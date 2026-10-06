@@ -61,7 +61,7 @@ def main():
     fixture = args.fixture.resolve()
     kind = 'material_only' if args.material_only else 'visual_cleanup'
     name = f'rifle7_{kind}_{args.revision}.glb'
-    root = Path(__file__).resolve().parents[3]/'build/swat/assets/weapons'
+    root = Path(__file__).resolve().parents[3]/'ocean/swat/assets/weapons'
     installed = root/'rifle7_rigid_textured.glb'
     frozen = root/'rifle7_original_textured.glb'
     original_path = frozen if frozen.exists() else installed

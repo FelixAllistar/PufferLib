@@ -1,0 +1,11 @@
+{
+  "schema": "independent-static-validator-provenance/1",
+  "status": "PASS",
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "authorship": "Independent reviewer scripts; parser design informed by prior independent replay_unit.py, rewritten strict single-key STEP contract; no producer modules imported",
+  "capture": "Fresh source and stock Blender4.3.2 GLB import; no source saved",
+  "portable_entrypoint": "replay_fixture.py --package PACKAGE --output replay.json",
+  "portable_relocation_smoke": "PASS: separate copied directory with only required asset, metadata, scripts and captures",
+  "manifest": "PORTABLE_FILES.json",
+  "scope": "Static export transport, exact baseline geometry/normal/UV/material/bind identity and measured metadata. No authoring correction, gameplay/runtime/camera/ADS/transition/loop approval."
+}

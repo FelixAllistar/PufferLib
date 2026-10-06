@@ -1,0 +1,661 @@
+{
+  "schema": "artifact_payload_sha256_v1",
+  "files": {
+    "01_street_front.png": {
+      "bytes": 1260878,
+      "sha256": "b43dd8e6d69a8f74be8869b82b28c88639b21c323ea6566556312e1f6d4f02a4"
+    },
+    "02_laundromat.png": {
+      "bytes": 1832839,
+      "sha256": "9e6b005c45dd6d7b4048aeed009c7c43405dacf6a5ed84c6c0149021470cf422"
+    },
+    "03_pawn_repair.png": {
+      "bytes": 1996360,
+      "sha256": "bfbe6b24eaa4169a06bc6a0eb96b792b7fd3410f5fcf8385bc09001c7d6283ff"
+    },
+    "04_shared_service.png": {
+      "bytes": 1909582,
+      "sha256": "4e1ad3295ee243b42cdbf9fdf7fab3452aee68d229b1924e068977eb81487719"
+    },
+    "05_cutaway.png": {
+      "bytes": 1314077,
+      "sha256": "5a95d78684190cad753d09ef3e26f30965c6e95e48464cd7baec98bcc6fb962f"
+    },
+    "LICENSE.txt": {
+      "bytes": 1181,
+      "sha256": "1c0b49b36543a857f3bb2a4fe9fe86d8e0516367507120c28e95868b7a2e7dfb"
+    },
+    "QA_SUMMARY.md": {
+      "bytes": 2862,
+      "sha256": "e3e2631da3a331a5e467fc8b44e540ebc16d3027f41934702577b624a1769872"
+    },
+    "README.md": {
+      "bytes": 6547,
+      "sha256": "b5ad1b17e609b23f8f2bf0a9cd011b1e409a59667d365bba799c28f074768e3b"
+    },
+    "assembly_manifest.json": {
+      "bytes": 131820,
+      "sha256": "f5a8ac5e51ce117002d0a77c0cf9c8fd9bb0fe6c400963b790c577b9dc560f6e"
+    },
+    "assets/alder_pawn_sign.glb": {
+      "bytes": 546848,
+      "sha256": "9aa9f33bd98a8e0ee2be9bbbb5f359dd9815f87b84d3c3530a23169dfed81a45"
+    },
+    "assets/fascia_cornice_2m.glb": {
+      "bytes": 463436,
+      "sha256": "32b2bd7ac9abf68acd7031653937d0b177aa0a74a4c8a1c14ee938101c1dfcb3"
+    },
+    "assets/floor_slab_2m.glb": {
+      "bytes": 148304,
+      "sha256": "6080bae7409fec165f022bc3155e6a4bbf8d4f9104620cc72d1b827ef3e4ff84"
+    },
+    "assets/glazed_display_bay_2m.glb": {
+      "bytes": 212284,
+      "sha256": "9da3ccf4b4e18913efaf04d9693baa27db2c64888e266dc07a619fe6060f1f48"
+    },
+    "assets/glazed_display_case.glb": {
+      "bytes": 435060,
+      "sha256": "867751bed415bc686b7e2304b663075d651a5da251383c6cbb335d06a111e539"
+    },
+    "assets/laundry_change_machine.glb": {
+      "bytes": 351124,
+      "sha256": "876672358b3717e8b69aa3867a7cea3cff38fdc6e074166e87372566196ac60f"
+    },
+    "assets/laundry_rules_sign.glb": {
+      "bytes": 518472,
+      "sha256": "2ef82b138f127c968a3d10f8952e098ee0dd9ac5ff5781927dc0404b6d206b04"
+    },
+    "assets/masonry_pier.glb": {
+      "bytes": 215452,
+      "sha256": "0d34355449c040d8c586221eb491391a7f464f8c11628d96e7544b7eae867767"
+    },
+    "assets/masonry_wall_2m.glb": {
+      "bytes": 619452,
+      "sha256": "4e73edffce9d84b19ca7d3e51e495e9b597d1d6ad84eeeaf44b39d23ef747cfd"
+    },
+    "assets/morrow_wash_sign.glb": {
+      "bytes": 537616,
+      "sha256": "e22075f8d4bc41ea9c2fe43669189d78060d47c440e7a6fcc2bdb15617dab647"
+    },
+    "assets/rear_service_door.glb": {
+      "bytes": 302424,
+      "sha256": "0d5caf1e235ac6929cd35ddeb2aa587bfa5305a8e862402a5d445641ca2b20e8"
+    },
+    "assets/rear_service_frame_2m.glb": {
+      "bytes": 289512,
+      "sha256": "50e01559f96968eadfc472e9c84e48ca4c2360bbd7fd58523aff194e8f53fcc1"
+    },
+    "assets/roller_shutter_2m.glb": {
+      "bytes": 293284,
+      "sha256": "02544214f7cc4dbb8bfbc8ec224e4725d1bac41801ab86bca52e445a5a892d1b"
+    },
+    "assets/roof_slab_2m.glb": {
+      "bytes": 376724,
+      "sha256": "3a71100ae95dc5d1e2546e3891d942178a726dcc2c35507803f48e4f1bc32c32"
+    },
+    "assets/service_counter_2m.glb": {
+      "bytes": 1085720,
+      "sha256": "bf480bfd5d26f6411ed4f7ee6d0f891ec521cc69cce0dde61d8afac8b1a30e91"
+    },
+    "assets/service_hatch_2m.glb": {
+      "bytes": 960224,
+      "sha256": "de80ea268897ca2de04dc52041de400ef199a74cfd7fb12c3de498ac940e8321"
+    },
+    "assets/shutter_tracks_2m.glb": {
+      "bytes": 121580,
+      "sha256": "1cc9850574635d2d682b2b720ea80403440ba968dc2f9732d15b14edf46ced84"
+    },
+    "assets/stockroom_door_leaf.glb": {
+      "bytes": 220336,
+      "sha256": "f122b6e07c1aff44b568cec643432d7a35e894e2f863c6fd52f9bff5209fd1ea"
+    },
+    "assets/stockroom_doorway_2m.glb": {
+      "bytes": 503148,
+      "sha256": "a86824c36f0a11a3f8ef6519099cdf7d383fe60cee40986402d326a6a48489e0"
+    },
+    "assets/stockroom_partition_2m.glb": {
+      "bytes": 483292,
+      "sha256": "b0c3b4662300aa5783d2eaaddee8bc00721f6c87310c41994d7872411a3898f0"
+    },
+    "assets/storefront_entry_frame_2m.glb": {
+      "bytes": 216512,
+      "sha256": "cfb51e6d802e3dfd641d521ee4ce4c4daee26283df3ed9dcc61106ee0ee500c7"
+    },
+    "assets/storefront_glass_door.glb": {
+      "bytes": 233456,
+      "sha256": "9b48cfa19d54e6324af5f49b340998888f706593fb20401c70685c3db4859402"
+    },
+    "assets/striped_awning_2m.glb": {
+      "bytes": 244140,
+      "sha256": "cbff32552009e5d74642888a135f8f6dcf3b0854013a66efafbb7ba78bab0fdc"
+    },
+    "assets/transom_insert_2m.glb": {
+      "bytes": 142632,
+      "sha256": "7f88d3f3e8abf3b582041db332943c56f2a8bcae4503403d7643959171108567"
+    },
+    "build_storefronts.py": {
+      "bytes": 28988,
+      "sha256": "588b0854d8cd0501b49d69817036e89b1e46a4dea8aac169e96faba4cc25ee83"
+    },
+    "compose_sheets.py": {
+      "bytes": 2020,
+      "sha256": "d61496bfc7a76eff65c0d67231c9ace3a9e1cb0923eed98f5d61095f89428164"
+    },
+    "geometry_core.py": {
+      "bytes": 8885,
+      "sha256": "893ceb98569bfd9519c5b8b1490f0fd0c437d23fcc5d202812c882672c1016af"
+    },
+    "inputs/SOURCE_PROVENANCE.md": {
+      "bytes": 1236,
+      "sha256": "45f83354076a29eb04aab9446e3a1641602b7ece93c7df9ea18c22756c102f25"
+    },
+    "inputs/materials_v1/.gitignore": {
+      "bytes": 28,
+      "sha256": "8fce71539b188f10c5333a4d600ae756d2fc81aca209a7be27c9a81adff6e687"
+    },
+    "inputs/materials_v1/INTEGRATION_TABLE.md": {
+      "bytes": 4677,
+      "sha256": "fb1d8bca029b9225a9caf59d8e357b94065376ad58616fbef6981e2614ee03d2"
+    },
+    "inputs/materials_v1/LICENSE_CC0.txt": {
+      "bytes": 1645,
+      "sha256": "7bde52c8517ac3f7e2e4b78387fc13e7a3fdb1b48349312fc2d09f9cae78267f"
+    },
+    "inputs/materials_v1/README.md": {
+      "bytes": 10140,
+      "sha256": "e83f9abfba304fa9ca5ae401ac7bc7cb44625b10c1ba3074b0cb9098bebd02bd"
+    },
+    "inputs/materials_v1/SHA256SUMS": {
+      "bytes": 3757,
+      "sha256": "6ddf2ed790ddafc13d286fa01e4debf2649c7afcd6ab8f648242b4dc288e9dec"
+    },
+    "inputs/materials_v1/door_paint_basecolor.png": {
+      "bytes": 19925,
+      "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9"
+    },
+    "inputs/materials_v1/door_paint_normal.png": {
+      "bytes": 46293,
+      "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28"
+    },
+    "inputs/materials_v1/door_paint_roughness.png": {
+      "bytes": 29843,
+      "sha256": "69dc722ad7b88b1a832f4f7019c7d556b44722b34c37999f61dfe933247c542a"
+    },
+    "inputs/materials_v1/door_wood_basecolor.png": {
+      "bytes": 200871,
+      "sha256": "19eff6c77c51302cfad2d260e3c19d2edeae86a91b76e63ad9fef39930012440"
+    },
+    "inputs/materials_v1/door_wood_normal.png": {
+      "bytes": 85704,
+      "sha256": "4eee14f7f7b28f0fb5eb00977116459a83cc0566a874227c5a8e295c606be7c5"
+    },
+    "inputs/materials_v1/door_wood_roughness.png": {
+      "bytes": 52880,
+      "sha256": "bdb8f6c56a0bdad3004862c3444b406e6fcac69ce09cbd716f6b074a67d6de48"
+    },
+    "inputs/materials_v1/floor_pine_basecolor.png": {
+      "bytes": 247436,
+      "sha256": "f6a9b7645db4e0fa572ea12b1294a0d96e46b541f3bd2174fefee19cebd63e23"
+    },
+    "inputs/materials_v1/floor_pine_normal.png": {
+      "bytes": 215036,
+      "sha256": "8e64c9f878c12a10581ecc559a408993bcd7b2e8a49b515d9dd69ae22474dbe1"
+    },
+    "inputs/materials_v1/floor_pine_roughness.png": {
+      "bytes": 44294,
+      "sha256": "b7eaf3acffad62c9b465f1db8309c43c25a9ac409772f01f047853529d6fb61a"
+    },
+    "inputs/materials_v1/framing_pine_basecolor.png": {
+      "bytes": 183988,
+      "sha256": "d61852a7641a67068fbf49b24fc9fbaeed973b05bac9463a9d7e22b2188655cb"
+    },
+    "inputs/materials_v1/framing_pine_normal.png": {
+      "bytes": 122639,
+      "sha256": "ad519b2b8c9271c6fbd06ef2f876b370c8fac4f3402827b310ceb9833b819ea3"
+    },
+    "inputs/materials_v1/framing_pine_roughness.png": {
+      "bytes": 43896,
+      "sha256": "76cfa04b4b6b6e6be32e3e4486931a1b768368830529cffa20d88d4365002f21"
+    },
+    "inputs/materials_v1/material_manifest.json": {
+      "bytes": 15396,
+      "sha256": "fbeb3805de4ed2df93c2d4e4c055d6596a9fd38ed59c55ac37c381e92a1c504e"
+    },
+    "inputs/materials_v1/plaster_painted_basecolor.png": {
+      "bytes": 97929,
+      "sha256": "540a8ff7152ab914caffd3bb3d20b29ae82b77010ff76055e0ed350c70b5f881"
+    },
+    "inputs/materials_v1/plaster_painted_normal.png": {
+      "bytes": 139020,
+      "sha256": "16f4452075b0ac3986bb1929f600c19b5b55047af1fcca7dce5530c12220658b"
+    },
+    "inputs/materials_v1/plaster_painted_roughness.png": {
+      "bytes": 46453,
+      "sha256": "046db2d87873e2cd4b0d7880c1a1e4672075d2928d2f1a53abaecc54d568f1df"
+    },
+    "inputs/materials_v1/plaster_worn_basecolor.png": {
+      "bytes": 99931,
+      "sha256": "80d8e456ff463f257b2c6c43f5ab1fd7eaf4f02d64eda8cea80705d1f062e028"
+    },
+    "inputs/materials_v1/plaster_worn_normal.png": {
+      "bytes": 116444,
+      "sha256": "c84b2ff837e36f95b1d27e0f16955dfa2fd90c5a383de7339d7420fa5ec09e63"
+    },
+    "inputs/materials_v1/plaster_worn_roughness.png": {
+      "bytes": 47463,
+      "sha256": "2a4b061b0ae6329f3ee0da18686512b7be965dc9d0de6ddeef0bd9a53af907ad"
+    },
+    "inputs/materials_v1/qa/render_report.json": {
+      "bytes": 4669,
+      "sha256": "4db8fc4fe15d57bb16a5bb03e6bec6f8a0f1dbd67bc37a122b266fb70398dff7"
+    },
+    "inputs/materials_v1/qa/review_summary.json": {
+      "bytes": 918,
+      "sha256": "8f8591f761cd028798fd48d59c5aab00a457232802724ce48f0e27473001e1cd"
+    },
+    "inputs/materials_v1/qa/storefront_copy_validation_report.json": {
+      "bytes": 9626,
+      "sha256": "b7e76bc275cc8febbbcb4b366c03446ccce7e7b6d358c9f3f867663fb9d98efc"
+    },
+    "inputs/materials_v1/qa/validation_report.json": {
+      "bytes": 9927,
+      "sha256": "db5ffb9bc41c4150064d18b4907dded19d041291a48184c36ec68d12a83f07a7"
+    },
+    "inputs/materials_v1/source/build_materials.py": {
+      "bytes": 15854,
+      "sha256": "9f0e7cb9467a1abe36cb4c8691b70b288ec5afbe914563a365878458141c1bc7"
+    },
+    "inputs/materials_v1/source/cc0/wood_floor_worn_diff_1k.jpg": {
+      "bytes": 629271,
+      "sha256": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758"
+    },
+    "inputs/materials_v1/source/cc0/wood_floor_worn_nor_gl_1k.jpg": {
+      "bytes": 636603,
+      "sha256": "f428496e5d6c726d17d9ecea29c0acd8660348630acf791cea7bdd7f3c6e262b"
+    },
+    "inputs/materials_v1/source/cc0/wood_floor_worn_rough_1k.jpg": {
+      "bytes": 290570,
+      "sha256": "9d7492db1197f1386466dfd7dd43f692446166c1433ddeebf66c10e8b226a6d0"
+    },
+    "inputs/materials_v1/source/parameters.json": {
+      "bytes": 2257,
+      "sha256": "a6f087094e74b3b626e14d106570ff32e194875a9c35478feb3a730466e90a88"
+    },
+    "inputs/materials_v1/source/render_qa.py": {
+      "bytes": 24616,
+      "sha256": "2d40823071109d3f84fdc9637d069fa0160a390bdbaf3b882e04b1f4661149cd"
+    },
+    "inputs/materials_v1/source/requirements.txt": {
+      "bytes": 28,
+      "sha256": "e32056a5263b5972e789540468f3d3e1e8e2d1649d21ef65e814317727be4897"
+    },
+    "inputs/materials_v1/source/test_materials.py": {
+      "bytes": 2820,
+      "sha256": "ae4ce91bfa690b241fdfcc8f685e01a21c47ef33b8a6d2d9ad5f6706635b6bbf"
+    },
+    "inputs/materials_v1/source/validate_materials.py": {
+      "bytes": 7653,
+      "sha256": "e565157c92dd6db13d8879ab2eef064c31480ed0fadcd6b5a262ac252d23ccd6"
+    },
+    "inputs/package_verified_sources.py": {
+      "bytes": 9832,
+      "sha256": "3d2c8ebfeb6e48d90121a3714f0cbfcc093b8377aeff44841cef5d260d60a157"
+    },
+    "inputs/prior_asset_provenance/02_household_clutter/LICENSE.txt": {
+      "bytes": 1031,
+      "sha256": "f26e4507daa86f1a1ed8a2c666d18599cd4358447f6a2faadad054c30f5b9d5c"
+    },
+    "inputs/prior_asset_provenance/02_household_clutter/manifest.json": {
+      "bytes": 42723,
+      "sha256": "b6d68cddd66916da9f02958ef61656464f6ab9290d1bb89a760fa6d7c65d8a91"
+    },
+    "inputs/prior_asset_provenance/04_furniture_variants/LICENSE.txt": {
+      "bytes": 997,
+      "sha256": "5ab799c82556e28d2f5d4dfef1dda8da41e245d4fdf3a0ec725035923bd0128b"
+    },
+    "inputs/prior_asset_provenance/04_furniture_variants/manifest.json": {
+      "bytes": 22313,
+      "sha256": "c6d89d6156ab8a6116dfb47f8f399d359c3a09105123c39c0581d044700ace0a"
+    },
+    "inputs/prior_asset_provenance/05_interior_fixtures/LICENSE.txt": {
+      "bytes": 935,
+      "sha256": "78f6007bab307f38d9aa48f751ffad71b509221f12c22a0f3076d8e401e75eb4"
+    },
+    "inputs/prior_asset_provenance/05_interior_fixtures/manifest.json": {
+      "bytes": 31414,
+      "sha256": "30912b0940ebd3f698f76e2afde1b9b9a401cb01a8c3dfb1d2d22bc12934be79"
+    },
+    "inputs/prior_asset_provenance/09_garage_workshop/LICENSE.txt": {
+      "bytes": 553,
+      "sha256": "2cf85dc1ce9db9ea116954b92b5a0a43a15ac7372b7b039557d4ca37a608510a"
+    },
+    "inputs/prior_asset_provenance/09_garage_workshop/manifest.json": {
+      "bytes": 23340,
+      "sha256": "ed24df1075cb0e08ccb74a14aa3ae5a79ed7a6cb3d5c3318a5daeeb30dfeb2aa"
+    },
+    "inputs/prior_asset_provenance/11_laundry_basement/LICENSE.txt": {
+      "bytes": 554,
+      "sha256": "8350eb769642ebe2f36b321cc2e7823fda2cfa62ada991eb1cd67fc80b68e30c"
+    },
+    "inputs/prior_asset_provenance/11_laundry_basement/manifest.json": {
+      "bytes": 27667,
+      "sha256": "3fabadc057376ffeec75aa81be9b02af436709a975a179ffb1dc7fe33979a882"
+    },
+    "lettering.py": {
+      "bytes": 2567,
+      "sha256": "340d48b8ece7b250258e06ad92e15349e9c6fc559d1091c07439df0b819fee60"
+    },
+    "manifest.json": {
+      "bytes": 93251,
+      "sha256": "0f1ab3e96905edbcba7efbec939de2f41ba793f76c580d68ef0e0ac230fdc783"
+    },
+    "neighborhood_storefronts.blend": {
+      "bytes": 20645740,
+      "sha256": "708053a032c0c21629cb98005bf316485f9413d609c2924b9e204eea911860cf"
+    },
+    "package_batch.py": {
+      "bytes": 4648,
+      "sha256": "4e5379132f7869a3c267ff649409934b8fb9154ee32497c4b9743cc26a99e175"
+    },
+    "previews/01_masonry_pier.png": {
+      "bytes": 194645,
+      "sha256": "7b07b686122ebb42e04e960008705acc6ca331b78fa19d3fde346bb41de369eb"
+    },
+    "previews/02_glazed_display_bay_2m.png": {
+      "bytes": 216443,
+      "sha256": "a807d5c579d149f85674937134a57b6bf996f1214219283bbc2e7a9c4f8e4613"
+    },
+    "previews/03_masonry_wall_2m.png": {
+      "bytes": 213130,
+      "sha256": "5b3cfd40edba0ddd6746e74d320b8d22e64fcf556c58141c47c94344da2becb6"
+    },
+    "previews/04_storefront_entry_frame_2m.png": {
+      "bytes": 211173,
+      "sha256": "cc4e1bf41b69b3b6f22bf33fc2261cd86c4493af07ff083cb767cfc64d19562d"
+    },
+    "previews/05_storefront_glass_door.png": {
+      "bytes": 205461,
+      "sha256": "6efebc326bb2d7778e37e181b75a29c8ddb3cd76a417a35c093cc128cff507ea"
+    },
+    "previews/06_transom_insert_2m.png": {
+      "bytes": 190780,
+      "sha256": "5a8a4df8f4ba56b8fbcfb4ea805adb3c6abc5a2fdf9a868657ceee5e0cfb505b"
+    },
+    "previews/07_roller_shutter_2m.png": {
+      "bytes": 219053,
+      "sha256": "c714cf70a71750ee740f05daf522069acbbe99818ca1f99c629a8dff28aa9af5"
+    },
+    "previews/08_shutter_tracks_2m.png": {
+      "bytes": 198442,
+      "sha256": "59e2bf21adb6a005be0cb43c9b40c72ce8c6f2dcedb0e683bc235e39301501b8"
+    },
+    "previews/09_striped_awning_2m.png": {
+      "bytes": 186729,
+      "sha256": "c082cd6068a80e4fb159c556186721c2ff60a6b2fa0c21b217dfe899c5dfdb96"
+    },
+    "previews/10_fascia_cornice_2m.png": {
+      "bytes": 191744,
+      "sha256": "6431eb63b4fe0328d36406ed78e6aaabebe6c871c92604c17ef6451e9f0301f2"
+    },
+    "previews/11_morrow_wash_sign.png": {
+      "bytes": 197231,
+      "sha256": "581a9097d370a1b90b2453a393a106be5c4a54d342041e5d236f6531585306db"
+    },
+    "previews/12_alder_pawn_sign.png": {
+      "bytes": 196814,
+      "sha256": "c69ef5a4129e96cfc90adad0f36d730a3888fe5f6a399a7d4de1f33b07fe3c93"
+    },
+    "previews/13_glazed_display_case.png": {
+      "bytes": 210581,
+      "sha256": "87740aef6b691b2235d984a63c11758ad1c35d8cea2fa3df8b51a21110678f6c"
+    },
+    "previews/14_service_counter_2m.png": {
+      "bytes": 205984,
+      "sha256": "faaf72658b4bee3932223057bb9ba840048912e5256eeff9404e12c8c8762b15"
+    },
+    "previews/15_laundry_change_machine.png": {
+      "bytes": 209729,
+      "sha256": "ca3b0b156d993ccc6acfa1cfde08174204e0e97628186e0580f5aeda849d1302"
+    },
+    "previews/16_laundry_rules_sign.png": {
+      "bytes": 206759,
+      "sha256": "5eb0bcfc334809926870a36192d924c372a6d14c4208803692f2f997449902cc"
+    },
+    "previews/17_stockroom_partition_2m.png": {
+      "bytes": 198893,
+      "sha256": "045a62c0f0610f74ceed0984bc9a4abd4394f7510ef1b802ccb2100143ecf3d0"
+    },
+    "previews/18_stockroom_doorway_2m.png": {
+      "bytes": 200927,
+      "sha256": "60ecaa5b7b6275cc371ce0d5536308933058861e5259160cafe777f5a7cf6b11"
+    },
+    "previews/19_stockroom_door_leaf.png": {
+      "bytes": 197925,
+      "sha256": "1fdd4bda56fbfb39be6369f922ce5edab259ff824aa3ff997803df91de31e4e9"
+    },
+    "previews/20_rear_service_frame_2m.png": {
+      "bytes": 209522,
+      "sha256": "7eb32a5dc7c2b7697ee134fa6bd485d43da6ebc57c32b53967ef57bf34843e21"
+    },
+    "previews/21_rear_service_door.png": {
+      "bytes": 201891,
+      "sha256": "4521f06e630e363c5d10780613332ee59e52e7054eec2ab7c5cc25b0a4918ded"
+    },
+    "previews/22_service_hatch_2m.png": {
+      "bytes": 209429,
+      "sha256": "1eef2778054c2cb09b3cb13c0e20321d71df486fa3a5fd4ba6ce235029e0a3db"
+    },
+    "previews/23_floor_slab_2m.png": {
+      "bytes": 180518,
+      "sha256": "c3eb5b4a4071609520261152da972ef653f7e8fcd164422e7ff6700481f38279"
+    },
+    "previews/24_roof_slab_2m.png": {
+      "bytes": 184238,
+      "sha256": "c932e257c5c0017b39b9d50887f30a5f20fb46edc917fc7144c9d43f10943ff1"
+    },
+    "qa/independent_blender_audit.py": {
+      "bytes": 15250,
+      "sha256": "8cc7d499bf9a290c36ca2c9414d877426be994b70de00a77316bbb6ccf881926"
+    },
+    "qa/independent_blender_report.json": {
+      "bytes": 227597,
+      "sha256": "5a80d910233cd0ca084a76f77070a971b0d0a7acf014ceee1666cf053bbf6858"
+    },
+    "qa/independent_glb_audit.py": {
+      "bytes": 9790,
+      "sha256": "4966c699639e098e28d65088a119064e94181d3dc3f5d75cff8101ff6590c4ee"
+    },
+    "qa/independent_glb_report.json": {
+      "bytes": 212273,
+      "sha256": "24c7fc5f9f498a51ef65e05b2f235d870e9a73dcb793366e2a31b3eb6f70a3c9"
+    },
+    "qa/independent_summary.md": {
+      "bytes": 3124,
+      "sha256": "96fde945771fe66b393b6acb3c3897ba32a68bfe85fb29d72fbc85873ceef00b"
+    },
+    "qa/joinery_detail.png": {
+      "bytes": 326621,
+      "sha256": "bf147b1ca51ef632bfc1bf99a088a1044029baa6155b4300b848f99ce32c23f4"
+    },
+    "qa/portable_rebuild_report.json": {
+      "bytes": 7244,
+      "sha256": "9335675f7e4fc97af7c6075fe927a194530f4277259835828a56e05bd9b04d68"
+    },
+    "qa/presentation_audit.py": {
+      "bytes": 2648,
+      "sha256": "7b03bbf345a07d768b8a9f2b6b80a58b887f0592b70f5b9001c0c6cf16e3488f"
+    },
+    "qa/presentation_report.json": {
+      "bytes": 3376,
+      "sha256": "4662047541ff1a8bfb53b21c0bea2b69a725478560ce2ae65f767cec6afafe37"
+    },
+    "qa/source_provenance_report.json": {
+      "bytes": 50028,
+      "sha256": "66121d846545136b84f20fe724afc253ca4a4d1191213a146231fe2f7abacdd9"
+    },
+    "qa/verify_portable_rebuild.py": {
+      "bytes": 1743,
+      "sha256": "e5197743b038766472c6be631f1bd66188340ef86130964d37865af5b30acc15"
+    },
+    "qa/visual_review.md": {
+      "bytes": 3532,
+      "sha256": "9ea8997132a0de39e4a45c253dfbb2f8167b7dbd8be73de261f23d4028450962"
+    },
+    "render_storefronts.py": {
+      "bytes": 4665,
+      "sha256": "d03673cbfe648197df3e5526ab15a2bbfc79bb72701beb63c6f5bbbc7fb8a478"
+    },
+    "requirements.txt": {
+      "bytes": 236,
+      "sha256": "3240da814380e33265e36136664626750891968aafe6c7f6544dfda7385f93f8"
+    },
+    "reused_assets/combination_pliers.glb": {
+      "bytes": 233960,
+      "sha256": "fbfba8c7d06c38aa5b5d24bbe50806f0e8eda7819fa9047e30c6b85fca3b5fef"
+    },
+    "reused_assets/corded_power_drill.glb": {
+      "bytes": 292032,
+      "sha256": "db801d2a97677f7f3d3bf81df6c616a146a7164b813f46f0ae4a39fbf0b1865e"
+    },
+    "reused_assets/deep_utility_sink.glb": {
+      "bytes": 536140,
+      "sha256": "7d854fdf1283c9b39f3596c16c9fbae4379e36030a5d87a4ab139ee90613ee30"
+    },
+    "reused_assets/folded_bedsheet_stack.glb": {
+      "bytes": 178848,
+      "sha256": "cdc52903272f0383b7c7af1086e6ec9e99ee7c0ec7d79210ddc36dc494aaa8a2"
+    },
+    "reused_assets/front_load_washer.glb": {
+      "bytes": 674944,
+      "sha256": "b4178f63e852ad16510bbfab8cb30ee3f5d9b4ce461e395c9a71a57cb3f7e33d"
+    },
+    "reused_assets/frosted_dome_light.glb": {
+      "bytes": 237748,
+      "sha256": "e105aef8c014e1c253ba45414bda021659609c28012d0256e354f8582afba38c"
+    },
+    "reused_assets/handled_detergent_jug.glb": {
+      "bytes": 451548,
+      "sha256": "6bd7e3ae480bfcd16f219d4813305bca0b19bb3bac9da273bdb5da9b8561da3b"
+    },
+    "reused_assets/laundry_hamper_woven.glb": {
+      "bytes": 1960956,
+      "sha256": "f445aee1c052cc4f13658c06ad70176c604c4527b5cd2f73c306d919d86863d0"
+    },
+    "reused_assets/portable_am_fm_radio.glb": {
+      "bytes": 836352,
+      "sha256": "e579132d53ba684562a57547f1f59c2c59de470debb03848bb2d67693d208160"
+    },
+    "reused_assets/reuse_catalog.json": {
+      "bytes": 36882,
+      "sha256": "34f03600936702f3f52138e65b476326abd585fe4ebf7a8bfabaa26b3a8a8bb8"
+    },
+    "reused_assets/shelving_steel_repaired.glb": {
+      "bytes": 866856,
+      "sha256": "751bd3e5df502252f27f1546f0dcc250dbf279ffda6c59a0f123242fdf525b9b"
+    },
+    "reused_assets/table_folding_card.glb": {
+      "bytes": 836368,
+      "sha256": "febd7704462743c5157bc4e506b4b2fa51df77a31f4b1d122c224ac0ef848098"
+    },
+    "reused_assets/twin_bell_alarm_clock.glb": {
+      "bytes": 538516,
+      "sha256": "332c0ae369197861fb11a6f464a293217922e526d3b42d8e79e10db7f3b0cdbf"
+    },
+    "reused_assets/two_slot_toaster.glb": {
+      "bytes": 607928,
+      "sha256": "ae48f18693dd7c1a50bd0b7b86f0b2aaae2aaa29c2300e8cfd21c2da4123f10d"
+    },
+    "reused_assets/vented_tumble_dryer.glb": {
+      "bytes": 606792,
+      "sha256": "416fd1ad92098cc9c7c8897d1aa3b4e50263f0fbdc34820961cecf500b1af27d"
+    },
+    "reused_assets/workbench_pegboard.glb": {
+      "bytes": 637724,
+      "sha256": "dd496a99dc869234e0d8f5f495929df3c38503512b320d0fc77e71c3cacbd77f"
+    },
+    "storefronts_contact_sheet.jpg": {
+      "bytes": 670703,
+      "sha256": "1e427ee7fddd91f29b0dd1e5e84772706349a1c4cecbf1887dfb830c88ee81cc"
+    },
+    "storefronts_example.glb": {
+      "bytes": 15315660,
+      "sha256": "b57bdbc34bbbeda827f7011110db1fb4fa9027d24c4227d8cad5f5abbf339b5a"
+    },
+    "storefronts_example_cutaway.glb": {
+      "bytes": 14149328,
+      "sha256": "91e8d224d1a1c227f914e958fca066e17e396d8828f27f6a278cc0cd2f0b3778"
+    },
+    "storefronts_location_views.jpg": {
+      "bytes": 595087,
+      "sha256": "e07a38f5580bd6566ea6c7f022c30dac1173b8986bbf00587d484362f04789a6"
+    },
+    "textures/asphalt.png": {
+      "bytes": 43260,
+      "sha256": "1e2730f8964fc8aa1a3acd4c961de6571180f0506e017dba84123cf5cb3ba662"
+    },
+    "textures/brick.png": {
+      "bytes": 57534,
+      "sha256": "f5819c78571dd28191a87225db55f39b1e4a4316ea66ef9de0e52d75ee9b68d0"
+    },
+    "textures/concrete.png": {
+      "bytes": 67464,
+      "sha256": "5b049d2025d19c3bcb88019affdb88dfc95ba1fb3d7dea426ab788f0b1796bda"
+    },
+    "textures/floor_tile.png": {
+      "bytes": 75079,
+      "sha256": "411a906512f2a7d60b6ea6e7e42029f511bc1f71bca6d80bd5468ae6737d5458"
+    },
+    "textures/glass.png": {
+      "bytes": 62742,
+      "sha256": "02629e1dd405ee39465df401e8d20658f4d5b220b0f2cad5a50ed8cde1503970"
+    },
+    "textures/iron.png": {
+      "bytes": 35749,
+      "sha256": "01df2488443926e283c83797bf03b3e0572530ffc6dfcdceeb5d512274995936"
+    },
+    "textures/ivory.png": {
+      "bytes": 72325,
+      "sha256": "8db5bdb235a350c8acea1aa5996d9675ee39318a4a816e1d61ba7a0b5db1530c"
+    },
+    "textures/lamp.png": {
+      "bytes": 79321,
+      "sha256": "a3bc9eb70be3fd8bdaa56b15b1a49e936ee917177c0e8a5918572a5f6be7aee9"
+    },
+    "textures/linen.png": {
+      "bytes": 70339,
+      "sha256": "7d243a7da02c0e10f00753de38a1cb52d45b36b7640c1806c66a1bb0e8d4b82d"
+    },
+    "textures/mortar.png": {
+      "bytes": 66506,
+      "sha256": "12460fbf22b225e60256d03e5a0ee9d79975710c4eb7369ee4196006749577b1"
+    },
+    "textures/ochre.png": {
+      "bytes": 64905,
+      "sha256": "5f5e3660679c20d1565c2eb3d56ade7b3b5b6576addb7e4cd6b421de8974952f"
+    },
+    "textures/oxblood.png": {
+      "bytes": 44160,
+      "sha256": "052851f3107842487bec50f6c32fbf30961c90ccd4604dfe1c053f4ec0a484ea"
+    },
+    "textures/paper.png": {
+      "bytes": 78218,
+      "sha256": "c18c9f40c5668507c08d95d052c5925d41a4b8879efd844938ef46e9af439665"
+    },
+    "textures/provenance.json": {
+      "bytes": 4209,
+      "sha256": "04310fcb2c28e7104a3baebe16311e5b752b37426ada14500cce58686ee53099"
+    },
+    "textures/rubber.png": {
+      "bytes": 4071,
+      "sha256": "d61a89ad40fb86c9060b7a986fd5a61c4573772694f3a07e17e658df31f5256f"
+    },
+    "textures/steel.png": {
+      "bytes": 57646,
+      "sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3"
+    },
+    "textures/teal.png": {
+      "bytes": 42300,
+      "sha256": "287efb75afc8fc2c306cea79e1aa477e30196733be909fe25bcf75f6e5d5cc0d"
+    }
+  }
+}

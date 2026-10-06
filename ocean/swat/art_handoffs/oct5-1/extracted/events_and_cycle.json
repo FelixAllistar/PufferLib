@@ -1,0 +1,76 @@
+{
+  "schema": "swat-walk-review-cycle/2",
+  "clip_id": "walk_right_shared_ready_n_c1_loop_a_original_1s",
+  "animation_name": "Walk Right / Shared Ready N C1 Loop A",
+  "duration_s": 1.0,
+  "source_fps": 30,
+  "source_frame_range": [
+    0,
+    30
+  ],
+  "cyclic_source": true,
+  "runtime_loop_quality_approved": false,
+  "repair_windows_s": [
+    [
+      0,
+      0.125
+    ],
+    [
+      0.875,
+      1
+    ]
+  ],
+  "preserved_center_s": [
+    0.125,
+    0.875
+  ],
+  "preservation_scope": "Source central75% retained to float evaluation tolerance; actual export fidelity is measured separately. Exact 661-curve diff is SOURCE_SAVED_CURVE_DIFF.json.",
+  "phase_semantics": "Original one-second phase, no runtime speed retime or phase bake. Explicit cubic tangents carry the seam derivative; flattening to linear needs new validation.",
+  "events": [],
+  "event_policy": "No authored footstep, reload, fire or ownership-transfer events. Do not infer gameplay commits from phase.",
+  "visibility": {
+    "mode": "Five source mesh objects exported/enabled; Fresh magazine remains collapsed through preserved zero-scale Prop_Magazine_B",
+    "visibility_extension_channels": 0,
+    "parent_switches": 0,
+    "collapsed_prop": {
+      "mesh_node": 75,
+      "joint_node": 69,
+      "skin_joint_slot": 69,
+      "scale": [
+        0,
+        0,
+        0
+      ],
+      "entire_clip": true,
+      "sampled_joint_linear_matrix_max_abs": 0.0
+    }
+  },
+  "owners_all_phases": {
+    "rifle": "character carry",
+    "installed_A": "rifle",
+    "unused_B": "collapsed source prop; no active game inventory owner supplied",
+    "spare_sleeve": "hips"
+  },
+  "installed_A_vs_rifle_deformation_max_change": 5.551115123125783e-16,
+  "identity_policy": "Cycle wrap retains weapon/magazine identities. Gameplay, replay and save/restore own magazine_seated, ammo/chamber/inventory; animation does not reset them.",
+  "source_pace": {
+    "nominal_speed_m_s": 1.921261549020877,
+    "duration_s": 1,
+    "original_source_fps": 60,
+    "root_vector_removed_blender_m": [
+      -1.9212615489959717,
+      -9.782612323760986e-06,
+      -4.76837158203125e-07
+    ],
+    "root_vector_removed_gltf_m": [
+      -1.9212615489959717,
+      -4.76837158203125e-07,
+      9.782612323760986e-06
+    ],
+    "manifest_sha256": "01649bec45c342e21d12b651d29a814b33366a43a4fa9689e3d0de195fbe8f28",
+    "source_fbx_file": "walk right.fbx.bin",
+    "source_fbx_sha256": "80f0debe85112dc5ae73fdd60d035cc5db3c343509a0e9541166264137a4fd82",
+    "meaning": "Original source displacement before in-place preparation; not a selected gameplay speed or current GLB root motion."
+  },
+  "gameplay_mapping": "This clip has not been tested in the engine. Cubic-capable preview implementation exists by engine-owner report for earlier clips; per-clip integration, blend/speed and achieved-pose mapping remain consumer work."
+}

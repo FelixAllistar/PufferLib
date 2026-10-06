@@ -1,0 +1,28 @@
+{
+  "source_records": [
+    {
+      "file": "HISTORICAL_README_MIXAMO_ASSETS.md",
+      "sha256": "bded8322f89d2811f8a2d38799d93ce97a1e508b5bdfe750c25f4cdc8dd206a7"
+    },
+    {
+      "file": "HISTORICAL_mixamo_manifest.json",
+      "sha256": "8f6edb0c299dcaadfbe948391891c80d60e2e1a91a21e800754b5337f7cc4d8c"
+    }
+  ],
+  "original_textured_blend": {
+    "path": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.blend",
+    "sha256": "cf7f57f19fb418beee368ee0073217df0698bc274e20140ac73a4add831191ae",
+    "all_9_maps_packed_byte_identical_to_external_files": true,
+    "stale_original_external_paths_missing": true
+  },
+  "original_textured_glb": {
+    "path": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.glb",
+    "sha256": "886ff5da576cb2ef427dc03a9051e40ee6f61ffea21d7a8aa92d12e100c663e3",
+    "embedded_map_count": 7,
+    "all_embedded_images_match_external_map_bytes": true,
+    "omits_glossiness_maps": true
+  },
+  "rights": "Third-party Adobe Mixamo character textures. Applicable original terms remain in effect. This package adds no license grant or public redistribution authorization; project code licensing does not relicense art. Exact original license text/receipt and original character FBX are not present.",
+  "source_url": "https://www.mixamo.com/",
+  "warning": "Historical documents describe old animation, proxy rifle and helper sockets; use them for provenance only, not current animation or weapon calibration."
+}

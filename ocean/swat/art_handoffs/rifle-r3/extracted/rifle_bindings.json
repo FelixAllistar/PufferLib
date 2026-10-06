@@ -1,0 +1,370 @@
+{
+  "schema": "swat-rigid-rifle-bindings/1",
+  "asset": "rifle7_visual_cleanup_r3.glb",
+  "asset_sha256": "011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a",
+  "units": "meters",
+  "axes": {
+    "forward": "+X",
+    "up": "+Y",
+    "right": "+Z"
+  },
+  "matrix_order": "row-major 4x4; named vectors are xyz",
+  "origin": "Measured center of the actual stock rear pad bounding box",
+  "landmarks": [
+    {
+      "id": "stock_contact",
+      "position_native_rifle": [
+        0.00129691231995821,
+        0.44999998807907104,
+        0.02265022322535515
+      ],
+      "position_export_engine": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "method": "Bounding-box center of the true rear pad; lies on source loop triangle 3978",
+      "kind": "measured stock-pad reference, not a fitted shoulder pose",
+      "source_vertex_ids": [
+        3854,
+        3857,
+        3859,
+        3860,
+        3861,
+        3864,
+        3894,
+        3895,
+        3896,
+        3897,
+        3899,
+        3902,
+        3905,
+        3907,
+        3908,
+        3909,
+        3912,
+        3947
+      ],
+      "surface_triangle": 3978
+    },
+    {
+      "id": "muzzle",
+      "position_native_rifle": [
+        0.0012969920644536614,
+        -0.44999996200203896,
+        0.06627657171338797
+      ],
+      "position_export_engine": [
+        0.89999995008111,
+        0.04362634848803282,
+        -7.974449545145035e-08
+      ],
+      "method": "Center of the eight-vertex inner tip ring at the foremost muzzle plane",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79
+      ]
+    },
+    {
+      "id": "rear_sight",
+      "position_native_rifle": [
+        0.0012967195361852646,
+        0.15017832815647125,
+        0.1473989635705948
+      ],
+      "position_export_engine": [
+        0.2998216599225998,
+        0.12474874034523964,
+        1.9278377294540405e-07
+      ],
+      "method": "Center of the rear aperture component bounds in X/Z and mean front/back Y planes",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        5186,
+        5187,
+        5188,
+        5189,
+        5190,
+        5191,
+        5192,
+        5193,
+        5194,
+        5195,
+        5196,
+        5197,
+        5198,
+        5199,
+        5200,
+        5201,
+        5202,
+        5203,
+        5204,
+        5205,
+        5206,
+        5207,
+        5208,
+        5209,
+        5210,
+        5211,
+        5212,
+        5213,
+        5214,
+        5215,
+        5216,
+        5217
+      ]
+    },
+    {
+      "id": "front_sight",
+      "position_native_rifle": [
+        0.0012967658888859053,
+        -0.20497363805770874,
+        0.14737612009048462
+      ],
+      "position_export_engine": [
+        0.6549736261367798,
+        0.12472589686512947,
+        1.4643107230471845e-07
+      ],
+      "method": "Center of the six top-face boundary vertices of the front sight post",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        5247,
+        5249,
+        5251,
+        5253,
+        5255,
+        5257
+      ]
+    },
+    {
+      "id": "grip_center",
+      "position_native_rifle": [
+        0.0012971572577953339,
+        0.18822678923606873,
+        -0.04834649385884404
+      ],
+      "position_export_engine": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        -2.4493783712387085e-07
+      ],
+      "method": "Bounding-box center of the separate pistol-grip component",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        1850,
+        1851,
+        1852,
+        1853,
+        1854,
+        1855,
+        1856,
+        1857,
+        1858,
+        1859,
+        1860,
+        1861,
+        1862,
+        1863,
+        1864,
+        1865,
+        1866,
+        1867,
+        1868,
+        1869,
+        1870,
+        1871,
+        1872,
+        1873,
+        1874,
+        1875,
+        1876,
+        1877,
+        1878,
+        1879,
+        1880,
+        1881,
+        1882,
+        1883,
+        1884,
+        1885,
+        1886,
+        1887,
+        1888,
+        1889,
+        1890,
+        1891,
+        1892,
+        1893,
+        1894,
+        1895,
+        1896,
+        1897,
+        1898,
+        1899,
+        1900,
+        1901,
+        1902,
+        1903,
+        1904,
+        1905,
+        1906,
+        1907,
+        1908,
+        1909,
+        1910
+      ]
+    },
+    {
+      "id": "right_hand_surface_candidate",
+      "position_native_rifle": [
+        -0.01336847496817406,
+        0.18822678923606873,
+        -0.04834649385884404
+      ],
+      "position_export_engine": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        0.01466538728813227
+      ],
+      "method": "Ray from native -X onto pistol-grip side at its mid-height/length",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        1867,
+        1860,
+        1862
+      ],
+      "surface_triangle": 2590,
+      "barycentric": [
+        0.4654029393868774,
+        0.12894403974164492,
+        0.4056530208714777
+      ],
+      "fit_status": "provisional surface candidate; hand wrap/orientation not fitted"
+    },
+    {
+      "id": "support_hand_surface_candidate",
+      "position_native_rifle": [
+        0.0012970571406185627,
+        -0.10807344317436218,
+        0.03487178310755068
+      ],
+      "position_export_engine": [
+        0.5580734312534332,
+        0.012221559882195532,
+        -1.448206603527069e-07
+      ],
+      "method": "Upward ray onto fore-end lower rail at its component midpoint",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        4981,
+        4847,
+        4982
+      ],
+      "surface_triangle": 6822,
+      "barycentric": [
+        1.0726561006091373e-06,
+        0.49999998480181357,
+        0.4999989425420859
+      ],
+      "fit_status": "provisional underside candidate; palm/finger clearance not fitted"
+    }
+  ],
+  "measured": {
+    "stock_to_muzzle_vector": [
+      0.89999995008111,
+      0.04362634848803282,
+      -7.974449545145035e-08
+    ],
+    "stock_to_muzzle_distance": 0.901056695457287,
+    "stock_to_muzzle_forward_length": 0.89999995008111,
+    "rear_to_front_sight_direction": [
+      0.9999999979314412,
+      -6.432029732629793e-05,
+      -1.305151173423283e-07
+    ],
+    "rear_sight_above_bore": 0.08112239185720682,
+    "front_sight_above_bore": 0.08109954837709665
+  },
+  "engine_profile_comparison": {
+    "carbine_barrel": 0.56,
+    "carbine_sight_height": 0.055,
+    "policy": "Record mismatch; do not scale/distort geometry. Engine owner calibrates pose/mesh alignment."
+  },
+  "historical_hand_frames": {
+    "status": "provisional older authoring seed, not current Ready approval or game IK calibration",
+    "source_json_sha256": "488cd87b6bb1ec6f55f6ddd0dab88c574bcd5abab2aba2f7be640aca4207a72b",
+    "source_seed_sha256": "d4cc80c1d93f1d31379dbb623a6270b62d2ae2ab303153232f29dea2f78981f7",
+    "local_frame_convention": "Blender authoring bone-local axes; explicit conversion/retargeting required by consumer",
+    "matrices_export_engine": {
+      "Left": [
+        [
+          -0.9908376932144165,
+          0.13210514187812805,
+          0.028077084571123123,
+          0.5099997967481613
+        ],
+        [
+          0.02955523505806923,
+          0.009238443337380886,
+          0.9995204210281372,
+          -0.007649954408407211
+        ],
+        [
+          0.1317829042673111,
+          0.9911920428276062,
+          -0.013058420270681381,
+          -0.07070325594395399
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "Right": [
+        [
+          -0.4103555381298065,
+          0.9091367721557617,
+          0.0712583065032959,
+          0.16999977827072144
+        ],
+        [
+          0.910483717918396,
+          0.404060959815979,
+          0.08805958926677704,
+          -0.11265023425221443
+        ],
+        [
+          0.05126555636525154,
+          0.10101497173309326,
+          -0.9935632348060608,
+          0.021297109313309193
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  },
+  "rigid_nodes": {
+    "body": "Rifle7_RigidBody",
+    "seated_magazine": "Rifle7_SeatedMagazine"
+  },
+  "known_fit_limits": [
+    "Current Ready shoulder/hand fit is being revised separately",
+    "Older fit had partial pad support and foregrip/cuff contact",
+    "These source geometry landmarks do not override authoritative swat_pose"
+  ]
+}

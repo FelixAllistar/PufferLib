@@ -1,0 +1,45 @@
+{
+  "status": "Exact body position/normal/UV/index agreement with verified Ready empty fixture",
+  "glb_sha256": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+  "comparison_glb_sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+  "assignments": [
+    {
+      "node": 71,
+      "mesh": 1,
+      "primitive": 0,
+      "material_index": 1,
+      "material_name": "Ch15_body.001",
+      "map_set": "Ch15_1001",
+      "uv": "TEXCOORD_0",
+      "tangent_attribute_present": false,
+      "accessors_match_verified_empty_body": {
+        "POSITION": true,
+        "NORMAL": true,
+        "TEXCOORD_0": true,
+        "indices": true
+      }
+    },
+    {
+      "node": 71,
+      "mesh": 1,
+      "primitive": 1,
+      "material_index": 2,
+      "material_name": "Ch15_body1.001",
+      "map_set": "Ch15_1002",
+      "uv": "TEXCOORD_0",
+      "tangent_attribute_present": false,
+      "accessors_match_verified_empty_body": {
+        "POSITION": true,
+        "NORMAL": true,
+        "TEXCOORD_0": true,
+        "indices": true
+      }
+    }
+  ],
+  "separate_texture_package": {
+    "file": "ch15-original-2k-character-textures-v1.zip",
+    "sha256": "be6b60251053f034761c400eec63b66ea870ac4336f67400eba3a882bdeb1b7f"
+  },
+  "images_embedded": 0,
+  "scope": "Body only. Original texture/normal/specular/gloss semantics are documented in the separate texture package. Source normal convention is undocumented; consistent tangent generation and runtime material appearance remain consumer work."
+}

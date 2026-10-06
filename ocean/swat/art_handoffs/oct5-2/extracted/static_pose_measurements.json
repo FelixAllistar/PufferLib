@@ -1,0 +1,68 @@
+{
+  "schema": "swat-static-crouch-export-measurement/1",
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "units": "metres",
+  "axes": "glTF model space,+Y up; Blender(x,y,z)\u2192(x,z,\u2212y)",
+  "source_authored_pose_height_reference": "SOURCE_ENGINE_MEASUREMENT_HANDOFF.json",
+  "body_top_y_native_evaluated_m": 1.3599172830581665,
+  "body_extent_y_native_evaluated_m": 1.355917257256806,
+  "hips_scene_node_model_xyz_m": [
+    0.02533753588795662,
+    0.6709743142127991,
+    -0.05438758805394173
+  ],
+  "visor_optical_surface_model_xyz_m": [
+    -0.19219146526877484,
+    1.1881570016289107,
+    0.4233279858775172
+  ],
+  "body_source_bind_vertex_namespace": "Rebuilt SWAT full body,24850 vertices; optical vertex map provided in optical_proxy_bindings.json",
+  "sole_min_y_native_weighted_subset_m": {
+    "left": 0.00400002274338606,
+    "right": 0.004000140044304566
+  },
+  "physical_rifle_model_landmarks_m": {
+    "stock_contact": [
+      -0.23481313754950472,
+      0.9897714877271249,
+      0.178368907118792
+    ],
+    "muzzle": [
+      -0.14719467995566854,
+      0.7235862138600017,
+      1.0347408636554445
+    ],
+    "rear_sight": [
+      -0.20480990133144616,
+      1.004652409328649,
+      0.5013763448532738
+    ],
+    "front_sight": [
+      -0.17036189476147362,
+      0.8834152312170496,
+      0.8334125049648254
+    ],
+    "grip_center": [
+      -0.20994685753486253,
+      0.8337191202147705,
+      0.39881206839209915
+    ],
+    "right_hand_surface_candidate": [
+      -0.2245429302121194,
+      0.8333336370618526,
+      0.4001856237237483
+    ],
+    "support_hand_surface_candidate": [
+      -0.18059206637976014,
+      0.8107805310670292,
+      0.7043139175488202
+    ]
+  },
+  "physical_rifle_forward_elevation_degrees": -19.956482850225047,
+  "visor_surface_to_rear_sight_distance_m": 0.19981167799395888,
+  "visor_surface_axial_coordinate_on_sightline_m": -0.13438680059367675,
+  "visor_surface_perpendicular_distance_to_sightline_m": 0.1478678277684395,
+  "visor_surface_normal_to_sightline_angle_degrees": 14.584255257115746,
+  "source_stock_support_reference": "SOURCE_MEASURED_POSE.json; contact checks are preserved authoring evidence, not independently rerun runtime collision tests",
+  "scope": "Single source-scale pose. Visor is a surface proxy; these measurements do not define anatomical eyes, optical nodal point, eye relief, camera origin, collider height or ADS approval."
+}

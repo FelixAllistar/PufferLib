@@ -1,5 +1,10 @@
 # Animation asset contract and integration proposal
 
+Current checkout: SWAT is merged into `5.0`. Runtime art is tracked under
+`assets/`, and source deliveries and editable scenes under `art_handoffs/`.
+Earlier private-package/PR scope statements below describe the historical
+snapshot rather than the current asset layout.
+
 Target: `swat/gold-element`, `ocean/swat`. Verified baseline:
 `811bc1ed9ed0f33767589696907227bd374d45c0` (2026-10-04, 12:16 UTC inspection).
 This replaces the earlier `5.0/ocean/shenaniguns3d` integration assumption.

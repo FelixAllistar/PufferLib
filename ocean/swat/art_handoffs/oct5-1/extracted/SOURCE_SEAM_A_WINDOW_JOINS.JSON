@@ -1,0 +1,370 @@
+{
+  "baseline": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_right/native_carry/ready_walk.editable.blend",
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_right/seam_a/walk_right_ready_n_c1.editable.blend",
+  "max_scalar_slope_jump_change_per_s": 0.06322083747936103,
+  "max_candidate_scalar_slope_jump_per_s": 4.2916653930636116e-05,
+  "max_baseline_scalar_slope_jump_per_s": 0.06322860717773438,
+  "worst_added_jumps": [
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 1,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": 0.26033878326416016,
+        "right_per_s": 0.32356739044189453,
+        "jump_per_s": 0.06322860717773438,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.3235596207435212,
+        "right_per_s": 0.32356739044189453,
+        "jump_per_s": 7.769698373349954e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.06322083747936103
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 1,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": -0.6785702705383301,
+        "right_per_s": -0.7290029525756836,
+        "jump_per_s": -0.050432682037353516,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -0.7290015621155508,
+        "right_per_s": -0.7290029525756836,
+        "jump_per_s": -1.3904601328107447e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.050431291577220705
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 1,
+      "join_frame": 26.25,
+      "baseline": {
+        "left_per_s": 0.3103923797607422,
+        "right_per_s": 0.34698486328125,
+        "jump_per_s": 0.03659248352050781,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.3103923797607422,
+        "right_per_s": 0.31038996337834746,
+        "jump_per_s": -2.416382394732075e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.036594899902902545
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": -0.1810741424560547,
+        "right_per_s": -0.2083110809326172,
+        "jump_per_s": -0.0272369384765625,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -0.2083106836115196,
+        "right_per_s": -0.2083110809326172,
+        "jump_per_s": -3.973210975782848e-07,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.02723654115546492
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": -0.032215118408203125,
+        "right_per_s": -0.057234764099121094,
+        "jump_per_s": -0.02501964569091797,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -0.057248960020141564,
+        "right_per_s": -0.057234764099121094,
+        "jump_per_s": 1.4195921020469793e-05,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.02503384161193844
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 26.25,
+      "baseline": {
+        "left_per_s": -0.026950836181640625,
+        "right_per_s": -0.04959583282470703,
+        "jump_per_s": -0.022644996643066406,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -0.026950836181640625,
+        "right_per_s": -0.026951247425040053,
+        "jump_per_s": -4.112433994278575e-07,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.02264458539966698
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 1,
+      "join_frame": 26.25,
+      "baseline": {
+        "left_per_s": -1.0300648212432861,
+        "right_per_s": -1.051093339920044,
+        "jump_per_s": -0.021028518676757812,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -1.0300648212432861,
+        "right_per_s": -1.0300805390249486,
+        "jump_per_s": -1.5717781662427655e-05,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.021012800895095385
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": 0.06388664245605469,
+        "right_per_s": 0.08450031280517578,
+        "jump_per_s": 0.020613670349121094,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.08450015163392709,
+        "right_per_s": 0.08450031280517578,
+        "jump_per_s": 1.6117124869430288e-07,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.0206135091778724
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 1,
+      "join_frame": 26.25,
+      "baseline": {
+        "left_per_s": 0.8103525638580322,
+        "right_per_s": 0.7900822162628174,
+        "jump_per_s": -0.020270347595214844,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.8103525638580322,
+        "right_per_s": 0.8103613527122911,
+        "jump_per_s": 8.788854258923173e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.020279136449473767
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": 0.758814811706543,
+        "right_per_s": 0.7389736175537109,
+        "jump_per_s": -0.01984119415283203,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.7389579029886189,
+        "right_per_s": 0.7389736175537109,
+        "jump_per_s": 1.5714565092084243e-05,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.019856908717924115
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": -0.2295970916748047,
+        "right_per_s": -0.24825096130371094,
+        "jump_per_s": -0.01865386962890625,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -0.24826479289094375,
+        "right_per_s": -0.24825096130371094,
+        "jump_per_s": 1.3831587232809861e-05,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.01866770121613906
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 1,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": -1.5989148616790771,
+        "right_per_s": -1.6169357299804688,
+        "jump_per_s": -0.0180208683013916,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -1.616929069654332,
+        "right_per_s": -1.6169357299804688,
+        "jump_per_s": -6.660326136831429e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.01801420797525477
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 26.25,
+      "baseline": {
+        "left_per_s": 0.1689291000366211,
+        "right_per_s": 0.1853656768798828,
+        "jump_per_s": 0.01643657684326172,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.1689291000366211,
+        "right_per_s": 0.1689173723964294,
+        "jump_per_s": -1.1727640191694366e-05,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.016448304483453413
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 3,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": 0.2088645100593567,
+        "right_per_s": 0.20042359828948975,
+        "jump_per_s": -0.008440911769866943,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.20042232194457638,
+        "right_per_s": 0.20042359828948975,
+        "jump_per_s": 1.2763449133701421e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.008442188114780314
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "component": 1,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": 1.9492721557617188,
+        "right_per_s": 1.95648193359375,
+        "jump_per_s": 0.00720977783203125,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 1.956485354451457,
+        "right_per_s": 1.95648193359375,
+        "jump_per_s": -3.420857707103764e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.007213198689738354
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 3,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": -2.21241295337677,
+        "right_per_s": -2.206181287765503,
+        "jump_per_s": 0.00623166561126709,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -2.206177079816666,
+        "right_per_s": -2.206181287765503,
+        "jump_per_s": -4.207948836931763e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.006235873560104022
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": 0.10727405548095703,
+        "right_per_s": 0.10205268859863281,
+        "jump_per_s": -0.005221366882324219,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.102052493948948,
+        "right_per_s": 0.10205268859863281,
+        "jump_per_s": 1.9464968481486267e-07,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.005221561532009034
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 2,
+      "join_frame": 3.75,
+      "baseline": {
+        "left_per_s": -0.19319772720336914,
+        "right_per_s": -0.1881498098373413,
+        "jump_per_s": 0.005047917366027832,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -0.1881512391066759,
+        "right_per_s": -0.1881498098373413,
+        "jump_per_s": 1.4292693345796526e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.005046488096693252
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 3,
+      "join_frame": 26.25,
+      "baseline": {
+        "left_per_s": 0.8184313774108887,
+        "right_per_s": 0.8224403858184814,
+        "jump_per_s": 0.0040090084075927734,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": 0.8184313774108887,
+        "right_per_s": 0.8184402895399405,
+        "jump_per_s": 8.912129051852347e-06,
+        "exact_key": true
+      },
+      "jump_change_per_s": -0.004000096278540921
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "component": 0,
+      "join_frame": 26.25,
+      "baseline": {
+        "left_per_s": -0.46381473541259766,
+        "right_per_s": -0.4675769805908203,
+        "jump_per_s": -0.0037622451782226562,
+        "exact_key": true
+      },
+      "candidate": {
+        "left_per_s": -0.46381473541259766,
+        "right_per_s": -0.4638361181048295,
+        "jump_per_s": -2.1382692231841638e-05,
+        "exact_key": true
+      },
+      "jump_change_per_s": 0.0037408624859908146
+    }
+  ],
+  "scope": "Repair joins checked using actual stored incoming/outgoing Bezier handles or LINEAR slopes. Existing native knot derivative changes are retained separately, so the metric measures added jump rather than falsely demanding smoothness at all original source knots."
+}

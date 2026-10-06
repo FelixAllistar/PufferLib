@@ -1,0 +1,74 @@
+{
+  "status": "Bounded release/return contact goals met; full review candidate with inherited stock/grip limits and brisk final closure",
+  "action_library_sha256": "762b66dd099e2baa19a9cbcfa0c6ec2d2332a8786db0a175feb817cba096360c",
+  "serialized_action_sha256": "62f9ce51e7d9af711eaef67ba640d9fb5030cefe3d73117f6cb5b6d91186ac17",
+  "edited_windows_clip_s": [
+    [
+      0.18,
+      0.5
+    ],
+    [
+      4.95,
+      6
+    ]
+  ],
+  "native_skin_samples": 303,
+  "native_skin_rate_hz": 192,
+  "old_magazine_left_hand_pairs": 0,
+  "installed_magazine_left_hand_pairs": 0,
+  "late_thumb_middle_ring_pinky_prop_pairs": 0,
+  "nonlocal_left_finger_and_interhand_pairs_in_changed_windows": 0,
+  "late_index_contact_mm": 1.955,
+  "late_palm_rifle_contact_mm": {
+    "F": 5.36,
+    "E": 5.347,
+    "at_clip_s": 5.98958,
+    "exact_final_ready_both": 4.822
+  },
+  "early_added_shoulder_seam_contact_mm": 0.439,
+  "early_added_seam_weights": {
+    "Spine2": 0.5251,
+    "LeftShoulder": 0.438,
+    "LeftArm": 0.026
+  },
+  "new_mid_arm_chest_overlap": false,
+  "new_finite_arm_wrist_snap": false,
+  "peak_early_upper_arm_deg_s": {
+    "F": 264.69,
+    "E": 263.46
+  },
+  "native_length_error_max_mm": 0.00111,
+  "late_distal_finger_peak_deg_s": {
+    "F": 798.49,
+    "E": 685.09
+  },
+  "temporal_note": "Last0.2s grip closure is continuous and brisk, with a nonzero final linear-segment speed; normal-speed artistic judgment remains necessary",
+  "preserved": [
+    "628 exact source curves",
+    "All70 evaluated matrices on render frames13\u2013118",
+    "Ready endpoints and receiver thumb press",
+    "Original body/rifle/magazine geometry, rest and skin",
+    "Core, legs, holding arm, rifle, magazine ownership and drop"
+  ],
+  "inherited_limits": [
+    "Partial lower stock-pad support and upper overhang",
+    "Foregrip palm/cuff contact and wrist pinch",
+    "Shallow pickup sleeve contact",
+    "Unmodified insertion/release inter-hand and neighboring-digit contact",
+    "Rough reconstructed sleeve"
+  ],
+  "video": "standing-empty-contact-cleanup-f-full-review.mp4",
+  "decoded_frames_inspected": [
+    0,
+    6,
+    34,
+    88,
+    113,
+    125,
+    135,
+    140,
+    142,
+    144
+  ],
+  "live_playback_acceptance_claimed": false
+}

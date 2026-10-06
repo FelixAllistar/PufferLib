@@ -1,0 +1,24 @@
+{
+  "source": "walk crouching forward",
+  "source_path": "/workspace/scratch/eac4961518d4/attachments/8b987126-d219-4132-8184-06cd71f13d22/walk crouching forward.fbx.bin",
+  "source_sha256": "a53c3d0f5c872d268f067e8cccf7b509d1f3a3e846a975ea83082876db100b51",
+  "source_library": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/forward_native_candidate/native_body.actions.blend",
+  "source_library_sha256": "6cdb2bade10a2ff622a234b49e0b86f159ddfebab8258234f371ec359fcd0af4",
+  "source_action": "Oct4 Crouch Forward / Native Grounded Body Reference",
+  "duration": 1.0,
+  "source_fps": 60,
+  "source_frames": [
+    1,
+    61
+  ],
+  "nominal_speed_m_s": 2.0390741825103778,
+  "source_root_displacement_m": [
+    -8.149072527885437e-08,
+    -2.039074182510376,
+    -2.384185791015625e-07
+  ],
+  "grounding": "Existing verified 240Hz native-knee-plane lift; original legs/body/gaze retained before bounded seam. Native dense sole minima3.701892/3.891718mm.",
+  "carry_reference": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch_ready_n.editable.blend",
+  "carry_reference_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "secondary_prop_policy": "Use current crouch Ready stored spare B in hips-relative frame. Original human FBX has no props; previous derived native library B collapse is not a source-human requirement."
+}

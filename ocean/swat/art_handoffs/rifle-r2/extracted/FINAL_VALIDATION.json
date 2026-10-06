@@ -1,0 +1,133 @@
+{
+  "status": "PASS",
+  "assets": [
+    {
+      "file": "rifle7_visual_cleanup_r2.glb",
+      "sha256": "09d659865fb4d75aaed64b91f973e98ae178d12ffd9df42b8fc401cac25fce98",
+      "bytes": 35764708,
+      "meshes": [
+        {
+          "name": "Rifle7_RigidBody_triangulated",
+          "vertices": 15951,
+          "triangles": 11233,
+          "source_attribute_prefix_exact": {
+            "POSITION": true,
+            "NORMAL": true,
+            "TEXCOORD_0": true,
+            "TANGENT": true
+          },
+          "bounds_exact": true,
+          "normals_tangents_finite_unit_orthogonal": true
+        },
+        {
+          "name": "Rifle7_SeatedMagazine_triangulated",
+          "vertices": 996,
+          "triangles": 780,
+          "source_attribute_prefix_exact": {
+            "POSITION": true,
+            "NORMAL": true,
+            "TEXCOORD_0": true,
+            "TANGENT": true
+          },
+          "bounds_exact": true,
+          "normals_tangents_finite_unit_orthogonal": true
+        }
+      ],
+      "images": [
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_Normal",
+          "size": [
+            4096,
+            4096
+          ],
+          "bytes": 4164967,
+          "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5"
+        },
+        {
+          "name": "Rifle7_finish_r2_BaseColor",
+          "size": [
+            4096,
+            4096
+          ],
+          "bytes": 12963280,
+          "sha256": "0d2caa1970a95cddbe5ffe1137be76d84eb8b2fb401ca3f14a1e127cd319dc22"
+        },
+        {
+          "name": "Rifle7_finish_r2_ORM",
+          "size": [
+            4096,
+            4096
+          ],
+          "bytes": 17747924,
+          "sha256": "68bcd5679a65fd1c759cceb9e9fbc0d9e34249c466970a507078e109921134d1"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "file": "rifle7_material_only_r2.glb",
+      "sha256": "de255f8596a7bdd4b633abb7969865989c998c281ce89899bbd3820a18a62c0a",
+      "bytes": 35712868,
+      "meshes": [
+        {
+          "name": "Rifle7_RigidBody_triangulated",
+          "vertices": 14991,
+          "triangles": 10273,
+          "source_attribute_prefix_exact": {
+            "POSITION": true,
+            "NORMAL": true,
+            "TEXCOORD_0": true,
+            "TANGENT": true
+          },
+          "bounds_exact": true,
+          "normals_tangents_finite_unit_orthogonal": true
+        },
+        {
+          "name": "Rifle7_SeatedMagazine_triangulated",
+          "vertices": 996,
+          "triangles": 780,
+          "source_attribute_prefix_exact": {
+            "POSITION": true,
+            "NORMAL": true,
+            "TEXCOORD_0": true,
+            "TANGENT": true
+          },
+          "bounds_exact": true,
+          "normals_tangents_finite_unit_orthogonal": true
+        }
+      ],
+      "images": [
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_Normal",
+          "size": [
+            4096,
+            4096
+          ],
+          "bytes": 4164967,
+          "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5"
+        },
+        {
+          "name": "Rifle7_finish_r2_BaseColor",
+          "size": [
+            4096,
+            4096
+          ],
+          "bytes": 12963280,
+          "sha256": "0d2caa1970a95cddbe5ffe1137be76d84eb8b2fb401ca3f14a1e127cd319dc22"
+        },
+        {
+          "name": "Rifle7_finish_r2_ORM",
+          "size": [
+            4096,
+            4096
+          ],
+          "bytes": 17747924,
+          "sha256": "68bcd5679a65fd1c759cceb9e9fbc0d9e34249c466970a507078e109921134d1"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "source_original_glb_unchanged": true,
+  "scope": "Offline file integrity, geometry/binding preservation, rigid two-mesh contract, PBR image dimensions and tangent frames. No runtime acceptance claim."
+}

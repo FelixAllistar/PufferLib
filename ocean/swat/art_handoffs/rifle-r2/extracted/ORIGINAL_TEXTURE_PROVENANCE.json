@@ -1,0 +1,27 @@
+[
+  {
+    "role": "BaseColor",
+    "path": "source_frozen/textures_original/7_uv_checker_material_uv_grid_4096x4096_BaseColor.png",
+    "sha256": "82ba8169d041537751ba1143ccadb37181b59e848874c49cce770f2aac42f425"
+  },
+  {
+    "role": "Roughness",
+    "path": "source_frozen/textures_original/7_uv_checker_material_uv_grid_4096x4096_Roughness.png",
+    "sha256": "d09db6b4efe94cfbbf479566cd40861463a84a89934745481a14c276142dc024"
+  },
+  {
+    "role": "Metallic",
+    "path": "source_frozen/textures_original/7_uv_checker_material_uv_grid_4096x4096_Metallic.png",
+    "sha256": "bbd66a30ffcbbd01df44711a0cfda79c76da79e12272a97da1bd9209f8030c09"
+  },
+  {
+    "role": "Normal",
+    "path": "source_frozen/textures_original/7_uv_checker_material_uv_grid_4096x4096_Normal.png",
+    "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5"
+  },
+  {
+    "role": "Height",
+    "path": "source_frozen/textures_original/7_uv_checker_material_uv_grid_4096x4096_Height.png",
+    "sha256": "7ba2f1eca6505fe4b2e46f3a590a0a14c3f1e049d20a12a9c41ab4c42b189b99"
+  }
+]

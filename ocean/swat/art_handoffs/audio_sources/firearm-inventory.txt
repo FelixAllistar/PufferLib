@@ -1,0 +1,104 @@
+Prepared SFX Library/1911/A_34P.wav
+Prepared SFX Library/1911/A_42P.wav
+Prepared SFX Library/1917/B_16P.wav
+Prepared SFX Library/1917/B_24P.wav
+Prepared SFX Library/AK-47/C_27P.wav
+Prepared SFX Library/AK-47/C_28P.wav
+Prepared SFX Library/AK-47/C_29P.wav
+Prepared SFX Library/AK-47/C_31P.wav
+Prepared SFX Library/AK-47/C_34P.wav
+Prepared SFX Library/AK-47/C_36P.wav
+Prepared SFX Library/AR-15/D_24P.wav
+Prepared SFX Library/AR-15/D_32P.wav
+Prepared SFX Library/Arisaka/E_18P.wav
+Prepared SFX Library/Arisaka/E_25P.wav
+Prepared SFX Library/Bersa/F_41P.wav
+Prepared SFX Library/Bersa/F_47P.wav
+Prepared SFX Library/Carl Gustav M45/G_20P.wav
+Prepared SFX Library/Carl Gustav M45/G_22P.wav
+Prepared SFX Library/Carl Gustav M45/G_24P.wav
+Prepared SFX Library/Carl Gustav M45/G_31P.wav
+Prepared SFX Library/Carl Gustav M45/G_33P.wav
+Prepared SFX Library/Carl Gustav M45/G_35P.wav
+Prepared SFX Library/CD/H_16P.wav
+Prepared SFX Library/CD/H_21P.wav
+Prepared SFX Library/Marlin 336/I_17P.wav
+Prepared SFX Library/Marlin 336/I_22P.wav
+Prepared SFX Library/Model 12/K_17P.wav
+Prepared SFX Library/Model 12/K_22P.wav
+Prepared SFX Library/Model 1894/L_17P.wav
+Prepared SFX Library/Model 1894/L_23P.wav
+Prepared SFX Library/Mosin Nagant/M_21P.wav
+Prepared SFX Library/Mosin Nagant/M_26P.wav
+Prepared SFX Library/Mossberg/N_26P.wav
+Prepared SFX Library/Mossberg/N_30P.wav
+Prepared SFX Library/Nova/O_17P.wav
+Prepared SFX Library/Nova/O_21P.wav
+Prepared SFX Library/PPSh/P_16P.wav
+Prepared SFX Library/PPSh/P_18P.wav
+Prepared SFX Library/PPSh/P_22P.wav
+Prepared SFX Library/PPSh/P_30P.wav
+Prepared SFX Library/PPSh/P_32P.wav
+Prepared SFX Library/PPSh/P_34P.wav
+Prepared SFX Library/Ruger Mark III/R_30P.wav
+Prepared SFX Library/Ruger Mark III/R_35P.wav
+Prepared SFX Library/Ruger Single Six/S_11P.wav
+Prepared SFX Library/Ruger Single Six/S_14P.wav
+Prepared SFX Library/Savage 10 .300 Blackout/T_17P.wav
+Prepared SFX Library/Savage 10 .300 Blackout/T_27P.wav
+Prepared SFX Library/SKS/U_14P.wav
+Prepared SFX Library/SKS/U_19P.wav
+Prepared SFX Library/Smith & Wesson 642/V_22P.wav
+Prepared SFX Library/Smith & Wesson 642/V_27P.wav
+Prepared SFX Library/Tikka/W_24P.wav
+Prepared SFX Library/Tikka/W_29P.wav
+Prepared SFX Library/Walther PPQ/X_31P.wav
+Prepared SFX Library/Walther PPQ/X_39P.wav
+Prepared SFX Library/desktop.ini
+Prepared SFX Library/Prepared Master Sheet.csv
+Prepared SFX Library/1911/.DS_Store
+Prepared SFX Library/1917/.DS_Store
+Prepared SFX Library/AK-47/.DS_Store
+Prepared SFX Library/AR-15/.DS_Store
+Prepared SFX Library/Arisaka/.DS_Store
+Prepared SFX Library/Bersa/.DS_Store
+Prepared SFX Library/Carl Gustav M45/.DS_Store
+Prepared SFX Library/CD/.DS_Store
+Prepared SFX Library/Marlin 336/.DS_Store
+Prepared SFX Library/Model 12/.DS_Store
+Prepared SFX Library/Model 1894/.DS_Store
+Prepared SFX Library/Mosin Nagant/.DS_Store
+Prepared SFX Library/Mossberg/.DS_Store
+Prepared SFX Library/Nova/.DS_Store
+Prepared SFX Library/PPSh/.DS_Store
+Prepared SFX Library/Ruger Mark III/.DS_Store
+Prepared SFX Library/Ruger Single Six/.DS_Store
+Prepared SFX Library/Savage 10 .300 Blackout/.DS_Store
+Prepared SFX Library/SKS/.DS_Store
+Prepared SFX Library/Smith & Wesson 642/.DS_Store
+Prepared SFX Library/Tikka/.DS_Store
+Prepared SFX Library/Walther PPQ/.DS_Store
+Prepared SFX Library/.DS_Store
+Prepared SFX Library/Walther PPQ
+Prepared SFX Library/Tikka
+Prepared SFX Library/Smith & Wesson 642
+Prepared SFX Library/SKS
+Prepared SFX Library/Savage 10 .300 Blackout
+Prepared SFX Library/Ruger Single Six
+Prepared SFX Library/Ruger Mark III
+Prepared SFX Library/PPSh
+Prepared SFX Library/Nova
+Prepared SFX Library/Mossberg
+Prepared SFX Library/Mosin Nagant
+Prepared SFX Library/Model 1894
+Prepared SFX Library/Model 12
+Prepared SFX Library/Marlin 336
+Prepared SFX Library/CD
+Prepared SFX Library/Carl Gustav M45
+Prepared SFX Library/Bersa
+Prepared SFX Library/Arisaka
+Prepared SFX Library/AR-15
+Prepared SFX Library/AK-47
+Prepared SFX Library/1917
+Prepared SFX Library/1911
+Prepared SFX Library

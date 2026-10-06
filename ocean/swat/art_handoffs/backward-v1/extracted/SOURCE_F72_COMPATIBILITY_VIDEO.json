@@ -1,0 +1,14 @@
+{
+  "path": "/workspace/scratch/eac4961518d4/animation_rebuild/walk_backward_n/review_delivery/walk-backward-loop-a-normal-speed.mp4",
+  "bytes": 2358665,
+  "sha256": "4e40db23cfb863fa3509531002b068d0c225d83334144ce7849bb08d33c3ed0e",
+  "fps": 60,
+  "frames": 240,
+  "duration_s": 4,
+  "cycle_s": 1,
+  "repetitions": 4,
+  "no_retime": true,
+  "views": "matched front and side; baseline left, loop A right",
+  "geometry": "Existing F preview with exact native70 motion; two geometric carriers reconstructed per sample. N70 source remains authoritative.",
+  "limitations": "Source-mapped, grounding and seam garment contacts retained and independently documented; not material-clean/gameplay/ADS approval. Source sleeve shown. No gripC/C1 adoption."
+}

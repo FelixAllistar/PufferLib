@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "checks": {
+    "rest": true,
+    "parents": true,
+    "bone_names": true,
+    "p0": true,
+    "p1": true,
+    "p2": true,
+    "p3": true,
+    "p4": true,
+    "w0": true,
+    "w1": true,
+    "w2": true,
+    "w3": true,
+    "w4": true,
+    "tris0": true,
+    "tris1": true,
+    "tris2": true,
+    "tris3": true,
+    "tris4": true
+  },
+  "template_source_sha256": "944b032d6b5f352fe8f715e609568fb686b1187d08e08a76159555d3702a8d44",
+  "walk_right_source_sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+  "scope": "Exact captured native geometry, raw weights, oriented triangles, rest matrices and parent identities; template reused only for static GLB data"
+}

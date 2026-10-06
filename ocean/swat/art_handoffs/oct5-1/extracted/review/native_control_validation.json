@@ -1,0 +1,126 @@
+{
+  "status": "PASS",
+  "glb_sha256": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+  "source_sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+  "source_capture_sha256": "1b93d3c9ddf945d61eb284c98cc296cb76431cf82bca99d1c95d66aee5899fc8",
+  "scope": "Independent GLB byte evaluator checked against separately captured Blender evaluated native vertices at16 controls. Complete exported vertices matched by exact bind coordinates plus all normalized weights. Neither capture generation nor the fixture writer is imported.",
+  "controls_s": [
+    0.0,
+    0.005,
+    0.025,
+    0.05,
+    0.1,
+    0.1249,
+    0.125,
+    0.25,
+    0.5,
+    0.75,
+    0.875,
+    0.9,
+    0.95,
+    0.975,
+    0.995,
+    1.0
+  ],
+  "total_exported_vertices": 48755,
+  "meshes": [
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "primitive": 0,
+      "vertices": 144,
+      "bind_positions_exact": true,
+      "normalized_weight_max_error": 0,
+      "source_matches_ambiguous": 0,
+      "control_count": 16,
+      "max_position_error_vs_native_evaluated_m": 1.786613183456508e-07,
+      "rms_position_error_vs_native_evaluated_m": 6.291952260977589e-08
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 0,
+      "vertices": 7638,
+      "bind_positions_exact": true,
+      "normalized_weight_max_error": 2.1133167771303363e-08,
+      "source_matches_ambiguous": 0,
+      "control_count": 16,
+      "max_position_error_vs_native_evaluated_m": 6.740691152043554e-07,
+      "rms_position_error_vs_native_evaluated_m": 1.6012548564930052e-07
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 1,
+      "vertices": 24049,
+      "bind_positions_exact": true,
+      "normalized_weight_max_error": 2.212510108456911e-08,
+      "source_matches_ambiguous": 0,
+      "control_count": 16,
+      "max_position_error_vs_native_evaluated_m": 1.0170932088790609e-06,
+      "rms_position_error_vs_native_evaluated_m": 2.0123857967913617e-07
+    },
+    {
+      "name": "Rifle 7",
+      "primitive": 0,
+      "vertices": 14936,
+      "bind_positions_exact": true,
+      "normalized_weight_max_error": 0,
+      "source_matches_ambiguous": 0,
+      "control_count": 16,
+      "max_position_error_vs_native_evaluated_m": 2.7287522641162226e-07,
+      "rms_position_error_vs_native_evaluated_m": 5.443401085977673e-08
+    },
+    {
+      "name": "Removed magazine",
+      "primitive": 0,
+      "vertices": 994,
+      "bind_positions_exact": true,
+      "normalized_weight_max_error": 0,
+      "source_matches_ambiguous": 0,
+      "control_count": 16,
+      "max_position_error_vs_native_evaluated_m": 2.562001487038194e-07,
+      "rms_position_error_vs_native_evaluated_m": 5.181721613499828e-08
+    },
+    {
+      "name": "Fresh magazine",
+      "primitive": 0,
+      "vertices": 994,
+      "bind_positions_exact": true,
+      "normalized_weight_max_error": 0,
+      "source_matches_ambiguous": 0,
+      "control_count": 16,
+      "max_position_error_vs_native_evaluated_m": 1.4901161193847656e-08,
+      "rms_position_error_vs_native_evaluated_m": 3.308452932438894e-09
+    }
+  ],
+  "native_oriented_topology": [
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "oriented_surface_triangles_exact": true,
+      "triangle_count": 72,
+      "unreferenced_native_vertices": 0
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "oriented_surface_triangles_exact": true,
+      "triangle_count": 46301,
+      "unreferenced_native_vertices": 0
+    },
+    {
+      "name": "Rifle 7",
+      "oriented_surface_triangles_exact": true,
+      "triangle_count": 10273,
+      "unreferenced_native_vertices": 6
+    },
+    {
+      "name": "Removed magazine",
+      "oriented_surface_triangles_exact": true,
+      "triangle_count": 780,
+      "unreferenced_native_vertices": 0
+    },
+    {
+      "name": "Fresh magazine",
+      "oriented_surface_triangles_exact": true,
+      "triangle_count": 780,
+      "unreferenced_native_vertices": 0
+    }
+  ]
+}

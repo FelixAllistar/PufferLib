@@ -1,0 +1,11 @@
+{
+  "parser_original": "animation_rebuild/walk_left_n_cubic_fixture/independent_validation/replay_unit.py",
+  "parser_sha256": "6fd2cb6815224e0a83f0e3fb7c3225985b1091bc17fae5d3cccb54304fa82120",
+  "parser_unchanged": true,
+  "inspector_original": "animation_rebuild/walk_left_n_cubic_fixture/independent_validation/inspect_binary.py",
+  "inspector_changes": [
+    "Default GLB basename right in place of left",
+    "Report schema direction right in place of left"
+  ],
+  "method": "Independent NumPy implementation. No fixture writer or gltf_math imports."
+}

@@ -1,0 +1,449 @@
+{
+  "status": "Geometric source landmarks only. No gameplay socket placement, hand-fit contact, physical dimension calibration, or animation contact acceptance is implied.",
+  "coordinate_spaces": {
+    "local": "Unscaled Blender mesh vertex coordinates, as imported from the FBX geometry; see exact object matrix to obtain imported world coordinates. These are model-space values, not validated meters.",
+    "world": "Default Blender FBX imported world space. FBX global centimeters are converted by the importer, but the model carries an additional source scale and remains implausibly large for a pistol.",
+    "component_ids": "Zero-based connected-component labels sorted by lowest imported vertex index. These labels are derived for this report and are not authored FBX part names."
+  },
+  "muzzle_tip": {
+    "component_id": 0,
+    "label": "Cylindrical muzzle-extension end ring",
+    "local_tip_plane_axis": "X",
+    "local_tip_plane_value": 3.3819684982299805,
+    "local_tip_plane_normal": [
+      1,
+      0,
+      0
+    ],
+    "local_center": [
+      3.3819684982299805,
+      0.523220063187182,
+      -0.014973351557273418
+    ],
+    "imported_world_center": [
+      40.631665379664774,
+      -1.742222944670301,
+      0.3445156022372237
+    ],
+    "imported_world_forward_normal": [
+      0.007012145551742831,
+      -0.9999752168663429,
+      -0.0006288623629607827
+    ],
+    "ring_vertices": 32,
+    "ring_vertex_indices": [
+      100,
+      101,
+      138,
+      139,
+      142,
+      143,
+      145,
+      147,
+      149,
+      151,
+      153,
+      155,
+      157,
+      159,
+      161,
+      163,
+      165,
+      167,
+      169,
+      171,
+      173,
+      175,
+      177,
+      179,
+      181,
+      183,
+      185,
+      187,
+      189,
+      191,
+      193,
+      195
+    ],
+    "ring_local_radius_mean": 0.1320261268040418,
+    "method": "Select the 32 vertices at the maximum local X of component 0; all lie on the same local X plane. Center is their mean. This is the end ring of the attached extension rather than a calibrated bore or effects socket."
+  },
+  "front_sight": [
+    {
+      "component_id": 17,
+      "geometric_label": "Front-sight base/post",
+      "vertex_index_min": 5273,
+      "vertex_index_max": 5280,
+      "vertex_count": 8,
+      "local_bounds_min": [
+        0.9187042713165283,
+        0.6859573721885681,
+        -0.0694970190525055
+      ],
+      "local_bounds_max": [
+        1.053659200668335,
+        0.7511582970619202,
+        0.03922498598694801
+      ],
+      "local_vertex_centroid": [
+        0.9756767153739929,
+        0.7185578346252441,
+        -0.01513601839542389
+      ],
+      "imported_world_vertex_centroid": [
+        40.62354316031137,
+        -0.5615246225317926,
+        0.44111181452191756
+      ],
+      "world_bounds_min": [
+        40.59666061401367,
+        -0.5999674201011658,
+        0.4250689148902893
+      ],
+      "world_bounds_max": [
+        40.650474548339844,
+        -0.5333714485168457,
+        0.4571412205696106
+      ]
+    },
+    {
+      "component_id": 12,
+      "geometric_label": "Front-sight cylindrical dot/inset",
+      "vertex_index_min": 5019,
+      "vertex_index_max": 5082,
+      "vertex_count": 64,
+      "local_bounds_min": [
+        0.9215588569641113,
+        0.6958341002464294,
+        -0.04021213948726654
+      ],
+      "local_bounds_max": [
+        0.9567599296569824,
+        0.7450100779533386,
+        0.00896385870873928
+      ],
+      "local_vertex_centroid": [
+        0.9391593933105469,
+        0.7204221896827221,
+        -0.015624453910277225
+      ],
+      "imported_world_vertex_centroid": [
+        40.62365792310959,
+        -0.5436046118806681,
+        0.4420377429670253
+      ],
+      "world_bounds_min": [
+        40.61153030395508,
+        -0.5523257255554199,
+        0.4299667775630951
+      ],
+      "world_bounds_max": [
+        40.63578414916992,
+        -0.5348834991455078,
+        0.4541086256504059
+      ]
+    }
+  ],
+  "rear_sight": [
+    {
+      "component_id": 16,
+      "geometric_label": "Rear-sight base/notched part",
+      "vertex_index_min": 5241,
+      "vertex_index_max": 5272,
+      "vertex_count": 32,
+      "local_bounds_min": [
+        -1.82889986038208,
+        0.6597242951393127,
+        -0.19275698065757751
+      ],
+      "local_bounds_max": [
+        -1.7158849239349365,
+        0.7724593281745911,
+        0.16241204738616943
+      ],
+      "local_vertex_centroid": [
+        -1.7660881280899048,
+        0.7292078137397766,
+        -0.015172263840213418
+      ],
+      "imported_world_vertex_centroid": [
+        40.61413100467176,
+        0.7838449957659365,
+        0.4471839008561787
+      ],
+      "world_bounds_min": [
+        40.52674865722656,
+        0.7586206793785095,
+        0.41300198435783386
+      ],
+      "world_bounds_max": [
+        40.701416015625,
+        0.8152987957000732,
+        0.46847105026245117
+      ]
+    },
+    {
+      "component_id": 13,
+      "geometric_label": "Rear-sight dot/inset on one side",
+      "vertex_index_min": 5083,
+      "vertex_index_max": 5146,
+      "vertex_count": 64,
+      "local_bounds_min": [
+        -1.8072409629821777,
+        0.6958341002464294,
+        0.07937392592430115
+      ],
+      "local_bounds_max": [
+        -1.720616102218628,
+        0.7450100779533386,
+        0.12854993343353271
+      ],
+      "local_vertex_centroid": [
+        -1.7639285326004028,
+        0.7204219549894333,
+        0.10396162047982216
+      ],
+      "imported_world_vertex_centroid": [
+        40.55567644942591,
+        0.7823780186214497,
+        0.4429191452321714
+      ],
+      "world_bounds_min": [
+        40.543460845947266,
+        0.7610401511192322,
+        0.4308403432369232
+      ],
+      "world_bounds_max": [
+        40.56789016723633,
+        0.8037158250808716,
+        0.45499807596206665
+      ]
+    },
+    {
+      "component_id": 14,
+      "geometric_label": "Rear-sight dot/inset on opposite side",
+      "vertex_index_min": 5147,
+      "vertex_index_max": 5210,
+      "vertex_count": 64,
+      "local_bounds_min": [
+        -1.8072409629821777,
+        0.6958341002464294,
+        -0.16361406445503235
+      ],
+      "local_bounds_max": [
+        -1.720616102218628,
+        0.7450100779533386,
+        -0.11443808674812317
+      ],
+      "local_vertex_centroid": [
+        -1.7639285326004028,
+        0.7204219549894333,
+        -0.1390258865430951
+      ],
+      "imported_world_vertex_centroid": [
+        40.67490937790857,
+        0.783214178492109,
+        0.44282287886698807
+      ],
+      "world_bounds_min": [
+        40.662696838378906,
+        0.7618763446807861,
+        0.43074408173561096
+      ],
+      "world_bounds_max": [
+        40.6871223449707,
+        0.8045520186424255,
+        0.4549018144607544
+      ]
+    }
+  ],
+  "grip": [
+    {
+      "component_id": 19,
+      "geometric_label": "Integrated frame, trigger guard, trigger, and grip; grip has no separate connected component",
+      "vertex_index_min": 5891,
+      "vertex_index_max": 13607,
+      "vertex_count": 7717,
+      "local_bounds_min": [
+        -2.1507279872894287,
+        -1.4155696630477905,
+        -0.2630600035190582
+      ],
+      "local_bounds_max": [
+        1.0932350158691406,
+        0.30588820576667786,
+        0.20367807149887085
+      ],
+      "local_vertex_centroid": [
+        -0.632477319108686,
+        -0.21151677755335074,
+        -0.0033061457619875246
+      ],
+      "imported_world_vertex_centroid": [
+        40.61183429023878,
+        0.22783366882759506,
+        -0.014781900677783896
+      ],
+      "world_bounds_min": [
+        40.50563430786133,
+        -0.6195856928825378,
+        -0.6054279208183289
+      ],
+      "world_bounds_max": [
+        40.73804473876953,
+        0.97368323802948,
+        0.23900838196277618
+      ]
+    },
+    {
+      "component_id": 11,
+      "geometric_label": "Magazine inside grip and exposed baseplate",
+      "vertex_index_min": 4923,
+      "vertex_index_max": 5018,
+      "vertex_count": 96,
+      "local_bounds_min": [
+        -1.9708831310272217,
+        -1.5360087156295776,
+        -0.2084612250328064
+      ],
+      "local_bounds_max": [
+        -0.9294888973236084,
+        0.40897122025489807,
+        0.17368781566619873
+      ],
+      "local_vertex_centroid": [
+        -1.4278791695833206,
+        -0.876631522240738,
+        -0.017386712909986574
+      ],
+      "imported_world_vertex_centroid": [
+        40.615741716273476,
+        0.6183859376754801,
+        -0.34091887207380994
+      ],
+      "world_bounds_min": [
+        40.519859313964844,
+        0.3730097711086273,
+        -0.6645582914352417
+      ],
+      "world_bounds_max": [
+        40.709476470947266,
+        0.8856878876686096,
+        0.2899734675884247
+      ]
+    }
+  ],
+  "other_useful_components": [
+    {
+      "component_id": 18,
+      "geometric_label": "Slide",
+      "vertex_index_min": 5281,
+      "vertex_index_max": 5890,
+      "vertex_count": 610,
+      "local_bounds_min": [
+        -1.9684770107269287,
+        0.17544037103652954,
+        -0.21489295363426208
+      ],
+      "local_bounds_max": [
+        1.089597225189209,
+        0.6851323246955872,
+        0.1858050525188446
+      ],
+      "local_vertex_centroid": [
+        -0.9531428445558079,
+        0.4691771239042282,
+        0.006123349360633092
+      ],
+      "imported_world_vertex_centroid": [
+        40.60637503656755,
+        0.38494231947429786,
+        0.3193424431301209
+      ],
+      "world_bounds_min": [
+        40.51514434814453,
+        -0.6180030703544617,
+        0.17456510663032532
+      ],
+      "world_bounds_max": [
+        40.7171630859375,
+        0.8836531043052673,
+        0.4256593883037567
+      ]
+    },
+    {
+      "component_id": 1,
+      "geometric_label": "Barrel",
+      "vertex_index_min": 1792,
+      "vertex_index_max": 2911,
+      "vertex_count": 1120,
+      "local_bounds_min": [
+        -0.7662385702133179,
+        0.4169560968875885,
+        -0.12159501016139984
+      ],
+      "local_bounds_max": [
+        1.1401152610778809,
+        0.6326890587806702,
+        0.09413905441761017
+      ],
+      "local_vertex_centroid": [
+        0.7027962712304933,
+        0.524822474510542,
+        -0.013728220711761554
+      ],
+      "imported_world_vertex_centroid": [
+        40.62183623018575,
+        -0.4275689089137677,
+        0.3461291708434094
+      ],
+      "world_bounds_min": [
+        40.56385040283203,
+        -0.6424576640129089,
+        0.29306748509407043
+      ],
+      "world_bounds_max": [
+        40.67622375488281,
+        0.29365164041519165,
+        0.39951345324516296
+      ]
+    },
+    {
+      "component_id": 0,
+      "geometric_label": "Cylindrical muzzle extension",
+      "vertex_index_min": 0,
+      "vertex_index_max": 1791,
+      "vertex_count": 1792,
+      "local_bounds_min": [
+        1.0296125411987305,
+        0.35955527424812317,
+        -0.17863790690898895
+      ],
+      "local_bounds_max": [
+        3.3819684982299805,
+        0.686884343624115,
+        0.14869119226932526
+      ],
+      "local_vertex_centroid": [
+        2.3524858692128743,
+        0.5232198244692492,
+        -0.014973335259648073
+      ],
+      "imported_world_vertex_centroid": [
+        40.62812300800819,
+        -1.2370600458928114,
+        0.3448331709104268
+      ],
+      "world_bounds_min": [
+        40.5440788269043,
+        -1.7426772117614746,
+        0.26422056555747986
+      ],
+      "world_bounds_max": [
+        40.7117919921875,
+        -0.5876597762107849,
+        0.4254794120788574
+      ]
+    }
+  ]
+}

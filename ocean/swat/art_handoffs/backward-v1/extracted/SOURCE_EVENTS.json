@@ -1,0 +1,7 @@
+{
+  "clip": "Walk Backward / Shared Ready N C1 Loop A",
+  "duration_s": 1.0,
+  "events": [],
+  "event_semantics": "Continuous locomotion source has no authored gameplay, reload, magazine, footstep or stance-transition events. Inferred support windows in source diagnosis are kinematic measurements, not authored engine events.",
+  "cyclic_endpoint": "time1.0 is the matching cycle boundary, not an additional held frame"
+}

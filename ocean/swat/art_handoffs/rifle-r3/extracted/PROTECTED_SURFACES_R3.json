@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "components": [
+    {
+      "component": "pistol_grip",
+      "original_native_vertex_count": 61,
+      "r2_rendered_triangles": 118,
+      "all_r2_triangle_indices_retained_exact": true
+    },
+    {
+      "component": "support_lower_rail",
+      "original_native_vertex_count": 80,
+      "r2_rendered_triangles": 154,
+      "all_r2_triangle_indices_retained_exact": true
+    },
+    {
+      "component": "stock_rear_pad",
+      "original_native_vertex_count": 102,
+      "r2_rendered_triangles": 200,
+      "all_r2_triangle_indices_retained_exact": true
+    },
+    {
+      "component": "barrel_and_muzzle",
+      "original_native_vertex_count": 136,
+      "r2_rendered_triangles": 256,
+      "all_r2_triangle_indices_retained_exact": true
+    },
+    {
+      "component": "front_sight_post",
+      "original_native_vertex_count": 24,
+      "r2_rendered_triangles": 44,
+      "all_r2_triangle_indices_retained_exact": true
+    },
+    {
+      "component": "trigger_guard",
+      "original_native_vertex_count": 58,
+      "r2_rendered_triangles": 112,
+      "all_r2_triangle_indices_retained_exact": true
+    },
+    {
+      "component": "lower_receiver",
+      "original_native_vertex_count": 172,
+      "r2_rendered_triangles": 340,
+      "all_r2_triangle_indices_retained_exact": true
+    }
+  ],
+  "r2_ring_1024_triangle_rows_retained_exact": true,
+  "corresponding_vertex_positions_normals_uvs_tangents": "Byte-exact R2 prefix, independently validated in FINAL_VALIDATION_R3.json",
+  "guarantee_scope": "Exact indexed mesh data preservation of protected components and complete R2 ring; no new runtime collision/hand-fit test claimed."
+}

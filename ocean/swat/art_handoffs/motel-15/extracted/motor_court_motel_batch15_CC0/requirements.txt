@@ -1,0 +1,5 @@
+# Host Python only. Blender 4.3.2+ supplies bpy, bmesh, mathutils and NumPy.
+numpy>=1.26
+Pillow>=10.1
+
+# Verified host versions: Python 3.12.14, NumPy 2.3.5, Pillow 12.3.0.

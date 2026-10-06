@@ -1,0 +1,235 @@
+{
+  "schema": "swat-character-preview-fit/1",
+  "glb_sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+  "units": "meters",
+  "coordinate_space": "Exported glTF model coordinates, Y up",
+  "root": {
+    "name": "SWAT_Mixamo_Rig",
+    "transform_column_major": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "basis_change_applied_to_asset": false,
+    "source_blender_to_gltf": "(x,y,z) -> (x,z,-y)"
+  },
+  "ready_body_bounds_model_xyz_m": [
+    [
+      -0.5266320334399931,
+      0.00399997911323547,
+      -0.21627666654621086
+    ],
+    [
+      0.24972223361782256,
+      1.7369427553471328,
+      0.6764057600916904
+    ]
+  ],
+  "sole_support": {
+    "left": {
+      "selection": "Body vertices with cumulative same-side Foot/Toe weight >0.5; support candidates within 1 mm of that subset minimum Y",
+      "subset_vertices": 654,
+      "minimum_y_m": 0.00399997911323547,
+      "support_vertex_indices": [
+        2903,
+        2910,
+        2924,
+        2973,
+        2974
+      ],
+      "support_centroid_model_xyz_m": [
+        0.1677502676504868,
+        0.004362991620014758,
+        0.06600829287643621
+      ],
+      "support_count": 5,
+      "minimum_vertex_index": 2973
+    },
+    "right": {
+      "selection": "Body vertices with cumulative same-side Foot/Toe weight >0.5; support candidates within 1 mm of that subset minimum Y",
+      "subset_vertices": 668,
+      "minimum_y_m": 0.004000013254831965,
+      "support_vertex_indices": [
+        2212,
+        2219,
+        2233,
+        2282,
+        2283
+      ],
+      "support_centroid_model_xyz_m": [
+        -0.1284835548989176,
+        0.004363023116936585,
+        -0.1500450817510696
+      ],
+      "support_count": 5,
+      "minimum_vertex_index": 2282
+    }
+  },
+  "ready_support_floor_y_m": 0.00399997911323547,
+  "preview_alignment_candidate": {
+    "status": "Measured rigid preview placement candidate; not an accepted controller retarget or eye fit",
+    "heading_definition": "Horizontal projection of the measured Ready rifle forward axis",
+    "source_ready_forward_model_xyz": [
+      0.006459206496957102,
+      0.0,
+      0.9999791391081264
+    ],
+    "source_ready_up_model_xyz": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "source_ready_right_model_xyz": [
+      -0.9999791391081265,
+      0.0,
+      0.0064592064969571025
+    ],
+    "source_ready_feet_origin_model_xyz_m": [
+      0.019633356375784602,
+      0.00399997911323547,
+      -0.04201839443731669
+    ],
+    "model_to_engine_heading0_feet_origin_column_major": [
+      0.006459206496957102,
+      0.0,
+      -0.9999791391081265,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.9999791391081264,
+      0.0,
+      0.0064592064969571025,
+      0.0,
+      0.04189070199307409,
+      -0.00399997911323547,
+      0.019904352292801356,
+      1.0
+    ],
+    "uniform_scale": 1,
+    "engine_axes": "+X forward, +Y up, +Z right",
+    "scope": "Translate the sampled support floor to zero and rotate source Ready heading to +X; no changes are baked into the GLB"
+  },
+  "eye": {
+    "status": "unresolved: no eye bones or independently measured eye/visor landmark",
+    "eye_point_model_xyz_m": null,
+    "head_joint_origin_model_xyz_m": [
+      -0.12941312789916998,
+      1.503762125968933,
+      0.08056230098009107
+    ],
+    "head_top_joint_origin_model_xyz_m": [
+      -0.17257802188396454,
+      1.7211812734603884,
+      0.20673945546150213
+    ],
+    "warning": "Head joint origins are supplied for inspection only; neither is a measured eye. Engine camera eye remains authoritative."
+  },
+  "weapon_bridge": {
+    "status": "Verified same Rifle 7 native bind vertices, no rescale",
+    "native_bind_vertex_max_difference_m": 0,
+    "rigid_asset_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+    "rigid_stockpad_engine_frame_to_Prop_Rifle_local_gltf_column_major": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.00129691231995821,
+      0.02265022322535515,
+      -0.44999998807907104,
+      1.0
+    ],
+    "ready_rigid_stockpad_frame_to_model_column_major": [
+      0.006370909046381712,
+      0.16478194296360016,
+      0.9863094091415405,
+      0.0,
+      -0.0010644254507496953,
+      0.9863299131393433,
+      -0.16477851569652557,
+      0.0,
+      -0.9999786615371704,
+      -6.410086683672489e-08,
+      0.006459214258939028,
+      0.0,
+      -0.2474126444747364,
+      1.3366163355860288,
+      0.07016425438191198,
+      1.0
+    ],
+    "formula": "model_from_rigid(t) = world_gltf(Prop_Rifle,t) * rigid_to_prop_local; apply actor-world only once",
+    "ready_measured_points_model_xyz_m": {
+      "stock": [
+        -0.2474126444747364,
+        1.3366163355860288,
+        0.07016425438191198
+      ],
+      "muzzle": [
+        -0.24172526364880162,
+        1.5279500500202583,
+        0.9506539880955709
+      ],
+      "rear_sight": [
+        -0.2456352936825462,
+        1.5090649451518432,
+        0.345325266492136
+      ],
+      "front_sight": [
+        -0.24337262847255559,
+        1.5675650490405775,
+        0.6956187597195886
+      ],
+      "right_hand_candidate": [
+        -0.26033441757418896,
+        1.3097256424869854,
+        0.34014708564012497
+      ],
+      "left_hand_candidate": [
+        -0.243870218350516,
+        1.4406312499110168,
+        0.6185834788665089
+      ]
+    },
+    "warning": "This bridges source animation geometry to the immutable rigid asset. It does not replace gameplay pose or fix anatomical targets. Resolve duplicate rifle and magazine rendering before using both assets."
+  },
+  "legacy_helper_comparison": {
+    "Muzzle": {
+      "compared_to": "muzzle",
+      "ready_distance_m": 0.37585118990440947,
+      "sampled_min_distance_m": 0.3758501536468567,
+      "sampled_max_distance_m": 0.3758530464044093,
+      "status": "Preserved helper, not an authoritative calibrated socket"
+    },
+    "RifleSocket": {
+      "compared_to": "stock",
+      "ready_distance_m": 0.25269430605172977,
+      "sampled_min_distance_m": 0.25269387054913484,
+      "sampled_max_distance_m": 0.25269734741562516,
+      "status": "Preserved helper, not an authoritative calibrated socket"
+    }
+  },
+  "runtime_reference_commit": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+  "runtime_or_gameplay_fit_tested": false
+}

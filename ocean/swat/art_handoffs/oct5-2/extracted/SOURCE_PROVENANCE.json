@@ -1,0 +1,28 @@
+{
+  "inputs": [
+    {
+      "role": "editable",
+      "file": "crouch_ready_n.editable.blend",
+      "bytes": 2010424,
+      "sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9"
+    },
+    {
+      "role": "actions",
+      "file": "crouch_ready_n.actions.blend",
+      "bytes": 85712,
+      "sha256": "9398392755fc5448bce97762f6fbc2d3bc7c188be49ecc8c9211a4bb2e2e3988"
+    },
+    {
+      "role": "checkpoint",
+      "file": "crouch-ready-planted-shared-n-selfcontained-checkpoint.tar.gz",
+      "bytes": 18715894,
+      "sha256": "6fb887ef7551d9cf23f45ee1a394609a121fa649bfb5695b7ff1f6f382e2cf10"
+    }
+  ],
+  "source_character": "Adobe Mixamo Ch15_nonPBR; original body/animation terms apply",
+  "weapon_source": "Numbered weapon7 upload; exact product, creator and license identity unresolved",
+  "distribution": "Private licensed-source review only; no public redistribution authority",
+  "engine_geometry_reference_commit": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+  "geometry_template_glb_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+  "authored_duration_s": null
+}

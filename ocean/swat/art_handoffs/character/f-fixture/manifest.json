@@ -1,0 +1,184 @@
+{
+  "schema": "swat-character-import-fixture/1",
+  "version": "2026-10-04-standing-f1",
+  "status": "numerically validated import/skinning fixture; animation quality and gameplay adaptation pending",
+  "asset": "standing_f_original_timing.glb",
+  "asset_sha256": "2410005918b2b3e87c157229c12debb5743d228fefee1f29cd4bccb9e14ec45f",
+  "source": {
+    "filename": "standing_empty_revision_f.editable.blend",
+    "sha256": "a7a6d9ae7e13f30ac8de4b6347eb47062344768c04228b054388d9af726156b6",
+    "unchanged": true,
+    "artistic_approval": false
+  },
+  "target": {
+    "repository": "FelixAllistar/PufferLib",
+    "branch": "swat/gold-element",
+    "baseline": "811bc1ed9ed0f33767589696907227bd374d45c0",
+    "protocol": 7,
+    "contract_pr": "https://github.com/FelixAllistar/PufferLib/pull/2",
+    "contract_commit": "9f3ed2c8673d2fcdb3e3d45973a2ea012ad7c828"
+  },
+  "exporter": {
+    "application": "Blender",
+    "version": "4.3.2",
+    "settings": "export_report.json",
+    "reproduction_script": "export_fixture.py"
+  },
+  "clips": [
+    {
+      "id": "standing_empty_f_original_6s",
+      "name": "Standing Empty / Coordinated Contact Cleanup F",
+      "start_s": 0,
+      "end_s": 6,
+      "duration_s": 6,
+      "source_fps": 24,
+      "loop": false,
+      "initial_ready_diagnostic_s": 0,
+      "gameplay_timing_mapping": "pending"
+    }
+  ],
+  "format": {
+    "skins": 1,
+    "joints": 70,
+    "nodes": 76,
+    "meshes": 5,
+    "primitives": 6,
+    "materials": 4,
+    "textures": 0,
+    "images": 0,
+    "animation_channels": 210,
+    "interpolation": [
+      "LINEAR"
+    ],
+    "max_nonzero_influences": 7,
+    "body_weight_sets": 2,
+    "external_payload_dependencies": false
+  },
+  "transforms": {
+    "units": "meters",
+    "up": "+Y",
+    "rig_root": "identity",
+    "authoring_to_gltf": "(x,y,z) -> (x,z,-y)",
+    "model_to_engine_feet_and_heading": "uncalibrated",
+    "root_motion": "All source channels preserved; no gameplay root extraction or retargeting"
+  },
+  "weights": {
+    "all_nonzero_influences_preserved": true,
+    "normalized_equivalents_not_literal_raw_values": true,
+    "max_normalized_weight_difference": 2.212510108456911e-08
+  },
+  "geometry": {
+    "all_rendered_surface_triangles_preserved": true,
+    "loose_unrendered_rifle_vertices_omitted": 6,
+    "source_body_vertices": 24850,
+    "exported_body_vertices_after_seams": 31687
+  },
+  "validation": {
+    "samples": 1782,
+    "max_standard_gltf_vertex_difference_m": 4.495480946137122e-06,
+    "max_reimport_vertex_difference_m": 1.4672856042102507e-06,
+    "report": "validation.json",
+    "preflight": "preflight.json",
+    "engine_runtime_tested": false,
+    "ozz_tested": false,
+    "gameplay_timing_adapted": false
+  },
+  "rights": "Private integration use only. Public redistribution of source character/weapon art has not been established; no raw assets were added to GitHub.",
+  "files": [
+    {
+      "path": "ENGINE_CONTRACT.md",
+      "bytes": 27892,
+      "sha256": "3d4724d1d80c36f66c882c58e7f5335e7a61cc43c51c95ebaf8aec845622bd52"
+    },
+    {
+      "path": "README.md",
+      "bytes": 6707,
+      "sha256": "d9ab946f2cf487f0a9354bab02fd307ce088a8cabf12663c24ef79be821842ee"
+    },
+    {
+      "path": "SOURCE_QUALITY_STATUS.json",
+      "bytes": 2234,
+      "sha256": "f67e8615d83c3c78b1dde87537ff96a4fee1ec01bf171e5806a2c2a1cbb42a74"
+    },
+    {
+      "path": "bindings.json",
+      "bytes": 71644,
+      "sha256": "f16b4a9db7220182e6486bc14a44df9fa8f3f7e289774a8b4e7f7da9bca1a60b"
+    },
+    {
+      "path": "capture_parity.py",
+      "bytes": 5571,
+      "sha256": "4d709baf454d6fa2613fb7e875cda2a6634dc5221d74bd98bbb1f3595627a591"
+    },
+    {
+      "path": "check_animation_glb.py",
+      "bytes": 7699,
+      "sha256": "5080b74555d61c0492b3d61f793ddd8312adf68344dbb4a3106a7548175baf9d"
+    },
+    {
+      "path": "events.json",
+      "bytes": 6641,
+      "sha256": "23b080da0ec2c7d3a5e1f26d59e8b665eb9ea4204c86ee07e9c37825a7bfe0e5"
+    },
+    {
+      "path": "export_fixture.py",
+      "bytes": 2950,
+      "sha256": "dc9442d0763b4e1228aab730e46627a52a1fbf8117f9a04ae29f411ee014b800"
+    },
+    {
+      "path": "export_report.json",
+      "bytes": 1549,
+      "sha256": "80e327eca17d62f9dcd2f5ade200927f4e1d5f558c9c691e92f346f0a5c2311a"
+    },
+    {
+      "path": "four_influence_negative.json",
+      "bytes": 145,
+      "sha256": "e0336af3f9165787112c89fe3aa0365a4ce6c67945a20ebf81d530b6d2025ecb"
+    },
+    {
+      "path": "native_authoring_reference.mp4",
+      "bytes": 670267,
+      "sha256": "600db0b5c21c749ad6db6d4cee2740eefb119fdb40f392a3f7ebd8d1191e0b18"
+    },
+    {
+      "path": "package_checks.json",
+      "bytes": 311,
+      "sha256": "ebc5ce56d7f8ad24a6f320c7d0bdd2667b6c09c6d48f9a31db89edd081be550d"
+    },
+    {
+      "path": "preflight.json",
+      "bytes": 1217,
+      "sha256": "54a54b0a7735cb9cdd9e1569ce5d8690b85728efd05532cad8495dc002079d0b"
+    },
+    {
+      "path": "reimport_ready.png",
+      "bytes": 308988,
+      "sha256": "c9d962b8342e82f9c7067edf079af877e18cdecae067fc0f3849ad14659af24b"
+    },
+    {
+      "path": "reimport_seated.png",
+      "bytes": 311034,
+      "sha256": "5651224acea3097a23d702aedbcd37ea7d2a67f31100cd2699b7993cc3974fa6"
+    },
+    {
+      "path": "render_import_preview.py",
+      "bytes": 2209,
+      "sha256": "060b96b64399e2430b9686fd5e39ffe86769911a400f2907fac9880fc2cf52c5"
+    },
+    {
+      "path": "standing_f_original_timing.glb",
+      "bytes": 4382908,
+      "sha256": "2410005918b2b3e87c157229c12debb5743d228fefee1f29cd4bccb9e14ec45f"
+    },
+    {
+      "path": "validate_fixture.py",
+      "bytes": 11903,
+      "sha256": "fb8b743dd303ea28619a495af727f9d60cdd9af93e82ec10d53d9d52db6d51f2"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 9394,
+      "sha256": "b3c80492a8ca7e013dfc58880063e6731a12d69cafb2e1c666044c64fa5337cd"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "complete": true,
+  "blender": "4.3.2",
+  "engine": "Cycles CPU",
+  "samples": 64,
+  "seed": 20261004,
+  "denoising": false,
+  "inputs_sha256": {
+    "materials_v1/plaster_painted_basecolor.png": "540a8ff7152ab914caffd3bb3d20b29ae82b77010ff76055e0ed350c70b5f881",
+    "materials_v1/plaster_painted_normal.png": "16f4452075b0ac3986bb1929f600c19b5b55047af1fcca7dce5530c12220658b",
+    "materials_v1/plaster_painted_roughness.png": "046db2d87873e2cd4b0d7880c1a1e4672075d2928d2f1a53abaecc54d568f1df",
+    "materials_v1/plaster_worn_basecolor.png": "80d8e456ff463f257b2c6c43f5ab1fd7eaf4f02d64eda8cea80705d1f062e028",
+    "materials_v1/plaster_worn_normal.png": "c84b2ff837e36f95b1d27e0f16955dfa2fd90c5a383de7339d7420fa5ec09e63",
+    "materials_v1/plaster_worn_roughness.png": "2a4b061b0ae6329f3ee0da18686512b7be965dc9d0de6ddeef0bd9a53af907ad",
+    "materials_v1/floor_pine_basecolor.png": "f6a9b7645db4e0fa572ea12b1294a0d96e46b541f3bd2174fefee19cebd63e23",
+    "materials_v1/floor_pine_normal.png": "8e64c9f878c12a10581ecc559a408993bcd7b2e8a49b515d9dd69ae22474dbe1",
+    "materials_v1/floor_pine_roughness.png": "b7eaf3acffad62c9b465f1db8309c43c25a9ac409772f01f047853529d6fb61a",
+    "materials_v1/framing_pine_basecolor.png": "d61852a7641a67068fbf49b24fc9fbaeed973b05bac9463a9d7e22b2188655cb",
+    "materials_v1/framing_pine_normal.png": "ad519b2b8c9271c6fbd06ef2f876b370c8fac4f3402827b310ceb9833b819ea3",
+    "materials_v1/framing_pine_roughness.png": "76cfa04b4b6b6e6be32e3e4486931a1b768368830529cffa20d88d4365002f21",
+    "materials_v1/door_paint_basecolor.png": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9",
+    "materials_v1/door_paint_normal.png": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28",
+    "materials_v1/door_paint_roughness.png": "69dc722ad7b88b1a832f4f7019c7d556b44722b34c37999f61dfe933247c542a",
+    "materials_v1/door_wood_basecolor.png": "19eff6c77c51302cfad2d260e3c19d2edeae86a91b76e63ad9fef39930012440",
+    "materials_v1/door_wood_normal.png": "4eee14f7f7b28f0fb5eb00977116459a83cc0566a874227c5a8e295c606be7c5",
+    "materials_v1/door_wood_roughness.png": "bdb8f6c56a0bdad3004862c3444b406e6fcac69ce09cbd716f6b074a67d6de48",
+    "plaster_diffuse.png": "1820b7fb89dcfa04cd736353892c05a86753b41a5b62ffb50ed53a056f501219",
+    "wood_diffuse.png": "ba8532f20c9673a481496cae5b4ffbe30f74b0c82a6b40f39ce462b357245d81",
+    "painted_plaster_basecolor_v1.png": "3d5db06dfc54326099db35ccefd3a0dcdb14fd5b9129cbef0b7d3dd5f4078bce"
+  },
+  "rendered_images_sha256": {
+    "closeup_door_paint.png": "b3e32d9882d32982c590d38a293502be1b4f1b43abfc241e9b6605a001e61822",
+    "closeup_door_wood.png": "698c9af304e5e159f39583956f1419125d577c0fe60bab0e40a4787053f6e15e",
+    "closeup_floor_pine.png": "8cf98d45faae6e40646d2bcee65fc0ac66bf04ea5e95bde8fb57ce62b3ac4bd1",
+    "closeup_framing_pine.png": "acedf6a47e51cd7ce25b6c5a30b97609eb5cd3333fa240c6b5a9547732e57281",
+    "closeup_plaster_painted.png": "b4f1b14464cb061f8405b6ec17aa409b727105deccbcd1ccca6bdcceb644ac38",
+    "closeup_plaster_worn.png": "a1aeafc1fcecbe973e32ccd38ebfce7c7c1f971d0e844395ff20159b5ab390a5",
+    "room_legacy.png": "52246918dc1ccd0dbdce68a221b3db4c4c0bc1553985468bcd183992680183ea",
+    "room_new.png": "d5ac1ce409d97ee465b3f8cacb77bc4f05779411b741b70156af67a2406dc00a",
+    "room_new_basecolor.png": "03ed9ffb2ffabda465c62c2ce1fcaa2812623bb09e268ee498248f939e2e44d1",
+    "room_provisional.png": "94e59418ad2915da4f24ddf289a65bcc7630c805963380671c1a96533675b3fa"
+  },
+  "scene_textures_packed": true,
+  "render_script_sha256": "2d40823071109d3f84fdc9637d069fa0160a390bdbaf3b882e04b1f4661149cd",
+  "purpose": "Offline actual-map QA, not an in-engine screenshot.",
+  "view_transform": "Standard",
+  "look": "None",
+  "exposure": 0,
+  "gamma": 1,
+  "normal_convention": "Tangent OpenGL +Y/+V; strength 1",
+  "basecolor_space": "sRGB",
+  "data_map_space": "Non-Color",
+  "legacy_assumptions": "Absent roughness uses 0.7; absent normals are flat.",
+  "comparison_invariant": "Room geometry, camera, lighting, exposure, gray card, and new basecolor-only door/framing fixtures are identical across all four. Only wall/floor material and their catalogued metric UV repeat change.",
+  "room_dimensions_m": {
+    "wall": [
+      4,
+      3
+    ],
+    "floor": [
+      4,
+      4
+    ],
+    "door": [
+      0.9,
+      2.0
+    ],
+    "framing_width": 0.09
+  },
+  "closeup_dimensions_m": [
+    1,
+    1
+  ],
+  "outputs": [
+    "01_basecolor_pixels.png",
+    "02_neutral_closeups.jpg",
+    "03_same_light_room_comparison.jpg",
+    "04_new_materials_room.jpg",
+    "05_raw_tiling_test.jpg",
+    "06_basecolor_only_room.jpg",
+    "validation_report.json"
+  ]
+}

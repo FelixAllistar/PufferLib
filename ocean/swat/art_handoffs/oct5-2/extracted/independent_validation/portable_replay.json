@@ -1,0 +1,549 @@
+{
+  "schema": "portable-independent-crouch-fixture-replay/1",
+  "status": "PASS",
+  "requirements": "Python3 and NumPy only",
+  "scope": "Independent bytes and fresh pinned Blender reference captures. Includes all vertices, all influences, joint FK, metadata, visor, bridge, soles and fresh stock rays. Reports separately supplied baseline identity checks; does not invent an authored temporal duration.",
+  "binary": {
+    "schema": "independent-static-step-validation/1",
+    "status": "PASS",
+    "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+    "method": "Actual binary accessor validation, normalized-quaternion hierarchical FK, all-influence normalized linear blend skinning; no producer imports",
+    "static_contract": {
+      "channels": 210,
+      "samplers": 210,
+      "interpolation": "STEP",
+      "keys_per_channel": 1,
+      "only_authored_time_s": 0.0,
+      "stored_animation_span_s": 0.0,
+      "authored_duration_s": null,
+      "quaternion_norm_residual_max": 3.887685251502404e-08
+    },
+    "nodes": 76,
+    "skin_joints": 70,
+    "accessors": 459,
+    "primitives": 6,
+    "prop_magazine_B": {
+      "node": 69,
+      "skin_joint_slot": 69,
+      "world_linear_determinant": 1.0000007748603474,
+      "world_linear_singular_values": [
+        1.0000005960464482,
+        1.0000004768371586,
+        0.9999997019767759
+      ],
+      "noncollapsed": true
+    },
+    "scene_roots": [
+      {
+        "node": 70,
+        "name": "Rebuilt spare magazine sleeve",
+        "world_matrix_column_major": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      {
+        "node": 72,
+        "name": "SWAT_Mixamo_Rig",
+        "world_matrix_column_major": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      {
+        "node": 73,
+        "name": "Rifle 7",
+        "world_matrix_column_major": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      {
+        "node": 74,
+        "name": "Removed magazine",
+        "world_matrix_column_major": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      {
+        "node": 75,
+        "name": "Fresh magazine",
+        "world_matrix_column_major": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    ],
+    "source_parity": {
+      "status": "PASS",
+      "source_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+      "capture_npz_sha256": "fb734c5f0925295e7032f363039bd47256c856a15efdd977b3acb34fb96e3af0",
+      "bone_world_max_abs_error": 5.573743372400131e-07,
+      "every_oriented_source_triangle_preserved": true,
+      "total_exported_vertices": 48755,
+      "meshes": [
+        {
+          "name": "Rebuilt spare magazine sleeve",
+          "primitive": 0,
+          "exported_vertices": 144,
+          "maximum_influences": 1,
+          "max_weight_error": 0.0,
+          "max_position_error_m": 1.1417995881291367e-07,
+          "rms_position_error_m": 4.2938544249653186e-08,
+          "ambiguous_equivalent_bind_matches": 0
+        },
+        {
+          "name": "Rebuilt SWAT full body",
+          "primitive": 0,
+          "exported_vertices": 7638,
+          "maximum_influences": 5,
+          "max_weight_error": 2.1133167771303363e-08,
+          "max_position_error_m": 7.163908329138777e-07,
+          "rms_position_error_m": 1.9171480649252198e-07,
+          "ambiguous_equivalent_bind_matches": 0
+        },
+        {
+          "name": "Rebuilt SWAT full body",
+          "primitive": 1,
+          "exported_vertices": 24049,
+          "maximum_influences": 7,
+          "max_weight_error": 2.212510108456911e-08,
+          "max_position_error_m": 8.116653597730939e-07,
+          "rms_position_error_m": 2.3409857128833763e-07,
+          "ambiguous_equivalent_bind_matches": 0
+        },
+        {
+          "name": "Rifle 7",
+          "primitive": 0,
+          "exported_vertices": 14936,
+          "maximum_influences": 1,
+          "max_weight_error": 0.0,
+          "max_position_error_m": 1.207309092028219e-07,
+          "rms_position_error_m": 3.322527460052599e-08,
+          "ambiguous_equivalent_bind_matches": 0
+        },
+        {
+          "name": "Removed magazine",
+          "primitive": 0,
+          "exported_vertices": 994,
+          "maximum_influences": 1,
+          "max_weight_error": 0.0,
+          "max_position_error_m": 9.680268863598106e-08,
+          "rms_position_error_m": 2.992370477347487e-08,
+          "ambiguous_equivalent_bind_matches": 0
+        },
+        {
+          "name": "Fresh magazine",
+          "primitive": 0,
+          "exported_vertices": 994,
+          "maximum_influences": 1,
+          "max_weight_error": 0.0,
+          "max_position_error_m": 1.1630817424275645e-07,
+          "rms_position_error_m": 3.175056128394655e-08,
+          "ambiguous_equivalent_bind_matches": 0
+        }
+      ]
+    },
+    "stock_blender_reimport": {
+      "status": "PASS",
+      "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+      "blender_version": "4.3.2",
+      "read_only_glb_hash_preserved": true,
+      "single_key_no_authored_duration_preserved": true,
+      "bone_world_origin_max_error_m": 5.226432434382393e-07,
+      "total_vertices": 48755,
+      "meshes": [
+        {
+          "name": "Fresh magazine",
+          "vertices": 994,
+          "bind_position_max_error_m": 1.5914447131226827e-08,
+          "actual_binary_to_stock_blender_evaluated_max_error_m": 2.253623834753234e-07,
+          "native_to_stock_blender_evaluated_max_error_m": 2.4755668231600746e-07,
+          "all_normalized_weight_max_error": 0.0,
+          "oriented_index_topology_exact": true
+        },
+        {
+          "name": "Rebuilt SWAT full body",
+          "vertices": 31687,
+          "bind_position_max_error_m": 8.679846453196227e-07,
+          "actual_binary_to_stock_blender_evaluated_max_error_m": 7.004679618014766e-07,
+          "native_to_stock_blender_evaluated_max_error_m": 9.348623240803553e-07,
+          "all_normalized_weight_max_error": 0.0,
+          "oriented_index_topology_exact": true
+        },
+        {
+          "name": "Rebuilt spare magazine sleeve",
+          "vertices": 144,
+          "bind_position_max_error_m": 0.0,
+          "actual_binary_to_stock_blender_evaluated_max_error_m": 1.1789309819930941e-07,
+          "native_to_stock_blender_evaluated_max_error_m": 1.2644054553268208e-07,
+          "all_normalized_weight_max_error": 0.0,
+          "oriented_index_topology_exact": true
+        },
+        {
+          "name": "Removed magazine",
+          "vertices": 994,
+          "bind_position_max_error_m": 1.5914447131226827e-08,
+          "actual_binary_to_stock_blender_evaluated_max_error_m": 2.407100892031174e-07,
+          "native_to_stock_blender_evaluated_max_error_m": 2.1696418193818683e-07,
+          "all_normalized_weight_max_error": 0.0,
+          "oriented_index_topology_exact": true
+        },
+        {
+          "name": "Rifle 7",
+          "vertices": 14936,
+          "bind_position_max_error_m": 3.725290298461914e-08,
+          "actual_binary_to_stock_blender_evaluated_max_error_m": 2.957965434044319e-07,
+          "native_to_stock_blender_evaluated_max_error_m": 3.01357335092972e-07,
+          "all_normalized_weight_max_error": 0.0,
+          "oriented_index_topology_exact": true
+        }
+      ],
+      "scope": "Stock glTF import evaluated at frame0. All exported vertices, normalized influences and oriented topology checked. Blender may choose new display-bone bind frames; imported head/tail basis is not treated as a byte-preserved GLB joint frame."
+    }
+  },
+  "measurements": {
+    "schema": "independent-crouch-static-measurement/1",
+    "status": "PASS",
+    "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+    "units": "metres, glTF model +Y up",
+    "root": {
+      "node": 72,
+      "identity_exact": true,
+      "native_scale_preserved": true,
+      "native_to_gltf_basis": "(x,y,z) -> (x,z,-y)"
+    },
+    "body": {
+      "bounds_model_xyz_m": [
+        [
+          -0.510562870233491,
+          0.003999881957470919,
+          -0.23859109638728807
+        ],
+        [
+          0.2673899970920548,
+          1.3599174905369744,
+          0.7693855721553656
+        ]
+      ],
+      "body_top_y_m": 1.3599174905369744,
+      "vertical_extent_m": 1.3559176085795035,
+      "hips_model_xyz_m": [
+        0.02533753588795662,
+        0.6709743142127991,
+        -0.05438758805394173
+      ],
+      "source_top_error_m": 2.0747880791205375e-07
+    },
+    "soles": {
+      "Left": {
+        "native_subset_vertices": 652,
+        "sole_min_y_m": 0.003999881957470919,
+        "native_patch_vertices_within8mm": 110,
+        "below_floor_vertices": 0,
+        "patch_centroid_model_m": [
+          0.14823677732405433,
+          0.008429875318102584,
+          0.12919801162002922
+        ]
+      },
+      "Right": {
+        "native_subset_vertices": 653,
+        "sole_min_y_m": 0.004000151156367522,
+        "native_patch_vertices_within8mm": 110,
+        "below_floor_vertices": 0,
+        "patch_centroid_model_m": [
+          -0.16430687518827441,
+          0.00843010778146507,
+          -0.09445342536992475
+        ]
+      }
+    },
+    "rifle": {
+      "node": 67,
+      "skin_joint_slot": 67,
+      "bridge_formula": "Wnode @ IBM[resolved skin slot] @ B_bind_mesh",
+      "B_bind_mesh_column_major": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.00129691231995821,
+        0.02265022322535515,
+        -0.44999998807907104,
+        1.0
+      ],
+      "joint_local_attachment_column_major": [
+        0.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.00129691231995821,
+        0.44999998807907104,
+        0.02265022322535515,
+        1.0
+      ],
+      "native_rifle_vertices": 5346,
+      "bridge_source_evaluated_all_vertex_max_error_m": 1.207309090220146e-07,
+      "source_matrix_error_max": 4.78808486192861e-08,
+      "two_correct_forms_error_max": 0.0,
+      "missing_inverse_bind_matrix_error_max": 1.2808915987184086,
+      "landmark_native_error_m": {
+        "stock_contact": 1.9124593762081297e-08,
+        "muzzle": 5.940545799837368e-08,
+        "rear_sight": 3.177115397812624e-08,
+        "front_sight": 3.7786329007706406e-08,
+        "grip_center": 2.2155284608774815e-08,
+        "right_hand_surface_candidate": 3.303323468623704e-08,
+        "support_hand_surface_candidate": 1.8428588892785157e-08
+      },
+      "landmarks_model_xyz_m": {
+        "stock_contact": [
+          -0.23481313754950475,
+          0.9897714877271249,
+          0.178368907118792
+        ],
+        "muzzle": [
+          -0.14719467995566857,
+          0.7235862138600017,
+          1.0347408636554445
+        ],
+        "rear_sight": [
+          -0.20480990133144616,
+          1.0046524093286493,
+          0.5013763448532739
+        ],
+        "front_sight": [
+          -0.17036189476147368,
+          0.8834152312170496,
+          0.8334125049648254
+        ],
+        "grip_center": [
+          -0.20994685753486253,
+          0.8337191202147705,
+          0.39881206839209915
+        ],
+        "right_hand_surface_candidate": [
+          -0.2245429302121194,
+          0.8333336370618527,
+          0.4001856237237483
+        ],
+        "support_hand_surface_candidate": [
+          -0.18059206637976014,
+          0.8107805310670292,
+          0.7043139175488202
+        ]
+      },
+      "physical_forward_elevation_deg": -19.956482850225047,
+      "rear_front_sight_elevation_deg": -19.96016648013356
+    },
+    "visor": {
+      "head_node": 1,
+      "head_skin_joint_slot": 5,
+      "classification": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin",
+      "source_vertex_ids": [
+        23263,
+        23516
+      ],
+      "midpoint_model_xyz_m": [
+        -0.19219146526877495,
+        1.1881570016289107,
+        0.42332798587751697
+      ],
+      "midpoint_to_attachment_error_m": 0.0,
+      "source_lens_error_max_m": 3.16845797669371e-07,
+      "surface_normal_elevation_deg": -17.842036485978433,
+      "perpendicular_to_sightline_m": 0.14786782776843907,
+      "axial_coordinate_on_sightline_m": -0.1343868005936771,
+      "normal_to_sightline_angle_deg": 14.584255257115746,
+      "not_eye_relief_or_ADS": true
+    },
+    "stock_axial_rays": {
+      "method": "Fresh NumPy two-sided Moller-Trumbore ray tests against all actual GLB skinned body triangles, native stock-pad grid and rearward axis, 150mm search",
+      "patches_mm": {
+        "0": {
+          "samples": 1,
+          "hits": 1,
+          "min_gap_mm": 2.1918948352578003,
+          "max_gap_mm": 2.1918948352578003,
+          "median_gap_mm": 2.1918948352578003,
+          "within5mm": 1
+        },
+        "3": {
+          "samples": 29,
+          "hits": 29,
+          "min_gap_mm": 1.223682317673676,
+          "max_gap_mm": 7.14093545268982,
+          "median_gap_mm": 2.9625085307469647,
+          "within5mm": 24
+        },
+        "5": {
+          "samples": 81,
+          "hits": 81,
+          "min_gap_mm": 0.9049996831303696,
+          "max_gap_mm": 16.09731971399675,
+          "median_gap_mm": 4.4269399289699605,
+          "within5mm": 45
+        }
+      },
+      "classification": "Localized support on curved shoulder gear; not flush seating or force simulation"
+    },
+    "limits": [
+      "Single static frame only; no invented loop, motion, temporal duration or physical balance",
+      "Authored sole clearance remains about4mm",
+      "Optical surface proxy is not anatomical eye or gameplay camera; no ADS approval",
+      "Source intersections and material limitations remain inherited as listed in pinned source QUALITY.md; this is transport validation"
+    ]
+  },
+  "metadata": {
+    "schema": "independent-static-metadata-validation/1",
+    "status": "PASS",
+    "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+    "joint_bindings_verified": 70,
+    "single_key_STEP_channel_rows_verified": 210,
+    "static_zero_span_no_duration_no_motion_no_loop_verified": true,
+    "visible_B_preserved": true,
+    "native_and_actual_node_world_matrices_verified": true,
+    "bridge_reference_vertices": 5346,
+    "bridge_native_vertex_error_m": 1.3792390308551066e-08,
+    "rifle_node_and_slot": [
+      67,
+      67
+    ],
+    "head_node_and_slot": [
+      1,
+      5
+    ],
+    "lens_mapping_rows": 2,
+    "sole_mapping_rows": [
+      {
+        "side": "left",
+        "native_subset_vertices": 654,
+        "native_1mm_support_vertices": 5,
+        "exported_mappings": 7,
+        "exported_subset_vertices": 899,
+        "mapped_position_max_error_vs_source_m": 2.220123410629905e-07,
+        "metadata_centroid_max_error_m": 2.1067250692457302e-07
+      },
+      {
+        "side": "right",
+        "native_subset_vertices": 668,
+        "native_1mm_support_vertices": 5,
+        "exported_mappings": 7,
+        "exported_subset_vertices": 916,
+        "mapped_position_max_error_vs_source_m": 6.638846810438683e-08,
+        "metadata_centroid_max_error_m": 6.922564794823989e-08
+      }
+    ],
+    "measured_rifle_visor_sight_metadata_matches_binary": true,
+    "preview_heading_to_X_and_feet_origin_to_zero_verified": true,
+    "preview_scale_one_and_unbaked_root_identity": true,
+    "material_assignments_match_binary": true,
+    "ready_empty_body_static_arrays_compared": false,
+    "limits": "Native/source evaluated heights and exported float32 replay differ by submicrometre tolerances; source named support subsets (>0.5 weights and 1mm patch) differ explicitly from source QA sole qualification (>0.65 weights and 8mm patch). No runtime, ADS, camera, loop or transition approval."
+  },
+  "immutable_static_baseline": {
+    "status": "PASS",
+    "baseline_glb_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+    "static_accessors_checked": 39,
+    "static_json_keys_checked": [
+      "nodes",
+      "skins",
+      "meshes",
+      "materials",
+      "scenes",
+      "scene",
+      "images",
+      "textures",
+      "samplers"
+    ]
+  },
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66"
+}

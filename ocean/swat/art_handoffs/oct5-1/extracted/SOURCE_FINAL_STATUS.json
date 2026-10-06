@@ -1,0 +1,471 @@
+{
+  "status": "QUALIFIED_SAVED_RIGHT_CONTINUITY_AND_N_CARRY_WITH_DISCLOSED_MATERIAL_LIMITS",
+  "direction": "walk right only",
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_right/seam_a/walk_right_ready_n_c1.editable.blend",
+  "candidate_sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+  "action": "Walk Right / Shared Ready N C1 Loop A",
+  "native_source": "/workspace/scratch/eac4961518d4/attachments/3107ee81-c21a-4492-8d1e-823c29714b3f/walk right.fbx.bin",
+  "native_source_sha256": "80f0debe85112dc5ae73fdd60d035cc5db3c343509a0e9541166264137a4fd82",
+  "native_source_timing": {
+    "fps": 60.0,
+    "frames": [
+      1.0,
+      61.0
+    ],
+    "duration_s": 1.0,
+    "root_displacement_m": [
+      -1.9212615489959717,
+      -9.782612323760986e-06,
+      -4.76837158203125e-07
+    ],
+    "pace_m_s": 1.921261549020877
+  },
+  "saved_timing": {
+    "fps": 30.0,
+    "range": [
+      0.0,
+      30.0
+    ],
+    "duration_s": 1
+  },
+  "gate_results": {
+    "saved_loop_continuity": "qualified within float32 stored-handle residuals",
+    "Shared_Ready_N_carry": "pass at stated sampled precision",
+    "source_structure_retention": "pass",
+    "positive_z0_floor": "pass at960Hz",
+    "interlimb_clearance": "not passed: inherited opposing thigh-garment intersections remain",
+    "zero_regression_by_pair_identity": "not passed: five small new cross-leg and one same-side hip/strap pairs"
+  },
+  "integrity": {
+    "all_saved_mesh_geometry_uv_and_weights_identical_to_sealed_N": true,
+    "mesh_object_count": 6,
+    "body_vertices": 24850,
+    "max_nonzero_skin_influences": 7,
+    "vertices_retaining7influences": 2,
+    "rig_identity_matches_N": true,
+    "bone_count": 70,
+    "unused_prop_scale": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "baseline_original_curve_count": 180,
+    "baseline_original_curves_exact": true
+  },
+  "repair": {
+    "windows_seconds": [
+      [
+        0,
+        0.125
+      ],
+      [
+        0.875,
+        1
+      ]
+    ],
+    "center_original_keys_exact": true,
+    "center_max_scalar_curve_roundoff": 1.1920928955078125e-07,
+    "center_max_FK_component_roundoff": 3.5762786865234375e-07,
+    "center_checked_full_mesh_error_mm": 0.0,
+    "center_checked_full_mesh_frames": [
+      3.75,
+      4.0,
+      7.5,
+      15.0,
+      22.5,
+      26.0,
+      26.25
+    ],
+    "baseline_worst_linear_velocity_gap_m_s": 1.228351270676965,
+    "candidate_worst_linear_velocity_gap_m_s": 6.85298261758363e-05,
+    "baseline_worst_angular_velocity_gap_deg_s": 457.66444598295647,
+    "candidate_worst_angular_velocity_gap_deg_s": 0.004866553584832237,
+    "candidate_C0_bone_position_mm": 0.0,
+    "candidate_C0_bone_rotation_deg": 6.670309368571434e-09,
+    "candidate_C0_rifle_surface_mm": 0.0,
+    "candidate_C0_foot_surface_mm": {
+      "Left": 0.0,
+      "Right": 0.0
+    },
+    "repair_join_max_scalar_slope_gap_per_s": 4.2916653930636116e-05,
+    "C1_qualification": "Analytic normalized-quaternion FK is independently reconstructed against Blender evaluated endpoint matrices. Small stored-float32 residuals remain; literal exact mathematical C1 is not claimed."
+  },
+  "upper_contacts": {
+    "samples": 111,
+    "identity_matches_N": true,
+    "finite_vertices": true,
+    "arm_vest_max": {
+      "Left": 0,
+      "Right": 0
+    },
+    "whole_component_vest_count_range": {
+      "Left": [
+        50,
+        52
+      ],
+      "Right": [
+        63,
+        63
+      ]
+    },
+    "rifle_nonhand_max": 0,
+    "connector16480_max": 0,
+    "magazine_body_max": {
+      "Removed magazine": 0,
+      "Fresh magazine": 0
+    },
+    "stock_center_gap_range_mm": [
+      2.1916397381573915,
+      2.1921908482909203
+    ],
+    "stock_central_3mm_within5_range": [
+      24,
+      24
+    ],
+    "actual_surface_max_error_to_N_mm": {
+      "Left": 0.0011448161029518438,
+      "Right": 0.0009411721078809504,
+      "Rifle 7": 0.00023962598576435413,
+      "Removed magazine": 0.0002302173069309932
+    },
+    "sole_z_range_mm": {
+      "Left": [
+        3.9999205619096756,
+        47.401562333106995
+      ],
+      "Right": [
+        2.93523445725441,
+        56.42494559288025
+      ]
+    },
+    "whole_pairs_added_to_N_union": {
+      "Left": 4,
+      "Right": 6
+    }
+  },
+  "upper_layer_pair_unions_equal_baseline": true,
+  "upper_root_classification": {
+    "Left": {
+      "N_pair_count": 50,
+      "baseline_union_count": 54,
+      "candidate_union_count": 54,
+      "baseline_added_to_N": [
+        [
+          938,
+          8976
+        ],
+        [
+          938,
+          8977
+        ],
+        [
+          968,
+          8960
+        ],
+        [
+          1131,
+          8418
+        ]
+      ],
+      "candidate_added_to_baseline": [],
+      "candidate_missing_from_baseline": [],
+      "max_chord_mm": [
+        16.658556206945562,
+        16.658606845743677
+      ]
+    },
+    "Right": {
+      "N_pair_count": 63,
+      "baseline_union_count": 67,
+      "candidate_union_count": 67,
+      "baseline_added_to_N": [
+        [
+          1480,
+          7627
+        ],
+        [
+          1489,
+          7626
+        ],
+        [
+          1489,
+          7627
+        ],
+        [
+          1523,
+          7624
+        ],
+        [
+          1689,
+          7681
+        ],
+        [
+          1787,
+          7687
+        ]
+      ],
+      "candidate_added_to_baseline": [],
+      "candidate_missing_from_baseline": [],
+      "max_chord_mm": [
+        16.83053336439856,
+        16.83053336439856
+      ]
+    }
+  },
+  "dense_grip_transport": {
+    "sample_count": 961,
+    "rate_hz": 960,
+    "component_vertex_counts": {
+      "Left": 726,
+      "Right": 726
+    },
+    "surface_max_error_mm": {
+      "Left": 0.0033153786754024097,
+      "Right": 0.002479240575401883,
+      "Rifle 7": 0.00024288316492950256,
+      "Removed magazine": 0.00023713069607696267
+    },
+    "worst_frames": {
+      "Left": 7.3125,
+      "Right": 7.4375,
+      "Rifle 7": 12.625,
+      "Removed magazine": 22.1875
+    },
+    "scope": "Actual complete connected gloves and all original rifle/installed magazine vertices in rifle coordinates vs sealedSharedReadyN, every1/32frame. Closedglove source depth/opposingcontact checks transfer within this measured sampled surface tolerance; not a continuous collision or watertight-cloth proof. Fresh magazine deliberately excluded from invariance transfer."
+  },
+  "floor": {
+    "Left": {
+      "vertex_count": 652,
+      "max_surface_change_mm": 14.376191937486391,
+      "max_change_frame": 28.65625,
+      "max_change_vertex": 3077,
+      "center_max_surface_change_mm": 0.00015840151626966373,
+      "candidate_sole_min_mm": 3.954406827688217,
+      "candidate_sole_min_frame": 6.1875,
+      "candidate_sole_min_vertex": 3165,
+      "baseline_sole_min_mm": 3.954406827688217,
+      "boundary_candidate_sole_min_mm": 7.435828447341919,
+      "boundary_baseline_sole_min_mm": 10.716290213167667,
+      "max_sole_height_change_mm": 3.7817806005477905,
+      "below_floor_samples": 0,
+      "below_3mm_samples": 0
+    },
+    "Right": {
+      "vertex_count": 653,
+      "max_surface_change_mm": 2.910109842227965,
+      "max_change_frame": 28.4375,
+      "max_change_vertex": 2393,
+      "center_max_surface_change_mm": 0.00011967404487884797,
+      "candidate_sole_min_mm": 2.9319841414690018,
+      "candidate_sole_min_frame": 1.8125,
+      "candidate_sole_min_vertex": 2473,
+      "baseline_sole_min_mm": 3.916848450899124,
+      "boundary_candidate_sole_min_mm": 2.9319841414690018,
+      "boundary_baseline_sole_min_mm": 3.982285037636757,
+      "max_sole_height_change_mm": 1.3192631304264069,
+      "below_floor_samples": 0,
+      "below_3mm_samples": 17
+    }
+  },
+  "lower_material": {
+    "summary": {
+      "leg_leg": {
+        "baseline_count_range": [
+          0,
+          98
+        ],
+        "candidate_count_range": [
+          0,
+          98
+        ],
+        "baseline_pair_union_count": 285,
+        "candidate_pair_union_count": 270,
+        "new_pair_union_vs_baseline": [
+          "12316,22378",
+          "12316,22379",
+          "12317,22378",
+          "12446,22206",
+          "21588,22374"
+        ],
+        "baseline_max_chord_mm": 22.156917493272257,
+        "candidate_max_chord_mm": 21.13923808766288
+      },
+      "left_leg_torso": {
+        "baseline_count_range": [
+          45,
+          181
+        ],
+        "candidate_count_range": [
+          45,
+          182
+        ],
+        "baseline_pair_union_count": 895,
+        "candidate_pair_union_count": 893,
+        "new_pair_union_vs_baseline": [
+          "13874,21394"
+        ],
+        "baseline_max_chord_mm": 32.44064578342617,
+        "candidate_max_chord_mm": 31.92621945765723
+      },
+      "right_leg_torso": {
+        "baseline_count_range": [
+          9,
+          70
+        ],
+        "candidate_count_range": [
+          9,
+          70
+        ],
+        "baseline_pair_union_count": 120,
+        "candidate_pair_union_count": 119,
+        "new_pair_union_vs_baseline": [],
+        "baseline_max_chord_mm": 23.14519194045246,
+        "candidate_max_chord_mm": 23.120319810934102
+      }
+    },
+    "classification": {
+      "5118": "Continuous waist/crotch/pants mesh, including opposing thigh-weighted surfaces",
+      "11165": "Left upper-thigh strap garment, orange in component images",
+      "11623": "Right upper-thigh strap garment, green in component images",
+      "7464": "Left strap/buckle junction, purple in component images",
+      "other_families": "Exact component IDs and dominant tags retained in family tables; remaining inherited hip/pants/brace material is not relabeled as clear contact"
+    },
+    "new_pair_total": 6,
+    "max_new_pair_chord_mm": 0.6552818298868373,
+    "component_family_matched_extrema": {
+      "leg_leg": {
+        "max_sum_chord_increase": {
+          "frame": 3.375,
+          "category": "leg_leg",
+          "components": "11165,11623",
+          "baseline": {
+            "count": 26,
+            "max_chord_mm": 11.91830957245136,
+            "sum_chord_mm": 132.90039363255804
+          },
+          "candidate": {
+            "count": 26,
+            "max_chord_mm": 11.924010374449818,
+            "sum_chord_mm": 133.0311369800664
+          },
+          "sum_chord_change_mm": 0.13074334750837124
+        },
+        "max_sum_chord_decrease": {
+          "frame": 1.25,
+          "category": "leg_leg",
+          "components": "5118,11623",
+          "baseline": {
+            "count": 27,
+            "max_chord_mm": 11.885072416970763,
+            "sum_chord_mm": 103.21191150180745
+          },
+          "candidate": {
+            "count": 15,
+            "max_chord_mm": 9.34682543257554,
+            "sum_chord_mm": 60.92861129993071
+          },
+          "sum_chord_change_mm": -42.28330020187674
+        }
+      },
+      "left_leg_torso": {
+        "max_sum_chord_increase": {
+          "frame": 29.25,
+          "category": "left_leg_torso",
+          "components": "5118,16372",
+          "baseline": {
+            "count": 25,
+            "max_chord_mm": 22.58149670365131,
+            "sum_chord_mm": 173.14629855531155
+          },
+          "candidate": {
+            "count": 25,
+            "max_chord_mm": 22.06795394873255,
+            "sum_chord_mm": 180.66922481108463
+          },
+          "sum_chord_change_mm": 7.522926255773086
+        },
+        "max_sum_chord_decrease": {
+          "frame": 27.625,
+          "category": "left_leg_torso",
+          "components": "5118,11165",
+          "baseline": {
+            "count": 74,
+            "max_chord_mm": 19.619875918194474,
+            "sum_chord_mm": 384.10052790429364
+          },
+          "candidate": {
+            "count": 74,
+            "max_chord_mm": 19.599174916616686,
+            "sum_chord_mm": 378.71672227723855
+          },
+          "sum_chord_change_mm": -5.3838056270550965
+        }
+      },
+      "right_leg_torso": {
+        "max_sum_chord_increase": {
+          "frame": 0.0,
+          "category": "right_leg_torso",
+          "components": "5118,11623",
+          "baseline": {
+            "count": 20,
+            "max_chord_mm": 16.851710103653332,
+            "sum_chord_mm": 125.76015502382396
+          },
+          "candidate": {
+            "count": 20,
+            "max_chord_mm": 16.851827111224427,
+            "sum_chord_mm": 125.76115055244152
+          },
+          "sum_chord_change_mm": 0.0009955286175653555
+        },
+        "max_sum_chord_decrease": {
+          "frame": 29.25,
+          "category": "right_leg_torso",
+          "components": "5118,11623",
+          "baseline": {
+            "count": 21,
+            "max_chord_mm": 13.179899844314443,
+            "sum_chord_mm": 118.32399963246499
+          },
+          "candidate": {
+            "count": 18,
+            "max_chord_mm": 14.918397475334192,
+            "sum_chord_mm": 112.99389174763603
+          },
+          "sum_chord_change_mm": -5.330107884828962
+        }
+      }
+    }
+  },
+  "native_direction": {
+    "native_chest_start_forward_xy": [
+      -0.424752801656723,
+      -0.9053093791007996,
+      0.0
+    ],
+    "native_pelvis_start_forward_xy": [
+      -0.7545731067657471,
+      -0.6562159657478333,
+      0.0
+    ],
+    "forward_vs_stride_deg_ranges": {
+      "Hips": [
+        20.273408475566868,
+        51.19084373480362
+      ],
+      "Spine2": [
+        56.71169930130327,
+        69.48208691700319
+      ]
+    },
+    "note": "Source pelvis/chest directional intent is retained. Asymmetric shoulder-line normal is secondary only."
+  },
+  "limits": [
+    "Visible inherited opposing upper-thigh pants/strap contact remains; RIGHT is not interlimb-clear",
+    "Bounded seam repair introduces five small cross-leg pair identities and one same-side hip/strap pair; zero-regression by pair identity is not claimed",
+    "Ready N inherited sleeve root folds, stretched connecting sleeve panel and thin/flattened elbow link remain visible",
+    "Right sole minimum2.931984141mm remains abovez=0;17of961 phases are below3mm",
+    "Finite samples and finite triangle crossings are not continuous analytic or watertight penetration proof",
+    "No ADS, runtime engine, resampled-export or other-direction qualification is implied"
+  ]
+}

@@ -1,0 +1,3681 @@
+{
+  "status": "One bounded candidate saved; independent dense native-surface and material review required",
+  "source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+  "output_sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+  "action": "Support Grip / Surface Constrained Candidate C",
+  "frame": 0,
+  "parameters": {
+    "palm_rifle_x_mm": -2.7979471118292807,
+    "palm_rifle_y_mm": -0.8871079536060553,
+    "palm_rifle_z_mm": 4.126392850821976,
+    "palm_rifle_x_deg": 5.053634901962425,
+    "palm_rifle_y_deg": 1.7774732601216603,
+    "palm_rifle_z_deg": -1.0199562656250594,
+    "Thumb1_native_local_x_deg": -2.023175145459211,
+    "Thumb2_native_local_x_deg": -0.17183959846294639,
+    "Thumb3_native_local_x_deg": 0.11285693496678417,
+    "Index1_native_local_x_deg": 4.451142948549993,
+    "Index2_native_local_x_deg": -1.1330638470482677,
+    "Index3_native_local_x_deg": 0.2190997688838846,
+    "Middle1_native_local_x_deg": 2.8165432454726496,
+    "Middle2_native_local_x_deg": 0.10571355279465024,
+    "Middle3_native_local_x_deg": 0.21758569856263904,
+    "Ring1_native_local_x_deg": 2.276934574539797,
+    "Ring2_native_local_x_deg": 0.7335517258692137,
+    "Ring3_native_local_x_deg": 0.0637280703593449,
+    "Pinky1_native_local_x_deg": 1.9754493994189322,
+    "Pinky2_native_local_x_deg": 0.42930301607609667,
+    "Pinky3_native_local_x_deg": 0.12109406568302156,
+    "Thumb1_native_local_z_spread_deg": 0.16105849021647106,
+    "Index1_native_local_z_spread_deg": 0.42138296301187816,
+    "Middle1_native_local_z_spread_deg": 0.3363405075230255,
+    "Ring1_native_local_z_spread_deg": 0.43378802964808766,
+    "Pinky1_native_local_z_spread_deg": 0.473403201562721
+  },
+  "arm": {
+    "wrist_bend_deg": 35.508124928712796,
+    "elbow_flexion_deg": 34.04357869140574,
+    "fore_pronation_deg": -121.28612683175453,
+    "dorsal_residual_deg": 8.470234422475187e-05,
+    "elbow": [
+      -0.039644189178943634,
+      -0.3709556758403778,
+      1.3428370952606201
+    ]
+  },
+  "changed_bones": [
+    "mixamorig:LeftArm",
+    "mixamorig:LeftForeArm",
+    "mixamorig:LeftHand",
+    "mixamorig:LeftHandThumb1",
+    "mixamorig:LeftHandThumb2",
+    "mixamorig:LeftHandThumb3",
+    "mixamorig:LeftHandThumb4",
+    "mixamorig:LeftHandIndex1",
+    "mixamorig:LeftHandIndex2",
+    "mixamorig:LeftHandIndex3",
+    "mixamorig:LeftHandIndex4",
+    "mixamorig:LeftHandMiddle1",
+    "mixamorig:LeftHandMiddle2",
+    "mixamorig:LeftHandMiddle3",
+    "mixamorig:LeftHandMiddle4",
+    "mixamorig:LeftHandRing1",
+    "mixamorig:LeftHandRing2",
+    "mixamorig:LeftHandRing3",
+    "mixamorig:LeftHandRing4",
+    "mixamorig:LeftHandPinky1",
+    "mixamorig:LeftHandPinky2",
+    "mixamorig:LeftHandPinky3",
+    "mixamorig:LeftHandPinky4",
+    "Gear_Elbow_L"
+  ],
+  "changed_curves": [
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.7881393432617188e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.980232238769531e-07
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.043081283569336e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.5263370871543884
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.5236074328422546
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.33797675371170044
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3361562490463257
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.6514997482299805
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.6513930559158325
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.4292891025543213
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.43419042229652405
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000003576278687
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000008344650269
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.000001311302185
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000014305114746
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.000000238418579
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 7.450580596923828e-08
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -5.960464477539063e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.960464477539063e-08
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.5726487636566162
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.5365114808082581
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.24814577400684357
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.25394394993782043
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.7703444361686707
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.7959202527999878
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.13063880801200867
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.11907517910003662
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000004768371582
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.000000238418579
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999995827674866
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -5.960464477539063e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.960464477539063e-08
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            5.960464477539063e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.384185791015625e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9418176412582397
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.943625271320343
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.08516909182071686
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0541180819272995
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.05566268041729927
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.056667231023311615
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.3203551769256592
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.3216075301170349
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999995231628418
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999997615814209
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999990463256836
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999985694885254
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000003576278687
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.4901161193847656e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.043081283569336e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -2.980232238769531e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -3.5762786865234375e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.7881393432617188e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9641106724739075
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9661445021629333
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.14162658154964447
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.12457004934549332
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.009447667747735977
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.01360645517706871
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.22437314689159393
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.22552618384361267
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997615814209
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999996423721313
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998211860657
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -3.5762786865234375e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -4.172325134277344e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -2.384185791015625e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.384185791015625e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 3.2782554626464844e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9895920157432556
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9894753098487854
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.07701604068279266
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.0784999281167984
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.11136600375175476
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.11143896728754044
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.048722825944423676
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.048555776476860046
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999999403953552
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999996423721313
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999997019767761
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999983906745911
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999984502792358
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.086162567138672e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.9802322387695312e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -5.960464477539063e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.980232238769531e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9832019805908203
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9833108186721802
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.11098083853721619
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.1100124716758728
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.08343528211116791
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.08331857621669769
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.11847209185361862
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.11855421960353851
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997019767761
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999995827674866
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            7.237741783683305e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -4.3872168475900253e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -3.5762786865234375e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.6856934337283747e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -5.960464477539063e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.960463766996327e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -3.189780173329382e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.2351741790771484e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            4.487811366971073e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.607702853651972e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.086162567138672e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.7881393432617188e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            4.76837158203125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 4.76837158203125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            5.960464477539062e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 4.76837158203125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9323940873146057
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9183064699172974
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.34114110469818115
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3775091767311096
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.1140550971031189
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.11409011483192444
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.03543149679899216
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.034403182566165924
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999996423721313
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999998211860657
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998211860657
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.000000238418579
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -4.172325134277344e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.980232238769531e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.9802322387695312e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9252772927284241
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.928981363773346
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.37919148802757263
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3700241446495056
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.0005533649818971753
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.0006393234361894429
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.008687008172273636
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.00868113525211811
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.999997615814209
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999978542327881
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000003576278687
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -4.76837158203125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.960464477539062e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            4.76837158203125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.980232238769531e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            3.8743019104003906e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 5.960464477539062e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9612215757369995
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9606928825378418
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.2756137549877167
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.2774510383605957
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.004139251541346312
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.004122893791645765
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.00854412093758583
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.008552019484341145
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999998807907104
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.8626869291438197e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -3.7298558908105406e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.4901161193847656e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -3.585589638532838e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -4.76837158203125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            9.043142199516296e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 8.791684535935929e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            8.144416483446548e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 8.121133419081161e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.2014061212539673e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 8.754432201385498e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.9802322387695312e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.7881393432617188e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.4901161193847656e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.980232238769531e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9351707696914673
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.926479697227478
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.33165374398231506
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3547976016998291
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.08936867117881775
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.09049269556999207
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.08645617216825485
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.08697788417339325
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999995827674866
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999995827674866
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000003576278687
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.086162567138672e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -5.960464477539062e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -7.152557373046875e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.9802322387695312e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.4156103134155273e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.8570154309272766
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.8565396666526794
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.5152872800827026
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.5160776972770691
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            9.159281762549654e-05
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 9.333687194157392e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.0018871931824833155
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0018871295033022761
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999998807907104
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999980330467224
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999982118606567
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999996423721313
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999995827674866
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            3.8743019104003906e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.9802322387695312e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9387210607528687
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9380650520324707
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.3446173369884491
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.34639912843704224
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.0032930620945990086
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.0032825064845383167
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.005551191512495279
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.005557394586503506
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999985694885254
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999985098838806
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997615814209
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999995827674866
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999998807907104
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            3.6786150303669274e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 4.172325134277344e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.6822047516361636e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.980232238769531e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            7.508788257837296e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.1408702427218032e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.8626433728741176e-09
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.1641532182693481e-09
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -9.313223969797946e-09
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            7.4505797087454084e-09
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.0954755708402217e-09
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.7881393432617188e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.7881393432617188e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -3.2782554626464844e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -3.5762786865234375e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -3.5762786865234375e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.364418029785156e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.948151171207428
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9415784478187561
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.3108753561973572
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3297975957393646
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.03892667591571808
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.03880275413393974
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.05339115113019943
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.056195810437202454
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999993443489075
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999992251396179
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997615814209
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000003576278687
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.4901161193847656e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.7881393432617188e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -4.76837158203125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -3.8743019104003906e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.8361480832099915
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.8326197862625122
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.5485032200813293
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.5538444519042969
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.0005376844783313572
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0005338496994227171
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.000599371618591249
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.0006027925992384553
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999999403953552
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998211860657
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.000000238418579
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.000000238418579
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997615814209
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999997019767761
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            5.960464477539063e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            3.5762786865234375e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 3.5762786865234375e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            5.21540641784668e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 3.5762786865234375e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9294288754463196
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9292237758636475
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.36855706572532654
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3690739870071411
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.011861729435622692
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.011854118667542934
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.01367251481860876
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.013679131865501404
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999998807907104
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998211860657
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.000000238418579
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -2.7194042218070535e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.7881393432617188e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.3597055215086584e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.086162567138672e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -8.521599426103421e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -3.562308847904205e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -6.332993507385254e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -5.704350769519806e-09
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -3.166496753692627e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            3.2596294552433847e-09
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -2.9336661100387573e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.1920928955078125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 5.960464477539063e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.7881393432617188e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.1920928955078125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            4.76837158203125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.384185791015625e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9318432807922363
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.925613522529602
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.360968679189682
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3769116997718811
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.015380633063614368
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.01744968071579933
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.03366249054670334
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.029542598873376846
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000001192092896
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999999403953552
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997019767761
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000005960464478
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.000000238418579
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            4.76837158203125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 4.76837158203125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            4.76837158203125e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 7.152557373046875e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            8.940696716308594e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.086162567138672e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9340890049934387
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9327450394630432
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.35699859261512756
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3604954779148102
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.0039636134169995785
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.003977603744715452
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.0037406012415885925
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.0037257259245961905
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997615814209
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999996423721313
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0000003576278687
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000003576278687
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999996423721313
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999995231628418
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 5.960464477539063e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -2.384185791015625e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -3.5762786865234375e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            8.940696716308594e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.7881393432617188e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9717287421226501
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9714787602424622
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.23598793148994446
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.23701469600200653
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.002440940821543336
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0024336925707757473
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.006858163978904486
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.0068607390858232975
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999997615814209
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999997615814209
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            5.052632445767813e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 4.76837158203125e-07
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            8.009413932086318e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.960464477539063e-08
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -1.1641527741801383e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.0
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -4.132743036677766e-09
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 7.4505734914964705e-09
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            4.511095053061354e-09
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.5879372240497105e-09
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            6.984919309616089e-10
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -7.450577932388569e-09
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.000000238418579
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0000001192092896
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            1.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 1.0
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].location",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -1.1920928955078125e-07
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].location",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            5.960464477539063e-08
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -5.960464477539063e-08
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].location",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            2.384185791015625e-07
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 2.384185791015625e-07
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.3187617361545563
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3187331259250641
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.3476438820362091
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.3476177752017975
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            -0.5916500687599182
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": -0.5916652679443359
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+      "index": 3,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.6538233160972595
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.6538373827934265
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].scale",
+      "index": 0,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999999403953552
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998211860657
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].scale",
+      "index": 1,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999998211860657
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "path": "pose.bones[\"Gear_Elbow_L\"].scale",
+      "index": 2,
+      "prior_keys": [
+        [
+          [
+            0.0,
+            0.9999998807907104
+          ],
+          "LINEAR"
+        ]
+      ],
+      "new_value": 0.9999998807907104
+    }
+  ],
+  "untouched_pose_matrix_max_error": 0.0,
+  "gear_transport": "Native geometric carrier directly from upper-arm and elbow-to-wrist axes; no independent cap offset",
+  "limits": [
+    "No geometry, rest, weights, rifle, right arm/grip, original action, export, or animation-bank edits",
+    "Optimizer signed nearest-surface proxies are not the final acceptance gate",
+    "No engine camera, ADS shoulder, or armIK transition acceptance claim"
+  ]
+}

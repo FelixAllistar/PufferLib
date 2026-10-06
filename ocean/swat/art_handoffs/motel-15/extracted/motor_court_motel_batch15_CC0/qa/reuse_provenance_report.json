@@ -1,0 +1,134 @@
+{
+  "status": "pass",
+  "scope": "All sixteen packaged reused GLBs match their actual existing-library source bytes. Source paths are lineage references only; packaged rebuild uses reused_assets.",
+  "files": [
+    {
+      "id": "bedframe_single_institutional",
+      "original_source": "../04_furniture_variants/assets/bedframe_single_institutional.glb",
+      "packaged_file": "reused_assets/bedframe_single_institutional.glb",
+      "original_source_sha256": "515601eefaae54b374b900e8b5a98a8cc0b39385c2997775b4d0991b6fe7e370",
+      "packaged_sha256": "515601eefaae54b374b900e8b5a98a8cc0b39385c2997775b4d0991b6fe7e370",
+      "status": "pass"
+    },
+    {
+      "id": "mattress_dirty",
+      "original_source": "../../house_kit/modules/props/mattress_dirty.glb",
+      "packaged_file": "reused_assets/mattress_dirty.glb",
+      "original_source_sha256": "73aa330b4d519c838f042c50c89569ef58dec3ac3f2d7e9c24f5e7a0fb2e1ab5",
+      "packaged_sha256": "73aa330b4d519c838f042c50c89569ef58dec3ac3f2d7e9c24f5e7a0fb2e1ab5",
+      "status": "pass"
+    },
+    {
+      "id": "desk",
+      "original_source": "../../house_kit/modules/props/desk.glb",
+      "packaged_file": "reused_assets/desk.glb",
+      "original_source_sha256": "acb19cfa1461ba4bd960615ccbc2971493ac82a198d4a7445c9922f9f8325bb7",
+      "packaged_sha256": "acb19cfa1461ba4bd960615ccbc2971493ac82a198d4a7445c9922f9f8325bb7",
+      "status": "pass"
+    },
+    {
+      "id": "chair_metal_folding",
+      "original_source": "../04_furniture_variants/assets/chair_metal_folding.glb",
+      "packaged_file": "reused_assets/chair_metal_folding.glb",
+      "original_source_sha256": "7aa71587f7f9805ef3cbb5d7694012a191a376579cf9acde62f6826249daffed",
+      "packaged_sha256": "7aa71587f7f9805ef3cbb5d7694012a191a376579cf9acde62f6826249daffed",
+      "status": "pass"
+    },
+    {
+      "id": "tv_crt",
+      "original_source": "../../house_kit/modules/props/tv_crt.glb",
+      "packaged_file": "reused_assets/tv_crt.glb",
+      "original_source_sha256": "f3b503ae9a81e630c915fad5b552d2f76a5f872fbd13b41dd054da350afd0bf2",
+      "packaged_sha256": "f3b503ae9a81e630c915fad5b552d2f76a5f872fbd13b41dd054da350afd0bf2",
+      "status": "pass"
+    },
+    {
+      "id": "basin_pedestal",
+      "original_source": "../../house_kit/modules/props/basin_pedestal.glb",
+      "packaged_file": "reused_assets/basin_pedestal.glb",
+      "original_source_sha256": "e1b421ac32966a1466fb8b18aae4e469b464b8ac98122a338487576f5d1f1f56",
+      "packaged_sha256": "e1b421ac32966a1466fb8b18aae4e469b464b8ac98122a338487576f5d1f1f56",
+      "status": "pass"
+    },
+    {
+      "id": "toilet_old",
+      "original_source": "../../house_kit/modules/props/toilet_old.glb",
+      "packaged_file": "reused_assets/toilet_old.glb",
+      "original_source_sha256": "807fc8fc1274d0f022505d0df62948d8bcc930f90c90ebfa5d1423a7f4760d43",
+      "packaged_sha256": "807fc8fc1274d0f022505d0df62948d8bcc930f90c90ebfa5d1423a7f4760d43",
+      "status": "pass"
+    },
+    {
+      "id": "bathtub_old",
+      "original_source": "../../house_kit/modules/props/bathtub_old.glb",
+      "packaged_file": "reused_assets/bathtub_old.glb",
+      "original_source_sha256": "26a921829021be2378186f1d877aca3983ba13b46cdf1fd1d6209ef51a43bea0",
+      "packaged_sha256": "26a921829021be2378186f1d877aca3983ba13b46cdf1fd1d6209ef51a43bea0",
+      "status": "pass"
+    },
+    {
+      "id": "frosted_dome_light",
+      "original_source": "../05_interior_fixtures/assets/frosted_dome_light.glb",
+      "packaged_file": "reused_assets/frosted_dome_light.glb",
+      "original_source_sha256": "e105aef8c014e1c253ba45414bda021659609c28012d0256e354f8582afba38c",
+      "packaged_sha256": "e105aef8c014e1c253ba45414bda021659609c28012d0256e354f8582afba38c",
+      "status": "pass"
+    },
+    {
+      "id": "ribbed_glass_wall_sconce",
+      "original_source": "../05_interior_fixtures/assets/ribbed_glass_wall_sconce.glb",
+      "packaged_file": "reused_assets/ribbed_glass_wall_sconce.glb",
+      "original_source_sha256": "e38fb4f491ba38a29d533f18b724d5e0762ad695e6c6312f4b734fcf91195cad",
+      "packaged_sha256": "e38fb4f491ba38a29d533f18b724d5e0762ad695e6c6312f4b734fcf91195cad",
+      "status": "pass"
+    },
+    {
+      "id": "lb11_front_load_washer",
+      "original_source": "../11_laundry_basement/assets/front_load_washer.glb",
+      "packaged_file": "reused_assets/front_load_washer.glb",
+      "original_source_sha256": "b4178f63e852ad16510bbfab8cb30ee3f5d9b4ce461e395c9a71a57cb3f7e33d",
+      "packaged_sha256": "b4178f63e852ad16510bbfab8cb30ee3f5d9b4ce461e395c9a71a57cb3f7e33d",
+      "status": "pass"
+    },
+    {
+      "id": "lb11_vented_tumble_dryer",
+      "original_source": "../11_laundry_basement/assets/vented_tumble_dryer.glb",
+      "packaged_file": "reused_assets/vented_tumble_dryer.glb",
+      "original_source_sha256": "416fd1ad92098cc9c7c8897d1aa3b4e50263f0fbdc34820961cecf500b1af27d",
+      "packaged_sha256": "416fd1ad92098cc9c7c8897d1aa3b4e50263f0fbdc34820961cecf500b1af27d",
+      "status": "pass"
+    },
+    {
+      "id": "lb11_folded_bedsheet_stack",
+      "original_source": "../11_laundry_basement/assets/folded_bedsheet_stack.glb",
+      "packaged_file": "reused_assets/folded_bedsheet_stack.glb",
+      "original_source_sha256": "cdc52903272f0383b7c7af1086e6ec9e99ee7c0ec7d79210ddc36dc494aaa8a2",
+      "packaged_sha256": "cdc52903272f0383b7c7af1086e6ec9e99ee7c0ec7d79210ddc36dc494aaa8a2",
+      "status": "pass"
+    },
+    {
+      "id": "rotary_telephone",
+      "original_source": "../02_household_clutter/modules/rotary_telephone.glb",
+      "packaged_file": "reused_assets/rotary_telephone.glb",
+      "original_source_sha256": "429110b24d329af32deaa8f531d3563507eee32bc2d45b1e7dcbdd929b39d6c1",
+      "packaged_sha256": "429110b24d329af32deaa8f531d3563507eee32bc2d45b1e7dcbdd929b39d6c1",
+      "status": "pass"
+    },
+    {
+      "id": "twin_bell_alarm_clock",
+      "original_source": "../02_household_clutter/modules/twin_bell_alarm_clock.glb",
+      "packaged_file": "reused_assets/twin_bell_alarm_clock.glb",
+      "original_source_sha256": "332c0ae369197861fb11a6f464a293217922e526d3b42d8e79e10db7f3b0cdbf",
+      "packaged_sha256": "332c0ae369197861fb11a6f464a293217922e526d3b42d8e79e10db7f3b0cdbf",
+      "status": "pass"
+    },
+    {
+      "id": "chipped_coffee_mug",
+      "original_source": "../02_household_clutter/modules/chipped_coffee_mug.glb",
+      "packaged_file": "reused_assets/chipped_coffee_mug.glb",
+      "original_source_sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0",
+      "packaged_sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0",
+      "status": "pass"
+    }
+  ]
+}

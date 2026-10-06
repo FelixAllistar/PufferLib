@@ -1,0 +1,1015 @@
+{
+  "status": "passed",
+  "scope": "Independent core glTF bounds, indices, materials, embedded images, node metadata, normals/UVs and degeneracy. Not engine QA.",
+  "errors": [],
+  "assets": [
+    {
+      "asset_id": "mc15_room_facade_4m",
+      "library_id": "15_motor_court_motel/mc15_room_facade_4m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/room_facade_4m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_room_facade_4m",
+      "label": "Room facade / door and window openings",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          0.0,
+          -0.10000000149011612
+        ],
+        "max": [
+          2.0,
+          2.799999952316284,
+          0.14000000059604645
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        2.799999952316284,
+        0.24000000208616257
+      ],
+      "triangles": 547,
+      "material_count": 5,
+      "primitive_count": 5,
+      "embedded_image_count": 5,
+      "double_sided_material_count": 5,
+      "mesh_count": 1,
+      "file_bytes": 308964,
+      "sha256": "22e084bc315a5b6f524f382f98d425580834c84597c49e4245ac3edac5c522d0",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_solid_wall_4m",
+      "library_id": "15_motor_court_motel/mc15_solid_wall_4m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/solid_wall_4m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_solid_wall_4m",
+      "label": "Four metre rear wall",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          0.0,
+          -0.09000000357627869
+        ],
+        "max": [
+          2.0,
+          2.799999952316284,
+          0.11300000548362732
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        2.799999952316284,
+        0.203000009059906
+      ],
+      "triangles": 95,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 171384,
+      "sha256": "e8de5460cf7c583206b632189fe3c0fd5bbd4a042eb819d0b664950e986f6168",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_end_wall_6m",
+      "library_id": "15_motor_court_motel/mc15_end_wall_6m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/end_wall_6m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_end_wall_6m",
+      "label": "Six metre room side wall",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -3.0,
+          0.0,
+          -0.09000000357627869
+        ],
+        "max": [
+          3.0,
+          2.799999952316284,
+          0.11300000548362732
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        6.0,
+        2.799999952316284,
+        0.203000009059906
+      ],
+      "triangles": 95,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 171252,
+      "sha256": "cf3bf207f4f8c4a0058eb4e6e8f7f1b739a0e7b0a9c9f330ba776d5b2b2ae36d",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_corner_pier",
+      "library_id": "15_motor_court_motel/mc15_corner_pier",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/corner_pier.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_corner_pier",
+      "label": "Cream corner cap",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.13500000536441803,
+          0.0,
+          -0.13500000536441803
+        ],
+        "max": [
+          0.13500000536441803,
+          2.799999952316284,
+          0.13500000536441803
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        0.27000001072883606,
+        2.799999952316284,
+        0.27000001072883606
+      ],
+      "triangles": 132,
+      "material_count": 2,
+      "primitive_count": 2,
+      "embedded_image_count": 2,
+      "double_sided_material_count": 2,
+      "mesh_count": 1,
+      "file_bytes": 113668,
+      "sha256": "cc1b516b38ffe2074eaa4470b934ed6c3202531b425264bd6c5b3cf8dba7f336",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_room_floor_4x6m",
+      "library_id": "15_motor_court_motel/mc15_room_floor_4x6m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/room_floor_4x6m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_room_floor_4x6m",
+      "label": "Carpet and tile room floor",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          -0.10000000149011612,
+          -3.0
+        ],
+        "max": [
+          2.0,
+          0.006500000134110451,
+          3.0
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        0.10650000162422657,
+        6.0
+      ],
+      "triangles": 200,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 167128,
+      "sha256": "424cb97c36f85c352c9c0a6f14129334385a9d80e22efb27541124e1e60381c7",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_flat_roof_4x6m",
+      "library_id": "15_motor_court_motel/mc15_flat_roof_4x6m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/flat_roof_4x6m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_flat_roof_4x6m",
+      "label": "Flat roof with banded fascia",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          -0.019999995827674866,
+          -3.1474997997283936
+        ],
+        "max": [
+          2.0,
+          0.2199999988079071,
+          3.1524999141693115
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        0.23999999463558197,
+        6.299999713897705
+      ],
+      "triangles": 168,
+      "material_count": 4,
+      "primitive_count": 4,
+      "embedded_image_count": 4,
+      "double_sided_material_count": 4,
+      "mesh_count": 1,
+      "file_bytes": 208372,
+      "sha256": "7f811e5dd3af74608db434f0c3bc92428fdde034554e4dec19b5f836299485ae",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_gallery_walkway_4m",
+      "library_id": "15_motor_court_motel/mc15_gallery_walkway_4m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/gallery_walkway_4m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_gallery_walkway_4m",
+      "label": "Exterior walkway slab",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          -0.17000000178813934,
+          0.0
+        ],
+        "max": [
+          2.0,
+          0.0020000000949949026,
+          1.8299999237060547
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        0.17200000188313425,
+        1.8299999237060547
+      ],
+      "triangles": 112,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 157148,
+      "sha256": "576d29b5059343a2f57037e61e1a7199ce2cdadee6bec04592d3c4884365e874",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_gallery_canopy_4m",
+      "library_id": "15_motor_court_motel/mc15_gallery_canopy_4m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/gallery_canopy_4m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_gallery_canopy_4m",
+      "label": "Corrugated gallery canopy",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          -0.09999999403953552,
+          -0.050000011920928955
+        ],
+        "max": [
+          2.0,
+          0.1899999976158142,
+          2.007499933242798
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        0.28999999165534973,
+        2.057499945163727
+      ],
+      "triangles": 276,
+      "material_count": 4,
+      "primitive_count": 4,
+      "embedded_image_count": 4,
+      "double_sided_material_count": 4,
+      "mesh_count": 1,
+      "file_bytes": 213844,
+      "sha256": "bf31e9a47c5824ccb1bb1c50db2acfef14561b57aa00be57614b04a32a8b4fe3",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_canopy_post",
+      "library_id": "15_motor_court_motel/mc15_canopy_post",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/canopy_post.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_canopy_post",
+      "label": "Thin gallery support post",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.07999999821186066,
+          0.0,
+          -0.07999999821186066
+        ],
+        "max": [
+          0.07999999821186066,
+          2.440000057220459,
+          0.07999999821186066
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        0.1599999964237213,
+        2.440000057220459,
+        0.1599999964237213
+      ],
+      "triangles": 188,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 151872,
+      "sha256": "e0f211d94784a205fe2b9fb0e0e924ab7ff3dd185aef082fbf6777c815eacc9b",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_room_door_leaf",
+      "library_id": "15_motor_court_motel/mc15_room_door_leaf",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/room_door_leaf.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_room_door_leaf",
+      "label": "Panel door / left hinge origin",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          0.0,
+          0.0,
+          -0.02250000089406967
+        ],
+        "max": [
+          1.0800000429153442,
+          2.190000057220459,
+          0.11500000208616257
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        1.0800000429153442,
+        2.190000057220459,
+        0.13750000298023224
+      ],
+      "triangles": 467,
+      "material_count": 6,
+      "primitive_count": 6,
+      "embedded_image_count": 6,
+      "double_sided_material_count": 6,
+      "mesh_count": 1,
+      "file_bytes": 300636,
+      "sha256": "1f0c6633b60dc0c5e6b1b8333d2f4045f9da15e0f94cd985f37fcd2cda6b0fc4",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_room_window_insert",
+      "library_id": "15_motor_court_motel/mc15_room_window_insert",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/room_window_insert.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_room_window_insert",
+      "label": "Divided window with curtain folds",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -1.034999966621399,
+          -0.008499999530613422,
+          -0.06499999761581421
+        ],
+        "max": [
+          1.034999966621399,
+          1.2999999523162842,
+          0.1850000023841858
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        2.069999933242798,
+        1.3084999518468976,
+        0.25
+      ],
+      "triangles": 792,
+      "material_count": 4,
+      "primitive_count": 4,
+      "embedded_image_count": 4,
+      "double_sided_material_count": 4,
+      "mesh_count": 1,
+      "file_bytes": 247172,
+      "sha256": "a88dfa7e390653544ad1616b688aa71a5d44a0d30b82a41abed3a4cf6d4186ba",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_gallery_railing_2m",
+      "library_id": "15_motor_court_motel/mc15_gallery_railing_2m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/gallery_railing_2m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_gallery_railing_2m",
+      "label": "Simple gallery railing",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -1.0299999713897705,
+          0.0,
+          -0.05999999865889549
+        ],
+        "max": [
+          1.0299999713897705,
+          1.0225000381469727,
+          0.05999999865889549
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        2.059999942779541,
+        1.0225000381469727,
+        0.11999999731779099
+      ],
+      "triangles": 484,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 175020,
+      "sha256": "8c6bf42ccb3711aacc9a8f9aefe0b64e1f31d81919948c95e868c0440d78367c",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_lobby_glazed_facade",
+      "library_id": "15_motor_court_motel/mc15_lobby_glazed_facade",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/lobby_glazed_facade.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_lobby_glazed_facade",
+      "label": "Reception glazing and doorway",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          0.0,
+          -0.09000000357627869
+        ],
+        "max": [
+          2.0,
+          2.799999952316284,
+          0.10050000250339508
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        2.799999952316284,
+        0.19050000607967377
+      ],
+      "triangles": 1004,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 213760,
+      "sha256": "f3e939267e9401b47fd180e66cddcebeff95f4ed8da9f226c16223a1d325bcb0",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_reception_counter",
+      "library_id": "15_motor_court_motel/mc15_reception_counter",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/reception_counter.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_reception_counter",
+      "label": "Batten-front reception counter",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -1.25,
+          0.0,
+          -0.5199999809265137
+        ],
+        "max": [
+          1.25,
+          1.090000033378601,
+          0.39399999380111694
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        2.5,
+        1.090000033378601,
+        0.9139999747276306
+      ],
+      "triangles": 892,
+      "material_count": 4,
+      "primitive_count": 4,
+      "embedded_image_count": 4,
+      "double_sided_material_count": 4,
+      "mesh_count": 1,
+      "file_bytes": 268072,
+      "sha256": "6f526688a7fd5cea05702072f0d2c03224dea2c1ba0f72bd57a7c25158f7ff4c",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_roadside_sign",
+      "library_id": "15_motor_court_motel/mc15_roadside_sign",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/roadside_sign.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_roadside_sign",
+      "label": "BRIAR COURT roadside sign",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -1.600000023841858,
+          0.0,
+          -0.3499999940395355
+        ],
+        "max": [
+          1.600000023841858,
+          4.112499713897705,
+          0.3499999940395355
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        3.200000047683716,
+        4.112499713897705,
+        0.699999988079071
+      ],
+      "triangles": 3075,
+      "material_count": 7,
+      "primitive_count": 7,
+      "embedded_image_count": 7,
+      "double_sided_material_count": 7,
+      "mesh_count": 1,
+      "file_bytes": 559856,
+      "sha256": "588f6b571e3874b37597692c3597de05fcf9c364a64e32fc22d9e0480bd22170",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_ice_machine",
+      "library_id": "15_motor_court_motel/mc15_ice_machine",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/ice_machine.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_ice_machine",
+      "label": "Weathered ice dispenser shell",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.4749999940395355,
+          0.0,
+          -0.4000000059604645
+        ],
+        "max": [
+          0.4749999940395355,
+          1.6200000047683716,
+          0.4429999887943268
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        0.949999988079071,
+        1.6200000047683716,
+        0.8429999947547913
+      ],
+      "triangles": 875,
+      "material_count": 5,
+      "primitive_count": 5,
+      "embedded_image_count": 5,
+      "double_sided_material_count": 5,
+      "mesh_count": 1,
+      "file_bytes": 278912,
+      "sha256": "ef83a3514d38f7f07634ef4dea21098c6b1b9c6c413b90d032b322a0eb9490f6",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_vending_machine",
+      "library_id": "15_motor_court_motel/mc15_vending_machine",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/vending_machine.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_vending_machine",
+      "label": "Snack vending cabinet shell",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.4699999988079071,
+          0.0,
+          -0.4000000059604645
+        ],
+        "max": [
+          0.4699999988079071,
+          1.840000033378601,
+          0.4754999876022339
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        0.9399999976158142,
+        1.840000033378601,
+        0.8754999935626984
+      ],
+      "triangles": 1043,
+      "material_count": 6,
+      "primitive_count": 6,
+      "embedded_image_count": 6,
+      "double_sided_material_count": 6,
+      "mesh_count": 1,
+      "file_bytes": 338572,
+      "sha256": "80279ecba4c61943dd09043c2198c74d0e4080133bdc77a9b107985d35576185",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_room_number_plaque",
+      "library_id": "15_motor_court_motel/mc15_room_number_plaque",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/room_number_plaque.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_room_number_plaque",
+      "label": "Room 101 plaque master",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.1599999964237213,
+          -0.08500000089406967,
+          0.0
+        ],
+        "max": [
+          0.1599999964237213,
+          0.08500000089406967,
+          0.03799999877810478
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        0.3199999928474426,
+        0.17000000178813934,
+        0.03799999877810478
+      ],
+      "triangles": 424,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 178312,
+      "sha256": "028dc1310568185b544d783574a81492d9be9f97ba07f17287eb15a137b00121",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_through_wall_ac",
+      "library_id": "15_motor_court_motel/mc15_through_wall_ac",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/through_wall_ac.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_through_wall_ac",
+      "label": "Sleeved through-wall air conditioner",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.5049999952316284,
+          -0.04000002145767212,
+          -0.1925000101327896
+        ],
+        "max": [
+          0.5049999952316284,
+          0.5600000023841858,
+          0.20649999380111694
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        1.0099999904632568,
+        0.6000000238418579,
+        0.39900000393390656
+      ],
+      "triangles": 1019,
+      "material_count": 4,
+      "primitive_count": 4,
+      "embedded_image_count": 4,
+      "double_sided_material_count": 4,
+      "mesh_count": 1,
+      "file_bytes": 245516,
+      "sha256": "cc4d86eb06bdc0b596222716213ba425c3cb34be5248b47339e58ed50165e237",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_parking_wheel_stop",
+      "library_id": "15_motor_court_motel/mc15_parking_wheel_stop",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/parking_wheel_stop.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_parking_wheel_stop",
+      "label": "Chipped concrete wheel stop",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.8999999761581421,
+          0.0,
+          -0.11999999731779099
+        ],
+        "max": [
+          0.8999999761581421,
+          0.14300000667572021,
+          0.12350000441074371
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        1.7999999523162842,
+        0.14300000667572021,
+        0.2435000017285347
+      ],
+      "triangles": 156,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 140084,
+      "sha256": "22afdb17fbe161a0534ad1b2c50d50b30857aa8bf845fe62e25f73c4f6cf3d1e",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_gallery_access_ramp",
+      "library_id": "15_motor_court_motel/mc15_gallery_access_ramp",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/gallery_access_ramp.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_gallery_access_ramp",
+      "label": "Shallow walkway ramp",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.699999988079071,
+          -0.07999999821186066,
+          0.0
+        ],
+        "max": [
+          0.699999988079071,
+          0.0,
+          1.2000000476837158
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        1.399999976158142,
+        0.07999999821186066,
+        1.2000000476837158
+      ],
+      "triangles": 108,
+      "material_count": 2,
+      "primitive_count": 2,
+      "embedded_image_count": 2,
+      "double_sided_material_count": 2,
+      "mesh_count": 1,
+      "file_bytes": 103448,
+      "sha256": "1a2aa51634c08fafbe5ce43ecc875a5334ffa60ced0c459b2ef17879a38b457e",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_service_doorway_4m",
+      "library_id": "15_motor_court_motel/mc15_service_doorway_4m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/service_doorway_4m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_service_doorway_4m",
+      "label": "Centred service doorway wall",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          0.0,
+          -0.11500000208616257
+        ],
+        "max": [
+          2.0,
+          2.799999952316284,
+          0.11500000208616257
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        2.799999952316284,
+        0.23000000417232513
+      ],
+      "triangles": 264,
+      "material_count": 2,
+      "primitive_count": 2,
+      "embedded_image_count": 2,
+      "double_sided_material_count": 2,
+      "mesh_count": 1,
+      "file_bytes": 131976,
+      "sha256": "4587ce79f75c066c05739bc08e613add968edd167fe20fa8c13acc5d46868272",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_bathroom_partition_4m",
+      "library_id": "15_motor_court_motel/mc15_bathroom_partition_4m",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/bathroom_partition_4m.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_bathroom_partition_4m",
+      "label": "Off-centre bathroom partition",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -2.0,
+          0.0,
+          -0.08500000089406967
+        ],
+        "max": [
+          2.0,
+          2.799999952316284,
+          0.08500000089406967
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        4.0,
+        2.799999952316284,
+        0.17000000178813934
+      ],
+      "triangles": 264,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 179136,
+      "sha256": "32c6ee7ee72b4dee39feb2820d65e34789af32af906fb756fa196bd0ea2d7877",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    },
+    {
+      "asset_id": "mc15_reception_key_cubbies",
+      "library_id": "15_motor_court_motel/mc15_reception_key_cubbies",
+      "batch_id": "15_motor_court_motel",
+      "file": "assets/reception_key_cubbies.glb",
+      "source_manifest": "15_motor_court_motel/manifest.json",
+      "source_manifest_asset_id": "mc15_reception_key_cubbies",
+      "label": "Sixteen-slot reception key rack",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "floor",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.5400000214576721,
+          0.0,
+          -0.05000000074505806
+        ],
+        "max": [
+          0.5400000214576721,
+          0.9200000166893005,
+          0.2199999988079071
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        1.0800000429153442,
+        0.9200000166893005,
+        0.26999999955296516
+      ],
+      "triangles": 772,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "file_bytes": 196208,
+      "sha256": "ba9ab1491186f8aaf1341d584188365f49cf69b006fbe91b3d116628f98a0741",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "audit_errors": [],
+      "maximum_bounds_error_m": 0.0
+    }
+  ]
+}

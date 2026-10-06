@@ -1,0 +1,172 @@
+{
+  "schema": "swat-rigid-weapon-handoff/1",
+  "version": "2026-10-04-rigid-weapons-v1",
+  "status": "rigid rifle ready for engine import; sidearm source-scale reference pending calibration",
+  "main_asset": {
+    "file": "rifle7_rigid_textured.glb",
+    "sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+    "bytes": 40189468,
+    "nodes": [
+      "Rifle7_RigidBody",
+      "Rifle7_SeatedMagazine"
+    ],
+    "skins": 0,
+    "animations": 0,
+    "embedded_textures": 3,
+    "units": "meters",
+    "axes": {
+      "forward": "+X",
+      "up": "+Y",
+      "right": "+Z"
+    },
+    "origin": "actual stock rear-pad center",
+    "forward_length_m": 0.9,
+    "measured_stock_to_muzzle_distance_m": 0.901056695457287,
+    "engine_pose_calibration": "pending; do not distort geometry to 0.56 m"
+  },
+  "optional_sidearm": {
+    "file": "sidearm50_rigid_source_scale.glb",
+    "sha256": "04a163b5f0a2bcd166b59b38ccda50a7d50107e9710bb7b72dc36e07ea4ff450",
+    "bytes": 1106804,
+    "source_exists": true,
+    "physical_scale": "unverified; original imported geometry retained",
+    "canonical_forward_length_m": 2.7149387316391502,
+    "textures": 0,
+    "hand_fit": "unprovided; geometric candidates only"
+  },
+  "validation": "validation.json",
+  "bindings": [
+    "rifle_bindings.json",
+    "sidearm_bindings.json"
+  ],
+  "source_provenance": "SOURCE_PROVENANCE.json",
+  "reversible_recipes": [
+    "recipe.json",
+    "sidearm_recipe.json"
+  ],
+  "no_engine_runtime_claim": true,
+  "sources_and_F_fixture_unchanged": true,
+  "public_asset_distribution_authorized": false,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7815,
+      "sha256": "239e47807c0c9d46427cf0940217a41f6c5707a48e3ad59f550332f7f3c34011"
+    },
+    {
+      "path": "Rifle7_RigidBody_source.npz",
+      "bytes": 460219,
+      "sha256": "4aff95f9520eab2fd1a7a2294452a7e8bca9a5bd8e86f415a6a921b0d9db41f5"
+    },
+    {
+      "path": "Rifle7_SeatedMagazine_source.npz",
+      "bytes": 32760,
+      "sha256": "d49f2e720aa97e6863b97075f17fbb9cdae1af1723f6963349996cd57d84931e"
+    },
+    {
+      "path": "SOURCE_PROVENANCE.json",
+      "bytes": 3214,
+      "sha256": "31e02ea2cff2dd9db41852c265918295211d412a9290e5af4f485049803418e2"
+    },
+    {
+      "path": "Sidearm50_RigidBody_source.npz",
+      "bytes": 835368,
+      "sha256": "ec3015d80a36cabf3992128d8d4486227eb6ba5c3757f31ce653a18e6ad2baa5"
+    },
+    {
+      "path": "recipe.json",
+      "bytes": 5648,
+      "sha256": "b9f4862cc43b37bae0d5cf1b39655b94c6278b99582bcaea9e0309263a5bb2e3"
+    },
+    {
+      "path": "rifle7_rigid_textured.glb",
+      "bytes": 40189468,
+      "sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48"
+    },
+    {
+      "path": "rifle_bindings.json",
+      "bytes": 8845,
+      "sha256": "7bfa52f22345586caa1d7a9b17c2d3e5336772aff9745a36226c0e976448e447"
+    },
+    {
+      "path": "sidearm50_rigid_source_scale.glb",
+      "bytes": 1106804,
+      "sha256": "04a163b5f0a2bcd166b59b38ccda50a7d50107e9710bb7b72dc36e07ea4ff450"
+    },
+    {
+      "path": "sidearm_bindings.json",
+      "bytes": 22360,
+      "sha256": "ff0e8f4d4a2ccb84c0b05b276e8e80d274fb49cf9a0c883cfd2a6e98047576b1"
+    },
+    {
+      "path": "sidearm_geometric_landmarks.json",
+      "bytes": 11538,
+      "sha256": "ce8ffb04bde1c03400d306ddfc6a4b198d96348dcd2457a694ea4520afcb75f9"
+    },
+    {
+      "path": "sidearm_recipe.json",
+      "bytes": 4052,
+      "sha256": "625299c4ae35c478b2073929c62bcc526f3ef5393a18d224a675c49ef544487a"
+    },
+    {
+      "path": "tangent_validation_fix.json",
+      "bytes": 1775,
+      "sha256": "1d4f1613af717ba761bc120d86947467c0ddbfa114148c33961849166f9c6841"
+    },
+    {
+      "path": "tools/export_rifle.py",
+      "bytes": 6657,
+      "sha256": "6173323f619db543b2b59e31c924295776a3afd0c4676da04f2bf3a9b169adec"
+    },
+    {
+      "path": "tools/export_sidearm.py",
+      "bytes": 6651,
+      "sha256": "d0dbfe82dcabc7773dc28f12e51034b1c28c102274459d038b4a9d66d73bfbf8"
+    },
+    {
+      "path": "tools/render_neutral.py",
+      "bytes": 2465,
+      "sha256": "da6b57d06bca169ffcbc593b95a938869a9ef13d0b4750c4a3108eb33c637ba5"
+    },
+    {
+      "path": "tools/repair_tangents.py",
+      "bytes": 2924,
+      "sha256": "5b5d0a65c703a79dfe29afbe12d1349e010ca94fd4a6c800ddb4ba6600cd68bd"
+    },
+    {
+      "path": "tools/validate_rigid.py",
+      "bytes": 7610,
+      "sha256": "8a6114d8965a89f3db0e62276da0d874434431b3fd102a903dc60a45babc9477"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 5959,
+      "sha256": "17d4c96aada9bcb9d6034eca88063b3498db67d8f1f851515b411f761c1599db"
+    },
+    {
+      "path": "views/rifle_side.png",
+      "bytes": 587242,
+      "sha256": "6a9fd81b731e995e01df7fd613a84e89446688e4e11c65f14d2e2b6d1acfaa70"
+    },
+    {
+      "path": "views/rifle_sight_line.png",
+      "bytes": 542797,
+      "sha256": "7c8b3e10efa677358d9b12cf8718fad67b0832cb1f9ffd4693d916a048c97df5"
+    },
+    {
+      "path": "views/rifle_threequarter.png",
+      "bytes": 595260,
+      "sha256": "96e566aa838cb6466736e7c678dbef5de251bfc82981c22ba841d5e8c8b0c927"
+    },
+    {
+      "path": "views/rifle_top.png",
+      "bytes": 544392,
+      "sha256": "1d8050acd295ed4e256491c023fbd7dc68358397f0c95b36b202954eb752e112"
+    },
+    {
+      "path": "views/sidearm_source_scale.png",
+      "bytes": 461823,
+      "sha256": "cc7336e83ea515def3daa2dbe4e033644b096ea934eb897f250a5c4d97a0ebd1"
+    }
+  ]
+}

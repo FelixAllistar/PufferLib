@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "source_F_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+  "source_file_unchanged": true,
+  "mapping_npz_sha256": "84cc7f23469e7a4a9c0c1dd906e37c704ca7d1920bedc522b802bca060465858",
+  "checks": {
+    "F_vertex_to_original_N_vertex": true,
+    "F_polygon_to_original_N_polygon": true,
+    "F_polygon_material_slot": true,
+    "F_loop_vertex": true,
+    "F_triangle_vertices": true,
+    "F_triangle_polygon": true,
+    "F_triangle_loop_indices": true,
+    "F_loop_UV_0": true
+  },
+  "material_slots_UV_layer_active_index_exact": true,
+  "count_vertices": 22645,
+  "count_polygons": 22882,
+  "count_triangles": 42339
+}

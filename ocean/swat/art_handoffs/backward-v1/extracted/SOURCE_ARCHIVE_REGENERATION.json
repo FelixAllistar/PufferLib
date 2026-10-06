@@ -1,0 +1,15 @@
+{
+  "selected": "/tmp/backward_checkpoint_final_verify/animation_rebuild/walk_backward_n/seam_a/walk_backward_ready_n_c1.editable.blend",
+  "rebuilt": "/tmp/backward_checkpoint_final_verify/replayed/seam_a/walk_backward_ready_n_c1.editable.blend",
+  "all_curve_key_handle_interpolation_values_equal": true,
+  "curve_count": 700,
+  "keys": 168700,
+  "sampled_world_matrix_max_error": 0.0,
+  "canonical_curve_sha256": "ef7f84e7587e70e3c022840d301e891425215d08b39eb5e0c5cd2c7ca3df3806",
+  "scope": "Exact saved animation values, not byte-identical Blender serialization or runtime export parity",
+  "original_inputs_unchanged": true,
+  "absolute_path_driver": true,
+  "archive_sha256": "a2916151e218b3b0b7ba002582f2ae37f039df122c77c74c996e93ee43452a03",
+  "actual_final_archive_extraction": true,
+  "receipt_outside_immutable_archive": true
+}

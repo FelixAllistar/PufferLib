@@ -1,0 +1,127 @@
+{
+  "status": "PASS_QUALIFIED_NUMERICAL_CUBIC_FIXTURE",
+  "glb_sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "source_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "all_joint_endpoint_pose_matrix_gap": 0.0,
+  "maximum_joint_linear_wrap_residual_m_s": 6.622554901146386e-05,
+  "maximum_joint_angular_wrap_residual_deg_s": 0.005045901367007706,
+  "maximum_surface_linear_wrap_residual_m_s": 6.75958356072042e-05,
+  "scalar_replay_phases": 961,
+  "fresh_direct_blender_vertex_phases": 151,
+  "total_exported_vertices": 48755,
+  "maximum_byte_to_fresh_blender_source_m": 1.0878592978833764e-06,
+  "maximum_cubic_aware_blender_to_source_m": 1.491307735824204e-06,
+  "maximum_stock_blender_to_source_m": 0.0029150805951194203,
+  "four_weight_negative": {
+    "four_weights_rejected": true,
+    "max_surface_error_m": 0.001025814034558497
+  },
+  "quaternion_norm_extrema": {
+    "method": "Each actual stored float32 cubic quaternion is expanded as a cubic in unit segment u. Its squared norm is degree6; all numerically real roots of its derivative inside[0,1] and both endpoints are evaluated. Numerical root-based extrema, not exact symbolic certification.",
+    "intervals": 16800,
+    "squared_norm_coefficients_cross_checked_all_intervals": true,
+    "interior_critical_points": 16547,
+    "minimum": 0.9999958404336872,
+    "minimum_location": {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "segment": 28,
+      "time_s": 0.11884141939745062,
+      "segment_u": 0.5219410339406189
+    },
+    "maximum": 1.0000011141485683,
+    "maximum_location": {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "segment": 220,
+      "time_s": 0.9187255239521819,
+      "segment_u": 0.4941214513830009
+    }
+  },
+  "portable_reference_scope": "All 151 native/imported bone and deformation poses and all skin vertices; nine complete actual evaluated surface controls retained. Original direct 151-phase vertex captures were verified separately and are not bundled.",
+  "garment_nine_phase_qualification": {
+    "leg_leg": {
+      "source_count_range": [
+        0,
+        164
+      ],
+      "cubic_count_range": [
+        0,
+        164
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0021429721870939653
+    },
+    "left_leg_torso": {
+      "source_count_range": [
+        32,
+        78
+      ],
+      "cubic_count_range": [
+        32,
+        78
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0006640503433506285
+    },
+    "right_leg_torso": {
+      "source_count_range": [
+        29,
+        210
+      ],
+      "cubic_count_range": [
+        29,
+        210
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0008962364954571284
+    },
+    "left_arm_vest": {
+      "source_count_range": [
+        0,
+        0
+      ],
+      "cubic_count_range": [
+        0,
+        0
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0
+    },
+    "right_arm_vest": {
+      "source_count_range": [
+        0,
+        0
+      ],
+      "cubic_count_range": [
+        0,
+        0
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0
+    },
+    "sleeve_body": {
+      "source_count_range": [
+        28,
+        28
+      ],
+      "cubic_count_range": [
+        28,
+        28
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0015155099557621898
+    }
+  },
+  "garment_max_added_pairs_per_category_phase": 0,
+  "garment_max_removed_pairs_per_category_phase": 0,
+  "qualification": [
+    "Not material-clean, zero-regression, ADS, camera, runtime-speed-fit or gameplay approval",
+    "Stock Blender importer discards cubic tangents; it does not pass cubic round-trip parity",
+    "Practical 1/60 s velocity chords differ by up to 0.4394 m/s at joints, 0.4557 m/s on skin and 36.04 degrees/s, and converge as epsilon shrinks",
+    "Dense 960 Hz floor samples exceed 3 mm but do not maintain an exact 4 mm target or prove continuous clearance",
+    "All 7 influences and complete N70 source retained; no grip C/C1 diagnostics, engine override, F72 carrier/geometry adoption, or authored events",
+    "Source grounding and seam garment changes remain as qualified by the pinned source review"
+  ],
+  "source_and_glb_files_modified": false
+}

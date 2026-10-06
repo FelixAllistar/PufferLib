@@ -1,0 +1,1637 @@
+{
+  "schema_version": "1.0",
+  "batch": "02_household_clutter",
+  "title": "Quiet Evidence: Household Clutter",
+  "license": "CC0-1.0",
+  "seed": 260204,
+  "asset_count": 28,
+  "units": "metres",
+  "source_basis": "right-handed +Z up, front -Y",
+  "export_basis": "right-handed +Y up, front +Z",
+  "basis_mapping": "Blender (x,y,z) -> glTF (x,z,-y); do not transform loaded vertices again",
+  "pivot": "XY AABB centre, minimum surface Z=0",
+  "materials": "Original generated 256x256 base-colour PNGs packed in blend and embedded in GLB, core metallic-roughness PBR; no shader noise or external texture files required at runtime",
+  "runtime_binding": "Asset artwork only. No PufferLib loader, damage bindings, physics bodies, navigation changes or in-game performance validation included.",
+  "totals": {
+    "triangles": 73640,
+    "glb_bytes": 12539676
+  },
+  "assets": [
+    {
+      "asset_id": "enamel_kettle",
+      "category": "kitchen",
+      "description": "Worn enamel kettle with lid, arched handle and open spout",
+      "file": "modules/enamel_kettle.glb",
+      "dimensions_m_blender_xyz": [
+        0.293195,
+        0.188,
+        0.258383
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.293195,
+        0.258383,
+        0.188
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.14659728109836578,
+          -0.09399999678134918,
+          0.0
+        ],
+        "max": [
+          0.14659728109836578,
+          0.09399999678134918,
+          0.2583826184272766
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.14659728109836578,
+          0.0,
+          -0.09399999678134918
+        ],
+        "max": [
+          0.14659728109836578,
+          0.2583826184272766,
+          0.09399999678134918
+        ]
+      },
+      "triangles_source": 2672,
+      "vertices_source": 1353,
+      "materials": [
+        "HC02_cream",
+        "HC02_aged_steel",
+        "HC02_olive",
+        "HC02_bakelite",
+        "HC02_rust"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 512580,
+      "sha256": "686cf62d83281a09790b5ee619fa51f3f7279420fa18ded404f4af72587b6899",
+      "triangles_exported": 2672,
+      "mesh_count": 1,
+      "material_count": 5,
+      "embedded_image_count": 5,
+      "external_uris": []
+    },
+    {
+      "asset_id": "chipped_coffee_mug",
+      "category": "kitchen",
+      "description": "Open ceramic mug with handle and coffee residue",
+      "file": "modules/chipped_coffee_mug.glb",
+      "dimensions_m_blender_xyz": [
+        0.110991,
+        0.0768,
+        0.0925
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.110991,
+        0.0925,
+        0.0768
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.05549529194831848,
+          -0.03840000182390213,
+          0.0
+        ],
+        "max": [
+          0.05549529194831848,
+          0.03840000182390213,
+          0.0925000011920929
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.05549529194831848,
+          0.0,
+          -0.03840000182390213
+        ],
+        "max": [
+          0.05549529194831848,
+          0.0925000011920929,
+          0.03840000182390213
+        ]
+      },
+      "triangles_source": 2149,
+      "vertices_source": 1115,
+      "materials": [
+        "HC02_ceramic",
+        "HC02_olive",
+        "HC02_dark",
+        "HC02_dust"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 260164,
+      "sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0",
+      "triangles_exported": 2149,
+      "mesh_count": 1,
+      "material_count": 4,
+      "embedded_image_count": 2,
+      "external_uris": []
+    },
+    {
+      "asset_id": "stacked_dinner_plates",
+      "category": "kitchen",
+      "description": "Three nested ceramic plates with blue rim bands",
+      "file": "modules/stacked_dinner_plates.glb",
+      "dimensions_m_blender_xyz": [
+        0.26,
+        0.26,
+        0.058386
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.26,
+        0.058386,
+        0.26
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.12999999523162842,
+          -0.12999999523162842,
+          0.0
+        ],
+        "max": [
+          0.12999999523162842,
+          0.12999999523162842,
+          0.058385640382766724
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.12999999523162842,
+          0.0,
+          -0.12999999523162842
+        ],
+        "max": [
+          0.12999999523162842,
+          0.058385640382766724,
+          0.12999999523162842
+        ]
+      },
+      "triangles_source": 3600,
+      "vertices_source": 1830,
+      "materials": [
+        "HC02_ceramic",
+        "HC02_blue",
+        "HC02_dust"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 308140,
+      "sha256": "e2f3a922846a5f4ee47e0955ae47d1a8c7b01ec500088136687b4483c3434527",
+      "triangles_exported": 3600,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 2,
+      "external_uris": []
+    },
+    {
+      "asset_id": "seasoned_frying_pan",
+      "category": "kitchen",
+      "description": "Shallow scuffed steel pan with riveted bakelite handle",
+      "file": "modules/seasoned_frying_pan.glb",
+      "dimensions_m_blender_xyz": [
+        0.465105,
+        0.28,
+        0.051562
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.465105,
+        0.051562,
+        0.28
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.23255249857902527,
+          -0.14000000059604645,
+          0.0
+        ],
+        "max": [
+          0.23255249857902527,
+          0.14000000059604645,
+          0.051561735570430756
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.23255249857902527,
+          0.0,
+          -0.14000000059604645
+        ],
+        "max": [
+          0.23255249857902527,
+          0.051561735570430756,
+          0.14000000059604645
+        ]
+      },
+      "triangles_source": 2188,
+      "vertices_source": 1174,
+      "materials": [
+        "HC02_aged_steel",
+        "HC02_steel",
+        "HC02_bakelite",
+        "HC02_black"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 371884,
+      "sha256": "422e16df62abcb66a370640d5ff4e8fe8eb62446c5dd2b90c5df9b4851a445a9",
+      "triangles_exported": 2188,
+      "mesh_count": 1,
+      "material_count": 4,
+      "embedded_image_count": 4,
+      "external_uris": []
+    },
+    {
+      "asset_id": "lidded_saucepan",
+      "category": "kitchen",
+      "description": "Steel saucepan with removable-looking lid and two grips",
+      "file": "modules/lidded_saucepan.glb",
+      "dimensions_m_blender_xyz": [
+        0.393645,
+        0.208,
+        0.1585
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.393645,
+        0.1585,
+        0.208
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.19682246446609497,
+          -0.10400000214576721,
+          0.0
+        ],
+        "max": [
+          0.19682246446609497,
+          0.10400000214576721,
+          0.15850000083446503
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.19682246446609497,
+          0.0,
+          -0.10400000214576721
+        ],
+        "max": [
+          0.19682246446609497,
+          0.15850000083446503,
+          0.10400000214576721
+        ]
+      },
+      "triangles_source": 2228,
+      "vertices_source": 1126,
+      "materials": [
+        "HC02_steel",
+        "HC02_aged_steel",
+        "HC02_bakelite"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 313256,
+      "sha256": "5e2955ee12cf9341eb5fd3494c42db30dab1e262fe572365850f480e53e5d6ed",
+      "triangles_exported": 2228,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "two_slot_toaster",
+      "category": "kitchen",
+      "description": "Rounded cream toaster with two open-looking slots, lever and plug",
+      "file": "modules/two_slot_toaster.glb",
+      "dimensions_m_blender_xyz": [
+        0.333037,
+        0.150431,
+        0.19
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.333037,
+        0.19,
+        0.150431
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.16651856899261475,
+          -0.07521551847457886,
+          0.0
+        ],
+        "max": [
+          0.16651856899261475,
+          0.07521551847457886,
+          0.1899999976158142
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.16651856899261475,
+          0.0,
+          -0.07521551847457886
+        ],
+        "max": [
+          0.16651856899261475,
+          0.1899999976158142,
+          0.07521551847457886
+        ]
+      },
+      "triangles_source": 1502,
+      "vertices_source": 813,
+      "materials": [
+        "HC02_bakelite",
+        "HC02_cream",
+        "HC02_black",
+        "HC02_steel",
+        "HC02_dark",
+        "HC02_aged_steel",
+        "HC02_rubber",
+        "HC02_brass"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 607928,
+      "sha256": "ae48f18693dd7c1a50bd0b7b86f0b2aaae2aaa29c2300e8cfd21c2da4123f10d",
+      "triangles_exported": 1502,
+      "mesh_count": 1,
+      "material_count": 8,
+      "embedded_image_count": 7,
+      "external_uris": []
+    },
+    {
+      "asset_id": "perforated_box_grater",
+      "category": "kitchen",
+      "description": "Tapered four-panel grater with actual mesh holes",
+      "file": "modules/perforated_box_grater.glb",
+      "dimensions_m_blender_xyz": [
+        0.1236,
+        0.0948,
+        0.223711
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.1236,
+        0.223711,
+        0.0948
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.061799999326467514,
+          -0.04740000143647194,
+          0.0
+        ],
+        "max": [
+          0.061799999326467514,
+          0.04740000143647194,
+          0.22371140122413635
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.061799999326467514,
+          0.0,
+          -0.04740000143647194
+        ],
+        "max": [
+          0.061799999326467514,
+          0.22371140122413635,
+          0.04740000143647194
+        ]
+      },
+      "triangles_source": 2892,
+      "vertices_source": 1820,
+      "materials": [
+        "HC02_aged_steel",
+        "HC02_steel",
+        "HC02_bakelite"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 355052,
+      "sha256": "18f6401e33fa3f0a4828de9513ddeed4c52fce80f715d5b606707fdaaec82daf",
+      "triangles_exported": 2892,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "scarred_cutting_board",
+      "category": "kitchen",
+      "description": "Wooden board with handle, seams and knife scoring",
+      "file": "modules/scarred_cutting_board.glb",
+      "dimensions_m_blender_xyz": [
+        0.235,
+        0.415,
+        0.021098
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.235,
+        0.021098,
+        0.415
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.11749999970197678,
+          -0.20750001072883606,
+          0.0
+        ],
+        "max": [
+          0.11749999970197678,
+          0.20750001072883606,
+          0.021098077297210693
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.11749999970197678,
+          0.0,
+          -0.20750001072883606
+        ],
+        "max": [
+          0.11749999970197678,
+          0.021098077297210693,
+          0.20750001072883606
+        ]
+      },
+      "triangles_source": 1308,
+      "vertices_source": 760,
+      "materials": [
+        "HC02_wood_light",
+        "HC02_wood"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 236688,
+      "sha256": "d1dbd811b2488b1996b840b821f1796d3c8311aee7a25e865f6e14d3bb3b592b",
+      "triangles_exported": 1308,
+      "mesh_count": 1,
+      "material_count": 2,
+      "embedded_image_count": 2,
+      "external_uris": []
+    },
+    {
+      "asset_id": "utensil_crock",
+      "category": "kitchen",
+      "description": "Open green crock, wooden spoon, spatula and wire whisk",
+      "file": "modules/utensil_crock.glb",
+      "dimensions_m_blender_xyz": [
+        0.171131,
+        0.122,
+        0.277319
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.171131,
+        0.277319,
+        0.122
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.08556538075208664,
+          -0.061000000685453415,
+          0.0
+        ],
+        "max": [
+          0.08556538075208664,
+          0.061000000685453415,
+          0.27731919288635254
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.08556538075208664,
+          0.0,
+          -0.061000000685453415
+        ],
+        "max": [
+          0.08556538075208664,
+          0.27731919288635254,
+          0.061000000685453415
+        ]
+      },
+      "triangles_source": 3220,
+      "vertices_source": 1622,
+      "materials": [
+        "HC02_olive",
+        "HC02_ceramic",
+        "HC02_wood_light",
+        "HC02_wood",
+        "HC02_steel"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 569564,
+      "sha256": "7fb2b58132a21370fb3b07cf1f1b6ff7918bcdcb36458c183528cc8e9326ba59",
+      "triangles_exported": 3220,
+      "mesh_count": 1,
+      "material_count": 5,
+      "embedded_image_count": 5,
+      "external_uris": []
+    },
+    {
+      "asset_id": "steel_colander",
+      "category": "kitchen",
+      "description": "Perforated rounded bowl with foot and loop handles",
+      "file": "modules/steel_colander.glb",
+      "dimensions_m_blender_xyz": [
+        0.3104,
+        0.237201,
+        0.080231
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.3104,
+        0.080231,
+        0.237201
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.15519998967647552,
+          -0.11860039085149765,
+          0.0
+        ],
+        "max": [
+          0.15519998967647552,
+          0.11860039085149765,
+          0.08023080229759216
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.15519998967647552,
+          0.0,
+          -0.11860039085149765
+        ],
+        "max": [
+          0.15519998967647552,
+          0.08023080229759216,
+          0.11860039085149765
+        ]
+      },
+      "triangles_source": 4568,
+      "vertices_source": 2930,
+      "materials": [
+        "HC02_steel",
+        "HC02_aged_steel"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 319860,
+      "sha256": "6f8d67ec188d8d9d94bd6aefa354640f3d3c339ce55c0b591421d76496115cb7",
+      "triangles_exported": 4568,
+      "mesh_count": 1,
+      "material_count": 2,
+      "embedded_image_count": 2,
+      "external_uris": []
+    },
+    {
+      "asset_id": "soap_dish_and_bar",
+      "category": "bathroom",
+      "description": "Ridged ceramic drain dish and softened soap bar",
+      "file": "modules/soap_dish_and_bar.glb",
+      "dimensions_m_blender_xyz": [
+        0.13,
+        0.092,
+        0.048
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.13,
+        0.048,
+        0.092
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.06499999761581421,
+          -0.04600000008940697,
+          0.0
+        ],
+        "max": [
+          0.06499999761581421,
+          0.04600000008940697,
+          0.04800000041723251
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.06499999761581421,
+          0.0,
+          -0.04600000008940697
+        ],
+        "max": [
+          0.06499999761581421,
+          0.04800000041723251,
+          0.04600000008940697
+        ]
+      },
+      "triangles_source": 1618,
+      "vertices_source": 872,
+      "materials": [
+        "HC02_ceramic",
+        "HC02_soap",
+        "HC02_cream"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 361772,
+      "sha256": "914948dbdbbc476dc6d0d0e918b6f7dd916e9b09742d98ab28683dbf2b4f3dc8",
+      "triangles_exported": 1618,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "pump_soap_dispenser",
+      "category": "bathroom",
+      "description": "Teal dispenser with label, pump stem and nozzle",
+      "file": "modules/pump_soap_dispenser.glb",
+      "dimensions_m_blender_xyz": [
+        0.092,
+        0.0931,
+        0.215
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.092,
+        0.215,
+        0.0931
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.04600000008940697,
+          -0.046549998223781586,
+          0.0
+        ],
+        "max": [
+          0.04600000008940697,
+          0.046549998223781586,
+          0.2150000035762787
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.04600000008940697,
+          0.0,
+          -0.046549998223781586
+        ],
+        "max": [
+          0.04600000008940697,
+          0.2150000035762787,
+          0.046549998223781586
+        ]
+      },
+      "triangles_source": 1026,
+      "vertices_source": 616,
+      "materials": [
+        "HC02_teal",
+        "HC02_black",
+        "HC02_steel",
+        "HC02_cream",
+        "HC02_paper",
+        "HC02_olive",
+        "HC02_print"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 553340,
+      "sha256": "76bdf90047759f158503b0f30ee373dcd014a00285e63b030da97c407be7721b",
+      "triangles_exported": 1026,
+      "mesh_count": 1,
+      "material_count": 7,
+      "embedded_image_count": 6,
+      "external_uris": []
+    },
+    {
+      "asset_id": "squeezed_toothpaste",
+      "category": "bathroom",
+      "description": "Dented flattened toothpaste tube, crimp and ridged cap",
+      "file": "modules/squeezed_toothpaste.glb",
+      "dimensions_m_blender_xyz": [
+        0.1855,
+        0.06,
+        0.031666
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.1855,
+        0.031666,
+        0.06
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.09274999797344208,
+          -0.029999999329447746,
+          0.0
+        ],
+        "max": [
+          0.09274999797344208,
+          0.029999999329447746,
+          0.03166573867201805
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.09274999797344208,
+          0.0,
+          -0.029999999329447746
+        ],
+        "max": [
+          0.09274999797344208,
+          0.03166573867201805,
+          0.029999999329447746
+        ]
+      },
+      "triangles_source": 822,
+      "vertices_source": 533,
+      "materials": [
+        "HC02_paper_clean",
+        "HC02_steel",
+        "HC02_cream",
+        "HC02_blue",
+        "HC02_olive"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 508244,
+      "sha256": "3c2a68f8d317fe96a945d6b11276f8b62c0315635db9e6c309a554f974ed69d3",
+      "triangles_exported": 822,
+      "mesh_count": 1,
+      "material_count": 5,
+      "embedded_image_count": 5,
+      "external_uris": []
+    },
+    {
+      "asset_id": "worn_toothbrush",
+      "category": "bathroom",
+      "description": "Two-tone toothbrush with modeled bristle tufts",
+      "file": "modules/worn_toothbrush.glb",
+      "dimensions_m_blender_xyz": [
+        0.187238,
+        0.014,
+        0.025309
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.187238,
+        0.025309,
+        0.014
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.09361875802278519,
+          -0.007000000216066837,
+          0.0
+        ],
+        "max": [
+          0.09361875802278519,
+          0.007000000216066837,
+          0.02530888468027115
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.09361875802278519,
+          0.0,
+          -0.007000000216066837
+        ],
+        "max": [
+          0.09361875802278519,
+          0.02530888468027115,
+          0.007000000216066837
+        ]
+      },
+      "triangles_source": 1188,
+      "vertices_source": 642,
+      "materials": [
+        "HC02_teal",
+        "HC02_cream",
+        "HC02_paper_clean"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 332780,
+      "sha256": "9c84934690745f48b2b6c30eaa7a7c38fa0833e6f09d1e8073f70ead5f0005a3",
+      "triangles_exported": 1188,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "unrolling_toilet_paper",
+      "category": "bathroom",
+      "description": "Open cardboard roll and bent paper tail",
+      "file": "modules/unrolling_toilet_paper.glb",
+      "dimensions_m_blender_xyz": [
+        0.265,
+        0.09435,
+        0.124
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.265,
+        0.124,
+        0.09435
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.13249999284744263,
+          -0.04717499762773514,
+          0.0
+        ],
+        "max": [
+          0.13249999284744263,
+          0.04717499762773514,
+          0.12399999797344208
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.13249999284744263,
+          0.0,
+          -0.04717499762773514
+        ],
+        "max": [
+          0.13249999284744263,
+          0.12399999797344208,
+          0.04717499762773514
+        ]
+      },
+      "triangles_source": 6972,
+      "vertices_source": 3506,
+      "materials": [
+        "HC02_paper_clean",
+        "HC02_wood_light",
+        "HC02_paper"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 482164,
+      "sha256": "4b6300b4779436764e456d1fa053e26ff628ea6cfcb6a3ba61ad0b1992adbea3",
+      "triangles_exported": 6972,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "tissue_carton",
+      "category": "bathroom",
+      "description": "Printed blue carton with opening and folded tissue",
+      "file": "modules/tissue_carton.glb",
+      "dimensions_m_blender_xyz": [
+        0.22,
+        0.111244,
+        0.172504
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.22,
+        0.172504,
+        0.111244
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.10999999940395355,
+          -0.055622000247240067,
+          0.0
+        ],
+        "max": [
+          0.10999999940395355,
+          0.055622000247240067,
+          0.1725039929151535
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.10999999940395355,
+          0.0,
+          -0.055622000247240067
+        ],
+        "max": [
+          0.10999999940395355,
+          0.1725039929151535,
+          0.055622000247240067
+        ]
+      },
+      "triangles_source": 620,
+      "vertices_source": 519,
+      "materials": [
+        "HC02_blue",
+        "HC02_dark",
+        "HC02_paper",
+        "HC02_paper_clean"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 321044,
+      "sha256": "57bb7b3334482881b2f2fbe536c5ea65ac7bd30af28d3e5d59ae53fc6aad4751",
+      "triangles_exported": 620,
+      "mesh_count": 1,
+      "material_count": 4,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "folded_hand_towel",
+      "category": "bathroom",
+      "description": "Wrinkled folded towel with border stitching and frayed edge",
+      "file": "modules/folded_hand_towel.glb",
+      "dimensions_m_blender_xyz": [
+        0.299901,
+        0.192982,
+        0.04882
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.299901,
+        0.04882,
+        0.192982
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.14995057880878448,
+          -0.09649112820625305,
+          0.0
+        ],
+        "max": [
+          0.1499505639076233,
+          0.09649112820625305,
+          0.048819608986377716
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.14995057880878448,
+          0.0,
+          -0.09649112820625305
+        ],
+        "max": [
+          0.1499505639076233,
+          0.048819608986377716,
+          0.09649112820625305
+        ]
+      },
+      "triangles_source": 2456,
+      "vertices_source": 1286,
+      "materials": [
+        "HC02_fabric",
+        "HC02_olive",
+        "HC02_cream"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 358208,
+      "sha256": "f95b3ccdd98ea1805c5a1334222138d8bd3c1166a523e187abefa46a51eac754",
+      "triangles_exported": 2456,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "oval_hairbrush",
+      "category": "bathroom",
+      "description": "Bakelite brush with cushion and individual bristles",
+      "file": "modules/oval_hairbrush.glb",
+      "dimensions_m_blender_xyz": [
+        0.1875,
+        0.058,
+        0.0455
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.1875,
+        0.0455,
+        0.058
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.09375,
+          -0.028999999165534973,
+          0.0
+        ],
+        "max": [
+          0.09375,
+          0.028999999165534973,
+          0.045499999076128006
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.09375,
+          0.0,
+          -0.028999999165534973
+        ],
+        "max": [
+          0.09375,
+          0.045499999076128006,
+          0.028999999165534973
+        ]
+      },
+      "triangles_source": 3844,
+      "vertices_source": 2112,
+      "materials": [
+        "HC02_bakelite",
+        "HC02_rubber",
+        "HC02_black",
+        "HC02_cream"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 411120,
+      "sha256": "1c93cf58397367a3c70623c6fef17d77e72f365ec0085c369bdfebe823ddcea8",
+      "triangles_exported": 3844,
+      "mesh_count": 1,
+      "material_count": 4,
+      "embedded_image_count": 4,
+      "external_uris": []
+    },
+    {
+      "asset_id": "rotary_telephone",
+      "category": "desk_personal",
+      "description": "Brown rotary telephone with separate dial, handset and coiled cord",
+      "file": "modules/rotary_telephone.glb",
+      "dimensions_m_blender_xyz": [
+        0.329556,
+        0.205,
+        0.196084
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.329556,
+        0.196084,
+        0.205
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.16477791965007782,
+          -0.10249999910593033,
+          0.0
+        ],
+        "max": [
+          0.16477791965007782,
+          0.10249999910593033,
+          0.1960841566324234
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.16477791965007782,
+          0.0,
+          -0.10249999910593033
+        ],
+        "max": [
+          0.16477791965007782,
+          0.1960841566324234,
+          0.10249999910593033
+        ]
+      },
+      "triangles_source": 8785,
+      "vertices_source": 4580,
+      "materials": [
+        "HC02_bakelite",
+        "HC02_aged_steel",
+        "HC02_brass",
+        "HC02_paper",
+        "HC02_print",
+        "HC02_black",
+        "HC02_steel",
+        "HC02_dark",
+        "HC02_rubber"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 866356,
+      "sha256": "429110b24d329af32deaa8f531d3563507eee32bc2d45b1e7dcbdd929b39d6c1",
+      "triangles_exported": 8785,
+      "mesh_count": 1,
+      "material_count": 9,
+      "embedded_image_count": 7,
+      "external_uris": []
+    },
+    {
+      "asset_id": "twin_bell_alarm_clock",
+      "category": "desk_personal",
+      "description": "Green alarm clock with numbered face, bells, striker and feet",
+      "file": "modules/twin_bell_alarm_clock.glb",
+      "dimensions_m_blender_xyz": [
+        0.160464,
+        0.071,
+        0.202121
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.160464,
+        0.202121,
+        0.071
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.08023183047771454,
+          -0.03550000116229057,
+          0.0
+        ],
+        "max": [
+          0.08023183047771454,
+          0.03550000116229057,
+          0.20212070643901825
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.08023183047771454,
+          0.0,
+          -0.03550000116229057
+        ],
+        "max": [
+          0.08023183047771454,
+          0.20212070643901825,
+          0.03550000116229057
+        ]
+      },
+      "triangles_source": 2101,
+      "vertices_source": 1196,
+      "materials": [
+        "HC02_olive",
+        "HC02_ceramic",
+        "HC02_brass",
+        "HC02_print",
+        "HC02_aged_steel",
+        "HC02_steel"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 538516,
+      "sha256": "332c0ae369197861fb11a6f464a293217922e526d3b42d8e79e10db7f3b0cdbf",
+      "triangles_exported": 2101,
+      "mesh_count": 1,
+      "material_count": 6,
+      "embedded_image_count": 5,
+      "external_uris": []
+    },
+    {
+      "asset_id": "caged_desk_fan",
+      "category": "desk_personal",
+      "description": "Four-blade fan in modeled wire cage on painted stand",
+      "file": "modules/caged_desk_fan.glb",
+      "dimensions_m_blender_xyz": [
+        0.278725,
+        0.201,
+        0.346472
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.278725,
+        0.346472,
+        0.201
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.13936260342597961,
+          -0.10050000250339508,
+          0.0
+        ],
+        "max": [
+          0.13936260342597961,
+          0.10050000250339508,
+          0.34647223353385925
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.13936260342597961,
+          0.0,
+          -0.10050000250339508
+        ],
+        "max": [
+          0.13936260342597961,
+          0.34647223353385925,
+          0.10050000250339508
+        ]
+      },
+      "triangles_source": 7409,
+      "vertices_source": 3761,
+      "materials": [
+        "HC02_olive",
+        "HC02_cream",
+        "HC02_aged_steel",
+        "HC02_steel",
+        "HC02_bakelite",
+        "HC02_rubber"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 740644,
+      "sha256": "fdebb829ddf3fd114e57435041b54f37fd98c2226bff39f5fe9b4e7399615de4",
+      "triangles_exported": 7409,
+      "mesh_count": 1,
+      "material_count": 6,
+      "embedded_image_count": 6,
+      "external_uris": []
+    },
+    {
+      "asset_id": "portable_am_fm_radio",
+      "category": "desk_personal",
+      "description": "Wood-bodied radio with grille, dial, knobs, handle and aerial",
+      "file": "modules/portable_am_fm_radio.glb",
+      "dimensions_m_blender_xyz": [
+        0.2695,
+        0.096,
+        0.3725
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.2695,
+        0.3725,
+        0.096
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.13475000858306885,
+          -0.04800000041723251,
+          0.0
+        ],
+        "max": [
+          0.13475000858306885,
+          0.04800000041723251,
+          0.3725000023841858
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.13475000858306885,
+          0.0,
+          -0.04800000041723251
+        ],
+        "max": [
+          0.13475000858306885,
+          0.3725000023841858,
+          0.04800000041723251
+        ]
+      },
+      "triangles_source": 1745,
+      "vertices_source": 1019,
+      "materials": [
+        "HC02_wood",
+        "HC02_cream",
+        "HC02_black",
+        "HC02_aged_steel",
+        "HC02_screen",
+        "HC02_paper",
+        "HC02_red",
+        "HC02_bakelite",
+        "HC02_brass",
+        "HC02_print",
+        "HC02_steel"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 836352,
+      "sha256": "e579132d53ba684562a57547f1f59c2c59de470debb03848bb2d67693d208160",
+      "triangles_exported": 1745,
+      "mesh_count": 1,
+      "material_count": 11,
+      "embedded_image_count": 9,
+      "external_uris": []
+    },
+    {
+      "asset_id": "television_remote",
+      "category": "desk_personal",
+      "description": "Worn remote with screen, buttons and directional ring",
+      "file": "modules/television_remote.glb",
+      "dimensions_m_blender_xyz": [
+        0.047,
+        0.178,
+        0.0235
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.047,
+        0.0235,
+        0.178
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.023499999195337296,
+          -0.08900000154972076,
+          0.0
+        ],
+        "max": [
+          0.023499999195337296,
+          0.08900000154972076,
+          0.023499999195337296
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.023499999195337296,
+          0.0,
+          -0.08900000154972076
+        ],
+        "max": [
+          0.023499999195337296,
+          0.023499999195337296,
+          0.08900000154972076
+        ]
+      },
+      "triangles_source": 1674,
+      "vertices_source": 889,
+      "materials": [
+        "HC02_black",
+        "HC02_screen",
+        "HC02_red",
+        "HC02_cream",
+        "HC02_rubber",
+        "HC02_aged_steel",
+        "HC02_paper"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 547252,
+      "sha256": "76f7219967cd28f9895d3e79bd265bc4e49f4e0c58c00d54e3eea20fb7eb0f60",
+      "triangles_exported": 1674,
+      "mesh_count": 1,
+      "material_count": 7,
+      "embedded_image_count": 6,
+      "external_uris": []
+    },
+    {
+      "asset_id": "red_desktop_stapler",
+      "category": "desk_personal",
+      "description": "Metal stapler with red top, hinge and anvil",
+      "file": "modules/red_desktop_stapler.glb",
+      "dimensions_m_blender_xyz": [
+        0.042,
+        0.13103,
+        0.064502
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.042,
+        0.064502,
+        0.13103
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.020999997854232788,
+          -0.06551486998796463,
+          0.0
+        ],
+        "max": [
+          0.020999997854232788,
+          0.06551486998796463,
+          0.06450238823890686
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.020999997854232788,
+          0.0,
+          -0.06551486998796463
+        ],
+        "max": [
+          0.020999997854232788,
+          0.06450238823890686,
+          0.06551486998796463
+        ]
+      },
+      "triangles_source": 372,
+      "vertices_source": 202,
+      "materials": [
+        "HC02_bakelite",
+        "HC02_steel",
+        "HC02_aged_steel",
+        "HC02_red",
+        "HC02_dark"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 348268,
+      "sha256": "7c7554d6b9b0a26224a7c2d82db2b254eb6c75663e1e50560eed19356209d4a9",
+      "triangles_exported": 372,
+      "mesh_count": 1,
+      "material_count": 5,
+      "embedded_image_count": 4,
+      "external_uris": []
+    },
+    {
+      "asset_id": "open_sewing_scissors",
+      "category": "desk_personal",
+      "description": "Open steel scissors with bakelite finger loops",
+      "file": "modules/open_sewing_scissors.glb",
+      "dimensions_m_blender_xyz": [
+        0.060253,
+        0.206338,
+        0.01255
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.060253,
+        0.01255,
+        0.206338
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.03012663498520851,
+          -0.10316886007785797,
+          0.0
+        ],
+        "max": [
+          0.03012663498520851,
+          0.10316886007785797,
+          0.012550000101327896
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.03012663498520851,
+          0.0,
+          -0.10316886007785797
+        ],
+        "max": [
+          0.03012663498520851,
+          0.012550000101327896,
+          0.10316886007785797
+        ]
+      },
+      "triangles_source": 1220,
+      "vertices_source": 622,
+      "materials": [
+        "HC02_bakelite",
+        "HC02_steel",
+        "HC02_brass",
+        "HC02_dark"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 287720,
+      "sha256": "c194f47e829fce5449d5ddf319078c2dd0d693ebed507eaa2e58b8716bb90fe1",
+      "triangles_exported": 1220,
+      "mesh_count": 1,
+      "material_count": 4,
+      "embedded_image_count": 3,
+      "external_uris": []
+    },
+    {
+      "asset_id": "brass_eyeglasses",
+      "category": "desk_personal",
+      "description": "Oval brass glasses with bridge, lenses and folded-height arms",
+      "file": "modules/brass_eyeglasses.glb",
+      "dimensions_m_blender_xyz": [
+        0.120767,
+        0.124099,
+        0.012711
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.120767,
+        0.012711,
+        0.124099
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.06038356199860573,
+          -0.062049537897109985,
+          0.0
+        ],
+        "max": [
+          0.06038356199860573,
+          0.062049537897109985,
+          0.012711391784250736
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.06038356199860573,
+          0.0,
+          -0.062049537897109985
+        ],
+        "max": [
+          0.06038356199860573,
+          0.012711391784250736,
+          0.062049537897109985
+        ]
+      },
+      "triangles_source": 1400,
+      "vertices_source": 714,
+      "materials": [
+        "HC02_brass",
+        "HC02_glass",
+        "HC02_bakelite"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 203648,
+      "sha256": "67e9bdd4fa495cbe13c01d36422f17e424d7d7a57c8df1304ce022e9f0e57068",
+      "triangles_exported": 1400,
+      "mesh_count": 1,
+      "material_count": 3,
+      "embedded_image_count": 2,
+      "external_uris": []
+    },
+    {
+      "asset_id": "house_keys_and_tag",
+      "category": "desk_personal",
+      "description": "Three toothed keys on split-looking ring with numbered tag",
+      "file": "modules/house_keys_and_tag.glb",
+      "dimensions_m_blender_xyz": [
+        0.113414,
+        0.084555,
+        0.0088
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.113414,
+        0.0088,
+        0.084555
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.056706808507442474,
+          -0.042277440428733826,
+          0.0
+        ],
+        "max": [
+          0.056706808507442474,
+          0.042277440428733826,
+          0.008799999952316284
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.056706808507442474,
+          0.0,
+          -0.042277440428733826
+        ],
+        "max": [
+          0.056706808507442474,
+          0.008799999952316284,
+          0.042277440428733826
+        ]
+      },
+      "triangles_source": 2633,
+      "vertices_source": 1375,
+      "materials": [
+        "HC02_steel",
+        "HC02_brass",
+        "HC02_aged_steel",
+        "HC02_teal",
+        "HC02_paper"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 561232,
+      "sha256": "3cce14d0c2ccd95fa517bd26a93352d814cef8889145c93e1364f56d9b296c82",
+      "triangles_exported": 2633,
+      "mesh_count": 1,
+      "material_count": 5,
+      "embedded_image_count": 5,
+      "external_uris": []
+    },
+    {
+      "asset_id": "creased_leather_wallet",
+      "category": "desk_personal",
+      "description": "Leather bifold with card edge, scuffs and stitched border",
+      "file": "modules/creased_leather_wallet.glb",
+      "dimensions_m_blender_xyz": [
+        0.114,
+        0.098045,
+        0.03628
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.114,
+        0.03628,
+        0.098045
+      ],
+      "aabb_blender_z_up": {
+        "min": [
+          -0.05700000002980232,
+          -0.04902263358235359,
+          0.0
+        ],
+        "max": [
+          0.05700000002980232,
+          0.04902263358235359,
+          0.03627999871969223
+        ]
+      },
+      "aabb_gltf_y_up": {
+        "min": [
+          -0.05700000002980232,
+          0.0,
+          -0.04902263358235359
+        ],
+        "max": [
+          0.05700000002980232,
+          0.03627999871969223,
+          0.04902263358235359
+        ]
+      },
+      "triangles_source": 1428,
+      "vertices_source": 920,
+      "materials": [
+        "HC02_leather",
+        "HC02_dark",
+        "HC02_paper",
+        "HC02_wood_light",
+        "HC02_wood"
+      ],
+      "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+      "render_only": true,
+      "bytes": 425900,
+      "sha256": "adb0116489a06e5892f10a9178695282645cd7c16cafa4cbcd75232dd2b1b546",
+      "triangles_exported": 1428,
+      "mesh_count": 1,
+      "material_count": 5,
+      "embedded_image_count": 4,
+      "external_uris": []
+    }
+  ]
+}

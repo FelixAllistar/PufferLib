@@ -1,0 +1,31 @@
+{
+  "status": "QUALIFIED_MOTION_AND_C1_CONTINUITY_CANDIDATE_WITH_SUBSTANTIVE_STORED_ACCESSORY_COLLISION",
+  "full_clearance_approved": false,
+  "native_curves_changed": 683,
+  "source_keys": 168700,
+  "unchanged_shared_geometry": true,
+  "stored_spare_visible": true,
+  "sleeve_binding": "mixamorig:Hips",
+  "accessory_collision": {
+    "maximum_sampled_inward_distance_into_closed_thigh_hardware_mm": 18.392138183116913,
+    "frame": 3,
+    "time_s": 0.1,
+    "body_component": 17904,
+    "maximum_sampled_body_inward_distance_into_closed_sleeve_wall_mm": 3.9998574910146134,
+    "sleeve_body_triangle_pair_range": [
+      28,
+      148
+    ],
+    "static_belt_mount_pairs": 28,
+    "classification": "New dynamic stored-accessory fit failure relative to planted static reference, inherited unchanged from pre-seam native carry. Source pose and shared mesh retained."
+  },
+  "remaining_limits": [
+    "Stored sleeve intersects closed raised-thigh hardware, sampled inward distance18.392mm at0.1s",
+    "Visible spare has open-shell pants crossings; no solid inward depth inferred",
+    "Native own-sleeve/brace/link and upper-hip garment crossings remain",
+    "No runtime, ADS, camera, movement clearance or artistic approval"
+  ],
+  "native_source_seam_result": "SOURCE_ANALYTIC_FK.json; actual binary results separate",
+  "runtime_tested": false,
+  "speed_retimed": false
+}

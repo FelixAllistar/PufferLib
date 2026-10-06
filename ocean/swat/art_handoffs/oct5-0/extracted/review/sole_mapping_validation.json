@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "glb_sha256": "4fe97ec1997bb4799440216ddc3a74d858154c0d8e51bf863e2d86082b1a1996",
+  "rows": [
+    {
+      "side": "left",
+      "native_support_vertices": 18,
+      "actual_gltf_matches": 18,
+      "max_bind_position_error_m": 0.0,
+      "max_normalized_weight_error": 0.0,
+      "max_phase_zero_error_vs_evaluated_native_m": 1.942474449073837e-07,
+      "centroid_metadata_error_m": 1.5659244716662778e-07
+    },
+    {
+      "side": "right",
+      "native_support_vertices": 4,
+      "actual_gltf_matches": 4,
+      "max_bind_position_error_m": 0.0,
+      "max_normalized_weight_error": 0.0,
+      "max_phase_zero_error_vs_evaluated_native_m": 5.456352430708232e-08,
+      "centroid_metadata_error_m": 5.537432435522139e-08
+    }
+  ],
+  "scope": "Support vertex native-index to exported-primitive mapping cross-checked against captured source bind positions, all weights and actual evaluated phase-zero vertices"
+}

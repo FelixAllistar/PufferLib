@@ -1,0 +1,3846 @@
+{
+  "source_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "source_curve_count": 700,
+  "source_key_count": 168700,
+  "source_interpolation_counts": {
+    "BEZIER": 36844,
+    "LINEAR": 131856
+  },
+  "output": "walk_backward_unit.glb",
+  "bytes": 5847176,
+  "sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "policy": "unit",
+  "source_raw_quaternion_key_norm_max_deviation": 7.918140632057202e-08,
+  "source_fps": 30,
+  "duration_s": 1,
+  "channels": [
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 600,
+        "BEZIER": 120
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 60,
+        "LINEAR": 660
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 120,
+        "LINEAR": 600
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 120,
+        "LINEAR": 600
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 660,
+        "BEZIER": 60
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 120,
+        "LINEAR": 600
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 120,
+        "LINEAR": 600
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 600,
+        "BEZIER": 120
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 600,
+        "BEZIER": 120
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 780,
+        "BEZIER": 180
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 0.0
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 240,
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "BEZIER": 180,
+        "LINEAR": 540
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "translation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "rotation",
+      "native_component_key_counts": [
+        241,
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 960
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": 5.960464477539063e-08
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "scale",
+      "native_component_key_counts": [
+        241,
+        241,
+        241
+      ],
+      "gltf_key_count": 241,
+      "native_segment_modes": {
+        "LINEAR": 720
+      },
+      "export_interpolation": "CUBICSPLINE",
+      "max_time_quantization_s": 2.781550090258378e-08,
+      "key_quaternion_norm_residual": null
+    }
+  ],
+  "conversion_limit": "Stored native Bezier time handles are only approximately affine; endpoint slope Hermite and float32 output introduce measured numerical error. Unit policy additionally uses normalized key quaternions and projected derivatives, preserving physical key derivatives but not algebraically identical interior polynomials. Rest frames contain float32 near-rigid error. No exact-lossless or runtime approval claim."
+}

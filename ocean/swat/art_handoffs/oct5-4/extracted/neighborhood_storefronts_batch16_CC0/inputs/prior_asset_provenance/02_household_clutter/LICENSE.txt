@@ -1,0 +1,17 @@
+Quiet Evidence — Household Clutter Batch 02
+Original geometry, texture artwork, generation/QA scripts and rendered previews.
+Created 2026-10-04 for Felix's house environment asset library.
+
+To the extent possible under law, the creator dedicates this original work to the
+public domain under CC0 1.0 Universal, waiving copyright and related rights.
+You may copy, modify, distribute and use the work, including commercially,
+without attribution or permission. No warranty is provided.
+
+CC0 legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+Human-readable summary: https://creativecommons.org/publicdomain/zero/1.0/
+
+All mesh shapes and texture images are authored/generated for this batch.
+No scanned models, third-party stock assets, copied logos, or downloaded texture
+maps are incorporated. Blender's built-in font is used to render generic labels;
+no font file is redistributed. No endorsement by Blender or PufferLib is implied.
+This dedication does not relicense Blender, PufferLib, or other software.

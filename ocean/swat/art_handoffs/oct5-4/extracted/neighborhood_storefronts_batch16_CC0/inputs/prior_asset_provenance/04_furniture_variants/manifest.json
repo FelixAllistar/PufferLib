@@ -1,0 +1,795 @@
+{
+  "schema": "environment_furniture_batch_v1",
+  "version": "1.0.0",
+  "batch": "04_furniture_variants",
+  "title": "Secondhand rooms: furniture variants",
+  "license": "CC0-1.0",
+  "author": "Original procedural geometry and texture artwork",
+  "source_units": "metres",
+  "source_coordinate_system": "right-handed Z-up, -Y front",
+  "glTF_coordinate_system": "right-handed Y-up, +Z front; exporter maps (x,y,z) to (x,z,-y)",
+  "metadata_coordinate_warning": "collision_footprint_xy remains Blender-local XY inside GLB extras. Arbitrary extras are not transformed by the exporter.",
+  "pivot_policy": "Authored furniture-body XY reference, not full-AABB centred. X/Y asymmetry preserves open components and mechanisms. Each lowest vertex is normalized to Z=0.",
+  "double_sided_materials": true,
+  "asset_count": 12,
+  "total_triangles": 35116,
+  "physics_material_suggestions": {
+    "wood": 2,
+    "steel": 4,
+    "fabric": "No exact cloth ID; choose intentional gameplay mapping, do not infer carpet=9 automatically.",
+    "rubber": "No exact ID in inspected target."
+  },
+  "engine_material_notice": "Semantic suggestions only. Preserve authoritative runtime material IDs. No collider, runtime adapter, animation, destruction, LOD or navigation binding is implemented.",
+  "texture_policy": "Original 256/512px PNG base-color textures; external rebuild copies, packed in blend and embedded in each GLB. Regular metallic/roughness values. No procedural shader dependency.",
+  "assets": [
+    {
+      "asset_id": "wingback_armchair_worn",
+      "label": "Worn wingback armchair",
+      "description": "High winged back, buttoned wool insert, turned feet and stitched seat tear.",
+      "file": "assets/wingback_armchair_worn.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.4650000035762787,
+          -0.4050000011920929,
+          0.0
+        ],
+        [
+          0.4650000035762787,
+          0.43367525935173035,
+          1.3585227727890015
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        0.93,
+        0.8387,
+        1.3585
+      ],
+      "triangles": 4668,
+      "vertices": 2490,
+      "material_count": 5,
+      "materials": [
+        "F04_wood_walnut",
+        "F04_wool_slate",
+        "F04_wool_faded",
+        "F04_seam",
+        "F04_foam"
+      ],
+      "surface_semantics": [
+        "fabric",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0,
+      "collision_footprint_xy": [
+        -0.465,
+        -0.405,
+        0.465,
+        0.4337
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.4650000035762787,
+          0.0,
+          -0.43367525935173035
+        ],
+        "max": [
+          0.4650000035762787,
+          1.3585227727890015,
+          0.4050000011920929
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 1164460
+    },
+    {
+      "asset_id": "recliner_vinyl_extended",
+      "label": "Extended vinyl recliner",
+      "description": "Segmented tobacco vinyl, static extended footrest, scissor linkages and release lever.",
+      "file": "assets/recliner_vinyl_extended.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.5149999856948853,
+          -1.1243383884429932,
+          0.0
+        ],
+        [
+          0.5800700783729553,
+          0.5884049534797668,
+          1.312349557876587
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        1.0951,
+        1.7127,
+        1.3123
+      ],
+      "triangles": 4986,
+      "vertices": 2805,
+      "material_count": 8,
+      "materials": [
+        "F04_rubber",
+        "F04_vinyl_tobacco",
+        "F04_seam",
+        "F04_iron",
+        "F04_steel",
+        "F04_brass",
+        "F04_wood_walnut",
+        "F04_wood_honey"
+      ],
+      "surface_semantics": [
+        "fabric",
+        "rubber",
+        "steel",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0,
+      "collision_footprint_xy": [
+        -0.515,
+        -1.1243,
+        0.5801,
+        0.5884
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.5149999856948853,
+          0.0,
+          -0.5884049534797668
+        ],
+        "max": [
+          0.5800700783729553,
+          1.312349557876587,
+          1.1243383884429932
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 1315152
+    },
+    {
+      "asset_id": "chair_metal_folding",
+      "label": "Metal folding chair",
+      "description": "Open crossed tubular frame, pivot bolts, formed backrest and thin padded seat.",
+      "file": "assets/chair_metal_folding.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.2540000081062317,
+          -0.3068743050098419,
+          0.0
+        ],
+        [
+          0.2540000081062317,
+          0.32187432050704956,
+          0.8758432865142822
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        0.508,
+        0.6287,
+        0.8758
+      ],
+      "triangles": 1202,
+      "vertices": 657,
+      "material_count": 6,
+      "materials": [
+        "F04_metal_sage",
+        "F04_steel",
+        "F04_rubber",
+        "F04_wool_olive",
+        "F04_metal_cream",
+        "F04_rust"
+      ],
+      "surface_semantics": [
+        "fabric",
+        "rubber",
+        "steel"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0,
+      "collision_footprint_xy": [
+        -0.254,
+        -0.3069,
+        0.254,
+        0.3219
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.2540000081062317,
+          0.0,
+          -0.32187432050704956
+        ],
+        "max": [
+          0.2540000081062317,
+          0.8758432865142822,
+          0.3068743050098419
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 616704
+    },
+    {
+      "asset_id": "chair_dining_spindle",
+      "label": "Spindle dining chair",
+      "description": "Bow back, seven turned spindles, splayed legs and saddle-profile seat.",
+      "file": "assets/chair_dining_spindle.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.24705877900123596,
+          -0.23099999129772186,
+          0.0
+        ],
+        [
+          0.24705877900123596,
+          0.2789977788925171,
+          0.9658472537994385
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        0.4941,
+        0.51,
+        0.9658
+      ],
+      "triangles": 1884,
+      "vertices": 1048,
+      "material_count": 3,
+      "materials": [
+        "F04_wood_walnut",
+        "F04_wood_honey",
+        "F04_wood_dark"
+      ],
+      "surface_semantics": [
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.014892267063260078,
+      "collision_footprint_xy": [
+        -0.2471,
+        -0.231,
+        0.2471,
+        0.279
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.24705877900123596,
+          0.0,
+          -0.2789977788925171
+        ],
+        "max": [
+          0.24705877900123596,
+          0.9658472537994385,
+          0.23099999129772186
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 918796
+    },
+    {
+      "asset_id": "table_folding_card",
+      "label": "Folding card table",
+      "description": "Square fabric playing surface, corner caps and slim braced folding underframe.",
+      "file": "assets/table_folding_card.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.459848016500473,
+          -0.459848016500473,
+          0.0
+        ],
+        [
+          0.459848016500473,
+          0.459848016500473,
+          0.765999972820282
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        0.9197,
+        0.9197,
+        0.766
+      ],
+      "triangles": 1090,
+      "vertices": 603,
+      "material_count": 6,
+      "materials": [
+        "F04_metal_cream",
+        "F04_wool_olive",
+        "F04_metal_sage",
+        "F04_rubber",
+        "F04_steel",
+        "F04_canvas"
+      ],
+      "surface_semantics": [
+        "fabric",
+        "rubber",
+        "steel"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0,
+      "collision_footprint_xy": [
+        -0.4598,
+        -0.4598,
+        0.4598,
+        0.4598
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.459848016500473,
+          0.0,
+          -0.459848016500473
+        ],
+        "max": [
+          0.459848016500473,
+          0.765999972820282,
+          0.459848016500473
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 836368
+    },
+    {
+      "asset_id": "dresser_low_six_drawer",
+      "label": "Low six-drawer dresser",
+      "description": "Mismatched painted lower fronts, recessed panels, brass handles and one ajar drawer.",
+      "file": "assets/dresser_low_six_drawer.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.7049999833106995,
+          -0.460999995470047,
+          0.0
+        ],
+        [
+          0.7049999833106995,
+          0.3199999928474426,
+          0.8406999707221985
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        1.41,
+        0.781,
+        0.8407
+      ],
+      "triangles": 2186,
+      "vertices": 1219,
+      "material_count": 6,
+      "materials": [
+        "F04_wood_dark",
+        "F04_wood_walnut",
+        "F04_wood_honey",
+        "F04_paint_putty",
+        "F04_brass",
+        "F04_wood_endgrain"
+      ],
+      "surface_semantics": [
+        "steel",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0,
+      "collision_footprint_xy": [
+        -0.705,
+        -0.461,
+        0.705,
+        0.32
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.7049999833106995,
+          0.0,
+          -0.3199999928474426
+        ],
+        "max": [
+          0.7049999833106995,
+          0.8406999707221985,
+          0.460999995470047
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 1383244
+    },
+    {
+      "asset_id": "wardrobe_panel_ajar",
+      "label": "Tall panel wardrobe",
+      "description": "Raised wood panels, one static 23-degree open door, interior shelf, rail and hangers.",
+      "file": "assets/wardrobe_panel_ajar.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.6100000143051147,
+          -0.5902276635169983,
+          0.0
+        ],
+        [
+          0.6100000143051147,
+          0.3449999988079071,
+          1.9774999618530273
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        1.22,
+        0.9352,
+        1.9775
+      ],
+      "triangles": 2300,
+      "vertices": 1262,
+      "material_count": 7,
+      "materials": [
+        "F04_wood_walnut",
+        "F04_wood_dark",
+        "F04_wood_honey",
+        "F04_steel",
+        "F04_brass",
+        "F04_canvas",
+        "F04_wool_olive"
+      ],
+      "surface_semantics": [
+        "fabric",
+        "steel",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0009999945759773254,
+      "collision_footprint_xy": [
+        -0.61,
+        -0.5902,
+        0.61,
+        0.345
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.6100000143051147,
+          0.0,
+          -0.3449999988079071
+        ],
+        "max": [
+          0.6100000143051147,
+          1.9774999618530273,
+          0.5902276635169983
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 1655252
+    },
+    {
+      "asset_id": "shoe_rack_slatted",
+      "label": "Slatted shoe rack",
+      "description": "Tubular sage frame, two wooden shelves and one pair of worn loafers.",
+      "file": "assets/shoe_rack_slatted.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.4189999997615814,
+          -0.178070068359375,
+          0.0
+        ],
+        [
+          0.4189999997615814,
+          0.178070068359375,
+          0.5260000228881836
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        0.838,
+        0.3561,
+        0.526
+      ],
+      "triangles": 1944,
+      "vertices": 1044,
+      "material_count": 4,
+      "materials": [
+        "F04_metal_sage",
+        "F04_wood_honey",
+        "F04_rubber",
+        "F04_vinyl_tobacco"
+      ],
+      "surface_semantics": [
+        "fabric",
+        "rubber",
+        "steel",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0,
+      "collision_footprint_xy": [
+        -0.419,
+        -0.1781,
+        0.419,
+        0.1781
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.4189999997615814,
+          0.0,
+          -0.178070068359375
+        ],
+        "max": [
+          0.4189999997615814,
+          0.5260000228881836,
+          0.178070068359375
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 730592
+    },
+    {
+      "asset_id": "laundry_hamper_woven",
+      "label": "Woven laundry hamper",
+      "description": "Open tapered basket, individual wicker ribs, canvas liner and draped cloth.",
+      "file": "assets/laundry_hamper_woven.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.28666478395462036,
+          -0.22524479031562805,
+          0.0
+        ],
+        [
+          0.28666478395462036,
+          0.20399999618530273,
+          0.6761247515678406
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        0.5733,
+        0.4292,
+        0.6761
+      ],
+      "triangles": 8146,
+      "vertices": 4220,
+      "material_count": 6,
+      "materials": [
+        "F04_cane",
+        "F04_wood_honey",
+        "F04_canvas",
+        "F04_wool_faded",
+        "F04_seam",
+        "F04_wool_olive"
+      ],
+      "surface_semantics": [
+        "fabric",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.012875644490122795,
+      "collision_footprint_xy": [
+        -0.2867,
+        -0.2252,
+        0.2867,
+        0.204
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.28666478395462036,
+          0.0,
+          -0.20399999618530273
+        ],
+        "max": [
+          0.28666478395462036,
+          0.6761247515678406,
+          0.22524479031562805
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 1960956
+    },
+    {
+      "asset_id": "bedframe_single_institutional",
+      "label": "Single institutional bedframe",
+      "description": "Bare cream steel frame with welded uprights, spring-wire deck and static casters.",
+      "file": "assets/bedframe_single_institutional.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        1.052,
+        2.136,
+        1.095
+      ],
+      "triangles": 2524,
+      "vertices": 1416,
+      "material_count": 5,
+      "materials": [
+        "F04_metal_cream",
+        "F04_rubber",
+        "F04_steel",
+        "F04_iron",
+        "F04_rust"
+      ],
+      "surface_semantics": [
+        "rubber",
+        "steel"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0040000081062316895,
+      "collision_footprint_xy": [
+        -0.526,
+        -1.068,
+        0.526,
+        1.068
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.5260000228881836,
+          0.0,
+          -1.0679999589920044
+        ],
+        "max": [
+          0.5260000228881836,
+          1.0950000286102295,
+          1.0679999589920044
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 430008
+    },
+    {
+      "asset_id": "shelving_steel_repaired",
+      "label": "Repaired steel shelving",
+      "description": "Open angle-stock shelving, bolt details, rear X braces and one replacement wood shelf.",
+      "file": "assets/shelving_steel_repaired.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.6175000071525574,
+          -0.2615000009536743,
+          0.0
+        ],
+        [
+          0.6175000071525574,
+          0.2615000009536743,
+          1.8200000524520874
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        1.235,
+        0.523,
+        1.82
+      ],
+      "triangles": 1922,
+      "vertices": 1095,
+      "material_count": 6,
+      "materials": [
+        "F04_metal_sage",
+        "F04_rubber",
+        "F04_steel",
+        "F04_rust",
+        "F04_wood_honey",
+        "F04_wood_dark"
+      ],
+      "surface_semantics": [
+        "rubber",
+        "steel",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.0,
+      "collision_footprint_xy": [
+        -0.6175,
+        -0.2615,
+        0.6175,
+        0.2615
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.6175000071525574,
+          0.0,
+          -0.2615000009536743
+        ],
+        "max": [
+          0.6175000071525574,
+          1.8200000524520874,
+          0.2615000009536743
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 866856
+    },
+    {
+      "asset_id": "credenza_tambour",
+      "label": "Tambour-door credenza",
+      "description": "Long low sideboard, vertical timber tambour slats, tapered legs and exposed right cubby.",
+      "file": "assets/credenza_tambour.glb",
+      "units": "metres",
+      "source_bounds_z_up": [
+        [
+          -0.7699999809265137,
+          -0.3100000023841858,
+          0.0
+        ],
+        [
+          0.7699999809265137,
+          0.25,
+          0.7821413278579712
+        ]
+      ],
+      "dimensions_m_xyz_blender": [
+        1.54,
+        0.56,
+        0.7821
+      ],
+      "triangles": 2264,
+      "vertices": 1244,
+      "material_count": 4,
+      "materials": [
+        "F04_wood_walnut",
+        "F04_wood_dark",
+        "F04_wood_honey",
+        "F04_brass"
+      ],
+      "surface_semantics": [
+        "steel",
+        "wood"
+      ],
+      "canonical_front": "Blender -Y, glTF +Z",
+      "pivot": "authored furniture-body XY reference, not full-AABB centred; lowest vertex at Z=0",
+      "authored_ground_translation_z_m": -0.008358643390238285,
+      "collision_footprint_xy": [
+        -0.77,
+        -0.31,
+        0.77,
+        0.25
+      ],
+      "optional_coarse_aabb_y_up": {
+        "min": [
+          -0.7699999809265137,
+          0.0,
+          -0.25
+        ],
+        "max": [
+          0.7699999809265137,
+          0.7821413278579712,
+          0.3100000023841858
+        ],
+        "warning": "Suggestion only. Includes decorative protrusions and static open components. Never auto-enable colliders."
+      },
+      "collision_policy": "render_only_by_default",
+      "license": "CC0-1.0",
+      "file_bytes": 1035728
+    }
+  ]
+}

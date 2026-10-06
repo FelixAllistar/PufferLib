@@ -1,0 +1,241 @@
+{
+  "baseline": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/native_carry/ready_walk.editable.blend",
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/seam_a/walk_left_ready_n_c1.editable.blend",
+  "action": "Walk Left / Shared Ready N C1 Loop A",
+  "hashes_before": {
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/native_carry/ready_walk.editable.blend": "5c25ba9bd5acfe492f6ef4ba6aa1afffa1944ca3c91da70b0a7090c194a86a36",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/seam_a/walk_left_ready_n_c1.editable.blend": "6737a18666f08d89ea097ed304e17ed47095ffb28f87f5324d32b34e416bd173"
+  },
+  "hashes_after": {
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/native_carry/ready_walk.editable.blend": "5c25ba9bd5acfe492f6ef4ba6aa1afffa1944ca3c91da70b0a7090c194a86a36",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/seam_a/walk_left_ready_n_c1.editable.blend": "6737a18666f08d89ea097ed304e17ed47095ffb28f87f5324d32b34e416bd173"
+  },
+  "sample_count": 961,
+  "rate_hz": 960,
+  "center_bone_matrix_max_abs_error": 4.76837158203125e-07,
+  "center_mesh_vertex_max_error_mm": 0.0,
+  "center_mesh_checked_frames": [
+    3.75,
+    4.0,
+    7.5,
+    15.0,
+    22.5,
+    26.0,
+    26.25
+  ],
+  "scope": "All actual evaluated foot-skin vertices with combined foot/toe weighting >65%, every1/32frame (960Hz). Central bone matrices every1/32frame, actual entire body skin at7central phases. Dense sampling is not analytic continuous floor/contact proof.",
+  "bone_pose_departure": {
+    "mixamorig:Hips": {
+      "max_translation_mm": 9.542971375247923,
+      "max_translation_frame": 1.25,
+      "max_rotation_deg": 0.8907278303339728,
+      "max_rotation_frame": 1.25
+    },
+    "mixamorig:Spine2": {
+      "max_translation_mm": 8.291636290678984,
+      "max_translation_frame": 28.75,
+      "max_rotation_deg": 0.502779670010028,
+      "max_rotation_frame": 1.25
+    },
+    "Prop_Rifle": {
+      "max_translation_mm": 12.484752363776456,
+      "max_translation_frame": 1.25,
+      "max_rotation_deg": 0.5027900781009053,
+      "max_rotation_frame": 1.25
+    },
+    "Muzzle": {
+      "max_translation_mm": 16.047907313973948,
+      "max_translation_frame": 1.25,
+      "max_rotation_deg": 0.5027721388138194,
+      "max_rotation_frame": 1.25
+    },
+    "mixamorig:LeftArm": {
+      "max_translation_mm": 9.803438594682666,
+      "max_translation_frame": 1.25,
+      "max_rotation_deg": 0.5027938573903217,
+      "max_rotation_frame": 1.25
+    },
+    "mixamorig:RightArm": {
+      "max_translation_mm": 7.985092732609034,
+      "max_translation_frame": 1.25,
+      "max_rotation_deg": 0.502782583904952,
+      "max_rotation_frame": 1.25
+    },
+    "mixamorig:LeftFoot": {
+      "max_translation_mm": 11.518253654262972,
+      "max_translation_frame": 1.28125,
+      "max_rotation_deg": 1.6753711881375497,
+      "max_rotation_frame": 1.28125
+    },
+    "mixamorig:RightFoot": {
+      "max_translation_mm": 2.8752716615299923,
+      "max_translation_frame": 1.5625,
+      "max_rotation_deg": 0.1862051028872959,
+      "max_rotation_frame": 1.5625
+    },
+    "mixamorig:LeftToeBase": {
+      "max_translation_mm": 9.401360687561565,
+      "max_translation_frame": 1.3125,
+      "max_rotation_deg": 9.510939625491531,
+      "max_rotation_frame": 28.75
+    },
+    "mixamorig:RightToeBase": {
+      "max_translation_mm": 3.217300699597503,
+      "max_translation_frame": 1.5625,
+      "max_rotation_deg": 0.19035549017267106,
+      "max_rotation_frame": 1.53125
+    }
+  },
+  "feet": {
+    "Left": {
+      "vertex_count": 652,
+      "max_surface_change_mm": 13.91244607193859,
+      "max_change_frame": 1.3125,
+      "max_change_vertex": 3040,
+      "center_max_surface_change_mm": 0.0002394640249012142,
+      "candidate_sole_min_mm": 3.9604417979717255,
+      "candidate_sole_min_frame": 24.8125,
+      "candidate_sole_min_vertex": 2995,
+      "baseline_sole_min_mm": 3.953084349632263,
+      "boundary_candidate_sole_min_mm": 5.279481410980225,
+      "boundary_baseline_sole_min_mm": 3.953084349632263,
+      "max_sole_height_change_mm": 5.741730332374573,
+      "below_floor_samples": 0,
+      "below_3mm_samples": 0,
+      "sole_samples_below3mm": []
+    },
+    "Right": {
+      "vertex_count": 653,
+      "max_surface_change_mm": 3.3155863209116996,
+      "max_change_frame": 1.5625,
+      "max_change_vertex": 2348,
+      "center_max_surface_change_mm": 0.00017441362009524742,
+      "candidate_sole_min_mm": 2.8757471591234207,
+      "candidate_sole_min_frame": 28.1875,
+      "candidate_sole_min_vertex": 2473,
+      "baseline_sole_min_mm": 3.9169900119304657,
+      "boundary_candidate_sole_min_mm": 2.8757471591234207,
+      "boundary_baseline_sole_min_mm": 3.980996087193489,
+      "max_sole_height_change_mm": 1.3878662139177322,
+      "below_floor_samples": 0,
+      "below_3mm_samples": 23,
+      "sole_samples_below3mm": [
+        {
+          "frame": 27.84375,
+          "sole_mm": 2.9867589473724365,
+          "baseline_sole_mm": 3.9858128875494003
+        },
+        {
+          "frame": 27.875,
+          "sole_mm": 2.9686056077480316,
+          "baseline_sole_mm": 3.99995781481266
+        },
+        {
+          "frame": 27.90625,
+          "sole_mm": 2.9514916241168976,
+          "baseline_sole_mm": 3.9857830852270126
+        },
+        {
+          "frame": 27.9375,
+          "sole_mm": 2.9360782355070114,
+          "baseline_sole_mm": 3.981027752161026
+        },
+        {
+          "frame": 27.96875,
+          "sole_mm": 2.922268584370613,
+          "baseline_sole_mm": 3.985857591032982
+        },
+        {
+          "frame": 28.0,
+          "sole_mm": 2.910284325480461,
+          "baseline_sole_mm": 4.000021144747734
+        },
+        {
+          "frame": 28.03125,
+          "sole_mm": 2.8999894857406616,
+          "baseline_sole_mm": 3.986157476902008
+        },
+        {
+          "frame": 28.0625,
+          "sole_mm": 2.891670912504196,
+          "baseline_sole_mm": 3.981601446866989
+        },
+        {
+          "frame": 28.09375,
+          "sole_mm": 2.884950488805771,
+          "baseline_sole_mm": 3.986051306128502
+        },
+        {
+          "frame": 28.125,
+          "sole_mm": 2.8799567371606827,
+          "baseline_sole_mm": 4.000045359134674
+        },
+        {
+          "frame": 28.15625,
+          "sole_mm": 2.876829355955124,
+          "baseline_sole_mm": 3.9860978722572327
+        },
+        {
+          "frame": 28.1875,
+          "sole_mm": 2.8757471591234207,
+          "baseline_sole_mm": 3.981534391641617
+        },
+        {
+          "frame": 28.21875,
+          "sole_mm": 2.8765909373760223,
+          "baseline_sole_mm": 3.9860978722572327
+        },
+        {
+          "frame": 28.25,
+          "sole_mm": 2.8789620846509933,
+          "baseline_sole_mm": 4.000011831521988
+        },
+        {
+          "frame": 28.28125,
+          "sole_mm": 2.8833989053964615,
+          "baseline_sole_mm": 3.9860550314188004
+        },
+        {
+          "frame": 28.3125,
+          "sole_mm": 2.88967601954937,
+          "baseline_sole_mm": 3.9814598858356476
+        },
+        {
+          "frame": 28.34375,
+          "sole_mm": 2.897759899497032,
+          "baseline_sole_mm": 3.986140713095665
+        },
+        {
+          "frame": 28.375,
+          "sole_mm": 2.90776789188385,
+          "baseline_sole_mm": 3.9999689906835556
+        },
+        {
+          "frame": 28.40625,
+          "sole_mm": 2.9194261878728867,
+          "baseline_sole_mm": 3.986181691288948
+        },
+        {
+          "frame": 28.4375,
+          "sole_mm": 2.9329676181077957,
+          "baseline_sole_mm": 3.9815008640289307
+        },
+        {
+          "frame": 28.46875,
+          "sole_mm": 2.9483363032341003,
+          "baseline_sole_mm": 3.9860736578702927
+        },
+        {
+          "frame": 28.5,
+          "sole_mm": 2.96570360660553,
+          "baseline_sole_mm": 3.999972715973854
+        },
+        {
+          "frame": 28.53125,
+          "sole_mm": 2.984747290611267,
+          "baseline_sole_mm": 3.986706957221031
+        }
+      ]
+    }
+  }
+}

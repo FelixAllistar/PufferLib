@@ -1,0 +1,452 @@
+{
+  "inspection_time_utc": "2026-10-04T20:26:38.065200+00:00",
+  "status": "Native character maps survive and match current body geometry and UV layout; no asset modification performed.",
+  "source_character_provenance": "Local Oct1 mixamo_manifest.json and README_MIXAMO_ASSETS.md identify Adobe Mixamo Ch15_nonPBR.fbx from user-authorized Mixamo download; original character FBX is not included in those converted archives.",
+  "source_character_provenance_files": [
+    "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/README_MIXAMO_ASSETS.md",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/mixamo_manifest.json"
+  ],
+  "target_blend": {
+    "path": "/workspace/scratch/eac4961518d4/animation_rebuild/standing_empty/shared_ready_refresh/standing_empty_shared_ready_f.editable.blend",
+    "sha256": "2b801425c0c3b42e1042532fd0b2744973665b68f17f3fdf286f0aa7d78fd771",
+    "bytes": 4833425,
+    "unchanged_after_read": true
+  },
+  "native_map_directory": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures",
+  "maps": [
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1001_Diffuse.png",
+      "sha256": "5e6bab5297c6ad5332cab1c138d3c69cd3967e8945f0784d9e0956e43d5ad8e0",
+      "bytes": 5125157,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1001_Diffuse.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1001_Glossiness.png",
+      "sha256": "271a1f6a98132197ee675a19318fa10f812ca67f47c3f3d17d62f301704a7707",
+      "bytes": 1901714,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1001_Glossiness.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1001_Normal.png",
+      "sha256": "efc31286bafb8063b067ab19e617c43db1620dbef2c5039aef4da44577a24435",
+      "bytes": 8232798,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1001_Normal.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1001_Specular.png",
+      "sha256": "4bc3de417a225993bc56a4568b2ba14a039936ed79a734c6466831276f1a4f4f",
+      "bytes": 236627,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1001_Specular.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1002_Diffuse.png",
+      "sha256": "fa781e5a2fd6467d21e79dcf591cb63b9a49458fa63353f81350e4f86a2764ab",
+      "bytes": 4351870,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1002_Diffuse.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1002_Emissive.png",
+      "sha256": "7cae8cae55c064b7dab345c4ac3b777109bc68b68dff6e0d3738ad2a569c4055",
+      "bytes": 65117,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1002_Emissive.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1002_Glossiness.png",
+      "sha256": "d1e4c76e8b578eed3e635430771d03d556cb10d23d05079c348032a9f3300ca4",
+      "bytes": 1696283,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1002_Glossiness.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1002_Normal.png",
+      "sha256": "3468b1eff1ba4b6b0f3e099e00c38f6c1af73912c9e2f1660c0977777aecbb82",
+      "bytes": 7531552,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1002_Normal.png",
+      "duplicate_sha256_matches": true
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/textures/Ch15_1002_Specular.png",
+      "sha256": "f47ed4abdd18a830919d6a68f33850376ff294c2d6c1178bd8da9981292708c4",
+      "bytes": 2616672,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "duplicate_path": "/workspace/scratch/eac4961518d4/animation_rebuild/verification/portable_roundtrip/textures/Ch15_1002_Specular.png",
+      "duplicate_sha256_matches": true
+    }
+  ],
+  "map_storage_evidence": {
+    "original_blend": {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.blend",
+      "sha256": "cf7f57f19fb418beee368ee0073217df0698bc274e20140ac73a4add831191ae",
+      "all_9_maps_packed_byte_identical_to_external_files": true,
+      "stale_original_external_paths_missing": true
+    },
+    "foundation_blend": {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/swat_body_oct1_foundation.blend",
+      "sha256": "ce3021e8bd3976624d5ec6aea0d7b16521b2c324ab16cfc256b466fc799d052e",
+      "all_9_maps_load_from_existing_relative_external_paths": true
+    },
+    "textured_glb": {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.glb",
+      "sha256": "886ff5da576cb2ef427dc03a9051e40ee6f61ffea21d7a8aa92d12e100c663e3",
+      "embedded_map_count": 7,
+      "all_embedded_images_match_external_map_bytes": true,
+      "omits_glossiness_maps": true
+    }
+  },
+  "current_source_material_state": {
+    "images": 0,
+    "materials": "Two flat white Principled materials with roughness .75; no image texture nodes. Native UV map and original face material assignment survive."
+  },
+  "material_map_assignment": [
+    {
+      "target_material": "Ch15_body.001",
+      "source_material": "Ch15_body",
+      "map_set": "Ch15_1001",
+      "polygons": 7021
+    },
+    {
+      "target_material": "Ch15_body1.001",
+      "source_material": "Ch15_body1",
+      "map_set": "Ch15_1002",
+      "polygons": 18005
+    }
+  ],
+  "compatibility": {
+    "vertices": 24850,
+    "polygons": 25026,
+    "loops": 96353,
+    "uv_layer": "map1",
+    "uv_sha256": "9829a473f695cb6c23a0a8e0b0426acf5150e9cd2a457458b7c3fce19f4f13f1",
+    "blend_comparisons": [
+      {
+        "source": "/workspace/scratch/eac4961518d4/animation_rebuild/editable/swat_body_oct1_foundation.blend",
+        "ordered_rest_positions_equal": true,
+        "ordered_loop_vertex_indices_equal": true,
+        "polygon_layout_equal": true,
+        "polygon_material_assignment_equal": true,
+        "ordered_uv_values_equal": true
+      },
+      {
+        "source": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.blend",
+        "ordered_rest_positions_equal": true,
+        "ordered_loop_vertex_indices_equal": true,
+        "polygon_layout_equal": true,
+        "polygon_material_assignment_equal": true,
+        "ordered_uv_values_equal": true
+      }
+    ],
+    "glb_comparison": {
+      "source": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.glb",
+      "target": "/workspace/scratch/eac4961518d4/animation_rebuild/ready_n_integration_fixture/package/standing_empty_shared_ready_n_original_timing.glb",
+      "primitive_comparisons": [
+        {
+          "POSITION": true,
+          "NORMAL": true,
+          "TEXCOORD_0": true,
+          "indices": true
+        },
+        {
+          "POSITION": true,
+          "NORMAL": true,
+          "TEXCOORD_0": true,
+          "indices": true
+        }
+      ],
+      "source_body_accessors": [
+        {
+          "POSITION": {
+            "sha256": "c07bb7ff1710a2050d52887636ef72b56c637c47ebc529e28531c4197959dfe6",
+            "count": 7638,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "NORMAL": {
+            "sha256": "34dae7913f67bc8753245fe9763fea0724f8f923fc6818d8c5339a20b9789515",
+            "count": 7638,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "TEXCOORD_0": {
+            "sha256": "92d1a740394b0e2f3f1e01563647bb85f4022d6503911efc5bad0126e5e99da5",
+            "count": 7638,
+            "component_type": 5126,
+            "type": "VEC2"
+          },
+          "indices": {
+            "sha256": "ca339746e543204f24a445f2b9f4d406e7c0179d8a3471b0129246b77b340a0c",
+            "count": 40368,
+            "component_type": 5123,
+            "type": "SCALAR"
+          }
+        },
+        {
+          "POSITION": {
+            "sha256": "86c27e397d145037767574f88e39f30c9d352eba0b6d98c8652c467a68181540",
+            "count": 24049,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "NORMAL": {
+            "sha256": "a2a97a179aff6ea6e8d266d50d6fb35da1060747cdde6c53168ca785d489a25b",
+            "count": 24049,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "TEXCOORD_0": {
+            "sha256": "731b3fc91f16381d47723c70bf22f591ba44ecb36135d04ef69a537c9e3bf470",
+            "count": 24049,
+            "component_type": 5126,
+            "type": "VEC2"
+          },
+          "indices": {
+            "sha256": "4ea5e7bbd7245083d643658d98a0cd9114f71fc86dd919f45c0a0df0cdeaebdd",
+            "count": 98535,
+            "component_type": 5123,
+            "type": "SCALAR"
+          }
+        }
+      ],
+      "target_body_accessors": [
+        {
+          "POSITION": {
+            "sha256": "c07bb7ff1710a2050d52887636ef72b56c637c47ebc529e28531c4197959dfe6",
+            "count": 7638,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "NORMAL": {
+            "sha256": "34dae7913f67bc8753245fe9763fea0724f8f923fc6818d8c5339a20b9789515",
+            "count": 7638,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "TEXCOORD_0": {
+            "sha256": "92d1a740394b0e2f3f1e01563647bb85f4022d6503911efc5bad0126e5e99da5",
+            "count": 7638,
+            "component_type": 5126,
+            "type": "VEC2"
+          },
+          "indices": {
+            "sha256": "ca339746e543204f24a445f2b9f4d406e7c0179d8a3471b0129246b77b340a0c",
+            "count": 40368,
+            "component_type": 5123,
+            "type": "SCALAR"
+          }
+        },
+        {
+          "POSITION": {
+            "sha256": "86c27e397d145037767574f88e39f30c9d352eba0b6d98c8652c467a68181540",
+            "count": 24049,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "NORMAL": {
+            "sha256": "a2a97a179aff6ea6e8d266d50d6fb35da1060747cdde6c53168ca785d489a25b",
+            "count": 24049,
+            "component_type": 5126,
+            "type": "VEC3"
+          },
+          "TEXCOORD_0": {
+            "sha256": "731b3fc91f16381d47723c70bf22f591ba44ecb36135d04ef69a537c9e3bf470",
+            "count": 24049,
+            "component_type": 5126,
+            "type": "VEC2"
+          },
+          "indices": {
+            "sha256": "4ea5e7bbd7245083d643658d98a0cd9114f71fc86dd919f45c0a0df0cdeaebdd",
+            "count": 98535,
+            "component_type": 5123,
+            "type": "SCALAR"
+          }
+        }
+      ]
+    }
+  },
+  "surviving_original_fbx_scan": {
+    "count": 59,
+    "skeletal_animation_only": 48,
+    "non_skeletal_meshes": 11,
+    "skeletal_mesh_fbxs": 0,
+    "skeletal_fbx_material_texture_video_counts": [
+      [
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "material_semantics_and_gaps": [
+    "Ch15_nonPBR is diffuse/specular/glossiness material data, not a complete original metallic-roughness PBR set. No character metallic, roughness or AO map was found among the source character image datablocks or map files.",
+    "Both source material graphs wire Diffuse to Base Color, Normal via Normal Map, Specular to Specular IOR Level; 1002 also wires Emissive to Emission Color. Both Glossiness texture nodes are present but unlinked; both source materials use scalar roughness 0.78 and metallic 0.0.",
+    "The old GLB embeds seven used images and uses KHR_materials_specular; renderer support and specular interpretation still require runtime verification. Its missing glossiness is explained by unlinked source nodes, not lost source bytes.",
+    "Native maps cover the original body only. Additional reconstructed spare sleeve/carrier and weapon geometry are outside this body UV-identity proof. Weapon maps7 inputs are not character maps.",
+    "Current shared-ready source contains no texture images. Reusing source maps would require an explicitly separate material-restoration/export step; no such step was performed.",
+    "No render, PBR reconstruction, bake, novel textures, export or publication performed; no claim of exact final runtime appearance."
+  ],
+  "archive_copies": [
+    {
+      "path": "/workspace/scratch/eac4961518d4/deliverables/swat-mixamo-assets.zip",
+      "sha256": "f7357023b0249afb4be3bf720075cf0981c4baa9e3532c5e92fa4fae50ea975c",
+      "character_fbx_members": [],
+      "asset_members": [
+        {
+          "member": "assets/generated/swat_mixamo.blend",
+          "bytes": 51255416,
+          "sha256": "cf7f57f19fb418beee368ee0073217df0698bc274e20140ac73a4add831191ae"
+        },
+        {
+          "member": "assets/generated/swat_mixamo.glb",
+          "bytes": 31017456,
+          "sha256": "886ff5da576cb2ef427dc03a9051e40ee6f61ffea21d7a8aa92d12e100c663e3"
+        }
+      ]
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/deliverables/swat-mixamo-blender-source.zip",
+      "sha256": "af8a234348d1c38f8685c40ae36597c69cdd9dd7509b9494b8b74f0c58333996",
+      "character_fbx_members": [],
+      "asset_members": [
+        {
+          "member": "assets/generated/swat_mixamo.blend",
+          "bytes": 51255416,
+          "sha256": "cf7f57f19fb418beee368ee0073217df0698bc274e20140ac73a4add831191ae"
+        }
+      ]
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/deliverables/swat-mixamo-runtime-assets.zip",
+      "sha256": "b2ffba49b56354b6dc25ce01355b2095811e1f62db73837a567d3876897c07ca",
+      "character_fbx_members": [],
+      "asset_members": [
+        {
+          "member": "assets/generated/swat_mixamo.glb",
+          "bytes": 31017456,
+          "sha256": "886ff5da576cb2ef427dc03a9051e40ee6f61ffea21d7a8aa92d12e100c663e3"
+        }
+      ]
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/packages/swat-recovery-part-02.zip",
+      "sha256": "729b1b35da3e1e2f48e816eae17b7bae634879b39604c8d2a809961f3441767d",
+      "character_fbx_members": [],
+      "asset_members": [
+        {
+          "member": "textures/Ch15_1001_Diffuse.png",
+          "bytes": 5125157,
+          "sha256": "5e6bab5297c6ad5332cab1c138d3c69cd3967e8945f0784d9e0956e43d5ad8e0"
+        },
+        {
+          "member": "textures/Ch15_1001_Glossiness.png",
+          "bytes": 1901714,
+          "sha256": "271a1f6a98132197ee675a19318fa10f812ca67f47c3f3d17d62f301704a7707"
+        },
+        {
+          "member": "textures/Ch15_1001_Normal.png",
+          "bytes": 8232798,
+          "sha256": "efc31286bafb8063b067ab19e617c43db1620dbef2c5039aef4da44577a24435"
+        },
+        {
+          "member": "textures/Ch15_1001_Specular.png",
+          "bytes": 236627,
+          "sha256": "4bc3de417a225993bc56a4568b2ba14a039936ed79a734c6466831276f1a4f4f"
+        }
+      ]
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/packages/swat-recovery-part-03.zip",
+      "sha256": "4ded53cafda5fecc2090a24f95c1bee7a2af162f0070f8a66f27c930b558abaa",
+      "character_fbx_members": [],
+      "asset_members": [
+        {
+          "member": "textures/Ch15_1002_Diffuse.png",
+          "bytes": 4351870,
+          "sha256": "fa781e5a2fd6467d21e79dcf591cb63b9a49458fa63353f81350e4f86a2764ab"
+        },
+        {
+          "member": "textures/Ch15_1002_Emissive.png",
+          "bytes": 65117,
+          "sha256": "7cae8cae55c064b7dab345c4ac3b777109bc68b68dff6e0d3738ad2a569c4055"
+        },
+        {
+          "member": "textures/Ch15_1002_Glossiness.png",
+          "bytes": 1696283,
+          "sha256": "d1e4c76e8b578eed3e635430771d03d556cb10d23d05079c348032a9f3300ca4"
+        },
+        {
+          "member": "textures/Ch15_1002_Normal.png",
+          "bytes": 7531552,
+          "sha256": "3468b1eff1ba4b6b0f3e099e00c38f6c1af73912c9e2f1660c0977777aecbb82"
+        },
+        {
+          "member": "textures/Ch15_1002_Specular.png",
+          "bytes": 2616672,
+          "sha256": "f47ed4abdd18a830919d6a68f33850376ff294c2d6c1178bd8da9981292708c4"
+        }
+      ]
+    }
+  ],
+  "detail_reports": [
+    "blend_material_inventory.json",
+    "maps_and_glb_inventory.json",
+    "fbx_material_inventory.json"
+  ]
+}

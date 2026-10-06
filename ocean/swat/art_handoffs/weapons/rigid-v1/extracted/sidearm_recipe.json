@@ -1,0 +1,154 @@
+{
+  "schema": "swat-rigid-sidearm-recipe/1",
+  "source_file": "50.fbx.bin",
+  "source_sha256": "afad5811b629a9c2abcabdd12dcc812d33bbb0d175375fa3719e3b5193299048",
+  "source_object": "57",
+  "blender_version": "4.3.2",
+  "source_imported_matrix_row_major": [
+    [
+      0.0034409163054078817,
+      0.0003983323695138097,
+      -0.4906957149505615,
+      40.61247253417969
+    ],
+    [
+      -0.49069589376449585,
+      -0.0003058019501622766,
+      -0.0034411640372127295,
+      -0.08259641379117966
+    ],
+    [
+      -0.0003085878270212561,
+      0.4907075762748718,
+      0.00039617824950255454,
+      0.08881711959838867
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "native_to_export_engine_row_major": [
+    [
+      0.4907080550478107,
+      1.0045700165814408e-11,
+      -1.6205552486609598e-10,
+      0.9659475253326425
+    ],
+    [
+      5.421010862427522e-20,
+      0.49070783323385864,
+      -7.30964930511363e-12,
+      -0.25753449929960043
+    ],
+    [
+      5.971582278142817e-20,
+      -5.421010862427522e-20,
+      0.49070794087520025,
+      0.006736546917348788
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "export_engine_to_native_row_major": [
+    [
+      2.03787158110247,
+      -4.1719013827996514e-11,
+      6.730038810783122e-10,
+      -1.9684770107269287
+    ],
+    [
+      -2.2513037757653336e-19,
+      2.0378725022786135,
+      3.035641382453094e-11,
+      0.524822474510542
+    ],
+    [
+      -2.479951271450357e-19,
+      2.2513042995881473e-19,
+      2.037872055252364,
+      -0.013728220711761554
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "orientation": "Source local +X muzzle/+Y up aligned to engine +X forward/+Y up/+Z right",
+  "scale_policy": "Preserve imported metric geometry. Only remove source scene translation and rigid orientation. Intended physical scale is unverified; no resize to canonical 0.36 m.",
+  "source_baked_object_axis_scales": [
+    0.4907080550478107,
+    0.4907078332338587,
+    0.4907079408752003
+  ],
+  "additional_uniform_scale": 1.0,
+  "bounds_export_engine": [
+    [
+      -0.08943202227803104,
+      -1.011266007975659,
+      -0.12761631153128966
+    ],
+    [
+      2.6255067093611193,
+      0.1215173438915314,
+      0.1866933897069581
+    ]
+  ],
+  "dimensions_export_engine": [
+    2.7149387316391502,
+    1.1327833518671904,
+    0.31430970123824775
+  ],
+  "origin_native": [
+    -1.9684770107269287,
+    0.524822474510542,
+    -0.013728220711761554
+  ],
+  "nodes": [
+    "Sidearm50_SourceScale"
+  ],
+  "vertices": 13608,
+  "triangles": 26806,
+  "textures": 0,
+  "materials": "Original untextured material preserved; no source images found",
+  "settings": {
+    "export_format": "GLB",
+    "use_selection": true,
+    "export_animations": false,
+    "export_skins": false,
+    "export_cameras": false,
+    "export_lights": false,
+    "export_yup": true,
+    "export_tangents": true
+  },
+  "export_file": "sidearm50_rigid_source_scale.glb",
+  "export_sha256": "04a163b5f0a2bcd166b59b38ccda50a7d50107e9710bb7b72dc36e07ea4ff450",
+  "export_bytes": 1106804,
+  "source_unchanged": true,
+  "tangent_postprocess": {
+    "input_sha256": "d5419a7b4e9270b0da62e795b0c3010b8f1898c6b928ee73f1660c0800edf5f6",
+    "output_sha256": "04a163b5f0a2bcd166b59b38ccda50a7d50107e9710bb7b72dc36e07ea4ff450",
+    "meshes": [
+      {
+        "mesh": "Sidearm50_ExplicitTriangles",
+        "vertices": 19677,
+        "reorthonormalized": 16472,
+        "original_invalid_at_1e_4": 50,
+        "degenerate_direction_fallbacks": 3,
+        "fallback_rule": "Cross normal with its least-parallel coordinate axis; preserve source tangent handedness"
+      }
+    ],
+    "scope": "Only TANGENT xyz bytes changed. Positions, indices, UVs, normals, images, materials and tangent handedness remain unchanged.",
+    "file": "sidearm50_rigid_source_scale.glb"
+  },
+  "validation": "PASS; see validation.json",
+  "neutral_views": "Final GLB reimport views rendered; rifle side/top/three-quarter/sight-line and sidearm source-scale view inspected"
+}

@@ -1,0 +1,10 @@
+{
+  "selected": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_right/seam_a/walk_right_ready_n_c1.editable.blend",
+  "rebuilt": "/tmp/walk-right-ready-rebuild/seam_a/walk_right_ready_n_c1.editable.blend",
+  "all_curve_key_handle_interpolation_values_equal": true,
+  "curve_count": 700,
+  "keys": 159854,
+  "sampled_world_matrix_max_error": 0.0,
+  "canonical_curve_sha256": "a818807a1491842dac6a77ba89266a8e4754b1e771976fb6a0a0619ed6b4bcfb",
+  "scope": "Exact saved animation values, not byte-identical Blender serialization or runtime export parity"
+}

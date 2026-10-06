@@ -1,0 +1,327 @@
+{
+  "name": "binocular_goggle_lens_surface_midpoint",
+  "classification": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin",
+  "units": "metres",
+  "source": "/workspace/scratch/eac4961518d4/animation_rebuild/shared_pose_fit/shared_ready_n.editable.blend",
+  "source_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+  "body_object": "Rebuilt SWAT full body",
+  "body_vertex_count": 24850,
+  "bone": "mixamorig:Head",
+  "source_coordinate_convention": "Blender armature/mesh coordinates: Z up; native Head local +Y up, +Z outward through goggles, +X toward character left",
+  "landmarks": {
+    "left": {
+      "component_min_vertex": 23199,
+      "component_vertex_count": 253,
+      "center_vertex_id": 23263,
+      "center_vertex_weights": {
+        "mixamorig:Head": 1.0
+      },
+      "center_fan_polygons": [
+        23454,
+        23458,
+        23460,
+        23464,
+        23466,
+        23470,
+        23472,
+        23475,
+        23477,
+        23480,
+        23482,
+        23486,
+        23490,
+        23492,
+        23496,
+        23498,
+        23502,
+        23504,
+        23508,
+        23510,
+        23514
+      ],
+      "source_bind_mesh_point": [
+        0.032183121889829636,
+        -0.14902840554714203,
+        1.6498162746429443
+      ],
+      "native_head_local_point": [
+        0.032183121889829636,
+        0.10580563545227051,
+        0.166490375995636
+      ],
+      "ready_world_point": [
+        -0.10993500798940659,
+        -0.25918805599212646,
+        1.5913004875183105
+      ],
+      "front_aperture_rim_vertex_ids": [
+        23201,
+        23203,
+        23215,
+        23216,
+        23220,
+        23233,
+        23235,
+        23237,
+        23249,
+        23252,
+        23254,
+        23286,
+        23287,
+        23291,
+        23292,
+        23301,
+        23303,
+        23305,
+        23306,
+        23320,
+        23330
+      ],
+      "front_aperture_fitted_center_native_head_local": [
+        0.03218362930854229,
+        0.10580927689512774,
+        0.17188654059455508
+      ],
+      "rim_radius_m": 0.015768218828443016,
+      "rim_radius_spread_m": 8.311335993360647e-05,
+      "rim_plane_max_residual_m": 1.1857861764159854e-08,
+      "lens_center_vs_aperture_transverse_m": 3.676626148041394e-06,
+      "lens_center_recess_from_rim_m": 0.00539616459891909
+    },
+    "right": {
+      "component_min_vertex": 23452,
+      "component_vertex_count": 253,
+      "center_vertex_id": 23516,
+      "center_vertex_weights": {
+        "mixamorig:Head": 1.0
+      },
+      "center_fan_polygons": [
+        23707,
+        23711,
+        23713,
+        23717,
+        23719,
+        23723,
+        23725,
+        23728,
+        23730,
+        23733,
+        23735,
+        23739,
+        23743,
+        23745,
+        23749,
+        23751,
+        23755,
+        23757,
+        23761,
+        23763,
+        23767
+      ],
+      "source_bind_mesh_point": [
+        -0.03218313679099083,
+        -0.14902840554714203,
+        1.6498162746429443
+      ],
+      "native_head_local_point": [
+        -0.03218313679099083,
+        0.10580563545227051,
+        0.166490375995636
+      ],
+      "ready_world_point": [
+        -0.17281803488731384,
+        -0.2611141502857208,
+        1.5776983499526978
+      ],
+      "front_aperture_rim_vertex_ids": [
+        23454,
+        23456,
+        23468,
+        23469,
+        23473,
+        23486,
+        23488,
+        23490,
+        23502,
+        23505,
+        23507,
+        23539,
+        23540,
+        23544,
+        23545,
+        23554,
+        23556,
+        23558,
+        23559,
+        23573,
+        23583
+      ],
+      "front_aperture_fitted_center_native_head_local": [
+        -0.032183642347308625,
+        0.10580927685530808,
+        0.17188654059455508
+      ],
+      "rim_radius_m": 0.015768220025765105,
+      "rim_radius_spread_m": 8.311406975252539e-05,
+      "rim_plane_max_residual_m": 1.185786176407262e-08,
+      "lens_center_vs_aperture_transverse_m": 3.6763301364971794e-06,
+      "lens_center_recess_from_rim_m": 0.00539616459891909
+    }
+  },
+  "derivation": "Mean of the two actual central fan vertices in the large left/right goggle lens surfaces; both are 100% Head-weighted. Front aperture rims independently corroborate the transverse centers.",
+  "proxy_native_head_local_point": [
+    -7.450580596923828e-09,
+    0.10580563545227051,
+    0.166490375995636
+  ],
+  "proxy_source_bind_mesh_point": [
+    -7.450580596923828e-09,
+    -0.14902840554714203,
+    1.6498162746429443
+  ],
+  "proxy_ready_world_point": [
+    -0.1413765251636505,
+    -0.26015108823776245,
+    1.5844993591308594
+  ],
+  "lens_center_separation_m": 0.06436625868082047,
+  "native_head_bind_matrix": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      3.740067811008885e-08,
+      -1.0,
+      0.017461959272623062
+    ],
+    [
+      0.0,
+      1.0,
+      1.4777601364812654e-10,
+      1.5440106391906738
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "ready_head_world_matrix": [
+    [
+      0.976956307888031,
+      -0.2052379548549652,
+      0.05857354402542114,
+      -0.12941311299800873
+    ],
+    [
+      0.02992388606071472,
+      -0.1400107592344284,
+      -0.9896963834762573,
+      -0.08056224137544632
+    ],
+    [
+      0.21132436394691467,
+      0.9686451554298401,
+      -0.13064317405223846,
+      1.503762125968933
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "optical_frame_convention": "Right-handed +X outward/forward, +Y up, +Z character-right, metres",
+  "optical_frame_in_native_head_local": [
+    [
+      0.0,
+      0.0,
+      -1.0,
+      -7.450580596923828e-09
+    ],
+    [
+      -3.059736193285051e-07,
+      0.9999999999999533,
+      0.0,
+      0.10580563545227051
+    ],
+    [
+      0.9999999999999533,
+      3.059736193285051e-07,
+      0.0,
+      0.166490375995636
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "optical_frame_in_source_bind_mesh": [
+    [
+      0.0,
+      0.0,
+      -1.0,
+      -7.450580596923828e-09
+    ],
+    [
+      -1.0,
+      -2.6857296120397223e-07,
+      0.0,
+      -0.14902840554714203
+    ],
+    [
+      -3.0582586418859137e-07,
+      1.0,
+      0.0,
+      1.6498162746429443
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "optical_frame_in_ready_world": [
+    [
+      0.058573607355356216,
+      -0.20523793995380402,
+      -0.976956307888031,
+      -0.1413765251636505
+    ],
+    [
+      -0.9896963238716125,
+      -0.14001105725765228,
+      -0.02992388606071472,
+      -0.26015108823776245
+    ],
+    [
+      -0.13064347207546234,
+      0.9686450958251953,
+      -0.21132436394691467,
+      1.5844993591308594
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "formula_native": "world_Head_pose @ optical_frame_in_native_head_local; equivalently world_Head_pose @ inverse(native_Head_bind) @ optical_frame_in_source_bind_mesh",
+  "formula_gltf_pending": "Resolve actual Head node through skin.joints. Use world_Head_node @ inverseBindMatrix[Head_skin_slot] @ converted_source_bind_mesh_frame, or an equivalent explicitly derived node-local frame. Never multiply a native head-local point by an unrelated glTF bone frame.",
+  "uncertainty": {
+    "geometric_definition": "Exact selected mesh vertices; aperture circle is only an independent geometric corroboration",
+    "anatomical_eye": "Not inferable: no eye bones or eyeball surfaces identified. No interpupillary distance or eye depth claim.",
+    "camera_use": "Camera remains authoritative. This forward goggle surface lies ahead of any concealed eye, and must not be substituted blindly for the camera pivot.",
+    "optical_axis": "Geometric front-aperture normal; no lens prescription, optical nodal point or gaze direction is encoded."
+  }
+}

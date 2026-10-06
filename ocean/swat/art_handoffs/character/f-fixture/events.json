@@ -1,0 +1,210 @@
+{
+  "schema": "swat-import-fixture-events/1",
+  "clip_id": "standing_empty_f_original_6s",
+  "animation_name": "Standing Empty / Coordinated Contact Cleanup F",
+  "duration_s": 6,
+  "source_fps": 24,
+  "loop": false,
+  "events": [
+    {
+      "id": "guided_unseat_start",
+      "source_author_time_s": 0.7,
+      "clip_time_s": 0.7,
+      "clip_time_rational": {
+        "numerator": 7,
+        "denominator": 10
+      },
+      "prop": "old_magazine",
+      "kind": "contact",
+      "before_owner": "rifle",
+      "after_owner": "guided_exit",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "old_mag_release",
+      "source_author_time_s": 0.88,
+      "clip_time_s": 0.88,
+      "clip_time_rational": {
+        "numerator": 22,
+        "denominator": 25
+      },
+      "prop": "old_magazine",
+      "kind": "release",
+      "before_owner": "guided_exit",
+      "after_owner": "asset_root_preview_drop",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "fresh_acquisition_start",
+      "source_author_time_s": 1.05,
+      "clip_time_s": 1.05,
+      "clip_time_rational": {
+        "numerator": 21,
+        "denominator": 20
+      },
+      "prop": "fresh_magazine",
+      "kind": "contact",
+      "before_owner": "carrier",
+      "after_owner": "carrier_with_progressive_hand_contact",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "fresh_pickup",
+      "source_author_time_s": 1.4,
+      "clip_time_s": 1.4,
+      "clip_time_rational": {
+        "numerator": 7,
+        "denominator": 5
+      },
+      "prop": "fresh_magazine",
+      "kind": "contact",
+      "before_owner": "carrier_with_progressive_hand_contact",
+      "after_owner": "hand_with_guided_carrier_exit",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "fresh_carrier_clear",
+      "source_author_time_s": 1.85,
+      "clip_time_s": 1.928125,
+      "clip_time_rational": {
+        "numerator": 617,
+        "denominator": 320
+      },
+      "prop": "fresh_magazine",
+      "kind": "contact",
+      "before_owner": "hand_with_guided_carrier_exit",
+      "after_owner": "left_hand",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "fresh_preinsert",
+      "source_author_time_s": 2.65,
+      "clip_time_s": 3.107862609329446,
+      "clip_time_rational": {
+        "numerator": 341119,
+        "denominator": 109760
+      },
+      "prop": "fresh_magazine",
+      "kind": "contact",
+      "before_owner": "left_hand",
+      "after_owner": "guided_rifle_insertion",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "fresh_seated",
+      "source_author_time_s": 3.15,
+      "clip_time_s": 3.65,
+      "clip_time_rational": {
+        "numerator": 73,
+        "denominator": 20
+      },
+      "prop": "fresh_magazine",
+      "kind": "contact",
+      "before_owner": "guided_rifle_insertion",
+      "after_owner": "rifle",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "finger_release_start",
+      "source_author_time_s": 3.35,
+      "clip_time_s": 3.85,
+      "clip_time_rational": {
+        "numerator": 77,
+        "denominator": 20
+      },
+      "prop": "fresh_magazine",
+      "kind": "contact",
+      "before_owner": "rifle_with_hand_contact",
+      "after_owner": "rifle_with_releasing_hand_contact",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    },
+    {
+      "id": "hand_retreat_complete",
+      "source_author_time_s": 3.85,
+      "clip_time_s": 4.35,
+      "clip_time_rational": {
+        "numerator": 87,
+        "denominator": 20
+      },
+      "prop": "fresh_magazine",
+      "kind": "contact",
+      "before_owner": "rifle_with_releasing_hand_contact",
+      "after_owner": "rifle",
+      "timing_origin": "E authoring recipe, unchanged prop timing in F; not a gameplay notify"
+    }
+  ],
+  "old_magazine_release": {
+    "joint_world_model_space_column_major": [
+      0.735895574092865,
+      0.6289098262786865,
+      -0.25085899233818054,
+      0.0,
+      -0.6317251920700073,
+      0.7710630297660828,
+      0.07990685850381851,
+      0.0,
+      0.24368229508399963,
+      0.09967081993818283,
+      0.9647199511528015,
+      0.0,
+      -0.04334750026464462,
+      1.33274507522583,
+      0.5854867100715637,
+      1.0
+    ],
+    "bind_mesh_to_model_column_major": [
+      0.735895574092865,
+      0.6289098262786865,
+      -0.25085899233818054,
+      0.0,
+      -0.6317251920700073,
+      0.7710630297660828,
+      0.07990685850381851,
+      0.0,
+      0.24368229508399963,
+      0.09967081993818283,
+      0.9647199511528015,
+      0.0,
+      -0.04334750026464462,
+      1.33274507522583,
+      0.5854867100715637,
+      1.0
+    ],
+    "joint_origin_velocity_model_m_per_s": [
+      1.1545281221668708,
+      -0.9859892901849546,
+      -0.11879389038372948
+    ],
+    "velocity_note": "Finite difference of baked joint origin across adjacent captured times. Not a physics-calibrated center-of-mass launch velocity.",
+    "drop_space": "asset/model relative; translate or rotate actor root and baked drop follows it",
+    "runtime_requirement": "For an independent cosmetic drop, capture actor-world * bind_mesh_to_model once at release; do not replay on seek/late snapshots"
+  },
+  "visibility": {
+    "mode": "always-visible physical instances",
+    "old_magazine_instances": 1,
+    "fresh_magazine_instances": 1,
+    "scale_visibility_channels": 0,
+    "note": "This F fixture does not use historical prop:Magazine STEP visibility copies"
+  },
+  "initial_owners": {
+    "old_magazine": "rifle",
+    "fresh_magazine": "carrier"
+  },
+  "final_owners": {
+    "old_magazine": "asset_root_preview_drop",
+    "fresh_magazine": "rifle"
+  },
+  "restart_policy": "Pure source preview reset only; gameplay must reconstruct committed seated/inventory/chamber state",
+  "gameplay_mapping": {
+    "status": "pending; original timing preserved",
+    "protocol": 7,
+    "baseline": "811bc1ed9ed0f33767589696907227bd374d45c0",
+    "carbine_empty_commit_ticks": {
+      "remove": 39,
+      "insert": 104,
+      "chamber": 156
+    },
+    "tick_rate": 60,
+    "warning": "Old ammo is retained by game authority. Source drop is cosmetic preview, not an inventory operation. No marker grants ammo or chamber state."
+  }
+}

@@ -1,0 +1,317 @@
+{
+  "status": "STATIC_TWO_FOOT_LOW_READY_SOURCE_PARITY_VERIFIED_WITH_EXPLICIT_NATIVE_MATERIAL_LIMITS",
+  "selected": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch_ready_n.editable.blend",
+  "sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "action": "Crouch Ready / Planted Shared N Low-Ready",
+  "frame": 0,
+  "source_sha256": "dc2eab855d8978ade3f4076fc30303801fab41579edf7c87d8ad91dba4a0735e",
+  "source_exact_evaluated_geometry_and_bone_parity": {
+    "all_evaluated_mesh_max_delta_mm": {
+      "Fresh magazine": 0.0,
+      "Rebuild Review Floor": 0.0,
+      "Rebuilt spare magazine sleeve": 0.0,
+      "Rebuilt SWAT full body": 0.0,
+      "Removed magazine": 0.0,
+      "Rifle 7": 0.0
+    },
+    "all_bone_world_max_delta": 0.0
+  },
+  "source_full_body_crossing_pair_identity": true,
+  "source_material_diagnostic_exact": true,
+  "standing_native_body_gun_rig_identity": true,
+  "all_skin_influences": 7,
+  "body_height_m": 1.355917257256806,
+  "body_top_z_m": 1.3599172830581665,
+  "standing_body_height_m": 1.7329427832737565,
+  "standing_height_ratio": 0.7824362525664581,
+  "standing_height_drop_m": 0.3770255260169506,
+  "visor_surface_proxy": {
+    "midpoint_world_m": [
+      -0.1921914517879486,
+      -0.4233280122280121,
+      1.1881567239761353
+    ],
+    "height_m": 1.1881567239761353,
+    "head_attachment_error_mm": 5.0793888335888715e-05,
+    "definition": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin"
+  },
+  "soles": {
+    "Left": {
+      "minimum_z_mm": 4.000025801360607,
+      "below_floor_vertices": 0,
+      "8mm_patch_vertices": 110,
+      "8mm_patch_bounds_m": [
+        [
+          0.1030699759721756,
+          -0.2520875930786133,
+          0.004000025801360607
+        ],
+        [
+          0.18775403499603271,
+          -0.040499672293663025,
+          0.01199064776301384
+        ]
+      ]
+    },
+    "Right": {
+      "minimum_z_mm": 4.000143148005009,
+      "below_floor_vertices": 0,
+      "8mm_patch_vertices": 110,
+      "8mm_patch_bounds_m": [
+        [
+          -0.2810903787612915,
+          0.001812271773815155,
+          0.004000143148005009
+        ],
+        [
+          -0.08444657921791077,
+          0.16059373319149017,
+          0.01199064776301384
+        ]
+      ]
+    }
+  },
+  "joints": {
+    "Left": {
+      "hip_m": [
+        0.15328849852085114,
+        0.0054456209763884544,
+        0.6172098517417908
+      ],
+      "knee_m": [
+        0.09364072233438492,
+        -0.3398704528808594,
+        0.40312856435775757
+      ],
+      "ankle_m": [
+        0.1483824998140335,
+        -0.10773880034685135,
+        0.12441574782133102
+      ],
+      "knee_flexion_deg": 99.07394296778595,
+      "thigh_length_m": 0.4106480873852041,
+      "shin_length_m": 0.366827754949115
+    },
+    "Right": {
+      "hip_m": [
+        -0.08987907320261002,
+        0.11740466207265854,
+        0.6044750213623047
+      ],
+      "knee_m": [
+        -0.32073938846588135,
+        -0.11631312966346741,
+        0.3580755293369293
+      ],
+      "ankle_m": [
+        -0.14838235080242157,
+        0.10773888975381851,
+        0.12449400126934052
+      ],
+      "knee_flexion_deg": 103.28403742123596,
+      "thigh_length_m": 0.41064973843750935,
+      "shin_length_m": 0.3666968516998493
+    }
+  },
+  "lower_material": {
+    "Left_hip": {
+      "axial_deg": -15.984972584802051,
+      "swing_deg": 59.91823064490872
+    },
+    "Left_knee": {
+      "axial_deg": 13.961150931963715,
+      "swing_deg": 95.12972728815703
+    },
+    "Left_ankle": {
+      "axial_deg": -3.608622883826058,
+      "swing_deg": 42.056261436949875
+    },
+    "Right_hip": {
+      "axial_deg": 16.028501550665823,
+      "swing_deg": 56.0415928569279
+    },
+    "Right_knee": {
+      "axial_deg": -9.748016824874071,
+      "swing_deg": 99.60785202501668
+    },
+    "Right_ankle": {
+      "axial_deg": -5.0045770588706375,
+      "swing_deg": 52.212558072367486
+    }
+  },
+  "native_arm_frames": {
+    "Left": {
+      "hinge_deg": -9.141762008383724,
+      "hinge_native_residual_deg": 8.065963379522145e-05,
+      "dorsal_residual_deg": 0.0005030977546880422,
+      "wrist_deg": 36.66104378513803,
+      "elbow_deg": 34.03859265331163,
+      "upper_length_error_m": 2.2405767896582773e-07,
+      "fore_length_error_m": 3.79677298989467e-07,
+      "joint_min_svd": {
+        "shoulder": 0.48680008424712873,
+        "elbow": 0.5662566953197262,
+        "wrist": 0.9356840512655296
+      }
+    },
+    "Right": {
+      "hinge_deg": 12.168817423316279,
+      "hinge_native_residual_deg": 1.5169437261874918e-05,
+      "dorsal_residual_deg": -0.001789543211742739,
+      "wrist_deg": 31.354553705739228,
+      "elbow_deg": 109.37906601012357,
+      "upper_length_error_m": 1.778841846877821e-07,
+      "fore_length_error_m": 4.087819843734408e-08,
+      "joint_min_svd": {
+        "shoulder": 0.7973528766128043,
+        "elbow": 0.5123378602618447,
+        "wrist": 0.9516745270843541
+      }
+    }
+  },
+  "all_weight_actual_lbs_max_error_mm": 0.0003648164192952756,
+  "endpoint_lower_world_matrix_max_error": 5.066394805908203e-07,
+  "contact_classification": {
+    "opposing_leg_leg_triangle_crossings": 0,
+    "arm_leg_triangle_crossings": 0,
+    "left_leg_torso_dominant_pairs": 72,
+    "right_leg_torso_dominant_pairs": 28,
+    "leg_torso_explanation": "All100 pairs belong to native pants/own upper-thigh layers: components5118/11165,5118/7464,5118/11623. No opposing limb interaction or new gear family. Pair counts are not depths.",
+    "whole_sleeve_vest_pairs": {
+      "Left": 50,
+      "Right": 63
+    },
+    "whole_sleeve_vest_explanation": "Vest256 against right sleeve3554 and left sleeve4248, at inherited shoulder roots. Same counts and families as standingN; mixedSpine2/Shoulder faces. Distal Arm/ForeArm-dominant vest pairs remain0. These true triangle crossings are not erased by dominant-arm filtering.",
+    "same_leg_brace_explanation": "Actual same-leg hardware crossings remain in kneecap, hinges and straps; all listed final families/counts match planted endpointv3. They are separate from opposing-limb clearance, and are preserved material limits.",
+    "pants_normal_reversals": 93,
+    "pants_normal_reversal_explanation": "Component5118 has93 local normal-transport reversals, matching planted endpointv3; native crouchD had85. This is not a new selected-candidate regression and is not a declaration of perfect cloth.",
+    "spare_sleeve_belt_mount": {
+      "pairs": 28,
+      "body_component": 64,
+      "sleeve_vertices": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ],
+      "standing_N_exact_pair_identity": true,
+      "explanation": "Back mounting block intersects hips-weighted belt component64; exact same28 pairs in standingN. Actual sleeve/magazine cavity is separate and has0 crossings."
+    }
+  },
+  "accessory_counts": {
+    "Rifle 7 / Rebuilt SWAT full body": 65,
+    "Rifle 7 / Removed magazine": 234,
+    "Rifle 7 / Fresh magazine": 0,
+    "Rifle 7 / Rebuilt spare magazine sleeve": 0,
+    "Removed magazine / Rebuilt SWAT full body": 0,
+    "Removed magazine / Fresh magazine": 0,
+    "Removed magazine / Rebuilt spare magazine sleeve": 0,
+    "Fresh magazine / Rebuilt SWAT full body": 0,
+    "Fresh magazine / Rebuilt spare magazine sleeve": 0,
+    "Rebuilt spare magazine sleeve / Rebuilt SWAT full body": 28
+  },
+  "stock": {
+    "samples": 6772,
+    "minimum_gap_mm": 0.7551381713710725,
+    "maximum_gap_mm": 24.807142093777657,
+    "near_surface_counts": {
+      "1": 16,
+      "3": 663,
+      "5": 1369
+    },
+    "nearest": {
+      "gap_mm": 0.7551381713710725,
+      "point": [
+        -0.23898866772651672,
+        -0.17804571986198425,
+        0.9876995086669922
+      ],
+      "body_point": [
+        -0.23905059695243835,
+        -0.1774739921092987,
+        0.9881889224052429
+      ],
+      "body_component": 14012,
+      "pad_triangle": 3977
+    },
+    "intersections": 0
+  },
+  "stock_center_and_disks": {
+    "pad_center_inside_actual_rear_triangles": [
+      3978
+    ],
+    "patch": {
+      "0": {
+        "total_samples": 1,
+        "hits": 1,
+        "min_mm": 2.1919214632362127,
+        "max_mm": 2.1919214632362127,
+        "median_mm": 2.1919214632362127,
+        "within_5mm": 1,
+        "components": {
+          "14012": 1
+        }
+      },
+      "3": {
+        "total_samples": 29,
+        "hits": 29,
+        "min_mm": 1.223670202307403,
+        "max_mm": 7.140715140849352,
+        "median_mm": 2.9622125439345837,
+        "within_5mm": 24,
+        "components": {
+          "14012": 29
+        }
+      },
+      "5": {
+        "total_samples": 81,
+        "hits": 81,
+        "min_mm": 0.9049760410562158,
+        "max_mm": 16.09732024371624,
+        "median_mm": 4.427050705999136,
+        "within_5mm": 45,
+        "components": {
+          "14012": 59,
+          "12850": 6,
+          "3554": 16
+        }
+      }
+    }
+  },
+  "rifle_elevation_deg": -19.95648267109509,
+  "rifle_relative_grip_invariance": {
+    "Left_whole_hand_component_max_error_mm": 0.0005293273039383682,
+    "Right_whole_hand_component_max_error_mm": 0.0005001555404307222,
+    "Rifle 7_max_error_mm": 0.00020501248181997129,
+    "Removed magazine_max_error_mm": 0.0001602248508820295
+  },
+  "grip_depth_qualification": {
+    "basis": "Dense standingN hand-depth qualification inherited by directly measured whole-glove/rifle relative surface parity; not repeated dense parity rays.",
+    "standing_left_max_confirmed_depth_mm": 0.538,
+    "standing_right_max_confirmed_depth_mm": 0.456,
+    "standing_deeper_than1mm": 0,
+    "standing_nonlocal_finger_self_pairs": 0
+  },
+  "visual_views_reviewed": [
+    "full_front.png",
+    "full_side.png",
+    "lower_front.png",
+    "lower_back.png",
+    "left_knee.png",
+    "right_knee.png",
+    "left_shoulder.png",
+    "right_shoulder.png"
+  ],
+  "limitations": [
+    "One static low-ready pose, not ADS or aim-forward.",
+    "Soles keep authored4mm clearance; not literal floor contact or physicalCOM validation.",
+    "Same-component cloth folds, own brace and shoulder-root layer crossings, exposed/stretched light underarm material, and non-flush stock seating persist.",
+    "Finite triangle-crossing audit is not a watertight inside-volume proof; chord lengths are not penetration depth.",
+    "No animation, controller, engine scaling, runtime or user acceptance claim."
+  ],
+  "all_input_hashes_preserved": true
+}

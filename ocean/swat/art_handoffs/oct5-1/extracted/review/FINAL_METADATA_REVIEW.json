@@ -1,0 +1,40 @@
+{
+  "status": "PASS_QUALIFIED",
+  "glb_sha256": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+  "source_sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+  "source_unchanged": true,
+  "reviewed_metadata_sha256": {
+    "README.md": "d3525177e57d3031ea8c3e704503bf36cc60d2cba2a2fa24beffc3a9e7daa806",
+    "REPRODUCE.md": "93dab8a0d5b72ab361c5adc108199dff8686e6d9688c58add5892690d145dbbb",
+    "bindings.json": "f343ac1489833d546409017a2d23b5b44dc986cb4ebfc17c298517a75247cac1",
+    "animation_channels.json": "012a50d6b86c70259f60ceab64be4d989727d593f3eb4ace416b86e2f07bdbd9",
+    "measured_preview_fit.json": "0f30841c3c895c1b30cdf4e1dfb5ebe8511eae34483e51f2038c810a52757636",
+    "events_and_cycle.json": "5b358d53e9a4c5b01a12db2ad7f9d4760d7d27edfd49dd4f9fd137231faae742",
+    "SOURCE_QUALITY.md": "f9416262dd1cd26b9aa4a7e9fc1f1073278e54f6d5d61f67f69efd4211a56776",
+    "SOURCE_QUALITY_STATUS.json": "6d116cd2f45734071649fbd7cf7ebd5c390bccfa20a511eb15448a32d0524246",
+    "SOURCE_PROVENANCE.json": "3288d9ec2f2b511f661bb6bb6bc5cbb79f40bc433794c33eec2829743e8db795",
+    "SOURCE_FINAL_STATUS.json": "91357335738160caebb36896dc3f81e127e8a0be5e8bfa1a3aec939960f7c269",
+    "material_compatibility.json": "103720c53d21a2b0f83ba9f67c0f91fbbd09d7e5213f8c63e9a4407db3cf20cb",
+    "optical_proxy_bindings.json": "d170d0c19bf97f58b091f1ddaba1ad9efd84461f67c44f8941560ebaf8757f19",
+    "bridge_reference_samples.json": "6397395052c7db1292a82b37a0120a242c616af183c61c239d84dd87adf3f814",
+    "validation.json": "978aa8b1906474bba1d0733ae1e9d0e96a02cdc3d662e64c940a951865b06246",
+    "source_representability.json": "8ed9a301125df1fce7b7a2b415ce7dca2442d2664e7056886aaa98e1a9b76bd7",
+    "NATIVE_STATIC_PRESERVATION.json": "01e21cb83ca6e5ed82ce96dfeed0b2775e8d335bccc6b3d8c2e7c46f9593f6bd"
+  },
+  "independent_review_sha256": "9317692520600e2980becc8043851989eed5eb6fbd0004a2f169e6dba53e7382",
+  "checks": [
+    "RIGHT changed curve count 661 verified directly, all 700 source curves/159854 keys resolved,40982 saved boundary keys match",
+    "Sole native and exported vertex namespaces explicit, all 5 left/4 right support mappings checked",
+    "Native RIGHT travel and chest/pelvis asymmetry separated from measured rifle preview heading",
+    "Both source and actual serialized endpoint residuals separately stated; tiny 2.32813954e-10 matrix endpoint gap disclosed",
+    "961 independent native-curve probes/721 middle and 1243 producer native capture/16 actual evaluated controls distinguished",
+    "All 48755exported vertices matched to native bind points/full weights with no ambiguity; oriented topology preserved",
+    "Rifle/head node-to-slot mapping, corrected inverse-bind attachments and optical scope independently checked",
+    "Stock Blender import tangent loss disclosed; explicit cubic-aware capture separately scoped",
+    "Inherited opposing thigh contacts/five new cross-leg/one same-side pair qualified accurately; no interlimb-clear or zero-regression claim",
+    "Portable curve contract accepts package/output; native control NPZ/source-checkpoint dependency explicit"
+  ],
+  "scope": "Private static/export fidelity review. No runtime, gameplay, ADS, anatomical eye, material appearance, full official validator, continuous collision, or other-direction approval.",
+  "curve_contract_validator_sha256": "ef2243134a368c63a9f212ed2bc471091540c334c5d29d6e715b63a96202f32a",
+  "curve_contract_report_sha256": "720519c07c0b93ed935d8070f1c45df9f7da1ab25ef96374a90c5bb6b9b6cbbb"
+}

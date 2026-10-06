@@ -1,0 +1,8 @@
+{
+  "status": "PORTABLE_FULL_SURFACE_REPLAY_EXACT",
+  "reference_report_sha256": "491e2e56868c14b922c5423a7a5d9614548f4a45094fbfb59db77a3aee7ac02f",
+  "portable_report_sha256": "61bc8449f48b4f09e29093bbdacbf2e0bcd2ac8068502c7e40db2108b02b7de2",
+  "all_report_values_and_crossing_pair_ids_equal_except_paths": true,
+  "source_hashes_equal_before_and_after": true,
+  "commands_use_bundled_files_only": true
+}

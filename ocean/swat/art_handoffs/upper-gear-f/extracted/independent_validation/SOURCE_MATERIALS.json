@@ -1,0 +1,1364 @@
+{
+  "source_sha256": "7165d1454e0526f01ca85c81f12e0245dfecb22071191918f984477a42c091b1",
+  "hash_preserved": true,
+  "materials": {
+    "Ch15_body.001": {
+      "use_nodes": true,
+      "nodes": [
+        {
+          "name": "Material Output",
+          "type": "ShaderNodeOutputMaterial",
+          "inputs": {
+            "Displacement": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Thickness": {
+              "default": 0.0,
+              "links": []
+            }
+          }
+        },
+        {
+          "name": "Principled BSDF",
+          "type": "ShaderNodeBsdfPrincipled",
+          "inputs": {
+            "Base Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Metallic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Roughness": {
+              "default": 0.75,
+              "links": []
+            },
+            "IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Alpha": {
+              "default": 1.0,
+              "links": []
+            },
+            "Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Diffuse Roughness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Radius": {
+              "default": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "links": []
+            },
+            "Subsurface Scale": {
+              "default": 0.05000000074505806,
+              "links": []
+            },
+            "Subsurface IOR": {
+              "default": 1.399999976158142,
+              "links": []
+            },
+            "Subsurface Anisotropy": {
+              "default": 0.0,
+              "links": []
+            },
+            "Specular IOR Level": {
+              "default": 0.5,
+              "links": []
+            },
+            "Specular Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Anisotropic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Anisotropic Rotation": {
+              "default": 0.0,
+              "links": []
+            },
+            "Tangent": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Transmission Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Roughness": {
+              "default": 0.029999999329447746,
+              "links": []
+            },
+            "Coat IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Coat Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Coat Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Sheen Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Sheen Roughness": {
+              "default": 0.5,
+              "links": []
+            },
+            "Sheen Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Strength": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film Thickness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film IOR": {
+              "default": 1.3300000429153442,
+              "links": []
+            }
+          }
+        }
+      ]
+    },
+    "Ch15_body1.001": {
+      "use_nodes": true,
+      "nodes": [
+        {
+          "name": "Material Output",
+          "type": "ShaderNodeOutputMaterial",
+          "inputs": {
+            "Displacement": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Thickness": {
+              "default": 0.0,
+              "links": []
+            }
+          }
+        },
+        {
+          "name": "Principled BSDF",
+          "type": "ShaderNodeBsdfPrincipled",
+          "inputs": {
+            "Base Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Metallic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Roughness": {
+              "default": 0.75,
+              "links": []
+            },
+            "IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Alpha": {
+              "default": 1.0,
+              "links": []
+            },
+            "Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Diffuse Roughness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Radius": {
+              "default": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "links": []
+            },
+            "Subsurface Scale": {
+              "default": 0.05000000074505806,
+              "links": []
+            },
+            "Subsurface IOR": {
+              "default": 1.399999976158142,
+              "links": []
+            },
+            "Subsurface Anisotropy": {
+              "default": 0.0,
+              "links": []
+            },
+            "Specular IOR Level": {
+              "default": 0.5,
+              "links": []
+            },
+            "Specular Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Anisotropic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Anisotropic Rotation": {
+              "default": 0.0,
+              "links": []
+            },
+            "Tangent": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Transmission Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Roughness": {
+              "default": 0.029999999329447746,
+              "links": []
+            },
+            "Coat IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Coat Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Coat Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Sheen Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Sheen Roughness": {
+              "default": 0.5,
+              "links": []
+            },
+            "Sheen Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Strength": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film Thickness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film IOR": {
+              "default": 1.3300000429153442,
+              "links": []
+            }
+          }
+        }
+      ]
+    },
+    "Rebuilt carrier cloth": {
+      "use_nodes": true,
+      "nodes": [
+        {
+          "name": "Material Output",
+          "type": "ShaderNodeOutputMaterial",
+          "inputs": {
+            "Displacement": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Thickness": {
+              "default": 0.0,
+              "links": []
+            }
+          }
+        },
+        {
+          "name": "Principled BSDF",
+          "type": "ShaderNodeBsdfPrincipled",
+          "inputs": {
+            "Base Color": {
+              "default": [
+                0.054999999701976776,
+                0.07100000232458115,
+                0.06700000166893005,
+                1.0
+              ],
+              "links": []
+            },
+            "Metallic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Roughness": {
+              "default": 0.75,
+              "links": []
+            },
+            "IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Alpha": {
+              "default": 1.0,
+              "links": []
+            },
+            "Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Diffuse Roughness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Radius": {
+              "default": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "links": []
+            },
+            "Subsurface Scale": {
+              "default": 0.05000000074505806,
+              "links": []
+            },
+            "Subsurface IOR": {
+              "default": 1.399999976158142,
+              "links": []
+            },
+            "Subsurface Anisotropy": {
+              "default": 0.0,
+              "links": []
+            },
+            "Specular IOR Level": {
+              "default": 0.5,
+              "links": []
+            },
+            "Specular Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Anisotropic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Anisotropic Rotation": {
+              "default": 0.0,
+              "links": []
+            },
+            "Tangent": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Transmission Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Roughness": {
+              "default": 0.029999999329447746,
+              "links": []
+            },
+            "Coat IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Coat Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Coat Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Sheen Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Sheen Roughness": {
+              "default": 0.5,
+              "links": []
+            },
+            "Sheen Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Strength": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film Thickness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film IOR": {
+              "default": 1.3300000429153442,
+              "links": []
+            }
+          }
+        }
+      ]
+    },
+    "Review backdrop": {
+      "use_nodes": true,
+      "nodes": [
+        {
+          "name": "Material Output",
+          "type": "ShaderNodeOutputMaterial",
+          "inputs": {
+            "Displacement": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Thickness": {
+              "default": 0.0,
+              "links": []
+            }
+          }
+        },
+        {
+          "name": "Principled BSDF",
+          "type": "ShaderNodeBsdfPrincipled",
+          "inputs": {
+            "Base Color": {
+              "default": [
+                0.14000000059604645,
+                0.1899999976158142,
+                0.25,
+                1.0
+              ],
+              "links": []
+            },
+            "Metallic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Roughness": {
+              "default": 0.75,
+              "links": []
+            },
+            "IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Alpha": {
+              "default": 1.0,
+              "links": []
+            },
+            "Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Diffuse Roughness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Radius": {
+              "default": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "links": []
+            },
+            "Subsurface Scale": {
+              "default": 0.05000000074505806,
+              "links": []
+            },
+            "Subsurface IOR": {
+              "default": 1.399999976158142,
+              "links": []
+            },
+            "Subsurface Anisotropy": {
+              "default": 0.0,
+              "links": []
+            },
+            "Specular IOR Level": {
+              "default": 0.5,
+              "links": []
+            },
+            "Specular Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Anisotropic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Anisotropic Rotation": {
+              "default": 0.0,
+              "links": []
+            },
+            "Tangent": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Transmission Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Roughness": {
+              "default": 0.029999999329447746,
+              "links": []
+            },
+            "Coat IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Coat Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Coat Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Sheen Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Sheen Roughness": {
+              "default": 0.5,
+              "links": []
+            },
+            "Sheen Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Strength": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film Thickness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film IOR": {
+              "default": 1.3300000429153442,
+              "links": []
+            }
+          }
+        }
+      ]
+    },
+    "SWAT_Gear_Matte_Polymer": {
+      "use_nodes": true,
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "ShaderNodeBsdfPrincipled",
+          "inputs": {
+            "Base Color": {
+              "default": [
+                0.09000000357627869,
+                0.10000000149011612,
+                0.10999999940395355,
+                1.0
+              ],
+              "links": []
+            },
+            "Metallic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Roughness": {
+              "default": 0.7799999713897705,
+              "links": []
+            },
+            "IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Alpha": {
+              "default": 1.0,
+              "links": []
+            },
+            "Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Diffuse Roughness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Radius": {
+              "default": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "links": []
+            },
+            "Subsurface Scale": {
+              "default": 0.05000000074505806,
+              "links": []
+            },
+            "Subsurface IOR": {
+              "default": 1.399999976158142,
+              "links": []
+            },
+            "Subsurface Anisotropy": {
+              "default": 0.0,
+              "links": []
+            },
+            "Specular IOR Level": {
+              "default": 0.5,
+              "links": []
+            },
+            "Specular Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Anisotropic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Anisotropic Rotation": {
+              "default": 0.0,
+              "links": []
+            },
+            "Tangent": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Transmission Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Roughness": {
+              "default": 0.029999999329447746,
+              "links": []
+            },
+            "Coat IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Coat Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Coat Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Sheen Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Sheen Roughness": {
+              "default": 0.5,
+              "links": []
+            },
+            "Sheen Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Strength": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film Thickness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film IOR": {
+              "default": 1.3300000429153442,
+              "links": []
+            }
+          }
+        },
+        {
+          "name": "Material Output",
+          "type": "ShaderNodeOutputMaterial",
+          "inputs": {
+            "Displacement": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Thickness": {
+              "default": 0.0,
+              "links": []
+            }
+          }
+        }
+      ]
+    },
+    "SWAT_Gear_Soft_Padding": {
+      "use_nodes": true,
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "ShaderNodeBsdfPrincipled",
+          "inputs": {
+            "Base Color": {
+              "default": [
+                0.03799999877810478,
+                0.04399999976158142,
+                0.04800000041723251,
+                1.0
+              ],
+              "links": []
+            },
+            "Metallic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Roughness": {
+              "default": 0.7799999713897705,
+              "links": []
+            },
+            "IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Alpha": {
+              "default": 1.0,
+              "links": []
+            },
+            "Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Diffuse Roughness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Radius": {
+              "default": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "links": []
+            },
+            "Subsurface Scale": {
+              "default": 0.05000000074505806,
+              "links": []
+            },
+            "Subsurface IOR": {
+              "default": 1.399999976158142,
+              "links": []
+            },
+            "Subsurface Anisotropy": {
+              "default": 0.0,
+              "links": []
+            },
+            "Specular IOR Level": {
+              "default": 0.5,
+              "links": []
+            },
+            "Specular Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Anisotropic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Anisotropic Rotation": {
+              "default": 0.0,
+              "links": []
+            },
+            "Tangent": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Transmission Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Roughness": {
+              "default": 0.029999999329447746,
+              "links": []
+            },
+            "Coat IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Coat Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Coat Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Sheen Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Sheen Roughness": {
+              "default": 0.5,
+              "links": []
+            },
+            "Sheen Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Strength": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film Thickness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film IOR": {
+              "default": 1.3300000429153442,
+              "links": []
+            }
+          }
+        },
+        {
+          "name": "Material Output",
+          "type": "ShaderNodeOutputMaterial",
+          "inputs": {
+            "Displacement": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Thickness": {
+              "default": 0.0,
+              "links": []
+            }
+          }
+        }
+      ]
+    },
+    "uv_checker_material_uv_grid_4096x4096": {
+      "use_nodes": true,
+      "nodes": [
+        {
+          "name": "Material Output",
+          "type": "ShaderNodeOutputMaterial",
+          "inputs": {
+            "Displacement": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Thickness": {
+              "default": 0.0,
+              "links": []
+            }
+          }
+        },
+        {
+          "name": "Principled BSDF",
+          "type": "ShaderNodeBsdfPrincipled",
+          "inputs": {
+            "Base Color": {
+              "default": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929,
+                1.0
+              ],
+              "links": []
+            },
+            "Metallic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Roughness": {
+              "default": 0.75,
+              "links": []
+            },
+            "IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Alpha": {
+              "default": 1.0,
+              "links": []
+            },
+            "Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Diffuse Roughness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Subsurface Radius": {
+              "default": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "links": []
+            },
+            "Subsurface Scale": {
+              "default": 0.05000000074505806,
+              "links": []
+            },
+            "Subsurface IOR": {
+              "default": 1.399999976158142,
+              "links": []
+            },
+            "Subsurface Anisotropy": {
+              "default": 0.0,
+              "links": []
+            },
+            "Specular IOR Level": {
+              "default": 0.5,
+              "links": []
+            },
+            "Specular Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Anisotropic": {
+              "default": 0.0,
+              "links": []
+            },
+            "Anisotropic Rotation": {
+              "default": 0.0,
+              "links": []
+            },
+            "Tangent": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Transmission Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Coat Roughness": {
+              "default": 0.029999999329447746,
+              "links": []
+            },
+            "Coat IOR": {
+              "default": 1.5,
+              "links": []
+            },
+            "Coat Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Coat Normal": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "links": []
+            },
+            "Sheen Weight": {
+              "default": 0.0,
+              "links": []
+            },
+            "Sheen Roughness": {
+              "default": 0.5,
+              "links": []
+            },
+            "Sheen Tint": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Color": {
+              "default": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "links": []
+            },
+            "Emission Strength": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film Thickness": {
+              "default": 0.0,
+              "links": []
+            },
+            "Thin Film IOR": {
+              "default": 1.3300000429153442,
+              "links": []
+            }
+          }
+        }
+      ]
+    }
+  }
+}

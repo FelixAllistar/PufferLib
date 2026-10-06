@@ -8,14 +8,15 @@ and authoritative reload phase mapping outside that source.
 
 ## Live player
 
-The optional private install is `build/swat/assets/characters/ready.glb`,
+The tracked character bank is `ocean/swat/assets/characters/ready.glb`,
 `walk.glb` and `textures/Ch15_*.png`, optionally extended by `walk_left.glb`,
 `walk_right.glb`, `crouch_ready.glb`, `crouch_walk.glb` and `walk_backward.glb`. Ready is the verified six-second Shared
 Ready N carry/reload export, SHA-256
 `3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81`;
 walk is the one-second cubic candidate identified below. Build scripts copy
-this ignored install beside player binaries; no licensed source is published.
-`./swat` uses it automatically. `SWAT_CHARACTER_ASSETS` selects another private
+this repository asset bank beside player binaries. Editable sources, measured
+handoffs and original packages are tracked in `art_handoffs/`.
+`./swat` uses it automatically. `SWAT_CHARACTER_ASSETS` selects another
 install; `SWAT_CHARACTER_ART=0` selects procedural rendering.
 
 `character_runtime.c` follows actual feet, heading, stance, achieved lean and
@@ -62,7 +63,7 @@ crouch-forward sleeve/thigh overlap. Rejected ADS study poses are excluded.
 
 `tools/install_character_movement.py` accepts the four extracted private fixture
 directories in left, right, crouch-ready, crouch-forward order. It checks all
-four calibrated original GLB hashes before writing the ignored install. The
+four calibrated original GLB hashes before writing the tracked asset bank. The
 measured fits are recorded in `character_movement_data.h`; no source mesh,
 curve, duration, weight or binding is rewritten. The four new banks pass 748
 independent numerical source samples, including every authored key and off-key
@@ -249,7 +250,7 @@ character, not a full-squad frame budget. These historical CPU lab costs motivat
 comes from the fixture's neutral untextured materials. The nine original 2K body
 maps have been received and hash-verified in private storage. The live renderer
 uses the source conventions described above. Licensed fixture/capture
-files stay in ignored local storage and are not shipped in the public repository.
+files are retained in `art_handoffs/`; runtime maps live in `assets/characters/textures/`.
 
 ### Forward walk cubic seam candidate
 
@@ -299,7 +300,7 @@ licensed art. Live checks use the private Ready/walk install.
 
 ```sh
 build/swat/portable/swat_test_character_render /path/to/synthetic.glb
-build/swat/portable/swat_test_character_render build/swat/assets/characters/walk.glb build/swat/assets/characters
+build/swat/portable/swat_test_character_render ocean/swat/assets/characters/walk.glb ocean/swat/assets/characters
 ```
 
 

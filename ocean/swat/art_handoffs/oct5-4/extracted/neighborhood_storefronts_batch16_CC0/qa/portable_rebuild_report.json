@@ -1,0 +1,162 @@
+{
+  "status": "pass",
+  "scope": "Isolated generation with only included scripts, inputs and byte-identical reused_assets. Every new module and both example GLBs must reproduce SHA-256 exactly. Native .blend container byte layout, renders and timestamps excluded.",
+  "records": [
+    {
+      "file": "assets/masonry_pier.glb",
+      "status": "pass",
+      "sha256_expected": "0d34355449c040d8c586221eb491391a7f464f8c11628d96e7544b7eae867767",
+      "sha256_rebuilt": "0d34355449c040d8c586221eb491391a7f464f8c11628d96e7544b7eae867767"
+    },
+    {
+      "file": "assets/glazed_display_bay_2m.glb",
+      "status": "pass",
+      "sha256_expected": "9da3ccf4b4e18913efaf04d9693baa27db2c64888e266dc07a619fe6060f1f48",
+      "sha256_rebuilt": "9da3ccf4b4e18913efaf04d9693baa27db2c64888e266dc07a619fe6060f1f48"
+    },
+    {
+      "file": "assets/masonry_wall_2m.glb",
+      "status": "pass",
+      "sha256_expected": "4e73edffce9d84b19ca7d3e51e495e9b597d1d6ad84eeeaf44b39d23ef747cfd",
+      "sha256_rebuilt": "4e73edffce9d84b19ca7d3e51e495e9b597d1d6ad84eeeaf44b39d23ef747cfd"
+    },
+    {
+      "file": "assets/storefront_entry_frame_2m.glb",
+      "status": "pass",
+      "sha256_expected": "cfb51e6d802e3dfd641d521ee4ce4c4daee26283df3ed9dcc61106ee0ee500c7",
+      "sha256_rebuilt": "cfb51e6d802e3dfd641d521ee4ce4c4daee26283df3ed9dcc61106ee0ee500c7"
+    },
+    {
+      "file": "assets/storefront_glass_door.glb",
+      "status": "pass",
+      "sha256_expected": "9b48cfa19d54e6324af5f49b340998888f706593fb20401c70685c3db4859402",
+      "sha256_rebuilt": "9b48cfa19d54e6324af5f49b340998888f706593fb20401c70685c3db4859402"
+    },
+    {
+      "file": "assets/transom_insert_2m.glb",
+      "status": "pass",
+      "sha256_expected": "7f88d3f3e8abf3b582041db332943c56f2a8bcae4503403d7643959171108567",
+      "sha256_rebuilt": "7f88d3f3e8abf3b582041db332943c56f2a8bcae4503403d7643959171108567"
+    },
+    {
+      "file": "assets/roller_shutter_2m.glb",
+      "status": "pass",
+      "sha256_expected": "02544214f7cc4dbb8bfbc8ec224e4725d1bac41801ab86bca52e445a5a892d1b",
+      "sha256_rebuilt": "02544214f7cc4dbb8bfbc8ec224e4725d1bac41801ab86bca52e445a5a892d1b"
+    },
+    {
+      "file": "assets/shutter_tracks_2m.glb",
+      "status": "pass",
+      "sha256_expected": "1cc9850574635d2d682b2b720ea80403440ba968dc2f9732d15b14edf46ced84",
+      "sha256_rebuilt": "1cc9850574635d2d682b2b720ea80403440ba968dc2f9732d15b14edf46ced84"
+    },
+    {
+      "file": "assets/striped_awning_2m.glb",
+      "status": "pass",
+      "sha256_expected": "cbff32552009e5d74642888a135f8f6dcf3b0854013a66efafbb7ba78bab0fdc",
+      "sha256_rebuilt": "cbff32552009e5d74642888a135f8f6dcf3b0854013a66efafbb7ba78bab0fdc"
+    },
+    {
+      "file": "assets/fascia_cornice_2m.glb",
+      "status": "pass",
+      "sha256_expected": "32b2bd7ac9abf68acd7031653937d0b177aa0a74a4c8a1c14ee938101c1dfcb3",
+      "sha256_rebuilt": "32b2bd7ac9abf68acd7031653937d0b177aa0a74a4c8a1c14ee938101c1dfcb3"
+    },
+    {
+      "file": "assets/morrow_wash_sign.glb",
+      "status": "pass",
+      "sha256_expected": "e22075f8d4bc41ea9c2fe43669189d78060d47c440e7a6fcc2bdb15617dab647",
+      "sha256_rebuilt": "e22075f8d4bc41ea9c2fe43669189d78060d47c440e7a6fcc2bdb15617dab647"
+    },
+    {
+      "file": "assets/alder_pawn_sign.glb",
+      "status": "pass",
+      "sha256_expected": "9aa9f33bd98a8e0ee2be9bbbb5f359dd9815f87b84d3c3530a23169dfed81a45",
+      "sha256_rebuilt": "9aa9f33bd98a8e0ee2be9bbbb5f359dd9815f87b84d3c3530a23169dfed81a45"
+    },
+    {
+      "file": "assets/glazed_display_case.glb",
+      "status": "pass",
+      "sha256_expected": "867751bed415bc686b7e2304b663075d651a5da251383c6cbb335d06a111e539",
+      "sha256_rebuilt": "867751bed415bc686b7e2304b663075d651a5da251383c6cbb335d06a111e539"
+    },
+    {
+      "file": "assets/service_counter_2m.glb",
+      "status": "pass",
+      "sha256_expected": "bf480bfd5d26f6411ed4f7ee6d0f891ec521cc69cce0dde61d8afac8b1a30e91",
+      "sha256_rebuilt": "bf480bfd5d26f6411ed4f7ee6d0f891ec521cc69cce0dde61d8afac8b1a30e91"
+    },
+    {
+      "file": "assets/laundry_change_machine.glb",
+      "status": "pass",
+      "sha256_expected": "876672358b3717e8b69aa3867a7cea3cff38fdc6e074166e87372566196ac60f",
+      "sha256_rebuilt": "876672358b3717e8b69aa3867a7cea3cff38fdc6e074166e87372566196ac60f"
+    },
+    {
+      "file": "assets/laundry_rules_sign.glb",
+      "status": "pass",
+      "sha256_expected": "2ef82b138f127c968a3d10f8952e098ee0dd9ac5ff5781927dc0404b6d206b04",
+      "sha256_rebuilt": "2ef82b138f127c968a3d10f8952e098ee0dd9ac5ff5781927dc0404b6d206b04"
+    },
+    {
+      "file": "assets/stockroom_partition_2m.glb",
+      "status": "pass",
+      "sha256_expected": "b0c3b4662300aa5783d2eaaddee8bc00721f6c87310c41994d7872411a3898f0",
+      "sha256_rebuilt": "b0c3b4662300aa5783d2eaaddee8bc00721f6c87310c41994d7872411a3898f0"
+    },
+    {
+      "file": "assets/stockroom_doorway_2m.glb",
+      "status": "pass",
+      "sha256_expected": "a86824c36f0a11a3f8ef6519099cdf7d383fe60cee40986402d326a6a48489e0",
+      "sha256_rebuilt": "a86824c36f0a11a3f8ef6519099cdf7d383fe60cee40986402d326a6a48489e0"
+    },
+    {
+      "file": "assets/stockroom_door_leaf.glb",
+      "status": "pass",
+      "sha256_expected": "f122b6e07c1aff44b568cec643432d7a35e894e2f863c6fd52f9bff5209fd1ea",
+      "sha256_rebuilt": "f122b6e07c1aff44b568cec643432d7a35e894e2f863c6fd52f9bff5209fd1ea"
+    },
+    {
+      "file": "assets/rear_service_frame_2m.glb",
+      "status": "pass",
+      "sha256_expected": "50e01559f96968eadfc472e9c84e48ca4c2360bbd7fd58523aff194e8f53fcc1",
+      "sha256_rebuilt": "50e01559f96968eadfc472e9c84e48ca4c2360bbd7fd58523aff194e8f53fcc1"
+    },
+    {
+      "file": "assets/rear_service_door.glb",
+      "status": "pass",
+      "sha256_expected": "0d5caf1e235ac6929cd35ddeb2aa587bfa5305a8e862402a5d445641ca2b20e8",
+      "sha256_rebuilt": "0d5caf1e235ac6929cd35ddeb2aa587bfa5305a8e862402a5d445641ca2b20e8"
+    },
+    {
+      "file": "assets/service_hatch_2m.glb",
+      "status": "pass",
+      "sha256_expected": "de80ea268897ca2de04dc52041de400ef199a74cfd7fb12c3de498ac940e8321",
+      "sha256_rebuilt": "de80ea268897ca2de04dc52041de400ef199a74cfd7fb12c3de498ac940e8321"
+    },
+    {
+      "file": "assets/floor_slab_2m.glb",
+      "status": "pass",
+      "sha256_expected": "6080bae7409fec165f022bc3155e6a4bbf8d4f9104620cc72d1b827ef3e4ff84",
+      "sha256_rebuilt": "6080bae7409fec165f022bc3155e6a4bbf8d4f9104620cc72d1b827ef3e4ff84"
+    },
+    {
+      "file": "assets/roof_slab_2m.glb",
+      "status": "pass",
+      "sha256_expected": "3a71100ae95dc5d1e2546e3891d942178a726dcc2c35507803f48e4f1bc32c32",
+      "sha256_rebuilt": "3a71100ae95dc5d1e2546e3891d942178a726dcc2c35507803f48e4f1bc32c32"
+    },
+    {
+      "file": "storefronts_example.glb",
+      "status": "pass",
+      "sha256_expected": "b57bdbc34bbbeda827f7011110db1fb4fa9027d24c4227d8cad5f5abbf339b5a",
+      "sha256_rebuilt": "b57bdbc34bbbeda827f7011110db1fb4fa9027d24c4227d8cad5f5abbf339b5a"
+    },
+    {
+      "file": "storefronts_example_cutaway.glb",
+      "status": "pass",
+      "sha256_expected": "91e8d224d1a1c227f914e958fca066e17e396d8828f27f6a278cc0cd2f0b3778",
+      "sha256_rebuilt": "91e8d224d1a1c227f914e958fca066e17e396d8828f27f6a278cc0cd2f0b3778"
+    }
+  ]
+}

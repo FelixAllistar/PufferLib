@@ -1,0 +1,36 @@
+{
+  "native_face": [
+    8513,
+    8515,
+    8516
+  ],
+  "purpose": "Skin-only diagnostic: rifle and gear hidden in render, same physical close cameras on both exact saved sources. Source skin/material/pose untouched. Orange line in marked views is a separate observational curve at the true triangle edges.",
+  "cameras": {
+    "face": {
+      "target_world_m": [
+        -0.2663889527320862,
+        -0.6210417747497559,
+        1.443834662437439
+      ],
+      "location_world_m": [
+        -0.245174378156662,
+        -0.6883951425552368,
+        1.5761730670928955
+      ],
+      "orthographic_scale_m": 0.045
+    },
+    "oblique": {
+      "target_world_m": [
+        -0.2663889527320862,
+        -0.6210417747497559,
+        1.443834662437439
+      ],
+      "location_world_m": [
+        -0.154026597738266,
+        -0.6143710613250732,
+        1.5429821014404297
+      ],
+      "orthographic_scale_m": 0.045
+    }
+  }
+}

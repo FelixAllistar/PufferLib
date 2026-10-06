@@ -1,0 +1,186 @@
+{
+  "status": "Attachment review complete; integrated rigid backing visual supported, local proximity quantified, whole-underface flush/contact/force claims unsupported",
+  "static_source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+  "movement_source_sha256": "7165d1454e0526f01ca85c81f12e0245dfecb22071191918f984477a42c091b1",
+  "source_files_unchanged": true,
+  "central_static_mm": {
+    "N": {
+      "Left": {
+        "min_mm": 1.5369470929726958,
+        "median_mm": 2.1954685216769576,
+        "max_mm": 2.638002624735236
+      },
+      "Right": {
+        "min_mm": 0.9136612061411142,
+        "median_mm": 1.6397867584601045,
+        "max_mm": 3.1729298643767834
+      }
+    },
+    "ADS": {
+      "Left": {
+        "min_mm": 1.710798591375351,
+        "median_mm": 4.246304975822568,
+        "max_mm": 6.888221483677626
+      },
+      "Right": {
+        "min_mm": 0.5270050605759025,
+        "median_mm": 2.121672034263611,
+        "max_mm": 3.8405407685786486
+      }
+    }
+  },
+  "movement_path_ranges": {
+    "cap_Left": {
+      "central_vertices_and_centroids": {
+        "min_mm": {
+          "min": 1.0882423957809806,
+          "max": 1.5481841983273625,
+          "time_at_min_s": 1.4833333333333334,
+          "time_at_max_s": 2.65
+        },
+        "median_mm": {
+          "min": 1.6679733525961637,
+          "max": 2.210852690041065,
+          "time_at_min_s": 1.5,
+          "time_at_max_s": 3.0
+        },
+        "max_mm": {
+          "min": 1.7900492530316114,
+          "max": 2.6380002964287996,
+          "time_at_min_s": 1.4833333333333334,
+          "time_at_max_s": 3.0
+        }
+      },
+      "whole_underface_vertices_and_centroids": {
+        "min_mm": {
+          "min": 1.0882423957809806,
+          "max": 1.5481841983273625,
+          "time_at_min_s": 1.4833333333333334,
+          "time_at_max_s": 2.65
+        },
+        "median_mm": {
+          "min": 1.9949423149228096,
+          "max": 2.5419259909540415,
+          "time_at_min_s": 1.5,
+          "time_at_max_s": 3.0
+        },
+        "max_mm": {
+          "min": 14.44324292242527,
+          "max": 14.846150763332844,
+          "time_at_min_s": 1.5,
+          "time_at_max_s": 3.0
+        }
+      }
+    },
+    "cap_Right": {
+      "central_vertices_and_centroids": {
+        "min_mm": {
+          "min": 0.7407224620692432,
+          "max": 1.037718029692769,
+          "time_at_min_s": 1.5,
+          "time_at_max_s": 0.0
+        },
+        "median_mm": {
+          "min": 1.4128441689535975,
+          "max": 1.6458058962598443,
+          "time_at_min_s": 1.4833333333333334,
+          "time_at_max_s": 3.0
+        },
+        "max_mm": {
+          "min": 3.017354290932417,
+          "max": 3.173168282955885,
+          "time_at_min_s": 1.4833333333333334,
+          "time_at_max_s": 2.9833333333333334
+        }
+      },
+      "whole_underface_vertices_and_centroids": {
+        "min_mm": {
+          "min": 0.7407224620692432,
+          "max": 1.037718029692769,
+          "time_at_min_s": 1.5,
+          "time_at_max_s": 0.0
+        },
+        "median_mm": {
+          "min": 2.230742946267128,
+          "max": 2.4114646948873997,
+          "time_at_min_s": 1.5,
+          "time_at_max_s": 2.9833333333333334
+        },
+        "max_mm": {
+          "min": 18.327508121728897,
+          "max": 18.54579523205757,
+          "time_at_min_s": 1.4833333333333334,
+          "time_at_max_s": 0.0
+        }
+      }
+    },
+    "headset_Left": {
+      "inward_stem_to_mount_bands_pins": {
+        "min_mm": {
+          "min": 0.271664175670594,
+          "max": 0.271664175670594,
+          "time_at_min_s": 0.0,
+          "time_at_max_s": 0.0
+        },
+        "median_mm": {
+          "min": 1.584789075423032,
+          "max": 1.584789075423032,
+          "time_at_min_s": 0.0,
+          "time_at_max_s": 0.0
+        },
+        "max_mm": {
+          "min": 7.607264444231987,
+          "max": 7.607264444231987,
+          "time_at_min_s": 0.0,
+          "time_at_max_s": 0.0
+        }
+      }
+    },
+    "headset_Right": {
+      "inward_stem_to_mount_bands_pins": {
+        "min_mm": {
+          "min": 0.2792169980239123,
+          "max": 0.2792169980239123,
+          "time_at_min_s": 0.0,
+          "time_at_max_s": 0.0
+        },
+        "median_mm": {
+          "min": 1.5687954146414995,
+          "max": 1.5687954146414995,
+          "time_at_min_s": 0.0,
+          "time_at_max_s": 0.0
+        },
+        "max_mm": {
+          "min": 7.607284467667341,
+          "max": 7.607284467667341,
+          "time_at_min_s": 0.0,
+          "time_at_max_s": 0.0
+        }
+      }
+    }
+  },
+  "visual_review": "Source and isolated pixels read as a continuous contoured padded back on each cap; rim separation remains visible; ADS-left is less snug. Headset upper stems lie locally close to retained overhead band.",
+  "report": "F_PADDING_PROXIMITY_REVIEW.md",
+  "scope_exclusions": [
+    "topology",
+    "crossings",
+    "carrier correctness",
+    "joint conventions",
+    "force/contact/fastening",
+    "shoulder/camera approval",
+    "broader movement approval"
+  ],
+  "evidence_sha256": {
+    "F_PADDING_PROXIMITY_REVIEW.md": "20e48808f6adec712c77f6407fbedaf7c0e59cb88be073fae141203a17f6a5c5",
+    "ATTACHMENT_MEASUREMENTS.json": "face66ba4eaa11d8286e3914727c33c946403361c04fe87472262a9842559c7b",
+    "MOVEMENT_ATTACHMENT_MEASUREMENTS.json": "67e83765667c2dfd9d3f30a938d59102812cca2cf80b3bd74d211c98e5451103",
+    "RENDER_CAMERAS.json": "bed5d3a2f49aa50fe5f256f4282523365eb6ebd9903e0a297298207f38527a69",
+    "RENDER_MOVEMENT_CAMERAS.json": "acb0177670eb3cee80a44f7c9784bb212bf654fe2c526a70d5e55bfc1007f090",
+    "N_left_PIXEL_REVIEW.png": "99a95ee1e9cc8335fdc306e4a7674c528829f5cc0a85fa811b2aa044da05fa26",
+    "N_right_PIXEL_REVIEW.png": "2470567bf62058c609c2c5cd6834c8bbaecb511d714adeb40e778f8dcf9c7fa4",
+    "ADS_left_PIXEL_REVIEW.png": "999501c8a19479a3f5ecf7d963a3329076ebd5f3c1406387da16bef995301aa4",
+    "ADS_right_PIXEL_REVIEW.png": "975f13acad60059835aa66b4d7956663fb6d3df388d2182ff806c676b024f7c8",
+    "HEADSET_PIXEL_REVIEW.png": "bb246d41ca89969edb6a0689b765f911b11d7881f936117778795dc08d606d71",
+    "MOVEMENT_PEAK_PIXEL_REVIEW.png": "bdc0a158fb19025945116c320695623752de437894d3375430b634f9252adabf"
+  }
+}

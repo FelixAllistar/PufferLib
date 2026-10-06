@@ -1,0 +1,566 @@
+{
+  "source": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.blend",
+  "sha256_before": "cf7f57f19fb418beee368ee0073217df0698bc274e20140ac73a4add831191ae",
+  "blender_version": "4.3.2",
+  "blend_saved_version": [
+    4,
+    3,
+    34
+  ],
+  "materials": [
+    {
+      "name": "Ch15_body",
+      "nodes": [
+        {
+          "name": "Normal Map",
+          "type": "NORMAL_MAP",
+          "space": "TANGENT",
+          "uv_map": "",
+          "strength": 1.0
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "file1",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1001_Diffuse.png",
+          "colorspace": "sRGB",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        },
+        {
+          "name": "Image Texture.001",
+          "type": "TEX_IMAGE",
+          "image": "file2",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1001_Normal.png",
+          "colorspace": "Non-Color",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        },
+        {
+          "name": "Image Texture.002",
+          "type": "TEX_IMAGE",
+          "image": "file4",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1001_Specular.png",
+          "colorspace": "Non-Color",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        },
+        {
+          "name": "Image Texture.003",
+          "type": "TEX_IMAGE",
+          "image": "file3",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1001_Glossiness.png",
+          "colorspace": "Non-Color",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        }
+      ]
+    },
+    {
+      "name": "Ch15_body1",
+      "nodes": [
+        {
+          "name": "Normal Map",
+          "type": "NORMAL_MAP",
+          "space": "TANGENT",
+          "uv_map": "",
+          "strength": 1.0
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "file9",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1002_Emissive.png",
+          "colorspace": "sRGB",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        },
+        {
+          "name": "Image Texture.001",
+          "type": "TEX_IMAGE",
+          "image": "file5",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1002_Diffuse.png",
+          "colorspace": "sRGB",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        },
+        {
+          "name": "Image Texture.002",
+          "type": "TEX_IMAGE",
+          "image": "file6",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1002_Normal.png",
+          "colorspace": "Non-Color",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        },
+        {
+          "name": "Image Texture.003",
+          "type": "TEX_IMAGE",
+          "image": "file8",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1002_Specular.png",
+          "colorspace": "Non-Color",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        },
+        {
+          "name": "Image Texture.004",
+          "type": "TEX_IMAGE",
+          "image": "file7",
+          "filepath": "//../../../../../home/app/mixamo-mini/tmp/skins_d8a00da1-b1cb-419d-ae94-f6b751fed3d3.fbm/Ch15_1002_Glossiness.png",
+          "colorspace": "Non-Color",
+          "vector_linked": false,
+          "extension": "REPEAT",
+          "projection": "FLAT"
+        }
+      ]
+    }
+  ],
+  "mesh_uv": [
+    {
+      "object": "Ch15",
+      "active": "map1",
+      "uv_layers": [
+        {
+          "name": "map1",
+          "active_render": true
+        }
+      ]
+    }
+  ],
+  "sha256_after": "cf7f57f19fb418beee368ee0073217df0698bc274e20140ac73a4add831191ae",
+  "unchanged": true,
+  "graph_source_inventory": "blend_material_inventory.json (source SHA-256 matches freshly opened blend)",
+  "principled": {
+    "Ch15_body": {
+      "inputs": [
+        {
+          "name": "Metallic",
+          "linked": false,
+          "default": 0.0
+        },
+        {
+          "name": "Roughness",
+          "linked": false,
+          "default": 0.7799999713897705
+        },
+        {
+          "name": "IOR",
+          "linked": false,
+          "default": 1.5
+        },
+        {
+          "name": "Alpha",
+          "linked": false,
+          "default": 1.0
+        },
+        {
+          "name": "Specular IOR Level",
+          "linked": true,
+          "default": 1.0
+        },
+        {
+          "name": "Specular Tint",
+          "linked": false,
+          "default": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "Emission Color",
+          "linked": false,
+          "default": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        {
+          "name": "Emission Strength",
+          "linked": false,
+          "default": 1.0
+        }
+      ],
+      "links": [
+        {
+          "from": [
+            "Principled BSDF",
+            "BSDF"
+          ],
+          "to": [
+            "Material Output",
+            "Surface"
+          ]
+        },
+        {
+          "from": [
+            "Normal Map",
+            "Normal"
+          ],
+          "to": [
+            "Principled BSDF",
+            "Normal"
+          ]
+        },
+        {
+          "from": [
+            "Image Texture",
+            "Color"
+          ],
+          "to": [
+            "Principled BSDF",
+            "Base Color"
+          ]
+        },
+        {
+          "from": [
+            "Image Texture.001",
+            "Color"
+          ],
+          "to": [
+            "Normal Map",
+            "Color"
+          ]
+        },
+        {
+          "from": [
+            "Image Texture.002",
+            "Color"
+          ],
+          "to": [
+            "Principled BSDF",
+            "Specular IOR Level"
+          ]
+        }
+      ]
+    },
+    "Ch15_body1": {
+      "inputs": [
+        {
+          "name": "Metallic",
+          "linked": false,
+          "default": 0.0
+        },
+        {
+          "name": "Roughness",
+          "linked": false,
+          "default": 0.7799999713897705
+        },
+        {
+          "name": "IOR",
+          "linked": false,
+          "default": 1.5
+        },
+        {
+          "name": "Alpha",
+          "linked": false,
+          "default": 1.0
+        },
+        {
+          "name": "Specular IOR Level",
+          "linked": true,
+          "default": 1.0
+        },
+        {
+          "name": "Specular Tint",
+          "linked": false,
+          "default": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "Emission Color",
+          "linked": true,
+          "default": [
+            0.5,
+            0.5,
+            0.5,
+            1.0
+          ]
+        },
+        {
+          "name": "Emission Strength",
+          "linked": false,
+          "default": 1.0
+        }
+      ],
+      "links": [
+        {
+          "from": [
+            "Principled BSDF",
+            "BSDF"
+          ],
+          "to": [
+            "Material Output",
+            "Surface"
+          ]
+        },
+        {
+          "from": [
+            "Normal Map",
+            "Normal"
+          ],
+          "to": [
+            "Principled BSDF",
+            "Normal"
+          ]
+        },
+        {
+          "from": [
+            "Image Texture",
+            "Color"
+          ],
+          "to": [
+            "Principled BSDF",
+            "Emission Color"
+          ]
+        },
+        {
+          "from": [
+            "Image Texture.001",
+            "Color"
+          ],
+          "to": [
+            "Principled BSDF",
+            "Base Color"
+          ]
+        },
+        {
+          "from": [
+            "Image Texture.002",
+            "Color"
+          ],
+          "to": [
+            "Normal Map",
+            "Color"
+          ]
+        },
+        {
+          "from": [
+            "Image Texture.003",
+            "Color"
+          ],
+          "to": [
+            "Principled BSDF",
+            "Specular IOR Level"
+          ]
+        }
+      ]
+    }
+  },
+  "original_glb": {
+    "path": "/workspace/scratch/eac4961518d4/animation_rebuild/raw_sources/oct1_assets/assets/generated/swat_mixamo.glb",
+    "sha256": "886ff5da576cb2ef427dc03a9051e40ee6f61ffea21d7a8aa92d12e100c663e3",
+    "materials": [
+      {
+        "doubleSided": true,
+        "extensions": {
+          "KHR_materials_specular": {
+            "specularTexture": {
+              "index": 0
+            }
+          }
+        },
+        "name": "Ch15_body",
+        "normalTexture": {
+          "index": 1
+        },
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 2
+          },
+          "metallicFactor": 0,
+          "roughnessFactor": 0.7799999713897705
+        }
+      },
+      {
+        "doubleSided": true,
+        "emissiveFactor": [
+          1,
+          1,
+          1
+        ],
+        "emissiveTexture": {
+          "index": 3
+        },
+        "extensions": {
+          "KHR_materials_specular": {
+            "specularTexture": {
+              "index": 4
+            }
+          }
+        },
+        "name": "Ch15_body1",
+        "normalTexture": {
+          "index": 5
+        },
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 6
+          },
+          "metallicFactor": 0,
+          "roughnessFactor": 0.7799999713897705
+        }
+      }
+    ],
+    "textures": [
+      {
+        "sampler": 0,
+        "source": 0
+      },
+      {
+        "sampler": 0,
+        "source": 1
+      },
+      {
+        "sampler": 0,
+        "source": 2
+      },
+      {
+        "sampler": 0,
+        "source": 3
+      },
+      {
+        "sampler": 0,
+        "source": 4
+      },
+      {
+        "sampler": 0,
+        "source": 5
+      },
+      {
+        "sampler": 0,
+        "source": 6
+      }
+    ],
+    "images": [
+      {
+        "bufferView": 6,
+        "mimeType": "image/png",
+        "name": "Ch15_1001_Specular"
+      },
+      {
+        "bufferView": 7,
+        "mimeType": "image/png",
+        "name": "Ch15_1001_Normal"
+      },
+      {
+        "bufferView": 8,
+        "mimeType": "image/png",
+        "name": "Ch15_1001_Diffuse"
+      },
+      {
+        "bufferView": 15,
+        "mimeType": "image/png",
+        "name": "Ch15_1002_Emissive"
+      },
+      {
+        "bufferView": 16,
+        "mimeType": "image/png",
+        "name": "Ch15_1002_Specular"
+      },
+      {
+        "bufferView": 17,
+        "mimeType": "image/png",
+        "name": "Ch15_1002_Normal"
+      },
+      {
+        "bufferView": 18,
+        "mimeType": "image/png",
+        "name": "Ch15_1002_Diffuse"
+      }
+    ]
+  },
+  "specular_image_checks": [
+    {
+      "name": "Ch15_1001_Specular.png",
+      "sha256": "4bc3de417a225993bc56a4568b2ba14a039936ed79a734c6466831276f1a4f4f",
+      "mode": "RGB",
+      "png_chunks": [
+        "IDAT",
+        "IEND",
+        "IHDR",
+        "eXIf",
+        "oFFs",
+        "pHYs"
+      ],
+      "has_tRNS": false,
+      "rgb_extrema": [
+        [
+          25,
+          228
+        ],
+        [
+          25,
+          228
+        ],
+        [
+          25,
+          229
+        ]
+      ],
+      "decoded_alpha_extrema_8bit": [
+        255,
+        255
+      ]
+    },
+    {
+      "name": "Ch15_1002_Specular.png",
+      "sha256": "f47ed4abdd18a830919d6a68f33850376ff294c2d6c1178bd8da9981292708c4",
+      "mode": "RGB",
+      "png_chunks": [
+        "IDAT",
+        "IEND",
+        "IHDR",
+        "eXIf",
+        "oFFs",
+        "pHYs"
+      ],
+      "has_tRNS": false,
+      "rgb_extrema": [
+        [
+          0,
+          250
+        ],
+        [
+          0,
+          250
+        ],
+        [
+          0,
+          252
+        ]
+      ],
+      "decoded_alpha_extrema_8bit": [
+        255,
+        255
+      ]
+    }
+  ],
+  "interpretation": {
+    "normal_maps": "Surviving Blender graph uses TANGENT Normal Map at strength 1.0, with no flip or conversion node. Empty uv_map and unlinked image Vector inputs rely on active mesh UV map1. This verifies importer/source-blend interpretation, not original authoring green-channel convention; convention remains undocumented.",
+    "colorspaces": "Diffuse and Emissive image datablocks are sRGB; Normal, Specular and Glossiness are Non-Color.",
+    "glossiness": "Both image nodes survive but have no outgoing links. Source shading uses scalar roughness 0.7799999713897705; do not silently infer 1-glossiness reconstruction.",
+    "scalar_materials": "Both source Principled nodes have metallic 0, IOR 1.5, alpha 1, and emission strength 1. Ch15_body has unlinked black Emission Color; Ch15_body1 receives Ch15_1002_Emissive Color.",
+    "specular_source": "Both Specular image Color outputs feed scalar Specular IOR Level directly. No Alpha output link, no explicit grayscale math, and no Specular Tint texture connection. Do not claim exact source RGB-to-scalar conversion formula without renderer-specific verification.",
+    "specular_glb": "Original GLB uses KHR_materials_specular.specularTexture for both RGB-only Specular PNGs, with no specularColorTexture or explicit specularFactor. Standard specularTexture samples alpha, default specularFactor 1. Both PNGs have no alpha or tRNS; decoded alpha is uniformly 1. Therefore a standards-compliant GLB path cannot reproduce the source graph RGB spatial modulation through these bindings. Actual target renderer behavior was not tested.",
+    "scope": "Read-only source inspection; no source saves, texture conversions, material edits, renders or exports. N asset was never opened or modified by this check."
+  },
+  "references": [
+    "https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_specular"
+  ]
+}

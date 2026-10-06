@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "metadata_sha256": {
+    "measured_static_fit.json": "3fabd926c9c55cd8dedda96d3b78e49da2f13b01cbeb08243b1e71fcd7b41bb3",
+    "body_native_correspondence.json": "d762532e1135b6a8e39a9e91ee75dad8c798a88be1f64982cbeef0c7699442c8",
+    "body_native_correspondence.npz": "84cc7f23469e7a4a9c0c1dd906e37c704ca7d1920bedc522b802bca060465858",
+    "body_export_correspondence.npz": "c08de9bd1c8838fdc95d53a720412ed3a60219d0e8286f8e1f3650e3b4865187",
+    "body_texture_group_correspondence.json": "1bd49f05618c8158964a5db38192446951e8d8b38a8240c7dcce9a6cb140939b"
+  },
+  "wearer_triangle_polygon_material_UV_correspondence": [
+    {
+      "primitive": 0,
+      "vertices": 7351,
+      "triangles": 13004,
+      "F_and_original_vertex_polygon_maps_exact": true,
+      "material_group_exact": true,
+      "uv_max_error": 2.9802322387695312e-08
+    },
+    {
+      "primitive": 1,
+      "vertices": 21612,
+      "triangles": 29335,
+      "F_and_original_vertex_polygon_maps_exact": true,
+      "material_group_exact": true,
+      "uv_max_error": 2.9802322387695312e-08
+    }
+  ],
+  "root_world_exact": true,
+  "wearer_bounds_max_error_m": 5.551115123125783e-16,
+  "sole_support": [
+    {
+      "side": "left",
+      "native_foot_subset": 654,
+      "unique_source_support_points": 5,
+      "exported_support_samples_with_seams": 7,
+      "all_three_index_namespaces_exact": true,
+      "centroid_method": "one mean position per unique F support vertex; coincident seam copies averaged first",
+      "native_min_y_m": 0.003999984823167324,
+      "exported_min_y_m": 0.004000025565570574
+    },
+    {
+      "side": "right",
+      "native_foot_subset": 668,
+      "unique_source_support_points": 5,
+      "exported_support_samples_with_seams": 7,
+      "all_three_index_namespaces_exact": true,
+      "centroid_method": "one mean position per unique F support vertex; coincident seam copies averaged first",
+      "native_min_y_m": 0.004000389017164707,
+      "exported_min_y_m": 0.004000420661701049
+    }
+  ],
+  "preview_uniform_heading_and_feet_origin_transform_correct": true,
+  "scope": "Actual binary/source reference correspondence and metadata fitting only. Separate original texture package bytes are not reopened; historical texture-group labels retain their existing source-material association."
+}

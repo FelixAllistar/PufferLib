@@ -1,0 +1,1135 @@
+{
+  "rifle": {
+    "filename": "rifle_bindings.json",
+    "sha256": "7bfa52f22345586caa1d7a9b17c2d3e5336772aff9745a36226c0e976448e447",
+    "data": {
+      "schema": "swat-rigid-rifle-bindings/1",
+      "asset": "rifle7_rigid_textured.glb",
+      "asset_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+      "units": "meters",
+      "axes": {
+        "forward": "+X",
+        "up": "+Y",
+        "right": "+Z"
+      },
+      "matrix_order": "row-major 4x4; named vectors are xyz",
+      "origin": "Measured center of the actual stock rear pad bounding box",
+      "landmarks": [
+        {
+          "id": "stock_contact",
+          "position_native_rifle": [
+            0.00129691231995821,
+            0.44999998807907104,
+            0.02265022322535515
+          ],
+          "position_export_engine": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "method": "Bounding-box center of the true rear pad; lies on source loop triangle 3978",
+          "kind": "measured stock-pad reference, not a fitted shoulder pose",
+          "source_vertex_ids": [
+            3854,
+            3857,
+            3859,
+            3860,
+            3861,
+            3864,
+            3894,
+            3895,
+            3896,
+            3897,
+            3899,
+            3902,
+            3905,
+            3907,
+            3908,
+            3909,
+            3912,
+            3947
+          ],
+          "surface_triangle": 3978
+        },
+        {
+          "id": "muzzle",
+          "position_native_rifle": [
+            0.0012969920644536614,
+            -0.44999996200203896,
+            0.06627657171338797
+          ],
+          "position_export_engine": [
+            0.89999995008111,
+            0.04362634848803282,
+            -7.974449545145035e-08
+          ],
+          "method": "Center of the eight-vertex inner tip ring at the foremost muzzle plane",
+          "kind": "measured geometric landmark; not a calibrated hand/body contact",
+          "source_vertex_ids": [
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79
+          ]
+        },
+        {
+          "id": "rear_sight",
+          "position_native_rifle": [
+            0.0012967195361852646,
+            0.15017832815647125,
+            0.1473989635705948
+          ],
+          "position_export_engine": [
+            0.2998216599225998,
+            0.12474874034523964,
+            1.9278377294540405e-07
+          ],
+          "method": "Center of the rear aperture component bounds in X/Z and mean front/back Y planes",
+          "kind": "measured geometric landmark; not a calibrated hand/body contact",
+          "source_vertex_ids": [
+            5186,
+            5187,
+            5188,
+            5189,
+            5190,
+            5191,
+            5192,
+            5193,
+            5194,
+            5195,
+            5196,
+            5197,
+            5198,
+            5199,
+            5200,
+            5201,
+            5202,
+            5203,
+            5204,
+            5205,
+            5206,
+            5207,
+            5208,
+            5209,
+            5210,
+            5211,
+            5212,
+            5213,
+            5214,
+            5215,
+            5216,
+            5217
+          ]
+        },
+        {
+          "id": "front_sight",
+          "position_native_rifle": [
+            0.0012967658888859053,
+            -0.20497363805770874,
+            0.14737612009048462
+          ],
+          "position_export_engine": [
+            0.6549736261367798,
+            0.12472589686512947,
+            1.4643107230471845e-07
+          ],
+          "method": "Center of the six top-face boundary vertices of the front sight post",
+          "kind": "measured geometric landmark; not a calibrated hand/body contact",
+          "source_vertex_ids": [
+            5247,
+            5249,
+            5251,
+            5253,
+            5255,
+            5257
+          ]
+        },
+        {
+          "id": "grip_center",
+          "position_native_rifle": [
+            0.0012971572577953339,
+            0.18822678923606873,
+            -0.04834649385884404
+          ],
+          "position_export_engine": [
+            0.2617731988430023,
+            -0.07099671708419919,
+            -2.4493783712387085e-07
+          ],
+          "method": "Bounding-box center of the separate pistol-grip component",
+          "kind": "measured geometric landmark; not a calibrated hand/body contact",
+          "source_vertex_ids": [
+            1850,
+            1851,
+            1852,
+            1853,
+            1854,
+            1855,
+            1856,
+            1857,
+            1858,
+            1859,
+            1860,
+            1861,
+            1862,
+            1863,
+            1864,
+            1865,
+            1866,
+            1867,
+            1868,
+            1869,
+            1870,
+            1871,
+            1872,
+            1873,
+            1874,
+            1875,
+            1876,
+            1877,
+            1878,
+            1879,
+            1880,
+            1881,
+            1882,
+            1883,
+            1884,
+            1885,
+            1886,
+            1887,
+            1888,
+            1889,
+            1890,
+            1891,
+            1892,
+            1893,
+            1894,
+            1895,
+            1896,
+            1897,
+            1898,
+            1899,
+            1900,
+            1901,
+            1902,
+            1903,
+            1904,
+            1905,
+            1906,
+            1907,
+            1908,
+            1909,
+            1910
+          ]
+        },
+        {
+          "id": "right_hand_surface_candidate",
+          "position_native_rifle": [
+            -0.01336847496817406,
+            0.18822678923606873,
+            -0.04834649385884404
+          ],
+          "position_export_engine": [
+            0.2617731988430023,
+            -0.07099671708419919,
+            0.01466538728813227
+          ],
+          "method": "Ray from native -X onto pistol-grip side at its mid-height/length",
+          "kind": "measured geometric landmark; not a calibrated hand/body contact",
+          "source_vertex_ids": [
+            1867,
+            1860,
+            1862
+          ],
+          "surface_triangle": 2590,
+          "barycentric": [
+            0.4654029393868774,
+            0.12894403974164492,
+            0.4056530208714777
+          ],
+          "fit_status": "provisional surface candidate; hand wrap/orientation not fitted"
+        },
+        {
+          "id": "support_hand_surface_candidate",
+          "position_native_rifle": [
+            0.0012970571406185627,
+            -0.10807344317436218,
+            0.03487178310755068
+          ],
+          "position_export_engine": [
+            0.5580734312534332,
+            0.012221559882195532,
+            -1.448206603527069e-07
+          ],
+          "method": "Upward ray onto fore-end lower rail at its component midpoint",
+          "kind": "measured geometric landmark; not a calibrated hand/body contact",
+          "source_vertex_ids": [
+            4981,
+            4847,
+            4982
+          ],
+          "surface_triangle": 6822,
+          "barycentric": [
+            1.0726561006091373e-06,
+            0.49999998480181357,
+            0.4999989425420859
+          ],
+          "fit_status": "provisional underside candidate; palm/finger clearance not fitted"
+        }
+      ],
+      "measured": {
+        "stock_to_muzzle_vector": [
+          0.89999995008111,
+          0.04362634848803282,
+          -7.974449545145035e-08
+        ],
+        "stock_to_muzzle_distance": 0.901056695457287,
+        "stock_to_muzzle_forward_length": 0.89999995008111,
+        "rear_to_front_sight_direction": [
+          0.9999999979314412,
+          -6.432029732629793e-05,
+          -1.305151173423283e-07
+        ],
+        "rear_sight_above_bore": 0.08112239185720682,
+        "front_sight_above_bore": 0.08109954837709665
+      },
+      "engine_profile_comparison": {
+        "carbine_barrel": 0.56,
+        "carbine_sight_height": 0.055,
+        "policy": "Record mismatch; do not scale/distort geometry. Engine owner calibrates pose/mesh alignment."
+      },
+      "historical_hand_frames": {
+        "status": "provisional older authoring seed, not current Ready approval or game IK calibration",
+        "source_json_sha256": "488cd87b6bb1ec6f55f6ddd0dab88c574bcd5abab2aba2f7be640aca4207a72b",
+        "source_seed_sha256": "d4cc80c1d93f1d31379dbb623a6270b62d2ae2ab303153232f29dea2f78981f7",
+        "local_frame_convention": "Blender authoring bone-local axes; explicit conversion/retargeting required by consumer",
+        "matrices_export_engine": {
+          "Left": [
+            [
+              -0.9908376932144165,
+              0.13210514187812805,
+              0.028077084571123123,
+              0.5099997967481613
+            ],
+            [
+              0.02955523505806923,
+              0.009238443337380886,
+              0.9995204210281372,
+              -0.007649954408407211
+            ],
+            [
+              0.1317829042673111,
+              0.9911920428276062,
+              -0.013058420270681381,
+              -0.07070325594395399
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "Right": [
+            [
+              -0.4103555381298065,
+              0.9091367721557617,
+              0.0712583065032959,
+              0.16999977827072144
+            ],
+            [
+              0.910483717918396,
+              0.404060959815979,
+              0.08805958926677704,
+              -0.11265023425221443
+            ],
+            [
+              0.05126555636525154,
+              0.10101497173309326,
+              -0.9935632348060608,
+              0.021297109313309193
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "rigid_nodes": {
+        "body": "Rifle7_RigidBody",
+        "seated_magazine": "Rifle7_SeatedMagazine"
+      },
+      "known_fit_limits": [
+        "Current Ready shoulder/hand fit is being revised separately",
+        "Older fit had partial pad support and foregrip/cuff contact",
+        "These source geometry landmarks do not override authoritative swat_pose"
+      ]
+    }
+  },
+  "optical": {
+    "filename": "optical_landmark_source.json",
+    "sha256": "0722c0dad1f433dadaa6f2b2423dd7a8bac5344be99072327dca6755e263a0dd",
+    "data": {
+      "name": "binocular_goggle_lens_surface_midpoint",
+      "classification": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin",
+      "units": "metres",
+      "source": "/workspace/scratch/eac4961518d4/animation_rebuild/shared_pose_fit/shared_ready_n.editable.blend",
+      "source_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+      "body_object": "Rebuilt SWAT full body",
+      "body_vertex_count": 24850,
+      "bone": "mixamorig:Head",
+      "source_coordinate_convention": "Blender armature/mesh coordinates: Z up; native Head local +Y up, +Z outward through goggles, +X toward character left",
+      "landmarks": {
+        "left": {
+          "component_min_vertex": 23199,
+          "component_vertex_count": 253,
+          "center_vertex_id": 23263,
+          "center_vertex_weights": {
+            "mixamorig:Head": 1.0
+          },
+          "center_fan_polygons": [
+            23454,
+            23458,
+            23460,
+            23464,
+            23466,
+            23470,
+            23472,
+            23475,
+            23477,
+            23480,
+            23482,
+            23486,
+            23490,
+            23492,
+            23496,
+            23498,
+            23502,
+            23504,
+            23508,
+            23510,
+            23514
+          ],
+          "source_bind_mesh_point": [
+            0.032183121889829636,
+            -0.14902840554714203,
+            1.6498162746429443
+          ],
+          "native_head_local_point": [
+            0.032183121889829636,
+            0.10580563545227051,
+            0.166490375995636
+          ],
+          "ready_world_point": [
+            -0.10993500798940659,
+            -0.25918805599212646,
+            1.5913004875183105
+          ],
+          "front_aperture_rim_vertex_ids": [
+            23201,
+            23203,
+            23215,
+            23216,
+            23220,
+            23233,
+            23235,
+            23237,
+            23249,
+            23252,
+            23254,
+            23286,
+            23287,
+            23291,
+            23292,
+            23301,
+            23303,
+            23305,
+            23306,
+            23320,
+            23330
+          ],
+          "front_aperture_fitted_center_native_head_local": [
+            0.03218362930854229,
+            0.10580927689512774,
+            0.17188654059455508
+          ],
+          "rim_radius_m": 0.015768218828443016,
+          "rim_radius_spread_m": 8.311335993360647e-05,
+          "rim_plane_max_residual_m": 1.1857861764159854e-08,
+          "lens_center_vs_aperture_transverse_m": 3.676626148041394e-06,
+          "lens_center_recess_from_rim_m": 0.00539616459891909
+        },
+        "right": {
+          "component_min_vertex": 23452,
+          "component_vertex_count": 253,
+          "center_vertex_id": 23516,
+          "center_vertex_weights": {
+            "mixamorig:Head": 1.0
+          },
+          "center_fan_polygons": [
+            23707,
+            23711,
+            23713,
+            23717,
+            23719,
+            23723,
+            23725,
+            23728,
+            23730,
+            23733,
+            23735,
+            23739,
+            23743,
+            23745,
+            23749,
+            23751,
+            23755,
+            23757,
+            23761,
+            23763,
+            23767
+          ],
+          "source_bind_mesh_point": [
+            -0.03218313679099083,
+            -0.14902840554714203,
+            1.6498162746429443
+          ],
+          "native_head_local_point": [
+            -0.03218313679099083,
+            0.10580563545227051,
+            0.166490375995636
+          ],
+          "ready_world_point": [
+            -0.17281803488731384,
+            -0.2611141502857208,
+            1.5776983499526978
+          ],
+          "front_aperture_rim_vertex_ids": [
+            23454,
+            23456,
+            23468,
+            23469,
+            23473,
+            23486,
+            23488,
+            23490,
+            23502,
+            23505,
+            23507,
+            23539,
+            23540,
+            23544,
+            23545,
+            23554,
+            23556,
+            23558,
+            23559,
+            23573,
+            23583
+          ],
+          "front_aperture_fitted_center_native_head_local": [
+            -0.032183642347308625,
+            0.10580927685530808,
+            0.17188654059455508
+          ],
+          "rim_radius_m": 0.015768220025765105,
+          "rim_radius_spread_m": 8.311406975252539e-05,
+          "rim_plane_max_residual_m": 1.185786176407262e-08,
+          "lens_center_vs_aperture_transverse_m": 3.6763301364971794e-06,
+          "lens_center_recess_from_rim_m": 0.00539616459891909
+        }
+      },
+      "derivation": "Mean of the two actual central fan vertices in the large left/right goggle lens surfaces; both are 100% Head-weighted. Front aperture rims independently corroborate the transverse centers.",
+      "proxy_native_head_local_point": [
+        -7.450580596923828e-09,
+        0.10580563545227051,
+        0.166490375995636
+      ],
+      "proxy_source_bind_mesh_point": [
+        -7.450580596923828e-09,
+        -0.14902840554714203,
+        1.6498162746429443
+      ],
+      "proxy_ready_world_point": [
+        -0.1413765251636505,
+        -0.26015108823776245,
+        1.5844993591308594
+      ],
+      "lens_center_separation_m": 0.06436625868082047,
+      "native_head_bind_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          3.740067811008885e-08,
+          -1.0,
+          0.017461959272623062
+        ],
+        [
+          0.0,
+          1.0,
+          1.4777601364812654e-10,
+          1.5440106391906738
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "ready_head_world_matrix": [
+        [
+          0.976956307888031,
+          -0.2052379548549652,
+          0.05857354402542114,
+          -0.12941311299800873
+        ],
+        [
+          0.02992388606071472,
+          -0.1400107592344284,
+          -0.9896963834762573,
+          -0.08056224137544632
+        ],
+        [
+          0.21132436394691467,
+          0.9686451554298401,
+          -0.13064317405223846,
+          1.503762125968933
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "optical_frame_convention": "Right-handed +X outward/forward, +Y up, +Z character-right, metres",
+      "optical_frame_in_native_head_local": [
+        [
+          0.0,
+          0.0,
+          -1.0,
+          -7.450580596923828e-09
+        ],
+        [
+          -3.059736193285051e-07,
+          0.9999999999999533,
+          0.0,
+          0.10580563545227051
+        ],
+        [
+          0.9999999999999533,
+          3.059736193285051e-07,
+          0.0,
+          0.166490375995636
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "optical_frame_in_source_bind_mesh": [
+        [
+          0.0,
+          0.0,
+          -1.0,
+          -7.450580596923828e-09
+        ],
+        [
+          -1.0,
+          -2.6857296120397223e-07,
+          0.0,
+          -0.14902840554714203
+        ],
+        [
+          -3.0582586418859137e-07,
+          1.0,
+          0.0,
+          1.6498162746429443
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "optical_frame_in_ready_world": [
+        [
+          0.058573607355356216,
+          -0.20523793995380402,
+          -0.976956307888031,
+          -0.1413765251636505
+        ],
+        [
+          -0.9896963238716125,
+          -0.14001105725765228,
+          -0.02992388606071472,
+          -0.26015108823776245
+        ],
+        [
+          -0.13064347207546234,
+          0.9686450958251953,
+          -0.21132436394691467,
+          1.5844993591308594
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "formula_native": "world_Head_pose @ optical_frame_in_native_head_local; equivalently world_Head_pose @ inverse(native_Head_bind) @ optical_frame_in_source_bind_mesh",
+      "formula_gltf_pending": "Resolve actual Head node through skin.joints. Use world_Head_node @ inverseBindMatrix[Head_skin_slot] @ converted_source_bind_mesh_frame, or an equivalent explicitly derived node-local frame. Never multiply a native head-local point by an unrelated glTF bone frame.",
+      "uncertainty": {
+        "geometric_definition": "Exact selected mesh vertices; aperture circle is only an independent geometric corroboration",
+        "anatomical_eye": "Not inferable: no eye bones or eyeball surfaces identified. No interpupillary distance or eye depth claim.",
+        "camera_use": "Camera remains authoritative. This forward goggle surface lies ahead of any concealed eye, and must not be substituted blindly for the camera pivot.",
+        "optical_axis": "Geometric front-aperture normal; no lens prescription, optical nodal point or gaze direction is encoded."
+      }
+    }
+  },
+  "measurements": {
+    "filename": "MEASURED_POSE.json",
+    "sha256": "4f786e060a62c61d033f7aaea64543ceead4a611218b9acb4f2be29b426ba5f4",
+    "data": {
+      "source": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch_ready_n.editable.blend",
+      "source_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+      "action": "Crouch Ready / Planted Shared N Low-Ready",
+      "frame": 0,
+      "units": "metres; native Blender world Z up",
+      "rig_world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "rig_object_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "body_vertices": 24850,
+      "body_bounds_world": [
+        [
+          -0.5105628967285156,
+          -0.7693856954574585,
+          0.004000025801360607
+        ],
+        [
+          0.26739001274108887,
+          0.2385910153388977,
+          1.3599172830581665
+        ]
+      ],
+      "body_vertical_extent_m": 1.355917257256806,
+      "body_top_world_z_m": 1.3599172830581665,
+      "hips_world": [
+        0.02533753588795662,
+        0.05438758432865143,
+        0.6709743142127991
+      ],
+      "head_bone_world": [
+        -0.1195029690861702,
+        -0.24461285769939423,
+        1.1470333337783813
+      ],
+      "soles": {
+        "Left": {
+          "vertex_count": 652,
+          "minimum_z_m": 0.004000025801360607,
+          "low_sole_patch_8mm_vertex_count": 110,
+          "low_sole_patch_xy_bounds": [
+            [
+              0.1030699759721756,
+              -0.2520875930786133
+            ],
+            [
+              0.18775403499603271,
+              -0.040499672293663025
+            ]
+          ],
+          "lowest_vertex_id": 2973,
+          "below_plane_vertices": 0
+        },
+        "Right": {
+          "vertex_count": 653,
+          "minimum_z_m": 0.004000143148005009,
+          "low_sole_patch_8mm_vertex_count": 110,
+          "low_sole_patch_xy_bounds": [
+            [
+              -0.2810903787612915,
+              0.001812271773815155
+            ],
+            [
+              -0.08444657921791077,
+              0.16059373319149017
+            ]
+          ],
+          "lowest_vertex_id": 2282,
+          "below_plane_vertices": 0
+        }
+      },
+      "legs": {
+        "Left": {
+          "hip_world": [
+            0.15328849852085114,
+            0.0054456209763884544,
+            0.6172098517417908
+          ],
+          "knee_world": [
+            0.09364072233438492,
+            -0.3398704528808594,
+            0.40312856435775757
+          ],
+          "ankle_world": [
+            0.1483824998140335,
+            -0.10773880034685135,
+            0.12441574782133102
+          ],
+          "knee_flexion_deg": 99.07394296778595,
+          "native_material_hinge_dot_minus_UpLeg_X": 0.9995272129308432,
+          "knee_ankle_plane_to_boot_forward_deg": 0.0,
+          "upper_length_m": 0.4106480873852041,
+          "lower_length_m": 0.366827754949115
+        },
+        "Right": {
+          "hip_world": [
+            -0.08987907320261002,
+            0.11740466207265854,
+            0.6044750213623047
+          ],
+          "knee_world": [
+            -0.32073938846588135,
+            -0.11631312966346741,
+            0.3580755293369293
+          ],
+          "ankle_world": [
+            -0.14838235080242157,
+            0.10773888975381851,
+            0.12449400126934052
+          ],
+          "knee_flexion_deg": 103.28403742123596,
+          "native_material_hinge_dot_minus_UpLeg_X": 0.9990946317557245,
+          "knee_ankle_plane_to_boot_forward_deg": 0.0,
+          "upper_length_m": 0.41064973843750935,
+          "lower_length_m": 0.3666968516998493
+        }
+      },
+      "visor": {
+        "classification": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin",
+        "landmark_source_sha256": "0722c0dad1f433dadaa6f2b2423dd7a8bac5344be99072327dca6755e263a0dd",
+        "source_vertices": [
+          23263,
+          23516
+        ],
+        "actual_world_points": [
+          [
+            -0.16378653049468994,
+            -0.4320336580276489,
+            1.2005311250686646
+          ],
+          [
+            -0.22059637308120728,
+            -0.41462236642837524,
+            1.175782322883606
+          ]
+        ],
+        "actual_surface_midpoint_world": [
+          -0.1921914517879486,
+          -0.4233280122280121,
+          1.1881567239761353
+        ],
+        "head_attachment_midpoint_world": [
+          -0.1921914666891098,
+          -0.4233280122280121,
+          1.1881567239761353
+        ],
+        "attachment_actual_error_m": 1.4901161193847656e-08,
+        "actual_lens_separation_m": 0.06436625279954533,
+        "optical_surface_frame_world": [
+          [
+            -0.1544026881456375,
+            -0.44403979182243347,
+            -0.8826026320457458,
+            -0.1921914666891098
+          ],
+          [
+            -0.9392988085746765,
+            -0.21105657517910004,
+            0.2705039083957672,
+            -0.4233280122280121
+          ],
+          [
+            -0.30639371275901794,
+            0.8707947134971619,
+            -0.3844985067844391,
+            1.1881567239761353
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "surface_normal_elevation_deg": -17.84203625265195,
+        "camera_or_anatomical_eye_defined": false
+      },
+      "rifle": {
+        "landmark_source_sha256": "7bfa52f22345586caa1d7a9b17c2d3e5336772aff9745a36226c0e976448e447",
+        "calibrated_native_skin_formula": "rig_world @ pose_bone @ inverse(native_bone_bind) @ inverse(rig_world) @ mesh_world @ bind_mesh_point",
+        "world_landmarks": {
+          "stock_contact": [
+            -0.2348131388425827,
+            -0.1783689260482788,
+            0.9897714853286743
+          ],
+          "muzzle": [
+            -0.14719468355178833,
+            -1.0347408056259155,
+            0.7235862016677856
+          ],
+          "rear_sight": [
+            -0.20480990409851074,
+            -0.5013763308525085,
+            1.0046523809432983
+          ],
+          "front_sight": [
+            -0.17036189138889313,
+            -0.8334124684333801,
+            0.8834152221679688
+          ],
+          "grip_center": [
+            -0.20994685590267181,
+            -0.39881208539009094,
+            0.8337191343307495
+          ],
+          "right_hand_surface_candidate": [
+            -0.22454293072223663,
+            -0.40018564462661743,
+            0.8333336114883423
+          ],
+          "support_hand_surface_candidate": [
+            -0.18059206008911133,
+            -0.7043139338493347,
+            0.8107805252075195
+          ]
+        },
+        "physical_forward_elevation_deg": -19.95648267109509,
+        "rear_to_front_sight_elevation_deg": -19.96016321086589,
+        "visor_surface_to_rear_sight_distance_m": 0.19981143807227392,
+        "visor_surface_axial_coordinate_on_sightline_m": -0.1343866678653285,
+        "visor_surface_perpendicular_distance_to_sightline_m": 0.14786761755271582,
+        "visor_surface_normal_to_sightline_angle_deg": 14.584258755465399,
+        "not_eye_relief_or_ADS_calibration": true
+      },
+      "prop_state": {
+        "Prop_Rifle": {
+          "world_matrix": [
+            [
+              0.9952569603919983,
+              -0.09699545800685883,
+              0.007391558028757572,
+              -0.19262336194515228
+            ],
+            [
+              0.09365810453891754,
+              0.9349349141120911,
+              -0.34223729372024536,
+              -0.591459333896637
+            ],
+            [
+              0.02628479339182377,
+              0.3413066267967224,
+              0.9395850300788879,
+              0.8148676156997681
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "basis_scale": [
+            0.9999995827674866,
+            1.0000008344650269,
+            1.0000004768371582
+          ],
+          "world_linear_determinant": 1.0000009536743164
+        },
+        "Prop_Magazine_A": {
+          "world_matrix": [
+            [
+              0.9952569603919983,
+              -0.09699545800685883,
+              0.007391558028757572,
+              -0.19262336194515228
+            ],
+            [
+              0.09365810453891754,
+              0.9349349141120911,
+              -0.34223729372024536,
+              -0.591459333896637
+            ],
+            [
+              0.02628479339182377,
+              0.3413066267967224,
+              0.9395850300788879,
+              0.8148676156997681
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "basis_scale": [
+            0.9999995827674866,
+            1.0000008344650269,
+            1.0000004768371582
+          ],
+          "world_linear_determinant": 1.0000009536743164
+        },
+        "Prop_Magazine_B": {
+          "world_matrix": [
+            [
+              -0.9420105814933777,
+              0.2847039997577667,
+              0.17765381932258606,
+              0.19372357428073883
+            ],
+            [
+              0.3344351351261139,
+              0.8402329087257385,
+              0.4268041253089905,
+              -0.2208663672208786
+            ],
+            [
+              -0.027757756412029266,
+              0.4614669680595398,
+              -0.8867236971855164,
+              0.7220333814620972
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "basis_scale": [
+            1.0000004768371582,
+            0.9999997019767761,
+            1.0000005960464478
+          ],
+          "world_linear_determinant": 1.000001072883606
+        }
+      },
+      "mesh_bounds": {
+        "Fresh magazine": {
+          "min_world": [
+            0.14980700612068176,
+            -0.2994046211242676,
+            0.6792214512825012
+          ],
+          "max_world": [
+            0.2353009283542633,
+            -0.1311509907245636,
+            0.8816325664520264
+          ]
+        },
+        "Rebuilt spare magazine sleeve": {
+          "min_world": [
+            0.0802898108959198,
+            -0.25789257884025574,
+            0.6395595669746399
+          ],
+          "max_world": [
+            0.2599186897277832,
+            -0.09729260206222534,
+            0.7674919366836548
+          ]
+        },
+        "Rebuilt SWAT full body": {
+          "min_world": [
+            -0.5105628967285156,
+            -0.7693856954574585,
+            0.004000025801360607
+          ],
+          "max_world": [
+            0.26739001274108887,
+            0.2385910153388977,
+            1.3599172830581665
+          ]
+        },
+        "Removed magazine": {
+          "min_world": [
+            -0.21239395439624786,
+            -0.6062189936637878,
+            0.6806883811950684
+          ],
+          "max_world": [
+            -0.17664340138435364,
+            -0.4904491901397705,
+            0.8935454487800598
+          ]
+        },
+        "Rifle 7": {
+          "min_world": [
+            -0.25718337297439575,
+            -1.0411545038223267,
+            0.7033741474151611
+          ],
+          "max_world": [
+            -0.12515363097190857,
+            -0.15865427255630493,
+            1.0500963926315308
+          ]
+        }
+      },
+      "limits": [
+        "Static measured surface geometry only; not a gameplay camera, eye center, dynamic balance, or ADS prescription",
+        "Body dimensions are measured at native scale; no mesh, bone or engine height scaling",
+        "Legacy Muzzle/RifleSocket helper origins are not used as calibrated physical landmarks"
+      ]
+    }
+  }
+}

@@ -1,0 +1,204 @@
+{
+  "schema": "swat-rigid-rifle-recipe/1",
+  "source_file": "upright16_editable_geometry_base.blend",
+  "source_sha256": "19d79d3eab5a0974ce0c1edc8ace6a2b27327f6df56a71bb85f533c63522628f",
+  "source_geometry": "Existing game-scale Rifle 7 mesh/rest and one seated magazine; no pose evaluation, character skin or new scaling",
+  "original_upload_fbx_sha256": "6e4be0a056f2934ae74513a262472abc30475c532932b7c233775e476bdb83f8",
+  "blender_version": "4.3.2",
+  "units": "meters",
+  "engine_axes": {
+    "forward": "+X",
+    "up": "+Y",
+    "right": "+Z"
+  },
+  "origin": "Measured center of the actual stock rear pad bounding box",
+  "native_stock_center": [
+    0.00129691231995821,
+    0.44999998807907104,
+    0.02265022322535515
+  ],
+  "native_to_export_engine_row_major": [
+    [
+      0.0,
+      -1.0,
+      0.0,
+      0.44999998807907104
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      -0.02265022322535515
+    ],
+    [
+      -1.0,
+      0.0,
+      0.0,
+      0.00129691231995821
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "export_engine_to_native_row_major": [
+    [
+      0.0,
+      -0.0,
+      -1.0,
+      0.00129691231995821
+    ],
+    [
+      -1.0,
+      0.0,
+      -0.0,
+      0.44999998807907104
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      0.02265022322535515
+    ],
+    [
+      -0.0,
+      0.0,
+      -0.0,
+      1.0
+    ]
+  ],
+  "scale_applied_during_extraction": 1.0,
+  "geometry": [
+    {
+      "object": "Rifle 7",
+      "export_node": "Rifle7_RigidBody",
+      "vertices": 5346,
+      "triangles": 10273,
+      "native_bounds": [
+        [
+          -0.0315636470913887,
+          -0.44999998807907104,
+          -0.10401569306850433
+        ],
+        [
+          0.0315636470913887,
+          0.44999998807907104,
+          0.15321019291877747
+        ]
+      ]
+    },
+    {
+      "object": "Removed magazine",
+      "export_node": "Rifle7_SeatedMagazine",
+      "vertices": 406,
+      "triangles": 780,
+      "native_bounds": [
+        [
+          -0.012539922259747982,
+          -0.01976623758673668,
+          -0.15321019291877747
+        ],
+        [
+          0.015134434215724468,
+          0.07690583169460297,
+          0.056747257709503174
+        ]
+      ]
+    }
+  ],
+  "texture_inputs": [
+    {
+      "role": "BaseColor",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_BaseColor.png",
+      "sha256": "82ba8169d041537751ba1143ccadb37181b59e848874c49cce770f2aac42f425",
+      "bytes": 13876902,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "sRGB"
+    },
+    {
+      "role": "Metallic",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_Metallic.png",
+      "sha256": "bbd66a30ffcbbd01df44711a0cfda79c76da79e12272a97da1bd9209f8030c09",
+      "bytes": 7661476,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "Non-Color"
+    },
+    {
+      "role": "Roughness",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_Roughness.png",
+      "sha256": "d09db6b4efe94cfbbf479566cd40861463a84a89934745481a14c276142dc024",
+      "bytes": 7237378,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "Non-Color"
+    },
+    {
+      "role": "Normal",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_Normal.png",
+      "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+      "bytes": 4164967,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "Non-Color"
+    }
+  ],
+  "topology_note": "Source loop triangles made explicit; per-corner UV and normals retained for tangent generation",
+  "height_map": "Source height exists but is not used; no displacement or mesh changes applied",
+  "normal_map_convention": "Supplied map used unchanged with standard glTF tangent-space normal interpretation; source convention not separately documented",
+  "settings": {
+    "export_format": "GLB",
+    "use_selection": true,
+    "export_animations": false,
+    "export_skins": false,
+    "export_cameras": false,
+    "export_lights": false,
+    "export_yup": true,
+    "export_materials": "EXPORT",
+    "export_image_format": "AUTO",
+    "export_texcoords": true,
+    "export_normals": true,
+    "export_tangents": true
+  },
+  "export_file": "rifle7_rigid_textured.glb",
+  "export_bytes": 40189468,
+  "export_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+  "source_unchanged": true,
+  "validation": "PASS; see validation.json",
+  "tangent_postprocess": {
+    "input_sha256": "777087accd1b9774be285c7dcb9b2e288f09e0105b39f73db2328834eba12d4a",
+    "output_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+    "meshes": [
+      {
+        "mesh": "Rifle7_RigidBody_triangulated",
+        "vertices": 14991,
+        "reorthonormalized": 9008,
+        "original_invalid_at_1e_4": 31,
+        "degenerate_direction_fallbacks": 12,
+        "fallback_rule": "Cross normal with its least-parallel coordinate axis; preserve source tangent handedness"
+      },
+      {
+        "mesh": "Rifle7_SeatedMagazine_triangulated",
+        "vertices": 996,
+        "reorthonormalized": 914,
+        "original_invalid_at_1e_4": 2,
+        "degenerate_direction_fallbacks": 0,
+        "fallback_rule": "Cross normal with its least-parallel coordinate axis; preserve source tangent handedness"
+      }
+    ],
+    "scope": "Only TANGENT xyz bytes changed. Positions, indices, UVs, normals, images, materials and tangent handedness remain unchanged.",
+    "file": "rifle7_rigid_textured.glb"
+  },
+  "neutral_views": "Final GLB reimport views rendered; rifle side/top/three-quarter/sight-line and sidearm source-scale view inspected"
+}

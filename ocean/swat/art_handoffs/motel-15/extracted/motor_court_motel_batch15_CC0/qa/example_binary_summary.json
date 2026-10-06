@@ -1,0 +1,44 @@
+{
+  "status": "pass",
+  "scope": "Example GLB node/triangle/material/image inventory and required-extension/external-URI dependency check. Fresh decoding and native transforms are tested separately.",
+  "examples": [
+    {
+      "file": "motel_example.glb",
+      "sha256": "36a19d7fd8ac6e8dc43e79d6416305fe2e1d03dc456ccbee6a216b7b5c08f765",
+      "bytes": 7290096,
+      "placed_mesh_nodes": 161,
+      "placed_triangles": 112849,
+      "unique_meshes": 59,
+      "materials": 114,
+      "embedded_images": 70,
+      "scene_extras": {
+        "batch": "15_motor_court_motel",
+        "license": "CC0-1.0",
+        "render_only": true,
+        "colliders_supplied": false,
+        "source_basis": "metres; Z-up, front -Y"
+      },
+      "extensions_required": [],
+      "external_uris": []
+    },
+    {
+      "file": "motel_example_cutaway.glb",
+      "sha256": "f3619b26c16a39a9a0d0321be8055c724ca34b842a69d49bd6861b1cd4c37132",
+      "bytes": 7100644,
+      "placed_mesh_nodes": 139,
+      "placed_triangles": 94929,
+      "unique_meshes": 56,
+      "materials": 111,
+      "embedded_images": 69,
+      "scene_extras": {
+        "batch": "15_motor_court_motel",
+        "license": "CC0-1.0",
+        "render_only": true,
+        "colliders_supplied": false,
+        "source_basis": "metres; Z-up, front -Y"
+      },
+      "extensions_required": [],
+      "external_uris": []
+    }
+  ]
+}

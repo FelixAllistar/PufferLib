@@ -229,22 +229,9 @@ fi
 
 mkdir -p "$SWAT_BUILD/config"
 cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_BUILD/config/"
-mkdir -p "$SWAT_BUILD/assets/ui"
+mkdir -p "$SWAT_BUILD/assets"
+cp -R "$SWAT_ROOT/ocean/swat/assets/." "$SWAT_BUILD/assets/"
 cp "$SWAT_ROOT/resources/shared/Roboto-Regular.ttf" "$SWAT_BUILD/assets/ui/"
-mkdir -p "$SWAT_BUILD/assets/environment"
-cp "$SWAT_ROOT/ocean/swat/assets/environment/"*.{png,glb,json,txt} "$SWAT_BUILD/assets/environment/"
-cp -R "$SWAT_ROOT/ocean/swat/assets/environment/materials_v1" "$SWAT_BUILD/assets/environment/"
-cp -R "$SWAT_ROOT/ocean/swat/assets/environment/motel_v1" "$SWAT_BUILD/assets/environment/"
-cp -R "$SWAT_ROOT/ocean/swat/assets/environment/storefront_v1" "$SWAT_BUILD/assets/environment/"
-if [ -d "$SWAT_ROOT/build/swat/assets/characters" ]; then
-    mkdir -p "$SWAT_BUILD/assets/characters"
-    cp -R "$SWAT_ROOT/build/swat/assets/characters/." "$SWAT_BUILD/assets/characters/"
-fi
-SWAT_PRIVATE_RIFLE="$SWAT_ROOT/build/swat/assets/weapons/rifle7_rigid_textured.glb"
-if [ -f "$SWAT_PRIVATE_RIFLE" ]; then
-    mkdir -p "$SWAT_BUILD/assets/weapons"
-    cp "$SWAT_PRIVATE_RIFLE" "$SWAT_BUILD/assets/weapons/"
-fi
 SWAT_PHONON="$SWAT_ROOT/build/swat/deps/steam-audio/steamaudio/lib/windows-x64/phonon.dll"
 if [ -f "$SWAT_PHONON" ]; then
     cp "$SWAT_PHONON" "$SWAT_BUILD/phonon.dll"

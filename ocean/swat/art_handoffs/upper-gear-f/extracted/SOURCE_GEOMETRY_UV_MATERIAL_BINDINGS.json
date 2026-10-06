@@ -1,0 +1,4572 @@
+{
+  "source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+  "new_objects": {
+    "SWAT_ElbowCap_L": {
+      "vertices": 386,
+      "triangles": 768,
+      "polygons": 768,
+      "material_slots": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "material_polygon_counts": {
+        "0": 352,
+        "1": 416
+      },
+      "material_triangle_counts": {
+        "0": 352,
+        "1": 416
+      },
+      "uv_layers": {
+        "UVMap": {
+          "loop_count": 2304,
+          "sha256_float32": "08b889bb44acd2ba3121181c196329c14d2a4913c6df0a6c9db1ebc580935dec",
+          "bounds": [
+            [
+              0.3636148273944855,
+              0.36500000953674316
+            ],
+            [
+              0.5836148262023926,
+              0.6349999904632568
+            ]
+          ]
+        }
+      },
+      "weights_by_vertex": [
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        },
+        {
+          "Gear_Elbow_L": 1.0
+        }
+      ],
+      "rest_bounds": [
+        [
+          0.39826059341430664,
+          0.017462002113461494,
+          1.3668888807296753
+        ],
+        [
+          0.4212662875652313,
+          0.07151693105697632,
+          1.4108887910842896
+        ]
+      ],
+      "armature_modifier": [
+        {
+          "rig": "SWAT_Mixamo_Rig",
+          "preserve_volume": false
+        }
+      ]
+    },
+    "SWAT_ElbowCap_R": {
+      "vertices": 386,
+      "triangles": 768,
+      "polygons": 768,
+      "material_slots": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "material_polygon_counts": {
+        "0": 352,
+        "1": 416
+      },
+      "material_triangle_counts": {
+        "0": 352,
+        "1": 416
+      },
+      "uv_layers": {
+        "UVMap": {
+          "loop_count": 2304,
+          "sha256_float32": "e20888c58e74762fbb599da82c714e3e30e9ddd1f26a7ffcbbe5b4a4583086f0",
+          "bounds": [
+            [
+              0.3636099696159363,
+              0.36500000953674316
+            ],
+            [
+              0.5836099982261658,
+              0.6349999904632568
+            ]
+          ]
+        }
+      },
+      "weights_by_vertex": [
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        },
+        {
+          "Gear_Elbow_R": 1.0
+        }
+      ],
+      "rest_bounds": [
+        [
+          -0.4235914647579193,
+          0.017278937622904778,
+          1.3668887615203857
+        ],
+        [
+          -0.3867607116699219,
+          0.07128212600946426,
+          1.410888671875
+        ]
+      ],
+      "armature_modifier": [
+        {
+          "rig": "SWAT_Mixamo_Rig",
+          "preserve_volume": false
+        }
+      ]
+    },
+    "SWAT_Headset_L": {
+      "vertices": 320,
+      "triangles": 636,
+      "polygons": 290,
+      "material_slots": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "material_polygon_counts": {
+        "0": 164,
+        "1": 126
+      },
+      "material_triangle_counts": {
+        "0": 384,
+        "1": 252
+      },
+      "uv_layers": {
+        "UVMap": {
+          "loop_count": 1216,
+          "sha256_float32": "d23b6590ef9a4dc9caff9232e488b932a594da3392f5562a3522607605958ac0",
+          "bounds": [
+            [
+              0.9049999713897705,
+              0.4749999940395355
+            ],
+            [
+              1.2450000047683716,
+              0.8449999690055847
+            ]
+          ]
+        }
+      },
+      "weights_by_vertex": [
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        }
+      ],
+      "rest_bounds": [
+        [
+          0.10199999809265137,
+          -0.05153803527355194,
+          1.62501060962677
+        ],
+        [
+          0.11973022669553757,
+          0.022461961954832077,
+          1.693010687828064
+        ]
+      ],
+      "armature_modifier": [
+        {
+          "rig": "SWAT_Mixamo_Rig",
+          "preserve_volume": false
+        }
+      ]
+    },
+    "SWAT_Headset_R": {
+      "vertices": 320,
+      "triangles": 636,
+      "polygons": 290,
+      "material_slots": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "material_polygon_counts": {
+        "0": 164,
+        "1": 126
+      },
+      "material_triangle_counts": {
+        "0": 384,
+        "1": 252
+      },
+      "uv_layers": {
+        "UVMap": {
+          "loop_count": 1216,
+          "sha256_float32": "ede7caf30dd398412f0ce6c4584d26d34806cad0ac71f63d59037795d030b6d0",
+          "bounds": [
+            [
+              0.9049999713897705,
+              0.4749999940395355
+            ],
+            [
+              1.2450000047683716,
+              0.8449999690055847
+            ]
+          ]
+        }
+      },
+      "weights_by_vertex": [
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        },
+        {
+          "mixamorig:Head": 1.0
+        }
+      ],
+      "rest_bounds": [
+        [
+          -0.11973025649785995,
+          -0.05153803527355194,
+          1.62501060962677
+        ],
+        [
+          -0.10199999809265137,
+          0.022461961954832077,
+          1.693010687828064
+        ]
+      ],
+      "armature_modifier": [
+        {
+          "rig": "SWAT_Mixamo_Rig",
+          "preserve_volume": false
+        }
+      ]
+    }
+  },
+  "new_materials": {
+    "SWAT_Gear_Matte_Polymer": {
+      "viewport_rgba": [
+        0.09000000357627869,
+        0.10000000149011612,
+        0.10999999940395355,
+        1.0
+      ],
+      "base_color_linear_rgba": [
+        0.09000000357627869,
+        0.10000000149011612,
+        0.10999999940395355,
+        1.0
+      ],
+      "roughness": 0.7799999713897705,
+      "metallic": 0.0,
+      "image_texture_nodes": []
+    },
+    "SWAT_Gear_Soft_Padding": {
+      "viewport_rgba": [
+        0.03799999877810478,
+        0.04399999976158142,
+        0.04800000041723251,
+        1.0
+      ],
+      "base_color_linear_rgba": [
+        0.03799999877810478,
+        0.04399999976158142,
+        0.04800000041723251,
+        1.0
+      ],
+      "roughness": 0.7799999713897705,
+      "metallic": 0.0,
+      "image_texture_nodes": []
+    }
+  },
+  "native_rest_bones_unchanged": 70,
+  "rig_bones": 72,
+  "selected_static_action": "Neutral Carry / Anatomical Gear F",
+  "prop_static_scales": {
+    "Prop_Rifle": [
+      0.9999996423721313,
+      0.9999998807907104,
+      1.0
+    ],
+    "Prop_Magazine_A": [
+      0.9999996423721313,
+      0.9999998807907104,
+      1.0
+    ],
+    "Prop_Magazine_B": [
+      1.0000005960464478,
+      0.9999997019767761,
+      1.0000005960464478
+    ]
+  },
+  "new_uv_usage": "Planar coordinates for untextured flat PBR materials, overlapping islands permitted; not a production painted atlas",
+  "gear_bones": {
+    "Gear_Elbow_L": {
+      "parent": "mixamorig:LeftArm",
+      "rest": [
+        [
+          -0.9998332858085632,
+          -7.450580596923828e-09,
+          0.01826915703713894,
+          0.44301092624664307
+        ],
+        [
+          0.018269214779138565,
+          0.0,
+          0.9998330473899841,
+          0.043936822563409805
+        ],
+        [
+          2.9802322387695312e-08,
+          1.0000001192092896,
+          2.0116567611694336e-07,
+          1.3941658735275269
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "inherit_scale": "NONE"
+    },
+    "Gear_Elbow_R": {
+      "parent": "mixamorig:RightArm",
+      "rest": [
+        [
+          0.9999994039535522,
+          0.0,
+          -0.0009196130558848381,
+          -0.44301101565361023
+        ],
+        [
+          -0.0009197089821100235,
+          0.0,
+          -0.9999994039535522,
+          0.04431387037038803
+        ],
+        [
+          7.450580596923828e-09,
+          0.9999997615814209,
+          -2.8312206268310547e-07,
+          1.3941667079925537
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "inherit_scale": "NONE"
+    }
+  }
+}

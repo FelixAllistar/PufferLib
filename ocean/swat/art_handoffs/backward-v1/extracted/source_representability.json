@@ -1,0 +1,1016 @@
+{
+  "source_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "source_unchanged": true,
+  "blender": "4.3.2",
+  "action": "Walk Backward / Shared Ready N C1 Loop A",
+  "frame_range": [
+    0.0,
+    30.0
+  ],
+  "fps": 30.0,
+  "fcurve_count": 700,
+  "key_modes": {
+    "BEZIER": 36844,
+    "LINEAR": 131856
+  },
+  "curve_modes": {
+    "BEZIER+LINEAR": 604,
+    "LINEAR": 96
+  },
+  "span_modes": {
+    "BEZIER": 36240,
+    "LINEAR": 131760
+  },
+  "bezier_spans": 36240,
+  "bezier_spans_with_nonexact_time_thirds": 36240,
+  "worst_time_handle_residual": {
+    "path": "pose.bones[\"mixamorig:Hips\"].location",
+    "component": 0,
+    "frames": [
+      26.25,
+      26.375
+    ],
+    "normalized_error": 5.086263020870341e-06,
+    "absolute_frame_error": 6.357828787884046e-07,
+    "normalized_x_handles": [
+      0.3333282470703125,
+      0.6666717529296875
+    ]
+  },
+  "worst_scalar_hermite_approximation_error_15_probes_per_bezier_span": {
+    "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+    "component": 2,
+    "frames": [
+      29.5,
+      29.625
+    ],
+    "error": 4.7388414893545505e-09,
+    "at_fraction": 0.375
+  },
+  "worst_scalar_derivative_approximation_error_15_probes_per_bezier_span": {
+    "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+    "component": 2,
+    "frames": [
+      29.5,
+      29.625
+    ],
+    "error_per_s": 4.7228732123066886e-06,
+    "at_fraction": 0.125
+  },
+  "groups_with_different_component_key_grids": [],
+  "worst_quaternion_key_norm": {
+    "path": "pose.bones[\"mixamorig:Spine1\"].rotation_quaternion",
+    "max_key_norm_deviation": 7.918140632057202e-08,
+    "norm_min": 0.999999954113541,
+    "norm_max": 1.0000000791814063,
+    "minimum_neighbor_dot": 0.9999997491514403,
+    "key_count": 241
+  },
+  "quaternion_keys": [
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.408424946258151e-08,
+      "norm_min": 0.9999999600179211,
+      "norm_max": 1.0000000640842495,
+      "minimum_neighbor_dot": 0.9999968546639245,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.378647632310219e-08,
+      "norm_min": 0.9999999561518873,
+      "norm_max": 1.0000000637864763,
+      "minimum_neighbor_dot": 0.9999987089132659,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.918140632057202e-08,
+      "norm_min": 0.999999954113541,
+      "norm_max": 1.0000000791814063,
+      "minimum_neighbor_dot": 0.9999997491514403,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.508023203151026e-08,
+      "norm_min": 0.9999999538981877,
+      "norm_max": 1.000000075080232,
+      "minimum_neighbor_dot": 0.9999997557311887,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.459093898098956e-08,
+      "norm_min": 0.9999999576481795,
+      "norm_max": 1.000000074590939,
+      "minimum_neighbor_dot": 0.9999997696689643,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.71910100283435e-08,
+      "norm_min": 0.9999999489454198,
+      "norm_max": 1.00000007719101,
+      "minimum_neighbor_dot": 0.9999986570492028,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.195044477408373e-14,
+      "norm_min": 1.0,
+      "norm_max": 1.000000000000062,
+      "minimum_neighbor_dot": 0.9999999999999628,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.759086797394673e-08,
+      "norm_min": 0.9999999741254283,
+      "norm_max": 1.000000037590868,
+      "minimum_neighbor_dot": 0.9999999999999942,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.374859107260988e-08,
+      "norm_min": 0.9999999706777447,
+      "norm_max": 1.000000063748591,
+      "minimum_neighbor_dot": 0.999999999999985,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.1221257740531314e-08,
+      "norm_min": 0.9999999824938665,
+      "norm_max": 1.0000000412212577,
+      "minimum_neighbor_dot": 0.9999999999999744,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.482859883303547e-08,
+      "norm_min": 0.9999999752833069,
+      "norm_max": 1.0000000448285988,
+      "minimum_neighbor_dot": 0.9999999999999649,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.635896238587179e-08,
+      "norm_min": 0.9999999714095188,
+      "norm_max": 1.0000000563589624,
+      "minimum_neighbor_dot": 0.9999999999999812,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.090349862792777e-08,
+      "norm_min": 0.9999999458552068,
+      "norm_max": 1.0000000709034986,
+      "minimum_neighbor_dot": 0.9999999999999944,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.0211229962162633e-08,
+      "norm_min": 0.99999996978877,
+      "norm_max": 0.9999999894524355,
+      "minimum_neighbor_dot": 0.9999999999999963,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "max_key_norm_deviation": 9.992007221626409e-15,
+      "norm_min": 1.000000000000001,
+      "norm_max": 1.00000000000001,
+      "minimum_neighbor_dot": 0.9999999999999974,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.196689523145892e-08,
+      "norm_min": 0.9999999480331048,
+      "norm_max": 1.0000000490905154,
+      "minimum_neighbor_dot": 0.999999999999987,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.577983814257891e-08,
+      "norm_min": 0.9999999679196807,
+      "norm_max": 1.0000000457798381,
+      "minimum_neighbor_dot": 0.9999999999999899,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.523079593672264e-08,
+      "norm_min": 0.9999999730645837,
+      "norm_max": 1.000000055230796,
+      "minimum_neighbor_dot": 0.9999999999999822,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "max_key_norm_deviation": 8.282263763703668e-13,
+      "norm_min": 1.000000000000647,
+      "norm_max": 1.0000000000008282,
+      "minimum_neighbor_dot": 0.9999999999999912,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.891245681231226e-08,
+      "norm_min": 0.9999999793070409,
+      "norm_max": 1.0000000389124568,
+      "minimum_neighbor_dot": 0.9999999999999831,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.1287425750778937e-08,
+      "norm_min": 0.9999999487125742,
+      "norm_max": 1.000000040954532,
+      "minimum_neighbor_dot": 0.9999999999999556,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.5214738114983675e-08,
+      "norm_min": 0.9999999786729147,
+      "norm_max": 1.0000000552147381,
+      "minimum_neighbor_dot": 0.999999999999976,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.217248937900877e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.0000000000000062,
+      "minimum_neighbor_dot": 0.9999999999999879,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.129657327212044e-08,
+      "norm_min": 0.9999999615623987,
+      "norm_max": 1.0000000412965733,
+      "minimum_neighbor_dot": 0.9999999999999833,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.825072424414657e-08,
+      "norm_min": 0.9999999740923247,
+      "norm_max": 1.0000000582507242,
+      "minimum_neighbor_dot": 0.9999999999999559,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.7409112413632215e-08,
+      "norm_min": 0.999999969487141,
+      "norm_max": 1.0000000474091124,
+      "minimum_neighbor_dot": 0.9999999999999476,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "max_key_norm_deviation": 1.4432899320127035e-14,
+      "norm_min": 1.0,
+      "norm_max": 1.0000000000000144,
+      "minimum_neighbor_dot": 0.9999999999999889,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.088621869373753e-08,
+      "norm_min": 1.0000000035709053,
+      "norm_max": 1.0000000308862187,
+      "minimum_neighbor_dot": 0.9999999999999828,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.974876799401784e-08,
+      "norm_min": 0.9999999725065706,
+      "norm_max": 1.000000049748768,
+      "minimum_neighbor_dot": 0.9999999999999912,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.649984470222023e-08,
+      "norm_min": 0.9999999714345368,
+      "norm_max": 1.0000000364998447,
+      "minimum_neighbor_dot": 0.9999999999999823,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.995204332975845e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.000000000000006,
+      "minimum_neighbor_dot": 0.9999999999999929,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].rotation_quaternion",
+      "max_key_norm_deviation": 2.9057730888126798e-08,
+      "norm_min": 0.999999990847151,
+      "norm_max": 1.0000000290577309,
+      "minimum_neighbor_dot": 0.9999999999999962,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.2133431138170465e-08,
+      "norm_min": 0.9999999678665689,
+      "norm_max": 1.000000030575867,
+      "minimum_neighbor_dot": 0.9999999999999885,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.775000116476804e-08,
+      "norm_min": 0.9999999518315434,
+      "norm_max": 1.0000000677500012,
+      "minimum_neighbor_dot": 0.9999999999999644,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.197216317893606e-08,
+      "norm_min": 0.9999999606327326,
+      "norm_max": 1.0000000619721632,
+      "minimum_neighbor_dot": 0.9999999999999545,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.076634769172415e-08,
+      "norm_min": 0.9999999712980557,
+      "norm_max": 1.0000000307663477,
+      "minimum_neighbor_dot": 0.9999999999999873,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].rotation_quaternion",
+      "max_key_norm_deviation": 2.5555929594744953e-08,
+      "norm_min": 1.000000013014754,
+      "norm_max": 1.0000000255559296,
+      "minimum_neighbor_dot": 0.9999999999999919,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.441944850304026e-08,
+      "norm_min": 0.9999999793066431,
+      "norm_max": 1.0000000544194485,
+      "minimum_neighbor_dot": 0.9999999999999907,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.105427357601002e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.000000000000007,
+      "minimum_neighbor_dot": 0.9999999999999931,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.29517251052414e-08,
+      "norm_min": 0.9999999902653269,
+      "norm_max": 1.000000072951725,
+      "minimum_neighbor_dot": 0.9999999999999893,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.5165316658591905e-08,
+      "norm_min": 0.9999999713828308,
+      "norm_max": 1.0000000351653167,
+      "minimum_neighbor_dot": 0.9999999999999938,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].rotation_quaternion",
+      "max_key_norm_deviation": 2.6859111379451406e-08,
+      "norm_min": 1.000000022807355,
+      "norm_max": 1.0000000268591114,
+      "minimum_neighbor_dot": 0.9999999999999952,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].rotation_quaternion",
+      "max_key_norm_deviation": 1.1102230246251565e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.000000000000001,
+      "minimum_neighbor_dot": 0.9999999999999977,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.8250750667454554e-08,
+      "norm_min": 0.9999999747933765,
+      "norm_max": 1.0000000582507507,
+      "minimum_neighbor_dot": 0.999999999999989,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].rotation_quaternion",
+      "max_key_norm_deviation": 3.365284517720113e-08,
+      "norm_min": 0.9999999805101886,
+      "norm_max": 1.0000000336528452,
+      "minimum_neighbor_dot": 0.9999999999999895,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.727084390587777e-08,
+      "norm_min": 0.9999999551461838,
+      "norm_max": 1.000000047270844,
+      "minimum_neighbor_dot": 0.9999999999999902,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].rotation_quaternion",
+      "max_key_norm_deviation": 1.6209256159527285e-14,
+      "norm_min": 1.0000000000000002,
+      "norm_max": 1.0000000000000162,
+      "minimum_neighbor_dot": 0.9999999999999906,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.571614170030159e-08,
+      "norm_min": 0.9999999913693605,
+      "norm_max": 1.0000000557161417,
+      "minimum_neighbor_dot": 0.9999999999999882,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.211540304335017e-08,
+      "norm_min": 0.9999999758792478,
+      "norm_max": 1.000000062115403,
+      "minimum_neighbor_dot": 0.999999999999975,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.8275034797716785e-08,
+      "norm_min": 0.9999999755701481,
+      "norm_max": 1.0000000582750348,
+      "minimum_neighbor_dot": 0.9999999999999568,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].rotation_quaternion",
+      "max_key_norm_deviation": 8.215650382226158e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.0000000000000082,
+      "minimum_neighbor_dot": 0.9999999999999888,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.4969938823035136e-08,
+      "norm_min": 0.9999999779409267,
+      "norm_max": 1.0000000549699388,
+      "minimum_neighbor_dot": 0.9999999999999917,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.6037520179685885e-08,
+      "norm_min": 0.999999975208177,
+      "norm_max": 1.0000000560375202,
+      "minimum_neighbor_dot": 0.9999999999999825,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.5007109150674296e-08,
+      "norm_min": 0.9999999698292028,
+      "norm_max": 1.0000000450071092,
+      "minimum_neighbor_dot": 0.999999999999987,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].rotation_quaternion",
+      "max_key_norm_deviation": 9.547918011776346e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.0000000000000095,
+      "minimum_neighbor_dot": 0.9999999999999957,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.329070518200751e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.0000000000000053,
+      "minimum_neighbor_dot": 0.9999999999999919,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].rotation_quaternion",
+      "max_key_norm_deviation": 1.5543122344752192e-15,
+      "norm_min": 1.0,
+      "norm_max": 1.0000000000000016,
+      "minimum_neighbor_dot": 0.9999999999999972,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.658873785703179e-08,
+      "norm_min": 0.9999999508432634,
+      "norm_max": 1.0000000665887379,
+      "minimum_neighbor_dot": 0.9998388735054128,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.45566442525336e-08,
+      "norm_min": 0.9999999598795041,
+      "norm_max": 1.0000000645566443,
+      "minimum_neighbor_dot": 0.9992158323471997,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].rotation_quaternion",
+      "max_key_norm_deviation": 5.875384045950227e-08,
+      "norm_min": 0.999999960217368,
+      "norm_max": 1.0000000587538405,
+      "minimum_neighbor_dot": 0.998823885884157,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.191767270597893e-08,
+      "norm_min": 0.9999999668364307,
+      "norm_max": 1.0000000719176727,
+      "minimum_neighbor_dot": 0.9994707567199052,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.283862319378386e-14,
+      "norm_min": 1.0000000000000013,
+      "norm_max": 1.0000000000000628,
+      "minimum_neighbor_dot": 0.9999999999999565,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.883309605105637e-08,
+      "norm_min": 0.999999961854927,
+      "norm_max": 1.000000078833096,
+      "minimum_neighbor_dot": 0.9999283656979425,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.214131142989743e-08,
+      "norm_min": 0.9999999662955166,
+      "norm_max": 1.0000000621413114,
+      "minimum_neighbor_dot": 0.9998618875807301,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "max_key_norm_deviation": 6.570503474634393e-08,
+      "norm_min": 0.9999999516316738,
+      "norm_max": 1.0000000657050347,
+      "minimum_neighbor_dot": 0.9997406591709194,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.500351184575038e-08,
+      "norm_min": 0.9999999670675935,
+      "norm_max": 1.0000000750035118,
+      "minimum_neighbor_dot": 0.9996956121930768,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].rotation_quaternion",
+      "max_key_norm_deviation": 4.463096558993129e-14,
+      "norm_min": 1.0000000000000007,
+      "norm_max": 1.0000000000000446,
+      "minimum_neighbor_dot": 0.9999999999999779,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.01319209372997e-08,
+      "norm_min": 0.9999999580039304,
+      "norm_max": 1.000000070131921,
+      "minimum_neighbor_dot": 0.9999977997703068,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].rotation_quaternion",
+      "max_key_norm_deviation": 7.01319209372997e-08,
+      "norm_min": 0.9999999580039304,
+      "norm_max": 1.000000070131921,
+      "minimum_neighbor_dot": 0.9999977997703068,
+      "key_count": 241
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].rotation_quaternion",
+      "max_key_norm_deviation": 0.0,
+      "norm_min": 1.0,
+      "norm_max": 1.0,
+      "minimum_neighbor_dot": 1.0,
+      "key_count": 241
+    }
+  ],
+  "worst_rest_rotation_orthogonality": {
+    "bone": "mixamorig:LeftUpLeg",
+    "orthogonality_max_abs": 5.844552271039305e-07,
+    "determinant": 0.9999997727824087
+  },
+  "rest_basis": [
+    {
+      "bone": "mixamorig:Hips",
+      "orthogonality_max_abs": 3.4622310352006025e-08,
+      "determinant": 1.0
+    },
+    {
+      "bone": "mixamorig:Spine",
+      "orthogonality_max_abs": 1.0631880043021624e-08,
+      "determinant": 1.0000000078656552
+    },
+    {
+      "bone": "mixamorig:Spine1",
+      "orthogonality_max_abs": 2.8581615074685374e-08,
+      "determinant": 0.999999971418391
+    },
+    {
+      "bone": "mixamorig:Spine2",
+      "orthogonality_max_abs": 2.8581615962863793e-08,
+      "determinant": 1.0000000285816097
+    },
+    {
+      "bone": "mixamorig:Neck",
+      "orthogonality_max_abs": 1.1113567288667525e-08,
+      "determinant": 0.999999992134345
+    },
+    {
+      "bone": "mixamorig:Head",
+      "orthogonality_max_abs": 8.881784197001252e-16,
+      "determinant": 0.9999999999999996
+    },
+    {
+      "bone": "mixamorig:HeadTop_End",
+      "orthogonality_max_abs": 0.0,
+      "determinant": 1.0
+    },
+    {
+      "bone": "mixamorig:LeftShoulder",
+      "orthogonality_max_abs": 1.1889313444868321e-07,
+      "determinant": 0.999999922200518
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "orthogonality_max_abs": 1.3581873703483183e-07,
+      "determinant": 0.9999999421307996
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "orthogonality_max_abs": 1.173515050689744e-07,
+      "determinant": 1.0000000031241845
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "orthogonality_max_abs": 1.2246656933001532e-07,
+      "determinant": 1.0000001422361422
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "orthogonality_max_abs": 1.620014153935756e-07,
+      "determinant": 1.0000001621402919
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "orthogonality_max_abs": 1.1997749749248499e-07,
+      "determinant": 0.9999999679566962
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "orthogonality_max_abs": 1.3110584196063257e-07,
+      "determinant": 0.9999999043044429
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "orthogonality_max_abs": 1.5708957012972036e-07,
+      "determinant": 0.9999998783928328
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "orthogonality_max_abs": 1.0494059732302219e-07,
+      "determinant": 1.0000000417221075
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "orthogonality_max_abs": 1.2762459666859627e-07,
+      "determinant": 1.000000100578252
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "orthogonality_max_abs": 4.267942610436393e-08,
+      "determinant": 0.9999999828513108
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "orthogonality_max_abs": 1.0397928251748567e-07,
+      "determinant": 0.9999999373530536
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "orthogonality_max_abs": 7.006101965245648e-08,
+      "determinant": 1.000000052905917
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "orthogonality_max_abs": 6.17080621045929e-08,
+      "determinant": 0.9999999444249758
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "orthogonality_max_abs": 4.490943594781527e-08,
+      "determinant": 0.9999999777087779
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "orthogonality_max_abs": 3.684995947272895e-09,
+      "determinant": 0.9999999997788772
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "orthogonality_max_abs": 2.3896567857839557e-07,
+      "determinant": 0.9999999209062319
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "orthogonality_max_abs": 1.0660129023953857e-07,
+      "determinant": 0.9999999623310684
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "orthogonality_max_abs": 1.276625734014658e-07,
+      "determinant": 0.999999906484326
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "orthogonality_max_abs": 1.2260399584462789e-08,
+      "determinant": 1.0000000105000564
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "orthogonality_max_abs": 8.015143304618277e-08,
+      "determinant": 1.0000000963646818
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "orthogonality_max_abs": 1.0071309619608115e-07,
+      "determinant": 0.9999999595731615
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "orthogonality_max_abs": 6.984327161063675e-08,
+      "determinant": 1.0000000175406851
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "orthogonality_max_abs": 1.383572915958364e-09,
+      "determinant": 0.9999999999919149
+    },
+    {
+      "bone": "mixamorig:RightShoulder",
+      "orthogonality_max_abs": 1.857952349748615e-07,
+      "determinant": 0.9999999289593647
+    },
+    {
+      "bone": "mixamorig:RightArm",
+      "orthogonality_max_abs": 7.707619342767202e-08,
+      "determinant": 1.0000000467351857
+    },
+    {
+      "bone": "mixamorig:RightForeArm",
+      "orthogonality_max_abs": 1.7217187919804644e-07,
+      "determinant": 1.0000000764553088
+    },
+    {
+      "bone": "mixamorig:RightHand",
+      "orthogonality_max_abs": 8.296708575716849e-08,
+      "determinant": 0.9999999818605929
+    },
+    {
+      "bone": "mixamorig:RightHandThumb1",
+      "orthogonality_max_abs": 5.6724346442216245e-08,
+      "determinant": 0.9999999576165679
+    },
+    {
+      "bone": "mixamorig:RightHandThumb2",
+      "orthogonality_max_abs": 7.364090126582568e-08,
+      "determinant": 0.9999999526669978
+    },
+    {
+      "bone": "mixamorig:RightHandThumb3",
+      "orthogonality_max_abs": 4.264304809264985e-08,
+      "determinant": 0.99999997419098
+    },
+    {
+      "bone": "mixamorig:RightHandThumb4",
+      "orthogonality_max_abs": 5.992994611681013e-08,
+      "determinant": 1.0000000670225317
+    },
+    {
+      "bone": "mixamorig:RightHandIndex1",
+      "orthogonality_max_abs": 1.1217305762034613e-07,
+      "determinant": 0.9999999336534109
+    },
+    {
+      "bone": "mixamorig:RightHandIndex2",
+      "orthogonality_max_abs": 7.610954833037198e-08,
+      "determinant": 1.0000000124254838
+    },
+    {
+      "bone": "mixamorig:RightHandIndex3",
+      "orthogonality_max_abs": 2.09399030781654e-07,
+      "determinant": 1.0000001411187074
+    },
+    {
+      "bone": "mixamorig:RightHandIndex4",
+      "orthogonality_max_abs": 1.2619274969427607e-07,
+      "determinant": 0.9999999450899485
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle1",
+      "orthogonality_max_abs": 6.388625983788643e-08,
+      "determinant": 1.000000039583491
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle2",
+      "orthogonality_max_abs": 1.0138621320265884e-07,
+      "determinant": 1.0000000841743388
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle3",
+      "orthogonality_max_abs": 2.1215650636285943e-07,
+      "determinant": 0.9999998776452338
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle4",
+      "orthogonality_max_abs": 1.3092630968269958e-07,
+      "determinant": 0.9999999312941535
+    },
+    {
+      "bone": "mixamorig:RightHandRing1",
+      "orthogonality_max_abs": 1.0054153409821964e-07,
+      "determinant": 0.9999999272738624
+    },
+    {
+      "bone": "mixamorig:RightHandRing2",
+      "orthogonality_max_abs": 1.043031014891227e-07,
+      "determinant": 0.9999999069940346
+    },
+    {
+      "bone": "mixamorig:RightHandRing3",
+      "orthogonality_max_abs": 1.9400101969324623e-08,
+      "determinant": 1.0000000245006821
+    },
+    {
+      "bone": "mixamorig:RightHandRing4",
+      "orthogonality_max_abs": 6.515767481118928e-09,
+      "determinant": 0.9999999933791056
+    },
+    {
+      "bone": "mixamorig:RightHandPinky1",
+      "orthogonality_max_abs": 2.988010542326336e-07,
+      "determinant": 0.9999998111587481
+    },
+    {
+      "bone": "mixamorig:RightHandPinky2",
+      "orthogonality_max_abs": 6.944333064140551e-08,
+      "determinant": 0.9999999697441895
+    },
+    {
+      "bone": "mixamorig:RightHandPinky3",
+      "orthogonality_max_abs": 5.180719375719178e-08,
+      "determinant": 1.00000000929484
+    },
+    {
+      "bone": "mixamorig:RightHandPinky4",
+      "orthogonality_max_abs": 1.7581379685438492e-08,
+      "determinant": 1.0000000168175767
+    },
+    {
+      "bone": "RifleSocket",
+      "orthogonality_max_abs": 1.9511284277129448e-07,
+      "determinant": 1.0000002100337002
+    },
+    {
+      "bone": "Muzzle",
+      "orthogonality_max_abs": 9.571946379960394e-08,
+      "determinant": 0.9999999457169317
+    },
+    {
+      "bone": "mixamorig:LeftUpLeg",
+      "orthogonality_max_abs": 5.844552271039305e-07,
+      "determinant": 0.9999997727824087
+    },
+    {
+      "bone": "mixamorig:LeftLeg",
+      "orthogonality_max_abs": 8.024279662954825e-08,
+      "determinant": 1.0000000317051407
+    },
+    {
+      "bone": "mixamorig:LeftFoot",
+      "orthogonality_max_abs": 1.902500975647925e-07,
+      "determinant": 1.000000196070476
+    },
+    {
+      "bone": "mixamorig:LeftToeBase",
+      "orthogonality_max_abs": 1.1816556466648365e-07,
+      "determinant": 1.0000001500950388
+    },
+    {
+      "bone": "mixamorig:LeftToe_End",
+      "orthogonality_max_abs": 2.730635428882522e-08,
+      "determinant": 1.000000017319059
+    },
+    {
+      "bone": "mixamorig:RightUpLeg",
+      "orthogonality_max_abs": 3.0630243341711605e-07,
+      "determinant": 1.0000001270390846
+    },
+    {
+      "bone": "mixamorig:RightLeg",
+      "orthogonality_max_abs": 1.5168783762398164e-07,
+      "determinant": 1.0000002060032884
+    },
+    {
+      "bone": "mixamorig:RightFoot",
+      "orthogonality_max_abs": 1.3353277816818832e-07,
+      "determinant": 1.0000000271055527
+    },
+    {
+      "bone": "mixamorig:RightToeBase",
+      "orthogonality_max_abs": 5.911015366066863e-08,
+      "determinant": 1.0000000488700291
+    },
+    {
+      "bone": "mixamorig:RightToe_End",
+      "orthogonality_max_abs": 3.112512247938071e-08,
+      "determinant": 0.999999967253982
+    },
+    {
+      "bone": "Prop_Rifle",
+      "orthogonality_max_abs": 0.0,
+      "determinant": 1.0
+    },
+    {
+      "bone": "Prop_Magazine_A",
+      "orthogonality_max_abs": 0.0,
+      "determinant": 1.0
+    },
+    {
+      "bone": "Prop_Magazine_B",
+      "orthogonality_max_abs": 0.0,
+      "determinant": 1.0
+    }
+  ],
+  "unsupported_FK_flags": [],
+  "rig_matrix_world": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "method": "Direct saved handle audit. At 15 interior fractions per BEZIER span, invert cubic Bezier x by eight Newton steps, compare y(x) and dy/dt to endpoint-slope Hermite. These probes are measurements, not proven global maxima."
+}

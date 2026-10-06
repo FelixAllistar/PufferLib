@@ -1,0 +1,40 @@
+{
+  "inputs": [
+    {
+      "role": "editable",
+      "file": "walk_backward_ready_n_c1.editable.blend",
+      "bytes": 3474349,
+      "sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5"
+    },
+    {
+      "role": "actions",
+      "file": "candidate.actions.blend",
+      "bytes": 1547982,
+      "sha256": "326b2b54559f36fb43f26249b0d64f2c6372e3335cdb93ae223def9f7bf58a17"
+    },
+    {
+      "role": "checkpoint",
+      "file": "walk-backward-shared-ready-n-loop-a-source-checkpoint.tar.gz",
+      "bytes": 19285530,
+      "sha256": "a2916151e218b3b0b7ba002582f2ae37f039df122c77c74c996e93ee43452a03"
+    },
+    {
+      "role": "native_carry_source",
+      "file": "ready_walk.editable.blend",
+      "bytes": 3354708,
+      "sha256": "e90cb6001ecd60f2b395eb94e3a4bb1c67fd9270c7111c2c8aacaa6c40d10f66"
+    },
+    {
+      "role": "original_fbx",
+      "file": "walk_backward.fbx.bin",
+      "bytes": 424177,
+      "sha256": "97b1662e913c09ad61f3aa3a2840fa6dc87dfc6ec4b38636f1f3f152b54871eb"
+    }
+  ],
+  "geometry_template_glb_sha256": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+  "source_character": "Adobe Mixamo Ch15; original character/animation terms apply",
+  "weapon_source": "Numbered weapon7 upload; original product/creator/license not identified",
+  "distribution": "Private licensed-source review; no public redistribution authorization",
+  "grips": "Original sealed N only; no C/C1 hand-diagnostic or engine override",
+  "F_gear": "Separate compatibility preview and engine-owned mapping; not included in this N70 source export"
+}

@@ -73,30 +73,14 @@ if(SWAT_BUILD_PLAYER)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${SWAT_ROOT}/resources/shared/Roboto-Regular.ttf" "$<TARGET_FILE_DIR:swat_player>/assets/ui/Roboto-Regular.ttf"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_LIST_DIR}/assets/environment" "$<TARGET_FILE_DIR:swat_player>/assets/environment"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/assets/audio" "$<TARGET_FILE_DIR:swat_player>/assets/audio"
-        COMMENT "Copying Gold Element font and environment art" VERBATIM)
+            "${CMAKE_CURRENT_LIST_DIR}/assets" "$<TARGET_FILE_DIR:swat_player>/assets"
+        COMMENT "Copying Gold Element runtime art" VERBATIM)
     add_dependencies(swat_player swat_ui_assets)
-    # Local licensed assets are optional and never stored in the public source.
-    set(SWAT_PRIVATE_RIFLE "${SWAT_ROOT}/build/swat/assets/weapons/rifle7_rigid_textured.glb")
-    if(EXISTS "${SWAT_PRIVATE_RIFLE}")
-        add_custom_command(TARGET swat_player POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:swat_player>/assets/weapons"
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SWAT_PRIVATE_RIFLE}" "$<TARGET_FILE_DIR:swat_player>/assets/weapons/"
-            VERBATIM)
-    endif()
     target_include_directories(swat_player PRIVATE "${SWAT_ROOT}/src" "${SWAT_ROOT}/vendor")
     target_link_libraries(swat_player PRIVATE swat_network swat_spatial swat_character_render raylib)
     add_executable(swat_performance_tool performance_tool.c render.c lighting.c weapon_art.c environment_art.c sound_view.c)
     target_link_libraries(swat_performance_tool PRIVATE swat_network swat_spatial swat_character_render raylib)
     add_dependencies(swat_performance_tool swat_ui_assets)
-    if(EXISTS "${SWAT_ROOT}/build/swat/assets/characters/ready.glb")
-        foreach(consumer swat_player swat_performance_tool)
-            add_custom_command(TARGET ${consumer} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_directory "${SWAT_ROOT}/build/swat/assets/characters" "$<TARGET_FILE_DIR:${consumer}>/assets/characters"
-                VERBATIM)
-        endforeach()
-    endif()
     add_executable(swat_character_lab character_lab.c character_view.c lighting.c)
     target_link_libraries(swat_character_lab PRIVATE swat_character_asset swat_core raylib)
     if(WIN32)

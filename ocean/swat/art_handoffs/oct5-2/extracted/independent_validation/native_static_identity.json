@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "native_baseline_sha256": "944b032d6b5f352fe8f715e609568fb686b1187d08e08a76159555d3702a8d44",
+  "checks": {
+    "bone_names": true,
+    "bone_parent_hierarchy": true,
+    "bone_rest": true,
+    "rig_world": true
+  },
+  "meshes": [
+    {
+      "name": "Fresh magazine",
+      "material_slots_exact": true,
+      "uv_names_exact": true,
+      "p_exact": true,
+      "local_p_exact": true,
+      "world_exact": true,
+      "w_exact": true,
+      "tris_exact": true,
+      "mat_exact": true,
+      "loop_vert_exact": true,
+      "loop_normal_exact": true,
+      "uv0_exact": true
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "material_slots_exact": true,
+      "uv_names_exact": true,
+      "p_exact": true,
+      "local_p_exact": true,
+      "world_exact": true,
+      "w_exact": true,
+      "tris_exact": true,
+      "mat_exact": true,
+      "loop_vert_exact": true,
+      "loop_normal_exact": true,
+      "uv0_exact": true
+    },
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "material_slots_exact": true,
+      "uv_names_exact": true,
+      "p_exact": true,
+      "local_p_exact": true,
+      "world_exact": true,
+      "w_exact": true,
+      "tris_exact": true,
+      "mat_exact": true,
+      "loop_vert_exact": true,
+      "loop_normal_exact": true
+    },
+    {
+      "name": "Removed magazine",
+      "material_slots_exact": true,
+      "uv_names_exact": true,
+      "p_exact": true,
+      "local_p_exact": true,
+      "world_exact": true,
+      "w_exact": true,
+      "tris_exact": true,
+      "mat_exact": true,
+      "loop_vert_exact": true,
+      "loop_normal_exact": true,
+      "uv0_exact": true
+    },
+    {
+      "name": "Rifle 7",
+      "material_slots_exact": true,
+      "uv_names_exact": true,
+      "p_exact": true,
+      "local_p_exact": true,
+      "world_exact": true,
+      "w_exact": true,
+      "tris_exact": true,
+      "mat_exact": true,
+      "loop_vert_exact": true,
+      "loop_normal_exact": true,
+      "uv0_exact": true
+    }
+  ]
+}

@@ -1,0 +1,367 @@
+{
+  "schema": "swat-private-static-review-package/1",
+  "clip_id": "crouch_ready_planted_shared_n_static",
+  "animation_name": "Crouch Ready / Planted Shared N Low-Ready",
+  "glb": "crouch_ready_planted_shared_n_static.glb",
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "authored_duration_s": null,
+  "stored_animation_span_s": 0,
+  "static_key_time_s": 0,
+  "interpolation": "210 single-key STEP channels",
+  "runtime_approved": false,
+  "private_licensed_material": true,
+  "visible_stored_spare_B": true,
+  "source_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "files": [
+    {
+      "path": "IMMUTABLE_REFERENCE_CHECK.json",
+      "bytes": 3007,
+      "sha256": "fbe94580c6c316ae6b8bc67c1071b9686cdafa6500c02f7c81fc51e27714ba83"
+    },
+    {
+      "path": "README.md",
+      "bytes": 10063,
+      "sha256": "98032a4f798d6967ecc44213fa3aa45366282df51d2afd67965ba067738bd565"
+    },
+    {
+      "path": "REPRODUCE.md",
+      "bytes": 2958,
+      "sha256": "e5024b3653e39fa9887297ced020506a7bbdbc2bf8f6af130c359827294a2f3d"
+    },
+    {
+      "path": "SOURCE_CURVES.json",
+      "bytes": 181549,
+      "sha256": "59445e2b7265f2ab97e6170c48ab0db454bc8e1ebc8e1069f3ea7a8c6f1ecdeb"
+    },
+    {
+      "path": "SOURCE_ENGINE_MEASUREMENT_HANDOFF.json",
+      "bytes": 1166,
+      "sha256": "7213df0a3262c4c7af0f1aadc673bdb868414ba9446fda5f7d3f7e62d9be734a"
+    },
+    {
+      "path": "SOURCE_INDEPENDENT_STATIC_QUALIFICATION.json",
+      "bytes": 10533,
+      "sha256": "682d32f32563580723c746543f38cd29ce6b0b0f33ed046b98df8eac81414ff0"
+    },
+    {
+      "path": "SOURCE_INDEPENDENT_STATIC_REVIEW.md",
+      "bytes": 3895,
+      "sha256": "6e7eefcbe8ac6a0e5d3df66e162ae5085b63910d4856b2d6c4e136e6e1a3a618"
+    },
+    {
+      "path": "SOURCE_MANIFEST.json",
+      "bytes": 1328,
+      "sha256": "fa00926bfa6eafdcd3f2eef061ddf6b8c480dadc73b9b7375684aabc901ad4d5"
+    },
+    {
+      "path": "SOURCE_MEASURED_POSE.json",
+      "bytes": 10316,
+      "sha256": "4f786e060a62c61d033f7aaea64543ceead4a611218b9acb4f2be29b426ba5f4"
+    },
+    {
+      "path": "SOURCE_OFFLINE_REBUILD_VERIFICATION.json",
+      "bytes": 563,
+      "sha256": "e45f8f411a6ff166f936c1ff7f0e22c25c96c03f77168e2d3f4b3d59f4909c50"
+    },
+    {
+      "path": "SOURCE_PORTABLE_SURFACE_REPLAY.json",
+      "bytes": 407,
+      "sha256": "678a61857af9637fc52a0039cd940780c82df8df3b04721ac2af3a761d533b2e"
+    },
+    {
+      "path": "SOURCE_PREVIEW_MANIFEST.json",
+      "bytes": 938,
+      "sha256": "68ad06f13b8f32ed1a1d8a1881c8b622cce213011ca9a72cfc7c1b4854b595e7"
+    },
+    {
+      "path": "SOURCE_PROVENANCE.json",
+      "bytes": 1128,
+      "sha256": "99067304dfc226ef0a54e20a2db7c333dc1ad481c590fc74af7b173ccc6c940b"
+    },
+    {
+      "path": "SOURCE_QUALITY.md",
+      "bytes": 6216,
+      "sha256": "7c6a9acc0e160d0293de02f20d0e8d99b54beb59a60ff690b2393c4548c17007"
+    },
+    {
+      "path": "SOURCE_sleeve_mount_classification.json",
+      "bytes": 45781,
+      "sha256": "8551b8acbe62ce2aee74694763170b2fdb0f2f232b0392ac3d746b361bb0a48a"
+    },
+    {
+      "path": "animation_channels.json",
+      "bytes": 35657,
+      "sha256": "67fae8ae00fa53376b8399be5437e9909293cb69348803f58c0cedbe89338c22"
+    },
+    {
+      "path": "bindings.json",
+      "bytes": 76248,
+      "sha256": "ba3b94bcd6f9af4e450c7824bd82ad9db9d451a4f631abc20d2dd50054c80623"
+    },
+    {
+      "path": "bridge_reference_samples.json",
+      "bytes": 339191,
+      "sha256": "9571a798fa2ac2920b7d1b6d36686ee2b09ba9ffd256aaa0bc37e8e2e74ad057"
+    },
+    {
+      "path": "bridge_validation.json",
+      "bytes": 1593,
+      "sha256": "92db02d0e07c74bd0e1625973e9edf9de5a8c9e084f8e7224c738216d14ed538"
+    },
+    {
+      "path": "capture_report.json",
+      "bytes": 1010,
+      "sha256": "235747dd1f853b3aad4530854cb96b32e54af9e5a1eb5819038cdd52fa879122"
+    },
+    {
+      "path": "conversion_report.json",
+      "bytes": 84138,
+      "sha256": "b14583fbdfbc3dd11e8761aae3f5250b833608405edc0031da7635cd849175d5"
+    },
+    {
+      "path": "crouch_ready_planted_shared_n_static.conversion.json",
+      "bytes": 84138,
+      "sha256": "b14583fbdfbc3dd11e8761aae3f5250b833608405edc0031da7635cd849175d5"
+    },
+    {
+      "path": "crouch_ready_planted_shared_n_static.glb",
+      "bytes": 3620792,
+      "sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66"
+    },
+    {
+      "path": "events_and_state.json",
+      "bytes": 1145,
+      "sha256": "4e0a2211c1f2a85c8254476debb2e33289e36b33d91c54ffc71a961084b6b6c2"
+    },
+    {
+      "path": "independent_validation/INDEPENDENT_BINARY_REVIEW.md",
+      "bytes": 6744,
+      "sha256": "a853d75eac323ce45d3e1b2cf2ec33d4713cc31223848a6b8df6796c8aed6caf"
+    },
+    {
+      "path": "independent_validation/PORTABLE_FILES.json",
+      "bytes": 3422,
+      "sha256": "fa5c97cf71b7d5ddfd4ee560309a9fed3accd570ed15a44a614c7a2cf85710d0"
+    },
+    {
+      "path": "independent_validation/SOURCE_IDENTITY_CHECK.json",
+      "bytes": 1118,
+      "sha256": "c2e8be1e6a88840c828525f52e77d4614978d1f9e93e9e0d6cd618e934320d67"
+    },
+    {
+      "path": "independent_validation/VALIDATOR_PROVENANCE.json",
+      "bytes": 868,
+      "sha256": "75d48ee4d0774cf112dfb0277e42181273fe21160b6d9bd5cfc401fcacd30c43"
+    },
+    {
+      "path": "independent_validation/actual_binary_validation.json",
+      "bytes": 10400,
+      "sha256": "948ef74e0b83462aec9711da8fab7b8c517b9fa3b5f5cbd56c49dbfae2d635f5"
+    },
+    {
+      "path": "independent_validation/capture_blender.py",
+      "bytes": 4008,
+      "sha256": "debb9172b7af8209556a1be9d6d260e0d41861132dbb210c246d0cb9b1130e8c"
+    },
+    {
+      "path": "independent_validation/inspect_measurements.py",
+      "bytes": 7793,
+      "sha256": "b26699db6451cbb3a74a2199b61844079281eb8b96aa920c88c8459cc570555d"
+    },
+    {
+      "path": "independent_validation/inspect_metadata.py",
+      "bytes": 10664,
+      "sha256": "4e9c7ce4306ff479c95d475e8281b1ef1a56fa01e5fbab7a438ffdbb4750a8ce"
+    },
+    {
+      "path": "independent_validation/measurements_validation.json",
+      "bytes": 5911,
+      "sha256": "d3eab45539c780691b683fe3ae8e64d91f8e11a43075fce7afb84017b98850e9"
+    },
+    {
+      "path": "independent_validation/metadata_validation.json",
+      "bytes": 1851,
+      "sha256": "c4dd7bfa7a61a12d27cec78a382aa525f16199b6a4da49c342a2b8ef09141474"
+    },
+    {
+      "path": "independent_validation/native_static_identity.json",
+      "bytes": 2012,
+      "sha256": "c70621b3d0563543add61b7a359d4b3f35a8e7b923d1fa1fff88ce6522301512"
+    },
+    {
+      "path": "independent_validation/portable_replay.json",
+      "bytes": 17378,
+      "sha256": "7e88f69768f8811e273c7671817a3bb396941a3cbf51c4a58f25a5dd84f03eda"
+    },
+    {
+      "path": "independent_validation/reference_landmarks.json",
+      "bytes": 31991,
+      "sha256": "19b26abbf660fab21373c6cd1f4510da3293cf8bcc3e25c03c625f2d01fe2df6"
+    },
+    {
+      "path": "independent_validation/reimport_capture.json",
+      "bytes": 158123,
+      "sha256": "ee1044b609478c83e3f9879299b0a4d04a0b8f25536f6eaa16bda5d3ae2ea6fb"
+    },
+    {
+      "path": "independent_validation/reimport_capture.npz",
+      "bytes": 3352122,
+      "sha256": "094344bafa4b15fb309cd7462ee15f53a253d674c165a109d20454d3c9f614be"
+    },
+    {
+      "path": "independent_validation/replay_fixture.py",
+      "bytes": 2938,
+      "sha256": "4e824603e0b53538ca5ac755a1f0cce5fbaf33875253f6f6a931962623f64530"
+    },
+    {
+      "path": "independent_validation/replay_static.py",
+      "bytes": 15455,
+      "sha256": "dd93f8c5e9b26e185b88e73a5ace07aeb1bfa29e078b9876335524fe7d7d0960"
+    },
+    {
+      "path": "independent_validation/source_capture.json",
+      "bytes": 156289,
+      "sha256": "04cde348d2b01aac367f4085005d9f0e69e5a6daa14e135729e79cb53a3a8867"
+    },
+    {
+      "path": "independent_validation/source_capture.npz",
+      "bytes": 2864228,
+      "sha256": "fb734c5f0925295e7032f363039bd47256c856a15efdd977b3acb34fb96e3af0"
+    },
+    {
+      "path": "independent_validation/static_baseline_manifest.json",
+      "bytes": 11994,
+      "sha256": "8916318be369f5a8356723ee255258ff042286c7165c78795da156d00c2dba23"
+    },
+    {
+      "path": "material_compatibility.json",
+      "bytes": 1567,
+      "sha256": "996b7d33817c5b84f3c7d4655ababdd59d1a30a97ec336ef34ce0d7c2311e34d"
+    },
+    {
+      "path": "measured_preview_fit.json",
+      "bytes": 13342,
+      "sha256": "00d464a18b4eb32b58dc6a02fead94642414911d07ae693a1a9fa64802296b66"
+    },
+    {
+      "path": "native_pose000.png",
+      "bytes": 306212,
+      "sha256": "b82504f8b5408e1c338a3452faaf0a12e6369219690a51bdc5faa2ef25b73bfd"
+    },
+    {
+      "path": "native_static_reference.npz",
+      "bytes": 1176313,
+      "sha256": "5f9091f5519bc5fe50910edae65b30d512d380993d1e3d9e253a09ad9e173aaf"
+    },
+    {
+      "path": "optical_landmark_source.json",
+      "bytes": 7883,
+      "sha256": "0722c0dad1f433dadaa6f2b2423dd7a8bac5344be99072327dca6755e263a0dd"
+    },
+    {
+      "path": "optical_proxy_bindings.json",
+      "bytes": 4455,
+      "sha256": "9cce08065360a40a1260ff1ecb84f43826639093c34f3db52c7593794b05d22a"
+    },
+    {
+      "path": "optical_proxy_replay_validation.json",
+      "bytes": 726,
+      "sha256": "d2576db1d394ae34f630d1f66b4fc37293add2f8a6b6bc70efd2e804861f7e46"
+    },
+    {
+      "path": "preflight_4_influences.json",
+      "bytes": 1270,
+      "sha256": "a7c04b8dd0cb7fa40b41a59c86318222c737dbf9247edb023a9e66d795a348a6"
+    },
+    {
+      "path": "preflight_8_influences.json",
+      "bytes": 1212,
+      "sha256": "76baf3256b8e98097c462a1d3beaaef0eb2a02501a6f9353f87b4eb74c54d887"
+    },
+    {
+      "path": "reference_capture_identity.json",
+      "bytes": 611,
+      "sha256": "4c90c0f1be4e454c90283e8ede347f919b2db4940fcfa55f3ad326cd3dff4a00"
+    },
+    {
+      "path": "source_crouch-ready-contact-detail.jpg",
+      "bytes": 331949,
+      "sha256": "c14d34ebd3c60f3cf33723d09f23afc244e11366f39f05101e64d82151dda8f1"
+    },
+    {
+      "path": "source_crouch-ready-measured-front-side.jpg",
+      "bytes": 194074,
+      "sha256": "053398b1c2054f96888c348ca622ef5532664b5c36fe92f207b4cd97b1bc2110"
+    },
+    {
+      "path": "source_standing-crouch-native-scale.jpg",
+      "bytes": 191389,
+      "sha256": "f1e1d78b31e0696f629c5d7624e452cf7c14cb8e1465a4d2e4becbd227cdcdd7"
+    },
+    {
+      "path": "static_pose_measurements.json",
+      "bytes": 2457,
+      "sha256": "9a9c645ab8e89d8d4106810ed70a4062582e0e3b4bc1154d3f976c80c123cc6f"
+    },
+    {
+      "path": "stock_reimport_pose000.png",
+      "bytes": 306148,
+      "sha256": "f68ac16cec1cb553f8657ef0b96235ba9471c9564e78c4db2ca57d9098684227"
+    },
+    {
+      "path": "stock_reimport_reference.npz",
+      "bytes": 1321354,
+      "sha256": "11eb84eb600d35e111d2fdc7c68c4e523503cacc0dafc10038275eae0a18001c"
+    },
+    {
+      "path": "tools/capture_parity.py",
+      "bytes": 5288,
+      "sha256": "4af723f23cae78f9f236adbec4ccf74e6469e61b52cf7235d91247ec442ea916"
+    },
+    {
+      "path": "tools/capture_source_curves.py",
+      "bytes": 2120,
+      "sha256": "7ed2ad19772a9d978ca428d34fdda4aad41a6309774effa81c82597d23e8a007"
+    },
+    {
+      "path": "tools/check_animation_glb.py",
+      "bytes": 7699,
+      "sha256": "5080b74555d61c0492b3d61f793ddd8312adf68344dbb4a3106a7548175baf9d"
+    },
+    {
+      "path": "tools/convert_static.py",
+      "bytes": 5866,
+      "sha256": "c7e250980f16eee6b5caf537fdd0413076b5cfdc0f0ff2cef9124513e53982c6"
+    },
+    {
+      "path": "tools/gltf_math.py",
+      "bytes": 6199,
+      "sha256": "33edb1611716fd035b7e7fbcae01692e30bfadc6a8f576633f6851fadd46d831"
+    },
+    {
+      "path": "tools/render_matched.py",
+      "bytes": 4412,
+      "sha256": "0859bb5a5da5efdf5f78441bae0a2a67917a04d8cd51e5d2eddbb8a703d5514b"
+    },
+    {
+      "path": "tools/validate_bridge.py",
+      "bytes": 2887,
+      "sha256": "346c23cde21ce6b7452a9ecb635645018e6e2a2d9e29b74d4966c8851f89582d"
+    },
+    {
+      "path": "tools/validate_fixture.py",
+      "bytes": 10297,
+      "sha256": "ccf9353cd9a843a4aa72870efdb957b0d0c0708011114683d8d94aa96ac061b8"
+    },
+    {
+      "path": "tools/verify_optical_proxy.py",
+      "bytes": 3084,
+      "sha256": "2b7130073412a359913d7c70f222e387ee7fa56b683cfb4fe448b6a148c21a91"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 9798,
+      "sha256": "69666abd3e79e5dd35d0dc96f869175498da69d865fef0f74ffd2b463632241b"
+    }
+  ]
+}

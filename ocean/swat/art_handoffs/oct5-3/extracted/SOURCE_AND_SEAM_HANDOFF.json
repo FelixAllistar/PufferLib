@@ -1,0 +1,88 @@
+{
+  "source_fbx_sha256": "a53c3d0f5c872d268f067e8cccf7b509d1f3a3e846a975ea83082876db100b51",
+  "native_duration_s": 1,
+  "source_hz": 60,
+  "nominal_source_pace_m_s": 2.0390741825103778,
+  "root_displacement_m": [
+    -8.149072527885437e-08,
+    -2.039074182510376,
+    -2.384185791015625e-07
+  ],
+  "candidate_sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+  "source_body_preserved_before_seam_human_curves": 170,
+  "repair_windows_s": [
+    [
+      0,
+      0.125
+    ],
+    [
+      0.875,
+      1
+    ]
+  ],
+  "changed_scalar_curves": 683,
+  "center_scalar_max_error": 0,
+  "analytic_endpoint_velocity_gap": {
+    "native_carry": {
+      "linear_m_s": 1.746609687545379,
+      "angular_deg_s": 475.58769773719695
+    },
+    "seam_a": {
+      "linear_m_s": 5.249731592851773e-05,
+      "angular_deg_s": 0.007135674878907807
+    }
+  },
+  "native_scale": true,
+  "selected_ranges": {
+    "body_top_z_m": {
+      "min": 1.3062503337860107,
+      "max": 1.3530688285827637
+    },
+    "body_extent_m": {
+      "min": 1.3022503182291985,
+      "max": 1.3490687794983387
+    },
+    "hips_z_m": {
+      "min": 0.64351886510849,
+      "max": 0.6894661784172058
+    },
+    "visor_surface_z_m": {
+      "min": 1.1259353160858154,
+      "max": 1.1724982261657715
+    },
+    "stock_center_z_m": {
+      "min": 0.9611530303955078,
+      "max": 1.0094754695892334
+    },
+    "muzzle_z_m": {
+      "min": 0.6924492120742798,
+      "max": 0.7526249289512634
+    },
+    "rifle_physical_elevation_deg": {
+      "min": -20.294393059024475,
+      "max": -18.93175225722774
+    },
+    "visor_perpendicular_to_sightline_m": {
+      "min": 0.1284859594242819,
+      "max": 0.13637739636260057
+    }
+  },
+  "prop_state": "Stored spare and Hips-skinned sleeve visible; not the collapsed spare state from the old movement library",
+  "actual_fit_qualification": "QUALIFIED_MOTION_AND_C1_CONTINUITY_CANDIDATE_WITH_STORED_ACCESSORY_COLLISION_LIMIT",
+  "runtime_or_ADS_approval": false,
+  "stored_accessory_limit": {
+    "maximum_sampled_inward_distance_into_closed_thigh_hardware_mm": 18.392138183116913,
+    "frame": 3,
+    "time_s": 0.1,
+    "body_component": 17904,
+    "maximum_sampled_body_inward_distance_into_closed_sleeve_wall_mm": 3.9998574910146134,
+    "sleeve_body_triangle_pair_range": [
+      28,
+      148
+    ],
+    "static_belt_mount_pairs": 28,
+    "classification": "New dynamic stored-accessory fit failure relative to planted static reference, inherited unchanged from pre-seam native carry. Source pose and shared mesh retained."
+  },
+  "independent_native_source_pace_m_s": 2.0390742532908934,
+  "precision_note": "Original bake displacement uses Blender float32 vector subtraction; independent native endpoint double-precision subtraction differs by0.071micrometres over the1s stride."
+}

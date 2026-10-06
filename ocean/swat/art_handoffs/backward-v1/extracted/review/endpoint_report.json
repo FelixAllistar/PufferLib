@@ -1,0 +1,2580 @@
+{
+  "schema": "independent-unit-glb-validation/1",
+  "glb": "animation_rebuild/walk_backward_n_cubic_fixture/package/walk_backward_shared_ready_n_c1_loop_a.glb",
+  "source_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "source_curves_sha256": "6d930c7d7cbccca3382daf39f3ce1c89704d3d84b51e88f4cd5d3e7aa6d799a9",
+  "source_analytic_fk_sha256": "0d42f07c119d44393d3a6425c4d76d43a9303bf6005efe31c202e2c7228afdea",
+  "method": "Actual binary float64 Hermite with per-second tangents; normalized quaternion differential; full scale-aware FK and polar angular derivative; every stored skin influence normalized across all influence sets. Finite chords are separate from analytic endpoint residuals. Native skin comparison uses the same GLB mesh and inverse binds to isolate animation; direct Blender skin fidelity belongs to a separate native capture.",
+  "sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "validation": {
+    "joint_count": 70,
+    "channel_count": 210,
+    "samplers_all_cubic": true,
+    "duration_s": 1,
+    "key_quaternion_norm_residual_max": 4.552790033862664e-08
+  },
+  "worst_linear": {
+    "bone": "mixamorig:LeftToe_End",
+    "endpoint_pose_matrix_abs_gap": 0.0,
+    "endpoint_position_gap_m": 0.0,
+    "linear_velocity_gap_m_s": 6.622554901146386e-05,
+    "outgoing_linear_m_s": [
+      0.022256797084195964,
+      -0.11798174895914401,
+      -4.3184269192638896
+    ],
+    "incoming_linear_m_s": [
+      0.02225729382480332,
+      -0.11798354444123929,
+      -4.318493118605538
+    ],
+    "native_pose_max_matrix_abs_error": 1.8436690585321713e-07,
+    "native_linear_velocity_max_error_m_s": 1.2518225504751856e-06,
+    "analytic_report_linear_velocity_max_error_m_s": 1.2613117176151815e-06,
+    "endpoint_rotation_gap_deg": 0.0,
+    "angular_velocity_gap_deg_s": 0.0014497666836857691,
+    "outgoing_angular_deg_s": [
+      67.231180987219,
+      -40.7090290269275,
+      -50.71031976032006
+    ],
+    "incoming_angular_deg_s": [
+      67.23222852976633,
+      -40.709628687279064,
+      -50.71112280795965
+    ],
+    "native_angular_velocity_max_error_deg_s": 2.6372831598106052e-05,
+    "analytic_report_angular_velocity_max_error_deg_s": 2.9597643181992534e-05
+  },
+  "worst_angular": {
+    "bone": "mixamorig:LeftUpLeg",
+    "endpoint_pose_matrix_abs_gap": 0.0,
+    "endpoint_position_gap_m": 0.0,
+    "linear_velocity_gap_m_s": 5.92799626178728e-06,
+    "outgoing_linear_m_s": [
+      0.08707538024712848,
+      -0.3124362094387503,
+      -0.21302513230105488
+    ],
+    "incoming_linear_m_s": [
+      0.08707671208754737,
+      -0.3124409822097148,
+      -0.21302838622147474
+    ],
+    "native_pose_max_matrix_abs_error": 1.6932866708785355e-07,
+    "native_linear_velocity_max_error_m_s": 1.5135471721458944e-08,
+    "analytic_report_linear_velocity_max_error_m_s": 1.513547176535227e-08,
+    "endpoint_rotation_gap_deg": 0.0,
+    "angular_velocity_gap_deg_s": 0.005045901367007706,
+    "outgoing_angular_deg_s": [
+      325.70171848318273,
+      42.75289998305852,
+      18.969352860319724
+    ],
+    "incoming_angular_deg_s": [
+      325.7067125821756,
+      42.753554658510744,
+      18.969655343223135
+    ],
+    "native_angular_velocity_max_error_deg_s": 2.3605393962305018e-05,
+    "analytic_report_angular_velocity_max_error_deg_s": 2.360539385235251e-05
+  },
+  "native_pose_max_matrix_abs_error": 4.815464542673453e-07,
+  "native_linear_velocity_max_error_m_s": 1.2518225504751856e-06,
+  "native_angular_velocity_max_error_deg_s": 2.6372831598106052e-05,
+  "bones": [
+    {
+      "bone": "mixamorig:Hips",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.134186655937745e-06,
+      "outgoing_linear_m_s": [
+        0.0231708325445652,
+        -0.31214475631713867,
+        -0.12259471416473389
+      ],
+      "incoming_linear_m_s": [
+        0.023171186447143555,
+        -0.3121495246887207,
+        -0.12259658426046371
+      ],
+      "native_pose_max_matrix_abs_error": 3.04563957387316e-08,
+      "native_linear_velocity_max_error_m_s": 1.1653735803183464e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1653735803183464e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0007572256213190186,
+      "outgoing_angular_deg_s": [
+        -5.5325741655079215,
+        49.008972971828165,
+        -4.067663021117314
+      ],
+      "incoming_angular_deg_s": [
+        -5.532658728055402,
+        49.00972289046911,
+        -4.067725164895068
+      ],
+      "native_angular_velocity_max_error_deg_s": 6.947575131499117e-07,
+      "analytic_report_angular_velocity_max_error_deg_s": 6.947574947616953e-07
+    },
+    {
+      "bone": "mixamorig:Spine",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.21614721393638e-06,
+      "outgoing_linear_m_s": [
+        0.02210861239611279,
+        -0.3132351602942633,
+        -0.13428761179291523
+      ],
+      "incoming_linear_m_s": [
+        0.022108949858731436,
+        -0.3132399453314127,
+        -0.13428966062922332
+      ],
+      "native_pose_max_matrix_abs_error": 3.36934022904245e-08,
+      "native_linear_velocity_max_error_m_s": 1.1508218364436918e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1508218364436918e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004667324636128759,
+      "outgoing_angular_deg_s": [
+        1.2819642179918118,
+        30.194850602524212,
+        -3.7811656512682834
+      ],
+      "incoming_angular_deg_s": [
+        1.2819827794493086,
+        30.19531348068101,
+        -3.7812225588850468
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.1170193672153093e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.1170193747703094e-06
+    },
+    {
+      "bone": "mixamorig:Spine1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.1717137549109e-06,
+      "outgoing_linear_m_s": [
+        0.030873093248864013,
+        -0.31260671900574316,
+        -0.12629763080604894
+      ],
+      "incoming_linear_m_s": [
+        0.030873562727636288,
+        -0.3126114945752768,
+        -0.12629955957469094
+      ],
+      "native_pose_max_matrix_abs_error": 4.165521505505865e-08,
+      "native_linear_velocity_max_error_m_s": 1.0368830917298928e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.036883091870508e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004432879256146096,
+      "outgoing_angular_deg_s": [
+        1.8579416282450374,
+        28.684180690960986,
+        -3.218684259285022
+      ],
+      "incoming_angular_deg_s": [
+        1.8579690195451601,
+        28.684620488408758,
+        -3.218732551174684
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.1008550293694867e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.1008551032885136e-06
+    },
+    {
+      "bone": "mixamorig:Spine2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.046841904122118e-06,
+      "outgoing_linear_m_s": [
+        0.04402089454628159,
+        -0.31083044214102806,
+        -0.10287846700407607
+      ],
+      "incoming_linear_m_s": [
+        0.04402156302401889,
+        -0.31083519097088325,
+        -0.10288003937989834
+      ],
+      "native_pose_max_matrix_abs_error": 3.869758669061696e-08,
+      "native_linear_velocity_max_error_m_s": 1.4479457649431543e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.4479457629245586e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273879315,
+      "outgoing_angular_deg_s": [
+        2.6979447027409758,
+        27.25478299073849,
+        -2.7955819533073734
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997608,
+        27.255200948894647,
+        -2.795623789620875
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507539313807e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074825939609e-06
+    },
+    {
+      "bone": "mixamorig:Neck",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 4.902982532340297e-06,
+      "outgoing_linear_m_s": [
+        0.06195433387687802,
+        -0.3085204757593619,
+        -0.06305095990474162
+      ],
+      "incoming_linear_m_s": [
+        0.06195527472085901,
+        -0.3085251899619911,
+        -0.06305192444809843
+      ],
+      "native_pose_max_matrix_abs_error": 4.914966034164081e-08,
+      "native_linear_velocity_max_error_m_s": 1.1594603624158963e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1594603634496725e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0003525399004034961,
+      "outgoing_angular_deg_s": [
+        8.513340969398865,
+        21.249767282432632,
+        -2.0347415029829112
+      ],
+      "incoming_angular_deg_s": [
+        8.513469936235293,
+        21.25009400858896,
+        -2.0347715355527294
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.1325613036802902e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.13256133070395e-06
+    },
+    {
+      "bone": "mixamorig:Head",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 4.929561407848375e-06,
+      "outgoing_linear_m_s": [
+        0.073911322359309,
+        -0.31129036438650337,
+        -0.0419502789926178
+      ],
+      "incoming_linear_m_s": [
+        0.07391244605906855,
+        -0.3112951210850293,
+        -0.041950920626202745
+      ],
+      "native_pose_max_matrix_abs_error": 4.960778343665595e-08,
+      "native_linear_velocity_max_error_m_s": 1.1849078392552603e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1849078403310492e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 9.400877337628157e-05,
+      "outgoing_angular_deg_s": [
+        3.9956310704040017,
+        0.8509746742119181,
+        -4.692743653146227
+      ],
+      "incoming_angular_deg_s": [
+        3.995691343089725,
+        0.8509901059060779,
+        -4.692814128075406
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.8759102355106275e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.875910238205536e-06
+    },
+    {
+      "bone": "mixamorig:HeadTop_End",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.05262034152074e-06,
+      "outgoing_linear_m_s": [
+        0.09265463483691802,
+        -0.3163825290055083,
+        -0.02691471264054801
+      ],
+      "incoming_linear_m_s": [
+        0.09265604662209545,
+        -0.3163873628417572,
+        -0.02691512478378375
+      ],
+      "native_pose_max_matrix_abs_error": 4.992964908190345e-08,
+      "native_linear_velocity_max_error_m_s": 1.6191603028378925e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.6191603054519834e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 9.3998038337383e-05,
+      "outgoing_angular_deg_s": [
+        3.993909962940757,
+        0.8521310196710125,
+        -4.693025086192397
+      ],
+      "incoming_angular_deg_s": [
+        3.9939702093044427,
+        0.85214646900589,
+        -4.693095565444136
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.8758558861962948e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.8758558834644602e-06
+    },
+    {
+      "bone": "mixamorig:LeftShoulder",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.161917871814071e-06,
+      "outgoing_linear_m_s": [
+        0.08154789818833333,
+        -0.3137787455850715,
+        -0.09540581561936087
+      ],
+      "incoming_linear_m_s": [
+        0.08154913946223573,
+        -0.3137835383728686,
+        -0.09540727637955568
+      ],
+      "native_pose_max_matrix_abs_error": 9.706126913311408e-08,
+      "native_linear_velocity_max_error_m_s": 2.0280971747791426e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 2.0280971710726773e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027392161,
+      "outgoing_angular_deg_s": [
+        2.697944702740981,
+        27.254782990738494,
+        -2.7955819533073742
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997687,
+        27.25520094889465,
+        -2.795623789620878
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074979538611e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507493360501e-06
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.673047779518709e-06,
+      "outgoing_linear_m_s": [
+        0.12777753066091463,
+        -0.3222585756256524,
+        -0.13346262637440343
+      ],
+      "incoming_linear_m_s": [
+        0.12777948114722174,
+        -0.3222634950617802,
+        -0.13346467044447538
+      ],
+      "native_pose_max_matrix_abs_error": 1.723364738692723e-07,
+      "native_linear_velocity_max_error_m_s": 1.7524219767608626e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.752421975346827e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027385263,
+      "outgoing_angular_deg_s": [
+        2.697944702741003,
+        27.254782990738544,
+        -2.795581953307381
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997856,
+        27.255200948894696,
+        -2.795623789620882
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507501904438e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075273301265e-06
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.087362996059556e-06,
+      "outgoing_linear_m_s": [
+        0.21960632269352423,
+        -0.324937769132703,
+        -0.07096109047481163
+      ],
+      "incoming_linear_m_s": [
+        0.21960968249097312,
+        -0.32494272815142416,
+        -0.07096217485605057
+      ],
+      "native_pose_max_matrix_abs_error": 1.5070026637697964e-07,
+      "native_linear_velocity_max_error_m_s": 6.115883809322566e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 6.11588381535351e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027392858,
+      "outgoing_angular_deg_s": [
+        2.6979447027409744,
+        27.25478299073852,
+        -2.7955819533073836
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997647,
+        27.25520094889467,
+        -2.7956237896208855
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075187816184e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075266660501e-06
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.745648093873137e-06,
+      "outgoing_linear_m_s": [
+        0.29943577095920576,
+        -0.3239829437850218,
+        0.015389086052597353
+      ],
+      "incoming_linear_m_s": [
+        0.2994403536099478,
+        -0.3239878881031783,
+        0.015389324376641506
+      ],
+      "native_pose_max_matrix_abs_error": 1.9578607285408722e-07,
+      "native_linear_velocity_max_error_m_s": 8.15831126603961e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 8.158311273845021e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027401409,
+      "outgoing_angular_deg_s": [
+        2.697944702740983,
+        27.254782990738523,
+        -2.795581953307392
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997763,
+        27.25520094889468,
+        -2.7956237896208993
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075671569772e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075393293735e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.904567175891394e-06,
+      "outgoing_linear_m_s": [
+        0.3135356194300031,
+        -0.32420779027524,
+        0.026804404395157636
+      ],
+      "incoming_linear_m_s": [
+        0.3135404177406983,
+        -0.3242127378903442,
+        0.026804817150701515
+      ],
+      "native_pose_max_matrix_abs_error": 2.640083932581305e-07,
+      "native_linear_velocity_max_error_m_s": 1.085874193872768e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.0858741951301721e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.000421968702732259,
+      "outgoing_angular_deg_s": [
+        2.697944702740985,
+        27.25478299073853,
+        -2.7955819533073814
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997696,
+        27.25520094889468,
+        -2.795623789620882
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075359028786e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507507942531e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 7.0608438450031145e-06,
+      "outgoing_linear_m_s": [
+        0.3268044940071301,
+        -0.32549521241431917,
+        0.027058475874298
+      ],
+      "incoming_linear_m_s": [
+        0.3268094953161247,
+        -0.32550017923127733,
+        0.02705889199140656
+      ],
+      "native_pose_max_matrix_abs_error": 3.212148429188044e-07,
+      "native_linear_velocity_max_error_m_s": 9.425263497690716e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 9.42526351243883e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027424013,
+      "outgoing_angular_deg_s": [
+        2.6979447027409806,
+        27.254782990738487,
+        -2.795581953307392
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997696,
+        27.255200948894643,
+        -2.7956237896208944
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074244113416e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074351789043e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 7.186040590878963e-06,
+      "outgoing_linear_m_s": [
+        0.33733635450346683,
+        -0.32613169272966375,
+        0.031017311570405215
+      ],
+      "incoming_linear_m_s": [
+        0.3373415167617941,
+        -0.32613666902292643,
+        0.031017787778028286
+      ],
+      "native_pose_max_matrix_abs_error": 2.865932504370061e-07,
+      "native_linear_velocity_max_error_m_s": 7.185772467455758e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 7.185772474748176e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.000421968702744786,
+      "outgoing_angular_deg_s": [
+        2.697944702740994,
+        27.25478299073847,
+        -2.7955819533074
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699777,
+        27.25520094889463,
+        -2.7956237896209006
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875073931507363e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507396226687e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 7.328770059529331e-06,
+      "outgoing_linear_m_s": [
+        0.34912013466852354,
+        -0.32674132807492173,
+        0.036446059673346486
+      ],
+      "incoming_linear_m_s": [
+        0.3491254773667918,
+        -0.32674631343172483,
+        0.03644661883642268
+      ],
+      "native_pose_max_matrix_abs_error": 2.986246444292018e-07,
+      "native_linear_velocity_max_error_m_s": 1.0904804943662562e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.0904804952112632e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870269090047,
+      "outgoing_angular_deg_s": [
+        2.6979447130421623,
+        27.2547829846644,
+        -2.7955819701063542
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849410011045,
+        27.255200942820466,
+        -2.7956238064201115
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507419329503e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074472788506e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.999993483382765e-06,
+      "outgoing_linear_m_s": [
+        0.3206597382532864,
+        -0.3215862339539735,
+        0.05923787775449619
+      ],
+      "incoming_linear_m_s": [
+        0.3206646454351653,
+        -0.3215911423041362,
+        0.0592387874651398
+      ],
+      "native_pose_max_matrix_abs_error": 2.096195878542595e-07,
+      "native_linear_velocity_max_error_m_s": 1.0975753176472472e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.0975753187169944e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027389599,
+      "outgoing_angular_deg_s": [
+        2.697944702740953,
+        27.25478299073844,
+        -2.7955819533073627
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699736,
+        27.255200948894597,
+        -2.7956237896208687
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074989202605e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074742725604e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 7.006067226081651e-06,
+      "outgoing_linear_m_s": [
+        0.32038631507983,
+        -0.32062591878663493,
+        0.06833634013219614
+      ],
+      "incoming_linear_m_s": [
+        0.32039121754596966,
+        -0.3206308127746391,
+        0.06833738879093033
+      ],
+      "native_pose_max_matrix_abs_error": 1.911103856278018e-07,
+      "native_linear_velocity_max_error_m_s": 7.862277911838771e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 7.862277927879724e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870274490426,
+      "outgoing_angular_deg_s": [
+        2.6979447027409966,
+        27.25478299073858,
+        -2.795581953307392
+      ],
+      "incoming_angular_deg_s": [
+        2.69798493069978,
+        27.25520094889474,
+        -2.7956237896208935
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875076877150654e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875076932293304e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.92112142421032e-06,
+      "outgoing_linear_m_s": [
+        0.31359918294345807,
+        -0.32039872057935587,
+        0.0640012647781796
+      ],
+      "incoming_linear_m_s": [
+        0.31360398085853847,
+        -0.32040361121080313,
+        0.06400224643835348
+      ],
+      "native_pose_max_matrix_abs_error": 2.0014954382752137e-07,
+      "native_linear_velocity_max_error_m_s": 7.581821480652734e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 7.581821493461324e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273281237,
+      "outgoing_angular_deg_s": [
+        2.6979447027409775,
+        27.254782990738565,
+        -2.795581953307384
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699761,
+        27.255200948894714,
+        -2.79562378962089
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875076841178198e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507728807083e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.8368648135698294e-06,
+      "outgoing_linear_m_s": [
+        0.30710940616615895,
+        -0.3206948335588867,
+        0.05485126792907866
+      ],
+      "incoming_linear_m_s": [
+        0.30711410437766956,
+        -0.3206997286594076,
+        0.05485210907114224
+      ],
+      "native_pose_max_matrix_abs_error": 2.0524439625635438e-07,
+      "native_linear_velocity_max_error_m_s": 1.1384957990994241e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1384957996452833e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687029476552,
+      "outgoing_angular_deg_s": [
+        2.6979447198347164,
+        27.254783002813355,
+        -2.795581956029132
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849477937687,
+        27.255200960969688,
+        -2.7956237923426723
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875077019514e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875076433992825e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.877157648801469e-06,
+      "outgoing_linear_m_s": [
+        0.3096604377329055,
+        -0.3199179494756714,
+        0.0648872318362844
+      ],
+      "incoming_linear_m_s": [
+        0.30966517633714863,
+        -0.3199228329176598,
+        0.0648882282907488
+      ],
+      "native_pose_max_matrix_abs_error": 2.165437880674581e-07,
+      "native_linear_velocity_max_error_m_s": 1.1080320337644742e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1080320344750468e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273610975,
+      "outgoing_angular_deg_s": [
+        2.6979447027410273,
+        27.25478299073847,
+        -2.7955819533073485
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699814,
+        27.255200948894622,
+        -2.7956237896208536
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075493450748e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075109703193e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.888204086362917e-06,
+      "outgoing_linear_m_s": [
+        0.3096622332519015,
+        -0.31900002347875855,
+        0.07383804024807994
+      ],
+      "incoming_linear_m_s": [
+        0.30966697132498605,
+        -0.3190048931919874,
+        0.07383917334650898
+      ],
+      "native_pose_max_matrix_abs_error": 2.3312129882047117e-07,
+      "native_linear_velocity_max_error_m_s": 1.1742534586868114e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.174253459485912e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870272610544,
+      "outgoing_angular_deg_s": [
+        2.6979447027409766,
+        27.254782990738512,
+        -2.795581953307385
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699764,
+        27.255200948894654,
+        -2.7956237896208838
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075155855297e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074970068086e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.798551388531699e-06,
+      "outgoing_linear_m_s": [
+        0.30288308764854543,
+        -0.3191983933707228,
+        0.06536170585304625
+      ],
+      "incoming_linear_m_s": [
+        0.302887721380777,
+        -0.31920326609476307,
+        0.06536270854293647
+      ],
+      "native_pose_max_matrix_abs_error": 2.448660332277086e-07,
+      "native_linear_velocity_max_error_m_s": 9.785564354565463e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 9.785564371783492e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273906295,
+      "outgoing_angular_deg_s": [
+        2.697944702740976,
+        27.25478299073844,
+        -2.7955819533073814
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699763,
+        27.255200948894597,
+        -2.795623789620884
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074633352303e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074311627747e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.7236162079962585e-06,
+      "outgoing_linear_m_s": [
+        0.29735737900762826,
+        -0.31988284780339427,
+        0.053356080109414096
+      ],
+      "incoming_linear_m_s": [
+        0.2973619279956787,
+        -0.31988773080033434,
+        0.053356898683487045
+      ],
+      "native_pose_max_matrix_abs_error": 2.9124074463204863e-07,
+      "native_linear_velocity_max_error_m_s": 1.2274043759854431e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.2274043777061623e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687026948549,
+      "outgoing_angular_deg_s": [
+        2.6979446913624154,
+        27.254782989298647,
+        -2.795581947573811
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849193210264,
+        27.25520094745478,
+        -2.7956237838872275
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075209122277e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075195686482e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.7600494559264025e-06,
+      "outgoing_linear_m_s": [
+        0.2991782890412095,
+        -0.318565595330972,
+        0.06795559432340288
+      ],
+      "incoming_linear_m_s": [
+        0.29918286701164376,
+        -0.31857045858974653,
+        0.06795663795621275
+      ],
+      "native_pose_max_matrix_abs_error": 2.3009981281463254e-07,
+      "native_linear_velocity_max_error_m_s": 1.1694028843220919e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1694028855029998e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027327699,
+      "outgoing_angular_deg_s": [
+        2.6979447027409846,
+        27.254782990738473,
+        -2.7955819533073782
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699769,
+        27.255200948894622,
+        -2.7956237896208833
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507541245163e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507545454949e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.758614532381044e-06,
+      "outgoing_linear_m_s": [
+        0.2983283187100745,
+        -0.31783470168236455,
+        0.07426096381410198
+      ],
+      "incoming_linear_m_s": [
+        0.29833288319628876,
+        -0.3178395540143573,
+        0.07426210364313696
+      ],
+      "native_pose_max_matrix_abs_error": 2.48922038648125e-07,
+      "native_linear_velocity_max_error_m_s": 1.1020064321413967e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1020064331559117e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273895535,
+      "outgoing_angular_deg_s": [
+        2.6979447027409966,
+        27.254782990738484,
+        -2.795581953307389
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997807,
+        27.255200948894636,
+        -2.7956237896208935
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075261911027e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075383306876e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.702351786227563e-06,
+      "outgoing_linear_m_s": [
+        0.29432458019418795,
+        -0.3182239793204301,
+        0.06660190286537766
+      ],
+      "incoming_linear_m_s": [
+        0.2943290829731184,
+        -0.3182288375041567,
+        0.06660292489876689
+      ],
+      "native_pose_max_matrix_abs_error": 3.658300191666797e-07,
+      "native_linear_velocity_max_error_m_s": 1.096790483877928e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.0967904832151576e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870274863375,
+      "outgoing_angular_deg_s": [
+        2.6979447027409766,
+        27.25478299073849,
+        -2.79558195330738
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699763,
+        27.255200948894654,
+        -2.7956237896208846
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875076066117738e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075712479962e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.657126375484395e-06,
+      "outgoing_linear_m_s": [
+        0.2912923888548532,
+        -0.31897342028818526,
+        0.05636913792387335
+      ],
+      "incoming_linear_m_s": [
+        0.29129684506681597,
+        -0.3189782897047746,
+        0.056370002960636476
+      ],
+      "native_pose_max_matrix_abs_error": 4.815464542673453e-07,
+      "native_linear_velocity_max_error_m_s": 1.321028818832263e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.3210288184028537e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027980078,
+      "outgoing_angular_deg_s": [
+        2.6979446957552216,
+        27.254782995732842,
+        -2.795581951218949
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849237139026,
+        27.25520095388907,
+        -2.7956237875324166
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075070886138e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075840989234e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.638841744611083e-06,
+      "outgoing_linear_m_s": [
+        0.2892018400149258,
+        -0.3182807186335323,
+        0.061104907224432084
+      ],
+      "incoming_linear_m_s": [
+        0.28920626522521464,
+        -0.31828557767959426,
+        0.06110584605614093
+      ],
+      "native_pose_max_matrix_abs_error": 2.1821266568342046e-07,
+      "native_linear_velocity_max_error_m_s": 9.604488766510266e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 9.604488775966949e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027316678,
+      "outgoing_angular_deg_s": [
+        2.697944702741004,
+        27.25478299073848,
+        -2.7955819533073725
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997883,
+        27.25520094889463,
+        -2.795623789620867
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074322392445e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074507941765e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.6095316636900195e-06,
+      "outgoing_linear_m_s": [
+        0.2860478692793255,
+        -0.3173808945258662,
+        0.06683368571600486
+      ],
+      "incoming_linear_m_s": [
+        0.28605224568726567,
+        -0.317385740129312,
+        0.06683471191754502
+      ],
+      "native_pose_max_matrix_abs_error": 2.691508091956507e-07,
+      "native_linear_velocity_max_error_m_s": 5.7834862336769305e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 5.7834862507223165e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027288434,
+      "outgoing_angular_deg_s": [
+        2.697944702740981,
+        27.254782990738498,
+        -2.7955819533073876
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997625,
+        27.255200948894643,
+        -2.7956237896208878
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507495377665e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507461202961e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.572196447363471e-06,
+      "outgoing_linear_m_s": [
+        0.2833091129357291,
+        -0.3176680308521583,
+        0.061391224320616694
+      ],
+      "incoming_linear_m_s": [
+        0.28331344698922495,
+        -0.3176728807726159,
+        0.06139216666768246
+      ],
+      "native_pose_max_matrix_abs_error": 3.7086182325118955e-07,
+      "native_linear_velocity_max_error_m_s": 3.822594104544215e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 3.82259410807264e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027185813,
+      "outgoing_angular_deg_s": [
+        2.697944702740981,
+        27.254782990738537,
+        -2.7955819533073853
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699758,
+        27.25520094889467,
+        -2.795623789620882
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507538971183e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075343816112e-06
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.544264938426342e-06,
+      "outgoing_linear_m_s": [
+        0.28126792721876576,
+        -0.31798163133546226,
+        0.05636396426432188
+      ],
+      "incoming_linear_m_s": [
+        0.2812722297477912,
+        -0.3179864859632696,
+        0.056364829270923886
+      ],
+      "native_pose_max_matrix_abs_error": 2.9563691761325117e-07,
+      "native_linear_velocity_max_error_m_s": 2.022028861047624e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 2.0220288662942364e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027223487,
+      "outgoing_angular_deg_s": [
+        2.697944703987579,
+        27.254782990184744,
+        -2.7955819518537326
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849319463804,
+        27.25520094834088,
+        -2.7956237881672115
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074510837489e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074859948052e-06
+    },
+    {
+      "bone": "mixamorig:RightShoulder",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 4.7197619413794996e-06,
+      "outgoing_linear_m_s": [
+        0.036392199513030694,
+        -0.30381637475127393,
+        -0.04185894124847808
+      ],
+      "incoming_linear_m_s": [
+        0.03639274906065169,
+        -0.30382101868408135,
+        -0.04185958002721582
+      ],
+      "native_pose_max_matrix_abs_error": 1.1334405693608912e-07,
+      "native_linear_velocity_max_error_m_s": 2.122818327751785e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 2.122818322467101e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027322984,
+      "outgoing_angular_deg_s": [
+        2.697944702740986,
+        27.25478299073849,
+        -2.7955819533073756
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997705,
+        27.25520094889464,
+        -2.795623789620876
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075135170107e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074946155338e-06
+    },
+    {
+      "bone": "mixamorig:RightArm",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 4.5723348007834575e-06,
+      "outgoing_linear_m_s": [
+        0.024378680894012832,
+        -0.29802633349966745,
+        0.0029955875548901513
+      ],
+      "incoming_linear_m_s": [
+        0.02437904755351046,
+        -0.29803089082891754,
+        0.0029956381162345638
+      ],
+      "native_pose_max_matrix_abs_error": 1.3502069418080964e-07,
+      "native_linear_velocity_max_error_m_s": 1.130397687739162e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.130397689060195e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870272980305,
+      "outgoing_angular_deg_s": [
+        2.6979447027409864,
+        27.25478299073849,
+        -2.795581953307385
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699775,
+        27.255200948894633,
+        -2.795623789620888
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074456167679e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507457540084e-06
+    },
+    {
+      "bone": "mixamorig:RightForeArm",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 4.8064306121233525e-06,
+      "outgoing_linear_m_s": [
+        0.05007849907886224,
+        -0.28953646015615314,
+        0.11056758947790547
+      ],
+      "incoming_linear_m_s": [
+        0.050079261050388874,
+        -0.2895408902768368,
+        0.11056929100820193
+      ],
+      "native_pose_max_matrix_abs_error": 2.054735148693254e-07,
+      "native_linear_velocity_max_error_m_s": 4.841397969965409e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 4.8413979655165925e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027293391,
+      "outgoing_angular_deg_s": [
+        2.6979447027409895,
+        27.254782990738498,
+        -2.795581953307392
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699776,
+        27.255200948894643,
+        -2.795623789620893
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074288749217e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074442487086e-06
+    },
+    {
+      "bone": "mixamorig:RightHand",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.252385277083187e-06,
+      "outgoing_linear_m_s": [
+        0.14930521876690997,
+        -0.3058908766637175,
+        0.04688572643153255
+      ],
+      "incoming_linear_m_s": [
+        0.14930750200953433,
+        -0.3058955510005826,
+        0.046886450951435
+      ],
+      "native_pose_max_matrix_abs_error": 2.0607674433570367e-07,
+      "native_linear_velocity_max_error_m_s": 4.425838298108452e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 4.425838293645683e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027262737,
+      "outgoing_angular_deg_s": [
+        2.697944702740984,
+        27.25478299073855,
+        -2.7955819533073862
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997683,
+        27.255200948894693,
+        -2.7956237896208895
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875076014694948e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075825258244e-06
+    },
+    {
+      "bone": "mixamorig:RightHandThumb1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.304580336317661e-06,
+      "outgoing_linear_m_s": [
+        0.15636527992853944,
+        -0.30742957152733436,
+        0.038698118399797164
+      ],
+      "incoming_linear_m_s": [
+        0.15636767070682878,
+        -0.30743426886355657,
+        0.03869871655038952
+      ],
+      "native_pose_max_matrix_abs_error": 1.5135146802514043e-07,
+      "native_linear_velocity_max_error_m_s": 9.714721518261498e-09,
+      "analytic_report_linear_velocity_max_error_m_s": 9.714721513911706e-09,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870272069164,
+      "outgoing_angular_deg_s": [
+        2.697944702740966,
+        27.254782990738498,
+        -2.795581953307368
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997585,
+        27.255200948894633,
+        -2.795623789620871
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074515041972e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507491902734e-06
+    },
+    {
+      "bone": "mixamorig:RightHandThumb2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.37664234507681e-06,
+      "outgoing_linear_m_s": [
+        0.1651732493962584,
+        -0.3094086898356172,
+        0.027903575272694287
+      ],
+      "incoming_linear_m_s": [
+        0.16517577483160473,
+        -0.30941341674813694,
+        0.027904007426890375
+      ],
+      "native_pose_max_matrix_abs_error": 1.890912172397563e-07,
+      "native_linear_velocity_max_error_m_s": 5.92328696330484e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 5.923286958331103e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027233887,
+      "outgoing_angular_deg_s": [
+        2.6979447027409886,
+        27.254782990738523,
+        -2.795581953307381
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699776,
+        27.25520094889466,
+        -2.795623789620884
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074689076004e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074959415688e-06
+    },
+    {
+      "bone": "mixamorig:RightHandThumb3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.477520959718196e-06,
+      "outgoing_linear_m_s": [
+        0.17626958540740778,
+        -0.311771911435952,
+        0.015572764514058125
+      ],
+      "incoming_linear_m_s": [
+        0.17627228086466198,
+        -0.31177667365660183,
+        0.015573007414320187
+      ],
+      "native_pose_max_matrix_abs_error": 2.037793356279849e-07,
+      "native_linear_velocity_max_error_m_s": 9.255222269994392e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 9.255222267392041e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027171593,
+      "outgoing_angular_deg_s": [
+        2.697944702740982,
+        27.25478299073854,
+        -2.795581953307366
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997714,
+        27.25520094889467,
+        -2.7956237896208678
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507495391294e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.08750749195112e-06
+    },
+    {
+      "bone": "mixamorig:RightHandThumb4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.592085142900162e-06,
+      "outgoing_linear_m_s": [
+        0.1885817195713294,
+        -0.3134989339883265,
+        0.01061774336960175
+      ],
+      "incoming_linear_m_s": [
+        0.1885846037753705,
+        -0.3135037219885511,
+        0.010617910214272682
+      ],
+      "native_pose_max_matrix_abs_error": 2.1450162407399276e-07,
+      "native_linear_velocity_max_error_m_s": 6.988481498265092e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 6.988481489794282e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870267161154,
+      "outgoing_angular_deg_s": [
+        2.6979447062569584,
+        27.254782987373783,
+        -2.795581946498381
+      ],
+      "incoming_angular_deg_s": [
+        2.697984934215805,
+        27.255200945529875,
+        -2.7956237828117816
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.08750747724325e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074546513632e-06
+    },
+    {
+      "bone": "mixamorig:RightHandIndex1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.5730839053324405e-06,
+      "outgoing_linear_m_s": [
+        0.18730311571777908,
+        -0.31045774742996574,
+        0.03903303536190362
+      ],
+      "incoming_linear_m_s": [
+        0.18730598016454333,
+        -0.31046248992745484,
+        0.039033637795731047
+      ],
+      "native_pose_max_matrix_abs_error": 1.7694808451818034e-07,
+      "native_linear_velocity_max_error_m_s": 1.2661148224173327e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.2661148233471515e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027231961,
+      "outgoing_angular_deg_s": [
+        2.697944702740982,
+        27.254782990738544,
+        -2.795581953307386
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997683,
+        27.255200948894682,
+        -2.7956237896208886
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875073496702767e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507381209039e-06
+    },
+    {
+      "bone": "mixamorig:RightHandIndex2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.705034609716512e-06,
+      "outgoing_linear_m_s": [
+        0.2013630541784497,
+        -0.31158093075838844,
+        0.04165174543305494
+      ],
+      "incoming_linear_m_s": [
+        0.2013661338961969,
+        -0.31158568999353436,
+        0.04165238764744403
+      ],
+      "native_pose_max_matrix_abs_error": 2.2189678827722048e-07,
+      "native_linear_velocity_max_error_m_s": 3.828597834568445e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 3.828597833043421e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870272961657,
+      "outgoing_angular_deg_s": [
+        2.6979447027409864,
+        27.25478299073853,
+        -2.7955819533074058
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997723,
+        27.255200948894675,
+        -2.79562378962091
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074283621259e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074623618854e-06
+    },
+    {
+      "bone": "mixamorig:RightHandIndex3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.832822936846662e-06,
+      "outgoing_linear_m_s": [
+        0.21468255536896286,
+        -0.31314593103326716,
+        0.03924850055718826
+      ],
+      "incoming_linear_m_s": [
+        0.2146858390561859,
+        -0.31315071362115,
+        0.039249105598324674
+      ],
+      "native_pose_max_matrix_abs_error": 2.590196752638718e-07,
+      "native_linear_velocity_max_error_m_s": 3.27282113552635e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 3.272821133427798e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273284115,
+      "outgoing_angular_deg_s": [
+        2.697944702740978,
+        27.25478299073847,
+        -2.7955819533073836
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997647,
+        27.25520094889462,
+        -2.7956237896208873
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074073009373e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074200675312e-06
+    },
+    {
+      "bone": "mixamorig:RightHandIndex4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.935617620429793e-06,
+      "outgoing_linear_m_s": [
+        0.22510460499568258,
+        -0.3145668789877085,
+        0.03545339915082892
+      ],
+      "incoming_linear_m_s": [
+        0.22510804829225836,
+        -0.31457168278714726,
+        0.03545394575505463
+      ],
+      "native_pose_max_matrix_abs_error": 2.6532851127303303e-07,
+      "native_linear_velocity_max_error_m_s": 3.3105076222059026e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 3.310507628167194e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196864957796476,
+      "outgoing_angular_deg_s": [
+        2.6979447256591835,
+        27.25478300026513,
+        -2.7955819295532347
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849536234615,
+        27.255200958361282,
+        -2.795623765924728
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074337227666e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074805333017e-06
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.676416592358792e-06,
+      "outgoing_linear_m_s": [
+        0.19840446318954127,
+        -0.31154525045246895,
+        0.03914434052501946
+      ],
+      "incoming_linear_m_s": [
+        0.19840749815913106,
+        -0.31155000916054776,
+        0.03914494497711827
+      ],
+      "native_pose_max_matrix_abs_error": 2.3599863119283526e-07,
+      "native_linear_velocity_max_error_m_s": 1.4225122985964076e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.4225122954521049e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273595964,
+      "outgoing_angular_deg_s": [
+        2.697944702740988,
+        27.254782990738512,
+        -2.7955819533073796
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997727,
+        27.25520094889466,
+        -2.795623789620885
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074788648496e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074961903673e-06
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.7937770547503944e-06,
+      "outgoing_linear_m_s": [
+        0.21078465791331924,
+        -0.3135091513804754,
+        0.031945616822901736
+      ],
+      "incoming_linear_m_s": [
+        0.21078788260554432,
+        -0.3135139394136731,
+        0.03194611073656969
+      ],
+      "native_pose_max_matrix_abs_error": 1.9953029772867836e-07,
+      "native_linear_velocity_max_error_m_s": 1.8747727893696683e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.874772773259035e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027289934,
+      "outgoing_angular_deg_s": [
+        2.6979447027409775,
+        27.254782990738484,
+        -2.795581953307378
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997608,
+        27.25520094889463,
+        -2.795623789620878
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507487453037e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075023860618e-06
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.754996043385129e-06,
+      "outgoing_linear_m_s": [
+        0.206386855706888,
+        -0.31457970918717304,
+        0.017264292618911277
+      ],
+      "incoming_linear_m_s": [
+        0.20639001300832951,
+        -0.3145845132644477,
+        0.01726456144712022
+      ],
+      "native_pose_max_matrix_abs_error": 2.182927142380109e-07,
+      "native_linear_velocity_max_error_m_s": 1.6358251741211904e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.635825174204169e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027260766,
+      "outgoing_angular_deg_s": [
+        2.6979447027410024,
+        27.25478299073849,
+        -2.795581953307386
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699787,
+        27.255200948894633,
+        -2.7956237896208873
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074491262123e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074473102514e-06
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.699840325680698e-06,
+      "outgoing_linear_m_s": [
+        0.20003239526287223,
+        -0.31473224140151607,
+        0.00964469446655902
+      ],
+      "incoming_linear_m_s": [
+        0.20003545526721161,
+        -0.3147370477935896,
+        0.009644846612597052
+      ],
+      "native_pose_max_matrix_abs_error": 2.998998376302353e-07,
+      "native_linear_velocity_max_error_m_s": 1.0668482695023033e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.0668482728731437e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219686646465491,
+      "outgoing_angular_deg_s": [
+        2.6979446790737716,
+        27.254783003393747,
+        -2.7955819361275918
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849069303685,
+        27.255200961511488,
+        -2.7956237725389235
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875073958290936e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074181691188e-06
+    },
+    {
+      "bone": "mixamorig:RightHandRing1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.735627708721552e-06,
+      "outgoing_linear_m_s": [
+        0.2046584528687369,
+        -0.31233388393785605,
+        0.03749133337660932
+      ],
+      "incoming_linear_m_s": [
+        0.20466158404667922,
+        -0.31233865440977154,
+        0.037491912813931286
+      ],
+      "native_pose_max_matrix_abs_error": 2.274367419952128e-07,
+      "native_linear_velocity_max_error_m_s": 2.344109618144512e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 2.344109612704898e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870272673606,
+      "outgoing_angular_deg_s": [
+        2.6979447027409917,
+        27.25478299073849,
+        -2.795581953307383
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699779,
+        27.25520094889463,
+        -2.7956237896208886
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074890409076e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074805403244e-06
+    },
+    {
+      "bone": "mixamorig:RightHandRing2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.840808506558069e-06,
+      "outgoing_linear_m_s": [
+        0.21554911876795677,
+        -0.3138592284952111,
+        0.03313069656811392
+      ],
+      "incoming_linear_m_s": [
+        0.21555241684082382,
+        -0.31386402173701455,
+        0.03313120900580509
+      ],
+      "native_pose_max_matrix_abs_error": 3.2480724643235703e-07,
+      "native_linear_velocity_max_error_m_s": 8.890382270591571e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 8.890382256435778e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027357671,
+      "outgoing_angular_deg_s": [
+        2.697944702740974,
+        27.254782990738523,
+        -2.79558195330739
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930699757,
+        27.255200948894675,
+        -2.7956237896208944
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507520034156e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075022138304e-06
+    },
+    {
+      "bone": "mixamorig:RightHandRing3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.800305707067053e-06,
+      "outgoing_linear_m_s": [
+        0.2112879813392005,
+        -0.3145063261437668,
+        0.022709676388903192
+      ],
+      "incoming_linear_m_s": [
+        0.211291214116707,
+        -0.3145111290917681,
+        0.022710029073444136
+      ],
+      "native_pose_max_matrix_abs_error": 2.758788840706572e-07,
+      "native_linear_velocity_max_error_m_s": 1.0066491889425476e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.006649187450754e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870272641774,
+      "outgoing_angular_deg_s": [
+        2.6979447027409793,
+        27.254782990738512,
+        -2.7955819533073933
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997674,
+        27.255200948894654,
+        -2.795623789620895
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074510920776e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074603401944e-06
+    },
+    {
+      "bone": "mixamorig:RightHandRing4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.733039288542076e-06,
+      "outgoing_linear_m_s": [
+        0.20420641617690047,
+        -0.31412629324299346,
+        0.01958046716751882
+      ],
+      "incoming_linear_m_s": [
+        0.20420954040417832,
+        -0.31413109054130217,
+        0.019580771917149655
+      ],
+      "native_pose_max_matrix_abs_error": 2.7273379088477157e-07,
+      "native_linear_velocity_max_error_m_s": 1.0220976667243664e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.02209766542359e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687008028475,
+      "outgoing_angular_deg_s": [
+        2.6979447152505,
+        27.254782987329357,
+        -2.7955819753600797
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849432381635,
+        27.25520094547409,
+        -2.7956238117403904
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875073797935629e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074373508003e-06
+    },
+    {
+      "bone": "mixamorig:RightHandPinky1",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.637670451247301e-06,
+      "outgoing_linear_m_s": [
+        0.1941334789603026,
+        -0.3109216190839329,
+        0.04110245134502449
+      ],
+      "incoming_linear_m_s": [
+        0.19413644929464197,
+        -0.3109263684697703,
+        0.041103086778889616
+      ],
+      "native_pose_max_matrix_abs_error": 3.3520318254431913e-07,
+      "native_linear_velocity_max_error_m_s": 2.0935262874596335e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 2.093526287685265e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870273261526,
+      "outgoing_angular_deg_s": [
+        2.697944702740989,
+        27.254782990738526,
+        -2.7955819533073827
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997727,
+        27.255200948894675,
+        -2.795623789620887
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075290878984e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075776237928e-06
+    },
+    {
+      "bone": "mixamorig:RightHandPinky2",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.759084444367735e-06,
+      "outgoing_linear_m_s": [
+        0.2071058713059633,
+        -0.3127472671310353,
+        0.03582310404919878
+      ],
+      "incoming_linear_m_s": [
+        0.20710904045193756,
+        -0.312752043769708,
+        0.03582365838702139
+      ],
+      "native_pose_max_matrix_abs_error": 2.6585498236197935e-07,
+      "native_linear_velocity_max_error_m_s": 8.62101194308672e-09,
+      "analytic_report_linear_velocity_max_error_m_s": 8.621012049937261e-09,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027358005,
+      "outgoing_angular_deg_s": [
+        2.697944702740978,
+        27.25478299073848,
+        -2.795581953307389
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997634,
+        27.25520094889463,
+        -2.7956237896208926
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875074449443482e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074779423367e-06
+    },
+    {
+      "bone": "mixamorig:RightHandPinky3",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.764444579361368e-06,
+      "outgoing_linear_m_s": [
+        0.20760560732183225,
+        -0.31403417381733323,
+        0.023759031084784582
+      ],
+      "incoming_linear_m_s": [
+        0.20760878408723313,
+        -0.3140389697127074,
+        0.02375940036849176
+      ],
+      "native_pose_max_matrix_abs_error": 3.0673818729454183e-07,
+      "native_linear_velocity_max_error_m_s": 2.0835251674548523e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 2.0835251631487843e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687027261115,
+      "outgoing_angular_deg_s": [
+        2.6979447027409873,
+        27.25478299073853,
+        -2.7955819533073853
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849306997727,
+        27.25520094889467,
+        -2.795623789620886
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075309447979e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075068565507e-06
+    },
+    {
+      "bone": "mixamorig:RightHandPinky4",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.738789869153939e-06,
+      "outgoing_linear_m_s": [
+        0.20453027296168444,
+        -0.31460088287109106,
+        0.015266122870744173
+      ],
+      "incoming_linear_m_s": [
+        0.20453340255902,
+        -0.3146056872640666,
+        0.01526636190592127
+      ],
+      "native_pose_max_matrix_abs_error": 3.151695885383887e-07,
+      "native_linear_velocity_max_error_m_s": 1.0484025894229366e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.0484025897613782e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870268841976,
+      "outgoing_angular_deg_s": [
+        2.697944702868712,
+        27.254782987780153,
+        -2.795581953175779
+      ],
+      "incoming_angular_deg_s": [
+        2.697984930827499,
+        27.255200945936256,
+        -2.7956237894892793
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.087507495807267e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875074955097162e-06
+    },
+    {
+      "bone": "RifleSocket",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.463596470254477e-06,
+      "outgoing_linear_m_s": [
+        0.17483679990995865,
+        -0.308831148711286,
+        0.04286020392448434
+      ],
+      "incoming_linear_m_s": [
+        0.17483947405020467,
+        -0.3088358669211476,
+        0.0428608660090982
+      ],
+      "native_pose_max_matrix_abs_error": 2.1193248400663833e-07,
+      "native_linear_velocity_max_error_m_s": 2.0206424070306744e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 2.020642403066228e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042196870269650173,
+      "outgoing_angular_deg_s": [
+        2.6979447026056596,
+        27.25478298836029,
+        -2.79558195448749
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849305644446,
+        27.2552009465164,
+        -2.79562379080101
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075401214772e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0875075163053659e-06
+    },
+    {
+      "bone": "Muzzle",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 9.214861276593537e-06,
+      "outgoing_linear_m_s": [
+        0.4767673578645001,
+        -0.35383807159216574,
+        -0.10453735840106898
+      ],
+      "incoming_linear_m_s": [
+        0.47677465784937506,
+        -0.35384346177002807,
+        -0.10453896148303334
+      ],
+      "native_pose_max_matrix_abs_error": 1.958455361217304e-07,
+      "native_linear_velocity_max_error_m_s": 6.544822463930478e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 6.544822471827484e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0004219687028599837,
+      "outgoing_angular_deg_s": [
+        2.697944705763475,
+        27.254782999374374,
+        -2.7955819510488658
+      ],
+      "incoming_angular_deg_s": [
+        2.6979849337223065,
+        27.255200957530647,
+        -2.7956237873623375
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.0875075405347774e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.087507576035954e-06
+    },
+    {
+      "bone": "mixamorig:LeftUpLeg",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.92799626178728e-06,
+      "outgoing_linear_m_s": [
+        0.08707538024712848,
+        -0.3124362094387503,
+        -0.21302513230105488
+      ],
+      "incoming_linear_m_s": [
+        0.08707671208754737,
+        -0.3124409822097148,
+        -0.21302838622147474
+      ],
+      "native_pose_max_matrix_abs_error": 1.6932866708785355e-07,
+      "native_linear_velocity_max_error_m_s": 1.5135471721458944e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.513547176535227e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.005045901367007706,
+      "outgoing_angular_deg_s": [
+        325.70171848318273,
+        42.75289998305852,
+        18.969352860319724
+      ],
+      "incoming_angular_deg_s": [
+        325.7067125821756,
+        42.753554658510744,
+        18.969655343223135
+      ],
+      "native_angular_velocity_max_error_deg_s": 2.3605393962305018e-05,
+      "analytic_report_angular_velocity_max_error_deg_s": 2.360539385235251e-05
+    },
+    {
+      "bone": "mixamorig:LeftLeg",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 3.925599934551558e-05,
+      "outgoing_linear_m_s": [
+        0.3392543883287752,
+        -1.3846544536978593,
+        -2.126358560595181
+      ],
+      "incoming_linear_m_s": [
+        0.33925965534786917,
+        -1.3846756895539571,
+        -2.1263911540057157
+      ],
+      "native_pose_max_matrix_abs_error": 1.9884801516489858e-07,
+      "native_linear_velocity_max_error_m_s": 6.285781513515409e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 6.285781513900893e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.004986449870977593,
+      "outgoing_angular_deg_s": [
+        317.28725294107693,
+        70.92654964855663,
+        8.992641482063789
+      ],
+      "incoming_angular_deg_s": [
+        317.2921177879791,
+        70.9276339435655,
+        8.992790650651278
+      ],
+      "native_angular_velocity_max_error_deg_s": 2.3089520759470125e-05,
+      "analytic_report_angular_velocity_max_error_deg_s": 2.308952078876063e-05
+    },
+    {
+      "bone": "mixamorig:LeftFoot",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 5.237085380595652e-05,
+      "outgoing_linear_m_s": [
+        0.036840168873276846,
+        0.1314491582618582,
+        -3.413911003291054
+      ],
+      "incoming_linear_m_s": [
+        0.03684085335874582,
+        0.13145119763302304,
+        -3.413963329945574
+      ],
+      "native_pose_max_matrix_abs_error": 1.6108410144655139e-07,
+      "native_linear_velocity_max_error_m_s": 8.382678827224313e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 8.382678823595404e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.004787927396738499,
+      "outgoing_angular_deg_s": [
+        301.9750796865116,
+        79.54933614372241,
+        0.5004790605247869
+      ],
+      "incoming_angular_deg_s": [
+        301.979710579771,
+        79.55055216258155,
+        0.5004984127965332
+      ],
+      "native_angular_velocity_max_error_deg_s": 2.2335743565543168e-05,
+      "analytic_report_angular_velocity_max_error_deg_s": 2.233574360952792e-05
+    },
+    {
+      "bone": "mixamorig:LeftToeBase",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.517992898326753e-05,
+      "outgoing_linear_m_s": [
+        0.09486478730567577,
+        -0.08357105727163819,
+        -4.249792040809832
+      ],
+      "incoming_linear_m_s": [
+        0.09486639326990703,
+        -0.08357232327664521,
+        -4.249857188651335
+      ],
+      "native_pose_max_matrix_abs_error": 2.587213215887729e-07,
+      "native_linear_velocity_max_error_m_s": 1.1828687415066366e-06,
+      "analytic_report_linear_velocity_max_error_m_s": 1.1828687410920565e-06,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0014497443860646405,
+      "outgoing_angular_deg_s": [
+        67.22983785066837,
+        -40.70808552944767,
+        -50.71020677677515
+      ],
+      "incoming_angular_deg_s": [
+        67.23088537249845,
+        -40.708685174825916,
+        -50.71100982236589
+      ],
+      "native_angular_velocity_max_error_deg_s": 2.6372771940987302e-05,
+      "analytic_report_angular_velocity_max_error_deg_s": 2.9597564675475085e-05
+    },
+    {
+      "bone": "mixamorig:LeftToe_End",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.622554901146386e-05,
+      "outgoing_linear_m_s": [
+        0.022256797084195964,
+        -0.11798174895914401,
+        -4.3184269192638896
+      ],
+      "incoming_linear_m_s": [
+        0.02225729382480332,
+        -0.11798354444123929,
+        -4.318493118605538
+      ],
+      "native_pose_max_matrix_abs_error": 1.8436690585321713e-07,
+      "native_linear_velocity_max_error_m_s": 1.2518225504751856e-06,
+      "analytic_report_linear_velocity_max_error_m_s": 1.2613117176151815e-06,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0014497666836857691,
+      "outgoing_angular_deg_s": [
+        67.231180987219,
+        -40.7090290269275,
+        -50.71031976032006
+      ],
+      "incoming_angular_deg_s": [
+        67.23222852976633,
+        -40.709628687279064,
+        -50.71112280795965
+      ],
+      "native_angular_velocity_max_error_deg_s": 2.6372831598106052e-05,
+      "analytic_report_angular_velocity_max_error_deg_s": 2.9597643181992534e-05
+    },
+    {
+      "bone": "mixamorig:RightUpLeg",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 4.896431500225019e-06,
+      "outgoing_linear_m_s": [
+        -0.0568272635380046,
+        -0.3137329696853384,
+        -0.03292192373273403
+      ],
+      "incoming_linear_m_s": [
+        -0.05682813362459982,
+        -0.3137377623800981,
+        -0.03292242179667958
+      ],
+      "native_pose_max_matrix_abs_error": 1.1313643588639621e-07,
+      "native_linear_velocity_max_error_m_s": 8.184069296932169e-09,
+      "analytic_report_linear_velocity_max_error_m_s": 8.18406930584417e-09,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.002956542129435438,
+      "outgoing_angular_deg_s": [
+        -182.48729949119303,
+        62.227949860471654,
+        -7.978166394695764
+      ],
+      "incoming_angular_deg_s": [
+        -182.4900959135048,
+        62.22890126750683,
+        -7.9782928394298365
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.073508442687306e-05,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.0735084364724328e-05
+    },
+    {
+      "bone": "mixamorig:RightLeg",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 1.8414607834250628e-05,
+      "outgoing_linear_m_s": [
+        0.14997394086825458,
+        0.43900937697201287,
+        1.1080695311754531
+      ],
+      "incoming_linear_m_s": [
+        0.1499762081020953,
+        0.43901612873003415,
+        1.1080865126711477
+      ],
+      "native_pose_max_matrix_abs_error": 1.1569176450176855e-07,
+      "native_linear_velocity_max_error_m_s": 1.4461542995619508e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 1.4461543022983482e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.0022768372233309604,
+      "outgoing_angular_deg_s": [
+        -144.18865738383673,
+        -9.854857141117247,
+        -33.789535910588654
+      ],
+      "incoming_angular_deg_s": [
+        -144.19086891479012,
+        -9.855010588667119,
+        -33.79005511424165
+      ],
+      "native_angular_velocity_max_error_deg_s": 1.3190523459873774e-05,
+      "analytic_report_angular_velocity_max_error_deg_s": 1.3190523479507553e-05
+    },
+    {
+      "bone": "mixamorig:RightFoot",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 2.4263010273605254e-05,
+      "outgoing_linear_m_s": [
+        -0.010199859376755688,
+        -0.0037365872877407336,
+        1.9206793322558422
+      ],
+      "incoming_linear_m_s": [
+        -0.010192309398771943,
+        -0.003745993999978825,
+        1.920700384696671
+      ],
+      "native_pose_max_matrix_abs_error": 1.5830459387800033e-07,
+      "native_linear_velocity_max_error_m_s": 3.189954252754222e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 3.1899542470788884e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 2.062505780264536e-05,
+      "outgoing_angular_deg_s": [
+        0.03833623013500087,
+        0.5946819875161502,
+        -0.9555048873097949
+      ],
+      "incoming_angular_deg_s": [
+        0.0383304888235925,
+        0.5946877269427363,
+        -0.9555238475137795
+      ],
+      "native_angular_velocity_max_error_deg_s": 7.455562706471047e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 7.455562684146335e-06
+    },
+    {
+      "bone": "mixamorig:RightToeBase",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 2.4462838465139486e-05,
+      "outgoing_linear_m_s": [
+        -0.010796134254372371,
+        -0.00247826613144146,
+        1.921438284367141
+      ],
+      "incoming_linear_m_s": [
+        -0.010789499712774145,
+        -0.002486555971272834,
+        1.9214603227853946
+      ],
+      "native_pose_max_matrix_abs_error": 2.1119342896724902e-07,
+      "native_linear_velocity_max_error_m_s": 3.6255927086459987e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 3.625592701897028e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 1.686846861047529e-05,
+      "outgoing_angular_deg_s": [
+        0.47689927429041523,
+        0.5982592472042143,
+        -0.7488858227340761
+      ],
+      "incoming_angular_deg_s": [
+        0.4769002216059539,
+        0.5982650412531085,
+        -0.7489016365515767
+      ],
+      "native_angular_velocity_max_error_deg_s": 7.4558837615473695e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 7.455883739049615e-06
+    },
+    {
+      "bone": "mixamorig:RightToe_End",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 2.4958331640253468e-05,
+      "outgoing_linear_m_s": [
+        -0.010141955084637987,
+        -0.002452844497568085,
+        1.9218742572747372
+      ],
+      "incoming_linear_m_s": [
+        -0.010136587372460235,
+        -0.0024595829893427025,
+        1.9218976815935713
+      ],
+      "native_pose_max_matrix_abs_error": 2.0948194379144525e-07,
+      "native_linear_velocity_max_error_m_s": 3.6989769060665117e-07,
+      "analytic_report_linear_velocity_max_error_m_s": 3.6989768989837435e-07,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 1.6850697982815327e-05,
+      "outgoing_angular_deg_s": [
+        0.475875836492295,
+        0.5953880368905736,
+        -0.7487484416335539
+      ],
+      "incoming_angular_deg_s": [
+        0.4758767680796209,
+        0.595393787305077,
+        -0.7487642533665583
+      ],
+      "native_angular_velocity_max_error_deg_s": 7.455863610452106e-06,
+      "analytic_report_angular_velocity_max_error_deg_s": 7.455863587549882e-06
+    },
+    {
+      "bone": "Prop_Rifle",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.43199176945706e-06,
+      "outgoing_linear_m_s": [
+        0.2733922004699707,
+        -0.31894683837890625,
+        0.03958940505981445
+      ],
+      "incoming_linear_m_s": [
+        0.273396372795105,
+        -0.31895169615745544,
+        0.039590008556842804
+      ],
+      "native_pose_max_matrix_abs_error": 1.610241595617623e-08,
+      "native_linear_velocity_max_error_m_s": 1.257494472801939e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.257494472801939e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042141939262572953,
+      "outgoing_angular_deg_s": [
+        2.6981074020749554,
+        27.25314315454368,
+        -2.79574916421525
+      ],
+      "incoming_angular_deg_s": [
+        2.69814889924303,
+        27.2535602421306,
+        -2.7957928704431447
+      ],
+      "native_angular_velocity_max_error_deg_s": 8.036163420013556e-07,
+      "analytic_report_angular_velocity_max_error_deg_s": 8.036163423037802e-07
+    },
+    {
+      "bone": "Prop_Magazine_A",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 6.43199176945706e-06,
+      "outgoing_linear_m_s": [
+        0.2733922004699707,
+        -0.31894683837890625,
+        0.03958940505981445
+      ],
+      "incoming_linear_m_s": [
+        0.273396372795105,
+        -0.31895169615745544,
+        0.039590008556842804
+      ],
+      "native_pose_max_matrix_abs_error": 1.610241595617623e-08,
+      "native_linear_velocity_max_error_m_s": 1.257494472801939e-08,
+      "analytic_report_linear_velocity_max_error_m_s": 1.257494472801939e-08,
+      "endpoint_rotation_gap_deg": 0.0,
+      "angular_velocity_gap_deg_s": 0.00042141939262572953,
+      "outgoing_angular_deg_s": [
+        2.6981074020749554,
+        27.25314315454368,
+        -2.79574916421525
+      ],
+      "incoming_angular_deg_s": [
+        2.69814889924303,
+        27.2535602421306,
+        -2.7957928704431447
+      ],
+      "native_angular_velocity_max_error_deg_s": 8.036163420013556e-07,
+      "analytic_report_angular_velocity_max_error_deg_s": 8.036163423037802e-07
+    },
+    {
+      "bone": "Prop_Magazine_B",
+      "endpoint_pose_matrix_abs_gap": 0.0,
+      "endpoint_position_gap_m": 0.0,
+      "linear_velocity_gap_m_s": 0.0,
+      "outgoing_linear_m_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "incoming_linear_m_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "native_pose_max_matrix_abs_error": 0.0,
+      "native_linear_velocity_max_error_m_s": 0.0,
+      "analytic_report_linear_velocity_max_error_m_s": 0.0,
+      "angular_undefined_reason": "intentionally collapsed zero-scale bone"
+    }
+  ],
+  "skinned_geometry": [
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "primitive": 0,
+      "max_influences": 1,
+      "raw_weight_sum_error": 0.0,
+      "vertices": 144,
+      "endpoint_position_gap_m": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "velocity_gap_m_s": {
+        "max": 7.390867789116102e-06,
+        "rms": 6.843810591907788e-06,
+        "p95": 7.334734139535716e-06
+      },
+      "native_source_velocity_gap_m_s": {
+        "max": 7.392266879446134e-06,
+        "rms": 6.846453453563313e-06,
+        "p95": 7.33626615605536e-06
+      },
+      "native_velocity_error_m_s": {
+        "max": 2.214176958167718e-08,
+        "rms": 1.7309655367149022e-08,
+        "p95": 2.13377198701187e-08
+      }
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 0,
+      "max_influences": 5,
+      "raw_weight_sum_error": 1.327134668827057e-07,
+      "vertices": 7638,
+      "endpoint_position_gap_m": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "velocity_gap_m_s": {
+        "max": 5.5129041279093804e-05,
+        "rms": 1.831690928464712e-05,
+        "p95": 4.430685360932932e-05
+      },
+      "left_foot": {
+        "vertices": 1,
+        "velocity_gap_m_s": {
+          "max": 4.819406054582025e-05,
+          "rms": 4.819406054582025e-05,
+          "p95": 4.819406054582025e-05
+        }
+      },
+      "right_foot": {
+        "vertices": 4,
+        "velocity_gap_m_s": {
+          "max": 2.463511434198614e-05,
+          "rms": 2.4368137713516752e-05,
+          "p95": 2.458936570484894e-05
+        }
+      },
+      "native_source_velocity_gap_m_s": {
+        "max": 5.498581641744064e-05,
+        "rms": 1.8270215124125673e-05,
+        "p95": 4.418118534158272e-05
+      },
+      "native_velocity_error_m_s": {
+        "max": 9.08285267032742e-07,
+        "rms": 2.600322833053269e-07,
+        "p95": 6.715685857946683e-07
+      }
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 1,
+      "max_influences": 7,
+      "raw_weight_sum_error": 1.287553459405899e-07,
+      "vertices": 24049,
+      "endpoint_position_gap_m": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "velocity_gap_m_s": {
+        "max": 6.75958356072042e-05,
+        "rms": 1.9728445386699874e-05,
+        "p95": 4.8834688586479516e-05
+      },
+      "left_foot": {
+        "vertices": 898,
+        "velocity_gap_m_s": {
+          "max": 6.75958356072042e-05,
+          "rms": 6.209404938120838e-05,
+          "p95": 6.630377107632453e-05
+        }
+      },
+      "right_foot": {
+        "vertices": 912,
+        "velocity_gap_m_s": {
+          "max": 2.5536156589671647e-05,
+          "rms": 2.45002988360035e-05,
+          "p95": 2.5153285060453518e-05
+        }
+      },
+      "native_source_velocity_gap_m_s": {
+        "max": 6.741688804889231e-05,
+        "rms": 1.9680953103975275e-05,
+        "p95": 4.871060770414441e-05
+      },
+      "native_velocity_error_m_s": {
+        "max": 1.2655138978241348e-06,
+        "rms": 2.870848255371858e-07,
+        "p95": 7.122909151680068e-07
+      }
+    },
+    {
+      "name": "Rifle 7",
+      "primitive": 0,
+      "max_influences": 1,
+      "raw_weight_sum_error": 0.0,
+      "vertices": 14936,
+      "endpoint_position_gap_m": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "velocity_gap_m_s": {
+        "max": 8.999839184696173e-06,
+        "rms": 6.409364290507297e-06,
+        "p95": 7.632338142097492e-06
+      },
+      "native_source_velocity_gap_m_s": {
+        "max": 9.011098800267735e-06,
+        "rms": 6.427308916081905e-06,
+        "p95": 7.647236645069242e-06
+      },
+      "native_velocity_error_m_s": {
+        "max": 1.381783730600256e-08,
+        "rms": 1.0961941611782073e-08,
+        "p95": 1.296901296774624e-08
+      }
+    },
+    {
+      "name": "Removed magazine",
+      "primitive": 0,
+      "max_influences": 1,
+      "raw_weight_sum_error": 0.0,
+      "vertices": 994,
+      "endpoint_position_gap_m": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "velocity_gap_m_s": {
+        "max": 6.674864786384268e-06,
+        "rms": 6.262198929821885e-06,
+        "p95": 6.58064595035593e-06
+      },
+      "native_source_velocity_gap_m_s": {
+        "max": 6.694645064834464e-06,
+        "rms": 6.282002030153118e-06,
+        "p95": 6.600436907397014e-06
+      },
+      "native_velocity_error_m_s": {
+        "max": 1.3321553487635504e-08,
+        "rms": 1.1109109225391863e-08,
+        "p95": 1.3134240118444666e-08
+      }
+    },
+    {
+      "name": "Fresh magazine",
+      "primitive": 0,
+      "max_influences": 1,
+      "raw_weight_sum_error": 0.0,
+      "vertices": 994,
+      "endpoint_position_gap_m": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "velocity_gap_m_s": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "native_source_velocity_gap_m_s": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      },
+      "native_velocity_error_m_s": {
+        "max": 0.0,
+        "rms": 0.0,
+        "p95": 0.0
+      }
+    }
+  ]
+}

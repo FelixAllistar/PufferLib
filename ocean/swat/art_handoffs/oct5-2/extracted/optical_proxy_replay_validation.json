@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "classification": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin",
+  "head_node": 1,
+  "head_skin_joint_slot": 5,
+  "control_pose_count": 1,
+  "times_s": [
+    0.0
+  ],
+  "actual_vertex_map_checks": 2,
+  "max_exported_vs_native_evaluated_lens_error_m": {
+    "left": 2.4252514157826097e-07,
+    "right": 3.168457978702983e-07
+  },
+  "max_midpoint_frame_error_m": 1.1102230246251565e-16,
+  "two_correct_forms_max_error": 2.220446049250313e-16,
+  "scope": "Explicit independent Blender evaluated control poses only; no anatomy, camera, runtime or contact approval"
+}

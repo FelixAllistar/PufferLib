@@ -1,0 +1,7069 @@
+{
+  "schema": "storefront_assembly_v1",
+  "instances": [
+    {
+      "object": "INSTANCE__floor_slab_2m__000",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -5,
+        1,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__001",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -5,
+        1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__002",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -5,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__003",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -5,
+        3,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__004",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -5,
+        5,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__005",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -5,
+        5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__006",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -5,
+        7,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__007",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -5,
+        7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__008",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -5,
+        9,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__009",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -5,
+        9,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__glazed_display_bay_2m__010",
+      "asset_id": "ns16_glazed_display_bay_2m",
+      "position_source_m": [
+        -5,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__transom_insert_2m__011",
+      "asset_id": "ns16_transom_insert_2m",
+      "position_source_m": [
+        -5,
+        0,
+        2.65
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.6500000953674316
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__fascia_cornice_2m__012",
+      "asset_id": "ns16_fascia_cornice_2m",
+      "position_source_m": [
+        -5,
+        0,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__striped_awning_2m__013",
+      "asset_id": "ns16_striped_awning_2m",
+      "position_source_m": [
+        -5,
+        -0.16,
+        2.91
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1599999964237213
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.9100000858306885
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_partition_2m__014",
+      "asset_id": "ns16_stockroom_partition_2m",
+      "position_source_m": [
+        -5,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__015",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        -5,
+        10,
+        0
+      ],
+      "yaw_source_deg": 180.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -1.0,
+          8.742277657347586e-08,
+          0.0,
+          -5.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -1.0,
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__016",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -3,
+        1,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__017",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -3,
+        1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__018",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -3,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__019",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -3,
+        3,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__020",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -3,
+        5,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__021",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -3,
+        5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__022",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -3,
+        7,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__023",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -3,
+        7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__024",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -3,
+        9,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__025",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -3,
+        9,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__storefront_entry_frame_2m__026",
+      "asset_id": "ns16_storefront_entry_frame_2m",
+      "position_source_m": [
+        -3,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__transom_insert_2m__027",
+      "asset_id": "ns16_transom_insert_2m",
+      "position_source_m": [
+        -3,
+        0,
+        2.65
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.6500000953674316
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__storefront_glass_door__028",
+      "asset_id": "ns16_storefront_glass_door",
+      "position_source_m": [
+        -3.6,
+        0,
+        0.025
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -3.5999999046325684
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.02500000037252903
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__fascia_cornice_2m__029",
+      "asset_id": "ns16_fascia_cornice_2m",
+      "position_source_m": [
+        -3,
+        0,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__striped_awning_2m__030",
+      "asset_id": "ns16_striped_awning_2m",
+      "position_source_m": [
+        -3,
+        -0.16,
+        2.91
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1599999964237213
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.9100000858306885
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_doorway_2m__031",
+      "asset_id": "ns16_stockroom_doorway_2m",
+      "position_source_m": [
+        -3,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_door_leaf__032",
+      "asset_id": "ns16_stockroom_door_leaf",
+      "position_source_m": [
+        -3.6,
+        6,
+        0.01
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -3.5999999046325684
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.009999999776482582
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__rear_service_frame_2m__033",
+      "asset_id": "ns16_rear_service_frame_2m",
+      "position_source_m": [
+        -3,
+        10,
+        0
+      ],
+      "yaw_source_deg": 180.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -1.0,
+          8.742277657347586e-08,
+          0.0,
+          -3.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -1.0,
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__rear_service_door__034",
+      "asset_id": "ns16_rear_service_door",
+      "position_source_m": [
+        -2.4,
+        10,
+        0.01
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -2.4000000953674316
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.009999999776482582
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__035",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -1,
+        1,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__036",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -1,
+        1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__037",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -1,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__038",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -1,
+        3,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__039",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -1,
+        5,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__040",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -1,
+        5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__041",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -1,
+        7,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__042",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -1,
+        7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__043",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        -1,
+        9,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__044",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        -1,
+        9,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__glazed_display_bay_2m__045",
+      "asset_id": "ns16_glazed_display_bay_2m",
+      "position_source_m": [
+        -1,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__transom_insert_2m__046",
+      "asset_id": "ns16_transom_insert_2m",
+      "position_source_m": [
+        -1,
+        0,
+        2.65
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.6500000953674316
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__fascia_cornice_2m__047",
+      "asset_id": "ns16_fascia_cornice_2m",
+      "position_source_m": [
+        -1,
+        0,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__striped_awning_2m__048",
+      "asset_id": "ns16_striped_awning_2m",
+      "position_source_m": [
+        -1,
+        -0.16,
+        2.91
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1599999964237213
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.9100000858306885
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_partition_2m__049",
+      "asset_id": "ns16_stockroom_partition_2m",
+      "position_source_m": [
+        -1,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__050",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        -1,
+        10,
+        0
+      ],
+      "yaw_source_deg": 180.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -1.0,
+          8.742277657347586e-08,
+          0.0,
+          -1.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -1.0,
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__051",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        1,
+        1,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__052",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        1,
+        1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__053",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        1,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__054",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        1,
+        3,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__055",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        1,
+        5,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__056",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        1,
+        5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__057",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        1,
+        7,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__058",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        1,
+        7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__059",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        1,
+        9,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__060",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        1,
+        9,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__glazed_display_bay_2m__061",
+      "asset_id": "ns16_glazed_display_bay_2m",
+      "position_source_m": [
+        1,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__transom_insert_2m__062",
+      "asset_id": "ns16_transom_insert_2m",
+      "position_source_m": [
+        1,
+        0,
+        2.65
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.6500000953674316
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__fascia_cornice_2m__063",
+      "asset_id": "ns16_fascia_cornice_2m",
+      "position_source_m": [
+        1,
+        0,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__shutter_tracks_2m__064",
+      "asset_id": "ns16_shutter_tracks_2m",
+      "position_source_m": [
+        1,
+        -0.19,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1899999976158142
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_partition_2m__065",
+      "asset_id": "ns16_stockroom_partition_2m",
+      "position_source_m": [
+        1,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__066",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        1,
+        10,
+        0
+      ],
+      "yaw_source_deg": 180.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -1.0,
+          8.742277657347586e-08,
+          0.0,
+          1.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -1.0,
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__067",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        3,
+        1,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__068",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        3,
+        1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__069",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        3,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__070",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        3,
+        3,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__071",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        3,
+        5,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__072",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        3,
+        5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__073",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        3,
+        7,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__074",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        3,
+        7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__075",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        3,
+        9,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__076",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        3,
+        9,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__storefront_entry_frame_2m__077",
+      "asset_id": "ns16_storefront_entry_frame_2m",
+      "position_source_m": [
+        3,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__transom_insert_2m__078",
+      "asset_id": "ns16_transom_insert_2m",
+      "position_source_m": [
+        3,
+        0,
+        2.65
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.6500000953674316
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__storefront_glass_door__079",
+      "asset_id": "ns16_storefront_glass_door",
+      "position_source_m": [
+        2.4,
+        0,
+        0.025
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          2.4000000953674316
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.02500000037252903
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__fascia_cornice_2m__080",
+      "asset_id": "ns16_fascia_cornice_2m",
+      "position_source_m": [
+        3,
+        0,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__shutter_tracks_2m__081",
+      "asset_id": "ns16_shutter_tracks_2m",
+      "position_source_m": [
+        3,
+        -0.19,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1899999976158142
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_doorway_2m__082",
+      "asset_id": "ns16_stockroom_doorway_2m",
+      "position_source_m": [
+        3,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_door_leaf__083",
+      "asset_id": "ns16_stockroom_door_leaf",
+      "position_source_m": [
+        2.4,
+        6,
+        0.01
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          2.4000000953674316
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.009999999776482582
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__service_hatch_2m__084",
+      "asset_id": "ns16_service_hatch_2m",
+      "position_source_m": [
+        3,
+        10,
+        0
+      ],
+      "yaw_source_deg": 180.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -1.0,
+          8.742277657347586e-08,
+          0.0,
+          3.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -1.0,
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__085",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        5,
+        1,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__086",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        5,
+        1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__087",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        5,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__088",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        5,
+        3,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__089",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        5,
+        5,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "NS16_floor_tile": "floor_pine"
+      },
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__090",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        5,
+        5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__091",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        5,
+        7,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__092",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        5,
+        7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__floor_slab_2m__093",
+      "asset_id": "ns16_floor_slab_2m",
+      "position_source_m": [
+        5,
+        9,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roof_slab_2m__094",
+      "asset_id": "ns16_roof_slab_2m",
+      "position_source_m": [
+        5,
+        9,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__glazed_display_bay_2m__095",
+      "asset_id": "ns16_glazed_display_bay_2m",
+      "position_source_m": [
+        5,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__transom_insert_2m__096",
+      "asset_id": "ns16_transom_insert_2m",
+      "position_source_m": [
+        5,
+        0,
+        2.65
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          2.6500000953674316
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__fascia_cornice_2m__097",
+      "asset_id": "ns16_fascia_cornice_2m",
+      "position_source_m": [
+        5,
+        0,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__shutter_tracks_2m__098",
+      "asset_id": "ns16_shutter_tracks_2m",
+      "position_source_m": [
+        5,
+        -0.19,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1899999976158142
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_partition_2m__099",
+      "asset_id": "ns16_stockroom_partition_2m",
+      "position_source_m": [
+        5,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__100",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        5,
+        10,
+        0
+      ],
+      "yaw_source_deg": 180.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -1.0,
+          8.742277657347586e-08,
+          0.0,
+          5.0
+        ],
+        [
+          -8.742277657347586e-08,
+          -1.0,
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__frosted_dome_light__101",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -3,
+        2.1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.0999999046325684
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__frosted_dome_light__102",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -3,
+        4.7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          4.699999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__frosted_dome_light__103",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        3,
+        2.1,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.0999999046325684
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__frosted_dome_light__104",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        3,
+        4.7,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          4.699999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__frosted_dome_light__105",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -4,
+        8.5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -4.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          8.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__frosted_dome_light__106",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        0,
+        8.5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          8.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__frosted_dome_light__107",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        4,
+        8.5,
+        3.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          4.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          8.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__108",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        -6,
+        1,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -6.0
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__109",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        6,
+        1,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          6.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__110",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        -6,
+        3,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -6.0
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__111",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        6,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          6.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__112",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        -6,
+        5,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -6.0
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__113",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        6,
+        5,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          6.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__114",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        -6,
+        7,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -6.0
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__115",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        6,
+        7,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          6.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          7.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__116",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        -6,
+        9,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -6.0
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_wall_2m__117",
+      "asset_id": "ns16_masonry_wall_2m",
+      "position_source_m": [
+        6,
+        9,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          6.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          9.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_partition_2m__118",
+      "asset_id": "ns16_stockroom_partition_2m",
+      "position_source_m": [
+        0,
+        1,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_partition_2m__119",
+      "asset_id": "ns16_stockroom_partition_2m",
+      "position_source_m": [
+        0,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__stockroom_partition_2m__120",
+      "asset_id": "ns16_stockroom_partition_2m",
+      "position_source_m": [
+        0,
+        5,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_pier__121",
+      "asset_id": "ns16_masonry_pier",
+      "position_source_m": [
+        -6,
+        -0.04,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.03999999910593033
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_pier__122",
+      "asset_id": "ns16_masonry_pier",
+      "position_source_m": [
+        0,
+        -0.04,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.03999999910593033
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__masonry_pier__123",
+      "asset_id": "ns16_masonry_pier",
+      "position_source_m": [
+        6,
+        -0.04,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.03999999910593033
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__morrow_wash_sign__124",
+      "asset_id": "ns16_morrow_wash_sign",
+      "position_source_m": [
+        -3,
+        -0.177,
+        3.625
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1770000010728836
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.625
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__alder_pawn_sign__125",
+      "asset_id": "ns16_alder_pawn_sign",
+      "position_source_m": [
+        3,
+        -0.177,
+        3.625
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.1770000010728836
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          3.625
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__roller_shutter_2m__126",
+      "asset_id": "ns16_roller_shutter_2m",
+      "position_source_m": [
+        5,
+        -0.21,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          5.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.20999999344348907
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__laundry_rules_sign__127",
+      "asset_id": "ns16_laundry_rules_sign",
+      "position_source_m": [
+        -5.84,
+        0.86,
+        1.79
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -5.840000152587891
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.8600000143051147
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          1.7899999618530273
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__laundry_change_machine__128",
+      "asset_id": "ns16_laundry_change_machine",
+      "position_source_m": [
+        -0.57,
+        4.82,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -0.5699999928474426
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          4.820000171661377
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__front_load_washer__129",
+      "asset_id": "lb11_front_load_washer",
+      "position_source_m": [
+        -5.42,
+        1.7,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -5.420000076293945
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          1.7000000476837158
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__front_load_washer__130",
+      "asset_id": "lb11_front_load_washer",
+      "position_source_m": [
+        -5.42,
+        2.73,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -5.420000076293945
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          2.7300000190734863
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__front_load_washer__131",
+      "asset_id": "lb11_front_load_washer",
+      "position_source_m": [
+        -5.42,
+        3.76,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -5.420000076293945
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          3.759999990463257
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__front_load_washer__132",
+      "asset_id": "lb11_front_load_washer",
+      "position_source_m": [
+        -5.42,
+        4.79,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          -5.420000076293945
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          4.789999961853027
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__vented_tumble_dryer__133",
+      "asset_id": "lb11_vented_tumble_dryer",
+      "position_source_m": [
+        -0.6,
+        1.8,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -0.6000000238418579
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          1.7999999523162842
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__vented_tumble_dryer__134",
+      "asset_id": "lb11_vented_tumble_dryer",
+      "position_source_m": [
+        -0.6,
+        2.95,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -0.6000000238418579
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          2.950000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__vented_tumble_dryer__135",
+      "asset_id": "lb11_vented_tumble_dryer",
+      "position_source_m": [
+        -0.6,
+        4.1,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          -0.6000000238418579
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          4.099999904632568
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__table_folding_card__136",
+      "asset_id": "table_folding_card",
+      "position_source_m": [
+        -4.4,
+        0.87,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -4.400000095367432
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.8700000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__folded_bedsheet_stack__137",
+      "asset_id": "lb11_folded_bedsheet_stack",
+      "position_source_m": [
+        -4.42,
+        0.88,
+        0.767999972820282
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -4.420000076293945
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.8799999952316284
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.7679999470710754
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__laundry_hamper_woven__138",
+      "asset_id": "laundry_hamper_woven",
+      "position_source_m": [
+        -4.6,
+        5.22,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -4.599999904632568
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.21999979019165
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__glazed_display_case__139",
+      "asset_id": "ns16_glazed_display_case",
+      "position_source_m": [
+        1.48,
+        2.1,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          1.4800000190734863
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          2.0999999046325684
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__twin_bell_alarm_clock__140",
+      "asset_id": "twin_bell_alarm_clock",
+      "position_source_m": [
+        1.47,
+        1.73,
+        0.497
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          1.4700000286102295
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          1.7300000190734863
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.4970000088214874
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__portable_am_fm_radio__141",
+      "asset_id": "portable_am_fm_radio",
+      "position_source_m": [
+        1.47,
+        2.3,
+        0.497
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          1.4700000286102295
+        ],
+        [
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          2.299999952316284
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.4970000088214874
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "INSTANCE__service_counter_2m__142",
+      "asset_id": "ns16_service_counter_2m",
+      "position_source_m": [
+        4.37,
+        4.68,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "XYZ",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": false,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          4.369999885559082
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          4.679999828338623
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__two_slot_toaster__143",
+      "asset_id": "two_slot_toaster",
+      "position_source_m": [
+        4.53,
+        4.67,
+        1.086999918937683
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          4.53000020980835
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          4.670000076293945
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          1.0869998931884766
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__shelving_steel_repaired__144",
+      "asset_id": "shelving_steel_repaired",
+      "position_source_m": [
+        5.5,
+        2.5,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          5.5
+        ],
+        [
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          2.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__deep_utility_sink__145",
+      "asset_id": "lb11_deep_utility_sink",
+      "position_source_m": [
+        -5.25,
+        9.48,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.25
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.479999542236328
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__workbench_pegboard__146",
+      "asset_id": "gw09_workbench_pegboard",
+      "position_source_m": [
+        1.5,
+        9.48,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.5
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.479999542236328
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__corded_power_drill__147",
+      "asset_id": "gw09_corded_power_drill",
+      "position_source_m": [
+        1.18,
+        9.34,
+        0.8835
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.1799999475479126
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.34000015258789
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.8834999799728394
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__combination_pliers__148",
+      "asset_id": "gw09_combination_pliers",
+      "position_source_m": [
+        1.79,
+        9.25,
+        0.8835
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.7899999618530273
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.25
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.8834999799728394
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__shelving_steel_repaired__149",
+      "asset_id": "shelving_steel_repaired",
+      "position_source_m": [
+        4.97,
+        9.4,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          4.96999979019165
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.399999618530273
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "object": "REUSE__handled_detergent_jug__150",
+      "asset_id": "lb11_handled_detergent_jug",
+      "position_source_m": [
+        -4.38,
+        9.68,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_rotation_mode": "QUATERNION",
+      "instance_rotation_mode": "XYZ",
+      "reused_existing_design": true,
+      "collection": "02c_FURNISHINGS",
+      "material_overrides": {},
+      "matrix_world_source_row_major": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -4.380000114440918
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          9.680000305175781
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "a": "INSTANCE__glazed_display_bay_2m__010",
+      "socket_a": "transom",
+      "b": "INSTANCE__transom_insert_2m__011",
+      "socket_b": "placement_origin"
+    },
+    {
+      "a": "INSTANCE__storefront_entry_frame_2m__026",
+      "socket_a": "transom",
+      "b": "INSTANCE__transom_insert_2m__027",
+      "socket_b": "placement_origin"
+    },
+    {
+      "a": "INSTANCE__storefront_entry_frame_2m__026",
+      "socket_a": "door_hinge",
+      "b": "INSTANCE__storefront_glass_door__028",
+      "socket_b": "hinge"
+    },
+    {
+      "a": "INSTANCE__stockroom_doorway_2m__031",
+      "socket_a": "door_hinge",
+      "b": "INSTANCE__stockroom_door_leaf__032",
+      "socket_b": "hinge"
+    },
+    {
+      "a": "INSTANCE__rear_service_frame_2m__033",
+      "socket_a": "door_hinge",
+      "b": "INSTANCE__rear_service_door__034",
+      "socket_b": "hinge"
+    },
+    {
+      "a": "INSTANCE__glazed_display_bay_2m__045",
+      "socket_a": "transom",
+      "b": "INSTANCE__transom_insert_2m__046",
+      "socket_b": "placement_origin"
+    },
+    {
+      "a": "INSTANCE__glazed_display_bay_2m__061",
+      "socket_a": "transom",
+      "b": "INSTANCE__transom_insert_2m__062",
+      "socket_b": "placement_origin"
+    },
+    {
+      "a": "INSTANCE__storefront_entry_frame_2m__077",
+      "socket_a": "transom",
+      "b": "INSTANCE__transom_insert_2m__078",
+      "socket_b": "placement_origin"
+    },
+    {
+      "a": "INSTANCE__storefront_entry_frame_2m__077",
+      "socket_a": "door_hinge",
+      "b": "INSTANCE__storefront_glass_door__079",
+      "socket_b": "hinge"
+    },
+    {
+      "a": "INSTANCE__stockroom_doorway_2m__082",
+      "socket_a": "door_hinge",
+      "b": "INSTANCE__stockroom_door_leaf__083",
+      "socket_b": "hinge"
+    },
+    {
+      "a": "INSTANCE__glazed_display_bay_2m__095",
+      "socket_a": "transom",
+      "b": "INSTANCE__transom_insert_2m__096",
+      "socket_b": "placement_origin"
+    }
+  ],
+  "supported_props": [
+    {
+      "object": "REUSE__folded_bedsheet_stack__137",
+      "support": "REUSE__table_folding_card__136",
+      "tolerance_m": 0.012
+    },
+    {
+      "object": "REUSE__twin_bell_alarm_clock__140",
+      "support": "INSTANCE__glazed_display_case__139",
+      "tolerance_m": 0.012
+    },
+    {
+      "object": "REUSE__portable_am_fm_radio__141",
+      "support": "INSTANCE__glazed_display_case__139",
+      "tolerance_m": 0.012
+    },
+    {
+      "object": "REUSE__two_slot_toaster__143",
+      "support": "INSTANCE__service_counter_2m__142",
+      "tolerance_m": 0.012
+    },
+    {
+      "object": "REUSE__corded_power_drill__147",
+      "support": "REUSE__workbench_pegboard__146",
+      "tolerance_m": 0.012
+    },
+    {
+      "object": "REUSE__combination_pliers__148",
+      "support": "REUSE__workbench_pegboard__146",
+      "tolerance_m": 0.012
+    }
+  ]
+}

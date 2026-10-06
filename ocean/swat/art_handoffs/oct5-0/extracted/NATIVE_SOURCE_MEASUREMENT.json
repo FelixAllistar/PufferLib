@@ -1,0 +1,70 @@
+{
+  "source": "/workspace/scratch/eac4961518d4/attachments/ba84dca2-37cf-4206-80f9-49e3d02b47ab/walk left.fbx.bin",
+  "source_sha256": "c66c409acea597462d088a26a2a388127aa8c03238b49c02117264f5504616ba",
+  "action": "Armature|mixamo.com|Layer0",
+  "source_fps": 60.0,
+  "source_frames": [
+    1.0,
+    61.0
+  ],
+  "duration_s": 1.0,
+  "hips_displacement_m": [
+    1.9212619066238403,
+    9.645707905292511e-06,
+    2.980232238769531e-07
+  ],
+  "horizontal_distance_m": 1.9212619066480534,
+  "nominal_pace_m_s": 1.9212619066480534,
+  "forward_stride_dot_at_start": -0.6509306992586517,
+  "native_chest_forward_stride_dot": -0.26974902199981443,
+  "native_pelvis_forward_stride_dot": -0.7443609981114605,
+  "heading_note": "The native chest and pelvis material forward directions use pose-times-inverse-rest transport of the rest shoulder-line forward direction. The posed shoulder-line normal is supplied separately and is biased by the asymmetric rifle stance.",
+  "endpoints": [
+    {
+      "frame": 1.0,
+      "hips": [
+        -0.010408376343548298,
+        -0.009805354289710522,
+        0.8345651030540466
+      ],
+      "shoulder_axis_forward_xy": [
+        -0.6509268879890442,
+        -0.7591404318809509,
+        0.0
+      ],
+      "native_chest_material_forward_xy": [
+        -0.2697441875934601,
+        -0.9629319906234741,
+        0.0
+      ],
+      "native_pelvis_material_forward_xy": [
+        -0.7443576455116272,
+        -0.6677811741828918,
+        0.0
+      ]
+    },
+    {
+      "frame": 61.0,
+      "hips": [
+        1.9108535051345825,
+        -0.00979570858180523,
+        0.8345654010772705
+      ],
+      "shoulder_axis_forward_xy": [
+        -0.6507710218429565,
+        -0.7592740654945374,
+        0.0
+      ],
+      "native_chest_material_forward_xy": [
+        -0.2697022557258606,
+        -0.9629437923431396,
+        0.0
+      ],
+      "native_pelvis_material_forward_xy": [
+        -0.744357705116272,
+        -0.6677811145782471,
+        0.0
+      ]
+    }
+  ]
+}

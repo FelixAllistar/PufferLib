@@ -1,0 +1,16 @@
+Two-part lossless weapon handoff
+
+Both parts are raw slices of the same original ZIP. They are not separate ZIPs.
+Download the two .part files, parts_manifest.json and reassemble.py into one folder.
+Run: python reassemble.py
+The script checks both hashes, creates the original ZIP and checks its hash and CRC.
+Then extract rigid-rifle7-textured-and-sidearm50-reference-v1.zip normally.
+
+The rifle retains its original embedded 4096 x 4096 textures without degradation.
+The full package includes both GLBs, measured bindings, validation, neutral views,
+provenance/source hashes, small geometry references and extraction recipes.
+The optional sidearm remains a clearly labeled source-scale reference.
+
+Alternatively, concatenate part01 then part02 as raw bytes, and compare the
+resulting SHA256 with parts_manifest.json. The original archive SHA256 is:
+aabbd0fd0318b87ebcae27e106290cc2ef2dd7341c4c5c45a8c91674a7272407

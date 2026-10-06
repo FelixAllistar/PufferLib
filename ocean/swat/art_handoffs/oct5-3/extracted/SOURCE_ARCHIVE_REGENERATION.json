@@ -1,0 +1,10 @@
+{
+  "selected": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend",
+  "rebuilt": "/tmp/crouch-forward-n-rebuilt-seam/crouch_forward_ready_n_c1.editable.blend",
+  "all_curve_key_handle_interpolation_values_equal": true,
+  "curve_count": 700,
+  "keys": 168700,
+  "sampled_world_matrix_max_error": 0.0,
+  "canonical_curve_sha256": "775172d79bbaf780b5c8a2df58d4f315f5d65c4d9fe189e6c47366f9e791d7a2",
+  "scope": "Exact saved animation values, not byte-identical Blender serialization or runtime export parity"
+}

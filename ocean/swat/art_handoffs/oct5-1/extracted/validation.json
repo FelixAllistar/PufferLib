@@ -1,0 +1,316 @@
+{
+  "source_sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+  "glb_sha256": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+  "samples": 1243,
+  "sample_scope": "960 Hz plus every source/export key, boundary probes and finite-difference epsilon pairs; source references +/-10 microseconds",
+  "bone_count": 70,
+  "mesh_names": [
+    "Fresh magazine",
+    "Rebuilt spare magazine sleeve",
+    "Rebuilt SWAT full body",
+    "Removed magazine",
+    "Rifle 7"
+  ],
+  "control_indices": [
+    0,
+    11,
+    37,
+    69,
+    131,
+    163,
+    166,
+    318,
+    621,
+    923,
+    1076,
+    1109,
+    1171,
+    1203,
+    1231,
+    1242
+  ],
+  "control_times_s": [
+    0.0,
+    0.005,
+    0.025,
+    0.05,
+    0.1,
+    0.1249,
+    0.125,
+    0.25,
+    0.5,
+    0.75,
+    0.875,
+    0.9,
+    0.95,
+    0.975,
+    0.995,
+    1.0
+  ],
+  "reimport_action": "Walk Right / Shared Ready N C1 Loop A_SWAT_Mixamo_Rig",
+  "reimport_method": "Cubic-aware pose adapter on Blender-imported geometry; stock importer results are separately reported",
+  "stock_reimport_method": "Unmodified Blender4.3.2 importer; its discarded cubic tangents are measured separately",
+  "stock_reimport_deformation_max_error": 0.003488180330397883,
+  "reimport_frames": [
+    0.0,
+    30.0
+  ],
+  "parent_identity": true,
+  "reimport_deformation_max_element_error": 5.0087516904051554e-06,
+  "scope": "Numerical exported/reimported skin parity, not artistic or engine acceptance",
+  "schema": "swat-import-fixture-validation/1",
+  "status": "PASS",
+  "glb_nodes": 76,
+  "glb_joints": 70,
+  "animations": [
+    "Walk Right / Shared Ready N C1 Loop A"
+  ],
+  "interpolation_modes": [
+    "CUBICSPLINE"
+  ],
+  "joint_names_match": true,
+  "joint_parents_match": true,
+  "inverse_bind_rest_identity_max_element_error": 5.761808450355232e-07,
+  "standard_gltf_deformation_max_element_error": 4.936085523599143e-06,
+  "meshes": [
+    {
+      "name": "Fresh magazine",
+      "source_vertices": 406,
+      "glb_vertices_with_seams": 994,
+      "source_rendered_vertices": 406,
+      "source_loose_vertices": 0,
+      "source_triangles": 780,
+      "glb_triangles": 780,
+      "oriented_surface_triangles_preserved": true,
+      "rendered_bind_weight_vertices_preserved": true,
+      "bind_position_max_error_m": 0.0,
+      "normalized_weight_max_error": 0.0,
+      "source_raw_weight_sum_range": [
+        1.0,
+        1.0
+      ],
+      "glb_weight_sum_max_error": 0.0,
+      "source_max_influences": 1,
+      "glb_max_influences": 1,
+      "glb_vertices_over_four_influences": 0,
+      "weight_set_counts": [
+        1
+      ],
+      "normal_length_max_error": 1.1920928955078125e-07,
+      "reimport_bind_error_m": 1.5914447131226827e-08,
+      "reimport_weight_error": 0.0,
+      "max_vertex_difference_standard_gltf_m": 2.3055512673781017e-16,
+      "max_vertex_difference_reimport_m": 0.0,
+      "max_vertex_difference_stock_blender_reimport_m": 2.4755668231600746e-07,
+      "source_formula_vs_blender_evaluated_m": 1.4901161193847656e-08,
+      "reimport_formula_vs_blender_evaluated_m": 1.4901161193847656e-08,
+      "sampled_bounds_blender_xyz_m": [
+        [
+          -0.14000000059604648,
+          -0.37000000476837164,
+          1.490000009536743
+        ],
+        [
+          -0.14000000059604642,
+          -0.3700000047683715,
+          1.4900000095367434
+        ]
+      ]
+    },
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "source_vertices": 48,
+      "glb_vertices_with_seams": 144,
+      "source_rendered_vertices": 48,
+      "source_loose_vertices": 0,
+      "source_triangles": 72,
+      "glb_triangles": 72,
+      "oriented_surface_triangles_preserved": true,
+      "rendered_bind_weight_vertices_preserved": true,
+      "bind_position_max_error_m": 0.0,
+      "normalized_weight_max_error": 0.0,
+      "source_raw_weight_sum_range": [
+        1.0,
+        1.0
+      ],
+      "glb_weight_sum_max_error": 0.0,
+      "source_max_influences": 1,
+      "glb_max_influences": 1,
+      "glb_vertices_over_four_influences": 0,
+      "weight_set_counts": [
+        1
+      ],
+      "normal_length_max_error": 0,
+      "reimport_bind_error_m": 0.0,
+      "reimport_weight_error": 0.0,
+      "max_vertex_difference_standard_gltf_m": 6.988056572935815e-07,
+      "max_vertex_difference_reimport_m": 7.457024708273121e-07,
+      "max_vertex_difference_stock_blender_reimport_m": 0.0011687050726321344,
+      "source_formula_vs_blender_evaluated_m": 1.7431428580981282e-07,
+      "reimport_formula_vs_blender_evaluated_m": 1.8409113009416553e-07,
+      "sampled_bounds_blender_xyz_m": [
+        [
+          -0.16578602103804208,
+          -0.39206774365034025,
+          0.7878212485926838
+        ],
+        [
+          0.15458360011333644,
+          -0.1835670384781904,
+          1.0097795091838808
+        ]
+      ]
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "source_vertices": 24850,
+      "glb_vertices_with_seams": 31687,
+      "source_rendered_vertices": 24850,
+      "source_loose_vertices": 0,
+      "source_triangles": 46301,
+      "glb_triangles": 46301,
+      "oriented_surface_triangles_preserved": true,
+      "rendered_bind_weight_vertices_preserved": true,
+      "bind_position_max_error_m": 0.0,
+      "normalized_weight_max_error": 2.212510108456911e-08,
+      "source_raw_weight_sum_range": [
+        0.9982482120394707,
+        1.0000000447034836
+      ],
+      "glb_weight_sum_max_error": 1.327134668827057e-07,
+      "source_max_influences": 7,
+      "glb_max_influences": 7,
+      "glb_vertices_over_four_influences": 444,
+      "weight_set_counts": [
+        2,
+        2
+      ],
+      "normal_length_max_error": 1.1920928955078125e-07,
+      "reimport_bind_error_m": 8.679846453196227e-07,
+      "reimport_weight_error": 2.212510108456911e-08,
+      "max_vertex_difference_standard_gltf_m": 4.635512870747108e-06,
+      "max_vertex_difference_reimport_m": 4.7750546192470135e-06,
+      "max_vertex_difference_stock_blender_reimport_m": 0.0029906881272361197,
+      "source_formula_vs_blender_evaluated_m": 4.694704346590869e-07,
+      "reimport_formula_vs_blender_evaluated_m": 4.921356579344951e-07,
+      "sampled_bounds_blender_xyz_m": [
+        [
+          -0.831768767758037,
+          -0.6704745607738124,
+          0.002932045343008994
+        ],
+        [
+          0.5665025509013222,
+          0.2373094321268494,
+          1.626107163800748
+        ]
+      ]
+    },
+    {
+      "name": "Removed magazine",
+      "source_vertices": 406,
+      "glb_vertices_with_seams": 994,
+      "source_rendered_vertices": 406,
+      "source_loose_vertices": 0,
+      "source_triangles": 780,
+      "glb_triangles": 780,
+      "oriented_surface_triangles_preserved": true,
+      "rendered_bind_weight_vertices_preserved": true,
+      "bind_position_max_error_m": 0.0,
+      "normalized_weight_max_error": 0.0,
+      "source_raw_weight_sum_range": [
+        1.0,
+        1.0
+      ],
+      "glb_weight_sum_max_error": 0.0,
+      "source_max_influences": 1,
+      "glb_max_influences": 1,
+      "glb_vertices_over_four_influences": 0,
+      "weight_set_counts": [
+        1
+      ],
+      "normal_length_max_error": 1.1920928955078125e-07,
+      "reimport_bind_error_m": 1.5914447131226827e-08,
+      "reimport_weight_error": 0.0,
+      "max_vertex_difference_standard_gltf_m": 2.974284997136918e-07,
+      "max_vertex_difference_reimport_m": 3.162081703742494e-07,
+      "max_vertex_difference_stock_blender_reimport_m": 0.00019547085663397447,
+      "source_formula_vs_blender_evaluated_m": 1.7473994323014567e-07,
+      "reimport_formula_vs_blender_evaluated_m": 1.7677079448073803e-07,
+      "sampled_bounds_blender_xyz_m": [
+        [
+          -0.45677780382023564,
+          -0.5261056844698797,
+          0.9402375024730569
+        ],
+        [
+          -0.33036428217796954,
+          -0.368706636638908,
+          1.2909881619014256
+        ]
+      ]
+    },
+    {
+      "name": "Rifle 7",
+      "source_vertices": 5346,
+      "glb_vertices_with_seams": 14936,
+      "source_rendered_vertices": 5340,
+      "source_loose_vertices": 6,
+      "source_triangles": 10273,
+      "glb_triangles": 10273,
+      "oriented_surface_triangles_preserved": true,
+      "rendered_bind_weight_vertices_preserved": true,
+      "bind_position_max_error_m": 0.0,
+      "normalized_weight_max_error": 0.0,
+      "source_raw_weight_sum_range": [
+        1.0,
+        1.0
+      ],
+      "glb_weight_sum_max_error": 0.0,
+      "source_max_influences": 1,
+      "glb_max_influences": 1,
+      "glb_vertices_over_four_influences": 0,
+      "weight_set_counts": [
+        1
+      ],
+      "normal_length_max_error": 1.1920928955078125e-07,
+      "reimport_bind_error_m": 3.725290298461914e-08,
+      "reimport_weight_error": 0.0,
+      "max_vertex_difference_standard_gltf_m": 3.979094396110182e-07,
+      "max_vertex_difference_reimport_m": 3.865770922860706e-07,
+      "max_vertex_difference_stock_blender_reimport_m": 0.00025043788451948197,
+      "source_formula_vs_blender_evaluated_m": 1.8008221654713611e-07,
+      "reimport_formula_vs_blender_evaluated_m": 1.81330958679934e-07,
+      "sampled_bounds_blender_xyz_m": [
+        [
+          -0.6032009743606572,
+          -0.9327713590038746,
+          0.9946835935385991
+        ],
+        [
+          -0.23751609412104613,
+          -0.007320246963300914,
+          1.394146629064751
+        ]
+      ]
+    }
+  ],
+  "max_vertex_difference_standard_gltf_m": 4.635512870747108e-06,
+  "max_vertex_difference_reimport_m": 4.7750546192470135e-06,
+  "max_vertex_difference_stock_blender_reimport_m": 0.0029906881272361197,
+  "stock_blender_reimport_status": "DOES_NOT_PRESERVE_CUBIC_TANGENTS",
+  "pass_criteria": {
+    "rendered_bind_and_weight_vertices_preserved": true,
+    "oriented_surface_triangles_preserved": true,
+    "maximum_skin_difference_m": 0.0001,
+    "note": "Numerical export fidelity gate only"
+  },
+  "limitations": [
+    "No engine/ozz/GPU playback test",
+    "No artistic or full contact-clearance approval",
+    "No gameplay timing adaptation",
+    "Stock Blender4.3.2 reimport discards cubic tangents; explicit adapter used for cubic-aware reimport fidelity",
+    "No complete Khronos glTF validator run",
+    "Material appearance and animated normal parity not independently certified"
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "license": "CC0-1.0",
+  "external_images_used": false,
+  "seed": 151004,
+  "textures": [
+    {
+      "file": "textures/stucco.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/repair.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/concrete.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/concrete_dark.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/teal.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/faded_teal.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/cream.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/ochre.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/steel.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/galvanized.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/iron.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/rust.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/rubber.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/glass.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/wood.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/paper.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/cloth.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/red.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/lamp.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/asphalt.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/carpet.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    },
+    {
+      "file": "textures/tile.png",
+      "size_px": [
+        192,
+        192
+      ],
+      "role": "sRGB baseColor",
+      "source": "Original deterministic generated texture; no photographic source"
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "A": {
+    "source": "/workspace/scratch/eac4961518d4/animation_rebuild/upper_body_gear_rebuild/stage_f/upper_gear_stage_f.editable.blend",
+    "sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+    "action": "Neutral Carry / Anatomical Gear F",
+    "frame": 0,
+    "method": "The dorsal relation uses native evaluated forearm-hardware and hand-dorsal skin centroids through compact native_vertex_id mapping, with recorded native offsets. Hinge uses the recorded native arm-frame offset. Wrist/elbow axis angles are supplemental. Mixed-joint skin uses normalized all-influence Jacobians; not a clinical range assessment.",
+    "all_body_LBS_max_error_mm": 0.0004352965229162147,
+    "sides": {
+      "Left": {
+        "hinge_deg": -9.141770138821498,
+        "hinge_native_residual_deg": 7.252919601796748e-05,
+        "dorsal_residual_deg": 0.0005689481102137961,
+        "wrist_deg": 36.66105744551636,
+        "elbow_deg": 34.03864046463582,
+        "hardware_marker_count": 149,
+        "dorsal_marker_count": 49,
+        "evaluated_hardware_centroid_world_m": [
+          -0.09350185346283368,
+          -0.4414200720771047,
+          1.2920474726081694
+        ],
+        "evaluated_dorsal_skin_centroid_world_m": [
+          -0.2175534464875046,
+          -0.5785140541135049,
+          1.3662675667782218
+        ],
+        "mixed_joint_skin": {
+          "shoulder": {
+            "vertices": 818,
+            "minimum_normalized_skin_J_singular_value": 0.48680000388202127,
+            "minimum_skin_J_determinant": 0.239222602747458,
+            "minimum_geometric_vs_transported_normal_alignment": -0.9962533572062275,
+            "negative_face_alignment_count": 26,
+            "minimum_face_area_over_rest": 0.02837561036102373
+          },
+          "elbow": {
+            "vertices": 200,
+            "minimum_normalized_skin_J_singular_value": 0.5703324776743465,
+            "minimum_skin_J_determinant": 0.3253512502037502,
+            "minimum_geometric_vs_transported_normal_alignment": 0.5635844881026864,
+            "negative_face_alignment_count": 0,
+            "minimum_face_area_over_rest": 0.16459614909802023
+          },
+          "wrist": {
+            "vertices": 372,
+            "minimum_normalized_skin_J_singular_value": 0.9356842668139174,
+            "minimum_skin_J_determinant": 0.8751882380460578,
+            "minimum_geometric_vs_transported_normal_alignment": 0.9214277119847553,
+            "negative_face_alignment_count": 0,
+            "minimum_face_area_over_rest": 0.48777494117699355
+          }
+        },
+        "segment_length_errors_mm": {
+          "upper": 2.812601088142408e-05,
+          "fore": 4.765582040100469e-06
+        },
+        "elbow_cap_vs_actual_arm_skin": {
+          "exact_triangle_crossing_pairs": 0,
+          "witnesses_first20": [],
+          "cap_native_topology": {
+            "boundary": 0,
+            "not_exactly_two_faces": 0
+          }
+        }
+      },
+      "Right": {
+        "hinge_deg": 12.16883509691822,
+        "hinge_native_residual_deg": 3.28430392073642e-05,
+        "dorsal_residual_deg": -0.002721138769885556,
+        "wrist_deg": 31.354584441590493,
+        "elbow_deg": 109.37913431201527,
+        "hardware_marker_count": 149,
+        "dorsal_marker_count": 49,
+        "evaluated_hardware_centroid_world_m": [
+          -0.4700393620753448,
+          -0.1804166620209713,
+          1.2583691153750323
+        ],
+        "evaluated_dorsal_skin_centroid_world_m": [
+          -0.3276169342654092,
+          -0.2965007296630314,
+          1.2699976429647328
+        ],
+        "mixed_joint_skin": {
+          "shoulder": {
+            "vertices": 818,
+            "minimum_normalized_skin_J_singular_value": 0.8176568697657045,
+            "minimum_skin_J_determinant": 0.6698455707322137,
+            "minimum_geometric_vs_transported_normal_alignment": -0.2545473737975859,
+            "negative_face_alignment_count": 1,
+            "minimum_face_area_over_rest": 0.18978029854095718
+          },
+          "elbow": {
+            "vertices": 200,
+            "minimum_normalized_skin_J_singular_value": 0.5123377299839985,
+            "minimum_skin_J_determinant": 0.26256676716190225,
+            "minimum_geometric_vs_transported_normal_alignment": -0.994097170924349,
+            "negative_face_alignment_count": 12,
+            "minimum_face_area_over_rest": 0.045804434474604236
+          },
+          "wrist": {
+            "vertices": 372,
+            "minimum_normalized_skin_J_singular_value": 0.951674577091324,
+            "minimum_skin_J_determinant": 0.9058154750238068,
+            "minimum_geometric_vs_transported_normal_alignment": 0.949800668308691,
+            "negative_face_alignment_count": 0,
+            "minimum_face_area_over_rest": 0.6105112331776882
+          }
+        },
+        "segment_length_errors_mm": {
+          "upper": 1.3206239962704203e-05,
+          "fore": 3.533588616155825e-06
+        },
+        "elbow_cap_vs_actual_arm_skin": {
+          "exact_triangle_crossing_pairs": 0,
+          "witnesses_first20": [],
+          "cap_native_topology": {
+            "boundary": 0,
+            "not_exactly_two_faces": 0
+          }
+        }
+      }
+    },
+    "sha256_after": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0"
+  },
+  "C1": {
+    "source": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+    "sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+    "action": "Support Grip / Index Base Release Candidate C1",
+    "frame": 0,
+    "method": "The dorsal relation uses native evaluated forearm-hardware and hand-dorsal skin centroids through compact native_vertex_id mapping, with recorded native offsets. Hinge uses the recorded native arm-frame offset. Wrist/elbow axis angles are supplemental. Mixed-joint skin uses normalized all-influence Jacobians; not a clinical range assessment.",
+    "all_body_LBS_max_error_mm": 0.0004540443377676781,
+    "sides": {
+      "Left": {
+        "hinge_deg": -9.141777921389242,
+        "hinge_native_residual_deg": 6.474662825439736e-05,
+        "dorsal_residual_deg": -0.00983334252745749,
+        "wrist_deg": 35.50811468342904,
+        "elbow_deg": 34.04368114424329,
+        "hardware_marker_count": 149,
+        "dorsal_marker_count": 49,
+        "evaluated_hardware_centroid_world_m": [
+          -0.1011458639330512,
+          -0.4372937421270665,
+          1.2951542787103845
+        ],
+        "evaluated_dorsal_skin_centroid_world_m": [
+          -0.22216706981464307,
+          -0.574367348028689,
+          1.3703138293052206
+        ],
+        "mixed_joint_skin": {
+          "shoulder": {
+            "vertices": 818,
+            "minimum_normalized_skin_J_singular_value": 0.4832414052260878,
+            "minimum_skin_J_determinant": 0.2357641106181416,
+            "minimum_geometric_vs_transported_normal_alignment": -0.99584959941028,
+            "negative_face_alignment_count": 26,
+            "minimum_face_area_over_rest": 0.028800763527488886
+          },
+          "elbow": {
+            "vertices": 200,
+            "minimum_normalized_skin_J_singular_value": 0.5342652480474777,
+            "minimum_skin_J_determinant": 0.2855218366574042,
+            "minimum_geometric_vs_transported_normal_alignment": 0.536595346489307,
+            "negative_face_alignment_count": 0,
+            "minimum_face_area_over_rest": 0.11402963031170849
+          },
+          "wrist": {
+            "vertices": 372,
+            "minimum_normalized_skin_J_singular_value": 0.937172299491792,
+            "minimum_skin_J_determinant": 0.8778597293591194,
+            "minimum_geometric_vs_transported_normal_alignment": 0.92030842699698,
+            "negative_face_alignment_count": 0,
+            "minimum_face_area_over_rest": 0.49222033343730165
+          }
+        },
+        "segment_length_errors_mm": {
+          "upper": 8.037447074560333e-05,
+          "fore": 7.937258963974791e-05
+        },
+        "elbow_cap_vs_actual_arm_skin": {
+          "exact_triangle_crossing_pairs": 0,
+          "witnesses_first20": [],
+          "cap_native_topology": {
+            "boundary": 0,
+            "not_exactly_two_faces": 0
+          }
+        }
+      },
+      "Right": {
+        "hinge_deg": 12.16883509691822,
+        "hinge_native_residual_deg": 3.28430392073642e-05,
+        "dorsal_residual_deg": -0.002721138769885556,
+        "wrist_deg": 31.354584441590493,
+        "elbow_deg": 109.37913431201527,
+        "hardware_marker_count": 149,
+        "dorsal_marker_count": 49,
+        "evaluated_hardware_centroid_world_m": [
+          -0.4700393620753448,
+          -0.1804166620209713,
+          1.2583691153750323
+        ],
+        "evaluated_dorsal_skin_centroid_world_m": [
+          -0.3276169342654092,
+          -0.2965007296630314,
+          1.2699976429647328
+        ],
+        "mixed_joint_skin": {
+          "shoulder": {
+            "vertices": 818,
+            "minimum_normalized_skin_J_singular_value": 0.8176568697657045,
+            "minimum_skin_J_determinant": 0.6698455707322137,
+            "minimum_geometric_vs_transported_normal_alignment": -0.2545473737975859,
+            "negative_face_alignment_count": 1,
+            "minimum_face_area_over_rest": 0.18978029854095718
+          },
+          "elbow": {
+            "vertices": 200,
+            "minimum_normalized_skin_J_singular_value": 0.5123377299839985,
+            "minimum_skin_J_determinant": 0.26256676716190225,
+            "minimum_geometric_vs_transported_normal_alignment": -0.994097170924349,
+            "negative_face_alignment_count": 12,
+            "minimum_face_area_over_rest": 0.045804434474604236
+          },
+          "wrist": {
+            "vertices": 372,
+            "minimum_normalized_skin_J_singular_value": 0.951674577091324,
+            "minimum_skin_J_determinant": 0.9058154750238068,
+            "minimum_geometric_vs_transported_normal_alignment": 0.949800668308691,
+            "negative_face_alignment_count": 0,
+            "minimum_face_area_over_rest": 0.6105112331776882
+          }
+        },
+        "segment_length_errors_mm": {
+          "upper": 1.3206239962704203e-05,
+          "fore": 3.533588616155825e-06
+        },
+        "elbow_cap_vs_actual_arm_skin": {
+          "exact_triangle_crossing_pairs": 0,
+          "witnesses_first20": [],
+          "cap_native_topology": {
+            "boundary": 0,
+            "not_exactly_two_faces": 0
+          }
+        }
+      }
+    },
+    "sha256_after": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99"
+  }
+}

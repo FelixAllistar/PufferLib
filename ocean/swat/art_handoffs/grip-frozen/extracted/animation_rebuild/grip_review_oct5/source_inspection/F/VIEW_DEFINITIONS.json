@@ -1,0 +1,194 @@
+{
+  "source": "/workspace/scratch/eac4961518d4/animation_rebuild/upper_body_gear_rebuild/stage_f/upper_gear_stage_f.editable.blend",
+  "source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+  "action": "Neutral Carry / Anatomical Gear F",
+  "frame": 0,
+  "physical_rifle_landmarks": {
+    "stock_contact": [
+      -0.2474125772714615,
+      -0.07016413658857346,
+      1.3366163969039917
+    ],
+    "muzzle": [
+      -0.2417251169681549,
+      -0.9506537318229675,
+      1.5279501676559448
+    ],
+    "rear_sight": [
+      -0.24563542008399963,
+      -0.3453250825405121,
+      1.50906503200531
+    ],
+    "front_sight": [
+      -0.24337270855903625,
+      -0.6956185698509216,
+      1.5675652027130127
+    ],
+    "grip_center": [
+      -0.24566903710365295,
+      -0.34005221724510193,
+      1.3097257614135742
+    ],
+    "right_hand_surface_candidate": [
+      -0.2603343725204468,
+      -0.34014692902565,
+      1.3097257614135742
+    ],
+    "support_hand_surface_candidate": [
+      -0.24387000501155853,
+      -0.6185832619667053,
+      1.44063138961792
+    ]
+  },
+  "hand_surface_bbox_centers": {
+    "Left": [
+      -0.24859336018562317,
+      -0.6051270961761475,
+      1.4340782165527344
+    ],
+    "Right": [
+      -0.26962774991989136,
+      -0.3379581570625305,
+      1.3054133653640747
+    ]
+  },
+  "cameras": {
+    "left_outer": {
+      "location": [
+        0.2009086012840271,
+        -0.526569664478302,
+        1.5228291749954224
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "left_inner": {
+      "location": [
+        -0.6979466676712036,
+        -0.7067052125930786,
+        1.328894853591919
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "left_below": {
+      "location": [
+        -0.14830780029296875,
+        -0.6490134000778198,
+        0.985283374786377
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "left_axial": {
+      "location": [
+        -0.16140902042388916,
+        -0.16893747448921204,
+        1.3106377124786377
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_outer": {
+      "location": [
+        -0.7201070785522461,
+        -0.26521414518356323,
+        1.3941643238067627
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_inner": {
+      "location": [
+        0.1810002326965332,
+        -0.43372291326522827,
+        1.2002300024032593
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_below": {
+      "location": [
+        -0.3693380355834961,
+        -0.3831363618373871,
+        0.8566185235977173
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_axial": {
+      "location": [
+        -0.36243969202041626,
+        0.09706875681877136,
+        1.1819729804992676
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "near_visor_inspection": {
+      "location": [
+        -0.1725950390100479,
+        -0.2956353425979614,
+        1.5834635496139526
+      ],
+      "target": [
+        -0.16797566413879395,
+        -1.010766625404358,
+        1.5508155822753906
+      ],
+      "orthographic_scale_m": null,
+      "horizontal_fov_deg": 80,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    }
+  },
+  "fps_like_view_limit": "Diagnostic80degree perspective35mm forward of actual right lens-surface proxy, pitched toward rifle; not an eye position, engine camera, ADS eye relief or transition target",
+  "source_sha256_after": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0"
+}

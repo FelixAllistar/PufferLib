@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "duration_s": 1,
+  "authored_events": [],
+  "changed_source_curves": 604,
+  "root_identity_and_no_baked_preview_basis": true,
+  "unique_native_sole_support_remap": [
+    {
+      "side": "left",
+      "unique_native_support_vertices": 3,
+      "exported_mapping_rows": 3,
+      "source_control_centroid_error_m": 0.0
+    },
+    {
+      "side": "right",
+      "unique_native_support_vertices": 4,
+      "exported_mapping_rows": 4,
+      "source_control_centroid_error_m": 0.0
+    }
+  ],
+  "correct_rifle_elevation_deg_at_961_phases": [
+    14.947141185486721,
+    17.206416148256835
+  ],
+  "backward_source_horizontal_travel_after_preview_alignment_engine_xyz_m": [
+    -1.9025011162755896,
+    0.0,
+    0.2678338741760148
+  ],
+  "nominal_source_pace_m_s": 1.92126144912079,
+  "zero_B_node": 69,
+  "zero_B_skin_slot": 69,
+  "qualification": "Source gait and raised Ready retained; preview alignment is unbaked. No runtime movement-speed, camera, ADS or hand/grip override approval."
+}

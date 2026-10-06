@@ -1,0 +1,26 @@
+{
+  "source": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+  "sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "original_C_definition": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c_review/crease_views/CREASE_VIEW_DEFINITIONS.json",
+  "original_C_definition_sha256": "c8f86c364d6ae2d6718439850f75c00d53b7abf77d8e3fc495a387568033e825",
+  "exact_camera": {
+    "target_world_m": [
+      -0.2663889527320862,
+      -0.6210417747497559,
+      1.443834662437439
+    ],
+    "location_world_m": [
+      -0.154026597738266,
+      -0.6143710613250732,
+      1.5429821014404297
+    ],
+    "orthographic_scale_m": 0.045
+  },
+  "skin_only_diagnostic": true,
+  "native_face": [
+    8513,
+    8515,
+    8516
+  ],
+  "original_C_pixels_and_definitions_unmodified": true
+}

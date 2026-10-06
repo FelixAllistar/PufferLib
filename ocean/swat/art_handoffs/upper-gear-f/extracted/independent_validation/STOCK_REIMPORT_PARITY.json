@@ -1,0 +1,110 @@
+{
+  "schema": "independent-upper-gear-f-stock-reimport/1",
+  "status": "PASS",
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "capture_npz_sha256": "2b7ee769d779906f126284bc96b84c6d8b8474f4279c6594232bc0bdb3d6f9bf",
+  "blender_version": "4.3.2",
+  "source_hash_preserved": true,
+  "scope": "Stock Blender glTF import; all exported vertices at neutral and 361 movement times; normalized all-influence weights and oriented topology. Import display bone axes are not asserted to preserve native bone basis.",
+  "meshes": [
+    {
+      "name": "Fresh magazine",
+      "vertices": 994,
+      "bind_max_error_m": 1.5914447131226827e-08,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "vertices": 144,
+      "bind_max_error_m": 0.0,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "Removed magazine",
+      "vertices": 994,
+      "bind_max_error_m": 1.5914447131226827e-08,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "Rifle 7",
+      "vertices": 14936,
+      "bind_max_error_m": 3.725290298461914e-08,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "SWAT_ElbowCap_L",
+      "vertices": 418,
+      "bind_max_error_m": 3.626374460350858e-07,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "SWAT_ElbowCap_R",
+      "vertices": 418,
+      "bind_max_error_m": 2.4620758953479386e-07,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "SWAT_Headset_L",
+      "vertices": 366,
+      "bind_max_error_m": 2.384476811558792e-07,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "SWAT_Headset_R",
+      "vertices": 366,
+      "bind_max_error_m": 2.384476811558792e-07,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    },
+    {
+      "name": "SWAT_Wearer",
+      "vertices": 28963,
+      "bind_max_error_m": 8.679846453196227e-07,
+      "normalized_weight_max_error": 0.0,
+      "oriented_topology_exact": true
+    }
+  ],
+  "animations": [
+    {
+      "label": "neutral",
+      "name": "Neutral Carry / Anatomical Gear F",
+      "samples": 1,
+      "max_joint_origin_error_m": 6.986032538309708e-07,
+      "all_vertex_max_error_m_by_mesh": {
+        "Fresh magazine": 3.8254259433018405e-07,
+        "Rebuilt spare magazine sleeve": 8.512741280849122e-08,
+        "Removed magazine": 4.222024695742607e-07,
+        "Rifle 7": 4.4829190281413516e-07,
+        "SWAT_ElbowCap_L": 3.772177348838222e-07,
+        "SWAT_ElbowCap_R": 3.812304288959554e-07,
+        "SWAT_Headset_L": 2.727000368120807e-07,
+        "SWAT_Headset_R": 2.812690016644575e-07,
+        "SWAT_Wearer": 5.65865091329622e-07
+      }
+    },
+    {
+      "label": "motion",
+      "name": "Upper Gear F / Three-second Carry Articulation",
+      "samples": 361,
+      "max_joint_origin_error_m": 7.582097334940377e-07,
+      "all_vertex_max_error_m_by_mesh": {
+        "Fresh magazine": 3.8254259433018405e-07,
+        "Rebuilt spare magazine sleeve": 8.512741280849122e-08,
+        "Removed magazine": 4.959011190589632e-07,
+        "Rifle 7": 5.236204773146826e-07,
+        "SWAT_ElbowCap_L": 5.467785557250914e-07,
+        "SWAT_ElbowCap_R": 5.992977221926948e-07,
+        "SWAT_Headset_L": 2.5796599041455204e-07,
+        "SWAT_Headset_R": 2.4124469876895525e-07,
+        "SWAT_Wearer": 9.888982463851664e-07
+      }
+    }
+  ]
+}

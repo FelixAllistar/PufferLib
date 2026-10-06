@@ -15,7 +15,7 @@ void swat_weapon_art_init(SwatWeaponArt* art) {
     if(custom && custom[0]) snprintf(path,sizeof(path),"%s/rifle7_rigid_textured.glb",custom);
     else {
         snprintf(path,sizeof(path),"%sassets/weapons/rifle7_rigid_textured.glb",GetApplicationDirectory());
-        if(!FileExists(path)) snprintf(path,sizeof(path),"build/swat/assets/weapons/rifle7_rigid_textured.glb");
+        if(!FileExists(path)) snprintf(path,sizeof(path),"ocean/swat/assets/weapons/rifle7_rigid_textured.glb");
     }
     if(!FileExists(path)) { TraceLog(LOG_INFO,"SWAT: private rigid rifle absent; canonical procedural fallback"); return; }
     art->carbine=LoadModel(path); Model m=art->carbine;

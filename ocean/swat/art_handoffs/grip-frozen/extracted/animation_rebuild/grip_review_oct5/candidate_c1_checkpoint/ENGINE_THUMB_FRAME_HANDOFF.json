@@ -1,0 +1,501 @@
+{
+  "status": "Frozen diagnostic handoff only. User requested final thumb/finger wrapping in the actual in-game ADS view. Preserve current engine pose; do not automatically apply C or C1.",
+  "baseline_F": {
+    "sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+    "action": "Neutral Carry / Anatomical Gear F",
+    "frame": 0,
+    "N_hands_identical": true,
+    "verified_engine_landmarks": {
+      "source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+      "physical_frame": "Metres stock-origin; +Xforward +Yup +Zright, displayedmm",
+      "actual_bone_head_points_mm": {
+        "LeftHand": [
+          495.5340027809143,
+          -31.70735016465187,
+          -57.27603659033775
+        ],
+        "LeftHandThumb4": [
+          618.6894178390503,
+          39.08427804708481,
+          -34.050922840833664
+        ],
+        "LeftHandIndex4": [
+          542.3831939697266,
+          73.95811378955841,
+          16.774877905845642
+        ],
+        "LeftHandMiddle4": [
+          519.3535089492798,
+          61.93073466420174,
+          17.587488517165184
+        ]
+      },
+      "engine_rounded_samples_mm": {
+        "wrist": [
+          495.53,
+          -31.71,
+          -57.28
+        ],
+        "thumbtip": [
+          618.69,
+          39.08,
+          -34.05
+        ],
+        "indextip": [
+          542.38,
+          73.96,
+          16.77
+        ],
+        "middletip": [
+          519.35,
+          61.93,
+          17.59
+        ]
+      },
+      "point_error_to_engine_mm": {
+        "wrist": 0.00622176451597897,
+        "thumbtip": 0.004417157535991943,
+        "indextip": 0.006116403146392439,
+        "middletip": 0.004402721326350444
+      }
+    }
+  },
+  "frames": {
+    "matrix_storage": "row-major arrays; column vectors; metres; quaternion w,x,y,z",
+    "native_rifle_mesh_frame": "Original Rifle 7 mesh coordinates; not stock-origin coordinates",
+    "native_rifle_mesh_to_world_matrix": [
+      [
+        0.9999787832580076,
+        -0.006370907261819936,
+        -0.0010643540343950597,
+        -0.24581845129656915
+      ],
+      [
+        0.006459215113751291,
+        0.9863092938423672,
+        0.16477860828814367,
+        -0.5177439465669915
+      ],
+      [
+        3.5917437587454096e-08,
+        -0.16478201744968324,
+        0.9863300056348903,
+        1.3884277359262627
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "physical_rifle_frame": "Established stock origin; +X forward, +Y up, +Z right",
+    "native_rifle_mesh_to_physical_rifle_matrix": [
+      [
+        0.0,
+        -1.0,
+        0.0,
+        0.44999998807907104
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        -0.02265022322535515
+      ],
+      [
+        -1.0,
+        0.0,
+        0.0,
+        0.00129691231995821
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "physical_rifle_to_world_matrix": [
+      [
+        0.006370907261819936,
+        -0.0010643540343950597,
+        -0.9999787832580076,
+        -0.2474125825412067
+      ],
+      [
+        -0.9863092938423672,
+        0.16477860828814367,
+        -0.006459215113751291,
+        -0.07016412679950118
+      ],
+      [
+        0.16478201744968324,
+        0.9863300056348903,
+        -3.5917437587454096e-08,
+        1.3366164248863377
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "F_left_hand_in_stock_origin_physical_frame": [
+    [
+      -0.9474835267527689,
+      0.2952607060688946,
+      -0.12286398252136402,
+      0.49553408737117255
+    ],
+    [
+      -0.0310177645699039,
+      0.2975284558853678,
+      0.9542090367925636,
+      -0.03170739293008262
+    ],
+    [
+      0.318296425000008,
+      0.9079079928057266,
+      -0.27274571355189237,
+      -0.05727603023656869
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "C1_left_hand_in_stock_origin_physical_frame": {
+    "bone_name": "mixamorig:LeftHand",
+    "matrix": [
+      [
+        -0.9516135150955765,
+        0.30545492590924866,
+        -0.033591880296332394,
+        0.494427393701252
+      ],
+      [
+        0.0624097908892889,
+        0.29914245352829805,
+        0.952165499086917,
+        -0.0274092238922079
+      ],
+      [
+        0.30089285461521376,
+        0.9039962238242588,
+        -0.3037321175478558,
+        -0.053811513769616154
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "wrist_position_m": [
+      0.494427393701252,
+      -0.0274092238922079,
+      -0.053811513769616154
+    ]
+  },
+  "native_thumb_chain": {
+    "mixamorig:LeftHandThumb1": {
+      "parent": "mixamorig:LeftHand",
+      "F_native_local_channels": {
+        "location": [
+          -1.4901161193847656e-07,
+          -2.980232238769531e-07,
+          1.1920928955078125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9641106724739075,
+          0.14162658154964447,
+          -0.009447667747735977,
+          0.22437314689159393
+        ],
+        "scale": [
+          0.9999997615814209,
+          1.0000001192092896,
+          1.0000001192092896
+        ]
+      },
+      "F_native_rest_matrix": [
+        [
+          0.5922494530677795,
+          0.7323510050773621,
+          -0.33601027727127075,
+          0.7177813053131104
+        ],
+        [
+          0.8057084679603577,
+          -0.5337955951690674,
+          0.25670239329338074,
+          0.0038269609212875366
+        ],
+        [
+          0.008635450154542923,
+          -0.42275816202163696,
+          -0.9062014222145081,
+          1.3546417951583862
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "C_and_C1_diagnostic_local_channels": {
+        "parent": "mixamorig:LeftHand",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -1.043081283569336e-07,
+          -3.5762786865234375e-07,
+          -1.7881393432617188e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9661445021629333,
+          0.12457004934549332,
+          -0.01360645517706871,
+          0.22552618384361267
+        ],
+        "scale": [
+          0.9999996423721313,
+          0.9999999403953552,
+          0.9999998211860657
+        ]
+      }
+    },
+    "mixamorig:LeftHandThumb2": {
+      "parent": "mixamorig:LeftHandThumb1",
+      "F_native_local_channels": {
+        "location": [
+          -3.5762786865234375e-07,
+          -2.384185791015625e-07,
+          2.384185791015625e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9895920157432556,
+          -0.07701604068279266,
+          0.11136600375175476,
+          -0.048722825944423676
+        ],
+        "scale": [
+          0.9999999403953552,
+          0.9999996423721313,
+          0.9999983906745911
+        ]
+      },
+      "F_native_rest_matrix": [
+        [
+          0.5922502279281616,
+          0.6516036987304688,
+          -0.4739753007888794,
+          0.7399137020111084
+        ],
+        [
+          0.8057079315185547,
+          -0.4726138114929199,
+          0.3570306897163391,
+          -0.02123337797820568
+        ],
+        [
+          0.008635254576802254,
+          -0.5933370590209961,
+          -0.8049077987670898,
+          1.3393361568450928
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "C_and_C1_diagnostic_local_channels": {
+        "parent": "mixamorig:LeftHandThumb1",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -4.172325134277344e-07,
+          -2.384185791015625e-07,
+          3.2782554626464844e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9894753098487854,
+          -0.0784999281167984,
+          0.11143896728754044,
+          -0.048555776476860046
+        ],
+        "scale": [
+          0.9999998807907104,
+          0.9999997019767761,
+          0.9999984502792358
+        ]
+      }
+    },
+    "mixamorig:LeftHandThumb3": {
+      "parent": "mixamorig:LeftHandThumb2",
+      "F_native_local_channels": {
+        "location": [
+          2.086162567138672e-07,
+          0.0,
+          -5.960464477539063e-08
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9832019805908203,
+          -0.11098083853721619,
+          -0.08343528211116791,
+          0.11847209185361862
+        ],
+        "scale": [
+          0.9999997019767761,
+          1.0000001192092896,
+          1.0
+        ]
+      },
+      "F_native_rest_matrix": [
+        [
+          0.5922499895095825,
+          0.7584187984466553,
+          -0.2721049189567566,
+          0.7640068531036377
+        ],
+        [
+          0.805708110332489,
+          -0.5538063049316406,
+          0.21007852256298065,
+          -0.03831705078482628
+        ],
+        [
+          0.008634090423583984,
+          -0.3436560332775116,
+          -0.939055860042572,
+          1.3175710439682007
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "C_and_C1_diagnostic_local_channels": {
+        "parent": "mixamorig:LeftHandThumb2",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          2.9802322387695312e-08,
+          0.0,
+          -2.980232238769531e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9833108186721802,
+          -0.1100124716758728,
+          -0.08331857621669769,
+          0.11855421960353851
+        ],
+        "scale": [
+          0.9999995827674866,
+          1.0000001192092896,
+          1.0
+        ]
+      }
+    },
+    "mixamorig:LeftHandThumb4": {
+      "parent": "mixamorig:LeftHandThumb3",
+      "F_native_local_channels": {
+        "location": [
+          7.237741783683305e-08,
+          -4.3872168475900253e-07,
+          -1.6856934337283747e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          1.0,
+          -5.960464477539063e-08,
+          -3.189780173329382e-08,
+          4.487811366971073e-08
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "F_native_rest_matrix": [
+        [
+          0.592249870300293,
+          0.7584187984466553,
+          -0.27210503816604614,
+          0.789688229560852
+        ],
+        [
+          0.8057081699371338,
+          -0.5538061261177063,
+          0.21007853746414185,
+          -0.048527929931879044
+        ],
+        [
+          0.008634081110358238,
+          -0.34365609288215637,
+          -0.9390558004379272,
+          1.307845115661621
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "C_and_C1_diagnostic_local_channels": {
+        "parent": "mixamorig:LeftHandThumb3",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          2.384185791015625e-07,
+          -3.5762786865234375e-07,
+          -1.1920928955078125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          1.0,
+          -5.960463766996327e-08,
+          -2.2351741790771484e-08,
+          2.607702853651972e-08
+        ],
+        "scale": [
+          1.0,
+          1.0000001192092896,
+          1.0
+        ]
+      }
+    }
+  },
+  "diagnostic_C_and_C1_thumb_parameter_deltas_from_F": {
+    "native_Thumb1_local_rotation_vector_deg": [
+      -2.023175145459211,
+      0,
+      0.16105849021647106
+    ],
+    "native_Thumb2_local_rotation_vector_deg": [
+      -0.17183959846294639,
+      0,
+      0
+    ],
+    "native_Thumb3_local_rotation_vector_deg": [
+      0.11285693496678417,
+      0,
+      0
+    ],
+    "notes": "These are the small rejected-as-final diagnostic changes, not a proposed final thumb-wrap prescription. Exact local quaternions above control the source; do not add Euler angles to engine world axes."
+  },
+  "source_application_scope": "Parent/engine owns weapon-specific thumb/finger hold and aim pose, with release for reload. C1 changes only Index1 versus C; it adds no further thumb change. Both diagnostics leave rifle geometry and right-hand intent unchanged.",
+  "limits": [
+    "Thumb-wrap intent is unresolved by these authored diagnostics",
+    "Near-visor inspection cameras are not engine cameras or anatomical eyes",
+    "R5 original thumb/hand source matched the baseline grip; its shoulder/ADS-fit limits remain separate",
+    "Physical exported rifle transform is Wnode \u00d7 inverse_bind[resolved skin slot] \u00d7 B_bind_mesh"
+  ]
+}

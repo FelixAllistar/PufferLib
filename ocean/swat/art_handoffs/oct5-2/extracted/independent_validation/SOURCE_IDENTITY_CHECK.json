@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "inputs": [
+    {
+      "file": "crouch_ready/shared_ready_n_candidate/selected/crouch_ready_n.editable.blend",
+      "sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+      "bytes": 2010424,
+      "pinned_identity_matches": true
+    },
+    {
+      "file": "crouch_ready/shared_ready_n_candidate/selected/crouch-ready-planted-shared-n-selfcontained-checkpoint.tar.gz",
+      "sha256": "6fb887ef7551d9cf23f45ee1a394609a121fa649bfb5695b7ff1f6f382e2cf10",
+      "bytes": 18715894,
+      "pinned_identity_matches": true
+    },
+    {
+      "file": "forward_walk_n_integration_fixture/package/forward_walk_shared_ready_n_original_timing.glb",
+      "sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+      "bytes": 4224280,
+      "pinned_identity_matches": true
+    },
+    {
+      "file": "upright_locomotion/shared_ready_n_forward_walk/candidate_a/forward_walk_ready_n.editable.blend",
+      "sha256": "944b032d6b5f352fe8f715e609568fb686b1187d08e08a76159555d3702a8d44",
+      "bytes": 3177958,
+      "pinned_identity_matches": true
+    }
+  ]
+}

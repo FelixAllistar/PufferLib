@@ -1,0 +1,155 @@
+{
+  "candidate": "standing_empty_shared_ready_n_refresh_f",
+  "action": "Standing Empty / Shared Ready N Carry F",
+  "authoring_fps": 24,
+  "authoring_duration_s": 6,
+  "visual_events_seconds": {
+    "guided_unseat_start": 0.7,
+    "old_mag_release": 0.88,
+    "acquisition_start": 1.05,
+    "pickup": 1.4,
+    "clear": 1.928125,
+    "preinsert": 3.107862609329446,
+    "seat": 3.65,
+    "finger_release_start": 3.85,
+    "retreat_complete": 4.35,
+    "receiver_precontact": 4.55,
+    "receiver_hold_start": 4.7,
+    "receiver_hold_end": 4.85,
+    "receiver_retreat_complete": 4.95,
+    "foregrip_return": 6.0,
+    "ready_end": 6.0,
+    "foregrip_depart": 0.18,
+    "finger_release_complete": 4.05,
+    "foregrip_contact": 5.9625,
+    "foregrip_approach_arrival": 5.8,
+    "foregrip_close_begin": 5.8,
+    "foregrip_departure_surface_contact_end": 0.03333333333333333,
+    "old_mag_floor_impact": 1.307136591519229,
+    "old_mag_floor_settled": 1.487136591519229,
+    "foregrip_palm_within_2mm": 5.9125,
+    "foregrip_thumb_within_2mm": 5.9375,
+    "foregrip_opposed_support_within_2mm": 5.954166666666667
+  },
+  "surface_contact_resolution_s": 0.004166666666666667,
+  "surface_contact_brackets_seconds": {
+    "last_departing_glove_rifle_touch": [
+      0.03333333333333333,
+      0.0375
+    ],
+    "first_returning_glove_rifle_touch": [
+      5.958333333333333,
+      5.9625
+    ]
+  },
+  "source_H_pose_keys_seconds": {
+    "guided_unseat_start": 0.7,
+    "old_mag_release": 0.88,
+    "acquisition_start": 1.05,
+    "pickup": 1.4,
+    "clear": 1.928125,
+    "preinsert": 3.107862609329446,
+    "seat": 3.65,
+    "finger_release_start": 3.85,
+    "retreat_complete": 4.35,
+    "receiver_precontact": 4.55,
+    "receiver_hold_start": 4.7,
+    "receiver_hold_end": 4.85,
+    "receiver_retreat_complete": 4.95,
+    "foregrip_return": 6.0,
+    "ready_end": 6.0,
+    "foregrip_depart": 0.18,
+    "finger_release_complete": 4.05,
+    "foregrip_contact": 5.8
+  },
+  "ownership": [
+    {
+      "interval_s": [
+        0,
+        0.7
+      ],
+      "old_magazine": "rifle",
+      "fresh_magazine": "spare sleeve attached to pelvis"
+    },
+    {
+      "interval_s": [
+        0.7,
+        0.88
+      ],
+      "old_magazine": "guided axial unseat from rifle",
+      "fresh_magazine": "spare sleeve attached to pelvis"
+    },
+    {
+      "interval_s": [
+        0.88,
+        1.4
+      ],
+      "old_magazine": "world gravity, impact, then floor",
+      "fresh_magazine": "spare sleeve attached to pelvis"
+    },
+    {
+      "interval_s": [
+        1.4,
+        3.65
+      ],
+      "old_magazine": "world/floor",
+      "fresh_magazine": "left opposed digit grasp"
+    },
+    {
+      "interval_s": [
+        3.65,
+        6
+      ],
+      "old_magazine": "fixed in world on floor",
+      "fresh_magazine": "seated in rifle"
+    }
+  ],
+  "prop_bones": {
+    "rifle": "Prop_Rifle",
+    "old_magazine": "Prop_Magazine_A",
+    "fresh_magazine": "Prop_Magazine_B"
+  },
+  "causal_coordination": [
+    {
+      "phase_s": [
+        0,
+        1.4
+      ],
+      "description": "Fingers open with palm withdrawal; chest, pelvis and knees carry the source authored load transfer while the right arm turns the rifle into working carry."
+    },
+    {
+      "phase_s": [
+        1.4,
+        3.65
+      ],
+      "description": "Magazine leaves its actual sleeve with an opposed digit grasp. Its continuous carried path moves from pelvis coordinates into rifle-relative insertion; body and rifle responses overlap the left-arm travel."
+    },
+    {
+      "phase_s": [
+        4.25,
+        5.3
+      ],
+      "description": "Both hands and the seated magazine follow a25mm body-left rifle presentation for the receiver thumb contact, clearing the proximal sleeve without forcing extra wrist bend."
+    },
+    {
+      "phase_s": [
+        4.95,
+        6
+      ],
+      "description": "The left hand follows a shorter curved free return. Open digits clear the fore-end; palm clearance remains until5.8, then the root settles with the closing digits into exact N grip."
+    }
+  ],
+  "stock_contract": "Localized central rear-pad support at N Ready entry/return. The rifle is intentionally brought off the shoulder for working carry; full-path axial ray gap is not continuous shoulder support.",
+  "loop_contract": "Actor/rifle/tool return to N. Magazine ownership differs: old remains on floor, fresh remains seated. Not a prop-state loop.",
+  "runtime_reference": {
+    "status": "Separate review source; not retimed or activated",
+    "reported_consumer_commit": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+    "reported_empty_duration_s": 2.6,
+    "committed_stage_fractions": {
+      "REMOVE": 0.25,
+      "INSERT": 0.6666666666666666,
+      "CHAMBER": 1.0
+    },
+    "instruction": "Map visual stages deliberately; do not uniformly speed up this six-second study. The rigid two-mesh consumer and historical F fixture remain separate. Resolve duplicate rifle/magazine rendering and the procedural hand path before runtime playback."
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema": "swat-import-fixture-export/1",
+  "status": "validated_numerical_export",
+  "source_file": "standing_empty_revision_f.editable.blend",
+  "source_sha256": "a7a6d9ae7e13f30ac8de4b6347eb47062344768c04228b054388d9af726156b6",
+  "action": "Standing Empty / Coordinated Contact Cleanup F",
+  "source_frames": [
+    0,
+    144
+  ],
+  "source_fps": 24,
+  "duration_seconds": 6,
+  "loop": false,
+  "blender_version": "4.3.2",
+  "settings": {
+    "export_format": "GLB",
+    "use_selection": true,
+    "export_animations": true,
+    "export_animation_mode": "ACTIONS",
+    "export_anim_single_armature": true,
+    "export_force_sampling": false,
+    "export_frame_range": false,
+    "export_skins": true,
+    "export_all_influences": true,
+    "export_def_bones": false,
+    "export_optimize_animation_size": false,
+    "export_cameras": false,
+    "export_lights": false,
+    "export_anim_slide_to_zero": true,
+    "export_yup": true
+  },
+  "selected_objects": [
+    "SWAT_Mixamo_Rig",
+    "Rebuilt SWAT full body",
+    "Rifle 7",
+    "Removed magazine",
+    "Fresh magazine",
+    "Rebuilt spare magazine sleeve"
+  ],
+  "source_unchanged": true,
+  "output": "standing_f_original_timing.glb",
+  "bytes": 4382908,
+  "sha256": "2410005918b2b3e87c157229c12debb5743d228fefee1f29cd4bccb9e14ec45f",
+  "asset_quality_approved": false,
+  "gameplay_timing_adapted": false,
+  "engine_runtime_tested": false,
+  "validation_report": "validation.json",
+  "visual_sanity": "Blender reimport Ready and fresh-seated stills inspected; no engine playback claim"
+}

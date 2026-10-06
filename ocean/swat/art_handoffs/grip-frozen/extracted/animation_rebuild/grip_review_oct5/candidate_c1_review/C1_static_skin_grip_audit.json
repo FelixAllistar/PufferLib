@@ -1,0 +1,4324 @@
+{
+  "label": "C1",
+  "source": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+  "sha256_before": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "action": "Support Grip / Index Base Release Candidate C1",
+  "frame": 0,
+  "body_object": "SWAT_Wearer",
+  "body_vertices": 22645,
+  "native_vertex_mapping": true,
+  "rifle_native_to_evaluated_affine_fit_max_error_mm": 0.0001755800600669329,
+  "scope": "Saved static grips only. Direct evaluated actual skin surfaces and native Rifle 7; no pose application, solve, or asset edits. Three-ray parity verifies finite penetration witnesses. Finite samples do not certify global zero contact/intersection or engine transition/FOV/armIK behavior.",
+  "hands": {
+    "Left": {
+      "native_component_id": 7820,
+      "vertices": 726,
+      "triangles": 1434,
+      "diagnostic_wrist_cap": {
+        "boundary_edges": 16,
+        "volume_m3": 0.0005634054490038761
+      },
+      "rifle_sample_count": 103125,
+      "confirmed_inside_samples": 236,
+      "maximum_sampled_confirmed_depth_mm": 0.8249042357419967,
+      "inside_by_region": {
+        "Pinky": {
+          "inside_samples": 28,
+          "all3_inside_samples": 28,
+          "samples_deeper_1mm": 0,
+          "max_depth_mm": 0.6448723297580727,
+          "deepest_rifle_point_m": [
+            -0.023905881447592536,
+            -0.04314125732045848,
+            0.07653375619561875
+          ],
+          "deepest_votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        "Middle": {
+          "inside_samples": 5,
+          "all3_inside_samples": 5,
+          "samples_deeper_1mm": 0,
+          "max_depth_mm": 0.5866789501851599,
+          "deepest_rifle_point_m": [
+            -0.015131795637967849,
+            -0.08139672241569107,
+            0.08700589664428482
+          ],
+          "deepest_votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        "Palm": {
+          "inside_samples": 82,
+          "all3_inside_samples": 82,
+          "samples_deeper_1mm": 0,
+          "max_depth_mm": 0.7689212316108751,
+          "deepest_rifle_point_m": [
+            -0.007854713642008071,
+            -0.08942418474687042,
+            0.031081299578270105
+          ],
+          "deepest_votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        "Thumb": {
+          "inside_samples": 121,
+          "all3_inside_samples": 121,
+          "samples_deeper_1mm": 0,
+          "max_depth_mm": 0.8249042357419967,
+          "deepest_rifle_point_m": [
+            0.02689598257598963,
+            -0.15965042199326274,
+            0.05649227611025398
+          ],
+          "deepest_votes": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "exact_rifle_hand_triangle_crossing_pairs": 103,
+      "nonlocal_cross_digit_exact_pairs": [],
+      "palm_skin_orientation": {
+        "native_volar_area_mm2": 6530.668393697622,
+        "area_weighted_skin_normal_world": [
+          0.2399607099957911,
+          0.37495898683483025,
+          0.8954466013393056
+        ],
+        "area_weighted_skin_normal_rifle": [
+          0.24237771731618268,
+          0.22074331947111883,
+          0.9447356397730893
+        ],
+        "skin_center_rifle_m": [
+          0.014197161162198324,
+          -0.061905028550128915,
+          0.026103557080575213
+        ],
+        "skin_normal_vs_hand_z_degrees": 11.310889537792942,
+        "method": "Volar material triangles selected in rest geometry with hand weight >0.6 and native face normal dot hand +Z >0.3. Reported normal and centroid are area weighted evaluated SKIN faces, not bone origin/axis.",
+        "contact_skin_normal_rifle": [
+          0.1738334657224818,
+          0.02791728815413183,
+          0.9843792720374753
+        ],
+        "contact_rifle_normal_rifle": [
+          -0.23459445620693287,
+          -0.11223960776250329,
+          -0.9655918970073708
+        ],
+        "opposed_contact_normal_dot": -0.994422443754044,
+        "contact_normal_vs_opposed_rifle_degrees": 6.054268461201657,
+        "material_skin_vertices_native": [
+          7949,
+          8158,
+          8159,
+          8170,
+          8171,
+          8176,
+          8177,
+          8178,
+          8179,
+          8180,
+          8181,
+          8182,
+          8183,
+          8184,
+          8185,
+          8186,
+          8187,
+          8188,
+          8189,
+          8190,
+          8191,
+          8192,
+          8193,
+          8194,
+          8195,
+          8196,
+          8197,
+          8198,
+          8199,
+          8200,
+          8201,
+          8202,
+          8215,
+          8216,
+          8217,
+          8218,
+          8219,
+          8220,
+          8223,
+          8224,
+          8225,
+          8226,
+          8271,
+          8272,
+          8273,
+          8275,
+          8340,
+          8341,
+          8343,
+          8344,
+          8345,
+          8346,
+          8350,
+          8351,
+          8352,
+          8353,
+          8354,
+          8355,
+          8356,
+          8357,
+          8358,
+          8359,
+          8360,
+          8363,
+          8364,
+          8365,
+          8366,
+          8367,
+          8368,
+          8369,
+          8370,
+          8467,
+          8469,
+          8470,
+          8471,
+          8472,
+          8473,
+          8474,
+          8475,
+          8476,
+          8477,
+          8478,
+          8479,
+          8480,
+          8481,
+          8490,
+          8515,
+          8518
+        ],
+        "dorsal_marker_count": 49,
+        "dorsal_skin_centroid_rifle_m": [
+          0.023285154386802287,
+          -0.05301403636621538,
+          -0.02722178902554817
+        ]
+      },
+      "contact_by_skin_segment": {
+        "Ring2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 19.067350775003433,
+          "minimum_opposed_surface_gap_mm": 19.067350775003433,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.04323117600694587,
+              -0.06556049872357206,
+              0.06400113293769216
+            ],
+            "rifle_point_m": [
+              -0.02430203327269098,
+              -0.06556049674413944,
+              0.061709478339362356
+            ],
+            "surface_normal_dot": -0.793226437817535,
+            "hand_local_triangle": 9,
+            "skin_vertices_local": [
+              7966,
+              7907,
+              7968
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Ring3": {
+          "area_within_1mm_mm2": 27.240713272552078,
+          "area_within_2mm_mm2": 65.96347677864455,
+          "area_within_3mm_mm2": 96.928277496537,
+          "minimum_sampled_surface_gap_mm": 0.47225519665516913,
+          "minimum_opposed_surface_gap_mm": 0.47225519665516913,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.024774303187416302,
+              -0.06648249033982245,
+              0.07586882634188052
+            ],
+            "rifle_point_m": [
+              -0.024302047945402028,
+              -0.06648285350069061,
+              0.07586876565292022
+            ],
+            "surface_normal_dot": -0.9370320424956344,
+            "hand_local_triangle": 48,
+            "skin_vertices_local": [
+              7990,
+              7988,
+              7987
+            ]
+          },
+          "contact_samples_within2mm": 44
+        },
+        "Index3": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 4.0061350028841245,
+          "minimum_sampled_surface_gap_mm": 2.7272109873592854,
+          "minimum_opposed_surface_gap_mm": 2.7272109873592854,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.02550764147058948,
+              -0.11395992239112962,
+              0.07886840698467013
+            ],
+            "rifle_point_m": [
+              -0.023417218888361846,
+              -0.11395988704731785,
+              0.07711688846109466
+            ],
+            "surface_normal_dot": -0.7939118676868777,
+            "hand_local_triangle": 370,
+            "skin_vertices_local": [
+              8096,
+              8090,
+              8085
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Ring1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 24.063963443040848,
+          "minimum_opposed_surface_gap_mm": 24.063963443040848,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.042024507398886246,
+              -0.06428273474414481,
+              0.04017477470917252
+            ],
+            "rifle_point_m": [
+              -0.02357921875715918,
+              -0.06428222890436652,
+              0.05562941408804689
+            ],
+            "surface_normal_dot": -0.7722450320652137,
+            "hand_local_triangle": 1148,
+            "skin_vertices_local": [
+              8648,
+              8438,
+              8412
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Index2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 32.2097205119729,
+          "minimum_sampled_surface_gap_mm": 2.003839472308755,
+          "minimum_opposed_surface_gap_mm": 2.003839472308755,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.025977033642850367,
+              -0.11451974082566219,
+              0.07716094482341362
+            ],
+            "rifle_point_m": [
+              -0.024302080605435705,
+              -0.11451978245049199,
+              0.07606092926989438
+            ],
+            "surface_normal_dot": -0.7806242212190574,
+            "hand_local_triangle": 366,
+            "skin_vertices_local": [
+              8084,
+              8108,
+              8090
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Pinky3": {
+          "area_within_1mm_mm2": 74.90023993585226,
+          "area_within_2mm_mm2": 106.12148177579854,
+          "area_within_3mm_mm2": 143.28050326055083,
+          "minimum_sampled_surface_gap_mm": 0.09185083763441071,
+          "minimum_opposed_surface_gap_mm": 0.09185083763441071,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.024393950898746797,
+              -0.03933896783772661,
+              0.07528187477533499
+            ],
+            "rifle_point_m": [
+              -0.02430209119232235,
+              -0.0393394093530518,
+              0.07528176072272097
+            ],
+            "surface_normal_dot": -0.7389956334285059,
+            "hand_local_triangle": 461,
+            "skin_vertices_local": [
+              7954,
+              7955,
+              7953
+            ]
+          },
+          "contact_samples_within2mm": 81
+        },
+        "Thumb3": {
+          "area_within_1mm_mm2": 208.8754641329923,
+          "area_within_2mm_mm2": 302.9968226459463,
+          "area_within_3mm_mm2": 431.2486630059409,
+          "minimum_sampled_surface_gap_mm": 0.06236192712094635,
+          "minimum_opposed_surface_gap_mm": 0.06236192712094635,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.026958354986994643,
+              -0.15015524799000735,
+              0.057524064878465175
+            ],
+            "rifle_point_m": [
+              0.026895987559785534,
+              -0.15015508586445525,
+              0.05752423700013076
+            ],
+            "surface_normal_dot": -0.8142389293800012,
+            "hand_local_triangle": 1415,
+            "skin_vertices_local": [
+              8013,
+              8030,
+              8031
+            ]
+          },
+          "contact_samples_within2mm": 159
+        },
+        "Thumb2": {
+          "area_within_1mm_mm2": 9.781133192461278,
+          "area_within_2mm_mm2": 44.48411739877577,
+          "area_within_3mm_mm2": 105.88428499337472,
+          "minimum_sampled_surface_gap_mm": 0.20135861996095628,
+          "minimum_opposed_surface_gap_mm": 0.20135861996095628,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.005350553293192367,
+              -0.10516419556927059,
+              0.030879885024670095
+            ],
+            "rifle_point_m": [
+              0.00535056508445747,
+              -0.1051641790990554,
+              0.03108126714942494
+            ],
+            "surface_normal_dot": -0.8346054978803247,
+            "hand_local_triangle": 556,
+            "skin_vertices_local": [
+              8492,
+              8170,
+              8471
+            ]
+          },
+          "contact_samples_within2mm": 31
+        },
+        "Middle2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 3.2938579097390175,
+          "minimum_opposed_surface_gap_mm": 3.2938579097390175,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.02456848777149151,
+              -0.0889868165533303,
+              0.08087170001634125
+            ],
+            "rifle_point_m": [
+              -0.022043408810894505,
+              -0.0889852754111371,
+              0.07875664003441396
+            ],
+            "surface_normal_dot": -0.7687717622586078,
+            "hand_local_triangle": 438,
+            "skin_vertices_local": [
+              8120,
+              8119,
+              8118
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Middle3": {
+          "area_within_1mm_mm2": 32.629745276569615,
+          "area_within_2mm_mm2": 69.67621073795381,
+          "area_within_3mm_mm2": 152.3945196003134,
+          "minimum_sampled_surface_gap_mm": 0.10216696682618931,
+          "minimum_opposed_surface_gap_mm": 0.10216696682618931,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.014477453848068034,
+              -0.08173103852492047,
+              0.08794583425976343
+            ],
+            "rifle_point_m": [
+              -0.014399130915075609,
+              -0.08172931075263401,
+              0.08788021312294791
+            ],
+            "surface_normal_dot": -0.6842382074530726,
+            "hand_local_triangle": 192,
+            "skin_vertices_local": [
+              7914,
+              7917,
+              7897
+            ]
+          },
+          "contact_samples_within2mm": 41
+        },
+        "Thumb1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 18.401365727186203,
+          "minimum_opposed_surface_gap_mm": 18.401365727186203,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.03618468437912231,
+              -0.10978421948442518,
+              0.03900660628392649
+            ],
+            "rifle_point_m": [
+              0.02287740494334331,
+              -0.11049718612828385,
+              0.05169590904663757
+            ],
+            "surface_normal_dot": -0.7916756917239707,
+            "hand_local_triangle": 588,
+            "skin_vertices_local": [
+              8175,
+              8174,
+              8262
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Palm": {
+          "area_within_1mm_mm2": 218.23446580247196,
+          "area_within_2mm_mm2": 456.5671326325861,
+          "area_within_3mm_mm2": 724.853577431284,
+          "minimum_sampled_surface_gap_mm": 0.007486495178454788,
+          "minimum_opposed_surface_gap_mm": 0.007486495178454788,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.007173097184009547,
+              -0.1001662740559931,
+              0.031073673022412818
+            ],
+            "rifle_point_m": [
+              -0.007173101327771769,
+              -0.10016631220742012,
+              0.031081208404035943
+            ],
+            "surface_normal_dot": -0.9418951068686463,
+            "hand_local_triangle": 511,
+            "skin_vertices_local": [
+              8471,
+              8479,
+              8490
+            ]
+          },
+          "contact_samples_within2mm": 226
+        },
+        "Index1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 5.831609014421701,
+          "minimum_opposed_surface_gap_mm": 5.831609014421701,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.014335503151840345,
+              -0.11524546531903601,
+              0.029464953801044746
+            ],
+            "rifle_point_m": [
+              -0.010083350688971426,
+              -0.11524544138528348,
+              0.03345580322223696
+            ],
+            "surface_normal_dot": -0.6190999987662301,
+            "hand_local_triangle": 1284,
+            "skin_vertices_local": [
+              8507,
+              8482,
+              8513
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Pinky2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 3.6387902218848467,
+          "minimum_opposed_surface_gap_mm": 3.6387902218848467,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.027940841576491904,
+              -0.044078759985388016,
+              0.07048051917840392
+            ],
+            "rifle_point_m": [
+              -0.024302049947270865,
+              -0.04407877920542924,
+              0.07048051583488468
+            ],
+            "surface_normal_dot": -0.6103287765060584,
+            "hand_local_triangle": 263,
+            "skin_vertices_local": [
+              8052,
+              8058,
+              8051
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Middle1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 19.02027055621147,
+          "minimum_opposed_surface_gap_mm": 19.02027055621147,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.03573514530177424,
+              -0.09226998238210937,
+              0.04052170229868257
+            ],
+            "rifle_point_m": [
+              -0.02115571241527142,
+              -0.0922701735991257,
+              0.052736896376430975
+            ],
+            "surface_normal_dot": -0.15215436270824828,
+            "hand_local_triangle": 967,
+            "skin_vertices_local": [
+              8448,
+              8445,
+              8361
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Pinky1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 11.967513710260391,
+          "minimum_opposed_surface_gap_mm": 11.967513710260391,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.021795686566097594,
+              -0.04878913904921778,
+              0.028921202151644287
+            ],
+            "rifle_point_m": [
+              -0.01141238122295335,
+              -0.048789110169356054,
+              0.03487169997098771
+            ],
+            "surface_normal_dot": -0.8326894364401165,
+            "hand_local_triangle": 937,
+            "skin_vertices_local": [
+              8349,
+              8350,
+              8347
+            ]
+          },
+          "contact_samples_within2mm": 0
+        }
+      },
+      "finger_skin_segments": {
+        "Thumb": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 8,
+              "native_skin_vertex_ids": [
+                8172,
+                8173,
+                8235,
+                8236,
+                8238,
+                8239,
+                8257,
+                8258
+              ],
+              "skin_center_rifle_m": [
+                0.055901587399104335,
+                -0.11411278597713626,
+                0.01711666298660619
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 18.401365727186203,
+                "minimum_opposed_surface_gap_mm": 18.401365727186203,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.03618468437912231,
+                    -0.10978421948442518,
+                    0.03900660628392649
+                  ],
+                  "rifle_point_m": [
+                    0.02287740494334331,
+                    -0.11049718612828385,
+                    0.05169590904663757
+                  ],
+                  "surface_normal_dot": -0.7916756917239707,
+                  "hand_local_triangle": 588,
+                  "skin_vertices_local": [
+                    8175,
+                    8174,
+                    8262
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 43,
+              "native_skin_vertex_ids": [
+                8040,
+                8041,
+                8044,
+                8150,
+                8203,
+                8204,
+                8237,
+                8241,
+                8242,
+                8243,
+                8244,
+                8247,
+                8248,
+                8249,
+                8250,
+                8251,
+                8252,
+                8253,
+                8254,
+                8261,
+                8262,
+                8263,
+                8264,
+                8265,
+                8305,
+                8306,
+                8485,
+                8486,
+                8491,
+                8492,
+                8519,
+                8521,
+                8525,
+                8541,
+                8553,
+                8558,
+                8559,
+                8563,
+                8571,
+                8574,
+                8575,
+                8579,
+                8585
+              ],
+              "skin_center_rifle_m": [
+                0.03751452095801494,
+                -0.12795415472317795,
+                0.03336101513021417
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 9.781133192461278,
+                "area_within_2mm_mm2": 44.48411739877577,
+                "area_within_3mm_mm2": 105.88428499337472,
+                "minimum_sampled_surface_gap_mm": 0.20135861996095628,
+                "minimum_opposed_surface_gap_mm": 0.20135861996095628,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.005350553293192367,
+                    -0.10516419556927059,
+                    0.030879885024670095
+                  ],
+                  "rifle_point_m": [
+                    0.00535056508445747,
+                    -0.1051641790990554,
+                    0.03108126714942494
+                  ],
+                  "surface_normal_dot": -0.8346054978803247,
+                  "hand_local_triangle": 556,
+                  "skin_vertices_local": [
+                    8492,
+                    8170,
+                    8471
+                  ]
+                },
+                "contact_samples_within2mm": 31
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 39,
+              "native_skin_vertex_ids": [
+                8003,
+                8004,
+                8005,
+                8006,
+                8007,
+                8008,
+                8009,
+                8010,
+                8011,
+                8012,
+                8013,
+                8014,
+                8015,
+                8016,
+                8017,
+                8018,
+                8019,
+                8020,
+                8021,
+                8022,
+                8023,
+                8024,
+                8025,
+                8026,
+                8027,
+                8028,
+                8029,
+                8030,
+                8031,
+                8032,
+                8033,
+                8034,
+                8035,
+                8036,
+                8037,
+                8038,
+                8039,
+                8042,
+                8043
+              ],
+              "skin_center_rifle_m": [
+                0.035027041598400616,
+                -0.1618188404163149,
+                0.05313291466614212
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 208.8754641329923,
+                "area_within_2mm_mm2": 302.9968226459463,
+                "area_within_3mm_mm2": 431.2486630059409,
+                "minimum_sampled_surface_gap_mm": 0.06236192712094635,
+                "minimum_opposed_surface_gap_mm": 0.06236192712094635,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.026958354986994643,
+                    -0.15015524799000735,
+                    0.057524064878465175
+                  ],
+                  "rifle_point_m": [
+                    0.026895987559785534,
+                    -0.15015508586445525,
+                    0.05752423700013076
+                  ],
+                  "surface_normal_dot": -0.8142389293800012,
+                  "hand_local_triangle": 1415,
+                  "skin_vertices_local": [
+                    8013,
+                    8030,
+                    8031
+                  ]
+                },
+                "contact_samples_within2mm": 159
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 40.977889680003216,
+          "supplemental_bone_segment_turns_degrees": [
+            4.849729734832413,
+            32.50266740003882
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  -0.34345137330768183,
+                  -0.8186359875592542,
+                  0.46030019991952215
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 17,
+                    "evaluated_ring_perimeter_mm": 95.42154035526481,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.04363901653247984,
+                      -0.0954813987696439,
+                      0.013224996382924514
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 25,
+                    "evaluated_ring_perimeter_mm": 126.0924443769198,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.03800822650983071,
+                      -0.10890270876918395,
+                      0.020771490514448265
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.4029706723457825,
+                  -0.6772969705834793,
+                  0.6155350931243723
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 26,
+                    "evaluated_ring_perimeter_mm": 146.57740096535716,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.030675620132015913,
+                      -0.12198437480756708,
+                      0.02947979840423498
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 19,
+                    "evaluated_ring_perimeter_mm": 86.07042297597312,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.040438568999363766,
+                      -0.13839354834201756,
+                      0.044392639592525596
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  -0.041525415730504264,
+                  -0.9878429524080404,
+                  0.1498063457473513
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 19,
+                    "evaluated_ring_perimeter_mm": 78.55017031163213,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.036283931812265524,
+                      -0.1533282286564266,
+                      0.051201916139700376
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 61.96742646784378,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.03567054623193558,
+                      -0.1679199819713142,
+                      0.0534147549688091
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 45.62192485679931,
+            "middle_to_distal_skin_axis_turn_deg": 41.88034606869577
+          }
+        },
+        "Index": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 31,
+              "native_skin_vertex_ids": [
+                7820,
+                7821,
+                7822,
+                7823,
+                7824,
+                7825,
+                7826,
+                7827,
+                7828,
+                7829,
+                7884,
+                7885,
+                7890,
+                7891,
+                8080,
+                8447,
+                8449,
+                8461,
+                8462,
+                8464,
+                8465,
+                8482,
+                8500,
+                8509,
+                8510,
+                8511,
+                8512,
+                8513,
+                8514,
+                8516,
+                8517
+              ],
+              "skin_center_rifle_m": [
+                -0.036098938143152015,
+                -0.1176310663051322,
+                0.032715925633854726
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 5.831609014421701,
+                "minimum_opposed_surface_gap_mm": 5.831609014421701,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.014335503151840345,
+                    -0.11524546531903601,
+                    0.029464953801044746
+                  ],
+                  "rifle_point_m": [
+                    -0.010083350688971426,
+                    -0.11524544138528348,
+                    0.03345580322223696
+                  ],
+                  "surface_normal_dot": -0.6190999987662301,
+                  "hand_local_triangle": 1284,
+                  "skin_vertices_local": [
+                    8507,
+                    8482,
+                    8513
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 28,
+              "native_skin_vertex_ids": [
+                7924,
+                7925,
+                7963,
+                8053,
+                8075,
+                8076,
+                8077,
+                8079,
+                8083,
+                8084,
+                8090,
+                8093,
+                8097,
+                8098,
+                8099,
+                8100,
+                8101,
+                8102,
+                8103,
+                8104,
+                8105,
+                8106,
+                8107,
+                8108,
+                8109,
+                8110,
+                8111,
+                8112
+              ],
+              "skin_center_rifle_m": [
+                -0.040470063375329934,
+                -0.11667723629600635,
+                0.07037368334390592
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 32.2097205119729,
+                "minimum_sampled_surface_gap_mm": 2.003839472308755,
+                "minimum_opposed_surface_gap_mm": 2.003839472308755,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.025977033642850367,
+                    -0.11451974082566219,
+                    0.07716094482341362
+                  ],
+                  "rifle_point_m": [
+                    -0.024302080605435705,
+                    -0.11451978245049199,
+                    0.07606092926989438
+                  ],
+                  "surface_normal_dot": -0.7806242212190574,
+                  "hand_local_triangle": 366,
+                  "skin_vertices_local": [
+                    8084,
+                    8108,
+                    8090
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                7922,
+                7923,
+                7926,
+                7927,
+                7928,
+                7929,
+                7930,
+                7931,
+                7932,
+                7934,
+                7935,
+                7936,
+                7937,
+                7938,
+                7939,
+                7941,
+                7942,
+                8085,
+                8086,
+                8087,
+                8088,
+                8089,
+                8094,
+                8095,
+                8096
+              ],
+              "skin_center_rifle_m": [
+                -0.024746051507924027,
+                -0.10347358002860174,
+                0.0975007164957602
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 4.0061350028841245,
+                "minimum_sampled_surface_gap_mm": 2.7272109873592854,
+                "minimum_opposed_surface_gap_mm": 2.7272109873592854,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.02550764147058948,
+                    -0.11395992239112962,
+                    0.07886840698467013
+                  ],
+                  "rifle_point_m": [
+                    -0.023417218888361846,
+                    -0.11395988704731785,
+                    0.07711688846109466
+                  ],
+                  "surface_normal_dot": -0.7939118676868777,
+                  "hand_local_triangle": 370,
+                  "skin_vertices_local": [
+                    8096,
+                    8090,
+                    8085
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 41.559096741899,
+          "supplemental_bone_segment_turns_degrees": [
+            54.64594917066832,
+            33.53341215747203
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  -0.38071070693637055,
+                  -0.5263735550215471,
+                  0.7602566923072674
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 36,
+                    "evaluated_ring_perimeter_mm": 114.16035188179896,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.03527985324294158,
+                      -0.10903351578180087,
+                      0.028276106436679216
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 82.58373747419091,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.04226888736959372,
+                      -0.11869660818342243,
+                      0.04223279289372517
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.31029525728417506,
+                  0.24434512038114548,
+                  0.9187014288945409
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 71.50949820809282,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.04361486596478398,
+                      -0.11935036479157057,
+                      0.05966547887940532
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 70.50784533833047,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.038186852135031535,
+                      -0.11507602072240974,
+                      0.07573637891538598
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.6004152896869321,
+                  0.47795744214422264,
+                  0.6411381780935443
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 67.40888093617566,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.03246903003503049,
+                      -0.11006847135808184,
+                      0.08854163629764655
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 59.89928398875982,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.024208876025295534,
+                      -0.10349301908359232,
+                      0.09736203142005406
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 63.147222626800996,
+            "middle_to_distal_skin_axis_turn_deg": 26.860761173247386
+          }
+        },
+        "Middle": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 27,
+              "native_skin_vertex_ids": [
+                7961,
+                7962,
+                7971,
+                7974,
+                7977,
+                7979,
+                7999,
+                8000,
+                8045,
+                8046,
+                8047,
+                8048,
+                8055,
+                8131,
+                8133,
+                8144,
+                8145,
+                8374,
+                8375,
+                8376,
+                8377,
+                8378,
+                8379,
+                8380,
+                8440,
+                8443,
+                8448
+              ],
+              "skin_center_rifle_m": [
+                -0.05405091043575383,
+                -0.0967915577354963,
+                0.048107318434222446
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 19.02027055621147,
+                "minimum_opposed_surface_gap_mm": 19.02027055621147,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.03573514530177424,
+                    -0.09226998238210937,
+                    0.04052170229868257
+                  ],
+                  "rifle_point_m": [
+                    -0.02115571241527142,
+                    -0.0922701735991257,
+                    0.052736896376430975
+                  ],
+                  "surface_normal_dot": -0.15215436270824828,
+                  "hand_local_triangle": 967,
+                  "skin_vertices_local": [
+                    8448,
+                    8445,
+                    8361
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                8054,
+                8091,
+                8092,
+                8117,
+                8119,
+                8122,
+                8123,
+                8124,
+                8125,
+                8126,
+                8127,
+                8128,
+                8129,
+                8130,
+                8132,
+                8134,
+                8135,
+                8136,
+                8137,
+                8138,
+                8139,
+                8140,
+                8141,
+                8142,
+                8143
+              ],
+              "skin_center_rifle_m": [
+                -0.04788600270307686,
+                -0.09329857857353963,
+                0.07532033723870213
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 3.2938579097390175,
+                "minimum_opposed_surface_gap_mm": 3.2938579097390175,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.02456848777149151,
+                    -0.0889868165533303,
+                    0.08087170001634125
+                  ],
+                  "rifle_point_m": [
+                    -0.022043408810894505,
+                    -0.0889852754111371,
+                    0.07875664003441396
+                  ],
+                  "surface_normal_dot": -0.7687717622586078,
+                  "hand_local_triangle": 438,
+                  "skin_vertices_local": [
+                    8120,
+                    8119,
+                    8118
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                7897,
+                7898,
+                7904,
+                7905,
+                7906,
+                7909,
+                7910,
+                7911,
+                7912,
+                7913,
+                7914,
+                7915,
+                7916,
+                7917,
+                7918,
+                7919,
+                7920,
+                7921,
+                8113,
+                8114,
+                8115,
+                8116,
+                8118,
+                8120,
+                8121
+              ],
+              "skin_center_rifle_m": [
+                -0.023527566717954584,
+                -0.08006756027149076,
+                0.09024083896763857
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 32.629745276569615,
+                "area_within_2mm_mm2": 69.67621073795381,
+                "area_within_3mm_mm2": 152.3945196003134,
+                "minimum_sampled_surface_gap_mm": 0.10216696682618931,
+                "minimum_opposed_surface_gap_mm": 0.10216696682618931,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.014477453848068034,
+                    -0.08173103852492047,
+                    0.08794583425976343
+                  ],
+                  "rifle_point_m": [
+                    -0.014399130915075609,
+                    -0.08172931075263401,
+                    0.08788021312294791
+                  ],
+                  "surface_normal_dot": -0.6842382074530726,
+                  "hand_local_triangle": 192,
+                  "skin_vertices_local": [
+                    7914,
+                    7917,
+                    7897
+                  ]
+                },
+                "contact_samples_within2mm": 41
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 47.116460289032084,
+          "supplemental_bone_segment_turns_degrees": [
+            70.41683799647258,
+            41.084378085130446
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  -0.3019356009040286,
+                  -0.3979354828567302,
+                  0.8663037829712532
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 28,
+                    "evaluated_ring_perimeter_mm": 113.14624072066407,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.05127414745893338,
+                      -0.09034844509040652,
+                      0.03076162028354812
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 76.87533155956264,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.05735447654528342,
+                      -0.09836200388791183,
+                      0.048207102278529534
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.5626859897972206,
+                  0.2921331644649221,
+                  0.7733321997082707
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 71.27010028850736,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.05621893753837487,
+                      -0.09831503310695922,
+                      0.06435329747994967
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 68.59661321749128,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.04619086156214419,
+                      -0.09310869489781581,
+                      0.07813546763196455
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.8386579400489782,
+                  0.47842577389045793,
+                  0.2603106576191622
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 67.22401862762534,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.03367652781532415,
+                      -0.08595610490443972,
+                      0.086773535922126
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 55.163492126196225,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.02193024808173255,
+                      -0.07925525262186395,
+                      0.09041945836083953
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 67.43100046823231,
+            "middle_to_distal_skin_axis_turn_deg": 35.61270187307966
+          }
+        },
+        "Ring": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 15,
+              "native_skin_vertex_ids": [
+                7903,
+                7933,
+                7946,
+                7969,
+                8399,
+                8400,
+                8401,
+                8402,
+                8403,
+                8406,
+                8648,
+                8649,
+                8656,
+                8664,
+                8665
+              ],
+              "skin_center_rifle_m": [
+                -0.06359717607875215,
+                -0.073954299664855,
+                0.04692186788358965
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 24.063963443040848,
+                "minimum_opposed_surface_gap_mm": 24.063963443040848,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.042024507398886246,
+                    -0.06428273474414481,
+                    0.04017477470917252
+                  ],
+                  "rifle_point_m": [
+                    -0.02357921875715918,
+                    -0.06428222890436652,
+                    0.05562941408804689
+                  ],
+                  "surface_normal_dot": -0.7722450320652137,
+                  "hand_local_triangle": 1148,
+                  "skin_vertices_local": [
+                    8648,
+                    8438,
+                    8412
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 14,
+              "native_skin_vertex_ids": [
+                7896,
+                7899,
+                7900,
+                7901,
+                7902,
+                7907,
+                7908,
+                7943,
+                7944,
+                7945,
+                7947,
+                7948,
+                7967,
+                7968
+              ],
+              "skin_center_rifle_m": [
+                -0.0562210888343152,
+                -0.07165725224675978,
+                0.06235166498950884
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 19.067350775003433,
+                "minimum_opposed_surface_gap_mm": 19.067350775003433,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.04323117600694587,
+                    -0.06556049872357206,
+                    0.06400113293769216
+                  ],
+                  "rifle_point_m": [
+                    -0.02430203327269098,
+                    -0.06556049674413944,
+                    0.061709478339362356
+                  ],
+                  "surface_normal_dot": -0.793226437817535,
+                  "hand_local_triangle": 9,
+                  "skin_vertices_local": [
+                    7966,
+                    7907,
+                    7968
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 30,
+              "native_skin_vertex_ids": [
+                7894,
+                7895,
+                7964,
+                7965,
+                7972,
+                7973,
+                7975,
+                7976,
+                7978,
+                7980,
+                7981,
+                7982,
+                7983,
+                7984,
+                7985,
+                7986,
+                7987,
+                7988,
+                7989,
+                7990,
+                7991,
+                7992,
+                7993,
+                7994,
+                7995,
+                7996,
+                7997,
+                7998,
+                8001,
+                8002
+              ],
+              "skin_center_rifle_m": [
+                -0.034588556268395965,
+                -0.06310682527659295,
+                0.07564625016673077
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 27.240713272552078,
+                "area_within_2mm_mm2": 65.96347677864455,
+                "area_within_3mm_mm2": 96.928277496537,
+                "minimum_sampled_surface_gap_mm": 0.47225519665516913,
+                "minimum_opposed_surface_gap_mm": 0.47225519665516913,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.024774303187416302,
+                    -0.06648249033982245,
+                    0.07586882634188052
+                  ],
+                  "rifle_point_m": [
+                    -0.024302047945402028,
+                    -0.06648285350069061,
+                    0.07586876565292022
+                  ],
+                  "surface_normal_dot": -0.9370320424956344,
+                  "hand_local_triangle": 48,
+                  "skin_vertices_local": [
+                    7990,
+                    7988,
+                    7987
+                  ]
+                },
+                "contact_samples_within2mm": 44
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 33.765228474439944,
+          "supplemental_bone_segment_turns_degrees": [
+            68.43941266531706,
+            32.65656709213534
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  -0.3648215623912336,
+                  -0.09529530288488965,
+                  0.9261879036472546
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 85.47688380412197,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.056208131988283894,
+                      -0.0679324011691329,
+                      0.03628181488071025
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 85.3037969590121,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.060881644423317005,
+                      -0.06915317271595045,
+                      0.04814665822083808
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.5967206283216023,
+                  0.1438806614083673,
+                  0.7894446446763467
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 71.892220158118,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.06110972306445056,
+                      -0.0717595017538275,
+                      0.05858313263791626
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 65.21744710825847,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.052661261931793324,
+                      -0.06972241753391617,
+                      0.06976020961561691
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.9144179302792538,
+                  0.3551171105098238,
+                  0.194246458415486
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 19,
+                    "evaluated_ring_perimeter_mm": 64.5353404956237,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.040339271078584815,
+                      -0.06551659213069827,
+                      0.07467627647180763
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 20,
+                    "evaluated_ring_perimeter_mm": 49.53366863344503,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.029344747642925773,
+                      -0.0612468339986465,
+                      0.07701180289645992
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 60.015438165536274,
+            "middle_to_distal_skin_axis_turn_deg": 41.401539486979274
+          }
+        },
+        "Pinky": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 46,
+              "native_skin_vertex_ids": [
+                8266,
+                8287,
+                8288,
+                8289,
+                8290,
+                8291,
+                8292,
+                8293,
+                8294,
+                8295,
+                8296,
+                8297,
+                8311,
+                8312,
+                8313,
+                8314,
+                8315,
+                8316,
+                8317,
+                8318,
+                8321,
+                8323,
+                8330,
+                8331,
+                8332,
+                8333,
+                8334,
+                8335,
+                8336,
+                8337,
+                8338,
+                8348,
+                8349,
+                8407,
+                8408,
+                8409,
+                8410,
+                8414,
+                8415,
+                8416,
+                8417,
+                8418,
+                8419,
+                8420,
+                8429,
+                8436
+              ],
+              "skin_center_rifle_m": [
+                -0.04666121127581513,
+                -0.044884566884530575,
+                0.02708521459244273
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 11.967513710260391,
+                "minimum_opposed_surface_gap_mm": 11.967513710260391,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.021795686566097594,
+                    -0.04878913904921778,
+                    0.028921202151644287
+                  ],
+                  "rifle_point_m": [
+                    -0.01141238122295335,
+                    -0.048789110169356054,
+                    0.03487169997098771
+                  ],
+                  "surface_normal_dot": -0.8326894364401165,
+                  "hand_local_triangle": 937,
+                  "skin_vertices_local": [
+                    8349,
+                    8350,
+                    8347
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 24,
+              "native_skin_vertex_ids": [
+                8056,
+                8057,
+                8058,
+                8059,
+                8071,
+                8072,
+                8073,
+                8074,
+                8081,
+                8082,
+                8281,
+                8282,
+                8283,
+                8284,
+                8285,
+                8286,
+                8608,
+                8609,
+                8614,
+                8615,
+                8622,
+                8623,
+                8624,
+                8641
+              ],
+              "skin_center_rifle_m": [
+                -0.04650905085766516,
+                -0.04257085835587149,
+                0.060719191021228136
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 3.6387902218848467,
+                "minimum_opposed_surface_gap_mm": 3.6387902218848467,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.027940841576491904,
+                    -0.044078759985388016,
+                    0.07048051917840392
+                  ],
+                  "rifle_point_m": [
+                    -0.024302049947270865,
+                    -0.04407877920542924,
+                    0.07048051583488468
+                  ],
+                  "surface_normal_dot": -0.6103287765060584,
+                  "hand_local_triangle": 263,
+                  "skin_vertices_local": [
+                    8052,
+                    8058,
+                    8051
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                7951,
+                7952,
+                7953,
+                7954,
+                7955,
+                7956,
+                7957,
+                7958,
+                7959,
+                7960,
+                8049,
+                8050,
+                8051,
+                8052,
+                8060,
+                8061,
+                8062,
+                8063,
+                8064,
+                8065,
+                8066,
+                8067,
+                8068,
+                8069,
+                8070
+              ],
+              "skin_center_rifle_m": [
+                -0.029127683918112046,
+                -0.04188142208377865,
+                0.08030820409475337
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 74.90023993585226,
+                "area_within_2mm_mm2": 106.12148177579854,
+                "area_within_3mm_mm2": 143.28050326055083,
+                "minimum_sampled_surface_gap_mm": 0.09185083763441071,
+                "minimum_opposed_surface_gap_mm": 0.09185083763441071,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.024393950898746797,
+                    -0.03933896783772661,
+                    0.07528187477533499
+                  ],
+                  "rifle_point_m": [
+                    -0.02430209119232235,
+                    -0.0393394093530518,
+                    0.07528176072272097
+                  ],
+                  "surface_normal_dot": -0.7389956334285059,
+                  "hand_local_triangle": 461,
+                  "skin_vertices_local": [
+                    7954,
+                    7955,
+                    7953
+                  ]
+                },
+                "contact_samples_within2mm": 81
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 41.34292173132325,
+          "supplemental_bone_segment_turns_degrees": [
+            53.316005516466156,
+            8.974120440754776
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  -0.4501093898325578,
+                  0.03738463289876631,
+                  0.8921905213616578
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 50,
+                    "evaluated_ring_perimeter_mm": 134.54428310893485,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.04612822454592885,
+                      -0.05348206786845455,
+                      0.02758112191796691
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 28,
+                    "evaluated_ring_perimeter_mm": 130.98052229572713,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.05222859729275098,
+                      -0.052975390601023076,
+                      0.03967305971004986
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.3951870158222969,
+                  0.15538096518760813,
+                  0.9053640031406345
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 22,
+                    "evaluated_ring_perimeter_mm": 101.25385921186944,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.052048621645192916,
+                      -0.049333004090211796,
+                      0.05350027673605995
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 20,
+                    "evaluated_ring_perimeter_mm": 81.71874745423017,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.04716572414399195,
+                      -0.047413129964109624,
+                      0.06468687814656926
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.7149839057755629,
+                  0.1113996006302094,
+                  0.6902087680270012
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 61.70615403402128,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.0362635676137959,
+                      -0.042278976860636974,
+                      0.07512746645815405
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 50.227115435740416,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.02957510305989186,
+                      -0.04123686629826562,
+                      0.08158416687120007
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 50.528905068715325,
+            "middle_to_distal_skin_axis_turn_deg": 22.369021958730418
+          }
+        }
+      },
+      "supplemental_wrist_axis_bend_degrees": 35.5081310572574,
+      "installed_magazine": {
+        "exact_triangle_crossings": 0,
+        "near_hand_surface_samples": 0,
+        "inside_samples": 0,
+        "minimum_glove_vertex_to_magazine_gap_mm": 20.351063460111618,
+        "minimum_magazine_vertex_to_glove_gap_mm": 32.15258568525314
+      },
+      "comparison_to_A": {
+        "native_skin_surface_ids_equal": true,
+        "max_native_rest_vertex_delta_mm": 0.0,
+        "native_weights_equal": true,
+        "native_triangles_equal": true,
+        "max_skin_delta_in_rifle_frame_mm": 12.51960378731771,
+        "rms_skin_delta_in_rifle_frame_mm": 6.764869419121523
+      }
+    },
+    "Right": {
+      "native_component_id": 9060,
+      "vertices": 726,
+      "triangles": 1434,
+      "diagnostic_wrist_cap": {
+        "boundary_edges": 16,
+        "volume_m3": 0.0005462417743368489
+      },
+      "rifle_sample_count": 46252,
+      "confirmed_inside_samples": 48,
+      "maximum_sampled_confirmed_depth_mm": 0.4298042771324617,
+      "inside_by_region": {
+        "Palm": {
+          "inside_samples": 47,
+          "all3_inside_samples": 47,
+          "samples_deeper_1mm": 0,
+          "max_depth_mm": 0.4298042771324617,
+          "deepest_rifle_point_m": [
+            -0.013368503362045148,
+            0.18799795907283046,
+            -0.034895777413889384
+          ],
+          "deepest_votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        "Middle": {
+          "inside_samples": 1,
+          "all3_inside_samples": 1,
+          "samples_deeper_1mm": 0,
+          "max_depth_mm": 0.04726103112595581,
+          "deepest_rifle_point_m": [
+            -0.009234818239036435,
+            0.13640661691478617,
+            -0.032233368958271
+          ],
+          "deepest_votes": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "exact_rifle_hand_triangle_crossing_pairs": 11,
+      "nonlocal_cross_digit_exact_pairs": [],
+      "palm_skin_orientation": {
+        "native_volar_area_mm2": 6804.206308167439,
+        "area_weighted_skin_normal_world": [
+          0.9306165154554619,
+          0.2362917888572613,
+          -0.27949792786382066
+        ],
+        "area_weighted_skin_normal_rifle": [
+          0.9321233867321285,
+          0.2731841296881068,
+          -0.23773183041733967
+        ],
+        "skin_center_rifle_m": [
+          -0.028473227661394818,
+          0.23105019681481953,
+          -0.07298027619262726
+        ],
+        "skin_normal_vs_hand_z_degrees": 10.80876754967155,
+        "method": "Volar material triangles selected in rest geometry with hand weight >0.6 and native face normal dot hand +Z >0.3. Reported normal and centroid are area weighted evaluated SKIN faces, not bone origin/axis.",
+        "contact_skin_normal_rifle": [
+          0.9941568624424655,
+          0.09501602709098265,
+          -0.0512258475225013
+        ],
+        "contact_rifle_normal_rifle": [
+          -0.9999762401013186,
+          0.006292699648898648,
+          0.0028144562456866354
+        ],
+        "opposed_contact_normal_dot": -0.9936795039100809,
+        "contact_normal_vs_opposed_rifle_degrees": 6.445286480156643,
+        "material_skin_vertices_native": [
+          9189,
+          9398,
+          9399,
+          9410,
+          9411,
+          9416,
+          9417,
+          9418,
+          9419,
+          9420,
+          9421,
+          9422,
+          9423,
+          9424,
+          9425,
+          9426,
+          9427,
+          9428,
+          9429,
+          9430,
+          9431,
+          9432,
+          9433,
+          9434,
+          9435,
+          9436,
+          9437,
+          9438,
+          9439,
+          9440,
+          9441,
+          9442,
+          9455,
+          9456,
+          9457,
+          9458,
+          9459,
+          9460,
+          9463,
+          9464,
+          9465,
+          9466,
+          9467,
+          9511,
+          9512,
+          9513,
+          9515,
+          9580,
+          9581,
+          9583,
+          9584,
+          9585,
+          9586,
+          9590,
+          9591,
+          9592,
+          9593,
+          9594,
+          9595,
+          9596,
+          9597,
+          9598,
+          9599,
+          9600,
+          9603,
+          9604,
+          9605,
+          9606,
+          9607,
+          9608,
+          9609,
+          9610,
+          9707,
+          9709,
+          9710,
+          9711,
+          9712,
+          9713,
+          9714,
+          9715,
+          9716,
+          9717,
+          9718,
+          9719,
+          9720,
+          9721,
+          9730,
+          9755,
+          9758
+        ],
+        "dorsal_marker_count": 49,
+        "dorsal_skin_centroid_rifle_m": [
+          -0.08036774921699841,
+          0.23825058769295182,
+          -0.08026793986192038
+        ]
+      },
+      "contact_by_skin_segment": {
+        "Ring2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 15.57921338826418,
+          "minimum_opposed_surface_gap_mm": 17.50854216516018,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.0011531582865288992,
+              0.14630753706254074,
+              -0.06568159651754502
+            ],
+            "rifle_point_m": [
+              -0.0011532268114471944,
+              0.16285493324378297,
+              -0.05996033755389352
+            ],
+            "surface_normal_dot": -0.8575813256135416,
+            "hand_local_triangle": 9,
+            "skin_vertices_local": [
+              9059,
+              9118,
+              9120
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Ring3": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 37.133233854610054,
+          "minimum_sampled_surface_gap_mm": 2.108736429363489,
+          "minimum_opposed_surface_gap_mm": 2.108736429363489,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.00895158851666042,
+              0.161832562686812,
+              -0.06283412717567094
+            ],
+            "rifle_point_m": [
+              0.008048047975846379,
+              0.16363331574737738,
+              -0.06221150937391373
+            ],
+            "surface_normal_dot": -0.7905736166234699,
+            "hand_local_triangle": 47,
+            "skin_vertices_local": [
+              9145,
+              9139,
+              9143
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Index3": {
+          "area_within_1mm_mm2": 22.639590318832685,
+          "area_within_2mm_mm2": 71.20395447086011,
+          "area_within_3mm_mm2": 121.75702943566209,
+          "minimum_sampled_surface_gap_mm": 0.41972321923822165,
+          "minimum_opposed_surface_gap_mm": 0.41972321923822165,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.00966691927884733,
+              0.11095525046681565,
+              0.007135699239132931
+            ],
+            "rifle_point_m": [
+              -0.009351708480780652,
+              0.11095523439443133,
+              0.007412856054270556
+            ],
+            "surface_normal_dot": -0.9117644724943724,
+            "hand_local_triangle": 1417,
+            "skin_vertices_local": [
+              9237,
+              9075,
+              9083
+            ]
+          },
+          "contact_samples_within2mm": 39
+        },
+        "Ring1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 7.0223696529865265,
+          "minimum_opposed_surface_gap_mm": 7.0223696529865265,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.019121049577964455,
+              0.1679154758000272,
+              -0.06811121643278484
+            ],
+            "rifle_point_m": [
+              -0.013368432353792592,
+              0.17172186426883418,
+              -0.06679497009744839
+            ],
+            "surface_normal_dot": -0.8115104840662051,
+            "hand_local_triangle": 1148,
+            "skin_vertices_local": [
+              9564,
+              9590,
+              9800
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Index2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 3.216890851035714,
+          "minimum_opposed_surface_gap_mm": 3.216890851035714,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.016570979685626208,
+              0.1468520724591751,
+              -0.013692443702981727
+            ],
+            "rifle_point_m": [
+              -0.013368546180213825,
+              0.14715686857098575,
+              -0.013692429660589367
+            ],
+            "surface_normal_dot": -0.7577019243472639,
+            "hand_local_triangle": 402,
+            "skin_vertices_local": [
+              9258,
+              9115,
+              9259
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Pinky3": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 15.95382747462694,
+          "area_within_3mm_mm2": 38.19803298336819,
+          "minimum_sampled_surface_gap_mm": 1.6616273205727339,
+          "minimum_opposed_surface_gap_mm": 1.6616273205727339,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.011486565730532194,
+              0.17011510271204977,
+              -0.07922351964360952
+            ],
+            "rifle_point_m": [
+              0.01046722813588069,
+              0.17135528172403802,
+              -0.07879466817318281
+            ],
+            "surface_normal_dot": -0.8921636491923259,
+            "hand_local_triangle": 260,
+            "skin_vertices_local": [
+              9204,
+              9201,
+              9202
+            ]
+          },
+          "contact_samples_within2mm": 12
+        },
+        "Thumb3": {
+          "area_within_1mm_mm2": 170.42598260597774,
+          "area_within_2mm_mm2": 217.3390226403679,
+          "area_within_3mm_mm2": 293.0956747548522,
+          "minimum_sampled_surface_gap_mm": 0.14734109572600573,
+          "minimum_opposed_surface_gap_mm": 0.14734109572600573,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.010403392031606118,
+              0.20560263158799252,
+              -0.03489200334376297
+            ],
+            "rifle_point_m": [
+              0.010313803267060884,
+              0.2054958221402784,
+              -0.034939700328858514
+            ],
+            "surface_normal_dot": -0.9919847892813174,
+            "hand_local_triangle": 84,
+            "skin_vertices_local": [
+              9184,
+              9183,
+              9165
+            ]
+          },
+          "contact_samples_within2mm": 113
+        },
+        "Thumb2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 1.4997184864583115,
+          "area_within_3mm_mm2": 4.4991554593749346,
+          "minimum_sampled_surface_gap_mm": 1.7229600343853235,
+          "minimum_opposed_surface_gap_mm": 1.7229600343853235,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.006270116384598651,
+              0.20907846906754124,
+              -0.03376670784120428
+            ],
+            "rifle_point_m": [
+              0.0062701509014443935,
+              0.20750569286971432,
+              -0.034470246727685616
+            ],
+            "surface_normal_dot": -0.6533328204672384,
+            "hand_local_triangle": 182,
+            "skin_vertices_local": [
+              9457,
+              9693,
+              9187
+            ]
+          },
+          "contact_samples_within2mm": 1
+        },
+        "Middle2": {
+          "area_within_1mm_mm2": 284.48874136485716,
+          "area_within_2mm_mm2": 554.4079570149332,
+          "area_within_3mm_mm2": 728.204492164318,
+          "minimum_sampled_surface_gap_mm": 0.025251383704016916,
+          "minimum_opposed_surface_gap_mm": 0.025251383704016916,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.0032242176969013436,
+              0.13575160048548096,
+              -0.032580910540198404
+            ],
+            "rifle_point_m": [
+              -0.0032242246104651207,
+              0.13574049591637627,
+              -0.03255827114372711
+            ],
+            "surface_normal_dot": -0.8537666363946772,
+            "hand_local_triangle": 1033,
+            "skin_vertices_local": [
+              9295,
+              9207,
+              9285
+            ]
+          },
+          "contact_samples_within2mm": 273
+        },
+        "Middle3": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 8.737468943834038,
+          "area_within_3mm_mm2": 19.861474305542846,
+          "minimum_sampled_surface_gap_mm": 1.8867796752601862,
+          "minimum_opposed_surface_gap_mm": 1.8867796752601862,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.017849579737262783,
+              0.16518540816287652,
+              -0.04504562297662096
+            ],
+            "rifle_point_m": [
+              0.01596279936593939,
+              0.1651854061498459,
+              -0.04504562324422201
+            ],
+            "surface_normal_dot": -0.7561649087766767,
+            "hand_local_triangle": 429,
+            "skin_vertices_local": [
+              9268,
+              9050,
+              9061
+            ]
+          },
+          "contact_samples_within2mm": 4
+        },
+        "Thumb1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 23.862075060606003,
+          "minimum_opposed_surface_gap_mm": 23.862075060606003,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.012717903889137183,
+              0.2345907045908886,
+              -0.03966144076108158
+            ],
+            "rifle_point_m": [
+              -0.005072658185373169,
+              0.21395697632032962,
+              -0.04889173172884331
+            ],
+            "surface_normal_dot": -0.12035600175756364,
+            "hand_local_triangle": 589,
+            "skin_vertices_local": [
+              9414,
+              9327,
+              9397
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Palm": {
+          "area_within_1mm_mm2": 267.6525779469446,
+          "area_within_2mm_mm2": 377.3715343526618,
+          "area_within_3mm_mm2": 511.4081005169142,
+          "minimum_sampled_surface_gap_mm": 0.013947773368272465,
+          "minimum_opposed_surface_gap_mm": 0.013947773368272465,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.013354572734473713,
+              0.19283461489690623,
+              -0.03367826621836567
+            ],
+            "rifle_point_m": [
+              -0.013368520416604579,
+              0.1928346400911457,
+              -0.033678322439494535
+            ],
+            "surface_normal_dot": -0.9927834570849295,
+            "hand_local_triangle": 1262,
+            "skin_vertices_local": [
+              9633,
+              9621,
+              9630
+            ]
+          },
+          "contact_samples_within2mm": 182
+        },
+        "Index1": {
+          "area_within_1mm_mm2": 8.89924874938034,
+          "area_within_2mm_mm2": 27.24343948623448,
+          "area_within_3mm_mm2": 70.55259047892098,
+          "minimum_sampled_surface_gap_mm": 0.3817161777988076,
+          "minimum_opposed_surface_gap_mm": 0.3817161777988076,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.013750244881462537,
+              0.18619408704187812,
+              -0.022330057120096836
+            ],
+            "rifle_point_m": [
+              -0.013368528585837092,
+              0.18619409493996586,
+              -0.022330055814496763
+            ],
+            "surface_normal_dot": -0.7934588175072683,
+            "hand_local_triangle": 1376,
+            "skin_vertices_local": [
+              9668,
+              9667,
+              9665
+            ]
+          },
+          "contact_samples_within2mm": 19
+        },
+        "Pinky2": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 10.230101110824016,
+          "minimum_sampled_surface_gap_mm": 2.3758092429488897,
+          "minimum_opposed_surface_gap_mm": 2.3758092429488897,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              0.008370395557980498,
+              0.1675274748879121,
+              -0.08067782820726688
+            ],
+            "rifle_point_m": [
+              0.008048077584350638,
+              0.16975209968244154,
+              -0.07990865610230569
+            ],
+            "surface_normal_dot": -0.7778238871185338,
+            "hand_local_triangle": 263,
+            "skin_vertices_local": [
+              9210,
+              9204,
+              9203
+            ]
+          },
+          "contact_samples_within2mm": 0
+        },
+        "Middle1": {
+          "area_within_1mm_mm2": 11.71931206619592,
+          "area_within_2mm_mm2": 32.4471605783472,
+          "area_within_3mm_mm2": 117.25705182709396,
+          "minimum_sampled_surface_gap_mm": 0.4990980960428715,
+          "minimum_opposed_surface_gap_mm": 0.4990980960428715,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.00930653723139857,
+              0.14079567509337343,
+              -0.031378665141551076
+            ],
+            "rifle_point_m": [
+              -0.009234818145908485,
+              0.14069814516067447,
+              -0.03089450194938248
+            ],
+            "surface_normal_dot": -0.9950688616082219,
+            "hand_local_triangle": 1006,
+            "skin_vertices_local": [
+              9197,
+              9528,
+              9207
+            ]
+          },
+          "contact_samples_within2mm": 15
+        },
+        "Pinky1": {
+          "area_within_1mm_mm2": 0.0,
+          "area_within_2mm_mm2": 0.0,
+          "area_within_3mm_mm2": 0.0,
+          "minimum_sampled_surface_gap_mm": 4.293292760848999,
+          "minimum_opposed_surface_gap_mm": 4.293292760848999,
+          "closest_opposed": {
+            "skin_point_rifle_m": [
+              -0.017661736499531122,
+              0.17993782707462047,
+              -0.06947376066379385
+            ],
+            "rifle_point_m": [
+              -0.013368442153802118,
+              0.17993781215493798,
+              -0.06947376331270405
+            ],
+            "surface_normal_dot": -0.9585953665870331,
+            "hand_local_triangle": 900,
+            "skin_vertices_local": [
+              9563,
+              9566,
+              9501
+            ]
+          },
+          "contact_samples_within2mm": 0
+        }
+      },
+      "finger_skin_segments": {
+        "Thumb": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 8,
+              "native_skin_vertex_ids": [
+                9412,
+                9413,
+                9475,
+                9476,
+                9478,
+                9479,
+                9497,
+                9498
+              ],
+              "skin_center_rifle_m": [
+                -0.022563129076548616,
+                0.2539905464100182,
+                -0.01660460975754008
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 23.862075060606003,
+                "minimum_opposed_surface_gap_mm": 23.862075060606003,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.012717903889137183,
+                    0.2345907045908886,
+                    -0.03966144076108158
+                  ],
+                  "rifle_point_m": [
+                    -0.005072658185373169,
+                    0.21395697632032962,
+                    -0.04889173172884331
+                  ],
+                  "surface_normal_dot": -0.12035600175756364,
+                  "hand_local_triangle": 589,
+                  "skin_vertices_local": [
+                    9414,
+                    9327,
+                    9397
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 43,
+              "native_skin_vertex_ids": [
+                9280,
+                9281,
+                9284,
+                9390,
+                9443,
+                9444,
+                9477,
+                9481,
+                9482,
+                9483,
+                9484,
+                9487,
+                9488,
+                9489,
+                9490,
+                9491,
+                9492,
+                9493,
+                9494,
+                9501,
+                9502,
+                9503,
+                9504,
+                9505,
+                9545,
+                9546,
+                9725,
+                9726,
+                9731,
+                9732,
+                9759,
+                9761,
+                9765,
+                9781,
+                9793,
+                9798,
+                9799,
+                9803,
+                9811,
+                9814,
+                9815,
+                9819,
+                9825
+              ],
+              "skin_center_rifle_m": [
+                -0.007595805644341758,
+                0.2257148597791696,
+                -0.024940386616113974
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 1.4997184864583115,
+                "area_within_3mm_mm2": 4.4991554593749346,
+                "minimum_sampled_surface_gap_mm": 1.7229600343853235,
+                "minimum_opposed_surface_gap_mm": 1.7229600343853235,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.006270116384598651,
+                    0.20907846906754124,
+                    -0.03376670784120428
+                  ],
+                  "rifle_point_m": [
+                    0.0062701509014443935,
+                    0.20750569286971432,
+                    -0.034470246727685616
+                  ],
+                  "surface_normal_dot": -0.6533328204672384,
+                  "hand_local_triangle": 182,
+                  "skin_vertices_local": [
+                    9457,
+                    9693,
+                    9187
+                  ]
+                },
+                "contact_samples_within2mm": 1
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 39,
+              "native_skin_vertex_ids": [
+                9243,
+                9244,
+                9245,
+                9246,
+                9247,
+                9248,
+                9249,
+                9250,
+                9251,
+                9252,
+                9253,
+                9254,
+                9255,
+                9256,
+                9257,
+                9258,
+                9259,
+                9260,
+                9261,
+                9262,
+                9263,
+                9264,
+                9265,
+                9266,
+                9267,
+                9268,
+                9269,
+                9270,
+                9271,
+                9272,
+                9273,
+                9274,
+                9275,
+                9276,
+                9277,
+                9278,
+                9279,
+                9282,
+                9283
+              ],
+              "skin_center_rifle_m": [
+                0.025210187599160744,
+                0.2041408164777535,
+                -0.028011473102346196
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 170.42598260597774,
+                "area_within_2mm_mm2": 217.3390226403679,
+                "area_within_3mm_mm2": 293.0956747548522,
+                "minimum_sampled_surface_gap_mm": 0.14734109572600573,
+                "minimum_opposed_surface_gap_mm": 0.14734109572600573,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.010403392031606118,
+                    0.20560263158799252,
+                    -0.03489200334376297
+                  ],
+                  "rifle_point_m": [
+                    0.010313803267060884,
+                    0.2054958221402784,
+                    -0.034939700328858514
+                  ],
+                  "surface_normal_dot": -0.9919847892813174,
+                  "hand_local_triangle": 84,
+                  "skin_vertices_local": [
+                    9184,
+                    9183,
+                    9165
+                  ]
+                },
+                "contact_samples_within2mm": 113
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 30.0868130945944,
+          "supplemental_bone_segment_turns_degrees": [
+            17.062466126138407,
+            21.354907419860478
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  0.6045072360011814,
+                  -0.6081456800069168,
+                  0.5145190312429044
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 20,
+                    "evaluated_ring_perimeter_mm": 100.13702040471712,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.036434150889787464,
+                      0.25367034446690984,
+                      -0.03486546305628324
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 28,
+                    "evaluated_ring_perimeter_mm": 106.87315145243653,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.024616687107039792,
+                      0.24178175303224564,
+                      -0.024807171517097215
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.9454380789298269,
+                  -0.32506751411866847,
+                  -0.021862071589575403
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 22,
+                    "evaluated_ring_perimeter_mm": 112.44839499673256,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.009921227809810751,
+                      0.228038256147847,
+                      -0.023504485530324803
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 17,
+                    "evaluated_ring_perimeter_mm": 85.6584778584416,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.008546854532176462,
+                      0.22168842346050255,
+                      -0.02393153680663862
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.671482510987767,
+                  -0.7376628626818904,
+                  -0.07046090020374403
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 19,
+                    "evaluated_ring_perimeter_mm": 79.2269880976232,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.02007067650710237,
+                      0.2103573171039147,
+                      -0.026278960763162162
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 62.019532812044865,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.029638975527016803,
+                      0.199845980277519,
+                      -0.027282994302874064
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 40.71495967081714,
+            "middle_to_distal_skin_axis_turn_deg": 28.815565861610846
+          }
+        },
+        "Index": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 31,
+              "native_skin_vertex_ids": [
+                9060,
+                9061,
+                9062,
+                9063,
+                9064,
+                9065,
+                9066,
+                9067,
+                9068,
+                9069,
+                9124,
+                9125,
+                9130,
+                9131,
+                9320,
+                9687,
+                9689,
+                9701,
+                9702,
+                9704,
+                9705,
+                9722,
+                9740,
+                9749,
+                9750,
+                9751,
+                9752,
+                9753,
+                9754,
+                9756,
+                9757
+              ],
+              "skin_center_rifle_m": [
+                -0.031992322829585085,
+                0.17479394686169214,
+                -0.016539594638622868
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 8.89924874938034,
+                "area_within_2mm_mm2": 27.24343948623448,
+                "area_within_3mm_mm2": 70.55259047892098,
+                "minimum_sampled_surface_gap_mm": 0.3817161777988076,
+                "minimum_opposed_surface_gap_mm": 0.3817161777988076,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.013750244881462537,
+                    0.18619408704187812,
+                    -0.022330057120096836
+                  ],
+                  "rifle_point_m": [
+                    -0.013368528585837092,
+                    0.18619409493996586,
+                    -0.022330055814496763
+                  ],
+                  "surface_normal_dot": -0.7934588175072683,
+                  "hand_local_triangle": 1376,
+                  "skin_vertices_local": [
+                    9668,
+                    9667,
+                    9665
+                  ]
+                },
+                "contact_samples_within2mm": 19
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 28,
+              "native_skin_vertex_ids": [
+                9164,
+                9165,
+                9203,
+                9293,
+                9315,
+                9316,
+                9317,
+                9319,
+                9323,
+                9324,
+                9330,
+                9333,
+                9337,
+                9338,
+                9339,
+                9340,
+                9341,
+                9342,
+                9343,
+                9344,
+                9345,
+                9346,
+                9347,
+                9348,
+                9349,
+                9350,
+                9351,
+                9352
+              ],
+              "skin_center_rifle_m": [
+                -0.02657584733799634,
+                0.13863354813756068,
+                -0.007892278775831096
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 3.216890851035714,
+                "minimum_opposed_surface_gap_mm": 3.216890851035714,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.016570979685626208,
+                    0.1468520724591751,
+                    -0.013692443702981727
+                  ],
+                  "rifle_point_m": [
+                    -0.013368546180213825,
+                    0.14715686857098575,
+                    -0.013692429660589367
+                  ],
+                  "surface_normal_dot": -0.7577019243472639,
+                  "hand_local_triangle": 402,
+                  "skin_vertices_local": [
+                    9258,
+                    9115,
+                    9259
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                9162,
+                9163,
+                9166,
+                9167,
+                9168,
+                9169,
+                9170,
+                9171,
+                9172,
+                9174,
+                9175,
+                9176,
+                9177,
+                9178,
+                9179,
+                9181,
+                9182,
+                9325,
+                9326,
+                9327,
+                9328,
+                9329,
+                9334,
+                9335,
+                9336
+              ],
+              "skin_center_rifle_m": [
+                -0.014033070612156917,
+                0.10778587583188648,
+                -0.000802921479917007
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 22.639590318832685,
+                "area_within_2mm_mm2": 71.20395447086011,
+                "area_within_3mm_mm2": 121.75702943566209,
+                "minimum_sampled_surface_gap_mm": 0.41972321923822165,
+                "minimum_opposed_surface_gap_mm": 0.41972321923822165,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.00966691927884733,
+                    0.11095525046681565,
+                    0.007135699239132931
+                  ],
+                  "rifle_point_m": [
+                    -0.009351708480780652,
+                    0.11095523439443133,
+                    0.007412856054270556
+                  ],
+                  "surface_normal_dot": -0.9117644724943724,
+                  "hand_local_triangle": 1417,
+                  "skin_vertices_local": [
+                    9237,
+                    9075,
+                    9083
+                  ]
+                },
+                "contact_samples_within2mm": 39
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 13.337334896751745,
+          "supplemental_bone_segment_turns_degrees": [
+            18.614731080958602,
+            8.92967825209831
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  0.08853557314453643,
+                  -0.8005244905098979,
+                  0.592724212751459
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 33,
+                    "evaluated_ring_perimeter_mm": 112.75497653929158,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.03167599082198452,
+                      0.1742082430526174,
+                      -0.023506493602932776
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 78.28680495518562,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.030232238612484086,
+                      0.1611540665122333,
+                      -0.01384092233716272
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.3063613756080303,
+                  -0.9185881487681714,
+                  0.24967683208143085
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 17,
+                    "evaluated_ring_perimeter_mm": 72.82033579826944,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.02796635617863419,
+                      0.14569822870170812,
+                      -0.00975330222210502
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 69.94418151945179,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.02313233143632404,
+                      0.1312039804293036,
+                      -0.005813693381180318
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.4098803813576077,
+                  -0.8876586662380741,
+                  0.2099051338833458
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 67.47028371451687,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.01811575199048915,
+                      0.1180444080883909,
+                      -0.0027918541048741474
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 56.239735779267896,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.012844603446057978,
+                      0.10662892957489178,
+                      -9.242961114019899e-05
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 24.43021349796874,
+            "middle_to_distal_skin_axis_turn_deg": 6.600033046837784
+          }
+        },
+        "Middle": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 27,
+              "native_skin_vertex_ids": [
+                9201,
+                9202,
+                9211,
+                9214,
+                9217,
+                9219,
+                9239,
+                9240,
+                9285,
+                9286,
+                9287,
+                9288,
+                9295,
+                9371,
+                9373,
+                9384,
+                9385,
+                9614,
+                9615,
+                9616,
+                9617,
+                9618,
+                9619,
+                9620,
+                9680,
+                9683,
+                9688
+              ],
+              "skin_center_rifle_m": [
+                -0.017562750622117207,
+                0.15045723250577014,
+                -0.04309541909307968
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 11.71931206619592,
+                "area_within_2mm_mm2": 32.4471605783472,
+                "area_within_3mm_mm2": 117.25705182709396,
+                "minimum_sampled_surface_gap_mm": 0.4990980960428715,
+                "minimum_opposed_surface_gap_mm": 0.4990980960428715,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.00930653723139857,
+                    0.14079567509337343,
+                    -0.031378665141551076
+                  ],
+                  "rifle_point_m": [
+                    -0.009234818145908485,
+                    0.14069814516067447,
+                    -0.03089450194938248
+                  ],
+                  "surface_normal_dot": -0.9950688616082219,
+                  "hand_local_triangle": 1006,
+                  "skin_vertices_local": [
+                    9197,
+                    9528,
+                    9207
+                  ]
+                },
+                "contact_samples_within2mm": 15
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                9294,
+                9331,
+                9332,
+                9357,
+                9359,
+                9362,
+                9363,
+                9364,
+                9365,
+                9366,
+                9367,
+                9368,
+                9369,
+                9370,
+                9372,
+                9374,
+                9375,
+                9376,
+                9377,
+                9378,
+                9379,
+                9380,
+                9381,
+                9382,
+                9383
+              ],
+              "skin_center_rifle_m": [
+                0.008469446472552239,
+                0.14569192655403929,
+                -0.043037962878191616
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 284.48874136485716,
+                "area_within_2mm_mm2": 554.4079570149332,
+                "area_within_3mm_mm2": 728.204492164318,
+                "minimum_sampled_surface_gap_mm": 0.025251383704016916,
+                "minimum_opposed_surface_gap_mm": 0.025251383704016916,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.0032242176969013436,
+                    0.13575160048548096,
+                    -0.032580910540198404
+                  ],
+                  "rifle_point_m": [
+                    -0.0032242246104651207,
+                    0.13574049591637627,
+                    -0.03255827114372711
+                  ],
+                  "surface_normal_dot": -0.8537666363946772,
+                  "hand_local_triangle": 1033,
+                  "skin_vertices_local": [
+                    9295,
+                    9207,
+                    9285
+                  ]
+                },
+                "contact_samples_within2mm": 273
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                9137,
+                9138,
+                9144,
+                9145,
+                9146,
+                9149,
+                9150,
+                9151,
+                9152,
+                9153,
+                9154,
+                9155,
+                9156,
+                9157,
+                9158,
+                9159,
+                9160,
+                9161,
+                9353,
+                9354,
+                9355,
+                9356,
+                9358,
+                9360,
+                9361
+              ],
+              "skin_center_rifle_m": [
+                0.02959950792256774,
+                0.16687974510041792,
+                -0.04444350548918741
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 8.737468943834038,
+                "area_within_3mm_mm2": 19.861474305542846,
+                "minimum_sampled_surface_gap_mm": 1.8867796752601862,
+                "minimum_opposed_surface_gap_mm": 1.8867796752601862,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.017849579737262783,
+                    0.16518540816287652,
+                    -0.04504562297662096
+                  ],
+                  "rifle_point_m": [
+                    0.01596279936593939,
+                    0.1651854061498459,
+                    -0.04504562324422201
+                  ],
+                  "surface_normal_dot": -0.7561649087766767,
+                  "hand_local_triangle": 429,
+                  "skin_vertices_local": [
+                    9268,
+                    9050,
+                    9061
+                  ]
+                },
+                "contact_samples_within2mm": 4
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 55.50220908121822,
+          "supplemental_bone_segment_turns_degrees": [
+            75.93386812886406,
+            28.250215757945693
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  0.7279850083412237,
+                  -0.6741503834653705,
+                  0.12473607378750719
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 19,
+                    "evaluated_ring_perimeter_mm": 97.8531575362869,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.026177260220780152,
+                      0.15398002056944393,
+                      -0.04519271019352544
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 19,
+                    "evaluated_ring_perimeter_mm": 73.9773884543805,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.014474933080798336,
+                      0.14314308266761544,
+                      -0.04318758326798
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.9107173115353852,
+                  0.4096048784719901,
+                  0.05308316118795752
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 68.6470749328919,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.0004930214303509872,
+                      0.14135181338073632,
+                      -0.04300148436623186
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 68.3340501632386,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.014970022282369017,
+                      0.14830648313449069,
+                      -0.04210018685990158
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.5193936738382975,
+                  0.8428938721335523,
+                  -0.14057073627346192
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 70.06433987129579,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.024578910504808066,
+                      0.15751875162655382,
+                      -0.042681834618936376
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 20,
+                    "evaluated_ring_perimeter_mm": 58.83169407420047,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.03039647114642255,
+                      0.16695973341469317,
+                      -0.044256321995080006
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 66.82913480006238,
+            "middle_to_distal_skin_axis_turn_deg": 35.82462904377287
+          }
+        },
+        "Ring": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 15,
+              "native_skin_vertex_ids": [
+                9143,
+                9173,
+                9186,
+                9209,
+                9639,
+                9640,
+                9641,
+                9642,
+                9643,
+                9646,
+                9888,
+                9889,
+                9896,
+                9904,
+                9905
+              ],
+              "skin_center_rifle_m": [
+                -0.020802609355801305,
+                0.1417187588417077,
+                -0.06519647865334477
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 7.0223696529865265,
+                "minimum_opposed_surface_gap_mm": 7.0223696529865265,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.019121049577964455,
+                    0.1679154758000272,
+                    -0.06811121643278484
+                  ],
+                  "rifle_point_m": [
+                    -0.013368432353792592,
+                    0.17172186426883418,
+                    -0.06679497009744839
+                  ],
+                  "surface_normal_dot": -0.8115104840662051,
+                  "hand_local_triangle": 1148,
+                  "skin_vertices_local": [
+                    9564,
+                    9590,
+                    9800
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 14,
+              "native_skin_vertex_ids": [
+                9136,
+                9139,
+                9140,
+                9141,
+                9142,
+                9147,
+                9148,
+                9183,
+                9184,
+                9185,
+                9187,
+                9188,
+                9207,
+                9208
+              ],
+              "skin_center_rifle_m": [
+                -0.0068124010616455455,
+                0.1360708198608589,
+                -0.06485171684198376
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 15.57921338826418,
+                "minimum_opposed_surface_gap_mm": 17.50854216516018,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.0011531582865288992,
+                    0.14630753706254074,
+                    -0.06568159651754502
+                  ],
+                  "rifle_point_m": [
+                    -0.0011532268114471944,
+                    0.16285493324378297,
+                    -0.05996033755389352
+                  ],
+                  "surface_normal_dot": -0.8575813256135416,
+                  "hand_local_triangle": 9,
+                  "skin_vertices_local": [
+                    9059,
+                    9118,
+                    9120
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 30,
+              "native_skin_vertex_ids": [
+                9134,
+                9135,
+                9204,
+                9205,
+                9212,
+                9213,
+                9215,
+                9216,
+                9218,
+                9220,
+                9221,
+                9222,
+                9223,
+                9224,
+                9225,
+                9226,
+                9227,
+                9228,
+                9229,
+                9230,
+                9231,
+                9232,
+                9233,
+                9234,
+                9235,
+                9236,
+                9237,
+                9238,
+                9241,
+                9242
+              ],
+              "skin_center_rifle_m": [
+                0.011358971516299249,
+                0.15285036573553434,
+                -0.0639475562127616
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 37.133233854610054,
+                "minimum_sampled_surface_gap_mm": 2.108736429363489,
+                "minimum_opposed_surface_gap_mm": 2.108736429363489,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.00895158851666042,
+                    0.161832562686812,
+                    -0.06283412717567094
+                  ],
+                  "rifle_point_m": [
+                    0.008048047975846379,
+                    0.16363331574737738,
+                    -0.06221150937391373
+                  ],
+                  "surface_normal_dot": -0.7905736166234699,
+                  "hand_local_triangle": 47,
+                  "skin_vertices_local": [
+                    9145,
+                    9139,
+                    9143
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 64.67606335368413,
+          "supplemental_bone_segment_turns_degrees": [
+            89.87259821455416,
+            44.43799819188521
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  0.5284437715825847,
+                  -0.8485514339505774,
+                  0.026601582960261997
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 77.83591193118691,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.022051871471481965,
+                      0.14773606942073414,
+                      -0.06791702358132912
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 66.55648285833114,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.014948058382536267,
+                      0.13632908327140514,
+                      -0.06755942134740756
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.8999484830291524,
+                  0.4345288867891931,
+                  0.035740375477488685
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 62.883881552315,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.004548689808960005,
+                      0.13515512042745303,
+                      -0.06557220176286993
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 67.0580317183429,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.009018332989048528,
+                      0.1417057879652428,
+                      -0.06503340371158561
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.19604914721305083,
+                  0.9750512769330439,
+                  0.10411406834945941
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 63.52608313751637,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.01150035210766226,
+                      0.1505008006862928,
+                      -0.06403043062908953
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 18,
+                    "evaluated_ring_perimeter_mm": 47.94136081715771,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.013112999594308616,
+                      0.15852130989763147,
+                      -0.06317401634198316
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 83.81133786370552,
+            "middle_to_distal_skin_axis_turn_deg": 52.85435499594286
+          }
+        },
+        "Pinky": {
+          "skin_segments": [
+            {
+              "segment": 1,
+              "skin_vertex_count": 46,
+              "native_skin_vertex_ids": [
+                9506,
+                9527,
+                9528,
+                9529,
+                9530,
+                9531,
+                9532,
+                9533,
+                9534,
+                9535,
+                9536,
+                9537,
+                9551,
+                9552,
+                9553,
+                9554,
+                9555,
+                9556,
+                9557,
+                9558,
+                9561,
+                9563,
+                9570,
+                9571,
+                9572,
+                9573,
+                9574,
+                9575,
+                9576,
+                9577,
+                9578,
+                9588,
+                9589,
+                9647,
+                9648,
+                9649,
+                9650,
+                9654,
+                9655,
+                9656,
+                9657,
+                9658,
+                9659,
+                9660,
+                9669,
+                9676
+              ],
+              "skin_center_rifle_m": [
+                -0.03449705215827903,
+                0.16983891397898654,
+                -0.09130296925384807
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 0.0,
+                "minimum_sampled_surface_gap_mm": 4.293292760848999,
+                "minimum_opposed_surface_gap_mm": 4.293292760848999,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    -0.017661736499531122,
+                    0.17993782707462047,
+                    -0.06947376066379385
+                  ],
+                  "rifle_point_m": [
+                    -0.013368442153802118,
+                    0.17993781215493798,
+                    -0.06947376331270405
+                  ],
+                  "surface_normal_dot": -0.9585953665870331,
+                  "hand_local_triangle": 900,
+                  "skin_vertices_local": [
+                    9563,
+                    9566,
+                    9501
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 2,
+              "skin_vertex_count": 24,
+              "native_skin_vertex_ids": [
+                9296,
+                9297,
+                9298,
+                9299,
+                9311,
+                9312,
+                9313,
+                9314,
+                9321,
+                9322,
+                9521,
+                9522,
+                9523,
+                9524,
+                9525,
+                9526,
+                9848,
+                9849,
+                9854,
+                9855,
+                9862,
+                9863,
+                9864,
+                9881
+              ],
+              "skin_center_rifle_m": [
+                -0.005953144991696635,
+                0.15461292960509865,
+                -0.08901915383532844
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 0.0,
+                "area_within_3mm_mm2": 10.230101110824016,
+                "minimum_sampled_surface_gap_mm": 2.3758092429488897,
+                "minimum_opposed_surface_gap_mm": 2.3758092429488897,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.008370395557980498,
+                    0.1675274748879121,
+                    -0.08067782820726688
+                  ],
+                  "rifle_point_m": [
+                    0.008048077584350638,
+                    0.16975209968244154,
+                    -0.07990865610230569
+                  ],
+                  "surface_normal_dot": -0.7778238871185338,
+                  "hand_local_triangle": 263,
+                  "skin_vertices_local": [
+                    9210,
+                    9204,
+                    9203
+                  ]
+                },
+                "contact_samples_within2mm": 0
+              }
+            },
+            {
+              "segment": 3,
+              "skin_vertex_count": 25,
+              "native_skin_vertex_ids": [
+                9191,
+                9192,
+                9193,
+                9194,
+                9195,
+                9196,
+                9197,
+                9198,
+                9199,
+                9200,
+                9289,
+                9290,
+                9291,
+                9292,
+                9300,
+                9301,
+                9302,
+                9303,
+                9304,
+                9305,
+                9306,
+                9307,
+                9308,
+                9309,
+                9310
+              ],
+              "skin_center_rifle_m": [
+                0.017368224603385662,
+                0.16421275695214144,
+                -0.08117751670738826
+              ],
+              "surface_contact": {
+                "area_within_1mm_mm2": 0.0,
+                "area_within_2mm_mm2": 15.95382747462694,
+                "area_within_3mm_mm2": 38.19803298336819,
+                "minimum_sampled_surface_gap_mm": 1.6616273205727339,
+                "minimum_opposed_surface_gap_mm": 1.6616273205727339,
+                "closest_opposed": {
+                  "skin_point_rifle_m": [
+                    0.011486565730532194,
+                    0.17011510271204977,
+                    -0.07922351964360952
+                  ],
+                  "rifle_point_m": [
+                    0.01046722813588069,
+                    0.17135528172403802,
+                    -0.07879466817318281
+                  ],
+                  "surface_normal_dot": -0.8921636491923259,
+                  "hand_local_triangle": 260,
+                  "skin_vertices_local": [
+                    9204,
+                    9201,
+                    9202
+                  ]
+                },
+                "contact_samples_within2mm": 12
+              }
+            }
+          ],
+          "skin_centroid_chain_turn_degrees": 51.138918614053345,
+          "supplemental_bone_segment_turns_degrees": [
+            63.79059369641726,
+            22.153004247962706
+          ],
+          "supplemental_bone_method": "Angles between consecutive posed bone directions; not substituted for skin contact evidence.",
+          "evaluated_skin_cross_section_axes": {
+            "method": "Native material rings at 25% and 75% along each rest finger segment, actual triangle/plane intersection edge parameters carried into evaluated skin; perimeter-weighted ring centers define each posed segment axis. Bone rest frames locate material rings only; posed bone axes do not supply the reported orientation. Unsigned axis turns include lateral deviation and are not pure clinical joint angles.",
+            "segments": [
+              {
+                "segment": 1,
+                "skin_ring_axis_rifle": [
+                  0.5699307712782775,
+                  -0.8202275235399847,
+                  -0.04904819647664522
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 52,
+                    "evaluated_ring_perimeter_mm": 136.85480182944676,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.03542070216512638,
+                      0.17224163065222364,
+                      -0.08265453221255203
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 28,
+                    "evaluated_ring_perimeter_mm": 127.10803893089096,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.026974536176121333,
+                      0.16008615816030813,
+                      -0.08338140858031484
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 2,
+                "skin_ring_axis_rifle": [
+                  0.9782846274596538,
+                  -0.17484015219964205,
+                  0.11131086584396141
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 22,
+                    "evaluated_ring_perimeter_mm": 93.96853044863276,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.014802844104551183,
+                      0.15342886233707964,
+                      -0.08571739087642039
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 20,
+                    "evaluated_ring_perimeter_mm": 80.50330248047673,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      -0.0035235049208697244,
+                      0.15141300588361872,
+                      -0.08443400874463358
+                    ]
+                  }
+                ]
+              },
+              {
+                "segment": 3,
+                "skin_ring_axis_rifle": [
+                  0.8378501602556779,
+                  0.4994053497708963,
+                  0.22045726474703312
+                ],
+                "skin_rings": [
+                  {
+                    "fraction_along_native_segment": 0.25,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 61.21998413919537,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.009822992338894498,
+                      0.15844251479810767,
+                      -0.08425153154340781
+                    ]
+                  },
+                  {
+                    "fraction_along_native_segment": 0.75,
+                    "surface_intersection_segments": 16,
+                    "evaluated_ring_perimeter_mm": 51.42818716132165,
+                    "evaluated_skin_ring_center_rifle_m": [
+                      0.018193775018530922,
+                      0.16343196738794097,
+                      -0.0820489899185648
+                    ]
+                  }
+                ]
+              }
+            ],
+            "proximal_to_middle_skin_axis_turn_deg": 45.93264170959017,
+            "middle_to_distal_skin_axis_turn_deg": 40.810172354228726
+          }
+        }
+      },
+      "supplemental_wrist_axis_bend_degrees": 31.354580936565203,
+      "installed_magazine": {
+        "exact_triangle_crossings": 0,
+        "near_hand_surface_samples": 0,
+        "inside_samples": 0,
+        "minimum_glove_vertex_to_magazine_gap_mm": 25.556959211826324,
+        "minimum_magazine_vertex_to_glove_gap_mm": 37.53000870347023
+      },
+      "comparison_to_A": {
+        "native_skin_surface_ids_equal": true,
+        "max_native_rest_vertex_delta_mm": 0.0,
+        "native_weights_equal": true,
+        "native_triangles_equal": true,
+        "max_skin_delta_in_rifle_frame_mm": 0.0,
+        "rms_skin_delta_in_rifle_frame_mm": 0.0
+      }
+    }
+  },
+  "sha256_after": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99"
+}

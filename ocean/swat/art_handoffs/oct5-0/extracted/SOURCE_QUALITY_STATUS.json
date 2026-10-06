@@ -1,0 +1,16 @@
+{
+  "status": "One native cubic seam-repair candidate with measured export checks; no runtime/user approval",
+  "remaining_limits": [
+    "Native sleeve/shoulder-root garment crossings and stretched cloth/elbow link remain",
+    "Braced chest-relative carry, no new secondary arm inertia",
+    "Shouldered muzzle elevation; ADS eye/sight alignment unverified",
+    "Right sole clearance changes to about2.876mm; no planted-foot locking or new ground solve",
+    "Eight new sampled triangle-pair identities remain confined to inherited left hip/pants/strap layers; no new interleg triangle crossings in the bounded source review"
+  ],
+  "native_curves_changed": 657,
+  "unchanged_native_geometry": true,
+  "native_source_seam_result": "SOURCE_ANALYTIC_FK.json; must not be substituted for exported cubic results",
+  "runtime_tested": false,
+  "speed_retimed": false,
+  "stock_blender_importer": "Blender4.3.2 discards CUBICSPLINE tangents; separate failure measurement and explicit cubic-aware pose-adapter reimport are included"
+}

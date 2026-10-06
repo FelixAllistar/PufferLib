@@ -1,0 +1,141 @@
+{
+  "cameras_exact_to": "source_inspection/F/VIEW_DEFINITIONS.json",
+  "values": {
+    "left_outer": {
+      "location": [
+        0.2009086012840271,
+        -0.526569664478302,
+        1.5228291749954224
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "left_inner": {
+      "location": [
+        -0.6979466676712036,
+        -0.7067052125930786,
+        1.328894853591919
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "left_below": {
+      "location": [
+        -0.14830780029296875,
+        -0.6490134000778198,
+        0.985283374786377
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "left_axial": {
+      "location": [
+        -0.16140902042388916,
+        -0.16893747448921204,
+        1.3106377124786377
+      ],
+      "target": [
+        -0.24859336018562317,
+        -0.6051270961761475,
+        1.4340782165527344
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_outer": {
+      "location": [
+        -0.7201070785522461,
+        -0.26521414518356323,
+        1.3941643238067627
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_inner": {
+      "location": [
+        0.1810002326965332,
+        -0.43372291326522827,
+        1.2002300024032593
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_below": {
+      "location": [
+        -0.3693380355834961,
+        -0.3831363618373871,
+        0.8566185235977173
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "right_axial": {
+      "location": [
+        -0.36243969202041626,
+        0.09706875681877136,
+        1.1819729804992676
+      ],
+      "target": [
+        -0.26962774991989136,
+        -0.3379581570625305,
+        1.3054133653640747
+      ],
+      "orthographic_scale_m": 0.26,
+      "horizontal_fov_deg": null,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    },
+    "near_visor_inspection": {
+      "location": [
+        -0.1725950390100479,
+        -0.2956353425979614,
+        1.5834635496139526
+      ],
+      "target": [
+        -0.16797566413879395,
+        -1.010766625404358,
+        1.5508155822753906
+      ],
+      "orthographic_scale_m": null,
+      "horizontal_fov_deg": 80,
+      "camera_is_not_anatomical_eye_or_engine_calibration": true
+    }
+  },
+  "limits": "Near-visor camera remains uncalibrated; no engine camera or anatomical eye assumption"
+}

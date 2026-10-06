@@ -1,0 +1,1182 @@
+{
+  "schema": "laundry_basement_environment_batch_11_v1",
+  "batch": "11_laundry_basement",
+  "title": "Below Stairs: laundry and basement utilities",
+  "license": "CC0-1.0",
+  "original_artwork": true,
+  "seed": 111073,
+  "units": "metres",
+  "source_coordinates": "right-handed +Z up, front -Y",
+  "gltf_coordinates": "right-handed +Y up, front +Z; exporter converts (x,y,z) to (x,z,-y)",
+  "pivot_policy": "Floor/surface items: XY AABB-centred, lowest surface Z=0. Wall manifold: X centred, rear mounting plane Y=0, lowest point Z=0. Ducts: inlet face centre at origin with inward direction +X; see connection anchors.",
+  "material_suggestions": "Original packed 192px base-colour PNGs, UV0, core metallic-roughness PBR. LB11_* material IDs keep muted aged enamel, dull steel, copper, rubber and cloth consistent. Dark washer/window glazing uses opaque portable PBR; no transmission extension.",
+  "collision_policy": "collider_enabled=false throughout. Art only. No colliders, gameplay binding, physics, destruction, animation, LODs, engine integration or runtime tests.",
+  "asset_count": 16,
+  "total_triangles": 23006,
+  "assets": [
+    {
+      "id": "lb11_front_load_washer",
+      "name": "front_load_washer",
+      "title": "Front-load washer",
+      "file": "assets/front_load_washer.glb",
+      "dimensions_m_source_xyz": [
+        0.633,
+        0.755996,
+        0.8845
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.633,
+        0.8845,
+        0.755996
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.3165,
+          -0.377998,
+          0.0
+        ],
+        [
+          0.3165,
+          0.377998,
+          0.8845
+        ]
+      ],
+      "triangles": 2388,
+      "vertices_source": 1306,
+      "material_count": 12,
+      "materials": [
+        "LB11_rubber",
+        "LB11_paint_cream",
+        "LB11_porcelain",
+        "LB11_paint_taupe",
+        "LB11_steel",
+        "LB11_plastic_charcoal",
+        "LB11_paper",
+        "LB11_iron",
+        "LB11_dial",
+        "LB11_steel_light",
+        "LB11_window",
+        "LB11_rust"
+      ],
+      "editable_vertex_groups": [
+        "adjustable_feet",
+        "control_fascia",
+        "control_knobs_and_tick_marks",
+        "door_handle_hinge",
+        "edge_wear",
+        "enamel_cabinet",
+        "glass_reflection",
+        "loading_door_frame",
+        "lower_service_panel",
+        "supply_and_drain"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 674944,
+      "sha256": "b4178f63e852ad16510bbfab8cb30ee3f5d9b4ce461e395c9a71a57cb3f7e33d"
+    },
+    {
+      "id": "lb11_vented_tumble_dryer",
+      "name": "vented_tumble_dryer",
+      "title": "Vented tumble dryer",
+      "file": "assets/vented_tumble_dryer.glb",
+      "dimensions_m_source_xyz": [
+        0.64,
+        0.749,
+        1.0255
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.64,
+        1.0255,
+        0.749
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.32,
+          -0.3745,
+          0.0
+        ],
+        [
+          0.32,
+          0.3745,
+          1.0255
+        ]
+      ],
+      "triangles": 2361,
+      "vertices_source": 1328,
+      "material_count": 10,
+      "materials": [
+        "LB11_rubber",
+        "LB11_paint_sage",
+        "LB11_paint_cream",
+        "LB11_paint_taupe",
+        "LB11_plastic_charcoal",
+        "LB11_paper",
+        "LB11_iron",
+        "LB11_steel",
+        "LB11_porcelain",
+        "LB11_rust"
+      ],
+      "editable_vertex_groups": [
+        "adjustable_feet",
+        "control_knobs_and_tick_marks",
+        "door_seam",
+        "enamel_cabinet",
+        "lint_grille",
+        "raised_control_console",
+        "rear_vent",
+        "recessed_door_handle",
+        "unbranded_service_plate",
+        "wear"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 606792,
+      "sha256": "416fd1ad92098cc9c7c8897d1aa3b4e50263f0fbdc34820961cecf500b1af27d"
+    },
+    {
+      "id": "lb11_deep_utility_sink",
+      "name": "deep_utility_sink",
+      "title": "Deep utility sink",
+      "file": "assets/deep_utility_sink.glb",
+      "dimensions_m_source_xyz": [
+        0.713,
+        0.598,
+        1.112719
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.713,
+        1.112719,
+        0.598
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.3565,
+          -0.299,
+          0.0
+        ],
+        [
+          0.3565,
+          0.299,
+          1.112719
+        ]
+      ],
+      "triangles": 1398,
+      "vertices_source": 778,
+      "material_count": 10,
+      "materials": [
+        "LB11_porcelain",
+        "LB11_paint_cream",
+        "LB11_steel",
+        "LB11_iron",
+        "LB11_steel_light",
+        "LB11_rubber",
+        "LB11_paint_blue",
+        "LB11_paint_red",
+        "LB11_paint_taupe",
+        "LB11_rust"
+      ],
+      "editable_vertex_groups": [
+        "back_faucet_deck",
+        "basin_stains",
+        "drain",
+        "faucet",
+        "steel_legs",
+        "thick_rim",
+        "tub_shell",
+        "waste_trap"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 536140,
+      "sha256": "7d854fdf1283c9b39f3596c16c9fbae4379e36030a5d87a4ab139ee90613ee30"
+    },
+    {
+      "id": "lb11_cylindrical_water_heater",
+      "name": "cylindrical_water_heater",
+      "title": "Cylindrical water heater",
+      "file": "assets/cylindrical_water_heater.glb",
+      "dimensions_m_source_xyz": [
+        0.665,
+        0.6565,
+        1.59
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.665,
+        1.59,
+        0.6565
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.3325,
+          -0.32825,
+          0.0
+        ],
+        [
+          0.3325,
+          0.32825,
+          1.59
+        ]
+      ],
+      "triangles": 2712,
+      "vertices_source": 1456,
+      "material_count": 11,
+      "materials": [
+        "LB11_paint_cream",
+        "LB11_steel",
+        "LB11_iron",
+        "LB11_copper",
+        "LB11_paint_blue",
+        "LB11_paint_red",
+        "LB11_paint_taupe",
+        "LB11_plastic_charcoal",
+        "LB11_paper",
+        "LB11_brass",
+        "LB11_rust"
+      ],
+      "editable_vertex_groups": [
+        "base_and_top_seams",
+        "burner_access",
+        "control_knobs_and_tick_marks",
+        "cylindrical_tank",
+        "drain_spigot",
+        "pedestal_feet",
+        "pressure_relief",
+        "thermostat_box",
+        "top_draft_hood",
+        "unbranded_service_plate",
+        "water_connections",
+        "wear"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 664588,
+      "sha256": "81059de98c0a52b363a2e5b3132e4657bce1124b2ddfaaf95d736a4cf499c7fc"
+    },
+    {
+      "id": "lb11_basement_furnace",
+      "name": "basement_furnace",
+      "title": "Basement furnace",
+      "file": "assets/basement_furnace.glb",
+      "dimensions_m_source_xyz": [
+        0.76,
+        0.72358,
+        1.5065
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.76,
+        1.5065,
+        0.72358
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.38,
+          -0.36179,
+          0.0
+        ],
+        [
+          0.38,
+          0.36179,
+          1.5065
+        ]
+      ],
+      "triangles": 1605,
+      "vertices_source": 916,
+      "material_count": 9,
+      "materials": [
+        "LB11_paint_taupe",
+        "LB11_iron",
+        "LB11_paint_sage",
+        "LB11_steel_light",
+        "LB11_steel",
+        "LB11_window",
+        "LB11_paper",
+        "LB11_paint_red",
+        "LB11_rust"
+      ],
+      "editable_vertex_groups": [
+        "air_intake_louvres",
+        "exhaust_connector",
+        "inspection_port",
+        "lower_blower_door",
+        "side_supply",
+        "steel_cabinet",
+        "unbranded_service_plate",
+        "upper_service_door",
+        "wear"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 494264,
+      "sha256": "d37fb98b323e95761c4793a0b197f458aabeb2715abf682fbf92f000bb2368a9",
+      "exhaust_connection": {
+        "position_source_m": [
+          -0.03149999678134918,
+          0.013290122151374817,
+          1.5065
+        ],
+        "position_gltf_m": [
+          -0.03149999678134918,
+          1.5065,
+          -0.013290122151374817
+        ],
+        "outward_direction_source": [
+          0,
+          0,
+          1
+        ],
+        "outer_diameter_m": 0.294,
+        "accepts_duct_outer_diameter_m": 0.28
+      }
+    },
+    {
+      "id": "lb11_round_duct_straight_1m",
+      "name": "round_duct_straight_1m",
+      "title": "Round duct / 1 m",
+      "file": "assets/round_duct_straight_1m.glb",
+      "dimensions_m_source_xyz": [
+        1.0,
+        0.295,
+        0.292
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.0,
+        0.292,
+        0.295
+      ],
+      "bounds_m_source_xyz": [
+        [
+          0.0,
+          -0.149,
+          -0.146
+        ],
+        [
+          1.0,
+          0.146,
+          0.146
+        ]
+      ],
+      "triangles": 980,
+      "vertices_source": 496,
+      "material_count": 3,
+      "materials": [
+        "LB11_steel",
+        "LB11_steel_light",
+        "LB11_iron"
+      ],
+      "editable_vertex_groups": [
+        "fasteners",
+        "folded_longitudinal_seam",
+        "open_galvanized_shell",
+        "raised_seam_bands"
+      ],
+      "mounting": "connector",
+      "pivot": "inlet face centre, source origin; inward axis +X",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 187408,
+      "sha256": "5bc9dcbad4b21149cc95edfc11c8f7bb1112a838350df2eb023ce05a7e7c818b",
+      "connections": [
+        {
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_direction_source": [
+            -1,
+            0,
+            0
+          ],
+          "outer_diameter_m": 0.28,
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_direction_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "position_source_m": [
+            1,
+            0,
+            0
+          ],
+          "outward_direction_source": [
+            1,
+            0,
+            0
+          ],
+          "outer_diameter_m": 0.28,
+          "position_gltf_m": [
+            1,
+            0,
+            0
+          ],
+          "outward_direction_gltf": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "inner_diameter_m": 0.264,
+      "connection_note": "Visual modular centerline anchors. Physical HVAC simulation is not supplied."
+    },
+    {
+      "id": "lb11_round_duct_elbow_90",
+      "name": "round_duct_elbow_90",
+      "title": "Round duct / 90 degrees",
+      "file": "assets/round_duct_elbow_90.glb",
+      "dimensions_m_source_xyz": [
+        0.493,
+        0.29,
+        0.493
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.493,
+        0.493,
+        0.29
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.008,
+          -0.145,
+          -0.145
+        ],
+        [
+          0.485,
+          0.145,
+          0.348
+        ]
+      ],
+      "triangles": 2128,
+      "vertices_source": 1064,
+      "material_count": 2,
+      "materials": [
+        "LB11_steel",
+        "LB11_steel_light"
+      ],
+      "editable_vertex_groups": [
+        "segmented_open_elbow",
+        "swaged_elbow_seams"
+      ],
+      "mounting": "connector",
+      "pivot": "inlet face centre, source origin; inward axis +X",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 226772,
+      "sha256": "ec521fb21c15a69ffc7f772eab1f841a06f746a3bf6cfc215235868e250a4e72",
+      "connections": [
+        {
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_direction_source": [
+            -1,
+            0,
+            0
+          ],
+          "outer_diameter_m": 0.28,
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_direction_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "position_source_m": [
+            0.34,
+            0,
+            0.34
+          ],
+          "outward_direction_source": [
+            0,
+            0,
+            1
+          ],
+          "outer_diameter_m": 0.28,
+          "position_gltf_m": [
+            0.34,
+            0.34,
+            0
+          ],
+          "outward_direction_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "inner_diameter_m": 0.264,
+      "connection_note": "Visual modular centerline anchors. Physical HVAC simulation is not supplied."
+    },
+    {
+      "id": "lb11_copper_riser_handwheel",
+      "name": "copper_riser_handwheel",
+      "title": "Copper riser + handwheel",
+      "file": "assets/copper_riser_handwheel.glb",
+      "dimensions_m_source_xyz": [
+        0.16,
+        0.202,
+        1.08
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.16,
+        1.08,
+        0.202
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.08,
+          -0.101,
+          0.0
+        ],
+        [
+          0.08,
+          0.101,
+          1.08
+        ]
+      ],
+      "triangles": 1092,
+      "vertices_source": 580,
+      "material_count": 5,
+      "materials": [
+        "LB11_copper",
+        "LB11_brass",
+        "LB11_paint_red",
+        "LB11_steel",
+        "LB11_iron"
+      ],
+      "editable_vertex_groups": [
+        "copper_riser",
+        "couplings",
+        "handwheel",
+        "saddle_brackets",
+        "valve_body"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 283264,
+      "sha256": "21c5f1e3fd6b6baf3910c4ec7a68bcee7476bbbf7faf649557608debac6f3d8b"
+    },
+    {
+      "id": "lb11_hot_cold_wall_manifold",
+      "name": "hot_cold_wall_manifold",
+      "title": "Hot/cold wall manifold",
+      "file": "assets/hot_cold_wall_manifold.glb",
+      "dimensions_m_source_xyz": [
+        0.796168,
+        0.1465,
+        0.643
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.796168,
+        0.643,
+        0.1465
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.398084,
+          -0.1465,
+          0.0
+        ],
+        [
+          0.398084,
+          0.0,
+          0.643
+        ]
+      ],
+      "triangles": 1976,
+      "vertices_source": 1072,
+      "material_count": 6,
+      "materials": [
+        "LB11_steel",
+        "LB11_brass",
+        "LB11_copper",
+        "LB11_paint_blue",
+        "LB11_paint_red",
+        "LB11_iron"
+      ],
+      "editable_vertex_groups": [
+        "hot_cold_headers",
+        "mounting_fasteners",
+        "mounting_rails",
+        "supply_elbows"
+      ],
+      "mounting": "wall",
+      "pivot": "lower wall-contact-plane centre",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 384196,
+      "sha256": "4bacad30c63c09366f1c982a099eca10c71be8e0c0a7b8db3534ba2bba632564"
+    },
+    {
+      "id": "lb11_handled_detergent_jug",
+      "name": "handled_detergent_jug",
+      "title": "Handled detergent jug",
+      "file": "assets/handled_detergent_jug.glb",
+      "dimensions_m_source_xyz": [
+        0.253058,
+        0.128,
+        0.3665
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.253058,
+        0.3665,
+        0.128
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.126529,
+          -0.064,
+          0.0
+        ],
+        [
+          0.126529,
+          0.064,
+          0.3665
+        ]
+      ],
+      "triangles": 1101,
+      "vertices_source": 610,
+      "material_count": 8,
+      "materials": [
+        "LB11_plastic_blue",
+        "LB11_paint_cream",
+        "LB11_porcelain",
+        "LB11_paper",
+        "LB11_paint_blue",
+        "LB11_paint_taupe",
+        "LB11_steel",
+        "LB11_rust"
+      ],
+      "editable_vertex_groups": [
+        "blow_molded_body",
+        "generic_label",
+        "offset_spout",
+        "open_side_handle",
+        "scuffed_moulding"
+      ],
+      "mounting": "surface",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 451548,
+      "sha256": "6bd7e3ae480bfcd16f219d4813305bca0b19bb3bac9da273bdb5da9b8561da3b"
+    },
+    {
+      "id": "lb11_folded_bedsheet_stack",
+      "name": "folded_bedsheet_stack",
+      "title": "Folded bedsheet stack",
+      "file": "assets/folded_bedsheet_stack.glb",
+      "dimensions_m_source_xyz": [
+        0.474843,
+        0.347644,
+        0.150427
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.474843,
+        0.150427,
+        0.347644
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.237421,
+          -0.173822,
+          0.0
+        ],
+        [
+          0.237421,
+          0.173822,
+          0.150427
+        ]
+      ],
+      "triangles": 388,
+      "vertices_source": 212,
+      "material_count": 3,
+      "materials": [
+        "LB11_fabric_stripe",
+        "LB11_fabric",
+        "LB11_paper"
+      ],
+      "editable_vertex_groups": [
+        "folded_cotton_layers",
+        "top_fabric_crease"
+      ],
+      "mounting": "surface",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 178848,
+      "sha256": "cdc52903272f0383b7c7af1086e6ec9e99ee7c0ec7d79210ddc36dc494aaa8a2"
+    },
+    {
+      "id": "lb11_mop_wringer_cart",
+      "name": "mop_wringer_cart",
+      "title": "Mop wringer cart",
+      "file": "assets/mop_wringer_cart.glb",
+      "dimensions_m_source_xyz": [
+        0.469903,
+        0.400477,
+        0.876084
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.469903,
+        0.876084,
+        0.400477
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.234951,
+          -0.200238,
+          0.0
+        ],
+        [
+          0.234951,
+          0.200238,
+          0.876084
+        ]
+      ],
+      "triangles": 2140,
+      "vertices_source": 1196,
+      "material_count": 7,
+      "materials": [
+        "LB11_iron",
+        "LB11_rubber",
+        "LB11_steel",
+        "LB11_rust",
+        "LB11_paint_taupe",
+        "LB11_paint_cream",
+        "LB11_paint_sage"
+      ],
+      "editable_vertex_groups": [
+        "bucket",
+        "bucket_lip",
+        "carry_handle",
+        "castor_chassis",
+        "perforated_wringer_basket",
+        "press_roller",
+        "utility_wear",
+        "wringer_frame",
+        "wringer_lever"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 434796,
+      "sha256": "61d0f0704c3e371d23b4c7e7f4543fccae3db51380db378a942877f62adffc57"
+    },
+    {
+      "id": "lb11_corded_steam_iron",
+      "name": "corded_steam_iron",
+      "title": "Corded steam iron",
+      "file": "assets/corded_steam_iron.glb",
+      "dimensions_m_source_xyz": [
+        0.272713,
+        0.48149,
+        0.191068
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.272713,
+        0.191068,
+        0.48149
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.136356,
+          -0.240745,
+          0.0
+        ],
+        [
+          0.136356,
+          0.240745,
+          0.191068
+        ]
+      ],
+      "triangles": 478,
+      "vertices_source": 259,
+      "material_count": 8,
+      "materials": [
+        "LB11_steel_light",
+        "LB11_paint_cream",
+        "LB11_plastic_blue",
+        "LB11_paint_taupe",
+        "LB11_paper",
+        "LB11_rubber",
+        "LB11_plastic_charcoal",
+        "LB11_brass"
+      ],
+      "editable_vertex_groups": [
+        "arched_handle",
+        "cord_plug",
+        "cord_stub",
+        "fill_port",
+        "soleplate",
+        "steam_iron_shell",
+        "temperature_dial"
+      ],
+      "mounting": "surface",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 384524,
+      "sha256": "dfcea7113be635b7fc8641bf2e63728216c41b61d6a71c9a5a4a155771a5132f"
+    },
+    {
+      "id": "lb11_folding_ironing_board",
+      "name": "folding_ironing_board",
+      "title": "Folding ironing board",
+      "file": "assets/folding_ironing_board.glb",
+      "dimensions_m_source_xyz": [
+        1.475,
+        0.546,
+        0.868825
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.475,
+        0.868825,
+        0.546
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.7375,
+          -0.273,
+          0.0
+        ],
+        [
+          0.7375,
+          0.273,
+          0.868825
+        ]
+      ],
+      "triangles": 679,
+      "vertices_source": 378,
+      "material_count": 6,
+      "materials": [
+        "LB11_fabric",
+        "LB11_fabric_stripe",
+        "LB11_paint_cream",
+        "LB11_rubber",
+        "LB11_steel",
+        "LB11_iron"
+      ],
+      "editable_vertex_groups": [
+        "crossed_leg_frames",
+        "edge_piping",
+        "hinge_rod",
+        "iron_rest",
+        "padded_top",
+        "top_stains"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 305060,
+      "sha256": "20b7747d55c4f7d6dc37c86c1adc16998eb55c37e04f3704eedfdbc63553c845"
+    },
+    {
+      "id": "lb11_ribbed_storage_tote_open",
+      "name": "ribbed_storage_tote_open",
+      "title": "Ribbed storage tote / open",
+      "file": "assets/ribbed_storage_tote_open.glb",
+      "dimensions_m_source_xyz": [
+        0.694,
+        0.4615,
+        0.37
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.694,
+        0.37,
+        0.4615
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.347,
+          -0.23075,
+          0.0
+        ],
+        [
+          0.347,
+          0.23075,
+          0.37
+        ]
+      ],
+      "triangles": 660,
+      "vertices_source": 368,
+      "material_count": 4,
+      "materials": [
+        "LB11_plastic_charcoal",
+        "LB11_paint_taupe",
+        "LB11_paper",
+        "LB11_steel"
+      ],
+      "editable_vertex_groups": [
+        "interior_moulding",
+        "label_holder",
+        "reinforcement_ribs",
+        "rolled_top_rim",
+        "tapered_polymer_bin"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 231324,
+      "sha256": "30e24cac1210dee01e4c7e453f1599c0abb58cde2ba55c553554e0b7f70d335b"
+    },
+    {
+      "id": "lb11_ribbed_storage_tote_closed",
+      "name": "ribbed_storage_tote_closed",
+      "title": "Ribbed storage tote / closed",
+      "file": "assets/ribbed_storage_tote_closed.glb",
+      "dimensions_m_source_xyz": [
+        0.718,
+        0.482,
+        0.4205
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.718,
+        0.4205,
+        0.482
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.359,
+          -0.241,
+          0.0
+        ],
+        [
+          0.359,
+          0.241,
+          0.4205
+        ]
+      ],
+      "triangles": 920,
+      "vertices_source": 504,
+      "material_count": 5,
+      "materials": [
+        "LB11_plastic_charcoal",
+        "LB11_paint_taupe",
+        "LB11_paper",
+        "LB11_steel",
+        "LB11_plastic_blue"
+      ],
+      "editable_vertex_groups": [
+        "folded_latches",
+        "label_holder",
+        "reinforcement_ribs",
+        "snap_on_lid",
+        "stacking_lid_ribs",
+        "tapered_polymer_bin"
+      ],
+      "mounting": "floor",
+      "pivot": "XY AABB-centred, lowest surface source Z=0",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render only; no colliders supplied",
+      "bytes": 295664,
+      "sha256": "64ad4977362256b89e5bd27cf38fb452208fcb2bb466e1646c61e17a5c0848a7"
+    }
+  ]
+}

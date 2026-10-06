@@ -1,0 +1,1671 @@
+{
+  "status": "QUALIFIED_WITH_INHERITED_CONTACTS",
+  "glb_sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "method": "Fresh finite triangle intersections on independently captured source geometry and actual byte cubic FK/all-weight skinning, same native triangle topology; shared-vertex adjacency excluded",
+  "sample_times_s": [
+    0.0,
+    0.125,
+    0.25,
+    0.375,
+    0.5,
+    0.625,
+    0.75,
+    0.875,
+    1.0
+  ],
+  "frames": [
+    {
+      "time_s": 0.0,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 50,
+          "max_intersection_chord_mm": 22.48289017256876,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 95,
+          "max_intersection_chord_mm": 20.112010231887513,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69079441841409,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 50,
+          "max_intersection_chord_mm": 22.483201575670165,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 95,
+          "max_intersection_chord_mm": 20.112000780597707,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69084224302014,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0003114031014057883,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00024040836037100138,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0015155099557621898,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 0.125,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 164,
+          "max_intersection_chord_mm": 24.282631829797293,
+          "component_families": [
+            [
+              11165,
+              11623
+            ],
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 73,
+          "max_intersection_chord_mm": 21.24580137013184,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              13350
+            ],
+            [
+              5118,
+              16372
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 156,
+          "max_intersection_chord_mm": 19.68937747837155,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              5118
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.690863001414233,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 164,
+          "max_intersection_chord_mm": 24.28262462126116,
+          "component_families": [
+            [
+              11165,
+              11623
+            ],
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 73,
+          "max_intersection_chord_mm": 21.245791096159238,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              13350
+            ],
+            [
+              5118,
+              16372
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 156,
+          "max_intersection_chord_mm": 19.689510973236008,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              5118
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.690836275939528,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0021429721870939653,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0002170187140670271,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0008962364954571284,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 6.618753876095132e-05,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 0.25,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 139,
+          "max_intersection_chord_mm": 25.958797928136768,
+          "component_families": [
+            [
+              11165,
+              11623
+            ],
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 78,
+          "max_intersection_chord_mm": 18.32872660479385,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              13350
+            ],
+            [
+              5118,
+              16372
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 158,
+          "max_intersection_chord_mm": 22.82365516271769,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              5118
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69085529806343,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 139,
+          "max_intersection_chord_mm": 25.95882600954528,
+          "component_families": [
+            [
+              11165,
+              11623
+            ],
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 78,
+          "max_intersection_chord_mm": 18.328891321861317,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              13350
+            ],
+            [
+              5118,
+              16372
+            ],
+            [
+              5118,
+              5118
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 158,
+          "max_intersection_chord_mm": 22.823777179340922,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              5118
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69083578143001,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.000655950163581942,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00032868509336134166,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0004207725091045361,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0009734892143435474,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 0.375,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 18,
+          "max_intersection_chord_mm": 9.769022444932109,
+          "component_families": [
+            [
+              11165,
+              11623
+            ],
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 53,
+          "max_intersection_chord_mm": 21.745910874193616,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 126,
+          "max_intersection_chord_mm": 19.42631342739574,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              5118
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69079704481421,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 18,
+          "max_intersection_chord_mm": 9.76847680555179,
+          "component_families": [
+            [
+              11165,
+              11623
+            ],
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 53,
+          "max_intersection_chord_mm": 21.745851317146943,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 126,
+          "max_intersection_chord_mm": 19.426246290743137,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              5118
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69085014417948,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.000545639380318888,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0003262452683422401,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00041757323528558016,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0005684503242178555,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 0.5,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 63,
+          "max_intersection_chord_mm": 22.10767418561539,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 29,
+          "max_intersection_chord_mm": 18.58591931693998,
+          "component_families": [
+            [
+              5118,
+              11623
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.690868935519887,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 63,
+          "max_intersection_chord_mm": 22.10764606430049,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 29,
+          "max_intersection_chord_mm": 18.58591138953157,
+          "component_families": [
+            [
+              5118,
+              11623
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.690833770424504,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0006194095718350945,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0006154304530159305,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0012743612146978028,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 0.625,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 60,
+          "max_intersection_chord_mm": 16.33491188838218,
+          "component_families": [
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 210,
+          "max_intersection_chord_mm": 21.735593863100902,
+          "component_families": [
+            [
+              160,
+              18662
+            ],
+            [
+              4942,
+              18662
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              13546
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              18662
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.690818671393334,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 60,
+          "max_intersection_chord_mm": 16.33489059154553,
+          "component_families": [
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 210,
+          "max_intersection_chord_mm": 21.735546203229838,
+          "component_families": [
+            [
+              160,
+              18662
+            ],
+            [
+              4942,
+              18662
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              13546
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              18662
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69082638574688,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0006640503433506285,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0005942681833605301,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00022270117410773393,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 0.75,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 32,
+          "max_intersection_chord_mm": 14.501656585567833,
+          "component_families": [
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 97,
+          "max_intersection_chord_mm": 20.707306283339307,
+          "component_families": [
+            [
+              160,
+              18662
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              13546
+            ],
+            [
+              5118,
+              17026
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69085307826709,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 32,
+          "max_intersection_chord_mm": 14.501727063184065,
+          "component_families": [
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 97,
+          "max_intersection_chord_mm": 20.707356178034555,
+          "component_families": [
+            [
+              160,
+              18662
+            ],
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              13546
+            ],
+            [
+              5118,
+              17026
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.6908533200271,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00047068200466284134,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00047952266828826806,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0009046569370164265,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 0.875,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 51,
+          "max_intersection_chord_mm": 13.247420416725047,
+          "component_families": [
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 85,
+          "max_intersection_chord_mm": 25.271698277037924,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              13546
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.690878924593896,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 51,
+          "max_intersection_chord_mm": 13.247331457389597,
+          "component_families": [
+            [
+              5118,
+              11165
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 85,
+          "max_intersection_chord_mm": 25.27185417945699,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              13546
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69085141891422,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00035793192674441615,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0008690429304635677,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0005013425620741668,
+          "same_component_families": true
+        }
+      }
+    },
+    {
+      "time_s": 1.0,
+      "source": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 50,
+          "max_intersection_chord_mm": 22.48289017256876,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 95,
+          "max_intersection_chord_mm": 20.112010231887513,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69079441841409,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "cubic": {
+        "leg_leg": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "left_leg_torso": {
+          "crossing_pairs": 50,
+          "max_intersection_chord_mm": 22.483201575670165,
+          "component_families": [
+            [
+              5118,
+              11165
+            ],
+            [
+              5118,
+              16372
+            ]
+          ]
+        },
+        "right_leg_torso": {
+          "crossing_pairs": 95,
+          "max_intersection_chord_mm": 20.112000780597707,
+          "component_families": [
+            [
+              5118,
+              11623
+            ],
+            [
+              5118,
+              17026
+            ],
+            [
+              5118,
+              7704
+            ]
+          ]
+        },
+        "left_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "right_arm_vest": {
+          "crossing_pairs": 0,
+          "max_intersection_chord_mm": 0,
+          "component_families": []
+        },
+        "sleeve_body": {
+          "crossing_pairs": 28,
+          "max_intersection_chord_mm": 20.69084224302014,
+          "component_families": [
+            [
+              "sleeve",
+              64
+            ]
+          ]
+        }
+      },
+      "comparison": {
+        "leg_leg": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "left_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0003114031014057883,
+          "same_component_families": true
+        },
+        "right_leg_torso": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.00024040836037100138,
+          "same_component_families": true
+        },
+        "left_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "right_arm_vest": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0,
+          "same_component_families": true
+        },
+        "sleeve_body": {
+          "added_pair_count": 0,
+          "removed_pair_count": 0,
+          "maximum_common_pair_chord_change_mm": 0.0015155099557621898,
+          "same_component_families": true
+        }
+      }
+    }
+  ],
+  "qualification": [
+    "Existing lower thigh/pants/strap and sleeve/body intersections are retained",
+    "Floating-point-sensitive pair membership may change; this is not zero-regression or material-clean approval",
+    "Intersection chord length is not penetration depth; finite sampled intersections do not prove continuous collision absence",
+    "This is source N70, with no F72 preview geometry or hand/grip override"
+  ],
+  "summary": {
+    "leg_leg": {
+      "source_count_range": [
+        0,
+        164
+      ],
+      "cubic_count_range": [
+        0,
+        164
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0021429721870939653
+    },
+    "left_leg_torso": {
+      "source_count_range": [
+        32,
+        78
+      ],
+      "cubic_count_range": [
+        32,
+        78
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0006640503433506285
+    },
+    "right_leg_torso": {
+      "source_count_range": [
+        29,
+        210
+      ],
+      "cubic_count_range": [
+        29,
+        210
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0008962364954571284
+    },
+    "left_arm_vest": {
+      "source_count_range": [
+        0,
+        0
+      ],
+      "cubic_count_range": [
+        0,
+        0
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0
+    },
+    "right_arm_vest": {
+      "source_count_range": [
+        0,
+        0
+      ],
+      "cubic_count_range": [
+        0,
+        0
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0
+    },
+    "sleeve_body": {
+      "source_count_range": [
+        28,
+        28
+      ],
+      "cubic_count_range": [
+        28,
+        28
+      ],
+      "same_component_families_all_phases": true,
+      "maximum_common_pair_chord_change_mm": 0.0015155099557621898
+    }
+  }
+}

@@ -1,0 +1,314 @@
+{
+  "status": "FROZEN DIAGNOSTIC ONLY. User moved final thumb/finger fitting to the actual in-game ADS view. Thumb-wrap intent unresolved. Preserve current engine pose; no automatic C/C1 promotion.",
+  "editable_sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "files": {
+    "animation_rebuild/eye_visor_landmark/optical_landmark_source.json": {
+      "bytes": 7883,
+      "sha256": "0722c0dad1f433dadaa6f2b2423dd7a8bac5344be99072327dca6755e263a0dd"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c/CANDIDATE_C_AUTHORING.json": {
+      "bytes": 80535,
+      "sha256": "5b5b7a567d8cd38a00bd28d06619d45facf3d5d49b474132e6299eb1cee01146"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c/EXACT_LEFT_GRIP_HANDOFF.json": {
+      "bytes": 20315,
+      "sha256": "5c8996397e08855b3d17282102d359cc46289427bfc9af5767b486c5a1a872a8"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c/source_pose_readonly.json": {
+      "bytes": 118577,
+      "sha256": "528d5441e35d3a46d581ee408959faad941fe7f91cf5bd0125a1ece839066237"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c/support_grip_surface_c.editable.blend": {
+      "bytes": 2116662,
+      "sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/BRACKET_EVIDENCE.json": {
+      "bytes": 12343,
+      "sha256": "0abedcdeded5e06c690bb7415663d92f8511fb49a4d4ed6d124192304ed62df7"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/CANDIDATE_C1_AUTHORING.json": {
+      "bytes": 4605,
+      "sha256": "b193ac73671f78c282f80dde817bbea988cf26f996ab2205e82a53d6d2f2a108"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/EXACT_INDEX_RELEASE_HANDOFF.json": {
+      "bytes": 1957,
+      "sha256": "511131d04fab700b606965432ae9cde2dd13c958c8a8fbbc8bbf7dbce6756e32"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/EXACT_LEFT_GRIP_HANDOFF.json": {
+      "bytes": 180204,
+      "sha256": "37cd372930d29f240e40fb17ebd5bddc301414f838a40f6938ed155babdbc6e3"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/README.md": {
+      "bytes": 4335,
+      "sha256": "8dde7d3c18d124de6379e454a6cc9d770cebcfb9ef31042d7764611d7611df9a"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/author_index_release_c1.py": {
+      "bytes": 12132,
+      "sha256": "33378aee70a78a68eaa23f50e1d84160276e7b6e36547510bff5f1045ec9313e"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/export_exact_handoff.py": {
+      "bytes": 7080,
+      "sha256": "95724ca3be095d97c31aafba1b73def3e6a437d87293d3b3041b90a7d1f47d5a"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/render_matched_views.py": {
+      "bytes": 1908,
+      "sha256": "78e932be3ca649c980f11074ed701fb101d2553c96f73d8669fb4159f7f618d7"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.actions.blend": {
+      "bytes": 86441,
+      "sha256": "89bb9ada5f14941b0dc0a12262ce9111a9bdee8f176193b70ce3d1d706421c0a"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend": {
+      "bytes": 2136806,
+      "sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/verify_exact_channels.py": {
+      "bytes": 3294,
+      "sha256": "bab9c1665c3c3d22d2e8867733c23c00644169cf88e067c77263fc63e095aa61"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1/views/CAMERA_IDENTITY.json": {
+      "bytes": 3703,
+      "sha256": "fa159d8cd7d03aa582f1aecadfd2149c9eae4d04da7598b99aaa7f13178d94c0"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/BUNDLE_COVERAGE.json": {
+      "bytes": 2575,
+      "sha256": "14b8eacf8fac8628d0ad10e5261f4ffe2184c9594c83bf0ebe6a5916695a87b7"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/ENGINE_THUMB_FRAME_HANDOFF.json": {
+      "bytes": 12382,
+      "sha256": "02d3368f0d2273f54bbe61a5b8e733b47639baf0641f35353c624d8c6673d58d"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/README.md": {
+      "bytes": 5148,
+      "sha256": "10e642948a4d06525a348b6c9181042e71568e5c0ef0f55dc533924c4e0d97f0"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/compose_review_panel.py": {
+      "bytes": 1514,
+      "sha256": "acd573727f47a9e1f58b07a11c17f5278aaefacc3f61b3816d0f8cff383ea061"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/replay_output/REPLAY_RECEIPT.json": {
+      "bytes": 479,
+      "sha256": "f53240eee3063d322f11fbb51229dd2f5f3ea8e2209266cb536779f12adf2e30"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/replay_saved_index_delta.py": {
+      "bytes": 3823,
+      "sha256": "365e3f346ffb0986656db79f09affa54263258cbb739803d8bc2763cd17bbfba"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/replay_surface_review.py": {
+      "bytes": 1743,
+      "sha256": "4848eb2ad9a6d9cbbc29ed6982cf8d659b4dad659527a8b930eac5015edafa1a"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/A_crease_oblique.jpg": {
+      "bytes": 84006,
+      "sha256": "a567b7c095e02ae14ea2dec9a4a1d36bceef9fa51a8c0335894d0fdbf7915f13"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_crease_oblique.jpg": {
+      "bytes": 82450,
+      "sha256": "1d0cc32c12829acf7c8821d4d1c88ff017d827e8174c6e137a1b5a4e3431131c"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_left_below.jpg": {
+      "bytes": 95203,
+      "sha256": "95d3a406250e838fa7bc4307c2166292b512cb20240daa8bebf84a845ab19b7c"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_left_inner.jpg": {
+      "bytes": 117190,
+      "sha256": "1198670210fb764f29a170312facba626f402f3f976634ba9ab0a1adf5c85380"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_left_outer.jpg": {
+      "bytes": 131547,
+      "sha256": "7c3f07bba61d9383fb7bd2ed21f60365cd28283874dacad107488566abc6734f"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_near_visor_inspection.jpg": {
+      "bytes": 61617,
+      "sha256": "d032ba865d84519496400d52a56df6fe55425ca4f2e689ebc6c29340bb021f0d"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C_crease_oblique.jpg": {
+      "bytes": 82182,
+      "sha256": "8a1d7e01fc4aca8db1b81b52bad1e09af0355fa8a365c1c02b912395be1b681e"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_left_below.jpg": {
+      "bytes": 96148,
+      "sha256": "773e7fdf7c47d2b0a652ba7f29454ebd8873a28a31bb9eb061bab403df4019fc"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_left_inner.jpg": {
+      "bytes": 118500,
+      "sha256": "0f9747da22d54683bc0112a483f94f17b108bc5f5488845cb65c20589409b632"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_left_outer.jpg": {
+      "bytes": 131956,
+      "sha256": "12f57e9db0b369a0865981d1eef746f341c8303488974c9c381faaef5600c228"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_near_visor_inspection.jpg": {
+      "bytes": 61631,
+      "sha256": "13cf8406ff61c42e130f5049f59e2f0d3d2d82c79e27fba7e9ed90d6c09cd42f"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/seal_checkpoint.py": {
+      "bytes": 3003,
+      "sha256": "232f8ac49aaf1908d20b0f2ef3b26126486b1f7e337483e74f19382a35b3727e"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/support-grip-c1-crease-restoration.jpg": {
+      "bytes": 68844,
+      "sha256": "e0ff479f63dac3d226a62d2ecebcfe6ea0531079e2c3f1900c21a576a1a8fc5d"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/support-grip-c1-matched-comparison.jpg": {
+      "bytes": 247508,
+      "sha256": "03c4ef2f9549ff7648713721577c62f149ac24010682ab141615e4eeb698edb4"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/surface_algorithms.py": {
+      "bytes": 15998,
+      "sha256": "24a41d25a15df1a19839ab6ef1dacb4bda43e77dce12b8ced84341c2c07b6f3d"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/A_palm_support_distribution.json": {
+      "bytes": 4689093,
+      "sha256": "a6207dfd35d77f7c319cf241976b2d33a9cdce1b274bde003275b332819eba3a"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/A_static_skin_grip_audit.json": {
+      "bytes": 144731,
+      "sha256": "df76832ccf1d8164da0098de5b8ad7264423b5694e2bc405b5a35f93f4435486"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/C1_palm_support_distribution.json": {
+      "bytes": 4696532,
+      "sha256": "0c506587e582691ae9a7d548c27be7d55c1a212056f30db1572b07457b46113f"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/C1_static_skin_grip_audit.json": {
+      "bytes": 145304,
+      "sha256": "7aef879981a0a2c3882cd53490f94ba2c0d7f5826bf142712aa9c703f554767c"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/CAMERA_PARAMETER_VERIFICATION.json": {
+      "bytes": 286,
+      "sha256": "22e1971a385b2ec922f40fc2b16b05fe8c0c758f1628691f4f2495519e85acd9"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/CANDIDATE_C1_REVIEW.md": {
+      "bytes": 10804,
+      "sha256": "41ab2a25ea40a7f3cbb40e1e4aa524ff443b1ec2344a3e9b118615fe9220dae8"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/FINAL_DISPOSITION.json": {
+      "bytes": 1741,
+      "sha256": "5126b217bef135aba31784201bc1832a5c002165af668acbb14bdf21fd406c85"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/GATE_PROGRESS.json": {
+      "bytes": 1537,
+      "sha256": "29438e77f28a36b9e035307ca2e59498762d747816fb63384bca4d58be1215a5"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/NUMERIC_GATE_SUMMARY.json": {
+      "bytes": 5473,
+      "sha256": "d89a36c9a2ccc10e2969ceafc8e68df0f48f959a579ae0a3071dc429a9b7a5d4"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/anatomy_material_comparison.json": {
+      "bytes": 10669,
+      "sha256": "df052cf2d1b97df8083c46dad60ff050a1f22cadf0ffa08dd91ed3364e86c88e"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/crease_views/CREASE_VIEW_IDENTITY.json": {
+      "bytes": 903,
+      "sha256": "ebfa69f47b6e1186d7104fbb4e31904f85f992c2ab48421b02ccac4dae189125"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_anatomy.py": {
+      "bytes": 4993,
+      "sha256": "5a0be72d0797040696149017b0c8a26af2d80d773d4db7051e3bc063169db427"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_config.py": {
+      "bytes": 2052,
+      "sha256": "6c94a7aeb060ec26754ce595536dbbd170e6a361cfc65b0ab67587d0d707d416"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_invariants.py": {
+      "bytes": 2298,
+      "sha256": "54383577dd5d35d916fb83a605377109fc798a7bfe97ae5b946608919c8f1b0d"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_material_clearance.py": {
+      "bytes": 7406,
+      "sha256": "41306546621f725be4da541ecf9f990edbc6bfefadc8b8b994e2931eec1e5e59"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_palm_distribution.py": {
+      "bytes": 4395,
+      "sha256": "ae5fa55617b055367707297e93a2be2400b58e931979914da1451a3283597842"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_sealed_c_changes.py": {
+      "bytes": 5932,
+      "sha256": "8f0799b8c86076842637ec533d370db97bab5b1340dc72a4f688caf353f32cba"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_skin_contacts.py": {
+      "bytes": 13096,
+      "sha256": "0261c001b57e4fcbc516ec60af6b4e707bf43dbe3bf9b4e465f83bd294e3e8b6"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/gate_skin_finger_axes.py": {
+      "bytes": 3823,
+      "sha256": "16e46f46fd311a60cf812fe32e713530c94795d7313de09a7c101cb1d8595f2b"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/index_surface_gap_exact.json": {
+      "bytes": 1125,
+      "sha256": "b1a65f3e33f61a61e2df7ba5bf7fe0062253a10ac3cedc7753a49bc3078e722a"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/invariants_comparison.json": {
+      "bytes": 2537,
+      "sha256": "4dfb528389c1dc25c7db05e9bf923ca31d5f3bf2b1ed4f7df4efb44e5ba7b097"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/material_clearance_comparison.json": {
+      "bytes": 145146,
+      "sha256": "6a32a8e236d4573e3e6dcf878bff7313aa1673e8cacde5659ede3591522df794"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/render_crease_review.py": {
+      "bytes": 3141,
+      "sha256": "8f44ffdf194d326df30190c608111153d8204c995953f54172c3265b8a9b34e6"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/run_gate.py": {
+      "bytes": 4650,
+      "sha256": "1bb385ad7c852c77caa44de9e72b69622e74dec6d980244f985c5854ae46a991"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/sealed_C_channel_and_skin_comparison.json": {
+      "bytes": 10945,
+      "sha256": "a374e6dd76c26cb8b36d5cf29c0148e4c99d62974cec6537edb1be1611464839"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/verify_index_surface_gap.py": {
+      "bytes": 3931,
+      "sha256": "5ba95c8a8614107606a52a2b224534a0c11843817a36a138d9152ba647e48c50"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c_review/CANDIDATE_C_REVIEW.md": {
+      "bytes": 11082,
+      "sha256": "d55daf092c4fa50ecd80ff140edcd49e8daed98bf28935ce21930e21f479af19"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c_review/FINAL_DISPOSITION.json": {
+      "bytes": 966,
+      "sha256": "02190d62e5d4232f83126c5e68af52aaa7a7140a35d73bb7818e2bb6d6299b1b"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c_review/crease_views/CREASE_VIEW_DEFINITIONS.json": {
+      "bytes": 927,
+      "sha256": "c8f86c364d6ae2d6718439850f75c00d53b7abf77d8e3fc495a387568033e825"
+    },
+    "animation_rebuild/grip_review_oct5/candidate_c_review/low_area_face_comparison.json": {
+      "bytes": 9976,
+      "sha256": "283285b899fdc4a6e1b655767b118845e7043911215a44ed5ffbfefd074ef890"
+    },
+    "animation_rebuild/grip_review_oct5/source_inspection/ENGINE_LANDMARK_COMPARISON.json": {
+      "bytes": 3675,
+      "sha256": "5763ef05f4a6f288625fbcf842b8df38d40c7264399a5540124bda68c1a0369b"
+    },
+    "animation_rebuild/grip_review_oct5/source_inspection/F/VIEW_DEFINITIONS.json": {
+      "bytes": 5168,
+      "sha256": "4723b7547524ea7d6d5eff766ed01b5041fddbddf7a62c0171963b2af6d8352f"
+    },
+    "animation_rebuild/rigid_weapon_package/package/rifle_bindings.json": {
+      "bytes": 8845,
+      "sha256": "7bfa52f22345586caa1d7a9b17c2d3e5336772aff9745a36226c0e976448e447"
+    },
+    "animation_rebuild/shared_pose_fit/portable_recipe/native_frame_reference.json": {
+      "bytes": 6311,
+      "sha256": "0025736d64407affe62022496767b75308480204f75ba9064338adbcb86ee1b0"
+    },
+    "animation_rebuild/upper_body_gear_rebuild/stage_f/COMPATIBILITY_AND_BINDINGS.json": {
+      "bytes": 3507,
+      "sha256": "5c59ed2597141d99ddc297412e1e73c1bdd34c156671519c65999df247c55cf8"
+    },
+    "animation_rebuild/upper_body_gear_rebuild/stage_f/EXPORT_INTENT.json": {
+      "bytes": 947,
+      "sha256": "74163ba9e22c1c0b78439223bb71ed7ea479ef5779f4e0159e4f6337a74c43a5"
+    },
+    "animation_rebuild/upper_body_gear_rebuild/stage_f/GEOMETRY_UV_MATERIAL_BINDINGS.json": {
+      "bytes": 80857,
+      "sha256": "0335dba5d76c6150ceeaa6d7d2d5b1a2c1236ddd3c31a5ec0993dbb4c52cd47d"
+    },
+    "animation_rebuild/upper_body_gear_rebuild/stage_f/upper_gear_stage_f.editable.blend": {
+      "bytes": 2097984,
+      "sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0"
+    }
+  }
+}

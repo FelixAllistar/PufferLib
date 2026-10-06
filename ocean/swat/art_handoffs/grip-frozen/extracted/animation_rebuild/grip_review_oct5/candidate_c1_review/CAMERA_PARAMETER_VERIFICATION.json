@@ -1,0 +1,13 @@
+{
+  "all_camera_parameters_equal_F": true,
+  "C1_crease_camera_exact_to_sealed_C_oblique": true,
+  "views_inspected": [
+    "left_inner",
+    "left_outer",
+    "left_below",
+    "near_visor_inspection",
+    "C1_oblique",
+    "C1_oblique_marked"
+  ],
+  "near_visor_uncalibrated": true
+}

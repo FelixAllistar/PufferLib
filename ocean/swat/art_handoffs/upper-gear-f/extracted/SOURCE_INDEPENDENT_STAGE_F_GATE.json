@@ -1,0 +1,106 @@
+{
+  "status": "QUALIFIED_SCOPED_RIGID_ASSEMBLY_AND_BOUNDED_NEUTRAL_CARRY_PROOF",
+  "scope": {
+    "static_actions": [
+      "Neutral Carry / Anatomical Gear F",
+      "ADS Intent / Anatomical Gear F"
+    ],
+    "movement_action": "Upper Gear F / Three-second Carry Articulation",
+    "movement_duration_s": 3,
+    "movement_sample_rate_hz": 60,
+    "movement_samples": 181,
+    "bounded_rifle_raise_deg": [
+      0,
+      4
+    ],
+    "bounded_clavicle_raise_deg": [
+      0,
+      1.5
+    ],
+    "new_part_names": [
+      "SWAT_ElbowCap_L",
+      "SWAT_ElbowCap_R",
+      "SWAT_Headset_L",
+      "SWAT_Headset_R"
+    ]
+  },
+  "input_sha256": {
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upper_body_gear_rebuild/stage_f/upper_gear_stage_f.editable.blend": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upper_body_gear_rebuild/stage_f/upper_gear_f_movement.editable.blend": "7165d1454e0526f01ca85c81f12e0245dfecb22071191918f984477a42c091b1",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/shared_pose_fit/shared_ready_n.editable.blend": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/standing_ads_practical/standing_ads_practical_r5.editable.blend": "e262c13a88d5005bedf9da3726ad960f407bf92fb2be78c3368c930dd50d4ddc"
+  },
+  "native_identity": {
+    "original_native_bones_rest_parents_lengths_exact": true,
+    "retained_native_vertices": 22645,
+    "removed_native_components": 27,
+    "removed_native_vertices": 2205,
+    "retained_bind_positions_weights_UVs_polygons_material_assignments_exact": true,
+    "rifle_and_other_original_meshes_preserved": true,
+    "custom_corner_normals_bit_exact": false,
+    "custom_corner_normals_max_angle_error_deg": 0.03467709436239553,
+    "added_anatomical_carrier_bones": 2,
+    "total_bones": 72,
+    "requires_baked_carrier_channels": true
+  },
+  "topology_rigidity": {
+    "four_closed_single_component_consistently_wound_manifolds": true,
+    "rigid_unit_weight_bindings": true,
+    "no_soft_mount_objects": true,
+    "minimum_cap_pair_thickness_mm": 3.4998323884634086,
+    "movement_rigid_prediction_max_error_mm": 0.00030706859512444925,
+    "movement_area_ratio_min_max": [
+      0.9997005262211823,
+      1.0004120262390432
+    ],
+    "normal_reversals": 0
+  },
+  "measured_clearance": {
+    "static_N_and_ADS_new_parts_and_rifle_nonhand_crossings": 0,
+    "all_movement_new_part_body_rifle_and_new_pair_crossings": 0,
+    "all_movement_rifle_nonhand_crossings": 0,
+    "movement_dense_cardinal_states": 5,
+    "movement_dense_wearer_probe_evaluations": 167958,
+    "confirmed_inside_new_part_probe_witnesses": 0,
+    "scope_is_discrete_finite_measurement": true
+  },
+  "attachment_qualification": {
+    "integrated_central_rigid_padding_visually_supported": true,
+    "local_sleeve_proximity_measured": true,
+    "uniform_flush_whole_underface": false,
+    "physical_fastening_contact_or_force_proven": false,
+    "headset_stem_local_band_proximity_only": true,
+    "maximum_observed_static_whole_underface_gap_mm": 18.621
+  },
+  "joint_grip_qualification": {
+    "181_pose_native_material_frame_and_grip_contract_pass": true,
+    "finger_local_bases_unchanged": true,
+    "inherited_bent_wrists_and_native_tail_offsets_preserved": true,
+    "exact_C1_loop_continuity_claimed": false
+  },
+  "not_approved": [
+    "Broad or arbitrary native-gear animation",
+    "Downward carry or 6-degree raised carry from rejected C/D",
+    "Whole-character self-collision or universal reciprocal solid-volume clearance",
+    "Physical fastening, load transfer or flush entire underface",
+    "Shared shoulder support or integrated R5 bolster",
+    "Anatomical-eye, eye-relief or camera ADS calibration",
+    "Engine export/runtime or gameplay acceptance"
+  ],
+  "source_hashes_unchanged": true,
+  "evidence_sha256": {
+    "STAGE_F_INDEPENDENT.json": "974700adf3f1caf2470d87482e58d8120d9a9cd02c427ce3b654e8d7619195d2",
+    "STATIC_RIFLE_WEARER.json": "5c9613137ca1baeb102dba031271935c86d280e2822512dbb27afa2ac4920fc1",
+    "CAP_PAIRED_SURFACE_THICKNESS.json": "b36e2bb5d24cf0dfaa9ec9cd93e6752a52218fdcf38f180b09372fc81dac648f",
+    "CARRIER_AND_HEADSET_CHECK.json": "0e3725b9518c1ef4aab1fd3b0e7cd622d85f64aac33c77049dbd5d3783bf4a47",
+    "PLACEMENT_DIAGNOSIS.json": "1ecd8fdff8d5f440fa4462514519b292ad48a41db0285b5efe931248740ab462",
+    "movement_surfaces/MOVEMENT_SURFACES.json": "cb9422c27f37239408df006accc8a95f3986d83ee1281b0554e560da3418f2b8",
+    "movement_joints/MOVEMENT_JOINTS_INDEPENDENT.json": "b63d80b265491159315a46b5f38461c00a7f61f55a4604973bd64457520414d9",
+    "movement_joints/SAMPLED_MOTION_CHECK.json": "4d92519b323d1e5d41affaa07d6edb47d62b420cd94b98278ab5c5115fbc8a43",
+    "movement_joints/JOINT_REVIEW.md": "9246cc5e03fd98562f03982fc80396167818e98388e3a2e144eb28399172edae",
+    "attachments/ATTACHMENT_MEASUREMENTS.json": "face66ba4eaa11d8286e3914727c33c946403361c04fe87472262a9842559c7b",
+    "attachments/MOVEMENT_ATTACHMENT_MEASUREMENTS.json": "67e83765667c2dfd9d3f30a938d59102812cca2cf80b3bd74d211c98e5451103",
+    "attachments/F_ATTACHMENT_REVIEW.json": "bd3d0045f21e3acf695af9950b49680b73844ffbf5b80c02bd168b7f6de637d1",
+    "attachments/F_PADDING_PROXIMITY_REVIEW.md": "20e48808f6adec712c77f6407fbedaf7c0e59cb88be073fae141203a17f6a5c5"
+  }
+}

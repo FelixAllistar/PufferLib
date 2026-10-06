@@ -1,0 +1,62 @@
+{
+  "max_active_influences": 7,
+  "skin_joint_counts": [
+    70
+  ],
+  "skinned_primitives": [
+    {
+      "mesh": 0,
+      "primitive": 0,
+      "weight_sets": 1,
+      "max_active": 1,
+      "max_sum_error": 0.0
+    },
+    {
+      "mesh": 1,
+      "primitive": 0,
+      "weight_sets": 2,
+      "max_active": 5,
+      "max_sum_error": 1.327134668827057e-07
+    },
+    {
+      "mesh": 1,
+      "primitive": 1,
+      "weight_sets": 2,
+      "max_active": 7,
+      "max_sum_error": 1.287553459405899e-07
+    },
+    {
+      "mesh": 2,
+      "primitive": 0,
+      "weight_sets": 1,
+      "max_active": 1,
+      "max_sum_error": 0.0
+    },
+    {
+      "mesh": 3,
+      "primitive": 0,
+      "weight_sets": 1,
+      "max_active": 1,
+      "max_sum_error": 0.0
+    },
+    {
+      "mesh": 4,
+      "primitive": 0,
+      "weight_sets": 1,
+      "max_active": 1,
+      "max_sum_error": 0.0
+    }
+  ],
+  "animations": [
+    {
+      "name": "Walk Right / Shared Ready N C1 Loop A",
+      "duration_s": 1.0,
+      "prop_visibility_channels": 0
+    }
+  ],
+  "mixed_interpolation_nodes": [],
+  "errors": [
+    "Asset requires 7 influences; consumer limit is 4"
+  ],
+  "scope": "Structure only; no render, deformation, ownership, root-motion, material, or gameplay certification"
+}

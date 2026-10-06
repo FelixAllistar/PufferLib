@@ -1,0 +1,85 @@
+{
+  "status": "PASS_SOURCE_IDENTITY_AND_DISCLOSED_QUALIFICATION",
+  "source": "animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend",
+  "source_bytes": 3670023,
+  "source_sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+  "checkpoint": "animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch-forward-shared-n-loop-a-selfcontained-checkpoint.tar.gz",
+  "checkpoint_bytes": 17482700,
+  "checkpoint_sha256": "e63cd72bbfcc43245a6eebc206cc5c89d15522c1bba10e3f2a6f43e08a1cf858",
+  "archive_file_count": 74,
+  "action": "Crouch Forward / Shared Ready N C1 Loop A",
+  "saved_timing": {
+    "fps": 30,
+    "range": [
+      0.0,
+      30.0
+    ],
+    "duration_s": 1
+  },
+  "saved_curve_count": 700,
+  "saved_key_count": 168700,
+  "boundary_changed_curve_count_verified": 683,
+  "repair_windows_seconds": [
+    [
+      0,
+      0.125
+    ],
+    [
+      0.875,
+      1
+    ]
+  ],
+  "center_max_scalar_error": 0,
+  "source_qualification": "QUALIFIED_MOTION_AND_C1_CONTINUITY_CANDIDATE_WITH_STORED_ACCESSORY_COLLISION_LIMIT",
+  "stored_spare_visible_and_noncollapsed_required": true,
+  "full_clearance_approved": false,
+  "limits": {
+    "stored_sleeve": {
+      "maximum_sampled_inward_distance_into_closed_thigh_hardware_mm": 18.392138183116913,
+      "frame": 3,
+      "time_s": 0.1,
+      "body_component": 17904,
+      "maximum_sampled_body_inward_distance_into_closed_sleeve_wall_mm": 3.9998574910146134,
+      "sleeve_body_triangle_pair_range": [
+        28,
+        148
+      ],
+      "static_belt_mount_pairs": 28,
+      "classification": "New dynamic stored-accessory fit failure relative to planted static reference, inherited unchanged from pre-seam native carry. Source pose and shared mesh retained."
+    },
+    "stored_spare": {
+      "maximum_body_triangle_pairs": 12,
+      "body_component": 5118,
+      "actual_inward_depth": null,
+      "reason": "Magazine shell has30 boundary edges and pants component74 after coincident seam welding; no solid containment/depth classification is valid."
+    },
+    "opposing_hip_layers": {
+      "component_families": [
+        "5118,11165",
+        "11165,11623"
+      ],
+      "native_peak_pairs": 22,
+      "candidate_peak_pairs": 28,
+      "candidate_frames": [
+        28.5,
+        29,
+        29.5
+      ],
+      "native_observed_max_intersection_chord_mm": 14.998052698510051,
+      "candidate_observed_max_intersection_chord_mm": 13.447398390890779,
+      "cycle_new_component_pair_families": [],
+      "classification": "Existing upper-hip garment families; changed timing and pair counts inside the seam repair window. Chords are not penetration depths."
+    },
+    "material": "Inherited shoulder-root sleeve crossings, local same-sleeve folds, pants/brace compression and normal-transport reversals remain; not globally intersection-free."
+  },
+  "source_qa_hashes": {
+    "seam_a/manifest.json": "ed6cc6cb432bec589a1eec7c94c10e52509631e784dc071d222f76b15461ad6c",
+    "seam_a/saved_curve_diff.json": "de75cf0246851aae882cd40533abfeb2b82f12f9327cf2ff7dfa3a57f09a2450",
+    "seam_a/QUALITY.md": "cc3272927d3de7b37be88177c0dd6f6cf605a40d526a4d7b59eb08afbd8b1e06",
+    "independent_review/INDEPENDENT_CROUCH_FORWARD_QUALIFICATION.json": "5eccd3f5dff30b69886f753963e39ca601a2702ac67334dc3c88583508d12a07",
+    "independent_review/INDEPENDENT_CROUCH_FORWARD_REVIEW.md": "abf55f6bfaa44bd7ccd24383dbe4b0cd7d4319d57630bbde94d501583ae16220"
+  },
+  "binary_export_review": "PENDING_FINAL_PACKAGE",
+  "archive_manifest_verified_file_count": 73,
+  "archive_manifest_self_excluded": true
+}

@@ -1,0 +1,23 @@
+SPDX-License-Identifier: CC0-1.0
+
+Morrow Block / Neighborhood Storefronts, batch 16
+Original geometry, original fictional sign artwork, original procedural texture
+additions, scene layout and build/QA scripts are dedicated, to the extent rights
+exist, under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Earlier batch props and supporting original geometry/lettering functions retain
+their original CC0 dedication and source identities. Original source manifests,
+licenses and hash verification are included under inputs/prior_asset_provenance.
+
+Material family v1 is preserved with its own full LICENSE_CC0.txt and manifest.
+Its floor source is Poly Haven's Wood Floor Worn by Dimitrios Savva, CC0.
+https://polyhaven.com/a/wood_floor_worn
+https://polyhaven.com/license
+
+The earlier provisional image-generated plaster is not included. No CC0 claim is
+made here about that earlier image or unrelated files outside this package.
+
+This dedication gives no trademark, patent, publicity or endorsement rights.
+The work is provided without warranties. External software dependencies retain
+their own licenses and are not relicensed by this dedication.

@@ -1,0 +1,108 @@
+{
+  "schema": "independent-static-portable-files/1",
+  "files": [
+    {
+      "file": "replay_fixture.py",
+      "bytes": 2938,
+      "sha256": "4e824603e0b53538ca5ac755a1f0cce5fbaf33875253f6f6a931962623f64530"
+    },
+    {
+      "file": "replay_static.py",
+      "bytes": 15455,
+      "sha256": "dd93f8c5e9b26e185b88e73a5ace07aeb1bfa29e078b9876335524fe7d7d0960"
+    },
+    {
+      "file": "inspect_measurements.py",
+      "bytes": 7793,
+      "sha256": "b26699db6451cbb3a74a2199b61844079281eb8b96aa920c88c8459cc570555d"
+    },
+    {
+      "file": "inspect_metadata.py",
+      "bytes": 10664,
+      "sha256": "4e9c7ce4306ff479c95d475e8281b1ef1a56fa01e5fbab7a438ffdbb4750a8ce"
+    },
+    {
+      "file": "capture_blender.py",
+      "bytes": 4008,
+      "sha256": "debb9172b7af8209556a1be9d6d260e0d41861132dbb210c246d0cb9b1130e8c"
+    },
+    {
+      "file": "source_capture.json",
+      "bytes": 156289,
+      "sha256": "04cde348d2b01aac367f4085005d9f0e69e5a6daa14e135729e79cb53a3a8867"
+    },
+    {
+      "file": "source_capture.npz",
+      "bytes": 2864228,
+      "sha256": "fb734c5f0925295e7032f363039bd47256c856a15efdd977b3acb34fb96e3af0"
+    },
+    {
+      "file": "reimport_capture.json",
+      "bytes": 158123,
+      "sha256": "ee1044b609478c83e3f9879299b0a4d04a0b8f25536f6eaa16bda5d3ae2ea6fb"
+    },
+    {
+      "file": "reimport_capture.npz",
+      "bytes": 3352122,
+      "sha256": "094344bafa4b15fb309cd7462ee15f53a253d674c165a109d20454d3c9f614be"
+    },
+    {
+      "file": "reference_landmarks.json",
+      "bytes": 31991,
+      "sha256": "19b26abbf660fab21373c6cd1f4510da3293cf8bcc3e25c03c625f2d01fe2df6"
+    },
+    {
+      "file": "static_baseline_manifest.json",
+      "bytes": 11994,
+      "sha256": "8916318be369f5a8356723ee255258ff042286c7165c78795da156d00c2dba23"
+    },
+    {
+      "file": "actual_binary_validation.json",
+      "bytes": 10400,
+      "sha256": "948ef74e0b83462aec9711da8fab7b8c517b9fa3b5f5cbd56c49dbfae2d635f5"
+    },
+    {
+      "file": "metadata_validation.json",
+      "bytes": 1851,
+      "sha256": "c4dd7bfa7a61a12d27cec78a382aa525f16199b6a4da49c342a2b8ef09141474"
+    },
+    {
+      "file": "measurements_validation.json",
+      "bytes": 5911,
+      "sha256": "d3eab45539c780691b683fe3ae8e64d91f8e11a43075fce7afb84017b98850e9"
+    },
+    {
+      "file": "native_static_identity.json",
+      "bytes": 2012,
+      "sha256": "c70621b3d0563543add61b7a359d4b3f35a8e7b923d1fa1fff88ce6522301512"
+    },
+    {
+      "file": "SOURCE_IDENTITY_CHECK.json",
+      "bytes": 1118,
+      "sha256": "c2e8be1e6a88840c828525f52e77d4614978d1f9e93e9e0d6cd618e934320d67"
+    },
+    {
+      "file": "INDEPENDENT_BINARY_REVIEW.md",
+      "bytes": 6744,
+      "sha256": "a853d75eac323ce45d3e1b2cf2ec33d4713cc31223848a6b8df6796c8aed6caf"
+    },
+    {
+      "file": "portable_replay.json",
+      "bytes": 17378,
+      "sha256": "7e88f69768f8811e273c7671817a3bb396941a3cbf51c4a58f25a5dd84f03eda"
+    },
+    {
+      "file": "VALIDATOR_PROVENANCE.json",
+      "bytes": 868,
+      "sha256": "75d48ee4d0774cf112dfb0277e42181273fe21160b6d9bd5cfc401fcacd30c43"
+    }
+  ],
+  "total_bytes": 6661887,
+  "omit": [
+    "baseline_native_capture.json",
+    "baseline_native_capture.npz",
+    "__pycache__",
+    "replay.log"
+  ],
+  "placement": "Copy these files plus PORTABLE_FILES.json into package/independent_validation. Entrypoint: python independent_validation/replay_fixture.py --package . --output replay.json"
+}

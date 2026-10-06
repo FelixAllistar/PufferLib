@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "scope": "Current selected static source and prior delivered archives read-only hash verification after static export",
+  "references": [
+    {
+      "file": "walk-left-shared-ready-n-cubic-loop-a-import-fixture-v1.zip",
+      "sha256": "d16ceb8c529d8838f84e720c01097384dfc600d5022ac4cd46047442edc531e1",
+      "unchanged": true
+    },
+    {
+      "file": "walk_right_ready_n_c1.editable.blend",
+      "sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+      "unchanged": true
+    },
+    {
+      "file": "walk_right_ready_n_c1-selfcontained-checkpoint.tar.gz",
+      "sha256": "93a8ec6e810c9d161c16cc90e5842952a07311a1dd5f9ab4e8a8ef669ef32180",
+      "unchanged": true
+    },
+    {
+      "file": "standing-f-original-timing-import-fixture-v1.zip",
+      "sha256": "c12e11d9afa7e66e55a09bbfeaf2091076011da9d01e08bf8f60e1c96a762343",
+      "unchanged": true
+    },
+    {
+      "file": "standing-empty-shared-ready-n-import-fixture-v1.zip",
+      "sha256": "2b32a3141d4f0a2a90a4e90dcd52b00fe8170d416e6fcd88406434df12154b28",
+      "unchanged": true
+    },
+    {
+      "file": "standing-empty-shared-ready-n-metadata-correction-v2.zip",
+      "sha256": "93b9f5b300710569883f4e2fafa67325450b511dd9274ba5398e28e085e54052",
+      "unchanged": true
+    },
+    {
+      "file": "standing-tactical-shared-ready-n-import-fixture-v1.zip",
+      "sha256": "bed392a8aed5c1c43cb9dcb241edfde3b491f0d2b79043cf93df30f5eace8833",
+      "unchanged": true
+    },
+    {
+      "file": "forward-walk-shared-ready-n-import-fixture-v1.zip",
+      "sha256": "015ddbc4105c598d636b3b4bb5c42cb56498e9957a9b1ceae4693119aac1d33e",
+      "unchanged": true
+    },
+    {
+      "file": "forward-walk-shared-ready-n-cubic-seam-b-import-fixture-v1.zip",
+      "sha256": "b688138a298c4d4942817690b29dae38cf9f92e8696c60a7569cb621aaabbed8",
+      "unchanged": true
+    },
+    {
+      "file": "rigid-rifle7-textured-and-sidearm50-reference-v1.zip",
+      "sha256": "aabbd0fd0318b87ebcae27e106290cc2ef2dd7341c4c5c45a8c91674a7272407",
+      "unchanged": true
+    },
+    {
+      "file": "ch15-original-2k-character-textures-v1.zip",
+      "sha256": "be6b60251053f034761c400eec63b66ea870ac4336f67400eba3a882bdeb1b7f",
+      "unchanged": true
+    },
+    {
+      "file": "swat-goggle-optical-surface-landmark-v1.zip",
+      "sha256": "2cc5d69c132735850c3f7cfe9caf463391eb9f19bad00060822ee7de285cc3cf",
+      "unchanged": true
+    },
+    {
+      "file": "walk-right-shared-ready-n-cubic-loop-a-import-fixture-v1.zip",
+      "sha256": "285eeb1123755ad918bb92b2508a30a76ab8043716303eac0260f4a74fc7e6ea",
+      "unchanged": true
+    },
+    {
+      "file": "crouch_ready_n.editable.blend",
+      "sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+      "unchanged": true
+    },
+    {
+      "file": "crouch-ready-planted-shared-n-selfcontained-checkpoint.tar.gz",
+      "sha256": "6fb887ef7551d9cf23f45ee1a394609a121fa649bfb5695b7ff1f6f382e2cf10",
+      "unchanged": true
+    }
+  ]
+}

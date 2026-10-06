@@ -1,0 +1,122 @@
+{
+  "source_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+  "candidate_sha256": "09d659865fb4d75aaed64b91f973e98ae178d12ffd9df42b8fc401cac25fce98",
+  "material_only_sha256": "de255f8596a7bdd4b633abb7969865989c998c281ce89899bbd3820a18a62c0a",
+  "mesh_count": 2,
+  "node_names": [
+    "Rifle7_RigidBody",
+    "Rifle7_SeatedMagazine"
+  ],
+  "magazine_mesh_index": 1,
+  "skins": 0,
+  "animations": 0,
+  "original_vertex_attribute_prefix_byte_identical": {
+    "POSITION": true,
+    "NORMAL": true,
+    "TEXCOORD_0": true,
+    "TANGENT": true
+  },
+  "unchanged_body_triangles": 10209,
+  "removed_original_ring_triangles": 64,
+  "replacement_ring_triangles": 1024,
+  "body_triangles_before_after": [
+    10273,
+    11233
+  ],
+  "magazine_all_attributes_indices_byte_identical": true,
+  "body_bounds_exact_equal": true,
+  "body_bounds_source": [
+    [
+      -1.0090490665248808e-09,
+      -0.12666592001914978,
+      -0.030266722664237022
+    ],
+    [
+      0.8999999761581421,
+      0.13055996596813202,
+      0.032860588282346725
+    ]
+  ],
+  "body_bounds_candidate": [
+    [
+      -1.0090490665248808e-09,
+      -0.12666592001914978,
+      -0.030266722664237022
+    ],
+    [
+      0.8999999761581421,
+      0.13055996596813202,
+      0.032860588282346725
+    ]
+  ],
+  "max_added_outer_contour_displacement_m": 0.00044235389212081487,
+  "max_inner_opening_displacement_m": 0.0,
+  "source_ring_center_engine": [
+    0.2998216599225998,
+    0.12474874034523964,
+    1.9278377294540405e-07
+  ],
+  "original_landmarks_and_hand_contacts": [
+    {
+      "id": "stock_contact",
+      "position_export_engine": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "muzzle",
+      "position_export_engine": [
+        0.89999995008111,
+        0.04362634848803282,
+        -7.974449545145035e-08
+      ]
+    },
+    {
+      "id": "rear_sight",
+      "position_export_engine": [
+        0.2998216599225998,
+        0.12474874034523964,
+        1.9278377294540405e-07
+      ]
+    },
+    {
+      "id": "front_sight",
+      "position_export_engine": [
+        0.6549736261367798,
+        0.12472589686512947,
+        1.4643107230471845e-07
+      ]
+    },
+    {
+      "id": "grip_center",
+      "position_export_engine": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        -2.4493783712387085e-07
+      ]
+    },
+    {
+      "id": "right_hand_surface_candidate",
+      "position_export_engine": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        0.01466538728813227
+      ]
+    },
+    {
+      "id": "support_hand_surface_candidate",
+      "position_export_engine": [
+        0.5580734312534332,
+        0.012221559882195532,
+        -1.448206603527069e-07
+      ]
+    }
+  ],
+  "stock_to_muzzle_distance_m": 0.901056695457287,
+  "original_normal_image_bytes_retained": true,
+  "normal_max_length_error": 1.1920928955078125e-07,
+  "tangent_max_length_error": 9.5367431640625e-07,
+  "normal_tangent_max_dot": 9.599558552508825e-07
+}

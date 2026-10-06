@@ -1,0 +1,13 @@
+{
+  "geometry_source_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "original_motion_sha256": {
+    "ready": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+    "walk": "82dd05c813a017b23ee205c2cb43a98edc56b062f4dd567741099d3e6a040d69",
+    "walk_left": "4fe97ec1997bb4799440216ddc3a74d858154c0d8e51bf863e2d86082b1a1996",
+    "walk_right": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+    "crouch_ready": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+    "crouch_walk": "ea828e53f305de77b35ba55abdf67470ae98e871911c43fae5505c5022d47dd1",
+    "walk_backward": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de"
+  },
+  "carrier_policy": "runtime anatomical frames after source sampling and arm IK"
+}

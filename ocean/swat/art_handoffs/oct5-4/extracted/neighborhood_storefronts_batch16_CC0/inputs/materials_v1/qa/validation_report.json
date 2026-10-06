@@ -1,0 +1,318 @@
+{
+  "independent_rebuild": "all 18 PNGs and manifest byte-identical",
+  "materials": {
+    "door_paint": {
+      "basecolor": {
+        "max": 110.0,
+        "min": 91.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.06564436562296151,
+          "ratio": 0.07934166601971897,
+          "wrap_mean_byte_difference": 0.005208333333333333
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.019199995923026746,
+          "ratio": 0.0,
+          "wrap_mean_byte_difference": 0.0
+        }
+      },
+      "normal": {
+        "max": 255.0,
+        "maximum_unit_length_error": 0.0003843936332625919,
+        "min": 124.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.25003822162426614,
+          "ratio": 0.92173407930539,
+          "wrap_mean_byte_difference": 0.23046875
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.04955688396934116,
+          "ratio": 2.0100007712677073,
+          "wrap_mean_byte_difference": 0.099609375
+        }
+      },
+      "roughness": {
+        "max": 173.0,
+        "min": 164.0,
+        "mode": "L",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.2445648850293542,
+          "ratio": 0.0,
+          "wrap_mean_byte_difference": 0.0
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.23734482020547945,
+          "ratio": 0.00822906098523278,
+          "wrap_mean_byte_difference": 0.001953125
+        }
+      }
+    },
+    "door_wood": {
+      "basecolor": {
+        "max": 139.0,
+        "min": 42.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 2.5765681058382257,
+          "ratio": 1.2457017570752267,
+          "wrap_mean_byte_difference": 3.2096354166666665
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.8663440761578604,
+          "ratio": 0.24498301445609497,
+          "wrap_mean_byte_difference": 0.21223958333333334
+        }
+      },
+      "normal": {
+        "max": 255.0,
+        "maximum_unit_length_error": 0.0013677689485345201,
+        "min": 121.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.4252830948303979,
+          "ratio": 1.0823060308025991,
+          "wrap_mean_byte_difference": 0.4602864583333333
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.14194109792889759,
+          "ratio": 1.151262465330449,
+          "wrap_mean_byte_difference": 0.16341145833333334
+        }
+      },
+      "roughness": {
+        "max": 205.0,
+        "min": 182.0,
+        "mode": "L",
+        "seam_u": {
+          "interior_mean_byte_difference": 1.1255618578767124,
+          "ratio": 1.0428819320639902,
+          "wrap_mean_byte_difference": 1.173828125
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.48021266511741684,
+          "ratio": 0.1504867119286209,
+          "wrap_mean_byte_difference": 0.072265625
+        }
+      }
+    },
+    "floor_pine": {
+      "basecolor": {
+        "max": 142.0,
+        "min": 35.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 2.3100640084801043,
+          "ratio": 0.7733371572282645,
+          "wrap_mean_byte_difference": 1.7864583333333333
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 1.1557161713144162,
+          "ratio": 0.9920120557767079,
+          "wrap_mean_byte_difference": 1.146484375
+        }
+      },
+      "normal": {
+        "max": 255.0,
+        "maximum_unit_length_error": 0.004434611554624324,
+        "min": 107.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 1.3285135865133724,
+          "ratio": 0.6306978216150642,
+          "wrap_mean_byte_difference": 0.837890625
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.6503001671559034,
+          "ratio": 1.1493089977234345,
+          "wrap_mean_byte_difference": 0.7473958333333334
+        }
+      },
+      "roughness": {
+        "max": 172.0,
+        "min": 162.0,
+        "mode": "L",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.3915079195205479,
+          "ratio": 0.8830041686598784,
+          "wrap_mean_byte_difference": 0.345703125
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.2308433219178082,
+          "ratio": 0.879925822902179,
+          "wrap_mean_byte_difference": 0.203125
+        }
+      }
+    },
+    "framing_pine": {
+      "basecolor": {
+        "max": 171.0,
+        "min": 69.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 2.5881428877201564,
+          "ratio": 1.035622319920568,
+          "wrap_mean_byte_difference": 2.6803385416666665
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.6693727576647097,
+          "ratio": 0.3559769161077147,
+          "wrap_mean_byte_difference": 0.23828125
+        }
+      },
+      "normal": {
+        "max": 255.0,
+        "maximum_unit_length_error": 0.004128348802530546,
+        "min": 108.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 1.2661307994944553,
+          "ratio": 0.9641208676760775,
+          "wrap_mean_byte_difference": 1.220703125
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.2846084067188519,
+          "ratio": 0.6633749350905153,
+          "wrap_mean_byte_difference": 0.18880208333333334
+        }
+      },
+      "roughness": {
+        "max": 240.0,
+        "min": 217.0,
+        "mode": "L",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.8739641939823874,
+          "ratio": 0.55199272272443,
+          "wrap_mean_byte_difference": 0.482421875
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.3514516572896282,
+          "ratio": 0.20562038477014932,
+          "wrap_mean_byte_difference": 0.072265625
+        }
+      }
+    },
+    "plaster_painted": {
+      "basecolor": {
+        "max": 196.0,
+        "min": 176.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.22185869210697978,
+          "ratio": 0.11151054348325445,
+          "wrap_mean_byte_difference": 0.024739583333333332
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.2283831233692107,
+          "ratio": 0.09977295168389518,
+          "wrap_mean_byte_difference": 0.022786458333333332
+        }
+      },
+      "normal": {
+        "max": 255.0,
+        "maximum_unit_length_error": 0.0017362858122673686,
+        "min": 121.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.44311093444227007,
+          "ratio": 0.9843989005048936,
+          "wrap_mean_byte_difference": 0.4361979166666667
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.45823777927266796,
+          "ratio": 1.0755083145892474,
+          "wrap_mean_byte_difference": 0.4928385416666667
+        }
+      },
+      "roughness": {
+        "max": 223.0,
+        "min": 207.0,
+        "mode": "L",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.39547532411937375,
+          "ratio": 0.12346693212459771,
+          "wrap_mean_byte_difference": 0.048828125
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.40209530944227007,
+          "ratio": 0.13114894345110786,
+          "wrap_mean_byte_difference": 0.052734375
+        }
+      }
+    },
+    "plaster_worn": {
+      "basecolor": {
+        "max": 195.0,
+        "min": 175.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.22768366764514025,
+          "ratio": 0.13153300355887818,
+          "wrap_mean_byte_difference": 0.029947916666666668
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.23864180732224397,
+          "ratio": 0.07365903400263735,
+          "wrap_mean_byte_difference": 0.017578125
+        }
+      },
+      "normal": {
+        "max": 255.0,
+        "maximum_unit_length_error": 0.002350179504618577,
+        "min": 120.0,
+        "mode": "RGB",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.3158265553652968,
+          "ratio": 0.9379323977070567,
+          "wrap_mean_byte_difference": 0.2962239583333333
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.33119929264514025,
+          "ratio": 1.0555861161653657,
+          "wrap_mean_byte_difference": 0.349609375
+        }
+      },
+      "roughness": {
+        "max": 240.0,
+        "min": 217.0,
+        "mode": "L",
+        "seam_u": {
+          "interior_mean_byte_difference": 0.4133210004892368,
+          "ratio": 0.13231241561708187,
+          "wrap_mean_byte_difference": 0.0546875
+        },
+        "seam_v": {
+          "interior_mean_byte_difference": 0.4327681629158513,
+          "ratio": 0.15344532174588874,
+          "wrap_mean_byte_difference": 0.06640625
+        }
+      }
+    }
+  },
+  "metric_normal_convention_test": "passed, +U/+V slope signs and rectangular tile spacing",
+  "negative_contract_tests": {
+    "cases": [
+      "baseline",
+      "bad source hash",
+      "wrong color space",
+      "wrong metric scale",
+      "path escape",
+      "unexpected PNG",
+      "invalid normal with matching hash",
+      "wrong scan normal basis"
+    ],
+    "result": "8 passed"
+  },
+  "normal_quantization_note": "RGB8 normals are normalized by consumer after decoding/filtering. Seam checks compare neighboring texel centers, not identical edge pixels.",
+  "result": "passed",
+  "runtime_budget": {
+    "compressed_bytes_all_maps": 1840045,
+    "compressed_bytes_basecolor_only": 850080,
+    "current_game_extra_loaded_bytes": 0,
+    "decoded_bytes_native_formats": 11010048,
+    "decoded_bytes_rgba8_all_maps": 18874368,
+    "estimated_rgba8_with_full_mips_bytes": 25165800,
+    "png_count": 18
+  }
+}

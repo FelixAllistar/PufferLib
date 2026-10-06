@@ -1,0 +1,9 @@
+{
+  "file": "R2_engine_reference.jpg",
+  "sha256": "ba72654c96732eec867ccab613661aee840ad4681a92dd73499444d934e8a98e",
+  "provided_reference_file_id": "file_00000000397c81fd929e0c6d163918fd",
+  "source_message": "Engine Slack 1791222840.388049, relayed by parent",
+  "observed_pixels": "R2 outer ring rounded and wear quieter; stalk, sight base and receiver still visibly angular in actual FPS and ADS captures",
+  "reported_r2_runtime_status": "Integrated for live/FPS; normalTexture.scale .65 honored; 21 headless and native GPU checks passed all seven motion banks, thumb/reload/cached poses/sight centers",
+  "r3_runtime_status": "Not yet handed off or tested in engine"
+}

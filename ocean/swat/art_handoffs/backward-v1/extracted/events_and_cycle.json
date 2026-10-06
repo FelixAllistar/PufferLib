@@ -1,0 +1,70 @@
+{
+  "schema": "swat-walk-review-cycle/2",
+  "clip_id": "walk_backward_shared_ready_n_c1_loop_a_original_1s",
+  "animation_name": "Walk Backward / Shared Ready N C1 Loop A",
+  "duration_s": 1.0,
+  "source_fps": 30,
+  "source_frame_range": [
+    0,
+    30
+  ],
+  "cyclic_source": true,
+  "runtime_loop_quality_approved": false,
+  "repair_windows_s": [
+    [
+      0,
+      0.125
+    ],
+    [
+      0.875,
+      1
+    ]
+  ],
+  "preserved_center_s": [
+    0.125,
+    0.875
+  ],
+  "preservation_scope": "604 curves edited only in0\u20130.125/.875\u20131s; source middle75%exact. Export errors measured separately. C1 means loop continuity, not grip diagnostic.",
+  "phase_semantics": "Original one-second phase, no runtime speed retime or phase bake. Explicit cubic tangents carry the seam derivative; flattening to linear needs new validation.",
+  "events": [],
+  "event_policy": "No authored footstep, reload, fire or ownership-transfer events. Do not infer gameplay commits from phase.",
+  "visibility": {
+    "mode": "Five source mesh objects exported/enabled; Fresh magazine remains collapsed through preserved zero-scale Prop_Magazine_B",
+    "visibility_extension_channels": 0,
+    "parent_switches": 0,
+    "collapsed_prop": {
+      "mesh_node": 75,
+      "joint_node": 69,
+      "skin_joint_slot": 69,
+      "scale": [
+        0,
+        0,
+        0
+      ],
+      "entire_clip": true,
+      "sampled_joint_linear_matrix_max_abs": 0.0
+    }
+  },
+  "owners_all_phases": {
+    "rifle": "character carry",
+    "installed_A": "rifle",
+    "unused_B": "collapsed source prop; no active game inventory owner supplied",
+    "spare_sleeve": "hips"
+  },
+  "installed_A_vs_rifle_deformation_max_change": 4.440892098500626e-16,
+  "identity_policy": "Cycle wrap retains weapon/magazine identities. Gameplay, replay and save/restore own magazine_seated, ammo/chamber/inventory; animation does not reset them.",
+  "source_pace": {
+    "nominal_speed_m_s": 1.92126144912079,
+    "original_source_fps": 60,
+    "duration_s": 1,
+    "root_vector_removed_blender_m": [
+      -1.7974525690078735e-07,
+      1.9212614297866821,
+      0.0
+    ],
+    "source_fbx_sha256": "97b1662e913c09ad61f3aa3a2840fa6dc87dfc6ec4b38636f1f3f152b54871eb",
+    "displacement_scope": "Horizontal root-removal vector; native vertical motion retained"
+  },
+  "gameplay_mapping": "Per-clip runtime blend/speed/achieved-pose mapping remains consumer validation. Source clip has no authored events or grip override.",
+  "scope": "Original N70, original hands. No authored gripC/C1 adoption, engine override, F72 mesh/carriers, controller timing or ADS approval."
+}

@@ -51,7 +51,12 @@ void swat_training_reset(void* pointer,uint32_t seed,int role,int stage) {
     Training* env=pointer; if(!env || role<0 || role>1 || stage<0 || stage>4) return; swat_sim_close(&env->sim); memset(env,0,sizeof(*env));
     SwatSim* s=&env->sim; s->config=swat_default_config(); s->config.mission=SWAT_RANGE; s->config.hostile_fire=false; env->limit=300; s->config.max_ticks=1200; s->rng=seed ? seed : 1;
     env->progress_reward=.15f; env->step_cost=.002f; env->success_reward=env->fall_penalty=2;
-    swat_world_init(&s->world); swat_world_box(&s->world,(b3Pos){0,-.5f,0},swat_v(10,.5f,8),SWAT_CONCRETE,0);
+    // Box3D reserves world slots from a process-wide pool. Pair creation with
+    // the same lock used by swat_sim_reset/close; construction and stepping of
+    // the reserved, separate worlds can still run in parallel.
+#pragma omp critical(swat_world_lifecycle)
+    { swat_world_init(&s->world); }
+    swat_world_box(&s->world,(b3Pos){0,-.5f,0},swat_v(10,.5f,8),SWAT_CONCRETE,0);
     float offset=(swat_rand01(&s->rng)-.5f)*.6f; b3Pos start={-4,0,offset}; env->goal=(b3Pos){4,0,offset};
     if(stage==1) {
         for(int i=0;i<6;i++) swat_world_box(&s->world,(b3Pos){i*.5f+.25f,(i+1)*.1f,offset},swat_v(.25f,(i+1)*.1f,.9f),SWAT_WOOD,0);

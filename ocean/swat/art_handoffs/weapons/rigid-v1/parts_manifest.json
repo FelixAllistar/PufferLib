@@ -1,0 +1,26 @@
+{
+  "format": "raw byte concatenation; not independently extractable ZIP files",
+  "original_archive": {
+    "file": "rigid-rifle7-textured-and-sidearm50-reference-v1.zip",
+    "size_bytes": 43941270,
+    "sha256": "aabbd0fd0318b87ebcae27e106290cc2ef2dd7341c4c5c45a8c91674a7272407"
+  },
+  "parts_in_order": [
+    {
+      "file": "rigid-rifle7-textured-and-sidearm50-reference-v1.zip.part01",
+      "size_bytes": 21970635,
+      "sha256": "c7cf7edacf89b6780634c94936772bc60788bf205b1242f5b233a28b33018a76"
+    },
+    {
+      "file": "rigid-rifle7-textured-and-sidearm50-reference-v1.zip.part02",
+      "size_bytes": 21970635,
+      "sha256": "6a933afb44a3d7a41e402abdc4399e498d1fe17b24f30e180f59725ce0f5f66e"
+    }
+  ],
+  "verification": {
+    "recombined_sha256_matches_original": true,
+    "zip_crc": "passed",
+    "archive_member_sha256": "all manifest entries passed"
+  },
+  "instructions": "Download both parts and reassemble.py into one folder. Run python reassemble.py. It verifies both parts, reconstructs the original ZIP, verifies its hash and CRC, then leaves the ZIP ready to extract. No source or texture bytes have changed."
+}

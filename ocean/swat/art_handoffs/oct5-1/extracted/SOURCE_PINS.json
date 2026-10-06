@@ -1,0 +1,51 @@
+{
+  "source": "walk right",
+  "source_path": "/workspace/scratch/eac4961518d4/attachments/3107ee81-c21a-4492-8d1e-823c29714b3f/walk right.fbx.bin",
+  "source_sha256": "80f0debe85112dc5ae73fdd60d035cc5db3c343509a0e9541166264137a4fd82",
+  "source_fps": 60,
+  "source_frames": [
+    1.0,
+    61.0
+  ],
+  "duration": 1.0,
+  "native_key_spacing_target_frames": 0.5,
+  "action": "Rebuilt Upright Native Frame / walk right",
+  "baseline_action": "Rebuild Carry Reference / Stock Cleared FPS Idle",
+  "grounding_hz": 240,
+  "dense_check_hz": 480,
+  "root_vector_removed_m": [
+    -1.9212615489959717,
+    -9.782612323760986e-06,
+    -4.76837158203125e-07
+  ],
+  "nominal_speed_m_s": 1.921261549020877,
+  "rest_world_rotation_element_max_difference": 0.019023293591365453,
+  "ground_policy": "Same native-plane knee IK and4mm sole target; solve density240Hz instead of prior120Hz; no XY foot pin or deliberate source style change",
+  "source_shoulder_yaw_range_deg": 2.3135203829133317,
+  "candidate_shoulder_yaw_range_deg": 2.313518174285406,
+  "source_shoulder_yaw_max_error_deg": 2.626909378733444e-05,
+  "gaze_world_max_error_deg": 2.9575586669422044e-05,
+  "hips_source_world_max_error_deg": 2.555622776104164e-05,
+  "feet_source_world_max_error_deg": 4.1123184440875915e-05,
+  "minimum_dense_sole_z_m": 0.003916848450899124,
+  "minimum_solver_sole_z_m": 0.003999929875135422,
+  "maximum_single_pass_boot_lift_m": 0.0156890799254179,
+  "knee_pole_loop_overlay_deg": {
+    "Left": 0.0,
+    "Right": 0.0
+  },
+  "axial_loop_overlay_deg": {},
+  "endpoint_matrix_max_difference": 0.000793159008026123,
+  "unexpected_channel_changes": [],
+  "changed_curve_count": 180,
+  "status": "candidate_pending_visual_and_library_parity_gate",
+  "elapsed_s": 3.868030548095703,
+  "action_library_parity": {
+    "curve_signatures_equal": true,
+    "samples": 121,
+    "all_bone_matrix_max_difference": 0.0
+  },
+  "original_library": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/all16_actions.blend",
+  "original_library_sha256": "f7e24cfd7a2f5e43f2a8e01fc6d0b3e58946da4e1ed9ba0e16794650bef65a49",
+  "manifest_sha256": "01649bec45c342e21d12b651d29a814b33366a43a4fa9689e3d0de195fbe8f28"
+}

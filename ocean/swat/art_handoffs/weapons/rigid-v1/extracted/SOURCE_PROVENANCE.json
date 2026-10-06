@@ -1,0 +1,88 @@
+{
+  "schema": "swat-rigid-weapon-provenance/1",
+  "source_origin": "Existing user-supplied weapon uploads and immutable existing character-work geometry; no newly downloaded model or texture",
+  "rights_status": "Source product/license text not established here. Private authorized integration handoff only; public redistribution not approved.",
+  "rifle_geometry": {
+    "file": "upright16_editable_geometry_base.blend",
+    "sha256": "19d79d3eab5a0974ce0c1edc8ace6a2b27327f6df56a71bb85f533c63522628f",
+    "selected_objects": [
+      "Rifle 7",
+      "Removed magazine"
+    ],
+    "units": "Existing game-scale source mesh, 0.90 m rifle overall forward length; no additional scale"
+  },
+  "rifle_original_upload": {
+    "file": "7.fbx.bin",
+    "sha256": "6e4be0a056f2934ae74513a262472abc30475c532932b7c233775e476bdb83f8",
+    "note": "Historical original FBX; extraction uses the existing normalized game-scale rest geometry named above"
+  },
+  "rifle_texture_inputs": [
+    {
+      "role": "BaseColor",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_BaseColor.png",
+      "sha256": "82ba8169d041537751ba1143ccadb37181b59e848874c49cce770f2aac42f425",
+      "bytes": 13876902,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "sRGB"
+    },
+    {
+      "role": "Metallic",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_Metallic.png",
+      "sha256": "bbd66a30ffcbbd01df44711a0cfda79c76da79e12272a97da1bd9209f8030c09",
+      "bytes": 7661476,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "Non-Color"
+    },
+    {
+      "role": "Roughness",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_Roughness.png",
+      "sha256": "d09db6b4efe94cfbbf479566cd40861463a84a89934745481a14c276142dc024",
+      "bytes": 7237378,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "Non-Color"
+    },
+    {
+      "role": "Normal",
+      "file": "7_uv_checker_material_uv_grid_4096x4096_Normal.png",
+      "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+      "bytes": 4164967,
+      "size": [
+        4096,
+        4096
+      ],
+      "colorspace": "Non-Color"
+    }
+  ],
+  "unused_height_map": {
+    "file": "7_uv_checker_material_uv_grid_4096x4096_Height.png",
+    "sha256": "7ba2f1eca6505fe4b2e46f3a590a0a14c3f1e049d20a12a9c41ab4c42b189b99",
+    "reason": "No displacement or geometry modification requested"
+  },
+  "sidearm_geometry": {
+    "file": "50.fbx.bin",
+    "sha256": "afad5811b629a9c2abcabdd12dcc812d33bbb0d175375fa3719e3b5193299048",
+    "fbx_unit_scale_factor_cm": 1,
+    "authored_fbx_object_scale_approx": 49.0708,
+    "imported_blender_scale_approx": 0.490708,
+    "intended_physical_scale": "unresolved; exported source-scale reference"
+  },
+  "sidearm_textures": "No FBX Texture/Video object or matching image files found in the existing sources",
+  "input_integrity": "All selected original source hashes verified unchanged after extraction. F GLB remains unchanged.",
+  "engine_responsibility": [
+    "model loader",
+    "PBR/lighting",
+    "achieved-pose calibration",
+    "hand and shoulder fitting",
+    "runtime scale decision for sidearm",
+    "reload and simulation timing"
+  ]
+}

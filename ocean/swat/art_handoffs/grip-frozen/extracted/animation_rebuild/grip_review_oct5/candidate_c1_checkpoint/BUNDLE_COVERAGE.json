@@ -1,0 +1,18 @@
+{
+  "visual_cache_mapping": {
+    "animation_rebuild/grip_review_oct5/source_inspection/F/left_inner.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_left_inner.jpg",
+    "animation_rebuild/grip_review_oct5/source_inspection/F/left_below.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_left_below.jpg",
+    "animation_rebuild/grip_review_oct5/source_inspection/F/left_outer.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_left_outer.jpg",
+    "animation_rebuild/grip_review_oct5/source_inspection/F/near_visor_inspection.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/F_near_visor_inspection.jpg",
+    "animation_rebuild/grip_review_oct5/candidate_c1/views/left_inner.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_left_inner.jpg",
+    "animation_rebuild/grip_review_oct5/candidate_c1/views/left_below.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_left_below.jpg",
+    "animation_rebuild/grip_review_oct5/candidate_c1/views/left_outer.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_left_outer.jpg",
+    "animation_rebuild/grip_review_oct5/candidate_c1/views/near_visor_inspection.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_near_visor_inspection.jpg",
+    "animation_rebuild/grip_review_oct5/candidate_c_review/crease_views/A_oblique.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/A_crease_oblique.jpg",
+    "animation_rebuild/grip_review_oct5/candidate_c_review/crease_views/C_oblique.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C_crease_oblique.jpg",
+    "animation_rebuild/grip_review_oct5/candidate_c1_review/crease_views/C1_oblique.png": "animation_rebuild/grip_review_oct5/candidate_c1_checkpoint/review_images/C1_crease_oblique.jpg"
+  },
+  "original_source_and_numeric_reports": "Unchanged; complete selected native surface reports and scripts included",
+  "omissions": "Original lossless render PNG caches are omitted for a compact checkpoint. High-quality review JPEGs and final panels are included; renders can be reproduced from the packed sources and exact camera definitions. Earlier C numerical-debug blends/logs and duplicated generated replay output are omitted.",
+  "scope": "One static derivative; exact C and F dependencies included. No R5 transfer, new GLB, bank replacement, runtime or ADS approval."
+}

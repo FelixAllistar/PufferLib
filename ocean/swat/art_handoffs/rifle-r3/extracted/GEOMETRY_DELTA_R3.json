@@ -1,0 +1,143 @@
+{
+  "base_r2_sha256": "09d659865fb4d75aaed64b91f973e98ae178d12ffd9df42b8fc401cac25fce98",
+  "geometry_only_sha256": "ced35b875fe8cb35688f9b6b8854ce004b0cb7b126503b8b35e9dbdb9a3f12e8",
+  "geometry_only_bytes": 35981128,
+  "scopes": [
+    {
+      "component": "rear_stalk",
+      "old_triangles": 92,
+      "new_vertices": 1080,
+      "new_triangles": 912,
+      "bounds_source_engine": [
+        [
+          0.2919219732284546,
+          0.08096573874354362,
+          -0.005171068012714386
+        ],
+        [
+          0.3040476441383362,
+          0.12080532684922218,
+          0.005171270342543721
+        ]
+      ],
+      "bounds_patch_engine": [
+        [
+          0.2919219732284546,
+          0.08096574246883392,
+          -0.005171068012714386
+        ],
+        [
+          0.3040476441383362,
+          0.12069635093212128,
+          0.00517126964405179
+        ]
+      ]
+    },
+    {
+      "component": "rear_sight_base",
+      "old_triangles": 164,
+      "new_vertices": 1175,
+      "new_triangles": 988,
+      "bounds_source_engine": [
+        [
+          0.28903526067733765,
+          0.07081945613026619,
+          -0.015138319693505764
+        ],
+        [
+          0.33073590695858,
+          0.09173815324902534,
+          0.015138501301407814
+        ]
+      ],
+      "bounds_patch_engine": [
+        [
+          0.28903526067733765,
+          0.07081945240497589,
+          -0.015138319693505764
+        ],
+        [
+          0.3307359218597412,
+          0.09173814952373505,
+          0.01513850037008524
+        ]
+      ]
+    },
+    {
+      "component": "receiver_upper",
+      "old_triangles": 260,
+      "new_vertices": 1910,
+      "new_triangles": 1365,
+      "bounds_source_engine": [
+        [
+          0.24435773491859436,
+          0.022912099957466125,
+          -0.018151232041418552
+        ],
+        [
+          0.46568405628204346,
+          0.06269272789359093,
+          0.022154861129820347
+        ]
+      ],
+      "bounds_patch_engine": [
+        [
+          0.24435773491859436,
+          0.022912099957466125,
+          -0.018151231110095978
+        ],
+        [
+          0.46568405628204346,
+          0.06269273161888123,
+          0.022154860198497772
+        ]
+      ]
+    }
+  ],
+  "r2_triangles_retained_exact": 10717,
+  "r2_triangles_replaced": 516,
+  "body_vertices_before_after": [
+    15951,
+    20116
+  ],
+  "body_triangles_before_after": [
+    11233,
+    13982
+  ],
+  "ring_entire_r2_geometry_untouched": true,
+  "all_original_r2_vertex_attribute_prefixes_byte_identical": true,
+  "magazine_payload_untouched": true,
+  "textures_and_materials_byte_identical_to_r2": true,
+  "bounds_before": [
+    [
+      -1.0090490665248808e-09,
+      -0.12666592001914978,
+      -0.030266722664237022
+    ],
+    [
+      0.8999999761581421,
+      0.13055996596813202,
+      0.032860588282346725
+    ]
+  ],
+  "bounds_after": [
+    [
+      -1.0090490665248808e-09,
+      -0.12666592001914978,
+      -0.030266722664237022
+    ],
+    [
+      0.8999999761581421,
+      0.13055996596813202,
+      0.032860588282346725
+    ]
+  ],
+  "binding_landmarks_unchanged": true,
+  "hand_contact_source_components_unchanged": [
+    "pistol grip",
+    "support lower rail",
+    "stock pad",
+    "trigger/guard"
+  ],
+  "receiver_geometry_limit": "Only edges whose two endpoints are forward of X=.315 m were eligible for bevel; rear grip-side edge positions excluded."
+}

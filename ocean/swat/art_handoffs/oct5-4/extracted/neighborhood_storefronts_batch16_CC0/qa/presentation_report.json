@@ -1,0 +1,134 @@
+{
+  "status": "pass",
+  "errors": [],
+  "renderer": "Blender 4.3.2 / Cycles CPU",
+  "cpu_threads": 2,
+  "final_resolution": [
+    1120,
+    784
+  ],
+  "samples_max": 80,
+  "adaptive_threshold": 0.03,
+  "denoising": false,
+  "reason_no_denoising": "Installed Blender build has no OpenImageDenoise support; final renders use unfiltered actual samples.",
+  "view_transform": "AgX",
+  "look": "AgX - Medium High Contrast",
+  "exposure": 0.5,
+  "new_asset_preview_count": 24,
+  "cameras": [
+    {
+      "name": "01_street_front",
+      "position_source_m": [
+        9.0,
+        -11.0,
+        1.7200000286102295
+      ],
+      "type": "PERSP",
+      "lens_mm": 27.0,
+      "orthographic_scale_m": null
+    },
+    {
+      "name": "02_laundromat",
+      "position_source_m": [
+        -2.8299999237060547,
+        0.699999988079071,
+        1.649999976158142
+      ],
+      "type": "PERSP",
+      "lens_mm": 20.0,
+      "orthographic_scale_m": null
+    },
+    {
+      "name": "03_pawn_repair",
+      "position_source_m": [
+        3.0299999713897705,
+        0.7200000286102295,
+        1.649999976158142
+      ],
+      "type": "PERSP",
+      "lens_mm": 20.0,
+      "orthographic_scale_m": null
+    },
+    {
+      "name": "04_shared_service",
+      "position_source_m": [
+        -3.049999952316284,
+        7.099999904632568,
+        1.649999976158142
+      ],
+      "type": "PERSP",
+      "lens_mm": 24.0,
+      "orthographic_scale_m": null
+    },
+    {
+      "name": "05_cutaway",
+      "position_source_m": [
+        13.852912902832031,
+        -17.225040435791016,
+        23.858800888061523
+      ],
+      "type": "ORTHO",
+      "lens_mm": 35.0,
+      "orthographic_scale_m": 19.854093551635742
+    }
+  ],
+  "renders": [
+    {
+      "file": "01_street_front.png",
+      "size_px": [
+        1120,
+        784
+      ],
+      "sha256": "b43dd8e6d69a8f74be8869b82b28c88639b21c323ea6566556312e1f6d4f02a4",
+      "finite_pixels": true,
+      "red_channel_range": 0.9725490808486938,
+      "status": "pass"
+    },
+    {
+      "file": "02_laundromat.png",
+      "size_px": [
+        1120,
+        784
+      ],
+      "sha256": "9e6b005c45dd6d7b4048aeed009c7c43405dacf6a5ed84c6c0149021470cf422",
+      "finite_pixels": true,
+      "red_channel_range": 0.960784375667572,
+      "status": "pass"
+    },
+    {
+      "file": "03_pawn_repair.png",
+      "size_px": [
+        1120,
+        784
+      ],
+      "sha256": "bfbe6b24eaa4169a06bc6a0eb96b792b7fd3410f5fcf8385bc09001c7d6283ff",
+      "finite_pixels": true,
+      "red_channel_range": 0.9686275124549866,
+      "status": "pass"
+    },
+    {
+      "file": "04_shared_service.png",
+      "size_px": [
+        1120,
+        784
+      ],
+      "sha256": "4e1ad3295ee243b42cdbf9fdf7fab3452aee68d229b1924e068977eb81487719",
+      "finite_pixels": true,
+      "red_channel_range": 0.9450981020927429,
+      "status": "pass"
+    },
+    {
+      "file": "05_cutaway.png",
+      "size_px": [
+        1120,
+        784
+      ],
+      "sha256": "5a95d78684190cad753d09ef3e26f30965c6e95e48464cd7baec98bcc6fb962f",
+      "finite_pixels": true,
+      "red_channel_range": 0.9960784912109375,
+      "status": "pass"
+    }
+  ],
+  "visual_review": "qa/visual_review.md",
+  "scope": "Verifies intended camera heights and actual nonempty geometry renders. Visual inspection is recorded separately; no engine screenshots or runtime validation claimed."
+}

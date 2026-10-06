@@ -1,0 +1,592 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "materials": [
+    {
+      "name": "Rebuilt carrier cloth",
+      "base_color_exact": true,
+      "roughness_exact": true,
+      "metallic_exact": true,
+      "source_color_untextured": true,
+      "source_roughness_untextured": true,
+      "source_metallic_untextured": true,
+      "double_sided": true,
+      "opaque": true
+    },
+    {
+      "name": "SWAT_Gear_Matte_Polymer",
+      "base_color_exact": true,
+      "roughness_exact": true,
+      "metallic_exact": true,
+      "source_color_untextured": true,
+      "source_roughness_untextured": true,
+      "source_metallic_untextured": true,
+      "double_sided": true,
+      "opaque": true
+    },
+    {
+      "name": "SWAT_Gear_Soft_Padding",
+      "base_color_exact": true,
+      "roughness_exact": true,
+      "metallic_exact": true,
+      "source_color_untextured": true,
+      "source_roughness_untextured": true,
+      "source_metallic_untextured": true,
+      "double_sided": true,
+      "opaque": true
+    },
+    {
+      "name": "Ch15_body.001",
+      "base_color_exact": true,
+      "roughness_exact": true,
+      "metallic_exact": true,
+      "source_color_untextured": true,
+      "source_roughness_untextured": true,
+      "source_metallic_untextured": true,
+      "double_sided": true,
+      "opaque": true
+    },
+    {
+      "name": "Ch15_body1.001",
+      "base_color_exact": true,
+      "roughness_exact": true,
+      "metallic_exact": true,
+      "source_color_untextured": true,
+      "source_roughness_untextured": true,
+      "source_metallic_untextured": true,
+      "double_sided": true,
+      "opaque": true
+    },
+    {
+      "name": "uv_checker_material_uv_grid_4096x4096",
+      "base_color_exact": true,
+      "roughness_exact": true,
+      "metallic_exact": true,
+      "source_color_untextured": true,
+      "source_roughness_untextured": true,
+      "source_metallic_untextured": true,
+      "double_sided": true,
+      "opaque": true
+    }
+  ],
+  "untextured_source_and_binary": true,
+  "no_unapproved_ads_clip": true,
+  "nine_mesh_names": [
+    "Rebuilt spare magazine sleeve",
+    "SWAT_ElbowCap_L",
+    "SWAT_ElbowCap_R",
+    "SWAT_Headset_L",
+    "SWAT_Headset_R",
+    "SWAT_Wearer",
+    "Rifle 7",
+    "Removed magazine",
+    "Fresh magazine"
+  ],
+  "72_bone_mapping": [
+    {
+      "bone": "mixamorig:Hips",
+      "source_F_bone_index": 0,
+      "gltf_node_index": 68,
+      "gltf_skin_joint_slot": 0,
+      "parent": "SWAT_Mixamo_Rig"
+    },
+    {
+      "bone": "mixamorig:Spine",
+      "source_F_bone_index": 1,
+      "gltf_node_index": 57,
+      "gltf_skin_joint_slot": 1,
+      "parent": "mixamorig:Hips"
+    },
+    {
+      "bone": "mixamorig:Spine1",
+      "source_F_bone_index": 2,
+      "gltf_node_index": 56,
+      "gltf_skin_joint_slot": 2,
+      "parent": "mixamorig:Spine"
+    },
+    {
+      "bone": "mixamorig:Spine2",
+      "source_F_bone_index": 3,
+      "gltf_node_index": 55,
+      "gltf_skin_joint_slot": 3,
+      "parent": "mixamorig:Spine1"
+    },
+    {
+      "bone": "mixamorig:Neck",
+      "source_F_bone_index": 4,
+      "gltf_node_index": 2,
+      "gltf_skin_joint_slot": 4,
+      "parent": "mixamorig:Spine2"
+    },
+    {
+      "bone": "mixamorig:Head",
+      "source_F_bone_index": 5,
+      "gltf_node_index": 1,
+      "gltf_skin_joint_slot": 5,
+      "parent": "mixamorig:Neck"
+    },
+    {
+      "bone": "mixamorig:HeadTop_End",
+      "source_F_bone_index": 6,
+      "gltf_node_index": 0,
+      "gltf_skin_joint_slot": 6,
+      "parent": "mixamorig:Head"
+    },
+    {
+      "bone": "mixamorig:LeftShoulder",
+      "source_F_bone_index": 7,
+      "gltf_node_index": 27,
+      "gltf_skin_joint_slot": 7,
+      "parent": "mixamorig:Spine2"
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "source_F_bone_index": 8,
+      "gltf_node_index": 26,
+      "gltf_skin_joint_slot": 8,
+      "parent": "mixamorig:LeftShoulder"
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "source_F_bone_index": 9,
+      "gltf_node_index": 24,
+      "gltf_skin_joint_slot": 9,
+      "parent": "mixamorig:LeftArm"
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "source_F_bone_index": 10,
+      "gltf_node_index": 23,
+      "gltf_skin_joint_slot": 10,
+      "parent": "mixamorig:LeftForeArm"
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "source_F_bone_index": 11,
+      "gltf_node_index": 6,
+      "gltf_skin_joint_slot": 11,
+      "parent": "mixamorig:LeftHand"
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "source_F_bone_index": 12,
+      "gltf_node_index": 5,
+      "gltf_skin_joint_slot": 12,
+      "parent": "mixamorig:LeftHandThumb1"
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "source_F_bone_index": 13,
+      "gltf_node_index": 4,
+      "gltf_skin_joint_slot": 13,
+      "parent": "mixamorig:LeftHandThumb2"
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "source_F_bone_index": 14,
+      "gltf_node_index": 3,
+      "gltf_skin_joint_slot": 14,
+      "parent": "mixamorig:LeftHandThumb3"
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "source_F_bone_index": 15,
+      "gltf_node_index": 10,
+      "gltf_skin_joint_slot": 15,
+      "parent": "mixamorig:LeftHand"
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "source_F_bone_index": 16,
+      "gltf_node_index": 9,
+      "gltf_skin_joint_slot": 16,
+      "parent": "mixamorig:LeftHandIndex1"
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "source_F_bone_index": 17,
+      "gltf_node_index": 8,
+      "gltf_skin_joint_slot": 17,
+      "parent": "mixamorig:LeftHandIndex2"
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "source_F_bone_index": 18,
+      "gltf_node_index": 7,
+      "gltf_skin_joint_slot": 18,
+      "parent": "mixamorig:LeftHandIndex3"
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "source_F_bone_index": 19,
+      "gltf_node_index": 14,
+      "gltf_skin_joint_slot": 19,
+      "parent": "mixamorig:LeftHand"
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "source_F_bone_index": 20,
+      "gltf_node_index": 13,
+      "gltf_skin_joint_slot": 20,
+      "parent": "mixamorig:LeftHandMiddle1"
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "source_F_bone_index": 21,
+      "gltf_node_index": 12,
+      "gltf_skin_joint_slot": 21,
+      "parent": "mixamorig:LeftHandMiddle2"
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "source_F_bone_index": 22,
+      "gltf_node_index": 11,
+      "gltf_skin_joint_slot": 22,
+      "parent": "mixamorig:LeftHandMiddle3"
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "source_F_bone_index": 23,
+      "gltf_node_index": 18,
+      "gltf_skin_joint_slot": 23,
+      "parent": "mixamorig:LeftHand"
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "source_F_bone_index": 24,
+      "gltf_node_index": 17,
+      "gltf_skin_joint_slot": 24,
+      "parent": "mixamorig:LeftHandRing1"
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "source_F_bone_index": 25,
+      "gltf_node_index": 16,
+      "gltf_skin_joint_slot": 25,
+      "parent": "mixamorig:LeftHandRing2"
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "source_F_bone_index": 26,
+      "gltf_node_index": 15,
+      "gltf_skin_joint_slot": 26,
+      "parent": "mixamorig:LeftHandRing3"
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "source_F_bone_index": 27,
+      "gltf_node_index": 22,
+      "gltf_skin_joint_slot": 27,
+      "parent": "mixamorig:LeftHand"
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "source_F_bone_index": 28,
+      "gltf_node_index": 21,
+      "gltf_skin_joint_slot": 28,
+      "parent": "mixamorig:LeftHandPinky1"
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "source_F_bone_index": 29,
+      "gltf_node_index": 20,
+      "gltf_skin_joint_slot": 29,
+      "parent": "mixamorig:LeftHandPinky2"
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "source_F_bone_index": 30,
+      "gltf_node_index": 19,
+      "gltf_skin_joint_slot": 30,
+      "parent": "mixamorig:LeftHandPinky3"
+    },
+    {
+      "bone": "Gear_Elbow_L",
+      "source_F_bone_index": 31,
+      "gltf_node_index": 25,
+      "gltf_skin_joint_slot": 31,
+      "parent": "mixamorig:LeftArm"
+    },
+    {
+      "bone": "mixamorig:RightShoulder",
+      "source_F_bone_index": 32,
+      "gltf_node_index": 54,
+      "gltf_skin_joint_slot": 32,
+      "parent": "mixamorig:Spine2"
+    },
+    {
+      "bone": "mixamorig:RightArm",
+      "source_F_bone_index": 33,
+      "gltf_node_index": 53,
+      "gltf_skin_joint_slot": 33,
+      "parent": "mixamorig:RightShoulder"
+    },
+    {
+      "bone": "mixamorig:RightForeArm",
+      "source_F_bone_index": 34,
+      "gltf_node_index": 51,
+      "gltf_skin_joint_slot": 34,
+      "parent": "mixamorig:RightArm"
+    },
+    {
+      "bone": "mixamorig:RightHand",
+      "source_F_bone_index": 35,
+      "gltf_node_index": 50,
+      "gltf_skin_joint_slot": 35,
+      "parent": "mixamorig:RightForeArm"
+    },
+    {
+      "bone": "mixamorig:RightHandThumb1",
+      "source_F_bone_index": 36,
+      "gltf_node_index": 31,
+      "gltf_skin_joint_slot": 36,
+      "parent": "mixamorig:RightHand"
+    },
+    {
+      "bone": "mixamorig:RightHandThumb2",
+      "source_F_bone_index": 37,
+      "gltf_node_index": 30,
+      "gltf_skin_joint_slot": 37,
+      "parent": "mixamorig:RightHandThumb1"
+    },
+    {
+      "bone": "mixamorig:RightHandThumb3",
+      "source_F_bone_index": 38,
+      "gltf_node_index": 29,
+      "gltf_skin_joint_slot": 38,
+      "parent": "mixamorig:RightHandThumb2"
+    },
+    {
+      "bone": "mixamorig:RightHandThumb4",
+      "source_F_bone_index": 39,
+      "gltf_node_index": 28,
+      "gltf_skin_joint_slot": 39,
+      "parent": "mixamorig:RightHandThumb3"
+    },
+    {
+      "bone": "mixamorig:RightHandIndex1",
+      "source_F_bone_index": 40,
+      "gltf_node_index": 35,
+      "gltf_skin_joint_slot": 40,
+      "parent": "mixamorig:RightHand"
+    },
+    {
+      "bone": "mixamorig:RightHandIndex2",
+      "source_F_bone_index": 41,
+      "gltf_node_index": 34,
+      "gltf_skin_joint_slot": 41,
+      "parent": "mixamorig:RightHandIndex1"
+    },
+    {
+      "bone": "mixamorig:RightHandIndex3",
+      "source_F_bone_index": 42,
+      "gltf_node_index": 33,
+      "gltf_skin_joint_slot": 42,
+      "parent": "mixamorig:RightHandIndex2"
+    },
+    {
+      "bone": "mixamorig:RightHandIndex4",
+      "source_F_bone_index": 43,
+      "gltf_node_index": 32,
+      "gltf_skin_joint_slot": 43,
+      "parent": "mixamorig:RightHandIndex3"
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle1",
+      "source_F_bone_index": 44,
+      "gltf_node_index": 39,
+      "gltf_skin_joint_slot": 44,
+      "parent": "mixamorig:RightHand"
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle2",
+      "source_F_bone_index": 45,
+      "gltf_node_index": 38,
+      "gltf_skin_joint_slot": 45,
+      "parent": "mixamorig:RightHandMiddle1"
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle3",
+      "source_F_bone_index": 46,
+      "gltf_node_index": 37,
+      "gltf_skin_joint_slot": 46,
+      "parent": "mixamorig:RightHandMiddle2"
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle4",
+      "source_F_bone_index": 47,
+      "gltf_node_index": 36,
+      "gltf_skin_joint_slot": 47,
+      "parent": "mixamorig:RightHandMiddle3"
+    },
+    {
+      "bone": "mixamorig:RightHandRing1",
+      "source_F_bone_index": 48,
+      "gltf_node_index": 43,
+      "gltf_skin_joint_slot": 48,
+      "parent": "mixamorig:RightHand"
+    },
+    {
+      "bone": "mixamorig:RightHandRing2",
+      "source_F_bone_index": 49,
+      "gltf_node_index": 42,
+      "gltf_skin_joint_slot": 49,
+      "parent": "mixamorig:RightHandRing1"
+    },
+    {
+      "bone": "mixamorig:RightHandRing3",
+      "source_F_bone_index": 50,
+      "gltf_node_index": 41,
+      "gltf_skin_joint_slot": 50,
+      "parent": "mixamorig:RightHandRing2"
+    },
+    {
+      "bone": "mixamorig:RightHandRing4",
+      "source_F_bone_index": 51,
+      "gltf_node_index": 40,
+      "gltf_skin_joint_slot": 51,
+      "parent": "mixamorig:RightHandRing3"
+    },
+    {
+      "bone": "mixamorig:RightHandPinky1",
+      "source_F_bone_index": 52,
+      "gltf_node_index": 47,
+      "gltf_skin_joint_slot": 52,
+      "parent": "mixamorig:RightHand"
+    },
+    {
+      "bone": "mixamorig:RightHandPinky2",
+      "source_F_bone_index": 53,
+      "gltf_node_index": 46,
+      "gltf_skin_joint_slot": 53,
+      "parent": "mixamorig:RightHandPinky1"
+    },
+    {
+      "bone": "mixamorig:RightHandPinky3",
+      "source_F_bone_index": 54,
+      "gltf_node_index": 45,
+      "gltf_skin_joint_slot": 54,
+      "parent": "mixamorig:RightHandPinky2"
+    },
+    {
+      "bone": "mixamorig:RightHandPinky4",
+      "source_F_bone_index": 55,
+      "gltf_node_index": 44,
+      "gltf_skin_joint_slot": 55,
+      "parent": "mixamorig:RightHandPinky3"
+    },
+    {
+      "bone": "RifleSocket",
+      "source_F_bone_index": 56,
+      "gltf_node_index": 49,
+      "gltf_skin_joint_slot": 56,
+      "parent": "mixamorig:RightHand"
+    },
+    {
+      "bone": "Muzzle",
+      "source_F_bone_index": 57,
+      "gltf_node_index": 48,
+      "gltf_skin_joint_slot": 57,
+      "parent": "RifleSocket"
+    },
+    {
+      "bone": "Gear_Elbow_R",
+      "source_F_bone_index": 58,
+      "gltf_node_index": 52,
+      "gltf_skin_joint_slot": 58,
+      "parent": "mixamorig:RightArm"
+    },
+    {
+      "bone": "mixamorig:LeftUpLeg",
+      "source_F_bone_index": 59,
+      "gltf_node_index": 62,
+      "gltf_skin_joint_slot": 59,
+      "parent": "mixamorig:Hips"
+    },
+    {
+      "bone": "mixamorig:LeftLeg",
+      "source_F_bone_index": 60,
+      "gltf_node_index": 61,
+      "gltf_skin_joint_slot": 60,
+      "parent": "mixamorig:LeftUpLeg"
+    },
+    {
+      "bone": "mixamorig:LeftFoot",
+      "source_F_bone_index": 61,
+      "gltf_node_index": 60,
+      "gltf_skin_joint_slot": 61,
+      "parent": "mixamorig:LeftLeg"
+    },
+    {
+      "bone": "mixamorig:LeftToeBase",
+      "source_F_bone_index": 62,
+      "gltf_node_index": 59,
+      "gltf_skin_joint_slot": 62,
+      "parent": "mixamorig:LeftFoot"
+    },
+    {
+      "bone": "mixamorig:LeftToe_End",
+      "source_F_bone_index": 63,
+      "gltf_node_index": 58,
+      "gltf_skin_joint_slot": 63,
+      "parent": "mixamorig:LeftToeBase"
+    },
+    {
+      "bone": "mixamorig:RightUpLeg",
+      "source_F_bone_index": 64,
+      "gltf_node_index": 67,
+      "gltf_skin_joint_slot": 64,
+      "parent": "mixamorig:Hips"
+    },
+    {
+      "bone": "mixamorig:RightLeg",
+      "source_F_bone_index": 65,
+      "gltf_node_index": 66,
+      "gltf_skin_joint_slot": 65,
+      "parent": "mixamorig:RightUpLeg"
+    },
+    {
+      "bone": "mixamorig:RightFoot",
+      "source_F_bone_index": 66,
+      "gltf_node_index": 65,
+      "gltf_skin_joint_slot": 66,
+      "parent": "mixamorig:RightLeg"
+    },
+    {
+      "bone": "mixamorig:RightToeBase",
+      "source_F_bone_index": 67,
+      "gltf_node_index": 64,
+      "gltf_skin_joint_slot": 67,
+      "parent": "mixamorig:RightFoot"
+    },
+    {
+      "bone": "mixamorig:RightToe_End",
+      "source_F_bone_index": 68,
+      "gltf_node_index": 63,
+      "gltf_skin_joint_slot": 68,
+      "parent": "mixamorig:RightToeBase"
+    },
+    {
+      "bone": "Prop_Rifle",
+      "source_F_bone_index": 69,
+      "gltf_node_index": 69,
+      "gltf_skin_joint_slot": 69,
+      "parent": "SWAT_Mixamo_Rig"
+    },
+    {
+      "bone": "Prop_Magazine_A",
+      "source_F_bone_index": 70,
+      "gltf_node_index": 70,
+      "gltf_skin_joint_slot": 70,
+      "parent": "SWAT_Mixamo_Rig"
+    },
+    {
+      "bone": "Prop_Magazine_B",
+      "source_F_bone_index": 71,
+      "gltf_node_index": 71,
+      "gltf_skin_joint_slot": 71,
+      "parent": "SWAT_Mixamo_Rig"
+    }
+  ],
+  "skinned_character_only": true
+}

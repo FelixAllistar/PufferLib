@@ -1,0 +1,520 @@
+{
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "old_body_vertices": 24850,
+  "retained_body_vertices": 22645,
+  "removed_vertices": 2205,
+  "removed_polygons": 2144,
+  "removed_triangles": 3962,
+  "removed_component_ids": [
+    8676,
+    9916,
+    12404,
+    13098,
+    13704,
+    13712,
+    13776,
+    13884,
+    13892,
+    13956,
+    14596,
+    14834,
+    15733,
+    15971,
+    16480,
+    17134,
+    22065,
+    22196,
+    22203,
+    22955,
+    22959,
+    22983,
+    22991,
+    22992,
+    23093,
+    23705,
+    24637
+  ],
+  "new_parts": [
+    {
+      "name": "SWAT_ElbowCap_L",
+      "bone": "Gear_Elbow_L",
+      "native_vertices": 386,
+      "native_polygons": 768,
+      "weights": "single rigid influence1.0"
+    },
+    {
+      "name": "SWAT_ElbowCap_R",
+      "bone": "Gear_Elbow_R",
+      "native_vertices": 386,
+      "native_polygons": 768,
+      "weights": "single rigid influence1.0"
+    },
+    {
+      "name": "SWAT_Headset_L",
+      "bone": "mixamorig:Head",
+      "native_vertices": 320,
+      "native_polygons": 290,
+      "weights": "single rigid influence1.0"
+    },
+    {
+      "name": "SWAT_Headset_R",
+      "bone": "mixamorig:Head",
+      "native_vertices": 320,
+      "native_polygons": 290,
+      "weights": "single rigid influence1.0"
+    }
+  ],
+  "mesh_inventory": [
+    {
+      "node": 72,
+      "mesh": 0,
+      "name": "Rebuilt spare magazine sleeve",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 144,
+          "triangles": 72,
+          "material_index": 0,
+          "material_name": "Rebuilt carrier cloth",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": null,
+          "UV_range": null,
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 73,
+      "mesh": 1,
+      "name": "SWAT_ElbowCap_L",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 193,
+          "triangles": 352,
+          "material_index": 1,
+          "material_name": "SWAT_Gear_Matte_Polymer",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.3636148273944855,
+              0.36500000953674316
+            ],
+            [
+              0.5836148262023926,
+              0.6349999904632568
+            ]
+          ],
+          "tangent_attribute_present": false
+        },
+        {
+          "primitive": 1,
+          "vertices": 225,
+          "triangles": 416,
+          "material_index": 2,
+          "material_name": "SWAT_Gear_Soft_Padding",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.3636148273944855,
+              0.36500000953674316
+            ],
+            [
+              0.5836148262023926,
+              0.6349999904632568
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 74,
+      "mesh": 2,
+      "name": "SWAT_ElbowCap_R",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 193,
+          "triangles": 352,
+          "material_index": 1,
+          "material_name": "SWAT_Gear_Matte_Polymer",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.3636099696159363,
+              0.36500000953674316
+            ],
+            [
+              0.5836099982261658,
+              0.6349999904632568
+            ]
+          ],
+          "tangent_attribute_present": false
+        },
+        {
+          "primitive": 1,
+          "vertices": 225,
+          "triangles": 416,
+          "material_index": 2,
+          "material_name": "SWAT_Gear_Soft_Padding",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.3636099696159363,
+              0.36500000953674316
+            ],
+            [
+              0.5836099982261658,
+              0.6349999904632568
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 75,
+      "mesh": 3,
+      "name": "SWAT_Headset_L",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 216,
+          "triangles": 384,
+          "material_index": 1,
+          "material_name": "SWAT_Gear_Matte_Polymer",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.9049999713897705,
+              0.15500003099441528
+            ],
+            [
+              1.2450000047683716,
+              0.5249999761581421
+            ]
+          ],
+          "tangent_attribute_present": false
+        },
+        {
+          "primitive": 1,
+          "vertices": 150,
+          "triangles": 252,
+          "material_index": 2,
+          "material_name": "SWAT_Gear_Soft_Padding",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.9049999713897705,
+              0.15855473279953003
+            ],
+            [
+              1.2450000047683716,
+              0.5214452743530273
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 76,
+      "mesh": 4,
+      "name": "SWAT_Headset_R",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 216,
+          "triangles": 384,
+          "material_index": 1,
+          "material_name": "SWAT_Gear_Matte_Polymer",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.9049999713897705,
+              0.15500003099441528
+            ],
+            [
+              1.2450000047683716,
+              0.5249999761581421
+            ]
+          ],
+          "tangent_attribute_present": false
+        },
+        {
+          "primitive": 1,
+          "vertices": 150,
+          "triangles": 252,
+          "material_index": 2,
+          "material_name": "SWAT_Gear_Soft_Padding",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.9049999713897705,
+              0.15855473279953003
+            ],
+            [
+              1.2450000047683716,
+              0.5214452743530273
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 77,
+      "mesh": 5,
+      "name": "SWAT_Wearer",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 7351,
+          "triangles": 13004,
+          "material_index": 3,
+          "material_name": "Ch15_body.001",
+          "original_character_texture_set": "Ch15_1001",
+          "max_influences": 5,
+          "vertices_above_four": 76,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.0021730000153183937,
+              0.004698991775512695
+            ],
+            [
+              0.997747004032135,
+              0.9975829720497131
+            ]
+          ],
+          "tangent_attribute_present": false
+        },
+        {
+          "primitive": 1,
+          "vertices": 21612,
+          "triangles": 29335,
+          "material_index": 4,
+          "material_name": "Ch15_body1.001",
+          "original_character_texture_set": "Ch15_1002",
+          "max_influences": 7,
+          "vertices_above_four": 368,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.0,
+              0.0014410018920898438
+            ],
+            [
+              0.9967020750045776,
+              0.9985589981079102
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 79,
+      "mesh": 6,
+      "name": "Rifle 7",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 14936,
+          "triangles": 10273,
+          "material_index": 5,
+          "material_name": "uv_checker_material_uv_grid_4096x4096",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.0,
+              0.0011656880378723145
+            ],
+            [
+              0.9997324347496033,
+              1.0
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 80,
+      "mesh": 7,
+      "name": "Removed magazine",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 994,
+          "triangles": 780,
+          "material_index": 5,
+          "material_name": "uv_checker_material_uv_grid_4096x4096",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.0009745758143253624,
+              0.05536544322967529
+            ],
+            [
+              0.9999265074729919,
+              0.9985669255256653
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    },
+    {
+      "node": 81,
+      "mesh": 8,
+      "name": "Fresh magazine",
+      "skin": 0,
+      "primitives": [
+        {
+          "primitive": 0,
+          "vertices": 994,
+          "triangles": 780,
+          "material_index": 5,
+          "material_name": "uv_checker_material_uv_grid_4096x4096",
+          "original_character_texture_set": null,
+          "max_influences": 1,
+          "vertices_above_four": 0,
+          "UV": "TEXCOORD_0",
+          "UV_range": [
+            [
+              0.0009745758143253624,
+              0.05536544322967529
+            ],
+            [
+              0.9999265074729919,
+              0.9985669255256653
+            ]
+          ],
+          "tangent_attribute_present": false
+        }
+      ]
+    }
+  ],
+  "material_definitions": [
+    {
+      "doubleSided": true,
+      "name": "Rebuilt carrier cloth",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.054999999701976776,
+          0.07100000232458115,
+          0.06700000166893005,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.75
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "SWAT_Gear_Matte_Polymer",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.09000000357627869,
+          0.10000000149011612,
+          0.10999999940395355,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.7799999713897705
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "SWAT_Gear_Soft_Padding",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.03799999877810478,
+          0.04399999976158142,
+          0.04800000041723251,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.7799999713897705
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "Ch15_body.001",
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0,
+        "roughnessFactor": 0.75
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "Ch15_body1.001",
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0,
+        "roughnessFactor": 0.75
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "uv_checker_material_uv_grid_4096x4096",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.75
+      }
+    }
+  ],
+  "textures_embedded": 0,
+  "material_scope": "Six original-source plain Principled materials; no linked images in selected scenes. New polymer/padding PBR roughness0.78 comes from shader nodes, not datablock roughness0.4. Original9-map character textures remain a separate compatible UV source, not embedded/lost here. New planar gear UVs are untextured and not an old atlas mapping.",
+  "normal_scope": "Retained N\u2192compacted F custom normal change\u22640.034677degrees. Fresh F\u2192GLB normalized/encoded normals have a separate measured small deviation; see independent binary report. Neither comparison is called bit-identical.",
+  "old_bank_compatible": false,
+  "original_rifle_magazine_sleeve_geometry": "Exact unchanged source geometry/weights/UV/materials; see source audit",
+  "native_ID_mapping": "native_vertex_and_polygon_map.json maps original retained wearer IDs; glTF seam-split vertex mapping is supplied independently by parity review"
+}

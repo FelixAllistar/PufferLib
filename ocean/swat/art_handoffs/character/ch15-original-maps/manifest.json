@@ -1,0 +1,99 @@
+{
+  "schema": "swat-original-character-texture-package/1",
+  "status": "Exact original PNG bytes with measured UV/material assignment; runtime material appearance pending",
+  "texture_count": 9,
+  "dimensions": [
+    2048,
+    2048
+  ],
+  "lossy_changes": false,
+  "public_distribution_authorized": false,
+  "target_ready_glb_sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+  "verification": {
+    "source_hashes_match": true,
+    "png_decode_integrity": "PASS",
+    "body_uv_compatibility": "Exact source/target comparison, details in CHARACTER_MATERIAL_INVENTORY.json"
+  },
+  "files": [
+    {
+      "path": "CHARACTER_MATERIAL_INVENTORY.json",
+      "bytes": 18042,
+      "sha256": "c5aac12d18ff313a5fa0ae49d72cc2ac47e35a9c6cc3301d0b096b1bc3533e82"
+    },
+    {
+      "path": "HISTORICAL_README_MIXAMO_ASSETS.md",
+      "bytes": 2047,
+      "sha256": "bded8322f89d2811f8a2d38799d93ce97a1e508b5bdfe750c25f4cdc8dd206a7"
+    },
+    {
+      "path": "HISTORICAL_mixamo_manifest.json",
+      "bytes": 3088,
+      "sha256": "8f6edb0c299dcaadfbe948391891c80d60e2e1a91a21e800754b5337f7cc4d8c"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3470,
+      "sha256": "6c6d94c81dce67a8d850c985574b610be2d3e5bf3141f5345efda0721ae0660f"
+    },
+    {
+      "path": "SOURCE_PROVENANCE.json",
+      "bytes": 1554,
+      "sha256": "97b28adb80b33886562de178d43592832eeedbe64eb8afc591b29734445f6bcd"
+    },
+    {
+      "path": "material_semantics.json",
+      "bytes": 14616,
+      "sha256": "2e6dc4e0167a961f8738442e3d823b892ce8eb50edfd70cc943cd15060cbb37c"
+    },
+    {
+      "path": "texture_bindings.json",
+      "bytes": 6558,
+      "sha256": "769b0f5bbd435cdb75db0737038d2e12a1604bd2836320002a4ca1792a3d7378"
+    },
+    {
+      "path": "textures/Ch15_1001_Diffuse.png",
+      "bytes": 5125157,
+      "sha256": "5e6bab5297c6ad5332cab1c138d3c69cd3967e8945f0784d9e0956e43d5ad8e0"
+    },
+    {
+      "path": "textures/Ch15_1001_Glossiness.png",
+      "bytes": 1901714,
+      "sha256": "271a1f6a98132197ee675a19318fa10f812ca67f47c3f3d17d62f301704a7707"
+    },
+    {
+      "path": "textures/Ch15_1001_Normal.png",
+      "bytes": 8232798,
+      "sha256": "efc31286bafb8063b067ab19e617c43db1620dbef2c5039aef4da44577a24435"
+    },
+    {
+      "path": "textures/Ch15_1001_Specular.png",
+      "bytes": 236627,
+      "sha256": "4bc3de417a225993bc56a4568b2ba14a039936ed79a734c6466831276f1a4f4f"
+    },
+    {
+      "path": "textures/Ch15_1002_Diffuse.png",
+      "bytes": 4351870,
+      "sha256": "fa781e5a2fd6467d21e79dcf591cb63b9a49458fa63353f81350e4f86a2764ab"
+    },
+    {
+      "path": "textures/Ch15_1002_Emissive.png",
+      "bytes": 65117,
+      "sha256": "7cae8cae55c064b7dab345c4ac3b777109bc68b68dff6e0d3738ad2a569c4055"
+    },
+    {
+      "path": "textures/Ch15_1002_Glossiness.png",
+      "bytes": 1696283,
+      "sha256": "d1e4c76e8b578eed3e635430771d03d556cb10d23d05079c348032a9f3300ca4"
+    },
+    {
+      "path": "textures/Ch15_1002_Normal.png",
+      "bytes": 7531552,
+      "sha256": "3468b1eff1ba4b6b0f3e099e00c38f6c1af73912c9e2f1660c0977777aecbb82"
+    },
+    {
+      "path": "textures/Ch15_1002_Specular.png",
+      "bytes": 2616672,
+      "sha256": "f47ed4abdd18a830919d6a68f33850376ff294c2d6c1178bd8da9981292708c4"
+    }
+  ]
+}

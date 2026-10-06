@@ -1,0 +1,370 @@
+{
+  "schema": "independent-upper-gear-f-binary-validation/1",
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "method": "Actual accessor bounds/finiteness checks; independent SLERP/TRS FK; normalized all-influence skinning; all vertices at 361 times plus static neutral using the explicitly reported reference mode; oriented triangles/material IDs and per-corner normals/UVs. No producer imports.",
+  "source_parity": {
+    "status": "PASS",
+    "reference_mode": {
+      "mode": "all-time algebraic skin from independently captured Blender joint matrices, bind positions and normalized native weights",
+      "dense_direct_evaluated_arrays_included": false,
+      "direct_control_times_s": {
+        "neutral": [
+          0.0
+        ],
+        "motion": [
+          0.0,
+          0.25,
+          0.5,
+          0.75,
+          1.0,
+          1.25,
+          1.5,
+          1.75,
+          2.0,
+          2.25,
+          2.5,
+          2.75,
+          3.0
+        ]
+      },
+      "direct_control_checks": [
+        {
+          "label": "neutral",
+          "name": "Fresh magazine",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 1.6282799929369248e-07
+        },
+        {
+          "label": "neutral",
+          "name": "Rebuilt spare magazine sleeve",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 1.3858555197065993e-07
+        },
+        {
+          "label": "neutral",
+          "name": "Removed magazine",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 1.3870815915630404e-07
+        },
+        {
+          "label": "neutral",
+          "name": "Rifle 7",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 1.7600189666771299e-07
+        },
+        {
+          "label": "neutral",
+          "name": "SWAT_ElbowCap_L",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 1.8285905915115688e-07
+        },
+        {
+          "label": "neutral",
+          "name": "SWAT_ElbowCap_R",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 2.2454490992606503e-07
+        },
+        {
+          "label": "neutral",
+          "name": "SWAT_Headset_L",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 1.3200396213279035e-07
+        },
+        {
+          "label": "neutral",
+          "name": "SWAT_Headset_R",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 1.3382461434840604e-07
+        },
+        {
+          "label": "neutral",
+          "name": "SWAT_Wearer",
+          "control_count": 1,
+          "max_algebraic_to_direct_evaluated_error_m": 4.3529652313505636e-07
+        },
+        {
+          "label": "motion",
+          "name": "Fresh magazine",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 1.6282799929369248e-07
+        },
+        {
+          "label": "motion",
+          "name": "Rebuilt spare magazine sleeve",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 1.3858555197065993e-07
+        },
+        {
+          "label": "motion",
+          "name": "Removed magazine",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 1.7211533567715205e-07
+        },
+        {
+          "label": "motion",
+          "name": "Rifle 7",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 1.8654162421555405e-07
+        },
+        {
+          "label": "motion",
+          "name": "SWAT_ElbowCap_L",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 2.3262431158049576e-07
+        },
+        {
+          "label": "motion",
+          "name": "SWAT_ElbowCap_R",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 2.88171098056044e-07
+        },
+        {
+          "label": "motion",
+          "name": "SWAT_Headset_L",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 1.2714779828543878e-07
+        },
+        {
+          "label": "motion",
+          "name": "SWAT_Headset_R",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 1.2859396929911056e-07
+        },
+        {
+          "label": "motion",
+          "name": "SWAT_Wearer",
+          "control_count": 13,
+          "max_algebraic_to_direct_evaluated_error_m": 4.547731005149788e-07
+        }
+      ]
+    },
+    "source_sha256": "7165d1454e0526f01ca85c81f12e0245dfecb22071191918f984477a42c091b1",
+    "source_capture_sha256": "6549a75c6687a0ef758e07e0cc5b3a00c577385160c8b139728b639695659c9f",
+    "joints": 72,
+    "native_parent_names_exact": true,
+    "inverse_bind_max_identity_error": 2.6622670823428507e-07,
+    "all_oriented_triangles_and_material_assignments_exact": true,
+    "all_uv_max_error": 2.9802322387695312e-08,
+    "all_normal_max_vector_error": 8.236857280096899e-05,
+    "all_normalized_weight_max_error": 2.212510108456911e-08,
+    "total_exported_vertices": 47599,
+    "primitives": [
+      {
+        "name": "Rebuilt spare magazine sleeve",
+        "primitive": 0,
+        "vertices": 144,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "Rebuilt carrier cloth",
+        "uv_max_error": 0.0,
+        "normal_max_vector_error": 6.01897634431138e-05
+      },
+      {
+        "name": "SWAT_ElbowCap_L",
+        "primitive": 0,
+        "vertices": 193,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Matte_Polymer",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 7.417677856184713e-05
+      },
+      {
+        "name": "SWAT_ElbowCap_L",
+        "primitive": 1,
+        "vertices": 225,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Soft_Padding",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 7.338555477602823e-05
+      },
+      {
+        "name": "SWAT_ElbowCap_R",
+        "primitive": 0,
+        "vertices": 193,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Matte_Polymer",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 7.144333412959345e-05
+      },
+      {
+        "name": "SWAT_ElbowCap_R",
+        "primitive": 1,
+        "vertices": 225,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Soft_Padding",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 7.572732587163609e-05
+      },
+      {
+        "name": "SWAT_Headset_L",
+        "primitive": 0,
+        "vertices": 216,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Matte_Polymer",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 7.558434790086964e-05
+      },
+      {
+        "name": "SWAT_Headset_L",
+        "primitive": 1,
+        "vertices": 150,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Soft_Padding",
+        "uv_max_error": 0.0,
+        "normal_max_vector_error": 7.454263253843085e-05
+      },
+      {
+        "name": "SWAT_Headset_R",
+        "primitive": 0,
+        "vertices": 216,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Matte_Polymer",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 7.15303916103247e-05
+      },
+      {
+        "name": "SWAT_Headset_R",
+        "primitive": 1,
+        "vertices": 150,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "SWAT_Gear_Soft_Padding",
+        "uv_max_error": 0.0,
+        "normal_max_vector_error": 7.15303916103247e-05
+      },
+      {
+        "name": "SWAT_Wearer",
+        "primitive": 0,
+        "vertices": 7351,
+        "maximum_positive_influences": 5,
+        "max_normalized_weight_error": 2.1133167771303363e-08,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "Ch15_body.001",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 8.117234099131379e-05
+      },
+      {
+        "name": "SWAT_Wearer",
+        "primitive": 1,
+        "vertices": 21612,
+        "maximum_positive_influences": 7,
+        "max_normalized_weight_error": 2.212510108456911e-08,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "Ch15_body1.001",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 8.236857280096899e-05
+      },
+      {
+        "name": "Rifle 7",
+        "primitive": 0,
+        "vertices": 14936,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "uv_checker_material_uv_grid_4096x4096",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 7.951315464269716e-05
+      },
+      {
+        "name": "Removed magazine",
+        "primitive": 0,
+        "vertices": 994,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "uv_checker_material_uv_grid_4096x4096",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 6.958384857470299e-05
+      },
+      {
+        "name": "Fresh magazine",
+        "primitive": 0,
+        "vertices": 994,
+        "maximum_positive_influences": 1,
+        "max_normalized_weight_error": 0.0,
+        "ambiguous_equivalent_bind_matches": 0,
+        "material": "uv_checker_material_uv_grid_4096x4096",
+        "uv_max_error": 2.9802322387695312e-08,
+        "normal_max_vector_error": 6.958384857470299e-05
+      }
+    ],
+    "animations": [
+      {
+        "label": "neutral",
+        "name": "Neutral Carry / Anatomical Gear F",
+        "channels": 216,
+        "keys_per_channel": {
+          "1": 216
+        },
+        "interpolation": [
+          "STEP"
+        ],
+        "time_min_max": [
+          0.0,
+          0.0
+        ],
+        "sample_count": 1,
+        "max_joint_matrix_error": 3.6396624817150447e-07,
+        "max_carrier_matrix_error": 3.6396624817150447e-07,
+        "max_vertex_error_m_by_mesh": {
+          "Fresh magazine": 9.05190830736558e-09,
+          "Rebuilt spare magazine sleeve": 9.92918599005967e-09,
+          "Removed magazine": 4.12921984677081e-09,
+          "Rifle 7": 1.0721918864654988e-08,
+          "SWAT_ElbowCap_L": 2.845520081615228e-08,
+          "SWAT_ElbowCap_R": 4.322107429544755e-08,
+          "SWAT_Headset_L": 9.613198076034705e-09,
+          "SWAT_Headset_R": 1.0687605786557473e-08,
+          "SWAT_Wearer": 8.835023769085259e-08
+        },
+        "endpoint_joint_matrix_delta": 0.0
+      },
+      {
+        "label": "motion",
+        "name": "Upper Gear F / Three-second Carry Articulation",
+        "channels": 216,
+        "keys_per_channel": {
+          "181": 216
+        },
+        "interpolation": [
+          "LINEAR"
+        ],
+        "time_min_max": [
+          0.0,
+          3.0
+        ],
+        "sample_count": 361,
+        "max_joint_matrix_error": 7.896352501868265e-07,
+        "max_carrier_matrix_error": 7.536503587868282e-07,
+        "max_vertex_error_m_by_mesh": {
+          "Fresh magazine": 9.051908344093936e-09,
+          "Rebuilt spare magazine sleeve": 9.929186127051086e-09,
+          "Removed magazine": 7.844488456799425e-08,
+          "Rifle 7": 1.0331780944100489e-07,
+          "SWAT_ElbowCap_L": 2.6431788938289483e-07,
+          "SWAT_ElbowCap_R": 2.0596197381330736e-07,
+          "SWAT_Headset_L": 3.172286649689884e-08,
+          "SWAT_Headset_R": 1.3144271745140042e-08,
+          "SWAT_Wearer": 5.07717216801269e-07
+        },
+        "endpoint_joint_matrix_delta": 5.50043769959041e-06
+      }
+    ]
+  }
+}

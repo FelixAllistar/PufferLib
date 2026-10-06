@@ -1,0 +1,1466 @@
+{
+  "status": "pass",
+  "errors": [],
+  "checks": [
+    {
+      "test": "mc15_room_facade_4m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_facade_4m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_facade_4m/roof/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_facade_4m/door_hinge/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_facade_4m/window/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_solid_wall_4m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_solid_wall_4m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_solid_wall_4m/roof/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_end_wall_6m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_end_wall_6m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_corner_pier/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_floor_4x6m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_floor_4x6m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_floor_4x6m/front/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_floor_4x6m/back/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_flat_roof_4x6m/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_gallery_walkway_4m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_gallery_walkway_4m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_gallery_canopy_4m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_gallery_canopy_4m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_canopy_post/foot/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_canopy_post/head/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_door_leaf/hinge/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_door_leaf/latch/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_window_insert/opening_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_gallery_railing_2m/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_lobby_glazed_facade/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_lobby_glazed_facade/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_lobby_glazed_facade/roof/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_reception_counter/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_roadside_sign/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_ice_machine/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_vending_machine/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_room_number_plaque/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_through_wall_ac/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_parking_wheel_stop/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_gallery_access_ramp/walkway/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_gallery_access_ramp/court/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_service_doorway_4m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_service_doorway_4m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_service_doorway_4m/roof/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_bathroom_partition_4m/left/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_bathroom_partition_4m/right/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_bathroom_partition_4m/roof/basis",
+      "status": "pass"
+    },
+    {
+      "test": "mc15_reception_key_cubbies/placement_origin/basis",
+      "status": "pass"
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__000",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_floor_4x6m__001",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__flat_roof_4x6m__002",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_walkway_4m__003",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_canopy_4m__004",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__lobby_glazed_facade__005",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__service_doorway_4m__006",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__007",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_floor_4x6m__008",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__flat_roof_4x6m__009",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_walkway_4m__010",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_canopy_4m__011",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_facade_4m__012",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__solid_wall_4m__013",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__014",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_door_leaf__015",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_window_insert__016",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__through_wall_ac__017",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_number_plaque__018",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__bathroom_partition_4m__019",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__ribbed_glass_wall_sconce__020",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bedframe_single_institutional__021",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__mattress_dirty__022",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__desk__023",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_REUSE__chair_metal_folding__024",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__tv_crt__025",
+      "status": "pass",
+      "maximum_matrix_error": 8.34465012644614e-08
+    },
+    {
+      "test": "instance_transform_REUSE__twin_bell_alarm_clock__026",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__folded_bedsheet_stack__027",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__basin_pedestal__028",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__toilet_old__029",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bathtub_old__030",
+      "status": "pass",
+      "maximum_matrix_error": 1.0728835775353218e-07
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__031",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_floor_4x6m__032",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__flat_roof_4x6m__033",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_walkway_4m__034",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_canopy_4m__035",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_facade_4m__036",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__solid_wall_4m__037",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__038",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_door_leaf__039",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_window_insert__040",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__through_wall_ac__041",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_number_plaque__042",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__bathroom_partition_4m__043",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__ribbed_glass_wall_sconce__044",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bedframe_single_institutional__045",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__mattress_dirty__046",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__desk__047",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_REUSE__chair_metal_folding__048",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__tv_crt__049",
+      "status": "pass",
+      "maximum_matrix_error": 8.34465012644614e-08
+    },
+    {
+      "test": "instance_transform_REUSE__twin_bell_alarm_clock__050",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__folded_bedsheet_stack__051",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__basin_pedestal__052",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__toilet_old__053",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bathtub_old__054",
+      "status": "pass",
+      "maximum_matrix_error": 1.0728835775353218e-07
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__055",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_floor_4x6m__056",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__flat_roof_4x6m__057",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_walkway_4m__058",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_canopy_4m__059",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_facade_4m__060",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__solid_wall_4m__061",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__062",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_door_leaf__063",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_window_insert__064",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__through_wall_ac__065",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_number_plaque__066",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__bathroom_partition_4m__067",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__ribbed_glass_wall_sconce__068",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bedframe_single_institutional__069",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__mattress_dirty__070",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__desk__071",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_REUSE__chair_metal_folding__072",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__tv_crt__073",
+      "status": "pass",
+      "maximum_matrix_error": 8.34465012644614e-08
+    },
+    {
+      "test": "instance_transform_REUSE__twin_bell_alarm_clock__074",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__folded_bedsheet_stack__075",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__basin_pedestal__076",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__toilet_old__077",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bathtub_old__078",
+      "status": "pass",
+      "maximum_matrix_error": 1.0728835775353218e-07
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__079",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_floor_4x6m__080",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__flat_roof_4x6m__081",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_walkway_4m__082",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_canopy_4m__083",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_facade_4m__084",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__solid_wall_4m__085",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__086",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_door_leaf__087",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_window_insert__088",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__through_wall_ac__089",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_number_plaque__090",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__bathroom_partition_4m__091",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__ribbed_glass_wall_sconce__092",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bedframe_single_institutional__093",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__mattress_dirty__094",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__desk__095",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_REUSE__chair_metal_folding__096",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__tv_crt__097",
+      "status": "pass",
+      "maximum_matrix_error": 8.34465012644614e-08
+    },
+    {
+      "test": "instance_transform_REUSE__twin_bell_alarm_clock__098",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__folded_bedsheet_stack__099",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__basin_pedestal__100",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__toilet_old__101",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__bathtub_old__102",
+      "status": "pass",
+      "maximum_matrix_error": 1.0728835775353218e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__end_wall_6m__103",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__end_wall_6m__104",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__end_wall_6m__105",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__end_wall_6m__106",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__end_wall_6m__107",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__end_wall_6m__108",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__corner_pier__109",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__corner_pier__110",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__corner_pier__111",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__corner_pier__112",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__canopy_post__113",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__canopy_post__114",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__canopy_post__115",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__canopy_post__116",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__canopy_post__117",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__canopy_post__118",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_door_leaf__119",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__reception_counter__120",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__121",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__reception_key_cubbies__122",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__rotary_telephone__123",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__chipped_coffee_mug__124",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__chair_metal_folding__125",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__room_floor_4x6m__126",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__flat_roof_4x6m__127",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__solid_wall_4m__128",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__solid_wall_4m__129",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__service_doorway_4m__130",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_REUSE__frosted_dome_light__131",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__front_load_washer__132",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__vented_tumble_dryer__133",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_REUSE__desk__134",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_REUSE__folded_bedsheet_stack__135",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__ice_machine__136",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__vending_machine__137",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_railing_2m__138",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__roadside_sign__139",
+      "status": "pass",
+      "maximum_matrix_error": 1.1920928955078125e-07
+    },
+    {
+      "test": "instance_transform_INSTANCE__parking_wheel_stop__140",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__parking_wheel_stop__141",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__parking_wheel_stop__142",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__parking_wheel_stop__143",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__parking_wheel_stop__144",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "instance_transform_INSTANCE__gallery_access_ramp__145",
+      "status": "pass",
+      "maximum_matrix_error": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__012/door_hinge",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__012/window",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__036/door_hinge",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__036/window",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__060/door_hinge",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__060/window",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__084/door_hinge",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "INSTANCE__room_facade_4m__084/window",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "adjacent_facades_INSTANCE__room_facade_4m__012",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "adjacent_facades_INSTANCE__room_facade_4m__036",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "adjacent_facades_INSTANCE__room_facade_4m__060",
+      "status": "pass",
+      "error_m": 0.0
+    },
+    {
+      "test": "post_canopy_INSTANCE__canopy_post__113",
+      "status": "pass",
+      "head_world_z_m": 2.440000057220459,
+      "canopy_bottom_z_m": 2.44
+    },
+    {
+      "test": "post_canopy_INSTANCE__canopy_post__114",
+      "status": "pass",
+      "head_world_z_m": 2.440000057220459,
+      "canopy_bottom_z_m": 2.44
+    },
+    {
+      "test": "post_canopy_INSTANCE__canopy_post__115",
+      "status": "pass",
+      "head_world_z_m": 2.440000057220459,
+      "canopy_bottom_z_m": 2.44
+    },
+    {
+      "test": "post_canopy_INSTANCE__canopy_post__116",
+      "status": "pass",
+      "head_world_z_m": 2.440000057220459,
+      "canopy_bottom_z_m": 2.44
+    },
+    {
+      "test": "post_canopy_INSTANCE__canopy_post__117",
+      "status": "pass",
+      "head_world_z_m": 2.440000057220459,
+      "canopy_bottom_z_m": 2.44
+    },
+    {
+      "test": "post_canopy_INSTANCE__canopy_post__118",
+      "status": "pass",
+      "head_world_z_m": 2.440000057220459,
+      "canopy_bottom_z_m": 2.44
+    },
+    {
+      "test": "reuse_hash_bedframe_single_institutional",
+      "status": "pass",
+      "sha256": "515601eefaae54b374b900e8b5a98a8cc0b39385c2997775b4d0991b6fe7e370"
+    },
+    {
+      "test": "reuse_hash_mattress_dirty",
+      "status": "pass",
+      "sha256": "73aa330b4d519c838f042c50c89569ef58dec3ac3f2d7e9c24f5e7a0fb2e1ab5"
+    },
+    {
+      "test": "reuse_hash_desk",
+      "status": "pass",
+      "sha256": "acb19cfa1461ba4bd960615ccbc2971493ac82a198d4a7445c9922f9f8325bb7"
+    },
+    {
+      "test": "reuse_hash_chair_metal_folding",
+      "status": "pass",
+      "sha256": "7aa71587f7f9805ef3cbb5d7694012a191a376579cf9acde62f6826249daffed"
+    },
+    {
+      "test": "reuse_hash_tv_crt",
+      "status": "pass",
+      "sha256": "f3b503ae9a81e630c915fad5b552d2f76a5f872fbd13b41dd054da350afd0bf2"
+    },
+    {
+      "test": "reuse_hash_basin_pedestal",
+      "status": "pass",
+      "sha256": "e1b421ac32966a1466fb8b18aae4e469b464b8ac98122a338487576f5d1f1f56"
+    },
+    {
+      "test": "reuse_hash_toilet_old",
+      "status": "pass",
+      "sha256": "807fc8fc1274d0f022505d0df62948d8bcc930f90c90ebfa5d1423a7f4760d43"
+    },
+    {
+      "test": "reuse_hash_bathtub_old",
+      "status": "pass",
+      "sha256": "26a921829021be2378186f1d877aca3983ba13b46cdf1fd1d6209ef51a43bea0"
+    },
+    {
+      "test": "reuse_hash_frosted_dome_light",
+      "status": "pass",
+      "sha256": "e105aef8c014e1c253ba45414bda021659609c28012d0256e354f8582afba38c"
+    },
+    {
+      "test": "reuse_hash_ribbed_glass_wall_sconce",
+      "status": "pass",
+      "sha256": "e38fb4f491ba38a29d533f18b724d5e0762ad695e6c6312f4b734fcf91195cad"
+    },
+    {
+      "test": "reuse_hash_lb11_front_load_washer",
+      "status": "pass",
+      "sha256": "b4178f63e852ad16510bbfab8cb30ee3f5d9b4ce461e395c9a71a57cb3f7e33d"
+    },
+    {
+      "test": "reuse_hash_lb11_vented_tumble_dryer",
+      "status": "pass",
+      "sha256": "416fd1ad92098cc9c7c8897d1aa3b4e50263f0fbdc34820961cecf500b1af27d"
+    },
+    {
+      "test": "reuse_hash_lb11_folded_bedsheet_stack",
+      "status": "pass",
+      "sha256": "cdc52903272f0383b7c7af1086e6ec9e99ee7c0ec7d79210ddc36dc494aaa8a2"
+    },
+    {
+      "test": "reuse_hash_rotary_telephone",
+      "status": "pass",
+      "sha256": "429110b24d329af32deaa8f531d3563507eee32bc2d45b1e7dcbdd929b39d6c1"
+    },
+    {
+      "test": "reuse_hash_twin_bell_alarm_clock",
+      "status": "pass",
+      "sha256": "332c0ae369197861fb11a6f464a293217922e526d3b42d8e79e10db7f3b0cdbf"
+    },
+    {
+      "test": "reuse_hash_chipped_coffee_mug",
+      "status": "pass",
+      "sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0"
+    },
+    {
+      "test": "mattress_support_REUSE__bedframe_single_institutional__021",
+      "status": "pass",
+      "gap_m": 0.002919822931289673,
+      "frame_contact_height_m": 0.4008922278881073,
+      "mattress_lowest_z_m": 0.403812050819397
+    },
+    {
+      "test": "sheets_support_REUSE__bedframe_single_institutional__021",
+      "status": "pass",
+      "gap_m": 0.003688216209411621,
+      "surface_height_m": 0.6543117761611938,
+      "sheets_lowest_z_m": 0.6579999923706055
+    },
+    {
+      "test": "mattress_support_REUSE__bedframe_single_institutional__045",
+      "status": "pass",
+      "gap_m": 0.002919793128967285,
+      "frame_contact_height_m": 0.4008922576904297,
+      "mattress_lowest_z_m": 0.403812050819397
+    },
+    {
+      "test": "sheets_support_REUSE__bedframe_single_institutional__045",
+      "status": "pass",
+      "gap_m": 0.0036881566047668457,
+      "surface_height_m": 0.6543118357658386,
+      "sheets_lowest_z_m": 0.6579999923706055
+    },
+    {
+      "test": "mattress_support_REUSE__bedframe_single_institutional__069",
+      "status": "pass",
+      "gap_m": 0.002919822931289673,
+      "frame_contact_height_m": 0.4008922278881073,
+      "mattress_lowest_z_m": 0.403812050819397
+    },
+    {
+      "test": "sheets_support_REUSE__bedframe_single_institutional__069",
+      "status": "pass",
+      "gap_m": 0.003688216209411621,
+      "surface_height_m": 0.6543117761611938,
+      "sheets_lowest_z_m": 0.6579999923706055
+    },
+    {
+      "test": "mattress_support_REUSE__bedframe_single_institutional__093",
+      "status": "pass",
+      "gap_m": 0.002919822931289673,
+      "frame_contact_height_m": 0.4008922278881073,
+      "mattress_lowest_z_m": 0.403812050819397
+    },
+    {
+      "test": "sheets_support_REUSE__bedframe_single_institutional__093",
+      "status": "pass",
+      "gap_m": 0.003688216209411621,
+      "surface_height_m": 0.6543117761611938,
+      "sheets_lowest_z_m": 0.6579999923706055
+    },
+    {
+      "test": "room_containment_REUSE__desk__023",
+      "status": "pass",
+      "room_center_x": -6,
+      "bounds_world_x_m": [
+        -7.904999732971191,
+        -7.074999809265137
+      ],
+      "interior_x_m": [
+        -7.91,
+        -4.09
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__desk__047",
+      "status": "pass",
+      "room_center_x": -2,
+      "bounds_world_x_m": [
+        -3.9049999713897705,
+        -3.075000047683716
+      ],
+      "interior_x_m": [
+        -3.91,
+        -0.09000000000000008
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__desk__071",
+      "status": "pass",
+      "room_center_x": 2,
+      "bounds_world_x_m": [
+        0.09499996900558472,
+        0.925000011920929
+      ],
+      "interior_x_m": [
+        0.09000000000000008,
+        3.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__desk__095",
+      "status": "pass",
+      "room_center_x": 6,
+      "bounds_world_x_m": [
+        4.095000267028809,
+        4.925000190734863
+      ],
+      "interior_x_m": [
+        4.09,
+        7.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bedframe_single_institutional__021",
+      "status": "pass",
+      "room_center_x": -6,
+      "bounds_world_x_m": [
+        -5.696000099182129,
+        -4.644000053405762
+      ],
+      "interior_x_m": [
+        -7.91,
+        -4.09
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bedframe_single_institutional__045",
+      "status": "pass",
+      "room_center_x": -2,
+      "bounds_world_x_m": [
+        -1.6959999799728394,
+        -0.6439999341964722
+      ],
+      "interior_x_m": [
+        -3.91,
+        -0.09000000000000008
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bedframe_single_institutional__069",
+      "status": "pass",
+      "room_center_x": 2,
+      "bounds_world_x_m": [
+        2.303999900817871,
+        3.3559999465942383
+      ],
+      "interior_x_m": [
+        0.09000000000000008,
+        3.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bedframe_single_institutional__093",
+      "status": "pass",
+      "room_center_x": 6,
+      "bounds_world_x_m": [
+        6.303999900817871,
+        7.355999946594238
+      ],
+      "interior_x_m": [
+        4.09,
+        7.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__mattress_dirty__022",
+      "status": "pass",
+      "room_center_x": -6,
+      "bounds_world_x_m": [
+        -5.631720066070557,
+        -4.708280086517334
+      ],
+      "interior_x_m": [
+        -7.91,
+        -4.09
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__mattress_dirty__046",
+      "status": "pass",
+      "room_center_x": -2,
+      "bounds_world_x_m": [
+        -1.631719946861267,
+        -0.7082799673080444
+      ],
+      "interior_x_m": [
+        -3.91,
+        -0.09000000000000008
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__mattress_dirty__070",
+      "status": "pass",
+      "room_center_x": 2,
+      "bounds_world_x_m": [
+        2.3682799339294434,
+        3.291719913482666
+      ],
+      "interior_x_m": [
+        0.09000000000000008,
+        3.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__mattress_dirty__094",
+      "status": "pass",
+      "room_center_x": 6,
+      "bounds_world_x_m": [
+        6.368279933929443,
+        7.291719913482666
+      ],
+      "interior_x_m": [
+        4.09,
+        7.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bathtub_old__030",
+      "status": "pass",
+      "room_center_x": -6,
+      "bounds_world_x_m": [
+        -5.175500392913818,
+        -4.4644999504089355
+      ],
+      "interior_x_m": [
+        -7.91,
+        -4.09
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bathtub_old__054",
+      "status": "pass",
+      "room_center_x": -2,
+      "bounds_world_x_m": [
+        -1.1755000352859497,
+        -0.46449995040893555
+      ],
+      "interior_x_m": [
+        -3.91,
+        -0.09000000000000008
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bathtub_old__078",
+      "status": "pass",
+      "room_center_x": 2,
+      "bounds_world_x_m": [
+        2.82450008392334,
+        3.5355000495910645
+      ],
+      "interior_x_m": [
+        0.09000000000000008,
+        3.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__bathtub_old__102",
+      "status": "pass",
+      "room_center_x": 6,
+      "bounds_world_x_m": [
+        6.824499607086182,
+        7.5355000495910645
+      ],
+      "interior_x_m": [
+        4.09,
+        7.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__toilet_old__029",
+      "status": "pass",
+      "room_center_x": -6,
+      "bounds_world_x_m": [
+        -6.147500038146973,
+        -5.65500020980835
+      ],
+      "interior_x_m": [
+        -7.91,
+        -4.09
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__toilet_old__053",
+      "status": "pass",
+      "room_center_x": -2,
+      "bounds_world_x_m": [
+        -2.1475000381469727,
+        -1.6549999713897705
+      ],
+      "interior_x_m": [
+        -3.91,
+        -0.09000000000000008
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__toilet_old__077",
+      "status": "pass",
+      "room_center_x": 2,
+      "bounds_world_x_m": [
+        1.8524998426437378,
+        2.3449997901916504
+      ],
+      "interior_x_m": [
+        0.09000000000000008,
+        3.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__toilet_old__101",
+      "status": "pass",
+      "room_center_x": 6,
+      "bounds_world_x_m": [
+        5.852499961853027,
+        6.34499979019165
+      ],
+      "interior_x_m": [
+        4.09,
+        7.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__basin_pedestal__028",
+      "status": "pass",
+      "room_center_x": -6,
+      "bounds_world_x_m": [
+        -7.25499963760376,
+        -6.644999980926514
+      ],
+      "interior_x_m": [
+        -7.91,
+        -4.09
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__basin_pedestal__052",
+      "status": "pass",
+      "room_center_x": -2,
+      "bounds_world_x_m": [
+        -3.255000114440918,
+        -2.6449999809265137
+      ],
+      "interior_x_m": [
+        -3.91,
+        -0.09000000000000008
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__basin_pedestal__076",
+      "status": "pass",
+      "room_center_x": 2,
+      "bounds_world_x_m": [
+        0.7449999451637268,
+        1.3550000190734863
+      ],
+      "interior_x_m": [
+        0.09000000000000008,
+        3.91
+      ]
+    },
+    {
+      "test": "room_containment_REUSE__basin_pedestal__100",
+      "status": "pass",
+      "room_center_x": 6,
+      "bounds_world_x_m": [
+        4.74500036239624,
+        5.355000019073486
+      ],
+      "interior_x_m": [
+        4.09,
+        7.91
+      ]
+    },
+    {
+      "test": "room_numbers",
+      "status": "pass",
+      "numbers": [
+        101,
+        102,
+        103,
+        104
+      ]
+    }
+  ],
+  "scope": "World-space socket/hinge alignment, repeated bays, canopy post heights, source hashes, actual vertical furnishing support rays and room-number variants. Static geometry only."
+}

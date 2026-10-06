@@ -1,0 +1,394 @@
+{
+  "source_C_sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+  "F_target_face": {
+    "native_vertices": [
+      8513,
+      8515,
+      8516
+    ],
+    "dominant_region": "mixamorig:LeftHandIndex1",
+    "rest_area_mm2": 38.3622567725649,
+    "posed_area_mm2": 6.171267664735715,
+    "posed_over_rest_ratio": 0.1608682122462918,
+    "normal_transport_alignment": 0.9771157749454493,
+    "posed_edges_mm": [
+      11.031617131461616,
+      3.479653188882775,
+      14.37011328064478
+    ],
+    "posed_vertices_world_m": [
+      [
+        -0.2608458399772644,
+        -0.6271234750747681,
+        1.4402046203613281
+      ],
+      [
+        -0.26586997509002686,
+        -0.6182497143745422,
+        1.4444130659103394
+      ],
+      [
+        -0.2683371901512146,
+        -0.6161618232727051,
+        1.445702075958252
+      ]
+    ]
+  },
+  "method": "One deterministic native-local Index1 flexion bracket; all other local channels are fixed. Local rifle samples use <=1.5mm triangle edges and 1mm coordinate deduplication, three-ray parity; whole candidate still requires independent final gate.",
+  "bracket": [
+    {
+      "index1_added_native_local_x_deg": 4.451142948549993,
+      "index1_added_native_local_z_spread_deg": 0.42138296301187816,
+      "release_from_C_deg": 0.0,
+      "target_native_triangle": [
+        8513,
+        8515,
+        8516
+      ],
+      "triangle_area_mm2": 2.559733376783651,
+      "triangle_area_over_F": 0.41478242653622965,
+      "triangle_area_over_rest": 0.06672530742806213,
+      "triangle_altitude_to_longest_edge_mm": 0.3575073054076434,
+      "triangle_normal_transport_alignment": 0.9385040035477524,
+      "left_glove_faces_below_10pct_rest": 1,
+      "left_glove_negative_normal_faces": 3,
+      "index_rifle_exact_triangle_pairs": 12,
+      "dense_local_rifle_sample_count": 38986,
+      "maximum_local_index_parity_confirmed_depth_mm": 0.6980263246987306,
+      "local_index_samples_deeper_than1mm": 0,
+      "deepest_index_witnesses": [
+        {
+          "point_m": [
+            -0.26917124032974243,
+            -0.6170766019821168,
+            1.482485205332438
+          ],
+          "nearest_hand_or_cap_triangle": 366,
+          "depth_mm": 0.6980263246987306,
+          "votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "point_m": [
+            -0.2689611375331879,
+            -0.615526888370514,
+            1.4824928760528564
+          ],
+          "nearest_hand_or_cap_triangle": 378,
+          "depth_mm": 0.69756696211698,
+          "votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "point_m": [
+            -0.26947895566622415,
+            -0.6171450924873352,
+            1.4805012559890747
+          ],
+          "nearest_hand_or_cap_triangle": 378,
+          "depth_mm": 0.5859499378857436,
+          "votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "point_m": [
+            -0.2685391145944595,
+            -0.6161164510250091,
+            1.4830978759129843
+          ],
+          "nearest_hand_or_cap_triangle": 366,
+          "depth_mm": 0.5815908612021303,
+          "votes": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "point_m": [
+            -0.2692762917280197,
+            -0.617851458787918,
+            1.482481369972229
+          ],
+          "nearest_hand_or_cap_triangle": 366,
+          "depth_mm": 0.47341338995465776,
+          "votes": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "nonlocal_glove_self_triangle_pairs": 0,
+      "bidirectional_dense_index23_middle23_minimum_gap_mm": 0.3634109743870795,
+      "nonlocal_self_witnesses": [],
+      "index_opposed_contact": {
+        "area_within1mm_mm2": 125.41685185272591,
+        "area_within2mm_mm2": 261.80252327624396,
+        "min_surface_gap_mm": 0.023293541744351387
+      },
+      "central_palm": {
+        "central_25_50": {
+          "median_gap_mm": 18.29509809613228,
+          "opposed_area_within2mm_mm2": 0.0,
+          "opposed_area_within5mm_mm2": 0.0
+        },
+        "central_50_75": {
+          "median_gap_mm": 5.552513990551233,
+          "opposed_area_within2mm_mm2": 62.00826756713839,
+          "opposed_area_within5mm_mm2": 613.9616523457073
+        }
+      },
+      "unchanged_other_local_matrix_max_error": 0.0,
+      "unchanged_hand_arm_gear_other_digits_world_matrix_max_error": 0.0,
+      "index1_rotation_quaternion_wxyz": [
+        0.9183064699172974,
+        0.3775091767311096,
+        0.11409011483192444,
+        0.034403182566165924
+      ],
+      "target_triangle_evaluated_world_vertices_m": [
+        [
+          -0.2640443444252014,
+          -0.6280786395072937,
+          1.4403220415115356
+        ],
+        [
+          -0.2687169313430786,
+          -0.6194912791252136,
+          1.4454416036605835
+        ],
+        [
+          -0.2705194354057312,
+          -0.6171452403068542,
+          1.4469245672225952
+        ]
+      ]
+    },
+    {
+      "index1_added_native_local_x_deg": 3.0,
+      "index1_added_native_local_z_spread_deg": 0.42138296301187816,
+      "release_from_C_deg": 1.4511429485499932,
+      "target_native_triangle": [
+        8513,
+        8515,
+        8516
+      ],
+      "triangle_area_mm2": 3.710511530657115,
+      "triangle_area_over_F": 0.6012559707724195,
+      "triangle_area_over_rest": 0.09672297312056781,
+      "triangle_altitude_to_longest_edge_mm": 0.5178810239796046,
+      "triangle_normal_transport_alignment": 0.9649139604894781,
+      "left_glove_faces_below_10pct_rest": 1,
+      "left_glove_negative_normal_faces": 3,
+      "index_rifle_exact_triangle_pairs": 4,
+      "dense_local_rifle_sample_count": 38986,
+      "maximum_local_index_parity_confirmed_depth_mm": 0.006909828019985298,
+      "local_index_samples_deeper_than1mm": 0,
+      "deepest_index_witnesses": [
+        {
+          "point_m": [
+            -0.26917124032974243,
+            -0.6170766019821168,
+            1.482485205332438
+          ],
+          "nearest_hand_or_cap_triangle": 366,
+          "depth_mm": 0.006909828019985298,
+          "votes": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "nonlocal_glove_self_triangle_pairs": 0,
+      "bidirectional_dense_index23_middle23_minimum_gap_mm": 0.5836414056830108,
+      "nonlocal_self_witnesses": [],
+      "index_opposed_contact": {
+        "area_within1mm_mm2": 36.216691501627224,
+        "area_within2mm_mm2": 126.09669276449767,
+        "min_surface_gap_mm": 0.04653261203202419
+      },
+      "central_palm": {
+        "central_25_50": {
+          "median_gap_mm": 18.29509809613228,
+          "opposed_area_within2mm_mm2": 0.0,
+          "opposed_area_within5mm_mm2": 0.0
+        },
+        "central_50_75": {
+          "median_gap_mm": 5.552513990551233,
+          "opposed_area_within2mm_mm2": 64.93807007461808,
+          "opposed_area_within5mm_mm2": 647.8388552068698
+        }
+      },
+      "unchanged_other_local_matrix_max_error": 0.0,
+      "unchanged_hand_arm_gear_other_digits_world_matrix_max_error": 0.0,
+      "index1_rotation_quaternion_wxyz": [
+        0.9230080246925354,
+        0.36584851145744324,
+        0.11368843168020248,
+        0.03586180508136749
+      ],
+      "target_triangle_evaluated_world_vertices_m": [
+        [
+          -0.2641292214393616,
+          -0.6281160116195679,
+          1.440418004989624
+        ],
+        [
+          -0.2688148021697998,
+          -0.6195359230041504,
+          1.4455461502075195
+        ],
+        [
+          -0.2707967162132263,
+          -0.6173090934753418,
+          1.4470582008361816
+        ]
+      ]
+    },
+    {
+      "index1_added_native_local_x_deg": 1.5,
+      "index1_added_native_local_z_spread_deg": 0.42138296301187816,
+      "release_from_C_deg": 2.951142948549993,
+      "target_native_triangle": [
+        8513,
+        8515,
+        8516
+      ],
+      "triangle_area_mm2": 4.913829555535775,
+      "triangle_area_over_F": 0.7962431420070661,
+      "triangle_area_over_rest": 0.12809021076804697,
+      "triangle_altitude_to_longest_edge_mm": 0.6853430644942669,
+      "triangle_normal_transport_alignment": 0.9763131660880985,
+      "left_glove_faces_below_10pct_rest": 0,
+      "left_glove_negative_normal_faces": 3,
+      "index_rifle_exact_triangle_pairs": 0,
+      "dense_local_rifle_sample_count": 38986,
+      "maximum_local_index_parity_confirmed_depth_mm": 0.0,
+      "local_index_samples_deeper_than1mm": 0,
+      "deepest_index_witnesses": [],
+      "nonlocal_glove_self_triangle_pairs": 0,
+      "bidirectional_dense_index23_middle23_minimum_gap_mm": 0.7638237439095974,
+      "nonlocal_self_witnesses": [],
+      "index_opposed_contact": {
+        "area_within1mm_mm2": 0.0,
+        "area_within2mm_mm2": 34.296303007367904,
+        "min_surface_gap_mm": 1.0499291820451617
+      },
+      "central_palm": {
+        "central_25_50": {
+          "median_gap_mm": 18.29509809613228,
+          "opposed_area_within2mm_mm2": 0.0,
+          "opposed_area_within5mm_mm2": 0.0
+        },
+        "central_50_75": {
+          "median_gap_mm": 5.550345405936241,
+          "opposed_area_within2mm_mm2": 67.86003566103705,
+          "opposed_area_within5mm_mm2": 651.6985543259881
+        }
+      },
+      "unchanged_other_local_matrix_max_error": 0.0,
+      "unchanged_hand_arm_gear_other_digits_world_matrix_max_error": 0.0,
+      "index1_rotation_quaternion_wxyz": [
+        0.9277122616767883,
+        0.35373368859291077,
+        0.11325394362211227,
+        0.03736387938261032
+      ],
+      "target_triangle_evaluated_world_vertices_m": [
+        [
+          -0.26421886682510376,
+          -0.6281565427780151,
+          1.4405149221420288
+        ],
+        [
+          -0.26891815662384033,
+          -0.6195839643478394,
+          1.4456514120101929
+        ],
+        [
+          -0.2710852026939392,
+          -0.6174817085266113,
+          1.4471880197525024
+        ]
+      ]
+    },
+    {
+      "index1_added_native_local_x_deg": 0.0,
+      "index1_added_native_local_z_spread_deg": 0.42138296301187816,
+      "release_from_C_deg": 4.451142948549993,
+      "target_native_triangle": [
+        8513,
+        8515,
+        8516
+      ],
+      "triangle_area_mm2": 6.123957202571087,
+      "triangle_area_over_F": 0.992333753009131,
+      "triangle_area_over_rest": 0.15963495679823217,
+      "triangle_altitude_to_longest_edge_mm": 0.8535179210201308,
+      "triangle_normal_transport_alignment": 0.9821859178791934,
+      "left_glove_faces_below_10pct_rest": 0,
+      "left_glove_negative_normal_faces": 3,
+      "index_rifle_exact_triangle_pairs": 0,
+      "dense_local_rifle_sample_count": 38986,
+      "maximum_local_index_parity_confirmed_depth_mm": 0.0,
+      "local_index_samples_deeper_than1mm": 0,
+      "deepest_index_witnesses": [],
+      "nonlocal_glove_self_triangle_pairs": 0,
+      "bidirectional_dense_index23_middle23_minimum_gap_mm": 0.774288026150316,
+      "nonlocal_self_witnesses": [],
+      "index_opposed_contact": {
+        "area_within1mm_mm2": 0.0,
+        "area_within2mm_mm2": 0.0,
+        "min_surface_gap_mm": 2.003839472308755
+      },
+      "central_palm": {
+        "central_25_50": {
+          "median_gap_mm": 18.29509809613228,
+          "opposed_area_within2mm_mm2": 0.0,
+          "opposed_area_within5mm_mm2": 0.0
+        },
+        "central_50_75": {
+          "median_gap_mm": 5.547546315938234,
+          "opposed_area_within2mm_mm2": 75.57528529457079,
+          "opposed_area_within5mm_mm2": 650.1574371768576
+        }
+      },
+      "unchanged_other_local_matrix_max_error": 0.0,
+      "unchanged_hand_arm_gear_other_digits_world_matrix_max_error": 0.0,
+      "index1_rotation_quaternion_wxyz": [
+        0.9322575330734253,
+        0.3415583074092865,
+        0.11279990524053574,
+        0.03885994479060173
+      ],
+      "target_triangle_evaluated_world_vertices_m": [
+        [
+          -0.26431018114089966,
+          -0.6281987428665161,
+          1.440609335899353
+        ],
+        [
+          -0.2690232992172241,
+          -0.6196341514587402,
+          1.445753812789917
+        ],
+        [
+          -0.2713755965232849,
+          -0.6176576614379883,
+          1.4473090171813965
+        ]
+      ]
+    }
+  ]
+}

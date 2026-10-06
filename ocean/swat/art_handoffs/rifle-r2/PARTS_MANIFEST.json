@@ -1,0 +1,19 @@
+{
+  "archive": "rifle-visual-cleanup-r2-runtime-review.tar.xz",
+  "archive_bytes": 35380312,
+  "archive_sha256": "843c574f43f79bc15aa65948ed63efa643d2556e968777c001b1cd72d1f1aebe",
+  "parts": [
+    {
+      "file": "rifle-visual-cleanup-r2-runtime-review.tar.xz.part01",
+      "bytes": 26214400,
+      "sha256": "38861489d2959f6c957aa204384982a617acfca2083656e55cd8f3316487a995"
+    },
+    {
+      "file": "rifle-visual-cleanup-r2-runtime-review.tar.xz.part02",
+      "bytes": 9165912,
+      "sha256": "47f1608f96cef27697136fdf272d74684e16507472248fb0a99f69ca5bf24e73"
+    }
+  ],
+  "member_validation": "PASS",
+  "parts_individually_extractable": false
+}

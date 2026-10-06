@@ -1,0 +1,338 @@
+{
+  "schema": "independent-upper-gear-f-compact-capture/1",
+  "source_filename": "swat_upper_gear_remake_f_v1.glb",
+  "source_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "blender_version": "4.3.2",
+  "bone_names": [
+    "mixamorig:Hips",
+    "mixamorig:Spine",
+    "mixamorig:Spine1",
+    "mixamorig:Spine2",
+    "mixamorig:Neck",
+    "mixamorig:Head",
+    "mixamorig:HeadTop_End",
+    "mixamorig:LeftShoulder",
+    "mixamorig:LeftArm",
+    "mixamorig:LeftForeArm",
+    "mixamorig:LeftHand",
+    "mixamorig:LeftHandThumb1",
+    "mixamorig:LeftHandThumb2",
+    "mixamorig:LeftHandThumb3",
+    "mixamorig:LeftHandThumb4",
+    "mixamorig:LeftHandIndex1",
+    "mixamorig:LeftHandIndex2",
+    "mixamorig:LeftHandIndex3",
+    "mixamorig:LeftHandIndex4",
+    "mixamorig:LeftHandMiddle1",
+    "mixamorig:LeftHandMiddle2",
+    "mixamorig:LeftHandMiddle3",
+    "mixamorig:LeftHandMiddle4",
+    "mixamorig:LeftHandRing1",
+    "mixamorig:LeftHandRing2",
+    "mixamorig:LeftHandRing3",
+    "mixamorig:LeftHandRing4",
+    "mixamorig:LeftHandPinky1",
+    "mixamorig:LeftHandPinky2",
+    "mixamorig:LeftHandPinky3",
+    "mixamorig:LeftHandPinky4",
+    "Gear_Elbow_L",
+    "mixamorig:RightShoulder",
+    "mixamorig:RightArm",
+    "mixamorig:RightForeArm",
+    "mixamorig:RightHand",
+    "mixamorig:RightHandThumb1",
+    "mixamorig:RightHandThumb2",
+    "mixamorig:RightHandThumb3",
+    "mixamorig:RightHandThumb4",
+    "mixamorig:RightHandIndex1",
+    "mixamorig:RightHandIndex2",
+    "mixamorig:RightHandIndex3",
+    "mixamorig:RightHandIndex4",
+    "mixamorig:RightHandMiddle1",
+    "mixamorig:RightHandMiddle2",
+    "mixamorig:RightHandMiddle3",
+    "mixamorig:RightHandMiddle4",
+    "mixamorig:RightHandRing1",
+    "mixamorig:RightHandRing2",
+    "mixamorig:RightHandRing3",
+    "mixamorig:RightHandRing4",
+    "mixamorig:RightHandPinky1",
+    "mixamorig:RightHandPinky2",
+    "mixamorig:RightHandPinky3",
+    "mixamorig:RightHandPinky4",
+    "RifleSocket",
+    "Muzzle",
+    "Gear_Elbow_R",
+    "mixamorig:LeftUpLeg",
+    "mixamorig:LeftLeg",
+    "mixamorig:LeftFoot",
+    "mixamorig:LeftToeBase",
+    "mixamorig:LeftToe_End",
+    "mixamorig:RightUpLeg",
+    "mixamorig:RightLeg",
+    "mixamorig:RightFoot",
+    "mixamorig:RightToeBase",
+    "mixamorig:RightToe_End",
+    "Prop_Rifle",
+    "Prop_Magazine_A",
+    "Prop_Magazine_B"
+  ],
+  "bone_parents": {
+    "mixamorig:Hips": null,
+    "mixamorig:Spine": "mixamorig:Hips",
+    "mixamorig:Spine1": "mixamorig:Spine",
+    "mixamorig:Spine2": "mixamorig:Spine1",
+    "mixamorig:Neck": "mixamorig:Spine2",
+    "mixamorig:Head": "mixamorig:Neck",
+    "mixamorig:HeadTop_End": "mixamorig:Head",
+    "mixamorig:LeftShoulder": "mixamorig:Spine2",
+    "mixamorig:LeftArm": "mixamorig:LeftShoulder",
+    "mixamorig:LeftForeArm": "mixamorig:LeftArm",
+    "mixamorig:LeftHand": "mixamorig:LeftForeArm",
+    "mixamorig:LeftHandThumb1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandThumb2": "mixamorig:LeftHandThumb1",
+    "mixamorig:LeftHandThumb3": "mixamorig:LeftHandThumb2",
+    "mixamorig:LeftHandThumb4": "mixamorig:LeftHandThumb3",
+    "mixamorig:LeftHandIndex1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandIndex2": "mixamorig:LeftHandIndex1",
+    "mixamorig:LeftHandIndex3": "mixamorig:LeftHandIndex2",
+    "mixamorig:LeftHandIndex4": "mixamorig:LeftHandIndex3",
+    "mixamorig:LeftHandMiddle1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandMiddle2": "mixamorig:LeftHandMiddle1",
+    "mixamorig:LeftHandMiddle3": "mixamorig:LeftHandMiddle2",
+    "mixamorig:LeftHandMiddle4": "mixamorig:LeftHandMiddle3",
+    "mixamorig:LeftHandRing1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandRing2": "mixamorig:LeftHandRing1",
+    "mixamorig:LeftHandRing3": "mixamorig:LeftHandRing2",
+    "mixamorig:LeftHandRing4": "mixamorig:LeftHandRing3",
+    "mixamorig:LeftHandPinky1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandPinky2": "mixamorig:LeftHandPinky1",
+    "mixamorig:LeftHandPinky3": "mixamorig:LeftHandPinky2",
+    "mixamorig:LeftHandPinky4": "mixamorig:LeftHandPinky3",
+    "Gear_Elbow_L": "mixamorig:LeftArm",
+    "mixamorig:RightShoulder": "mixamorig:Spine2",
+    "mixamorig:RightArm": "mixamorig:RightShoulder",
+    "mixamorig:RightForeArm": "mixamorig:RightArm",
+    "mixamorig:RightHand": "mixamorig:RightForeArm",
+    "mixamorig:RightHandThumb1": "mixamorig:RightHand",
+    "mixamorig:RightHandThumb2": "mixamorig:RightHandThumb1",
+    "mixamorig:RightHandThumb3": "mixamorig:RightHandThumb2",
+    "mixamorig:RightHandThumb4": "mixamorig:RightHandThumb3",
+    "mixamorig:RightHandIndex1": "mixamorig:RightHand",
+    "mixamorig:RightHandIndex2": "mixamorig:RightHandIndex1",
+    "mixamorig:RightHandIndex3": "mixamorig:RightHandIndex2",
+    "mixamorig:RightHandIndex4": "mixamorig:RightHandIndex3",
+    "mixamorig:RightHandMiddle1": "mixamorig:RightHand",
+    "mixamorig:RightHandMiddle2": "mixamorig:RightHandMiddle1",
+    "mixamorig:RightHandMiddle3": "mixamorig:RightHandMiddle2",
+    "mixamorig:RightHandMiddle4": "mixamorig:RightHandMiddle3",
+    "mixamorig:RightHandRing1": "mixamorig:RightHand",
+    "mixamorig:RightHandRing2": "mixamorig:RightHandRing1",
+    "mixamorig:RightHandRing3": "mixamorig:RightHandRing2",
+    "mixamorig:RightHandRing4": "mixamorig:RightHandRing3",
+    "mixamorig:RightHandPinky1": "mixamorig:RightHand",
+    "mixamorig:RightHandPinky2": "mixamorig:RightHandPinky1",
+    "mixamorig:RightHandPinky3": "mixamorig:RightHandPinky2",
+    "mixamorig:RightHandPinky4": "mixamorig:RightHandPinky3",
+    "RifleSocket": "mixamorig:RightHand",
+    "Muzzle": "RifleSocket",
+    "Gear_Elbow_R": "mixamorig:RightArm",
+    "mixamorig:LeftUpLeg": "mixamorig:Hips",
+    "mixamorig:LeftLeg": "mixamorig:LeftUpLeg",
+    "mixamorig:LeftFoot": "mixamorig:LeftLeg",
+    "mixamorig:LeftToeBase": "mixamorig:LeftFoot",
+    "mixamorig:LeftToe_End": "mixamorig:LeftToeBase",
+    "mixamorig:RightUpLeg": "mixamorig:Hips",
+    "mixamorig:RightLeg": "mixamorig:RightUpLeg",
+    "mixamorig:RightFoot": "mixamorig:RightLeg",
+    "mixamorig:RightToeBase": "mixamorig:RightFoot",
+    "mixamorig:RightToe_End": "mixamorig:RightToeBase",
+    "Prop_Rifle": null,
+    "Prop_Magazine_A": null,
+    "Prop_Magazine_B": null
+  },
+  "mesh_names": [
+    "Fresh magazine",
+    "Rebuilt spare magazine sleeve",
+    "Removed magazine",
+    "Rifle 7",
+    "SWAT_ElbowCap_L",
+    "SWAT_ElbowCap_R",
+    "SWAT_Headset_L",
+    "SWAT_Headset_R",
+    "SWAT_Wearer"
+  ],
+  "meshes": [
+    {
+      "name": "Fresh magazine",
+      "vertices": 994,
+      "triangles": 780,
+      "materials": [
+        "uv_checker_material_uv_grid_4096x4096"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "vertices": 144,
+      "triangles": 72,
+      "materials": [
+        "Rebuilt carrier cloth"
+      ],
+      "uv_names": []
+    },
+    {
+      "name": "Removed magazine",
+      "vertices": 994,
+      "triangles": 780,
+      "materials": [
+        "uv_checker_material_uv_grid_4096x4096"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "Rifle 7",
+      "vertices": 14936,
+      "triangles": 10273,
+      "materials": [
+        "uv_checker_material_uv_grid_4096x4096"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "SWAT_ElbowCap_L",
+      "vertices": 418,
+      "triangles": 768,
+      "materials": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "SWAT_ElbowCap_R",
+      "vertices": 418,
+      "triangles": 768,
+      "materials": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "SWAT_Headset_L",
+      "vertices": 366,
+      "triangles": 636,
+      "materials": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "SWAT_Headset_R",
+      "vertices": 366,
+      "triangles": 636,
+      "materials": [
+        "SWAT_Gear_Matte_Polymer",
+        "SWAT_Gear_Soft_Padding"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "SWAT_Wearer",
+      "vertices": 28963,
+      "triangles": 42339,
+      "materials": [
+        "Ch15_body.001",
+        "Ch15_body1.001"
+      ],
+      "uv_names": [
+        "UVMap"
+      ]
+    }
+  ],
+  "actions": {
+    "neutral": {
+      "name": "Neutral Carry / Anatomical Gear F_SWAT_Mixamo_Rig",
+      "frame_range": [
+        0.0,
+        0.0
+      ],
+      "curves": 720,
+      "keys": 720,
+      "sample_count": 1,
+      "fps": 24.0
+    },
+    "motion": {
+      "name": "Upper Gear F / Three-second Carry Articulation_SWAT_Mixamo_Rig",
+      "frame_range": [
+        0.0,
+        72.0
+      ],
+      "curves": 720,
+      "keys": 130320,
+      "sample_count": 361,
+      "fps": 24.0
+    }
+  },
+  "read_only_source_hash_preserved": true,
+  "capture_npz_sha256": "002250bc584777b86a6d587409a0086eb8ac2b554b32a10d67ece7bc4e7b543a",
+  "time_axis_last": true,
+  "dense_reference_npz_sha256": "2b7ee769d779906f126284bc96b84c6d8b8474f4279c6594232bc0bdb3d6f9bf",
+  "direct_evaluated_control_indices": {
+    "neutral": [
+      0
+    ],
+    "motion": [
+      0,
+      30,
+      60,
+      90,
+      120,
+      150,
+      180,
+      210,
+      240,
+      270,
+      300,
+      330,
+      360
+    ]
+  },
+  "direct_evaluated_control_times_s": {
+    "neutral": [
+      0.0
+    ],
+    "motion": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.25,
+      1.5,
+      1.75,
+      2.0,
+      2.25,
+      2.5,
+      2.75,
+      3.0
+    ]
+  },
+  "scope": "Complete bind positions, weights, topology, material IDs and UVs; every joint matrix at all361 motion times. Direct evaluated mesh vertices retained only at13 quarter-second controls. Full dense direct-reference audit is separately reported."
+}

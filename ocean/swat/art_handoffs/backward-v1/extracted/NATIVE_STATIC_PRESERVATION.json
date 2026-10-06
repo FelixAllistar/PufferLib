@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "checks": {
+    "rest": true,
+    "parents": true,
+    "bone_names": true,
+    "p0": true,
+    "p1": true,
+    "p2": true,
+    "p3": true,
+    "p4": true,
+    "w0": true,
+    "w1": true,
+    "w2": true,
+    "w3": true,
+    "w4": true,
+    "tris0": true,
+    "tris1": true,
+    "tris2": true,
+    "tris3": true,
+    "tris4": true
+  },
+  "source_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "comparison": "Previously verified N70 static crouch native bind geometry/weights/triangles/rest/parents; animation is separate",
+  "comparison_archive_sha256": "285bec8c34a208fe0e0860b4d191cdcb99c2f8577c23ab7d3e7c59645a220565"
+}

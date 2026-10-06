@@ -1,0 +1,198 @@
+{
+  "schema": "swat-native-character-textures/1",
+  "maps": [
+    {
+      "sha256": "5e6bab5297c6ad5332cab1c138d3c69cd3967e8945f0784d9e0956e43d5ad8e0",
+      "bytes": 5125157,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "file": "textures/Ch15_1001_Diffuse.png",
+      "map_set": "Ch15_1001",
+      "role_from_source_filename": "Diffuse",
+      "source_blender_colorspace": "sRGB",
+      "runtime_color_handling": "decode sRGB to linear light",
+      "transformed": false
+    },
+    {
+      "sha256": "271a1f6a98132197ee675a19318fa10f812ca67f47c3f3d17d62f301704a7707",
+      "bytes": 1901714,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L",
+      "file": "textures/Ch15_1001_Glossiness.png",
+      "map_set": "Ch15_1001",
+      "role_from_source_filename": "Glossiness",
+      "source_blender_colorspace": "Non-Color",
+      "runtime_color_handling": "read numeric data without sRGB transfer",
+      "transformed": false
+    },
+    {
+      "sha256": "efc31286bafb8063b067ab19e617c43db1620dbef2c5039aef4da44577a24435",
+      "bytes": 8232798,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "file": "textures/Ch15_1001_Normal.png",
+      "map_set": "Ch15_1001",
+      "role_from_source_filename": "Normal",
+      "source_blender_colorspace": "Non-Color",
+      "runtime_color_handling": "read numeric data without sRGB transfer",
+      "transformed": false
+    },
+    {
+      "sha256": "4bc3de417a225993bc56a4568b2ba14a039936ed79a734c6466831276f1a4f4f",
+      "bytes": 236627,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "file": "textures/Ch15_1001_Specular.png",
+      "map_set": "Ch15_1001",
+      "role_from_source_filename": "Specular",
+      "source_blender_colorspace": "Non-Color",
+      "runtime_color_handling": "read numeric data without sRGB transfer",
+      "transformed": false
+    },
+    {
+      "sha256": "fa781e5a2fd6467d21e79dcf591cb63b9a49458fa63353f81350e4f86a2764ab",
+      "bytes": 4351870,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "file": "textures/Ch15_1002_Diffuse.png",
+      "map_set": "Ch15_1002",
+      "role_from_source_filename": "Diffuse",
+      "source_blender_colorspace": "sRGB",
+      "runtime_color_handling": "decode sRGB to linear light",
+      "transformed": false
+    },
+    {
+      "sha256": "7cae8cae55c064b7dab345c4ac3b777109bc68b68dff6e0d3738ad2a569c4055",
+      "bytes": 65117,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "file": "textures/Ch15_1002_Emissive.png",
+      "map_set": "Ch15_1002",
+      "role_from_source_filename": "Emissive",
+      "source_blender_colorspace": "sRGB",
+      "runtime_color_handling": "decode sRGB to linear light",
+      "transformed": false
+    },
+    {
+      "sha256": "d1e4c76e8b578eed3e635430771d03d556cb10d23d05079c348032a9f3300ca4",
+      "bytes": 1696283,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L",
+      "file": "textures/Ch15_1002_Glossiness.png",
+      "map_set": "Ch15_1002",
+      "role_from_source_filename": "Glossiness",
+      "source_blender_colorspace": "Non-Color",
+      "runtime_color_handling": "read numeric data without sRGB transfer",
+      "transformed": false
+    },
+    {
+      "sha256": "3468b1eff1ba4b6b0f3e099e00c38f6c1af73912c9e2f1660c0977777aecbb82",
+      "bytes": 7531552,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "file": "textures/Ch15_1002_Normal.png",
+      "map_set": "Ch15_1002",
+      "role_from_source_filename": "Normal",
+      "source_blender_colorspace": "Non-Color",
+      "runtime_color_handling": "read numeric data without sRGB transfer",
+      "transformed": false
+    },
+    {
+      "sha256": "f47ed4abdd18a830919d6a68f33850376ff294c2d6c1178bd8da9981292708c4",
+      "bytes": 2616672,
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "file": "textures/Ch15_1002_Specular.png",
+      "map_set": "Ch15_1002",
+      "role_from_source_filename": "Specular",
+      "source_blender_colorspace": "Non-Color",
+      "runtime_color_handling": "read numeric data without sRGB transfer",
+      "transformed": false
+    }
+  ],
+  "assignment": [
+    {
+      "map_set": "Ch15_1001",
+      "native_slot": 0,
+      "native_material": "Ch15_body.001",
+      "gltf_node": 71,
+      "gltf_node_name": "Rebuilt SWAT full body",
+      "gltf_mesh": 1,
+      "gltf_primitive": 0,
+      "gltf_material": 1,
+      "gltf_material_name": "Ch15_body.001",
+      "uv_attribute": "TEXCOORD_0",
+      "rendered_vertices_with_seams": 7638,
+      "triangle_count": 13456,
+      "source_polygon_count": 7021,
+      "gltf_has_tangent_attribute": false
+    },
+    {
+      "map_set": "Ch15_1002",
+      "native_slot": 1,
+      "native_material": "Ch15_body1.001",
+      "gltf_node": 71,
+      "gltf_node_name": "Rebuilt SWAT full body",
+      "gltf_mesh": 1,
+      "gltf_primitive": 1,
+      "gltf_material": 2,
+      "gltf_material_name": "Ch15_body1.001",
+      "uv_attribute": "TEXCOORD_0",
+      "rendered_vertices_with_seams": 24049,
+      "triangle_count": 32845,
+      "source_polygon_count": 18005,
+      "gltf_has_tangent_attribute": false
+    }
+  ],
+  "compatibility_target": {
+    "file": "standing_empty_shared_ready_n_original_timing.glb",
+    "sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+    "scope": "Exact original body positions, topology, UVs, face assignment and per-primitive GLB position/normal/UV/index bytes; added sleeve, rifle and magazines excluded"
+  },
+  "dimensions_all": [
+    2048,
+    2048
+  ],
+  "native_uv_layer": "map1",
+  "source_body_uv_sha256": "9829a473f695cb6c23a0a8e0b0426acf5150e9cd2a457458b7c3fce19f4f13f1",
+  "image_storage": "Nine unchanged external PNG files; no re-encoding, resizing, channel inversion, bake or packing",
+  "source_provenance": "Adobe Mixamo Ch15_nonPBR, supported by surviving local Oct1 conversion records; original character FBX absent",
+  "public_distribution_authorized": false,
+  "normal_basis_requirement": "The neutral Ready GLB has NORMAL and TEXCOORD_0 but no TANGENT accessor. Consumer must construct a consistent tangent frame before tangent-space normal mapping; do not assume exported tangents exist."
+}

@@ -1,0 +1,64 @@
+{
+  "schema": "swat-character-review-provenance/1",
+  "candidate": "standing_empty_shared_ready_n_refresh_f",
+  "inputs": [
+    {
+      "file": "standing_empty_shared_ready_f.editable.blend",
+      "bytes": 4833425,
+      "sha256": "2b801425c0c3b42e1042532fd0b2744973665b68f17f3fdf286f0aa7d78fd771"
+    },
+    {
+      "file": "standing_empty_shared_ready_f.actions.blend",
+      "bytes": 2897111,
+      "sha256": "ffbc0915fe10dc55858325cee49d160b8c2a318afe86aa6ae4097968da33f234"
+    },
+    {
+      "file": "standing-empty-ready-n-selfcontained-checkpoint.zip",
+      "bytes": 18158305,
+      "sha256": "3f340ce1677d363775a3cff15bfcf3f984af61aec1a52aa60ff2a4d1b36cb96c"
+    },
+    {
+      "file": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json",
+      "bytes": 5014,
+      "sha256": "f593fee9177e28683ac58d6e322fb722dc2ae0b1629b0437f575c343710ad3c3"
+    },
+    {
+      "file": "standing-empty-ready-n-full-comparison.mp4",
+      "bytes": 967768,
+      "sha256": "1fbad90cac318827fe008b47b286624bdb5d6aad066215548aff7cce1ab19b20"
+    }
+  ],
+  "source_history": [
+    {
+      "asset": "historical_standing_F",
+      "file": "standing_empty_revision_f.editable.blend",
+      "sha256": "a7a6d9ae7e13f30ac8de4b6347eb47062344768c04228b054388d9af726156b6"
+    },
+    {
+      "asset": "standing_H",
+      "file": "standing_empty_anatomical_h.editable.blend",
+      "sha256": "3a2c419f2386988c5145def6e59a76028ae34bb4921b92612af003753ba984e6"
+    },
+    {
+      "asset": "tactical_K",
+      "file": "standing_tactical_k.editable.blend",
+      "sha256": "80e47a2b6fcc5b6be6d1a9c7894a238d6550f09fde918a6f1b6a2bfcd576f506"
+    },
+    {
+      "asset": "crouch_D",
+      "file": "crouch_anatomical_d.editable.blend",
+      "sha256": "b13350bc4548bc4ed57020c7f1f5fc0c1477d5b258dd47c6715104d8a87d1603"
+    },
+    {
+      "asset": "shared_Ready_N",
+      "file": "shared_ready_n.editable.blend",
+      "sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef"
+    }
+  ],
+  "checkpoint_archive": "Supply separately for editable reconstruction; GLB package does not duplicate the 18 MB authoring archive",
+  "character_origin": "Ch15_nonPBR and animations from Adobe Mixamo; preserved local provenance, not public redistribution authorization",
+  "weapon_origin": "Uploaded numbered weapon 7; marketplace/creator/license identity unestablished",
+  "distribution": "Private authorized project handoff; no public raw asset upload",
+  "historical_F_fixture_unchanged_sha256": "2410005918b2b3e87c157229c12debb5743d228fefee1f29cd4bccb9e14ec45f",
+  "rigid_rifle_unchanged_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48"
+}

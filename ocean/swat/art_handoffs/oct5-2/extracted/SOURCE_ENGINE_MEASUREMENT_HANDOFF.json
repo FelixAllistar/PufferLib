@@ -1,0 +1,30 @@
+{
+  "units": "metres",
+  "selected_pose_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "native_scale": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "native_world_Z_up": {
+    "body_top": 1.3599172830581665,
+    "lowest_sole": 0.004000025801360607,
+    "body_extent": 1.355917257256806,
+    "hips": 0.6709743142127991,
+    "visor_surface": 1.1881567239761353,
+    "calibrated_stock": 0.9897714853286743,
+    "calibrated_muzzle": 0.7235862016677856
+  },
+  "relative_to_lowest_sole": {
+    "body_top": 1.355917257256806,
+    "hips": 0.6669742884114385,
+    "visor_surface": 1.1841566981747746
+  },
+  "standing_reference_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+  "measured_visor_surface_drop_from_standing_m": 0.3963426947593689,
+  "physical_rifle_elevation_deg": -19.95648267109509,
+  "kind": "single static crouch low-ready pose; action key frame0, no authored duration",
+  "secondary_prop": "Stored spare magazine remains noncollapsed, exactly as reference; locomotion clips use a different collapsed source prop state",
+  "no_camera_or_controller_height_mapping": true,
+  "not_ADS_or_anatomical_eye": true
+}

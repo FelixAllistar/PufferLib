@@ -1,0 +1,1456 @@
+{
+  "schema": "storefront_source_provenance_verification_v1",
+  "created_utc": "2026-10-05T00:28:52.018052+00:00",
+  "result": "passed",
+  "reused_asset_count": 15,
+  "all_glbs_byte_identical_to_prior_sources": true,
+  "all_glbs_embedded_self_contained": true,
+  "all_measured_bounds_match_documentation_within_m": 0.0001,
+  "source_evidence": [
+    {
+      "source": "environment_batches/11_laundry_basement/manifest.json",
+      "copy": "inputs/prior_asset_provenance/11_laundry_basement/manifest.json",
+      "sha256": "3fabadc057376ffeec75aa81be9b02af436709a975a179ffb1dc7fe33979a882"
+    },
+    {
+      "source": "environment_batches/11_laundry_basement/LICENSE.txt",
+      "copy": "inputs/prior_asset_provenance/11_laundry_basement/LICENSE.txt",
+      "sha256": "8350eb769642ebe2f36b321cc2e7823fda2cfa62ada991eb1cd67fc80b68e30c"
+    },
+    {
+      "source": "environment_batches/04_furniture_variants/manifest.json",
+      "copy": "inputs/prior_asset_provenance/04_furniture_variants/manifest.json",
+      "sha256": "c6d89d6156ab8a6116dfb47f8f399d359c3a09105123c39c0581d044700ace0a"
+    },
+    {
+      "source": "environment_batches/04_furniture_variants/LICENSE.txt",
+      "copy": "inputs/prior_asset_provenance/04_furniture_variants/LICENSE.txt",
+      "sha256": "5ab799c82556e28d2f5d4dfef1dda8da41e245d4fdf3a0ec725035923bd0128b"
+    },
+    {
+      "source": "environment_batches/09_garage_workshop/manifest.json",
+      "copy": "inputs/prior_asset_provenance/09_garage_workshop/manifest.json",
+      "sha256": "ed24df1075cb0e08ccb74a14aa3ae5a79ed7a6cb3d5c3318a5daeeb30dfeb2aa"
+    },
+    {
+      "source": "environment_batches/09_garage_workshop/LICENSE.txt",
+      "copy": "inputs/prior_asset_provenance/09_garage_workshop/LICENSE.txt",
+      "sha256": "2cf85dc1ce9db9ea116954b92b5a0a43a15ac7372b7b039557d4ca37a608510a"
+    },
+    {
+      "source": "environment_batches/02_household_clutter/manifest.json",
+      "copy": "inputs/prior_asset_provenance/02_household_clutter/manifest.json",
+      "sha256": "b6d68cddd66916da9f02958ef61656464f6ab9290d1bb89a760fa6d7c65d8a91"
+    },
+    {
+      "source": "environment_batches/02_household_clutter/LICENSE.txt",
+      "copy": "inputs/prior_asset_provenance/02_household_clutter/LICENSE.txt",
+      "sha256": "f26e4507daa86f1a1ed8a2c666d18599cd4358447f6a2faadad054c30f5b9d5c"
+    },
+    {
+      "source": "environment_batches/05_interior_fixtures/manifest.json",
+      "copy": "inputs/prior_asset_provenance/05_interior_fixtures/manifest.json",
+      "sha256": "30912b0940ebd3f698f76e2afde1b9b9a401cb01a8c3dfb1d2d22bc12934be79"
+    },
+    {
+      "source": "environment_batches/05_interior_fixtures/LICENSE.txt",
+      "copy": "inputs/prior_asset_provenance/05_interior_fixtures/LICENSE.txt",
+      "sha256": "78f6007bab307f38d9aa48f751ffad71b509221f12c22a0f3076d8e401e75eb4"
+    }
+  ],
+  "assets": [
+    {
+      "id": "lb11_front_load_washer",
+      "name": "front_load_washer",
+      "title": "Front-load washer",
+      "file": "reused_assets/front_load_washer.glb",
+      "original_source_path": "environment_batches/11_laundry_basement/assets/front_load_washer.glb",
+      "original_batch": "11_laundry_basement",
+      "source_manifest": "environment_batches/11_laundry_basement/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/11_laundry_basement/manifest.json",
+      "source_manifest_asset_id": "lb11_front_load_washer",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/11_laundry_basement/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "b4178f63e852ad16510bbfab8cb30ee3f5d9b4ce461e395c9a71a57cb3f7e33d",
+      "bytes": 674944,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.3165,
+          -0.377998,
+          0.0
+        ],
+        [
+          0.3165,
+          0.377998,
+          0.8845
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 5.402755737238252e-08,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 12,
+      "triangles": 2388,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.3165000081062317,
+          0.0,
+          -0.3779980540275574
+        ],
+        [
+          0.3165000081062317,
+          0.8844999670982361,
+          0.3779980540275574
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.3165000081062317,
+          -0.3779980540275574,
+          0.0
+        ],
+        [
+          0.3165000081062317,
+          0.3779980540275574,
+          0.8844999670982361
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.6330000162124634,
+        0.7559961080551147,
+        0.8844999670982361
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.6330000162124634,
+        0.8844999670982361,
+        0.7559961080551147
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "lb11_vented_tumble_dryer",
+      "name": "vented_tumble_dryer",
+      "title": "Vented tumble dryer",
+      "file": "reused_assets/vented_tumble_dryer.glb",
+      "original_source_path": "environment_batches/11_laundry_basement/assets/vented_tumble_dryer.glb",
+      "original_batch": "11_laundry_basement",
+      "source_manifest": "environment_batches/11_laundry_basement/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/11_laundry_basement/manifest.json",
+      "source_manifest_asset_id": "lb11_vented_tumble_dryer",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/11_laundry_basement/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "416fd1ad92098cc9c7c8897d1aa3b4e50263f0fbdc34820961cecf500b1af27d",
+      "bytes": 606792,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.32,
+          -0.3745,
+          0.0
+        ],
+        [
+          0.32,
+          0.3745,
+          1.0255
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 5.91278075390278e-08,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 10,
+      "triangles": 2361,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.3199999928474426,
+          0.0,
+          -0.37450000643730164
+        ],
+        [
+          0.3199999928474426,
+          1.0255000591278076,
+          0.37450000643730164
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.3199999928474426,
+          -0.37450000643730164,
+          0.0
+        ],
+        [
+          0.3199999928474426,
+          0.37450000643730164,
+          1.0255000591278076
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.6399999856948853,
+        0.7490000128746033,
+        1.0255000591278076
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.6399999856948853,
+        1.0255000591278076,
+        0.7490000128746033
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "lb11_folded_bedsheet_stack",
+      "name": "folded_bedsheet_stack",
+      "title": "Folded bedsheet stack",
+      "file": "reused_assets/folded_bedsheet_stack.glb",
+      "original_source_path": "environment_batches/11_laundry_basement/assets/folded_bedsheet_stack.glb",
+      "original_batch": "11_laundry_basement",
+      "source_manifest": "environment_batches/11_laundry_basement/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/11_laundry_basement/manifest.json",
+      "source_manifest_asset_id": "lb11_folded_bedsheet_stack",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/11_laundry_basement/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "cdc52903272f0383b7c7af1086e6ec9e99ee7c0ec7d79210ddc36dc494aaa8a2",
+      "bytes": 178848,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.237421,
+          -0.173822,
+          0.0
+        ],
+        [
+          0.237421,
+          0.173822,
+          0.150427
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 4.828014373847722e-07,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 3,
+      "triangles": 388,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.23742148280143738,
+          0.0,
+          -0.17382186651229858
+        ],
+        [
+          0.23742148280143738,
+          0.15042652189731598,
+          0.17382186651229858
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.23742148280143738,
+          -0.17382186651229858,
+          0.0
+        ],
+        [
+          0.23742148280143738,
+          0.17382186651229858,
+          0.15042652189731598
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.47484296560287476,
+        0.34764373302459717,
+        0.15042652189731598
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.47484296560287476,
+        0.15042652189731598,
+        0.34764373302459717
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "lb11_deep_utility_sink",
+      "name": "deep_utility_sink",
+      "title": "Deep utility sink",
+      "file": "reused_assets/deep_utility_sink.glb",
+      "original_source_path": "environment_batches/11_laundry_basement/assets/deep_utility_sink.glb",
+      "original_batch": "11_laundry_basement",
+      "source_manifest": "environment_batches/11_laundry_basement/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/11_laundry_basement/manifest.json",
+      "source_manifest_asset_id": "lb11_deep_utility_sink",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/11_laundry_basement/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "7d854fdf1283c9b39f3596c16c9fbae4379e36030a5d87a4ab139ee90613ee30",
+      "bytes": 536140,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.3565,
+          -0.299,
+          0.0
+        ],
+        [
+          0.3565,
+          0.299,
+          1.112719
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 2.9863739015034696e-07,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 10,
+      "triangles": 1398,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.3564999997615814,
+          0.0,
+          -0.29899999499320984
+        ],
+        [
+          0.3564999997615814,
+          1.1127187013626099,
+          0.29899999499320984
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.3564999997615814,
+          -0.29899999499320984,
+          0.0
+        ],
+        [
+          0.3564999997615814,
+          0.29899999499320984,
+          1.1127187013626099
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.7129999995231628,
+        0.5979999899864197,
+        1.1127187013626099
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.7129999995231628,
+        1.1127187013626099,
+        0.5979999899864197
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "lb11_handled_detergent_jug",
+      "name": "handled_detergent_jug",
+      "title": "Handled detergent jug",
+      "file": "reused_assets/handled_detergent_jug.glb",
+      "original_source_path": "environment_batches/11_laundry_basement/assets/handled_detergent_jug.glb",
+      "original_batch": "11_laundry_basement",
+      "source_manifest": "environment_batches/11_laundry_basement/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/11_laundry_basement/manifest.json",
+      "source_manifest_asset_id": "lb11_handled_detergent_jug",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/11_laundry_basement/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "6bd7e3ae480bfcd16f219d4813305bca0b19bb3bac9da273bdb5da9b8561da3b",
+      "bytes": 451548,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.126529,
+          -0.064,
+          0.0
+        ],
+        [
+          0.126529,
+          0.064,
+          0.3665
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 3.6553382876114426e-08,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 8,
+      "triangles": 1101,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.12652896344661713,
+          0.0,
+          -0.06399999558925629
+        ],
+        [
+          0.12652896344661713,
+          0.36650002002716064,
+          0.06399999558925629
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.12652896344661713,
+          -0.06399999558925629,
+          0.0
+        ],
+        [
+          0.12652896344661713,
+          0.06399999558925629,
+          0.36650002002716064
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.25305792689323425,
+        0.12799999117851257,
+        0.36650002002716064
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.25305792689323425,
+        0.36650002002716064,
+        0.12799999117851257
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "laundry_hamper_woven",
+      "name": "laundry_hamper_woven",
+      "title": "Woven laundry hamper",
+      "file": "reused_assets/laundry_hamper_woven.glb",
+      "original_source_path": "environment_batches/04_furniture_variants/assets/laundry_hamper_woven.glb",
+      "original_batch": "04_furniture_variants",
+      "source_manifest": "environment_batches/04_furniture_variants/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/04_furniture_variants/manifest.json",
+      "source_manifest_asset_id": "laundry_hamper_woven",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/04_furniture_variants/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "f445aee1c052cc4f13658c06ad70176c604c4527b5cd2f73c306d919d86863d0",
+      "bytes": 1960956,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": null,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.28666478395462036,
+          -0.22524479031562805,
+          0.0
+        ],
+        [
+          0.28666478395462036,
+          0.20399999618530273,
+          0.6761247515678406
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 0.0,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 5,
+      "triangles": 8146,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.28666478395462036,
+          0.0,
+          -0.20399999618530273
+        ],
+        [
+          0.28666478395462036,
+          0.6761247515678406,
+          0.22524479031562805
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.28666478395462036,
+          -0.22524479031562805,
+          0.0
+        ],
+        [
+          0.28666478395462036,
+          0.20399999618530273,
+          0.6761247515678406
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.5733295679092407,
+        0.4292447865009308,
+        0.6761247515678406
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.5733295679092407,
+        0.6761247515678406,
+        0.4292447865009308
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "table_folding_card",
+      "name": "table_folding_card",
+      "title": "Folding card table",
+      "file": "reused_assets/table_folding_card.glb",
+      "original_source_path": "environment_batches/04_furniture_variants/assets/table_folding_card.glb",
+      "original_batch": "04_furniture_variants",
+      "source_manifest": "environment_batches/04_furniture_variants/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/04_furniture_variants/manifest.json",
+      "source_manifest_asset_id": "table_folding_card",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/04_furniture_variants/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "febd7704462743c5157bc4e506b4b2fa51df77a31f4b1d122c224ac0ef848098",
+      "bytes": 836368,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": null,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.459848016500473,
+          -0.459848016500473,
+          0.0
+        ],
+        [
+          0.459848016500473,
+          0.459848016500473,
+          0.765999972820282
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 0.0,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 5,
+      "triangles": 1090,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.459848016500473,
+          0.0,
+          -0.459848016500473
+        ],
+        [
+          0.459848016500473,
+          0.765999972820282,
+          0.459848016500473
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.459848016500473,
+          -0.459848016500473,
+          0.0
+        ],
+        [
+          0.459848016500473,
+          0.459848016500473,
+          0.765999972820282
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.919696033000946,
+        0.919696033000946,
+        0.765999972820282
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.919696033000946,
+        0.765999972820282,
+        0.919696033000946
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false,
+      "reuse_note": "Existing folding card table used as a laundry folding surface; no dedicated laundry folding table exists in inspected prior batches. No geometry or materials changed."
+    },
+    {
+      "id": "shelving_steel_repaired",
+      "name": "shelving_steel_repaired",
+      "title": "Repaired steel shelving",
+      "file": "reused_assets/shelving_steel_repaired.glb",
+      "original_source_path": "environment_batches/04_furniture_variants/assets/shelving_steel_repaired.glb",
+      "original_batch": "04_furniture_variants",
+      "source_manifest": "environment_batches/04_furniture_variants/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/04_furniture_variants/manifest.json",
+      "source_manifest_asset_id": "shelving_steel_repaired",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/04_furniture_variants/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "751bd3e5df502252f27f1546f0dcc250dbf279ffda6c59a0f123242fdf525b9b",
+      "bytes": 866856,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": null,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.6175000071525574,
+          -0.2615000009536743,
+          0.0
+        ],
+        [
+          0.6175000071525574,
+          0.2615000009536743,
+          1.8200000524520874
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 0.0,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 5,
+      "triangles": 1922,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.6175000071525574,
+          0.0,
+          -0.2615000009536743
+        ],
+        [
+          0.6175000071525574,
+          1.8200000524520874,
+          0.2615000009536743
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.6175000071525574,
+          -0.2615000009536743,
+          0.0
+        ],
+        [
+          0.6175000071525574,
+          0.2615000009536743,
+          1.8200000524520874
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        1.2350000143051147,
+        0.5230000019073486,
+        1.8200000524520874
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.2350000143051147,
+        1.8200000524520874,
+        0.5230000019073486
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "gw09_workbench_pegboard",
+      "name": "workbench_pegboard",
+      "title": "Workbench + pegboard",
+      "file": "reused_assets/workbench_pegboard.glb",
+      "original_source_path": "environment_batches/09_garage_workshop/assets/workbench_pegboard.glb",
+      "original_batch": "09_garage_workshop",
+      "source_manifest": "environment_batches/09_garage_workshop/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/09_garage_workshop/manifest.json",
+      "source_manifest_asset_id": "gw09_workbench_pegboard",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/09_garage_workshop/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "dd496a99dc869234e0d8f5f495929df3c38503512b320d0fc77e71c3cacbd77f",
+      "bytes": 637724,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.91,
+          -0.3295,
+          0.0
+        ],
+        [
+          0.91,
+          0.3295,
+          1.663
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 2.622604367008563e-08,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 8,
+      "triangles": 4406,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.9100000262260437,
+          0.0,
+          -0.3295000195503235
+        ],
+        [
+          0.9100000262260437,
+          1.6629999876022339,
+          0.3295000195503235
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.9100000262260437,
+          -0.3295000195503235,
+          0.0
+        ],
+        [
+          0.9100000262260437,
+          0.3295000195503235,
+          1.6629999876022339
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        1.8200000524520874,
+        0.659000039100647,
+        1.6629999876022339
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.8200000524520874,
+        1.6629999876022339,
+        0.659000039100647
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "gw09_corded_power_drill",
+      "name": "corded_power_drill",
+      "title": "Corded power drill",
+      "file": "reused_assets/corded_power_drill.glb",
+      "original_source_path": "environment_batches/09_garage_workshop/assets/corded_power_drill.glb",
+      "original_batch": "09_garage_workshop",
+      "source_manifest": "environment_batches/09_garage_workshop/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/09_garage_workshop/manifest.json",
+      "source_manifest_asset_id": "gw09_corded_power_drill",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/09_garage_workshop/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "db801d2a97677f7f3d3bf81df6c616a146a7164b813f46f0ae4a39fbf0b1865e",
+      "bytes": 292032,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.173975,
+          -0.079923,
+          0.0
+        ],
+        [
+          0.173975,
+          0.079923,
+          0.151146
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 3.667831420806067e-07,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 5,
+      "triangles": 1310,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.1739746332168579,
+          0.0,
+          -0.07992330193519592
+        ],
+        [
+          0.1739746332168579,
+          0.1511463224887848,
+          0.07992330193519592
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.1739746332168579,
+          -0.07992330193519592,
+          0.0
+        ],
+        [
+          0.1739746332168579,
+          0.07992330193519592,
+          0.1511463224887848
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.3479492664337158,
+        0.15984660387039185,
+        0.1511463224887848
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.3479492664337158,
+        0.1511463224887848,
+        0.15984660387039185
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "gw09_combination_pliers",
+      "name": "combination_pliers",
+      "title": "Combination pliers",
+      "file": "reused_assets/combination_pliers.glb",
+      "original_source_path": "environment_batches/09_garage_workshop/assets/combination_pliers.glb",
+      "original_batch": "09_garage_workshop",
+      "source_manifest": "environment_batches/09_garage_workshop/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/09_garage_workshop/manifest.json",
+      "source_manifest_asset_id": "gw09_combination_pliers",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/09_garage_workshop/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "fbfba8c7d06c38aa5b5d24bbe50806f0e8eda7819fa9047e30c6b85fca3b5fef",
+      "bytes": 233960,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.099091,
+          -0.06457,
+          0.0
+        ],
+        [
+          0.099091,
+          0.06457,
+          0.027413
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 4.641938209509755e-07,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 4,
+      "triangles": 856,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.09909093379974365,
+          0.0,
+          -0.06457046419382095
+        ],
+        [
+          0.09909093379974365,
+          0.02741267904639244,
+          0.06457046419382095
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.09909093379974365,
+          -0.06457046419382095,
+          0.0
+        ],
+        [
+          0.09909093379974365,
+          0.06457046419382095,
+          0.02741267904639244
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.1981818675994873,
+        0.1291409283876419,
+        0.02741267904639244
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.1981818675994873,
+        0.02741267904639244,
+        0.1291409283876419
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "portable_am_fm_radio",
+      "name": "portable_am_fm_radio",
+      "title": "Portable Am Fm Radio",
+      "file": "reused_assets/portable_am_fm_radio.glb",
+      "original_source_path": "environment_batches/02_household_clutter/modules/portable_am_fm_radio.glb",
+      "original_batch": "02_household_clutter",
+      "source_manifest": "environment_batches/02_household_clutter/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/02_household_clutter/manifest.json",
+      "source_manifest_asset_id": "portable_am_fm_radio",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/02_household_clutter/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "e579132d53ba684562a57547f1f59c2c59de470debb03848bb2d67693d208160",
+      "bytes": 836352,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.13475000858306885,
+          -0.04800000041723251,
+          0.0
+        ],
+        [
+          0.13475000858306885,
+          0.04800000041723251,
+          0.3725000023841858
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 0.0,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 9,
+      "triangles": 1745,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.13475000858306885,
+          0.0,
+          -0.04800000041723251
+        ],
+        [
+          0.13475000858306885,
+          0.3725000023841858,
+          0.04800000041723251
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.13475000858306885,
+          -0.04800000041723251,
+          0.0
+        ],
+        [
+          0.13475000858306885,
+          0.04800000041723251,
+          0.3725000023841858
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.2695000171661377,
+        0.09600000083446503,
+        0.3725000023841858
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.2695000171661377,
+        0.3725000023841858,
+        0.09600000083446503
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "two_slot_toaster",
+      "name": "two_slot_toaster",
+      "title": "Two Slot Toaster",
+      "file": "reused_assets/two_slot_toaster.glb",
+      "original_source_path": "environment_batches/02_household_clutter/modules/two_slot_toaster.glb",
+      "original_batch": "02_household_clutter",
+      "source_manifest": "environment_batches/02_household_clutter/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/02_household_clutter/manifest.json",
+      "source_manifest_asset_id": "two_slot_toaster",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/02_household_clutter/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "ae48f18693dd7c1a50bd0b7b86f0b2aaae2aaa29c2300e8cfd21c2da4123f10d",
+      "bytes": 607928,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.16651856899261475,
+          -0.07521551847457886,
+          0.0
+        ],
+        [
+          0.16651856899261475,
+          0.07521551847457886,
+          0.1899999976158142
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 0.0,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 7,
+      "triangles": 1502,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.16651856899261475,
+          0.0,
+          -0.07521551847457886
+        ],
+        [
+          0.16651856899261475,
+          0.1899999976158142,
+          0.07521551847457886
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.16651856899261475,
+          -0.07521551847457886,
+          0.0
+        ],
+        [
+          0.16651856899261475,
+          0.07521551847457886,
+          0.1899999976158142
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.3330371379852295,
+        0.15043103694915771,
+        0.1899999976158142
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.3330371379852295,
+        0.1899999976158142,
+        0.15043103694915771
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "twin_bell_alarm_clock",
+      "name": "twin_bell_alarm_clock",
+      "title": "Twin Bell Alarm Clock",
+      "file": "reused_assets/twin_bell_alarm_clock.glb",
+      "original_source_path": "environment_batches/02_household_clutter/modules/twin_bell_alarm_clock.glb",
+      "original_batch": "02_household_clutter",
+      "source_manifest": "environment_batches/02_household_clutter/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/02_household_clutter/manifest.json",
+      "source_manifest_asset_id": "twin_bell_alarm_clock",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/02_household_clutter/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "332c0ae369197861fb11a6f464a293217922e526d3b42d8e79e10db7f3b0cdbf",
+      "bytes": 538516,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.08023183047771454,
+          -0.03550000116229057,
+          0.0
+        ],
+        [
+          0.08023183047771454,
+          0.03550000116229057,
+          0.20212070643901825
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 0.0,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 5,
+      "triangles": 2101,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.08023183047771454,
+          0.0,
+          -0.03550000116229057
+        ],
+        [
+          0.08023183047771454,
+          0.20212070643901825,
+          0.03550000116229057
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.08023183047771454,
+          -0.03550000116229057,
+          0.0
+        ],
+        [
+          0.08023183047771454,
+          0.03550000116229057,
+          0.20212070643901825
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.16046366095542908,
+        0.07100000232458115,
+        0.20212070643901825
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.16046366095542908,
+        0.20212070643901825,
+        0.07100000232458115
+      ],
+      "source_coordinates": "right-handed Z-up; front -Y",
+      "gltf_coordinates": "right-handed Y-up; front +Z",
+      "collider_enabled": false
+    },
+    {
+      "id": "frosted_dome_light",
+      "name": "frosted_dome_light",
+      "title": "Frosted dome ceiling light",
+      "file": "reused_assets/frosted_dome_light.glb",
+      "original_source_path": "environment_batches/05_interior_fixtures/assets/frosted_dome_light.glb",
+      "original_batch": "05_interior_fixtures",
+      "source_manifest": "environment_batches/05_interior_fixtures/manifest.json",
+      "packaged_source_manifest": "inputs/prior_asset_provenance/05_interior_fixtures/manifest.json",
+      "source_manifest_asset_id": "frosted_dome_light",
+      "license": "CC0-1.0",
+      "license_evidence": "inputs/prior_asset_provenance/05_interior_fixtures/LICENSE.txt",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+      "cc0_source": "Original authored geometry and generated texture artwork; prior batch CC0 dedication preserved unmodified.",
+      "sha256": "e105aef8c014e1c253ba45414bda021659609c28012d0256e354f8582afba38c",
+      "bytes": 237748,
+      "copy_byte_identical": true,
+      "source_manifest_sha256_match": true,
+      "documented_bounds_m_source_xyz": [
+        [
+          -0.164000004529953,
+          -0.164000004529953,
+          -0.1509999930858612
+        ],
+        [
+          0.164000004529953,
+          0.164000004529953,
+          0.0
+        ]
+      ],
+      "documented_vs_measured_bound_max_delta_m": 0.0,
+      "gltf_version": 2,
+      "external_uris": [],
+      "embedded_image_count": 3,
+      "triangles": 1412,
+      "bounds_m_gltf_xyz": [
+        [
+          -0.164000004529953,
+          -0.1509999930858612,
+          -0.164000004529953
+        ],
+        [
+          0.164000004529953,
+          0.0,
+          0.164000004529953
+        ]
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.164000004529953,
+          -0.164000004529953,
+          -0.1509999930858612
+        ],
+        [
+          0.164000004529953,
+          0.164000004529953,
+          0.0
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.328000009059906,
+        0.328000009059906,
+        0.1509999930858612
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.328000009059906,
+        0.1509999930858612,
+        0.328000009059906
+      ],
+      "source_coordinates": "right-handed Z-up",
+      "gltf_coordinates": "right-handed Y-up",
+      "collider_enabled": false,
+      "mounting": "ceiling",
+      "pivot": "ceiling pan centre",
+      "mount_plane_source": "Z=0; fixture extends downward -Z",
+      "mount_normal_source_xyz": [
+        0,
+        0,
+        -1
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "reuse_note": "Original ceiling mounting plane is source Z=0; object extends 0.151 m downward. Position origin at ceiling underside; do not floor-normalize."
+    }
+  ],
+  "material_family": {
+    "original_source_path": "pufferlib_swat_materials/ocean/swat/assets/environment/materials_v1",
+    "copy_path": "inputs/materials_v1",
+    "material_ids": [
+      "plaster_painted",
+      "plaster_worn",
+      "floor_pine",
+      "framing_pine",
+      "door_paint",
+      "door_wood"
+    ],
+    "runtime_map_count": 18,
+    "all_map_and_source_hashes_match_manifest": true,
+    "copied_files": [
+      {
+        "file": ".gitignore",
+        "bytes": 28,
+        "sha256": "8fce71539b188f10c5333a4d600ae756d2fc81aca209a7be27c9a81adff6e687",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "INTEGRATION_TABLE.md",
+        "bytes": 4677,
+        "sha256": "fb1d8bca029b9225a9caf59d8e357b94065376ad58616fbef6981e2614ee03d2",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "LICENSE_CC0.txt",
+        "bytes": 1645,
+        "sha256": "7bde52c8517ac3f7e2e4b78387fc13e7a3fdb1b48349312fc2d09f9cae78267f",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "README.md",
+        "bytes": 10140,
+        "sha256": "e83f9abfba304fa9ca5ae401ac7bc7cb44625b10c1ba3074b0cb9098bebd02bd",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "SHA256SUMS",
+        "bytes": 3757,
+        "sha256": "6ddf2ed790ddafc13d286fa01e4debf2649c7afcd6ab8f648242b4dc288e9dec",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "door_paint_basecolor.png",
+        "bytes": 19925,
+        "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "door_paint_normal.png",
+        "bytes": 46293,
+        "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "door_paint_roughness.png",
+        "bytes": 29843,
+        "sha256": "69dc722ad7b88b1a832f4f7019c7d556b44722b34c37999f61dfe933247c542a",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "door_wood_basecolor.png",
+        "bytes": 200871,
+        "sha256": "19eff6c77c51302cfad2d260e3c19d2edeae86a91b76e63ad9fef39930012440",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "door_wood_normal.png",
+        "bytes": 85704,
+        "sha256": "4eee14f7f7b28f0fb5eb00977116459a83cc0566a874227c5a8e295c606be7c5",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "door_wood_roughness.png",
+        "bytes": 52880,
+        "sha256": "bdb8f6c56a0bdad3004862c3444b406e6fcac69ce09cbd716f6b074a67d6de48",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "floor_pine_basecolor.png",
+        "bytes": 247436,
+        "sha256": "f6a9b7645db4e0fa572ea12b1294a0d96e46b541f3bd2174fefee19cebd63e23",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "floor_pine_normal.png",
+        "bytes": 215036,
+        "sha256": "8e64c9f878c12a10581ecc559a408993bcd7b2e8a49b515d9dd69ae22474dbe1",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "floor_pine_roughness.png",
+        "bytes": 44294,
+        "sha256": "b7eaf3acffad62c9b465f1db8309c43c25a9ac409772f01f047853529d6fb61a",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "framing_pine_basecolor.png",
+        "bytes": 183988,
+        "sha256": "d61852a7641a67068fbf49b24fc9fbaeed973b05bac9463a9d7e22b2188655cb",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "framing_pine_normal.png",
+        "bytes": 122639,
+        "sha256": "ad519b2b8c9271c6fbd06ef2f876b370c8fac4f3402827b310ceb9833b819ea3",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "framing_pine_roughness.png",
+        "bytes": 43896,
+        "sha256": "76cfa04b4b6b6e6be32e3e4486931a1b768368830529cffa20d88d4365002f21",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "material_manifest.json",
+        "bytes": 15396,
+        "sha256": "fbeb3805de4ed2df93c2d4e4c055d6596a9fd38ed59c55ac37c381e92a1c504e",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "plaster_painted_basecolor.png",
+        "bytes": 97929,
+        "sha256": "540a8ff7152ab914caffd3bb3d20b29ae82b77010ff76055e0ed350c70b5f881",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "plaster_painted_normal.png",
+        "bytes": 139020,
+        "sha256": "16f4452075b0ac3986bb1929f600c19b5b55047af1fcca7dce5530c12220658b",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "plaster_painted_roughness.png",
+        "bytes": 46453,
+        "sha256": "046db2d87873e2cd4b0d7880c1a1e4672075d2928d2f1a53abaecc54d568f1df",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "plaster_worn_basecolor.png",
+        "bytes": 99931,
+        "sha256": "80d8e456ff463f257b2c6c43f5ab1fd7eaf4f02d64eda8cea80705d1f062e028",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "plaster_worn_normal.png",
+        "bytes": 116444,
+        "sha256": "c84b2ff837e36f95b1d27e0f16955dfa2fd90c5a383de7339d7420fa5ec09e63",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "plaster_worn_roughness.png",
+        "bytes": 47463,
+        "sha256": "2a4b061b0ae6329f3ee0da18686512b7be965dc9d0de6ddeef0bd9a53af907ad",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "qa/render_report.json",
+        "bytes": 4669,
+        "sha256": "4db8fc4fe15d57bb16a5bb03e6bec6f8a0f1dbd67bc37a122b266fb70398dff7",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "qa/review_summary.json",
+        "bytes": 918,
+        "sha256": "8f8591f761cd028798fd48d59c5aab00a457232802724ce48f0e27473001e1cd",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "qa/validation_report.json",
+        "bytes": 9927,
+        "sha256": "db5ffb9bc41c4150064d18b4907dded19d041291a48184c36ec68d12a83f07a7",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/build_materials.py",
+        "bytes": 15854,
+        "sha256": "9f0e7cb9467a1abe36cb4c8691b70b288ec5afbe914563a365878458141c1bc7",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/cc0/wood_floor_worn_diff_1k.jpg",
+        "bytes": 629271,
+        "sha256": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/cc0/wood_floor_worn_nor_gl_1k.jpg",
+        "bytes": 636603,
+        "sha256": "f428496e5d6c726d17d9ecea29c0acd8660348630acf791cea7bdd7f3c6e262b",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/cc0/wood_floor_worn_rough_1k.jpg",
+        "bytes": 290570,
+        "sha256": "9d7492db1197f1386466dfd7dd43f692446166c1433ddeebf66c10e8b226a6d0",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/parameters.json",
+        "bytes": 2257,
+        "sha256": "a6f087094e74b3b626e14d106570ff32e194875a9c35478feb3a730466e90a88",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/render_qa.py",
+        "bytes": 24616,
+        "sha256": "2d40823071109d3f84fdc9637d069fa0160a390bdbaf3b882e04b1f4661149cd",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/requirements.txt",
+        "bytes": 28,
+        "sha256": "e32056a5263b5972e789540468f3d3e1e8e2d1649d21ef65e814317727be4897",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/test_materials.py",
+        "bytes": 2820,
+        "sha256": "ae4ce91bfa690b241fdfcc8f685e01a21c47ef33b8a6d2d9ad5f6706635b6bbf",
+        "copy_byte_identical": true
+      },
+      {
+        "file": "source/validate_materials.py",
+        "bytes": 7653,
+        "sha256": "e565157c92dd6db13d8879ab2eef064c31480ed0fadcd6b5a262ac252d23ccd6",
+        "copy_byte_identical": true
+      }
+    ],
+    "omitted_files": [
+      "qa/01_basecolor_pixels.png",
+      "qa/02_neutral_closeups.jpg",
+      "qa/03_same_light_room_comparison.jpg",
+      "qa/04_new_materials_room.jpg",
+      "qa/05_raw_tiling_test.jpg",
+      "qa/06_basecolor_only_room.jpg",
+      "source/__pycache__/build_materials.cpython-312.pyc"
+    ],
+    "omission_reason": "Only offline QA render images and Python caches omitted; all runtime maps, editable source files, three original scan JPEGs, provenance, licensing and QA JSON evidence retained.",
+    "license_distinction": "Five original procedural families are CC0 per preserved LICENSE_CC0.txt; floor_pine is a derivative of the separately CC0 Poly Haven Wood Floor Worn scan. Earlier provisional imagegen painted_plaster_basecolor_v1.png is outside this family, is not copied, and is not relabeled CC0.",
+    "external_source_provenance": {
+      "asset": "wood_floor_worn",
+      "asset_url": "https://polyhaven.com/a/wood_floor_worn",
+      "author": "Dimitrios Savva",
+      "files": {
+        "wood_floor_worn_diff_1k.jpg": {
+          "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor_worn/wood_floor_worn_diff_1k.jpg",
+          "sha256": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758"
+        },
+        "wood_floor_worn_nor_gl_1k.jpg": {
+          "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor_worn/wood_floor_worn_nor_gl_1k.jpg",
+          "sha256": "f428496e5d6c726d17d9ecea29c0acd8660348630acf791cea7bdd7f3c6e262b"
+        },
+        "wood_floor_worn_rough_1k.jpg": {
+          "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor_worn/wood_floor_worn_rough_1k.jpg",
+          "sha256": "9d7492db1197f1386466dfd7dd43f692446166c1433ddeebf66c10e8b226a6d0"
+        }
+      },
+      "license": "CC0-1.0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_utc": "2026-10-04",
+      "physical_width_m": 2.0,
+      "source": "Unmodified local house_kit/textures source files; hashes matched source provenance, official asset and license pages freshly read 2026-10-04."
+    },
+    "independent_validation": {
+      "report": "inputs/materials_v1/qa/storefront_copy_validation_report.json",
+      "result": "passed",
+      "independent_rebuild": "all 18 PNGs and manifest byte-identical",
+      "metric_normal_convention_test": "passed, +U/+V slope signs and rectangular tile spacing",
+      "contract_tests": {
+        "tests_run": 8,
+        "failures": 0,
+        "errors": 0,
+        "result": "passed"
+      }
+    }
+  },
+  "prior_sources_modified": false,
+  "scope": "Asset-only preparation; no engine, runtime, collider, simulation or gameplay integration.",
+  "updated_utc": "2026-10-05T00:34:06.403553+00:00",
+  "additional_verified_fixture": "frosted_dome_light appended after initial 14-asset packaging; no build scripts modified."
+}

@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "source_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "optional_direct_source_bytes_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "source_curves": {
+    "count": 700,
+    "keys": 168700,
+    "interpolation_counts": {
+      "BEZIER": 36844,
+      "LINEAR": 131856
+    },
+    "saved_window_keys_exact": 37448,
+    "all_candidate_key_counts_match": true,
+    "boundary_changed_curves": 604
+  },
+  "quaternion_polynomial_norm": {
+    "method": "Each actual stored float32 cubic quaternion is expanded as a cubic in unit segment u. Its squared norm is degree6; all numerically real roots of its derivative inside[0,1] and both endpoints are evaluated. Numerical root-based extrema, not exact symbolic certification.",
+    "intervals": 16800,
+    "squared_norm_coefficients_cross_checked_all_intervals": true,
+    "interior_critical_points": 16547,
+    "minimum": 0.9999958404336872,
+    "minimum_location": {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "segment": 28,
+      "time_s": 0.11884141939745062,
+      "segment_u": 0.5219410339406189
+    },
+    "maximum": 1.0000011141485683,
+    "maximum_location": {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "segment": 220,
+      "time_s": 0.9187255239521819,
+      "segment_u": 0.4941214513830009
+    }
+  }
+}

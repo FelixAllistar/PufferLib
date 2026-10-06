@@ -1,0 +1,200 @@
+{
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "matrix_layout": "column-major4\u00d74, column vectors",
+  "formula": "model_from_attachment(t)=Wnode(t)\u00d7IBM[resolved_slot]\u00d7B_bind_mesh=Wnode(t)\u00d7J_joint_local; J=IBM\u00d7B. Apply external actor/preview placement once.",
+  "rigid_rifle": {
+    "asset_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+    "node": 69,
+    "skin_slot": 69,
+    "inverse_bind": [
+      1.0,
+      -0.0,
+      0.0,
+      -0.0,
+      -0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      -0.0,
+      -0.0,
+      0.0,
+      -0.0,
+      1.0
+    ],
+    "B_bind_mesh": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.00129691231995821,
+      0.02265022322535515,
+      -0.44999998807907104,
+      1.0
+    ],
+    "J_joint_local": [
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.00129691231995821,
+      0.44999998807907104,
+      0.02265022322535515,
+      1.0
+    ],
+    "physical_landmarks_rigid_engine_xyz_m": {
+      "stock_contact": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "muzzle": [
+        0.89999995008111,
+        0.04362634848803282,
+        -7.974449545145035e-08
+      ],
+      "rear_sight": [
+        0.2998216599225998,
+        0.12474874034523964,
+        1.9278377294540405e-07
+      ],
+      "front_sight": [
+        0.6549736261367798,
+        0.12472589686512947,
+        1.4643107230471845e-07
+      ],
+      "grip_center": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        -2.4493783712387085e-07
+      ],
+      "right_hand_surface_candidate": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        0.01466538728813227
+      ],
+      "support_hand_surface_candidate": [
+        0.5580734312534332,
+        0.012221559882195532,
+        -1.448206603527069e-07
+      ]
+    },
+    "legacy_helpers": "RifleSocket/Muzzle retained but not calibrated physical endpoints"
+  },
+  "optical_proxy": {
+    "name": "binocular_goggle_lens_surface_midpoint",
+    "classification": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin",
+    "node": 1,
+    "skin_slot": 5,
+    "inverse_bind": [
+      1.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      1.0,
+      3.740067811008885e-08,
+      0.0,
+      0.0,
+      -1.4777601364812654e-10,
+      1.0,
+      -0.0,
+      -0.0,
+      -1.5440106391906738,
+      0.017461901530623436,
+      1.0
+    ],
+    "B_bind_mesh": [
+      0.0,
+      -3.0582586418859137e-07,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      2.6857296120397223e-07,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      -7.450580596923828e-09,
+      1.6498162746429443,
+      0.14902840554714203,
+      1.0
+    ],
+    "J_joint_local": [
+      0.0,
+      -3.059736402022395e-07,
+      0.9999999999999886,
+      0.0,
+      0.0,
+      1.0,
+      3.059736393140611e-07,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      -7.450580596923828e-09,
+      0.10580563543024768,
+      0.1664903687820129,
+      1.0
+    ],
+    "body_node": 77,
+    "body_mesh": 5,
+    "vertex_mapping": {
+      "left": {
+        "original_native_vertex": 23263,
+        "F_native_vertex": 21466,
+        "gltf_matches": [
+          {
+            "primitive": 1,
+            "vertex": 19982,
+            "bind_mesh_point": [
+              0.032183121889829636,
+              1.6498162746429443,
+              0.14902840554714203
+            ],
+            "head_weight": 1.0
+          }
+        ]
+      },
+      "right": {
+        "original_native_vertex": 23516,
+        "F_native_vertex": 21719,
+        "gltf_matches": [
+          {
+            "primitive": 1,
+            "vertex": 20379,
+            "bind_mesh_point": [
+              -0.03218313679099083,
+              1.6498162746429443,
+              0.14902840554714203
+            ],
+            "head_weight": 1.0
+          }
+        ]
+      }
+    },
+    "axes": "+Xoutward,+Yup,+Zcharacter-right",
+    "scope": "Virtual midpoint of actual lens-surface vertices; no anatomy, eye relief, IPD, camera origin or optical nodal-point claim"
+  }
+}

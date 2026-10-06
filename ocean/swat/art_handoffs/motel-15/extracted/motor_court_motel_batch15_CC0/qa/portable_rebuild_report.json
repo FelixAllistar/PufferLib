@@ -1,0 +1,162 @@
+{
+  "status": "pass",
+  "scope": "Isolated full regeneration from build_motel.py, geometry_core.py and packaged reused_assets only; no other batch directories. Exact SHA-256 match for every new module and both complete example binaries. Native .blend container bytes and previews excluded.",
+  "files": [
+    {
+      "file": "assets/room_facade_4m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "22e084bc315a5b6f524f382f98d425580834c84597c49e4245ac3edac5c522d0",
+      "expected_sha256": "22e084bc315a5b6f524f382f98d425580834c84597c49e4245ac3edac5c522d0"
+    },
+    {
+      "file": "assets/solid_wall_4m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "e8de5460cf7c583206b632189fe3c0fd5bbd4a042eb819d0b664950e986f6168",
+      "expected_sha256": "e8de5460cf7c583206b632189fe3c0fd5bbd4a042eb819d0b664950e986f6168"
+    },
+    {
+      "file": "assets/end_wall_6m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "cf3bf207f4f8c4a0058eb4e6e8f7f1b739a0e7b0a9c9f330ba776d5b2b2ae36d",
+      "expected_sha256": "cf3bf207f4f8c4a0058eb4e6e8f7f1b739a0e7b0a9c9f330ba776d5b2b2ae36d"
+    },
+    {
+      "file": "assets/corner_pier.glb",
+      "status": "pass",
+      "rebuilt_sha256": "cc1b516b38ffe2074eaa4470b934ed6c3202531b425264bd6c5b3cf8dba7f336",
+      "expected_sha256": "cc1b516b38ffe2074eaa4470b934ed6c3202531b425264bd6c5b3cf8dba7f336"
+    },
+    {
+      "file": "assets/room_floor_4x6m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "424cb97c36f85c352c9c0a6f14129334385a9d80e22efb27541124e1e60381c7",
+      "expected_sha256": "424cb97c36f85c352c9c0a6f14129334385a9d80e22efb27541124e1e60381c7"
+    },
+    {
+      "file": "assets/flat_roof_4x6m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "7f811e5dd3af74608db434f0c3bc92428fdde034554e4dec19b5f836299485ae",
+      "expected_sha256": "7f811e5dd3af74608db434f0c3bc92428fdde034554e4dec19b5f836299485ae"
+    },
+    {
+      "file": "assets/gallery_walkway_4m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "576d29b5059343a2f57037e61e1a7199ce2cdadee6bec04592d3c4884365e874",
+      "expected_sha256": "576d29b5059343a2f57037e61e1a7199ce2cdadee6bec04592d3c4884365e874"
+    },
+    {
+      "file": "assets/gallery_canopy_4m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "bf31e9a47c5824ccb1bb1c50db2acfef14561b57aa00be57614b04a32a8b4fe3",
+      "expected_sha256": "bf31e9a47c5824ccb1bb1c50db2acfef14561b57aa00be57614b04a32a8b4fe3"
+    },
+    {
+      "file": "assets/canopy_post.glb",
+      "status": "pass",
+      "rebuilt_sha256": "e0f211d94784a205fe2b9fb0e0e924ab7ff3dd185aef082fbf6777c815eacc9b",
+      "expected_sha256": "e0f211d94784a205fe2b9fb0e0e924ab7ff3dd185aef082fbf6777c815eacc9b"
+    },
+    {
+      "file": "assets/room_door_leaf.glb",
+      "status": "pass",
+      "rebuilt_sha256": "1f0c6633b60dc0c5e6b1b8333d2f4045f9da15e0f94cd985f37fcd2cda6b0fc4",
+      "expected_sha256": "1f0c6633b60dc0c5e6b1b8333d2f4045f9da15e0f94cd985f37fcd2cda6b0fc4"
+    },
+    {
+      "file": "assets/room_window_insert.glb",
+      "status": "pass",
+      "rebuilt_sha256": "a88dfa7e390653544ad1616b688aa71a5d44a0d30b82a41abed3a4cf6d4186ba",
+      "expected_sha256": "a88dfa7e390653544ad1616b688aa71a5d44a0d30b82a41abed3a4cf6d4186ba"
+    },
+    {
+      "file": "assets/gallery_railing_2m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "8c6bf42ccb3711aacc9a8f9aefe0b64e1f31d81919948c95e868c0440d78367c",
+      "expected_sha256": "8c6bf42ccb3711aacc9a8f9aefe0b64e1f31d81919948c95e868c0440d78367c"
+    },
+    {
+      "file": "assets/lobby_glazed_facade.glb",
+      "status": "pass",
+      "rebuilt_sha256": "f3e939267e9401b47fd180e66cddcebeff95f4ed8da9f226c16223a1d325bcb0",
+      "expected_sha256": "f3e939267e9401b47fd180e66cddcebeff95f4ed8da9f226c16223a1d325bcb0"
+    },
+    {
+      "file": "assets/reception_counter.glb",
+      "status": "pass",
+      "rebuilt_sha256": "6f526688a7fd5cea05702072f0d2c03224dea2c1ba0f72bd57a7c25158f7ff4c",
+      "expected_sha256": "6f526688a7fd5cea05702072f0d2c03224dea2c1ba0f72bd57a7c25158f7ff4c"
+    },
+    {
+      "file": "assets/roadside_sign.glb",
+      "status": "pass",
+      "rebuilt_sha256": "588f6b571e3874b37597692c3597de05fcf9c364a64e32fc22d9e0480bd22170",
+      "expected_sha256": "588f6b571e3874b37597692c3597de05fcf9c364a64e32fc22d9e0480bd22170"
+    },
+    {
+      "file": "assets/ice_machine.glb",
+      "status": "pass",
+      "rebuilt_sha256": "ef83a3514d38f7f07634ef4dea21098c6b1b9c6c413b90d032b322a0eb9490f6",
+      "expected_sha256": "ef83a3514d38f7f07634ef4dea21098c6b1b9c6c413b90d032b322a0eb9490f6"
+    },
+    {
+      "file": "assets/vending_machine.glb",
+      "status": "pass",
+      "rebuilt_sha256": "80279ecba4c61943dd09043c2198c74d0e4080133bdc77a9b107985d35576185",
+      "expected_sha256": "80279ecba4c61943dd09043c2198c74d0e4080133bdc77a9b107985d35576185"
+    },
+    {
+      "file": "assets/room_number_plaque.glb",
+      "status": "pass",
+      "rebuilt_sha256": "028dc1310568185b544d783574a81492d9be9f97ba07f17287eb15a137b00121",
+      "expected_sha256": "028dc1310568185b544d783574a81492d9be9f97ba07f17287eb15a137b00121"
+    },
+    {
+      "file": "assets/through_wall_ac.glb",
+      "status": "pass",
+      "rebuilt_sha256": "cc4d86eb06bdc0b596222716213ba425c3cb34be5248b47339e58ed50165e237",
+      "expected_sha256": "cc4d86eb06bdc0b596222716213ba425c3cb34be5248b47339e58ed50165e237"
+    },
+    {
+      "file": "assets/parking_wheel_stop.glb",
+      "status": "pass",
+      "rebuilt_sha256": "22afdb17fbe161a0534ad1b2c50d50b30857aa8bf845fe62e25f73c4f6cf3d1e",
+      "expected_sha256": "22afdb17fbe161a0534ad1b2c50d50b30857aa8bf845fe62e25f73c4f6cf3d1e"
+    },
+    {
+      "file": "assets/gallery_access_ramp.glb",
+      "status": "pass",
+      "rebuilt_sha256": "1a2aa51634c08fafbe5ce43ecc875a5334ffa60ced0c459b2ef17879a38b457e",
+      "expected_sha256": "1a2aa51634c08fafbe5ce43ecc875a5334ffa60ced0c459b2ef17879a38b457e"
+    },
+    {
+      "file": "assets/service_doorway_4m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "4587ce79f75c066c05739bc08e613add968edd167fe20fa8c13acc5d46868272",
+      "expected_sha256": "4587ce79f75c066c05739bc08e613add968edd167fe20fa8c13acc5d46868272"
+    },
+    {
+      "file": "assets/bathroom_partition_4m.glb",
+      "status": "pass",
+      "rebuilt_sha256": "32c6ee7ee72b4dee39feb2820d65e34789af32af906fb756fa196bd0ea2d7877",
+      "expected_sha256": "32c6ee7ee72b4dee39feb2820d65e34789af32af906fb756fa196bd0ea2d7877"
+    },
+    {
+      "file": "assets/reception_key_cubbies.glb",
+      "status": "pass",
+      "rebuilt_sha256": "ba9ab1491186f8aaf1341d584188365f49cf69b006fbe91b3d116628f98a0741",
+      "expected_sha256": "ba9ab1491186f8aaf1341d584188365f49cf69b006fbe91b3d116628f98a0741"
+    },
+    {
+      "file": "motel_example.glb",
+      "status": "pass",
+      "rebuilt_sha256": "36a19d7fd8ac6e8dc43e79d6416305fe2e1d03dc456ccbee6a216b7b5c08f765",
+      "expected_sha256": "36a19d7fd8ac6e8dc43e79d6416305fe2e1d03dc456ccbee6a216b7b5c08f765"
+    },
+    {
+      "file": "motel_example_cutaway.glb",
+      "status": "pass",
+      "rebuilt_sha256": "f3619b26c16a39a9a0d0321be8055c724ca34b842a69d49bd6861b1cd4c37132",
+      "expected_sha256": "f3619b26c16a39a9a0d0321be8055c724ca34b842a69d49bd6861b1cd4c37132"
+    }
+  ]
+}

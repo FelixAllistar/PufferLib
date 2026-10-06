@@ -1,0 +1,49 @@
+{
+  "source_glb_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+  "base_color_linear_formula": "min(c,0.025)+0.40*max(c-0.025,0); polymer *0.40, rubber *0.18, rear sight coating *0.45",
+  "roughness_formula": "0.60*original+0.33, polymer floor 0.73, rubber floor 0.86, rear sight floor 0.78",
+  "metallic_formula": "0.88*original on coated metal; 0.0 on polymer and rubber",
+  "rear_sight_native_vertex_components": [
+    [
+      5096,
+      5143
+    ],
+    [
+      5186,
+      5217
+    ]
+  ],
+  "normal_scale": 0.65,
+  "polymer_native_vertex_components": [
+    [
+      1850,
+      1910
+    ],
+    [
+      3700,
+      3845
+    ]
+  ],
+  "rubber_native_vertex_components": [
+    [
+      3846,
+      3948
+    ]
+  ],
+  "source_triangle_region_counts": {
+    "Rifle7_RigidBody": {
+      "0": 9499,
+      "1": 418,
+      "2": 200,
+      "3": 156
+    },
+    "Rifle7_SeatedMagazine": {
+      "0": 780,
+      "1": 0,
+      "2": 0,
+      "3": 0
+    }
+  },
+  "bake": "Blender Cycles emission, 4096 square, margin16; original UVs and textures intact",
+  "height": "unused; no displacement"
+}

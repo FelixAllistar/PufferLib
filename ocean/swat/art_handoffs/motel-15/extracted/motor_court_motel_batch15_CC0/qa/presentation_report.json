@@ -1,0 +1,246 @@
+{
+  "status": "pass",
+  "images": [
+    {
+      "file": "motel_contact_sheet.jpg",
+      "size_px": [
+        1920,
+        1646
+      ],
+      "sha256": "5e4af10d90f035111d50aeff606a345e507d71624115173e4628356c3424041d"
+    },
+    {
+      "file": "motel_courtyard.png",
+      "size_px": [
+        1400,
+        1000
+      ],
+      "sha256": "934aabdd44b217ba70c9981a5680c38986269bc5bfd13a4d1b4159392f3d390d"
+    },
+    {
+      "file": "motel_cutaway.png",
+      "size_px": [
+        1400,
+        1000
+      ],
+      "sha256": "f1624c31718229990f8cf650bd955560079d7210536d13003a9f075b42adf1f2"
+    },
+    {
+      "file": "motel_guest_room.png",
+      "size_px": [
+        1120,
+        800
+      ],
+      "sha256": "469fff324dcd4f099107a3fb56ad170e7b8537753bda088e505e17b31560e848"
+    },
+    {
+      "file": "motel_location_views.jpg",
+      "size_px": [
+        1920,
+        1524
+      ],
+      "sha256": "6d87a0d133ff71d2e0b1d3bc6e3a2721983f28d5e15a9d40ecb6af22d69b64d5"
+    },
+    {
+      "file": "motel_reception.png",
+      "size_px": [
+        1120,
+        800
+      ],
+      "sha256": "38cd5d4037bea93decc84d93187f1be1560f6bbe0ce0a5db2cca96142811f42e"
+    },
+    {
+      "file": "previews/01_room_facade_4m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "cc0dbd6a01d252fa02d8eefe651b31dbd3a274a87ed9293d8fd4d8a9733d3f24"
+    },
+    {
+      "file": "previews/02_solid_wall_4m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "405a91405adf6559c004d5396cc9ba5bc2121aaddb03944418222e8e348d3404"
+    },
+    {
+      "file": "previews/03_end_wall_6m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "a30d6b9b757ab0357353e2af493a605ddd43da327dc779ef309a4f22cc8d4107"
+    },
+    {
+      "file": "previews/04_corner_pier.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "044cda8e7816ad198ad04f2c78c3e9b2360bff43645e0169b66ba6634d2396d8"
+    },
+    {
+      "file": "previews/05_room_floor_4x6m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "4740087f75260c036b14a3c106869e0e049446845d7328d7674fa24a2f9583c1"
+    },
+    {
+      "file": "previews/06_flat_roof_4x6m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "4e52b8e5873a2c25eacc47a981800518142f985ae9529f12e296d79ce9695cd1"
+    },
+    {
+      "file": "previews/07_gallery_walkway_4m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "bbe551bda52d4b990abe6d977b842ce57455ffe5c7dfc528ee827db1308ae849"
+    },
+    {
+      "file": "previews/08_gallery_canopy_4m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "d4d802e8b95a6d582d930a21a70c3ff9f26edda49961cfeade563211d8e7cf97"
+    },
+    {
+      "file": "previews/09_canopy_post.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "ce4904a70e1e252df5ca458989b48697469c6410c42608322916e31b8c46333e"
+    },
+    {
+      "file": "previews/10_room_door_leaf.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "5971974db83d497fb52c367a0fb8990763afc004b2d5591370622f2dce2c4550"
+    },
+    {
+      "file": "previews/11_room_window_insert.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "4efb78f921c21606765860a465aae3d607d64e43d7836bf32108a602ad9c30b4"
+    },
+    {
+      "file": "previews/12_gallery_railing_2m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "b0fe943ae98f76cbfe07cd711d999110b63ec0bb15594b9e92089cf72c9f0ec9"
+    },
+    {
+      "file": "previews/13_lobby_glazed_facade.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "a9e7bbf30578ec6ec3e0e9dcecde01ccdef46c3d8e44f55eff15e6c503620258"
+    },
+    {
+      "file": "previews/14_reception_counter.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "4f14e2269c0ec48a8e2d8a085c013c22e5b10258eeb46b7d4ac7a5bac9dd25a4"
+    },
+    {
+      "file": "previews/15_roadside_sign.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "29293c7f3d8c8892a58c174385ba8e31023b726ac88bf53fffbff89db09ba304"
+    },
+    {
+      "file": "previews/16_ice_machine.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "2d55452768d008b9bebea78c5823401289f79a49063ba61d51993d809abc3f4e"
+    },
+    {
+      "file": "previews/17_vending_machine.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "b51c773f848a38df59c02f96b7e636ab78c04c39230a39e0e00a9b0910a50d35"
+    },
+    {
+      "file": "previews/18_room_number_plaque.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "5024a74c5c4e1b6b3d5712b5eb1657d1676008784ee7df1db32dd38eb3aea8f1"
+    },
+    {
+      "file": "previews/19_through_wall_ac.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "3c72d9560c11d73e70a836a573ce9a8a9c9690bd1e9e1ffb0cfd8846950a676b"
+    },
+    {
+      "file": "previews/20_parking_wheel_stop.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "5d8c085b072d31f0ffcf94eac0ff1f91c809fe4024ed9dec70f8c1056ecde067"
+    },
+    {
+      "file": "previews/21_gallery_access_ramp.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "1f847bcc98899c3efc837ea349628b60ea342cd03fc9f1a1d6d2262e839aed40"
+    },
+    {
+      "file": "previews/22_service_doorway_4m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "13ffbe861c6980f370e1817b2276adcf79a8a5cbbd11f05e0900d6b4e388e655"
+    },
+    {
+      "file": "previews/23_bathroom_partition_4m.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "e0da5d5548c95d751dd76348ecff4a73fa09220215673638548269b92386ffe9"
+    },
+    {
+      "file": "previews/24_reception_key_cubbies.png",
+      "size_px": [
+        400,
+        400
+      ],
+      "sha256": "4d9f6722c7921334f05c7ea7959a8f4d8dae79c12d1c93527a5bb88e347557fb"
+    }
+  ],
+  "scope": "PNG/JPEG decoding, image dimensions and content hashes. Visual review is recorded separately."
+}

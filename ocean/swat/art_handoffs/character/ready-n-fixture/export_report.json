@@ -1,0 +1,54 @@
+{
+  "schema": "swat-import-fixture-export/1",
+  "status": "PASS: numerical parity and structural preflight",
+  "source_file": "standing_empty_shared_ready_f.editable.blend",
+  "source_sha256": "2b801425c0c3b42e1042532fd0b2744973665b68f17f3fdf286f0aa7d78fd771",
+  "action": "Standing Empty / Shared Ready N Carry F",
+  "source_curve_summary": {
+    "curves": 700,
+    "keys": 416500,
+    "interpolation_counts": {
+      "LINEAR": 416500
+    }
+  },
+  "source_frames": [
+    0,
+    144
+  ],
+  "source_fps": 24,
+  "duration_seconds": 6,
+  "loop": false,
+  "blender_version": "4.3.2",
+  "settings": {
+    "export_format": "GLB",
+    "use_selection": true,
+    "export_animations": true,
+    "export_animation_mode": "ACTIONS",
+    "export_anim_single_armature": true,
+    "export_force_sampling": false,
+    "export_frame_range": false,
+    "export_skins": true,
+    "export_all_influences": true,
+    "export_def_bones": false,
+    "export_optimize_animation_size": false,
+    "export_cameras": false,
+    "export_lights": false,
+    "export_anim_slide_to_zero": true,
+    "export_yup": true
+  },
+  "selected_objects": [
+    "SWAT_Mixamo_Rig",
+    "Rebuilt SWAT full body",
+    "Rifle 7",
+    "Removed magazine",
+    "Fresh magazine",
+    "Rebuilt spare magazine sleeve"
+  ],
+  "source_unchanged": true,
+  "output": "standing_empty_shared_ready_n_original_timing.glb",
+  "bytes": 5257132,
+  "sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+  "asset_quality_approved": false,
+  "gameplay_timing_adapted": false,
+  "engine_runtime_tested": false
+}

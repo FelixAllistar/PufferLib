@@ -1,0 +1,5593 @@
+{
+  "A": {
+    "source": "/workspace/scratch/eac4961518d4/animation_rebuild/upper_body_gear_rebuild/stage_f/upper_gear_stage_f.editable.blend",
+    "sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+    "action": "Neutral Carry / Anatomical Gear F",
+    "left_hand_native_component": 7820,
+    "left_arm_native_components": [
+      4248,
+      8520,
+      8764,
+      8900,
+      11926,
+      12156,
+      12316,
+      12492,
+      13832,
+      15398,
+      15453,
+      15508,
+      15563,
+      15861,
+      15916,
+      16404,
+      16584,
+      19164,
+      19313
+    ],
+    "material": {
+      "left_hand": {
+        "triangle_count": 1434,
+        "skin_area_over_rest": {
+          "min": 0.1608682122462918,
+          "p01": 0.5313869763959194,
+          "p05": 0.7421111328719967,
+          "median": 1.0011669429864822,
+          "max": 3.1019525352954207
+        },
+        "geometric_normal_vs_transported_rest_normal": {
+          "min": -0.4258903829642447,
+          "p01": 0.7375868453324731,
+          "p05": 0.9395633516482103,
+          "median": 0.9968538888336165,
+          "max": 0.9999999999885332
+        },
+        "minimum_normalized_skin_J_singular_value": 0.7870720073394704,
+        "minimum_skin_J_determinant": 0.6194921223674278,
+        "skin_J_nonpositive_determinant_vertices": 0,
+        "face_normal_alignment_below0": 3,
+        "face_normal_alignment_below0_5": 7,
+        "face_area_below_10pct_rest": 0,
+        "worst_normal_faces": [
+          {
+            "native_vertices": [
+              7896,
+              8404,
+              8405
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": -0.4258903829642447,
+            "area_ratio": 0.5319897575193476
+          },
+          {
+            "native_vertices": [
+              7896,
+              8400,
+              8404
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": -0.4202509660935951,
+            "area_ratio": 0.9645575073025137
+          },
+          {
+            "native_vertices": [
+              7896,
+              7944,
+              8405
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": -0.08838127677200981,
+            "area_ratio": 0.40647009192742245
+          },
+          {
+            "native_vertices": [
+              7820,
+              7821,
+              7963
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex1",
+            "alignment": 0.1616903366078325,
+            "area_ratio": 0.6606878120909034
+          },
+          {
+            "native_vertices": [
+              8400,
+              8404,
+              8656
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing1",
+            "alignment": 0.2585309144479844,
+            "area_ratio": 0.9883669572080146
+          },
+          {
+            "native_vertices": [
+              7820,
+              8053,
+              8080
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex1",
+            "alignment": 0.40666973294666453,
+            "area_ratio": 0.5623488393568024
+          },
+          {
+            "native_vertices": [
+              8515,
+              8516,
+              8517
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex1",
+            "alignment": 0.4629504477487997,
+            "area_ratio": 0.43785403355524405
+          },
+          {
+            "native_vertices": [
+              7944,
+              7967,
+              7969
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": 0.5504600840547762,
+            "area_ratio": 0.21366255066656237
+          },
+          {
+            "native_vertices": [
+              7821,
+              7963,
+              8105
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex2",
+            "alignment": 0.5893689924674297,
+            "area_ratio": 0.6270006819643101
+          },
+          {
+            "native_vertices": [
+              8490,
+              8491,
+              8503
+            ],
+            "dominant_weight": "mixamorig:LeftHand",
+            "alignment": 0.6614372420086525,
+            "area_ratio": 3.1019525352954207
+          }
+        ],
+        "exact_self_triangle_pairs_total": 2,
+        "nonlocal_self_triangle_pairs": 0,
+        "nonlocal_self_details": []
+      },
+      "left_arm_skin": {
+        "triangle_count": 4536,
+        "skin_area_over_rest": {
+          "min": 0.02837561036102373,
+          "p01": 0.3723367450343416,
+          "p05": 0.41743983223777237,
+          "median": 0.9999864556225102,
+          "max": 1.9311596599040899
+        },
+        "geometric_normal_vs_transported_rest_normal": {
+          "min": -0.9962533572062275,
+          "p01": 0.6086870257622529,
+          "p05": 0.8951425528701566,
+          "median": 0.9999999997718294,
+          "max": 0.9999999999999949
+        },
+        "minimum_normalized_skin_J_singular_value": 0.48680000388202127,
+        "minimum_skin_J_determinant": 0.239222602747458,
+        "skin_J_nonpositive_determinant_vertices": 0,
+        "face_normal_alignment_below0": 20,
+        "face_normal_alignment_below0_5": 35,
+        "face_area_below_10pct_rest": 1,
+        "worst_normal_faces": [
+          {
+            "native_vertices": [
+              4478,
+              4615,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.9962533572062275,
+            "area_ratio": 0.31453421998739023
+          },
+          {
+            "native_vertices": [
+              4365,
+              4370,
+              4445
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.950470439307462,
+            "area_ratio": 0.5331139272405795
+          },
+          {
+            "native_vertices": [
+              4478,
+              4479,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.9474035534597062,
+            "area_ratio": 0.2615686272661318
+          },
+          {
+            "native_vertices": [
+              4361,
+              4364,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.9106441170256623,
+            "area_ratio": 0.3926603775523919
+          },
+          {
+            "native_vertices": [
+              4370,
+              4432,
+              4446
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.8965868565300295,
+            "area_ratio": 0.35743345394790466
+          },
+          {
+            "native_vertices": [
+              4615,
+              4616,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.8866863723195566,
+            "area_ratio": 0.5041796893365266
+          },
+          {
+            "native_vertices": [
+              13854,
+              13855,
+              13865
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.8048423419360811,
+            "area_ratio": 0.42745898774314134
+          },
+          {
+            "native_vertices": [
+              4361,
+              4479,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.7181349209508642,
+            "area_ratio": 0.40702904681624374
+          },
+          {
+            "native_vertices": [
+              4409,
+              4478,
+              4479
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.6382887522717766,
+            "area_ratio": 0.3131639058102
+          },
+          {
+            "native_vertices": [
+              4370,
+              4445,
+              4446
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.5082997418504702,
+            "area_ratio": 0.5945913571018733
+          }
+        ]
+      }
+    },
+    "clearances": {
+      "left_glove_vs_other_wearer": {
+        "exact_triangle_pairs": 125,
+        "by_target": {
+          "11926:mixamorig:LeftHand": 125
+        },
+        "witnesses_first100": [
+          {
+            "triangles": [
+              15476,
+              22679
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19085794687271118,
+              -0.574615478515625,
+              1.4130865335464478
+            ]
+          },
+          {
+            "triangles": [
+              15476,
+              22675
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18619056046009064,
+              -0.5823410153388977,
+              1.414219856262207
+            ]
+          },
+          {
+            "triangles": [
+              15476,
+              22674
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19057108461856842,
+              -0.5750554800033569,
+              1.4131275415420532
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22756
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1814451664686203,
+              -0.5923627614974976,
+              1.4124053716659546
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22473
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18274839222431183,
+              -0.586526095867157,
+              1.4101035594940186
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22467
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18147292733192444,
+              -0.5923169851303101,
+              1.4124295711517334
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22471
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18578603863716125,
+              -0.583095371723175,
+              1.4142115116119385
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22472
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18358741700649261,
+              -0.5879108905792236,
+              1.4134100675582886
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22468
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1824750304222107,
+              -0.5902581214904785,
+              1.41292142868042
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22470
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1813802570104599,
+              -0.5888203382492065,
+              1.408950924873352
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22522
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1899680197238922,
+              -0.5712262392044067,
+              1.4093976020812988
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22677
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1885911524295807,
+              -0.5745088458061218,
+              1.410145878791809
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22681
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.189665287733078,
+              -0.5720200538635254,
+              1.4096157550811768
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22680
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18940719962120056,
+              -0.5726697444915771,
+              1.4097816944122314
+            ]
+          },
+          {
+            "triangles": [
+              15477,
+              22676
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.185508131980896,
+              -0.579729437828064,
+              1.4107357263565063
+            ]
+          },
+          {
+            "triangles": [
+              15477,
+              22675
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18619056046009064,
+              -0.5823410153388977,
+              1.414219856262207
+            ]
+          },
+          {
+            "triangles": [
+              15477,
+              22677
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1885911524295807,
+              -0.5745088458061218,
+              1.410145878791809
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22676
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.185508131980896,
+              -0.579729437828064,
+              1.4107357263565063
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22675
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18592099845409393,
+              -0.582798421382904,
+              1.4142723083496094
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22474
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18463775515556335,
+              -0.5828475952148438,
+              1.410780668258667
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22471
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18587008118629456,
+              -0.5829198956489563,
+              1.4142272472381592
+            ]
+          },
+          {
+            "triangles": [
+              15915,
+              22474
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18463775515556335,
+              -0.5828475952148438,
+              1.410780668258667
+            ]
+          },
+          {
+            "triangles": [
+              15915,
+              22473
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18274839222431183,
+              -0.586526095867157,
+              1.4101035594940186
+            ]
+          },
+          {
+            "triangles": [
+              15915,
+              22471
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18587008118629456,
+              -0.5829198956489563,
+              1.4142272472381592
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22756
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1814451664686203,
+              -0.5923627614974976,
+              1.4124053716659546
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22467
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1810320019721985,
+              -0.5944085717201233,
+              1.4096927642822266
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22470
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1813802570104599,
+              -0.5888203382492065,
+              1.408950924873352
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22469
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18086998164653778,
+              -0.5938481092453003,
+              1.40756094455719
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22519
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1808103621006012,
+              -0.5941516757011414,
+              1.407175898551941
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22467
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1810320019721985,
+              -0.5944085717201233,
+              1.4096927642822266
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22519
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1808103621006012,
+              -0.5941516757011414,
+              1.407175898551941
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22465
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1799267828464508,
+              -0.5990934371948242,
+              1.4042913913726807
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22466
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.180385023355484,
+              -0.5971840023994446,
+              1.406570315361023
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22520
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18002934753894806,
+              -0.596851646900177,
+              1.4026274681091309
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22465
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1799267828464508,
+              -0.5990934371948242,
+              1.4042913913726807
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22520
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18002934753894806,
+              -0.596851646900177,
+              1.4026274681091309
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22503
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18173909187316895,
+              -0.5996559262275696,
+              1.3982396125793457
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22412
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1817512810230255,
+              -0.5997048020362854,
+              1.39822518825531
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22503
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18173909187316895,
+              -0.5996559262275696,
+              1.3982396125793457
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22411
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18241439759731293,
+              -0.6010926961898804,
+              1.394484519958496
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22412
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1817512810230255,
+              -0.5997048020362854,
+              1.39822518825531
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22504
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18214137852191925,
+              -0.6000851988792419,
+              1.3950119018554688
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22420
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18255531787872314,
+              -0.6014342904090881,
+              1.3937978744506836
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22418
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18229761719703674,
+              -0.5998692512512207,
+              1.3928693532943726
+            ]
+          },
+          {
+            "triangles": [
+              15899,
+              22420
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18255531787872314,
+              -0.6014342904090881,
+              1.3937978744506836
+            ]
+          },
+          {
+            "triangles": [
+              15899,
+              22418
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18229761719703674,
+              -0.5998692512512207,
+              1.3928693532943726
+            ]
+          },
+          {
+            "triangles": [
+              15899,
+              22417
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1854223608970642,
+              -0.6008964776992798,
+              1.3891983032226562
+            ]
+          },
+          {
+            "triangles": [
+              15899,
+              22419
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18542234599590302,
+              -0.6008964776992798,
+              1.3891984224319458
+            ]
+          },
+          {
+            "triangles": [
+              15905,
+              22545
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19109900295734406,
+              -0.5984593629837036,
+              1.3784230947494507
+            ]
+          },
+          {
+            "triangles": [
+              15905,
+              22525
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19157342612743378,
+              -0.5991243720054626,
+              1.3786946535110474
+            ]
+          },
+          {
+            "triangles": [
+              15792,
+              22627
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20509928464889526,
+              -0.5462478399276733,
+              1.4061496257781982
+            ]
+          },
+          {
+            "triangles": [
+              15792,
+              22689
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20695815980434418,
+              -0.5448983311653137,
+              1.404693365097046
+            ]
+          },
+          {
+            "triangles": [
+              15792,
+              22688
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2074037492275238,
+              -0.5447043180465698,
+              1.4045908451080322
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22370
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2101660519838333,
+              -0.5395193696022034,
+              1.400490403175354
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22372
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21178820729255676,
+              -0.5387411117553711,
+              1.3998206853866577
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22371
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21021316945552826,
+              -0.5394965410232544,
+              1.4004696607589722
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22368
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21274690330028534,
+              -0.5379869341850281,
+              1.397648811340332
+            ]
+          },
+          {
+            "triangles": [
+              15788,
+              22369
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21280819177627563,
+              -0.5379708409309387,
+              1.3974711894989014
+            ]
+          },
+          {
+            "triangles": [
+              15788,
+              22368
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21274690330028534,
+              -0.5379869341850281,
+              1.397648811340332
+            ]
+          },
+          {
+            "triangles": [
+              15788,
+              22378
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21472690999507904,
+              -0.537477970123291,
+              1.3923481702804565
+            ]
+          },
+          {
+            "triangles": [
+              15793,
+              22688
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2074037492275238,
+              -0.5447043180465698,
+              1.4045908451080322
+            ]
+          },
+          {
+            "triangles": [
+              15793,
+              22370
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2101660519838333,
+              -0.5395193696022034,
+              1.400490403175354
+            ]
+          },
+          {
+            "triangles": [
+              15851,
+              22627
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20509928464889526,
+              -0.5462478399276733,
+              1.4061496257781982
+            ]
+          },
+          {
+            "triangles": [
+              15851,
+              22689
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20437626540660858,
+              -0.5486956238746643,
+              1.4072933197021484
+            ]
+          },
+          {
+            "triangles": [
+              15851,
+              22684
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2037459760904312,
+              -0.5505582094192505,
+              1.4080913066864014
+            ]
+          },
+          {
+            "triangles": [
+              15850,
+              22670
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20160533487796783,
+              -0.5567536354064941,
+              1.4099360704421997
+            ]
+          },
+          {
+            "triangles": [
+              15850,
+              22685
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20353038609027863,
+              -0.5518136024475098,
+              1.4085819721221924
+            ]
+          },
+          {
+            "triangles": [
+              15850,
+              22684
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2037459760904312,
+              -0.5505582094192505,
+              1.4080913066864014
+            ]
+          },
+          {
+            "triangles": [
+              15852,
+              22670
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20160533487796783,
+              -0.5567536354064941,
+              1.4099360704421997
+            ]
+          },
+          {
+            "triangles": [
+              15852,
+              22668
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19810181856155396,
+              -0.5638373494148254,
+              1.4104464054107666
+            ]
+          },
+          {
+            "triangles": [
+              15857,
+              22679
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19210076332092285,
+              -0.5728841423988342,
+              1.4125478267669678
+            ]
+          },
+          {
+            "triangles": [
+              15858,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19426491856575012,
+              -0.5697727203369141,
+              1.4118019342422485
+            ]
+          },
+          {
+            "triangles": [
+              15858,
+              22522
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19115033745765686,
+              -0.5696709752082825,
+              1.40911865234375
+            ]
+          },
+          {
+            "triangles": [
+              15858,
+              22681
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1926870346069336,
+              -0.5677263140678406,
+              1.4088075160980225
+            ]
+          },
+          {
+            "triangles": [
+              15856,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1942560076713562,
+              -0.5697855949401855,
+              1.4118050336837769
+            ]
+          },
+          {
+            "triangles": [
+              15856,
+              22679
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19210076332092285,
+              -0.5728841423988342,
+              1.4125478267669678
+            ]
+          },
+          {
+            "triangles": [
+              15860,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19426491856575012,
+              -0.5697727203369141,
+              1.4118019342422485
+            ]
+          },
+          {
+            "triangles": [
+              15860,
+              22668
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19697947800159454,
+              -0.5659119486808777,
+              1.41054105758667
+            ]
+          },
+          {
+            "triangles": [
+              15853,
+              22668
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19810181856155396,
+              -0.5638373494148254,
+              1.4104464054107666
+            ]
+          },
+          {
+            "triangles": [
+              15859,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19425882399082184,
+              -0.5697815418243408,
+              1.4118040800094604
+            ]
+          },
+          {
+            "triangles": [
+              15859,
+              22522
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19115033745765686,
+              -0.5696709752082825,
+              1.40911865234375
+            ]
+          },
+          {
+            "triangles": [
+              15800,
+              22434
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21314693987369537,
+              -0.5690041780471802,
+              1.3637287616729736
+            ]
+          },
+          {
+            "triangles": [
+              15800,
+              22433
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21496102213859558,
+              -0.5649040341377258,
+              1.3636301755905151
+            ]
+          },
+          {
+            "triangles": [
+              15800,
+              22742
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20924225449562073,
+              -0.5772594213485718,
+              1.3638637065887451
+            ]
+          },
+          {
+            "triangles": [
+              15801,
+              22742
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20924225449562073,
+              -0.5772594213485718,
+              1.3638637065887451
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22430
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1959841102361679,
+              -0.5889578461647034,
+              1.36909818649292
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22429
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19599413871765137,
+              -0.5889520645141602,
+              1.3690909147262573
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22631
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.195876806974411,
+              -0.5882629752159119,
+              1.368719220161438
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22557
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19195149838924408,
+              -0.5929179787635803,
+              1.3729997873306274
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22575
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19581054151058197,
+              -0.5958386659622192,
+              1.3733142614364624
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22558
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19924838840961456,
+              -0.5915557146072388,
+              1.3697986602783203
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22557
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19917131960391998,
+              -0.5906290411949158,
+              1.3692104816436768
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22497
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2009781450033188,
+              -0.5903072357177734,
+              1.3688952922821045
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22449
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20277807116508484,
+              -0.5878608822822571,
+              1.3672212362289429
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22575
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19784462451934814,
+              -0.5938523411750793,
+              1.371353030204773
+            ]
+          },
+          {
+            "triangles": [
+              15786,
+              22449
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20277807116508484,
+              -0.5878608822822571,
+              1.3672212362289429
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22449
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20490890741348267,
+              -0.5845931172370911,
+              1.3660962581634521
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22450
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20504869520664215,
+              -0.5843747854232788,
+              1.3660316467285156
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22742
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20923428237438202,
+              -0.5772758722305298,
+              1.3638633489608765
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22743
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2079903930425644,
+              -0.5794680118560791,
+              1.3645422458648682
+            ]
+          }
+        ]
+      },
+      "left_arm_components_vs_other_body": {
+        "exact_triangle_pairs": 148,
+        "by_target": {
+          "16584:mixamorig:Spine2": 44,
+          "10300:mixamorig:Spine2": 34,
+          "4248:mixamorig:Spine2": 37,
+          "4248:mixamorig:LeftShoulder": 13,
+          "10300:mixamorig:Spine1": 20
+        },
+        "witnesses_first100": [
+          {
+            "triangles": [
+              27285,
+              29086
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.057251229882240295,
+              0.03558474779129028,
+              1.4874273538589478
+            ]
+          },
+          {
+            "triangles": [
+              27280,
+              29086
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.058651842176914215,
+              0.03451748564839363,
+              1.4857693910598755
+            ]
+          },
+          {
+            "triangles": [
+              27280,
+              29083
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.058651842176914215,
+              0.03451748564839363,
+              1.4857693910598755
+            ]
+          },
+          {
+            "triangles": [
+              27275,
+              29083
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05887577682733536,
+              0.033391207456588745,
+              1.4852726459503174
+            ]
+          },
+          {
+            "triangles": [
+              27270,
+              29083
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05941053479909897,
+              0.03069308027625084,
+              1.4840797185897827
+            ]
+          },
+          {
+            "triangles": [
+              27270,
+              29082
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05941053479909897,
+              0.03069308027625084,
+              1.4840797185897827
+            ]
+          },
+          {
+            "triangles": [
+              27265,
+              29082
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.060001276433467865,
+              0.0282321535050869,
+              1.4828840494155884
+            ]
+          },
+          {
+            "triangles": [
+              27265,
+              29079
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.060001276433467865,
+              0.028232155367732048,
+              1.4828840494155884
+            ]
+          },
+          {
+            "triangles": [
+              27260,
+              29079
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05904221534729004,
+              0.024708576500415802,
+              1.482975721359253
+            ]
+          },
+          {
+            "triangles": [
+              27245,
+              29074
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05648418143391609,
+              0.01942167803645134,
+              1.484236478805542
+            ]
+          },
+          {
+            "triangles": [
+              27240,
+              29074
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05418144538998604,
+              0.016533182933926582,
+              1.4859979152679443
+            ]
+          },
+          {
+            "triangles": [
+              27250,
+              29078
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05824689939618111,
+              0.021381990984082222,
+              1.4829446077346802
+            ]
+          },
+          {
+            "triangles": [
+              27260,
+              29078
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05904221907258034,
+              0.024708576500415802,
+              1.482975721359253
+            ]
+          },
+          {
+            "triangles": [
+              27255,
+              29078
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05897699296474457,
+              0.024434862658381462,
+              1.4829734563827515
+            ]
+          },
+          {
+            "triangles": [
+              27250,
+              29075
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05824689939618111,
+              0.021381989121437073,
+              1.4829446077346802
+            ]
+          },
+          {
+            "triangles": [
+              27245,
+              29075
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05648418515920639,
+              0.01942167803645134,
+              1.484236478805542
+            ]
+          },
+          {
+            "triangles": [
+              27310,
+              29095
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04798128455877304,
+              0.0346880704164505,
+              1.4964913129806519
+            ]
+          },
+          {
+            "triangles": [
+              27315,
+              29095
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04551361873745918,
+              0.03188229352235794,
+              1.4982374906539917
+            ]
+          },
+          {
+            "triangles": [
+              27295,
+              29091
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05294070020318031,
+              0.03738170489668846,
+              1.4921544790267944
+            ]
+          },
+          {
+            "triangles": [
+              27300,
+              29091
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.050350725650787354,
+              0.03692115843296051,
+              1.4946155548095703
+            ]
+          },
+          {
+            "triangles": [
+              27305,
+              29091
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.049662619829177856,
+              0.03679298609495163,
+              1.4952841997146606
+            ]
+          },
+          {
+            "triangles": [
+              27290,
+              29090
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.054694995284080505,
+              0.03780337795615196,
+              1.4905109405517578
+            ]
+          },
+          {
+            "triangles": [
+              27295,
+              29090
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05294070020318031,
+              0.03738170489668846,
+              1.4921544790267944
+            ]
+          },
+          {
+            "triangles": [
+              27290,
+              29087
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.054694995284080505,
+              0.03780337795615196,
+              1.4905109405517578
+            ]
+          },
+          {
+            "triangles": [
+              27285,
+              29087
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.057251229882240295,
+              0.03558474779129028,
+              1.4874273538589478
+            ]
+          },
+          {
+            "triangles": [
+              27305,
+              29094
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.049662619829177856,
+              0.03679298609495163,
+              1.4952841997146606
+            ]
+          },
+          {
+            "triangles": [
+              27310,
+              29094
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04798128455877304,
+              0.0346880704164505,
+              1.4964913129806519
+            ]
+          },
+          {
+            "triangles": [
+              27320,
+              29099
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.044657181948423386,
+              0.028304317966103554,
+              1.4981608390808105
+            ]
+          },
+          {
+            "triangles": [
+              27325,
+              29099
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04379654675722122,
+              0.02502843365073204,
+              1.4982084035873413
+            ]
+          },
+          {
+            "triangles": [
+              27315,
+              29098
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04551361873745918,
+              0.03188229352235794,
+              1.4982374906539917
+            ]
+          },
+          {
+            "triangles": [
+              27320,
+              29098
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.044657181948423386,
+              0.028304317966103554,
+              1.4981608390808105
+            ]
+          },
+          {
+            "triangles": [
+              27325,
+              29102
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04379655048251152,
+              0.02502843178808689,
+              1.4982084035873413
+            ]
+          },
+          {
+            "triangles": [
+              27330,
+              29102
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04471786320209503,
+              0.021165091544389725,
+              1.4963452816009521
+            ]
+          },
+          {
+            "triangles": [
+              27330,
+              29103
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04471785947680473,
+              0.021165093407034874,
+              1.4963452816009521
+            ]
+          },
+          {
+            "triangles": [
+              27335,
+              29103
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.045188672840595245,
+              0.01882483810186386,
+              1.4952987432479858
+            ]
+          },
+          {
+            "triangles": [
+              27340,
+              29066
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04780089110136032,
+              0.016774937510490417,
+              1.4922966957092285
+            ]
+          },
+          {
+            "triangles": [
+              27335,
+              29066
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.045188672840595245,
+              0.01882483810186386,
+              1.4952987432479858
+            ]
+          },
+          {
+            "triangles": [
+              27345,
+              29066
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04797918349504471,
+              0.016638774424791336,
+              1.4921259880065918
+            ]
+          },
+          {
+            "triangles": [
+              27350,
+              29070
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.052038609981536865,
+              0.01612127758562565,
+              1.4881786108016968
+            ]
+          },
+          {
+            "triangles": [
+              27345,
+              29070
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04932583495974541,
+              0.015504414215683937,
+              1.4908208847045898
+            ]
+          },
+          {
+            "triangles": [
+              27355,
+              29070
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.052618492394685745,
+              0.016259875148534775,
+              1.4875956773757935
+            ]
+          },
+          {
+            "triangles": [
+              27345,
+              29067
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04797918349504471,
+              0.016638772562146187,
+              1.4921259880065918
+            ]
+          },
+          {
+            "triangles": [
+              27240,
+              29071
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05418144538998604,
+              0.016533182933926582,
+              1.4859979152679443
+            ]
+          },
+          {
+            "triangles": [
+              27355,
+              29071
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.052618492394685745,
+              0.016259875148534775,
+              1.4875956773757935
+            ]
+          },
+          {
+            "triangles": [
+              8948,
+              20259
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.076766237616539,
+              -0.07527077943086624,
+              1.4686001539230347
+            ]
+          },
+          {
+            "triangles": [
+              8948,
+              20260
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07964982092380524,
+              -0.07325221598148346,
+              1.4651672840118408
+            ]
+          },
+          {
+            "triangles": [
+              8949,
+              20259
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0767662301659584,
+              -0.07527077198028564,
+              1.4686001539230347
+            ]
+          },
+          {
+            "triangles": [
+              8949,
+              20264
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07224133610725403,
+              -0.07922879606485367,
+              1.4753317832946777
+            ]
+          },
+          {
+            "triangles": [
+              8412,
+              20264
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07224133610725403,
+              -0.07922879606485367,
+              1.4753317832946777
+            ]
+          },
+          {
+            "triangles": [
+              8413,
+              20264
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.06916701793670654,
+              -0.08169751614332199,
+              1.4786875247955322
+            ]
+          },
+          {
+            "triangles": [
+              8413,
+              20263
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.06399135291576385,
+              -0.08558835834264755,
+              1.4838627576828003
+            ]
+          },
+          {
+            "triangles": [
+              8417,
+              20268
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.05857842415571213,
+              -0.08947765827178955,
+              1.4880114793777466
+            ]
+          },
+          {
+            "triangles": [
+              8416,
+              20268
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.05857842415571213,
+              -0.08947765827178955,
+              1.4880114793777466
+            ]
+          },
+          {
+            "triangles": [
+              8416,
+              20263
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.06399135291576385,
+              -0.08558835834264755,
+              1.4838627576828003
+            ]
+          },
+          {
+            "triangles": [
+              9014,
+              20268
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.054402753710746765,
+              -0.09286155551671982,
+              1.4913700819015503
+            ]
+          },
+          {
+            "triangles": [
+              9014,
+              20039
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.046851981431245804,
+              -0.09489742666482925,
+              1.4943161010742188
+            ]
+          },
+          {
+            "triangles": [
+              9014,
+              20038
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0425126850605011,
+              -0.09614241123199463,
+              1.4960163831710815
+            ]
+          },
+          {
+            "triangles": [
+              9021,
+              20038
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0425126813352108,
+              -0.09614241123199463,
+              1.4960163831710815
+            ]
+          },
+          {
+            "triangles": [
+              9021,
+              20011
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.03818890452384949,
+              -0.09809402376413345,
+              1.4977061748504639
+            ]
+          },
+          {
+            "triangles": [
+              9037,
+              20010
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.02772701531648636,
+              -0.10227625072002411,
+              1.500235676765442
+            ]
+          },
+          {
+            "triangles": [
+              9037,
+              20011
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.03504035621881485,
+              -0.0993000864982605,
+              1.4985923767089844
+            ]
+          },
+          {
+            "triangles": [
+              9036,
+              20011
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.03818890079855919,
+              -0.09809402376413345,
+              1.4977061748504639
+            ]
+          },
+          {
+            "triangles": [
+              646,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.010556427761912346,
+              -0.1010640412569046,
+              1.5032962560653687
+            ]
+          },
+          {
+            "triangles": [
+              931,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.01778310537338257,
+              -0.11320854723453522,
+              1.5000040531158447
+            ]
+          },
+          {
+            "triangles": [
+              645,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.011395089328289032,
+              -0.10185210406780243,
+              1.5030771493911743
+            ]
+          },
+          {
+            "triangles": [
+              634,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.009299639612436295,
+              -0.10025180131196976,
+              1.5035279989242554
+            ]
+          },
+          {
+            "triangles": [
+              931,
+              9010
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.022288376465439796,
+              -0.1216101348400116,
+              1.49765145778656
+            ]
+          },
+          {
+            "triangles": [
+              932,
+              9010
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.027582703158259392,
+              -0.1295527070760727,
+              1.4958049058914185
+            ]
+          },
+          {
+            "triangles": [
+              931,
+              9035
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.01778310537338257,
+              -0.11320854723453522,
+              1.5000040531158447
+            ]
+          },
+          {
+            "triangles": [
+              932,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.027582701295614243,
+              -0.1295527070760727,
+              1.4958049058914185
+            ]
+          },
+          {
+            "triangles": [
+              1223,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.027956973761320114,
+              -0.1300196349620819,
+              1.4957188367843628
+            ]
+          },
+          {
+            "triangles": [
+              1224,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.026533501222729683,
+              -0.13183295726776123,
+              1.4953246116638184
+            ]
+          },
+          {
+            "triangles": [
+              1373,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.02293546125292778,
+              -0.1357853263616562,
+              1.4944549798965454
+            ]
+          },
+          {
+            "triangles": [
+              1373,
+              9000
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.02293546125292778,
+              -0.1357853263616562,
+              1.4944549798965454
+            ]
+          },
+          {
+            "triangles": [
+              1373,
+              9001
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.015942882746458054,
+              -0.14271822571754456,
+              1.4893782138824463
+            ]
+          },
+          {
+            "triangles": [
+              1374,
+              9001
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.011441800743341446,
+              -0.14771883189678192,
+              1.4859369993209839
+            ]
+          },
+          {
+            "triangles": [
+              1374,
+              9006
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.01144180167466402,
+              -0.14771883189678192,
+              1.4859369993209839
+            ]
+          },
+          {
+            "triangles": [
+              993,
+              9006
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.004562470596283674,
+              -0.15525999665260315,
+              1.4756312370300293
+            ]
+          },
+          {
+            "triangles": [
+              994,
+              9007
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.0015104846097528934,
+              -0.15860691666603088,
+              1.471140742301941
+            ]
+          },
+          {
+            "triangles": [
+              993,
+              9007
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.004562467336654663,
+              -0.15525999665260315,
+              1.4756312370300293
+            ]
+          },
+          {
+            "triangles": [
+              964,
+              9033
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.008532403036952019,
+              -0.16438893973827362,
+              1.4519718885421753
+            ]
+          },
+          {
+            "triangles": [
+              994,
+              9008
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.0015104841440916061,
+              -0.15860691666603088,
+              1.471140742301941
+            ]
+          },
+          {
+            "triangles": [
+              988,
+              9008
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.002432383131235838,
+              -0.1631685346364975,
+              1.46073317527771
+            ]
+          },
+          {
+            "triangles": [
+              964,
+              9008
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.005952280014753342,
+              -0.1628827303647995,
+              1.4567005634307861
+            ]
+          },
+          {
+            "triangles": [
+              8396,
+              20258
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10676494240760803,
+              -0.05508410930633545,
+              1.4292073249816895
+            ]
+          },
+          {
+            "triangles": [
+              8396,
+              20137
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10907577723264694,
+              -0.05084250122308731,
+              1.4196796417236328
+            ]
+          },
+          {
+            "triangles": [
+              8836,
+              20258
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10676494240760803,
+              -0.05508411303162575,
+              1.4292073249816895
+            ]
+          },
+          {
+            "triangles": [
+              8837,
+              20258
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10147837549448013,
+              -0.058256618678569794,
+              1.4365938901901245
+            ]
+          },
+          {
+            "triangles": [
+              8837,
+              20137
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.09568825364112854,
+              -0.06131633743643761,
+              1.4429829120635986
+            ]
+          },
+          {
+            "triangles": [
+              8957,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.09081847965717316,
+              -0.06398210674524307,
+              1.4490641355514526
+            ]
+          },
+          {
+            "triangles": [
+              8957,
+              20136
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.09329873323440552,
+              -0.06161725893616676,
+              1.4456007480621338
+            ]
+          },
+          {
+            "triangles": [
+              8957,
+              20137
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.09568825364112854,
+              -0.06131632626056671,
+              1.4429829120635986
+            ]
+          },
+          {
+            "triangles": [
+              8956,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.08663389831781387,
+              -0.06731998920440674,
+              1.4544200897216797
+            ]
+          },
+          {
+            "triangles": [
+              8959,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.08371943235397339,
+              -0.0699472725391388,
+              1.4583765268325806
+            ]
+          },
+          {
+            "triangles": [
+              8958,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.08371942490339279,
+              -0.0699472725391388,
+              1.4583765268325806
+            ]
+          },
+          {
+            "triangles": [
+              8958,
+              20260
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07964982092380524,
+              -0.07325221598148346,
+              1.4651672840118408
+            ]
+          },
+          {
+            "triangles": [
+              964,
+              9028
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.00853240117430687,
+              -0.16438893973827362,
+              1.4519718885421753
+            ]
+          },
+          {
+            "triangles": [
+              943,
+              9028
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.012898356653749943,
+              -0.1652390956878662,
+              1.4445841312408447
+            ]
+          },
+          {
+            "triangles": [
+              943,
+              9029
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.012898357585072517,
+              -0.1652390956878662,
+              1.4445841312408447
+            ]
+          },
+          {
+            "triangles": [
+              944,
+              9029
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.014312798157334328,
+              -0.17185750603675842,
+              1.4284244775772095
+            ]
+          }
+        ]
+      },
+      "left_arm_dominant_skin_vs_other_body": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "rifle_vs_left_nonhand_skin": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_L_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_L_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_R_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_R_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_L_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_L_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_R_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_R_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Rebuilt spare magazine sleeve_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Rebuilt spare magazine sleeve_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Removed magazine_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Removed magazine_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Fresh magazine_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Fresh magazine_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      }
+    },
+    "all_body_normalized_LBS_max_blender_error_mm": 0.0004352965229162147
+  },
+  "C1": {
+    "source": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+    "sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+    "action": "Support Grip / Index Base Release Candidate C1",
+    "left_hand_native_component": 7820,
+    "left_arm_native_components": [
+      4248,
+      8520,
+      8764,
+      8900,
+      11926,
+      12156,
+      12316,
+      12492,
+      13832,
+      15398,
+      15453,
+      15508,
+      15563,
+      15861,
+      15916,
+      16404,
+      16584,
+      19164,
+      19313
+    ],
+    "material": {
+      "left_hand": {
+        "triangle_count": 1434,
+        "skin_area_over_rest": {
+          "min": 0.15963495679823217,
+          "p01": 0.5181220672466451,
+          "p05": 0.7358244824846365,
+          "median": 1.001701563281733,
+          "max": 3.023791958080094
+        },
+        "geometric_normal_vs_transported_rest_normal": {
+          "min": -0.49964770919152535,
+          "p01": 0.730555823607224,
+          "p05": 0.9376811121031947,
+          "median": 0.996892335062937,
+          "max": 0.9999999999712339
+        },
+        "minimum_normalized_skin_J_singular_value": 0.7846547938371932,
+        "minimum_skin_J_determinant": 0.6156936684293637,
+        "skin_J_nonpositive_determinant_vertices": 0,
+        "face_normal_alignment_below0": 3,
+        "face_normal_alignment_below0_5": 7,
+        "face_area_below_10pct_rest": 0,
+        "worst_normal_faces": [
+          {
+            "native_vertices": [
+              7896,
+              8404,
+              8405
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": -0.49964770919152535,
+            "area_ratio": 0.5281669761493472
+          },
+          {
+            "native_vertices": [
+              7896,
+              8400,
+              8404
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": -0.46259899806390403,
+            "area_ratio": 0.9700224534590265
+          },
+          {
+            "native_vertices": [
+              7896,
+              7944,
+              8405
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": -0.1487522718842194,
+            "area_ratio": 0.3906497408880375
+          },
+          {
+            "native_vertices": [
+              7820,
+              7821,
+              7963
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex1",
+            "alignment": 0.2020542453771409,
+            "area_ratio": 0.6588608386449961
+          },
+          {
+            "native_vertices": [
+              8400,
+              8404,
+              8656
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing1",
+            "alignment": 0.2416746872561763,
+            "area_ratio": 0.9837829123322743
+          },
+          {
+            "native_vertices": [
+              7820,
+              8053,
+              8080
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex1",
+            "alignment": 0.4299740787332469,
+            "area_ratio": 0.5714630127802637
+          },
+          {
+            "native_vertices": [
+              8515,
+              8516,
+              8517
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex1",
+            "alignment": 0.4677608819772514,
+            "area_ratio": 0.43505122499184196
+          },
+          {
+            "native_vertices": [
+              7944,
+              7967,
+              7969
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing2",
+            "alignment": 0.5068096151715494,
+            "area_ratio": 0.21062970406090178
+          },
+          {
+            "native_vertices": [
+              7821,
+              7963,
+              8105
+            ],
+            "dominant_weight": "mixamorig:LeftHandIndex2",
+            "alignment": 0.6126107089369843,
+            "area_ratio": 0.6258073981672944
+          },
+          {
+            "native_vertices": [
+              8404,
+              8656,
+              8657
+            ],
+            "dominant_weight": "mixamorig:LeftHandRing1",
+            "alignment": 0.6501812945317959,
+            "area_ratio": 0.8515325798990793
+          }
+        ],
+        "area_ratio_candidate_over_A": {
+          "min": 0.8761707812813694,
+          "p01": 0.9640718267007249,
+          "p05": 0.9807545670000376,
+          "median": 0.9997584821231369,
+          "max": 1.0308842960475486
+        },
+        "new_negative_normal_faces_vs_A": 0,
+        "exact_self_triangle_pairs_total": 2,
+        "nonlocal_self_triangle_pairs": 0,
+        "nonlocal_self_details": [],
+        "new_exact_self_pairs_vs_A": 0,
+        "new_nonlocal_self_pairs_vs_A": 0
+      },
+      "left_arm_skin": {
+        "triangle_count": 4536,
+        "skin_area_over_rest": {
+          "min": 0.028800763527488886,
+          "p01": 0.36902561888460905,
+          "p05": 0.4145063422464433,
+          "median": 0.9999863540791236,
+          "max": 1.929408567529233
+        },
+        "geometric_normal_vs_transported_rest_normal": {
+          "min": -0.99584959941028,
+          "p01": 0.6055194722161902,
+          "p05": 0.8890527537547164,
+          "median": 0.9999999998145105,
+          "max": 0.9999999999999961
+        },
+        "minimum_normalized_skin_J_singular_value": 0.4832414052260878,
+        "minimum_skin_J_determinant": 0.2357641106181416,
+        "skin_J_nonpositive_determinant_vertices": 0,
+        "face_normal_alignment_below0": 20,
+        "face_normal_alignment_below0_5": 36,
+        "face_area_below_10pct_rest": 1,
+        "worst_normal_faces": [
+          {
+            "native_vertices": [
+              4478,
+              4615,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.99584959941028,
+            "area_ratio": 0.3232523973382702
+          },
+          {
+            "native_vertices": [
+              4365,
+              4370,
+              4445
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.951052856751923,
+            "area_ratio": 0.537655077826765
+          },
+          {
+            "native_vertices": [
+              4478,
+              4479,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.9497137381356984,
+            "area_ratio": 0.2703822384370088
+          },
+          {
+            "native_vertices": [
+              4361,
+              4364,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.9120757311187306,
+            "area_ratio": 0.4010170199176444
+          },
+          {
+            "native_vertices": [
+              4370,
+              4432,
+              4446
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.8989595317945811,
+            "area_ratio": 0.35865036562670444
+          },
+          {
+            "native_vertices": [
+              4615,
+              4616,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.8882996938811138,
+            "area_ratio": 0.5129959097257716
+          },
+          {
+            "native_vertices": [
+              13854,
+              13855,
+              13865
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.807516511235103,
+            "area_ratio": 0.42841607733669584
+          },
+          {
+            "native_vertices": [
+              4361,
+              4479,
+              4617
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.7228948494315833,
+            "area_ratio": 0.4140576631649831
+          },
+          {
+            "native_vertices": [
+              4409,
+              4478,
+              4479
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.6525171600179027,
+            "area_ratio": 0.3187130068966139
+          },
+          {
+            "native_vertices": [
+              4370,
+              4445,
+              4446
+            ],
+            "dominant_weight": "mixamorig:LeftArm",
+            "alignment": -0.5121865613617798,
+            "area_ratio": 0.5993037582896438
+          }
+        ],
+        "area_ratio_candidate_over_A": {
+          "min": 0.6927843144361877,
+          "p01": 0.9486257461624202,
+          "p05": 0.9855465247140931,
+          "median": 0.9999854488724038,
+          "max": 1.038815477176068
+        },
+        "new_negative_normal_faces_vs_A": 0
+      }
+    },
+    "clearances": {
+      "left_glove_vs_other_wearer": {
+        "exact_triangle_pairs": 123,
+        "by_target": {
+          "11926:mixamorig:LeftHand": 123
+        },
+        "witnesses_first100": [
+          {
+            "triangles": [
+              15899,
+              22418
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18648284673690796,
+              -0.5985510349273682,
+              1.3936505317687988
+            ]
+          },
+          {
+            "triangles": [
+              15899,
+              22420
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18674492835998535,
+              -0.6001803874969482,
+              1.3944480419158936
+            ]
+          },
+          {
+            "triangles": [
+              15899,
+              22419
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.189785897731781,
+              -0.5992326736450195,
+              1.3900319337844849
+            ]
+          },
+          {
+            "triangles": [
+              15899,
+              22417
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.189785897731781,
+              -0.5992326736450195,
+              1.3900319337844849
+            ]
+          },
+          {
+            "triangles": [
+              15774,
+              22545
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.195817232131958,
+              -0.5958312749862671,
+              1.3797563314437866
+            ]
+          },
+          {
+            "triangles": [
+              15774,
+              22525
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19630149006843567,
+              -0.5965129137039185,
+              1.3799901008605957
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22473
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1859302669763565,
+              -0.5866237282752991,
+              1.4119764566421509
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22467
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18470574915409088,
+              -0.5926640033721924,
+              1.413718581199646
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22471
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18875029683113098,
+              -0.5834869742393494,
+              1.4164894819259644
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22472
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18670342862606049,
+              -0.5882573127746582,
+              1.415186882019043
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22470
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18465913832187653,
+              -0.5888412594795227,
+              1.4105781316757202
+            ]
+          },
+          {
+            "triangles": [
+              15912,
+              22468
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18565593659877777,
+              -0.5905990600585938,
+              1.4144415855407715
+            ]
+          },
+          {
+            "triangles": [
+              15915,
+              22473
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1859302669763565,
+              -0.5866237282752991,
+              1.4119764566421509
+            ]
+          },
+          {
+            "triangles": [
+              15915,
+              22471
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18882879614830017,
+              -0.583313524723053,
+              1.416522741317749
+            ]
+          },
+          {
+            "triangles": [
+              15915,
+              22474
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18771132826805115,
+              -0.5829781889915466,
+              1.4130429029464722
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22467
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18470574915409088,
+              -0.5926640033721924,
+              1.413718581199646
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22469
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18434365093708038,
+              -0.5937731266021729,
+              1.4087529182434082
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22519
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18430675566196442,
+              -0.5940421223640442,
+              1.4083454608917236
+            ]
+          },
+          {
+            "triangles": [
+              15916,
+              22470
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18465913832187653,
+              -0.5888412594795227,
+              1.4105781316757202
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22465
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18364377319812775,
+              -0.5987309217453003,
+              1.4049873352050781
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22520
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18374863266944885,
+              -0.5963587760925293,
+              1.4035272598266602
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22412
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18572044372558594,
+              -0.598827600479126,
+              1.3989551067352295
+            ]
+          },
+          {
+            "triangles": [
+              15926,
+              22503
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18570247292518616,
+              -0.598767101764679,
+              1.398978352546692
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22467
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18444252014160156,
+              -0.594489336013794,
+              1.4107515811920166
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22519
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18430675566196442,
+              -0.5940421223640442,
+              1.4083454608917236
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22465
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18364377319812775,
+              -0.5987309217453003,
+              1.4049873352050781
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22466
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18397343158721924,
+              -0.5970145463943481,
+              1.4074079990386963
+            ]
+          },
+          {
+            "triangles": [
+              15917,
+              22520
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18374863266944885,
+              -0.5963587760925293,
+              1.4035272598266602
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22411
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1865665763616562,
+              -0.5998941659927368,
+              1.395155668258667
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22412
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18572044372558594,
+              -0.598827600479126,
+              1.3989551067352295
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22503
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18570247292518616,
+              -0.598767101764679,
+              1.398978352546692
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22504
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18624594807624817,
+              -0.5989367365837097,
+              1.3957544565200806
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22418
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18648284673690796,
+              -0.5985510349273682,
+              1.3936505317687988
+            ]
+          },
+          {
+            "triangles": [
+              15927,
+              22420
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18674492835998535,
+              -0.6001803874969482,
+              1.3944480419158936
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22675
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18887479603290558,
+              -0.5831960439682007,
+              1.4165794849395752
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22471
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18882879614830017,
+              -0.583313524723053,
+              1.416522741317749
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22676
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18850448727607727,
+              -0.579846978187561,
+              1.4132920503616333
+            ]
+          },
+          {
+            "triangles": [
+              15914,
+              22474
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18771132826805115,
+              -0.5829781889915466,
+              1.4130429029464722
+            ]
+          },
+          {
+            "triangles": [
+              15905,
+              22545
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19581721723079681,
+              -0.5958312749862671,
+              1.3797563314437866
+            ]
+          },
+          {
+            "triangles": [
+              15905,
+              22525
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19630149006843567,
+              -0.5965129137039185,
+              1.3799901008605957
+            ]
+          },
+          {
+            "triangles": [
+              15775,
+              22558
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19720156490802765,
+              -0.5903899669647217,
+              1.3750476837158203
+            ]
+          },
+          {
+            "triangles": [
+              15775,
+              22557
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1967511922121048,
+              -0.5898729562759399,
+              1.374879002571106
+            ]
+          },
+          {
+            "triangles": [
+              15775,
+              22575
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20066000521183014,
+              -0.5927188992500305,
+              1.3750900030136108
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22429
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2008497267961502,
+              -0.585528552532196,
+              1.3715046644210815
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22430
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20083925127983093,
+              -0.5855354070663452,
+              1.3715112209320068
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22631
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2007477730512619,
+              -0.5848033428192139,
+              1.3711798191070557
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22557
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1967511773109436,
+              -0.5898729562759399,
+              1.374879002571106
+            ]
+          },
+          {
+            "triangles": [
+              15784,
+              22575
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20066000521183014,
+              -0.5927188992500305,
+              1.3750900030136108
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22558
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2041020393371582,
+              -0.588088870048523,
+              1.372101068496704
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22557
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20403315126895905,
+              -0.5871196389198303,
+              1.3715935945510864
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22575
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20271670818328857,
+              -0.5905269980430603,
+              1.3733909130096436
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22449
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20764197409152985,
+              -0.5841180086135864,
+              1.369989275932312
+            ]
+          },
+          {
+            "triangles": [
+              15785,
+              22497
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20583300292491913,
+              -0.586734414100647,
+              1.3713762760162354
+            ]
+          },
+          {
+            "triangles": [
+              15856,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1970096081495285,
+              -0.5698594450950623,
+              1.415536642074585
+            ]
+          },
+          {
+            "triangles": [
+              15856,
+              22679
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19489483535289764,
+              -0.5730572938919067,
+              1.4159127473831177
+            ]
+          },
+          {
+            "triangles": [
+              15857,
+              22679
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19489483535289764,
+              -0.5730572938919067,
+              1.4159127473831177
+            ]
+          },
+          {
+            "triangles": [
+              15476,
+              22679
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1936769187450409,
+              -0.5748389959335327,
+              1.4162546396255493
+            ]
+          },
+          {
+            "triangles": [
+              15476,
+              22674
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19339652359485626,
+              -0.5752884149551392,
+              1.416248083114624
+            ]
+          },
+          {
+            "triangles": [
+              15476,
+              22675
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18913619220256805,
+              -0.5827300548553467,
+              1.4165749549865723
+            ]
+          },
+          {
+            "triangles": [
+              15477,
+              22675
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18913619220256805,
+              -0.5827301144599915,
+              1.4165749549865723
+            ]
+          },
+          {
+            "triangles": [
+              15477,
+              22677
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19149453938007355,
+              -0.5745388269424438,
+              1.4132579565048218
+            ]
+          },
+          {
+            "triangles": [
+              15477,
+              22676
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.18850448727607727,
+              -0.579846978187561,
+              1.4132920503616333
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22522
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19283366203308105,
+              -0.5711836218833923,
+              1.4128447771072388
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22681
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19253475964069366,
+              -0.5720051527023315,
+              1.4129825830459595
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22680
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19228745996952057,
+              -0.5726581811904907,
+              1.413079857826233
+            ]
+          },
+          {
+            "triangles": [
+              15855,
+              22677
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19149453938007355,
+              -0.5745388269424438,
+              1.4132579565048218
+            ]
+          },
+          {
+            "triangles": [
+              15859,
+              22522
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19399148225784302,
+              -0.5695906281471252,
+              1.4127459526062012
+            ]
+          },
+          {
+            "triangles": [
+              15859,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19701118767261505,
+              -0.5698570609092712,
+              1.4155362844467163
+            ]
+          },
+          {
+            "triangles": [
+              15858,
+              22522
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19399148225784302,
+              -0.5695906281471252,
+              1.4127459526062012
+            ]
+          },
+          {
+            "triangles": [
+              15858,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19701458513736725,
+              -0.5698518753051758,
+              1.4155356884002686
+            ]
+          },
+          {
+            "triangles": [
+              15858,
+              22681
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.1954975426197052,
+              -0.5675967335700989,
+              1.4126620292663574
+            ]
+          },
+          {
+            "triangles": [
+              15860,
+              22668
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.199689581990242,
+              -0.565847635269165,
+              1.4147028923034668
+            ]
+          },
+          {
+            "triangles": [
+              15860,
+              22678
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.19701458513736725,
+              -0.5698518753051758,
+              1.4155356884002686
+            ]
+          },
+          {
+            "triangles": [
+              15853,
+              22668
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2007552832365036,
+              -0.5637655258178711,
+              1.4148246049880981
+            ]
+          },
+          {
+            "triangles": [
+              15801,
+              22742
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21395094692707062,
+              -0.5731356143951416,
+              1.3678253889083862
+            ]
+          },
+          {
+            "triangles": [
+              15786,
+              22449
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20764197409152985,
+              -0.5841180086135864,
+              1.369989275932312
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22742
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21394522488117218,
+              -0.573148250579834,
+              1.3678237199783325
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22743
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21273450553417206,
+              -0.5754114985466003,
+              1.3682584762573242
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22449
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20973069965839386,
+              -0.5807146430015564,
+              1.369238257408142
+            ]
+          },
+          {
+            "triangles": [
+              15787,
+              22450
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20985984802246094,
+              -0.5805003643035889,
+              1.3692004680633545
+            ]
+          },
+          {
+            "triangles": [
+              15800,
+              22433
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21934521198272705,
+              -0.560653805732727,
+              1.3688697814941406
+            ]
+          },
+          {
+            "triangles": [
+              15800,
+              22742
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21395094692707062,
+              -0.5731356143951416,
+              1.3678253889083862
+            ]
+          },
+          {
+            "triangles": [
+              15800,
+              22434
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21763917803764343,
+              -0.5647859573364258,
+              1.368546724319458
+            ]
+          },
+          {
+            "triangles": [
+              15788,
+              22368
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21520200371742249,
+              -0.5366076231002808,
+              1.4048795700073242
+            ]
+          },
+          {
+            "triangles": [
+              15788,
+              22369
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2152716964483261,
+              -0.5365742444992065,
+              1.4047002792358398
+            ]
+          },
+          {
+            "triangles": [
+              15788,
+              22378
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2173539251089096,
+              -0.5356172323226929,
+              1.399735689163208
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22372
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21417322754859924,
+              -0.5375657081604004,
+              1.4069701433181763
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22371
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21259459853172302,
+              -0.5383920669555664,
+              1.4074915647506714
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22370
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21254953742027283,
+              -0.538415789604187,
+              1.407507300376892
+            ]
+          },
+          {
+            "triangles": [
+              15789,
+              22368
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21520200371742249,
+              -0.5366076231002808,
+              1.4048795700073242
+            ]
+          },
+          {
+            "triangles": [
+              15793,
+              22370
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.21254953742027283,
+              -0.538415789604187,
+              1.407507300376892
+            ]
+          },
+          {
+            "triangles": [
+              15793,
+              22688
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.209781214594841,
+              -0.5439822673797607,
+              1.4110223054885864
+            ]
+          },
+          {
+            "triangles": [
+              15792,
+              22627
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20745736360549927,
+              -0.5456992983818054,
+              1.4123482704162598
+            ]
+          },
+          {
+            "triangles": [
+              15792,
+              22688
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.209781214594841,
+              -0.5439822673797607,
+              1.4110223054885864
+            ]
+          },
+          {
+            "triangles": [
+              15792,
+              22689
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20933465659618378,
+              -0.5441955924034119,
+              1.4110921621322632
+            ]
+          },
+          {
+            "triangles": [
+              15850,
+              22670
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20411400496959686,
+              -0.556573212146759,
+              1.41507089138031
+            ]
+          },
+          {
+            "triangles": [
+              15850,
+              22684
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20615167915821075,
+              -0.5501816868782043,
+              1.4138606786727905
+            ]
+          },
+          {
+            "triangles": [
+              15850,
+              22685
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2059599608182907,
+              -0.5514659285545349,
+              1.4142261743545532
+            ]
+          },
+          {
+            "triangles": [
+              15851,
+              22627
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.20745736360549927,
+              -0.5456992983818054,
+              1.4123482704162598
+            ]
+          },
+          {
+            "triangles": [
+              15851,
+              22689
+            ],
+            "target": "11926:mixamorig:LeftHand",
+            "point_world_m": [
+              -0.2067636400461197,
+              -0.5482469201087952,
+              1.413252830505371
+            ]
+          }
+        ],
+        "new_native_triangle_pairs_vs_A": 0
+      },
+      "left_arm_components_vs_other_body": {
+        "exact_triangle_pairs": 148,
+        "by_target": {
+          "16584:mixamorig:Spine2": 44,
+          "10300:mixamorig:Spine2": 34,
+          "4248:mixamorig:Spine2": 37,
+          "4248:mixamorig:LeftShoulder": 13,
+          "10300:mixamorig:Spine1": 20
+        },
+        "witnesses_first100": [
+          {
+            "triangles": [
+              27285,
+              29086
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.057251229882240295,
+              0.03558474779129028,
+              1.4874273538589478
+            ]
+          },
+          {
+            "triangles": [
+              27280,
+              29086
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.058651842176914215,
+              0.03451748564839363,
+              1.4857693910598755
+            ]
+          },
+          {
+            "triangles": [
+              27280,
+              29083
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.058651842176914215,
+              0.03451748564839363,
+              1.4857693910598755
+            ]
+          },
+          {
+            "triangles": [
+              27275,
+              29083
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05887577682733536,
+              0.033391207456588745,
+              1.4852726459503174
+            ]
+          },
+          {
+            "triangles": [
+              27270,
+              29083
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05941053479909897,
+              0.03069308027625084,
+              1.4840797185897827
+            ]
+          },
+          {
+            "triangles": [
+              27270,
+              29082
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05941053479909897,
+              0.03069308027625084,
+              1.4840797185897827
+            ]
+          },
+          {
+            "triangles": [
+              27265,
+              29082
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.060001276433467865,
+              0.0282321535050869,
+              1.4828840494155884
+            ]
+          },
+          {
+            "triangles": [
+              27265,
+              29079
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.060001276433467865,
+              0.028232155367732048,
+              1.4828840494155884
+            ]
+          },
+          {
+            "triangles": [
+              27260,
+              29079
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05904221534729004,
+              0.024708576500415802,
+              1.482975721359253
+            ]
+          },
+          {
+            "triangles": [
+              27245,
+              29074
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05648418143391609,
+              0.01942167803645134,
+              1.484236478805542
+            ]
+          },
+          {
+            "triangles": [
+              27240,
+              29074
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05418144538998604,
+              0.016533182933926582,
+              1.4859979152679443
+            ]
+          },
+          {
+            "triangles": [
+              27250,
+              29078
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05824689939618111,
+              0.021381990984082222,
+              1.4829446077346802
+            ]
+          },
+          {
+            "triangles": [
+              27260,
+              29078
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05904221907258034,
+              0.024708576500415802,
+              1.482975721359253
+            ]
+          },
+          {
+            "triangles": [
+              27255,
+              29078
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05897699296474457,
+              0.024434862658381462,
+              1.4829734563827515
+            ]
+          },
+          {
+            "triangles": [
+              27250,
+              29075
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05824689939618111,
+              0.021381989121437073,
+              1.4829446077346802
+            ]
+          },
+          {
+            "triangles": [
+              27245,
+              29075
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05648418515920639,
+              0.01942167803645134,
+              1.484236478805542
+            ]
+          },
+          {
+            "triangles": [
+              27305,
+              29094
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.049662619829177856,
+              0.03679298609495163,
+              1.4952841997146606
+            ]
+          },
+          {
+            "triangles": [
+              27310,
+              29094
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04798128455877304,
+              0.0346880704164505,
+              1.4964913129806519
+            ]
+          },
+          {
+            "triangles": [
+              27290,
+              29090
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.054694995284080505,
+              0.03780337795615196,
+              1.4905109405517578
+            ]
+          },
+          {
+            "triangles": [
+              27295,
+              29090
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05294070020318031,
+              0.03738170489668846,
+              1.4921544790267944
+            ]
+          },
+          {
+            "triangles": [
+              27295,
+              29091
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05294070020318031,
+              0.03738170489668846,
+              1.4921544790267944
+            ]
+          },
+          {
+            "triangles": [
+              27300,
+              29091
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.050350725650787354,
+              0.03692115843296051,
+              1.4946155548095703
+            ]
+          },
+          {
+            "triangles": [
+              27305,
+              29091
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.049662619829177856,
+              0.03679298609495163,
+              1.4952841997146606
+            ]
+          },
+          {
+            "triangles": [
+              27290,
+              29087
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.054694995284080505,
+              0.03780337795615196,
+              1.4905109405517578
+            ]
+          },
+          {
+            "triangles": [
+              27285,
+              29087
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.057251229882240295,
+              0.03558474779129028,
+              1.4874273538589478
+            ]
+          },
+          {
+            "triangles": [
+              27310,
+              29095
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04798128455877304,
+              0.0346880704164505,
+              1.4964913129806519
+            ]
+          },
+          {
+            "triangles": [
+              27315,
+              29095
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04551361873745918,
+              0.03188229352235794,
+              1.4982374906539917
+            ]
+          },
+          {
+            "triangles": [
+              27315,
+              29098
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04551361873745918,
+              0.03188229352235794,
+              1.4982374906539917
+            ]
+          },
+          {
+            "triangles": [
+              27320,
+              29098
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.044657181948423386,
+              0.028304317966103554,
+              1.4981608390808105
+            ]
+          },
+          {
+            "triangles": [
+              27320,
+              29099
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.044657181948423386,
+              0.028304317966103554,
+              1.4981608390808105
+            ]
+          },
+          {
+            "triangles": [
+              27325,
+              29099
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04379654675722122,
+              0.02502843365073204,
+              1.4982084035873413
+            ]
+          },
+          {
+            "triangles": [
+              27330,
+              29103
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04471785947680473,
+              0.021165093407034874,
+              1.4963452816009521
+            ]
+          },
+          {
+            "triangles": [
+              27335,
+              29103
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.045188672840595245,
+              0.01882483810186386,
+              1.4952987432479858
+            ]
+          },
+          {
+            "triangles": [
+              27325,
+              29102
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04379655048251152,
+              0.02502843178808689,
+              1.4982084035873413
+            ]
+          },
+          {
+            "triangles": [
+              27330,
+              29102
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04471786320209503,
+              0.021165091544389725,
+              1.4963452816009521
+            ]
+          },
+          {
+            "triangles": [
+              27340,
+              29066
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04780089110136032,
+              0.016774937510490417,
+              1.4922966957092285
+            ]
+          },
+          {
+            "triangles": [
+              27335,
+              29066
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.045188672840595245,
+              0.01882483810186386,
+              1.4952987432479858
+            ]
+          },
+          {
+            "triangles": [
+              27345,
+              29066
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04797918349504471,
+              0.016638774424791336,
+              1.4921259880065918
+            ]
+          },
+          {
+            "triangles": [
+              27350,
+              29070
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.052038609981536865,
+              0.01612127758562565,
+              1.4881786108016968
+            ]
+          },
+          {
+            "triangles": [
+              27345,
+              29070
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04932583495974541,
+              0.015504414215683937,
+              1.4908208847045898
+            ]
+          },
+          {
+            "triangles": [
+              27355,
+              29070
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.052618492394685745,
+              0.016259875148534775,
+              1.4875956773757935
+            ]
+          },
+          {
+            "triangles": [
+              27345,
+              29067
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.04797918349504471,
+              0.016638772562146187,
+              1.4921259880065918
+            ]
+          },
+          {
+            "triangles": [
+              27240,
+              29071
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.05418144538998604,
+              0.016533182933926582,
+              1.4859979152679443
+            ]
+          },
+          {
+            "triangles": [
+              27355,
+              29071
+            ],
+            "target": "16584:mixamorig:Spine2",
+            "point_world_m": [
+              0.052618492394685745,
+              0.016259875148534775,
+              1.4875956773757935
+            ]
+          },
+          {
+            "triangles": [
+              8949,
+              20259
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07677322626113892,
+              -0.07530015707015991,
+              1.4685745239257812
+            ]
+          },
+          {
+            "triangles": [
+              8949,
+              20264
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07224797457456589,
+              -0.07926136255264282,
+              1.475305438041687
+            ]
+          },
+          {
+            "triangles": [
+              8948,
+              20259
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07677322626113892,
+              -0.07530016452074051,
+              1.4685745239257812
+            ]
+          },
+          {
+            "triangles": [
+              8948,
+              20260
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07965641468763351,
+              -0.07328024506568909,
+              1.4651426076889038
+            ]
+          },
+          {
+            "triangles": [
+              8412,
+              20264
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07224797457456589,
+              -0.07926136255264282,
+              1.475305438041687
+            ]
+          },
+          {
+            "triangles": [
+              8416,
+              20268
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.05858796834945679,
+              -0.0895111933350563,
+              1.4879835844039917
+            ]
+          },
+          {
+            "triangles": [
+              8416,
+              20263
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0639985129237175,
+              -0.08562371134757996,
+              1.483836054801941
+            ]
+          },
+          {
+            "triangles": [
+              8413,
+              20264
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.06917508691549301,
+              -0.0817306637763977,
+              1.4786598682403564
+            ]
+          },
+          {
+            "triangles": [
+              8413,
+              20263
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0639985129237175,
+              -0.08562371134757996,
+              1.483836054801941
+            ]
+          },
+          {
+            "triangles": [
+              8417,
+              20268
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.05858796834945679,
+              -0.0895111933350563,
+              1.4879835844039917
+            ]
+          },
+          {
+            "triangles": [
+              9014,
+              20039
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.04685702919960022,
+              -0.09492924809455872,
+              1.4942944049835205
+            ]
+          },
+          {
+            "triangles": [
+              9014,
+              20038
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.042513273656368256,
+              -0.09617375582456589,
+              1.4959982633590698
+            ]
+          },
+          {
+            "triangles": [
+              9014,
+              20268
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.054409317672252655,
+              -0.09289524704217911,
+              1.4913444519042969
+            ]
+          },
+          {
+            "triangles": [
+              9021,
+              20038
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.042513273656368256,
+              -0.09617375582456589,
+              1.4959982633590698
+            ]
+          },
+          {
+            "triangles": [
+              9021,
+              20011
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.038198262453079224,
+              -0.09811995178461075,
+              1.4976859092712402
+            ]
+          },
+          {
+            "triangles": [
+              9036,
+              20011
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.038198262453079224,
+              -0.09811995178461075,
+              1.4976859092712402
+            ]
+          },
+          {
+            "triangles": [
+              9037,
+              20011
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.035053543746471405,
+              -0.09932132810354233,
+              1.4985724687576294
+            ]
+          },
+          {
+            "triangles": [
+              9037,
+              20010
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.027729462832212448,
+              -0.10229631513357162,
+              1.5002217292785645
+            ]
+          },
+          {
+            "triangles": [
+              931,
+              9035
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.017791979014873505,
+              -0.11322030425071716,
+              1.499993085861206
+            ]
+          },
+          {
+            "triangles": [
+              646,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.010560346767306328,
+              -0.10107150673866272,
+              1.5032896995544434
+            ]
+          },
+          {
+            "triangles": [
+              645,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.011403169482946396,
+              -0.10186460614204407,
+              1.5030689239501953
+            ]
+          },
+          {
+            "triangles": [
+              931,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.017791979014873505,
+              -0.11322030425071716,
+              1.499993085861206
+            ]
+          },
+          {
+            "triangles": [
+              634,
+              9034
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.009301871061325073,
+              -0.10025744885206223,
+              1.5035221576690674
+            ]
+          },
+          {
+            "triangles": [
+              931,
+              9010
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.022294528782367706,
+              -0.12162788212299347,
+              1.4976344108581543
+            ]
+          },
+          {
+            "triangles": [
+              932,
+              9010
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.027597768232226372,
+              -0.12957970798015594,
+              1.4957823753356934
+            ]
+          },
+          {
+            "triangles": [
+              932,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.027597766369581223,
+              -0.12957970798015594,
+              1.4957823753356934
+            ]
+          },
+          {
+            "triangles": [
+              1223,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.027968933805823326,
+              -0.1300419569015503,
+              1.4956971406936646
+            ]
+          },
+          {
+            "triangles": [
+              1224,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.0265421774238348,
+              -0.13185858726501465,
+              1.4953023195266724
+            ]
+          },
+          {
+            "triangles": [
+              1373,
+              9011
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.022942304611206055,
+              -0.1358102411031723,
+              1.494433045387268
+            ]
+          },
+          {
+            "triangles": [
+              1373,
+              9000
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.022942306473851204,
+              -0.1358102411031723,
+              1.494433045387268
+            ]
+          },
+          {
+            "triangles": [
+              1373,
+              9001
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.015949206426739693,
+              -0.1427363008260727,
+              1.4893604516983032
+            ]
+          },
+          {
+            "triangles": [
+              1374,
+              9001
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.011450007557868958,
+              -0.14773209393024445,
+              1.4859213829040527
+            ]
+          },
+          {
+            "triangles": [
+              1374,
+              9006
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.011450008489191532,
+              -0.14773209393024445,
+              1.4859213829040527
+            ]
+          },
+          {
+            "triangles": [
+              993,
+              9006
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.00457150861620903,
+              -0.15526755154132843,
+              1.475618600845337
+            ]
+          },
+          {
+            "triangles": [
+              994,
+              9007
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.001521407626569271,
+              -0.15861020982265472,
+              1.4711300134658813
+            ]
+          },
+          {
+            "triangles": [
+              993,
+              9007
+            ],
+            "target": "4248:mixamorig:LeftShoulder",
+            "point_world_m": [
+              0.0045715076848864555,
+              -0.15526755154132843,
+              1.475618600845337
+            ]
+          },
+          {
+            "triangles": [
+              964,
+              9033
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.008523274213075638,
+              -0.16438411176204681,
+              1.4519662857055664
+            ]
+          },
+          {
+            "triangles": [
+              994,
+              9008
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              0.0015214085578918457,
+              -0.15861020982265472,
+              1.4711300134658813
+            ]
+          },
+          {
+            "triangles": [
+              988,
+              9008
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.0024172919802367687,
+              -0.16316308081150055,
+              1.4607349634170532
+            ]
+          },
+          {
+            "triangles": [
+              964,
+              9008
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.005939147435128689,
+              -0.16287589073181152,
+              1.456701397895813
+            ]
+          },
+          {
+            "triangles": [
+              8396,
+              20137
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10908079147338867,
+              -0.050848767161369324,
+              1.4196676015853882
+            ]
+          },
+          {
+            "triangles": [
+              8396,
+              20258
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10677111148834229,
+              -0.05509616807103157,
+              1.4291925430297852
+            ]
+          },
+          {
+            "triangles": [
+              8836,
+              20258
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10677111148834229,
+              -0.05509616807103157,
+              1.4291925430297852
+            ]
+          },
+          {
+            "triangles": [
+              8837,
+              20137
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0956960916519165,
+              -0.06133623048663139,
+              1.4429670572280884
+            ]
+          },
+          {
+            "triangles": [
+              8837,
+              20258
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.10148509591817856,
+              -0.058271829038858414,
+              1.4365780353546143
+            ]
+          },
+          {
+            "triangles": [
+              8957,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0908319354057312,
+              -0.0640064924955368,
+              1.44904363155365
+            ]
+          },
+          {
+            "triangles": [
+              8957,
+              20137
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0956960916519165,
+              -0.06133623048663139,
+              1.4429670572280884
+            ]
+          },
+          {
+            "triangles": [
+              8957,
+              20136
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0933094173669815,
+              -0.061639007180929184,
+              1.4455825090408325
+            ]
+          },
+          {
+            "triangles": [
+              8956,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.0866420641541481,
+              -0.0673447772860527,
+              1.454399824142456
+            ]
+          },
+          {
+            "triangles": [
+              8959,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.08373116701841354,
+              -0.06997392326593399,
+              1.4583525657653809
+            ]
+          },
+          {
+            "triangles": [
+              8958,
+              20030
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.08373116701841354,
+              -0.06997392326593399,
+              1.4583525657653809
+            ]
+          },
+          {
+            "triangles": [
+              8958,
+              20260
+            ],
+            "target": "10300:mixamorig:Spine2",
+            "point_world_m": [
+              0.07965642213821411,
+              -0.07328024506568909,
+              1.4651426076889038
+            ]
+          },
+          {
+            "triangles": [
+              964,
+              9028
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.008523272350430489,
+              -0.16438411176204681,
+              1.4519662857055664
+            ]
+          },
+          {
+            "triangles": [
+              943,
+              9028
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.012888273224234581,
+              -0.1652355194091797,
+              1.444579839706421
+            ]
+          },
+          {
+            "triangles": [
+              943,
+              9029
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.012888272292912006,
+              -0.1652355194091797,
+              1.444579839706421
+            ]
+          },
+          {
+            "triangles": [
+              944,
+              9029
+            ],
+            "target": "4248:mixamorig:Spine2",
+            "point_world_m": [
+              -0.014328316785395145,
+              -0.17182974517345428,
+              1.4284226894378662
+            ]
+          }
+        ],
+        "new_native_triangle_pairs_vs_A": 0
+      },
+      "left_arm_dominant_skin_vs_other_body": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": [],
+        "new_native_triangle_pairs_vs_A": 0
+      },
+      "rifle_vs_left_nonhand_skin": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_L_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_L_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_R_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_ElbowCap_R_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_L_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_L_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_R_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "SWAT_Headset_R_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Rebuilt spare magazine sleeve_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Rebuilt spare magazine sleeve_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Removed magazine_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Removed magazine_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Fresh magazine_vs_left_glove": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      },
+      "Fresh magazine_vs_left_arm": {
+        "exact_triangle_pairs": 0,
+        "by_target": {},
+        "witnesses_first100": []
+      }
+    },
+    "all_body_normalized_LBS_max_blender_error_mm": 0.0004540443377676781
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "destination_relative_directory": "review",
+  "files": [
+    "replay_unit.py",
+    "inspect_binary.py",
+    "inspect_curve_contract.py",
+    "replay_compact.py",
+    "verify_metadata.py",
+    "source_identity.json",
+    "saved_source_validation.json",
+    "source_capture.json",
+    "reimport_capture.json",
+    "binary_unit_validation.json",
+    "endpoint_report.json",
+    "structure_validation.json",
+    "curve_contract_validation.json",
+    "whole_vertex_validation.json",
+    "garment_qualification.json",
+    "portable_replay_validation.json",
+    "metadata_validation.json",
+    "FINAL_REVIEW.json",
+    "INDEPENDENT_REVIEW.md",
+    "REPLAY.md",
+    "VALIDATOR_PROVENANCE.json",
+    "portable/capture_manifest.json",
+    "portable/native_motion.npz",
+    "portable/reimport.npz",
+    "portable/source.npz",
+    "portable/vertex_correspondence.npz"
+  ],
+  "omit": "Do not bundle full source_capture.npz, reimport_capture.npz, logs, reference_right, or cached __pycache__; portable captures retain all bone poses and disclosed complete-vertex controls"
+}

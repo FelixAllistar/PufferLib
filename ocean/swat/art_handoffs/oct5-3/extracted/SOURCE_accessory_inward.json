@@ -1,0 +1,1020 @@
+{
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend",
+  "sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+  "geometry_topology": {
+    "Fresh magazine": [
+      {
+        "component": 357,
+        "welded_vertices": 406,
+        "triangles": 780,
+        "edge_incidence_counts": {
+          "2": 1155,
+          "1": 30
+        },
+        "closed_after_coincident_weld": false,
+        "convex": false,
+        "bounds": [
+          0.08296126872301102,
+          0.17331835627555847,
+          0.20191192626953125
+        ]
+      }
+    ],
+    "Rebuilt spare magazine sleeve": [
+      {
+        "component": 0,
+        "welded_vertices": 48,
+        "triangles": 12,
+        "edge_incidence_counts": {
+          "2": 18
+        },
+        "closed_after_coincident_weld": true,
+        "convex": true,
+        "bounds": [
+          0.06282524764537811,
+          0.1354566514492035,
+          0.1253940463066101
+        ]
+      },
+      {
+        "component": 8,
+        "welded_vertices": 48,
+        "triangles": 12,
+        "edge_incidence_counts": {
+          "2": 18
+        },
+        "closed_after_coincident_weld": true,
+        "convex": true,
+        "bounds": [
+          0.0628252625465393,
+          0.1354566365480423,
+          0.12539398670196533
+        ]
+      },
+      {
+        "component": 16,
+        "welded_vertices": 48,
+        "triangles": 12,
+        "edge_incidence_counts": {
+          "2": 18
+        },
+        "closed_after_coincident_weld": true,
+        "convex": true,
+        "bounds": [
+          0.06061297655105591,
+          0.06275466084480286,
+          0.07483673095703125
+        ]
+      },
+      {
+        "component": 24,
+        "welded_vertices": 48,
+        "triangles": 12,
+        "edge_incidence_counts": {
+          "2": 18
+        },
+        "closed_after_coincident_weld": true,
+        "convex": true,
+        "bounds": [
+          0.06061294674873352,
+          0.06275466084480286,
+          0.0748366117477417
+        ]
+      },
+      {
+        "component": 32,
+        "welded_vertices": 48,
+        "triangles": 12,
+        "edge_incidence_counts": {
+          "2": 18
+        },
+        "closed_after_coincident_weld": true,
+        "convex": true,
+        "bounds": [
+          0.0960608571767807,
+          0.1209985762834549,
+          0.06980389356613159
+        ]
+      },
+      {
+        "component": 40,
+        "welded_vertices": 48,
+        "triangles": 12,
+        "edge_incidence_counts": {
+          "2": 18
+        },
+        "closed_after_coincident_weld": true,
+        "convex": true,
+        "bounds": [
+          0.11343483626842499,
+          0.06101110577583313,
+          0.031142473220825195
+        ]
+      }
+    ],
+    "body_component_5118": {
+      "welded_vertices": 24850,
+      "triangles": 4308,
+      "edge_incidence_counts": {
+        "2": 6425,
+        "1": 74
+      },
+      "closed_after_coincident_weld": false
+    },
+    "body_component_17904": {
+      "welded_vertices": 24850,
+      "triangles": 1000,
+      "edge_incidence_counts": {
+        "2": 1500
+      },
+      "closed_after_coincident_weld": true
+    }
+  },
+  "frames": [
+    {
+      "frame": 0,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        }
+      }
+    },
+    {
+      "frame": 1,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 2903,
+          "confirmed_inside_samples": 386,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.0558217821610167,
+            "world_point_m": [
+              0.1408126950263977,
+              -0.24492990970611572,
+              0.6520681381225586
+            ],
+            "body_triangle": 14099,
+            "body_component": 5118,
+            "accessory_closed_component": 8
+          },
+          "body_triangles_sampled": [
+            14098,
+            14099,
+            14141
+          ]
+        }
+      }
+    },
+    {
+      "frame": 2,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 233208,
+          "confirmed_inside_samples": 35244,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9997296923035828,
+            "world_point_m": [
+              0.16730894148349762,
+              -0.2663287818431854,
+              0.6617520451545715
+            ],
+            "body_triangle": 34433,
+            "body_component": 17904,
+            "accessory_closed_component": 16
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12453,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14092,
+            14093,
+            14098,
+            14099,
+            14140,
+            14141,
+            34276,
+            34277,
+            34281,
+            34285,
+            34287,
+            34315,
+            34316,
+            34433,
+            34446,
+            34454,
+            34455
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 85180,
+          "confirmed_inside_samples": 11121,
+          "parity_disagreements": 293,
+          "maximum": {
+            "depth_mm": 15.76419360935688,
+            "world_point_m": [
+              0.17625007033348083,
+              -0.26604002714157104,
+              0.6466181874275208
+            ],
+            "accessory_triangle": 51,
+            "body_component": 17904
+          }
+        }
+      }
+    },
+    {
+      "frame": 3,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 202713,
+          "confirmed_inside_samples": 35255,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9996578309077213,
+            "world_point_m": [
+              0.1607535183429718,
+              -0.2474420964717865,
+              0.6558714509010315
+            ],
+            "body_triangle": 34277,
+            "body_component": 17904,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12453,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14092,
+            14093,
+            14098,
+            14099,
+            14113,
+            14114,
+            14140,
+            14141,
+            34276,
+            34277,
+            34281,
+            34315,
+            34316,
+            34433,
+            34446,
+            34454
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 85180,
+          "confirmed_inside_samples": 13146,
+          "parity_disagreements": 166,
+          "maximum": {
+            "depth_mm": 18.392138183116913,
+            "world_point_m": [
+              0.17891158163547516,
+              -0.27309972047805786,
+              0.6465821266174316
+            ],
+            "accessory_triangle": 3,
+            "body_component": 17904
+          }
+        }
+      }
+    },
+    {
+      "frame": 4,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 741,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": [
+            14141
+          ]
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 207051,
+          "confirmed_inside_samples": 37294,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9996923665316375,
+            "world_point_m": [
+              0.16409535706043243,
+              -0.25475603342056274,
+              0.6525185108184814
+            ],
+            "body_triangle": 34277,
+            "body_component": 17904,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12453,
+            12454,
+            12464,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14085,
+            14092,
+            14093,
+            14098,
+            14099,
+            14113,
+            14114,
+            14140,
+            14141,
+            34276,
+            34277,
+            34281,
+            34315,
+            34316,
+            34433,
+            34446,
+            34454
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 85180,
+          "confirmed_inside_samples": 9211,
+          "parity_disagreements": 54,
+          "maximum": {
+            "depth_mm": 11.09523605555296,
+            "world_point_m": [
+              0.1775396764278412,
+              -0.25979164242744446,
+              0.6523693203926086
+            ],
+            "accessory_triangle": 9,
+            "body_component": 17904
+          }
+        }
+      }
+    },
+    {
+      "frame": 4.5,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 741,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": [
+            14141
+          ]
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 205865,
+          "confirmed_inside_samples": 25484,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9998574910146134,
+            "world_point_m": [
+              0.16670362651348114,
+              -0.2626526951789856,
+              0.6566693186759949
+            ],
+            "body_triangle": 34446,
+            "body_component": 17904,
+            "accessory_closed_component": 0
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12453,
+            12464,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14085,
+            14092,
+            14093,
+            14098,
+            14099,
+            14113,
+            14114,
+            14140,
+            14141,
+            34276,
+            34277,
+            34281,
+            34315,
+            34316,
+            34433,
+            34446,
+            34454
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 83802,
+          "confirmed_inside_samples": 3660,
+          "parity_disagreements": 174,
+          "maximum": {
+            "depth_mm": 6.118563003838062,
+            "world_point_m": [
+              0.17362460494041443,
+              -0.25776562094688416,
+              0.651485025882721
+            ],
+            "accessory_triangle": 9,
+            "body_component": 17904
+          }
+        }
+      }
+    },
+    {
+      "frame": 5,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 68985,
+          "confirmed_inside_samples": 4500,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.99856478918037,
+            "world_point_m": [
+              0.15236873924732208,
+              -0.24511024355888367,
+              0.6521958112716675
+            ],
+            "body_triangle": 14098,
+            "body_component": 5118,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12464,
+            12465,
+            12466,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14085,
+            14098,
+            14099,
+            14113,
+            14114,
+            34315,
+            34446
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 56267,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 1,
+          "maximum": {
+            "depth_mm": 0
+          }
+        }
+      }
+    },
+    {
+      "frame": 6,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 6202,
+          "confirmed_inside_samples": 2371,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.998515806430736,
+            "world_point_m": [
+              0.1293187290430069,
+              -0.2246890366077423,
+              0.6535177826881409
+            ],
+            "body_triangle": 14027,
+            "body_component": 5118,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12402,
+            12403,
+            12466,
+            14027,
+            14113,
+            14114,
+            14140,
+            14141
+          ]
+        }
+      }
+    },
+    {
+      "frame": 8,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 6202,
+          "confirmed_inside_samples": 2424,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.999123391557724,
+            "world_point_m": [
+              0.12677717208862305,
+              -0.2767123878002167,
+              0.6246042251586914
+            ],
+            "body_triangle": 14140,
+            "body_component": 5118,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12402,
+            12403,
+            12466,
+            14027,
+            14113,
+            14114,
+            14140,
+            14141
+          ]
+        }
+      }
+    },
+    {
+      "frame": 10,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 17229,
+          "confirmed_inside_samples": 4539,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9969330702888106,
+            "world_point_m": [
+              0.13702069222927094,
+              -0.27844077348709106,
+              0.6236125826835632
+            ],
+            "body_triangle": 12384,
+            "body_component": 5118,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12464,
+            12465,
+            12466,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14085,
+            14098,
+            14099,
+            14113,
+            14114
+          ]
+        }
+      }
+    },
+    {
+      "frame": 10.5,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 741,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": [
+            14141
+          ]
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 90276,
+          "confirmed_inside_samples": 8406,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.999439857905185,
+            "world_point_m": [
+              0.13584448397159576,
+              -0.26549211144447327,
+              0.6246303915977478
+            ],
+            "body_triangle": 12385,
+            "body_component": 5118,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12453,
+            12464,
+            12465,
+            12466,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14085,
+            14098,
+            14099,
+            14113,
+            14114,
+            34315,
+            34433,
+            34446
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 67334,
+          "confirmed_inside_samples": 487,
+          "parity_disagreements": 95,
+          "maximum": {
+            "depth_mm": 2.1511041559278965,
+            "world_point_m": [
+              0.15580421686172485,
+              -0.3174220323562622,
+              0.6024379134178162
+            ],
+            "accessory_triangle": 2,
+            "body_component": 17904
+          }
+        }
+      }
+    },
+    {
+      "frame": 11,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 741,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": [
+            14141
+          ]
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 117424,
+          "confirmed_inside_samples": 14558,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.999010821778781,
+            "world_point_m": [
+              0.107167549431324,
+              -0.31414365768432617,
+              0.638733446598053
+            ],
+            "body_triangle": 14084,
+            "body_component": 5118,
+            "accessory_closed_component": 16
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12453,
+            12464,
+            12465,
+            12466,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14085,
+            14092,
+            14093,
+            14098,
+            14099,
+            14113,
+            14114,
+            14140,
+            14141,
+            34315,
+            34316,
+            34433,
+            34446
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 73465,
+          "confirmed_inside_samples": 1449,
+          "parity_disagreements": 200,
+          "maximum": {
+            "depth_mm": 3.766007488593459,
+            "world_point_m": [
+              0.15776734054088593,
+              -0.3103427290916443,
+              0.6004100441932678
+            ],
+            "accessory_triangle": 9,
+            "body_component": 17904
+          }
+        }
+      }
+    },
+    {
+      "frame": 12,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 113418,
+          "confirmed_inside_samples": 16014,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9996723169869464,
+            "world_point_m": [
+              0.15317879617214203,
+              -0.29615235328674316,
+              0.6021750569343567
+            ],
+            "body_triangle": 34446,
+            "body_component": 17904,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12453,
+            12464,
+            12501,
+            12502,
+            12639,
+            12640,
+            14027,
+            14028,
+            14084,
+            14085,
+            14098,
+            14099,
+            14113,
+            14114,
+            14140,
+            14141,
+            34315,
+            34316,
+            34433,
+            34446
+          ]
+        },
+        "Rebuilt spare magazine sleeve / accessory inside body solid 17904": {
+          "sample_count": 76221,
+          "confirmed_inside_samples": 1877,
+          "parity_disagreements": 343,
+          "maximum": {
+            "depth_mm": 4.407729022204876,
+            "world_point_m": [
+              0.1552201509475708,
+              -0.3097933828830719,
+              0.5945854187011719
+            ],
+            "accessory_triangle": 4,
+            "body_component": 17904
+          }
+        }
+      }
+    },
+    {
+      "frame": 13,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 14525,
+          "confirmed_inside_samples": 3167,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9978841532523903,
+            "world_point_m": [
+              0.1260906308889389,
+              -0.2928590476512909,
+              0.6173306703567505
+            ],
+            "body_triangle": 14140,
+            "body_component": 5118,
+            "accessory_closed_component": 16
+          },
+          "body_triangles_sampled": [
+            12384,
+            12385,
+            12402,
+            12403,
+            12501,
+            12502,
+            12639,
+            14027,
+            14028,
+            14084,
+            14098,
+            14099,
+            14113,
+            14114,
+            14140,
+            14141
+          ]
+        }
+      }
+    },
+    {
+      "frame": 14,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 4564,
+          "confirmed_inside_samples": 1274,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 3.9985174312376914,
+            "world_point_m": [
+              0.12307576835155487,
+              -0.2730706036090851,
+              0.620012640953064
+            ],
+            "body_triangle": 14141,
+            "body_component": 5118,
+            "accessory_closed_component": 32
+          },
+          "body_triangles_sampled": [
+            12402,
+            12403,
+            14027,
+            14113,
+            14140,
+            14141
+          ]
+        }
+      }
+    },
+    {
+      "frame": 15,
+      "measurements": {
+        "Fresh magazine / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        },
+        "Rebuilt spare magazine sleeve / body inside accessory solid": {
+          "sample_count": 0,
+          "confirmed_inside_samples": 0,
+          "parity_disagreements": 0,
+          "maximum": {
+            "depth_mm": 0
+          },
+          "body_triangles_sampled": []
+        }
+      }
+    }
+  ],
+  "scope": "Body triangles implicated by exact finite crossings sampled at \u22641mm edge subdivision; actual signed nearest convex plane or3-direction agreed parity plus nearest-surface distances only within verified closed accessory solids. Reciprocal accessory samples \u22641.5mm into verified closed body components only. Open cloth shells never assigned an inside or penetration depth. These are sampled inward distances, not minimum translation to resolve total intersecting objects.",
+  "elapsed_seconds": 66.47284007072449
+}

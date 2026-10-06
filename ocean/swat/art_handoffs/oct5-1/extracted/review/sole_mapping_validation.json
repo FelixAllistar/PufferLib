@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "glb_sha256": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+  "rows": [
+    {
+      "side": "left",
+      "native_support_vertices": 5,
+      "actual_gltf_matches": 5,
+      "max_bind_position_error_m": 0,
+      "max_normalized_weight_error": 0,
+      "max_phase_zero_error_vs_evaluated_native_m": 1.937250787253745e-07,
+      "centroid_metadata_error_m": 1.7501447230711871e-07,
+      "native_subset_vertices": 654,
+      "exported_subset_vertices": 899
+    },
+    {
+      "side": "right",
+      "native_support_vertices": 4,
+      "actual_gltf_matches": 4,
+      "max_bind_position_error_m": 0,
+      "max_normalized_weight_error": 0,
+      "max_phase_zero_error_vs_evaluated_native_m": 1.057049019597858e-07,
+      "centroid_metadata_error_m": 9.887098912790371e-08,
+      "native_subset_vertices": 668,
+      "exported_subset_vertices": 916
+    }
+  ],
+  "scope": "Original native Blender IDs resolve to separately checked exported primitive/vertex pairs, exact bind positions, all normalized weights and evaluated phase-zero positions."
+}

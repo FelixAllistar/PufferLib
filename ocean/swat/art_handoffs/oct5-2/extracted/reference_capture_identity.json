@@ -1,0 +1,7 @@
+{
+  "native_capture_sha256": "5f9091f5519bc5fe50910edae65b30d512d380993d1e3d9e253a09ad9e173aaf",
+  "stock_reimport_capture_sha256": "11eb84eb600d35e111d2fdc7c68c4e523503cacc0dafc10038275eae0a18001c",
+  "source_blend_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "scope": "Actual saved native/reimport geometry and one evaluated pose at t0, captured with packaged read-only Blender script. Pose reference files permit portable binary comparison but do not replace direct source verification."
+}

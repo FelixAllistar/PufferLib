@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "comparison_glb_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+  "accessors_checked": 39,
+  "checks": {
+    "nodes": true,
+    "skins": true,
+    "meshes": true,
+    "materials": true,
+    "scenes": true,
+    "scene": true,
+    "geometry_and_inverse_bind_arrays_exact": true
+  }
+}

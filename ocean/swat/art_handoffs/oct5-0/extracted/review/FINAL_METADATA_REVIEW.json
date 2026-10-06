@@ -1,0 +1,26 @@
+{
+  "status": "PASS_QUALIFIED",
+  "glb_sha256": "4fe97ec1997bb4799440216ddc3a74d858154c0d8e51bf863e2d86082b1a1996",
+  "source_sha256": "6737a18666f08d89ea097ed304e17ed47095ffb28f87f5324d32b34e416bd173",
+  "reviewed_metadata_sha256": {
+    "README.md": "f1decd7d8fafcb7f466eb9bdf1533201878769891ee633478ee6c0a04c5b515d",
+    "REPRODUCE.md": "c0f0ee7409231b18b84b8aa7d3aac1e1d3a4db4ffb2fd605a5a9453383c8834c",
+    "bindings.json": "d83a88df87283de787189c97ff66d6037c05a8e604e3464760ab9c1c67df96f2",
+    "measured_preview_fit.json": "50cae23c0e1171920719338ff4da01ba4a3dc29b5820c0f714f4891fe09d5233",
+    "events_and_cycle.json": "a291c515ef5532407a99d512f91748a39bad75c204e18e45d41b2b01818cd75f",
+    "SOURCE_QUALITY.md": "4de16b898fb1c84f8a2868dffe15a258f7d303edd3cd0e335ba8c5ac5dd4f3fc",
+    "SOURCE_QUALITY_STATUS.json": "316dc282819b7f1eb010be0788dcc7d7271e0cb7d90e78ae6b1695634501812a",
+    "SOURCE_PROVENANCE.json": "6ecf600e48a235044b10d8a16858a515f942c41631bd6f87036d232f0ff30214",
+    "material_compatibility.json": "ef8cb3ec79407a5166b9a59da288379b8fae3c216d97abc1859177fb6d92c180",
+    "optical_proxy_bindings.json": "3fea730020c729c56e71116beb98ddaeb313dcd314c779cb49309c38f340f569",
+    "bridge_reference_samples.json": "5be86eecdaaa387705b3937dc6e8c52753ff725a7429c1b3a272d23f6e28f4fa",
+    "validation.json": "38f163fec8858bc21cf1fd22f4028f46b613386924364f4bba65554ac35f0068"
+  },
+  "clarifications_resolved": [
+    "Sole native and exported vertex index namespaces are explicit and matching points checked",
+    "README middle-75% count is721 of961",
+    "Bindings mapping scope is accurate",
+    "Source curve diff reference resolves to packaged file"
+  ],
+  "scope": "Private static/export fixture validation. No runtime, gameplay, ADS, anatomical eye, material appearance, full official validator, continuous collision, or other-direction approval."
+}

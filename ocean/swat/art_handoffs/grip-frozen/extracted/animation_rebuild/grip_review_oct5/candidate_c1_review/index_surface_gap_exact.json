@@ -1,0 +1,28 @@
+{
+  "source": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+  "sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "method": "Float64 vertex/triangle and all edge/edge finite distance tests on every potentially closer triangle pair, culled only by conservative AABB lower distance; exact finite crossing tested separately. Applies to native skin triangles dominated by LeftHandIndex weights, including all three phalangeal tags.",
+  "tested_triangle_pairs": 395,
+  "minimum_finite_triangle_surface_gap_mm": 1.9066406665768747,
+  "index_rifle_exact_crossing_pairs": 0,
+  "closest_pair": {
+    "native_index_triangle": [
+      8107,
+      8090,
+      8108
+    ],
+    "index_segment": "mixamorig:LeftHandIndex2",
+    "rifle_triangle": 8490,
+    "index_point_world_m": [
+      -0.27130906423026474,
+      -0.6184404942487167,
+      1.482850276118943
+    ],
+    "rifle_point_world_m": [
+      -0.26947012739910337,
+      -0.6185118979948663,
+      1.4823517869340266
+    ]
+  },
+  "margin_over_2mm": -0.0933593334231253
+}

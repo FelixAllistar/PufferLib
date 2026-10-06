@@ -1,0 +1,2578 @@
+{
+  "baseline": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/native_carry/ready_walk.editable.blend",
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/seam_a/walk_left_ready_n_c1.editable.blend",
+  "sha_before": {
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/native_carry/ready_walk.editable.blend": "5c25ba9bd5acfe492f6ef4ba6aa1afffa1944ca3c91da70b0a7090c194a86a36",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/seam_a/walk_left_ready_n_c1.editable.blend": "6737a18666f08d89ea097ed304e17ed47095ffb28f87f5324d32b34e416bd173"
+  },
+  "sha_after": {
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/native_carry/ready_walk.editable.blend": "5c25ba9bd5acfe492f6ef4ba6aa1afffa1944ca3c91da70b0a7090c194a86a36",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_left/seam_a/walk_left_ready_n_c1.editable.blend": "6737a18666f08d89ea097ed304e17ed47095ffb28f87f5324d32b34e416bd173"
+  },
+  "sample_count_per_clip": 65,
+  "boundary_hz": 240,
+  "summary": {
+    "leg_leg": {
+      "baseline_count_range": [
+        0,
+        0
+      ],
+      "candidate_count_range": [
+        0,
+        0
+      ],
+      "baseline_pair_union_count": 0,
+      "candidate_pair_union_count": 0,
+      "new_pair_union_vs_baseline": [],
+      "baseline_max_chord_mm": 0,
+      "candidate_max_chord_mm": 0
+    },
+    "left_leg_torso": {
+      "baseline_count_range": [
+        28,
+        189
+      ],
+      "candidate_count_range": [
+        28,
+        189
+      ],
+      "baseline_pair_union_count": 845,
+      "candidate_pair_union_count": 839,
+      "new_pair_union_vs_baseline": [
+        "13596,14627",
+        "13682,13887",
+        "13842,21366",
+        "13854,21446",
+        "13854,21467",
+        "13876,21508",
+        "13884,21411",
+        "13884,21455"
+      ],
+      "baseline_max_chord_mm": 36.21649797295968,
+      "candidate_max_chord_mm": 36.29963934717738
+    },
+    "right_leg_torso": {
+      "baseline_count_range": [
+        16,
+        60
+      ],
+      "candidate_count_range": [
+        15,
+        60
+      ],
+      "baseline_pair_union_count": 111,
+      "candidate_pair_union_count": 111,
+      "new_pair_union_vs_baseline": [],
+      "baseline_max_chord_mm": 23.925899850784937,
+      "candidate_max_chord_mm": 23.925899850784937
+    }
+  },
+  "phases": [
+    {
+      "frame": 0.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 123,
+          "candidate_count": 123,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 0.125,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 101,
+          "candidate_count": 101,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 0.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 92,
+          "candidate_count": 92,
+          "added_pairs_at_matched_phase": [
+            "13853,21446",
+            "13854,21446"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13854,21447",
+            "13884,21447"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [
+            "13300,22373"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13299,22368",
+            "13482,22351",
+            "13500,22351"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 0.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 89,
+          "candidate_count": 89,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 0.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 81,
+          "candidate_count": 81,
+          "added_pairs_at_matched_phase": [
+            "13799,21586"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13800,21579"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 0.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 70,
+          "candidate_count": 77,
+          "added_pairs_at_matched_phase": [
+            "13596,14625",
+            "13596,14626",
+            "13596,14627",
+            "13596,14655",
+            "13596,14656",
+            "13596,14660",
+            "13876,21581"
+          ],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 0.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 67,
+          "candidate_count": 67,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 0.875,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 67,
+          "candidate_count": 67,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 1.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 66,
+          "candidate_count": 66,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 1.125,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 66,
+          "candidate_count": 66,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13333,22134",
+            "13333,22307"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 1.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 66,
+          "candidate_count": 66,
+          "added_pairs_at_matched_phase": [
+            "13871,21579",
+            "13882,21399"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13800,21586",
+            "13881,21400"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 1.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 65,
+          "candidate_count": 66,
+          "added_pairs_at_matched_phase": [
+            "13596,21468",
+            "13596,21493",
+            "13596,21494"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13596,21597",
+            "13596,21598"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 1.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 59,
+          "candidate_count": 59,
+          "added_pairs_at_matched_phase": [
+            "13884,21455"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13881,21454"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 1.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 54,
+          "candidate_count": 55,
+          "added_pairs_at_matched_phase": [
+            "13802,21359"
+          ],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 1.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 54,
+          "candidate_count": 55,
+          "added_pairs_at_matched_phase": [
+            "13794,30770",
+            "13887,21367"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13593,21364"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 20,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13316,22374"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 1.875,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 48,
+          "candidate_count": 46,
+          "added_pairs_at_matched_phase": [
+            "13596,21404"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13595,21373",
+            "13595,21410",
+            "13597,21403"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 35,
+          "candidate_count": 35,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.125,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 36,
+          "candidate_count": 36,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 36,
+          "candidate_count": 36,
+          "added_pairs_at_matched_phase": [
+            "13593,21364",
+            "13593,21366",
+            "13593,21367"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13593,21373",
+            "13593,21601",
+            "13593,21604"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 35,
+          "candidate_count": 35,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 35,
+          "candidate_count": 35,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 35,
+          "candidate_count": 35,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 34,
+          "candidate_count": 34,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 23,
+          "candidate_count": 23,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 2.875,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 32,
+          "candidate_count": 31,
+          "added_pairs_at_matched_phase": [
+            "13597,21598"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13874,21598",
+            "13879,21598"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 23,
+          "candidate_count": 23,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 3.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 32,
+          "candidate_count": 32,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 23,
+          "candidate_count": 23,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 3.125,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 31,
+          "candidate_count": 31,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 23,
+          "candidate_count": 23,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 3.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 32,
+          "candidate_count": 32,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 24,
+          "candidate_count": 24,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 3.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 32,
+          "candidate_count": 32,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 24,
+          "candidate_count": 24,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 3.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 32,
+          "candidate_count": 32,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 24,
+          "candidate_count": 24,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 3.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 29,
+          "candidate_count": 29,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 24,
+          "candidate_count": 24,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 3.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 28,
+          "candidate_count": 28,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 24,
+          "candidate_count": 24,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 7.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 189,
+          "candidate_count": 189,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 60,
+          "candidate_count": 60,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 15.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 28,
+          "candidate_count": 28,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 22.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 132,
+          "candidate_count": 132,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 16,
+          "candidate_count": 16,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 26.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 163,
+          "candidate_count": 163,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 22,
+          "candidate_count": 22,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 26.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 163,
+          "candidate_count": 163,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 22,
+          "candidate_count": 22,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 26.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 163,
+          "candidate_count": 163,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 22,
+          "candidate_count": 22,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 26.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 163,
+          "candidate_count": 163,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 26.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 165,
+          "candidate_count": 165,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 21,
+          "candidate_count": 21,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 26.875,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 165,
+          "candidate_count": 165,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 19,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 27.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 165,
+          "candidate_count": 165,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 19,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 27.125,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 166,
+          "candidate_count": 166,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 19,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 27.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 164,
+          "candidate_count": 164,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 19,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 27.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 164,
+          "candidate_count": 164,
+          "added_pairs_at_matched_phase": [
+            "13842,21366"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13843,21367"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 19,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 27.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 164,
+          "candidate_count": 164,
+          "added_pairs_at_matched_phase": [
+            "13818,13888",
+            "13842,21366"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13804,13875",
+            "13843,21367"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13483,22338"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 27.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 162,
+          "candidate_count": 162,
+          "added_pairs_at_matched_phase": [
+            "13569,21533",
+            "13841,21365",
+            "13853,21467"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13853,21367",
+            "13853,21530",
+            "13883,21508"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 27.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 160,
+          "candidate_count": 162,
+          "added_pairs_at_matched_phase": [
+            "13572,21395",
+            "13572,21508",
+            "13853,21467"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13853,21530"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 27.875,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 160,
+          "candidate_count": 162,
+          "added_pairs_at_matched_phase": [
+            "13596,21626",
+            "13853,21467",
+            "13853,21529"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13854,21530"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 28.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 159,
+          "candidate_count": 161,
+          "added_pairs_at_matched_phase": [
+            "13809,13844",
+            "13812,13847",
+            "13826,30741",
+            "13826,30793",
+            "13853,21467",
+            "13854,21467"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13810,13843",
+            "13811,13852",
+            "13831,13840",
+            "13854,21530"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 16,
+          "candidate_count": 16,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 28.125,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 162,
+          "candidate_count": 160,
+          "added_pairs_at_matched_phase": [
+            "13843,21391"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13804,13839",
+            "13804,13876",
+            "13849,21392"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 16,
+          "candidate_count": 16,
+          "added_pairs_at_matched_phase": [
+            "13486,22129"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13487,22130"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 28.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 162,
+          "candidate_count": 164,
+          "added_pairs_at_matched_phase": [
+            "13818,13839",
+            "13818,13840",
+            "13850,21429",
+            "13883,21533",
+            "13883,21578"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13853,21428",
+            "13883,21412",
+            "13883,21507"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 16,
+          "candidate_count": 16,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 28.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 160,
+          "candidate_count": 160,
+          "added_pairs_at_matched_phase": [
+            "13844,21392",
+            "13845,14667",
+            "13845,14669",
+            "13883,21577"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13843,21399",
+            "13845,14651",
+            "13845,14652",
+            "13884,21412"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 16,
+          "candidate_count": 16,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 28.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 160,
+          "candidate_count": 160,
+          "added_pairs_at_matched_phase": [
+            "13811,13843",
+            "13811,13844",
+            "13811,13847",
+            "13839,21395",
+            "13843,21366",
+            "13843,21367",
+            "13854,21530",
+            "13883,21508",
+            "13887,21508"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13684,13883",
+            "13684,13884",
+            "13810,13849",
+            "13811,13849",
+            "13811,13851",
+            "13876,21584",
+            "13884,21529",
+            "13887,21507",
+            "13888,21507"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 16,
+          "candidate_count": 15,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13483,22351"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 28.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 161,
+          "candidate_count": 161,
+          "added_pairs_at_matched_phase": [
+            "13680,13888",
+            "13686,13843",
+            "13839,21395",
+            "13884,21411",
+            "13888,21508"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13803,13887",
+            "13809,13849",
+            "13875,21507",
+            "13876,21584",
+            "13883,21506"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13483,22351"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 28.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 161,
+          "candidate_count": 161,
+          "added_pairs_at_matched_phase": [
+            "13679,13887",
+            "13685,13849",
+            "13686,13849",
+            "13809,13843",
+            "13810,13843",
+            "13839,21395",
+            "13845,14686",
+            "13845,14693",
+            "13847,21399",
+            "13887,21507"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13598,14687",
+            "13680,13883",
+            "13805,13887",
+            "13807,13849",
+            "13807,13887",
+            "13808,13849",
+            "13848,14630",
+            "13852,21400",
+            "13876,21584",
+            "13888,21412"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13486,22130"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 28.875,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 161,
+          "candidate_count": 164,
+          "added_pairs_at_matched_phase": [
+            "13682,13887",
+            "13799,21580",
+            "13804,13839",
+            "13804,13840",
+            "13811,13849",
+            "13831,13840",
+            "13854,21506"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13601,21569",
+            "13805,13883",
+            "13810,13851",
+            "13884,21505"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 16,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13487,22129"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 29.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 159,
+          "candidate_count": 160,
+          "added_pairs_at_matched_phase": [
+            "13598,21552",
+            "13679,13887",
+            "13680,13887",
+            "13682,13887",
+            "13683,13854",
+            "13683,13884",
+            "13803,13887",
+            "13845,21590",
+            "13848,21590"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13596,21594",
+            "13598,21593",
+            "13599,21594",
+            "13599,21621",
+            "13806,13887",
+            "13806,13888",
+            "13831,13876",
+            "13845,21593"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 16,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": [
+            "13300,22368"
+          ]
+        }
+      }
+    },
+    {
+      "frame": 29.125,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 154,
+          "candidate_count": 155,
+          "added_pairs_at_matched_phase": [
+            "13840,21584",
+            "13847,21495",
+            "13847,21496",
+            "13854,21440"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13839,21583",
+            "13847,21468",
+            "13853,21443"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 29.25,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 153,
+          "candidate_count": 155,
+          "added_pairs_at_matched_phase": [
+            "13803,13888",
+            "13845,14689",
+            "13850,21369",
+            "13854,21440",
+            "13875,21508",
+            "13876,21508"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13598,14623",
+            "13806,13875",
+            "13853,21443",
+            "13882,21370"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 29.375,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 153,
+          "candidate_count": 155,
+          "added_pairs_at_matched_phase": [
+            "13591,13593",
+            "13795,30771",
+            "13839,21583",
+            "13845,14647",
+            "13849,21391",
+            "13849,21392",
+            "13853,21365",
+            "13854,21428",
+            "13854,21440",
+            "13867,30771",
+            "13868,30771",
+            "13884,21428"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13593,13885",
+            "13598,14658",
+            "13794,30771",
+            "13838,13875",
+            "13838,13888",
+            "13840,21582",
+            "13849,21379",
+            "13849,21380",
+            "13853,21443",
+            "13854,21367"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 29.5,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 156,
+          "candidate_count": 153,
+          "added_pairs_at_matched_phase": [
+            "13803,13875",
+            "13806,13875",
+            "13845,14623",
+            "13854,21440",
+            "13888,21412"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13598,14624",
+            "13831,13875",
+            "13837,13875",
+            "13837,13876",
+            "13838,13876",
+            "13853,21443",
+            "13875,21411",
+            "13876,13878"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 29.625,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 149,
+          "candidate_count": 149,
+          "added_pairs_at_matched_phase": [
+            "13684,13881",
+            "13854,21440"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13807,13882",
+            "13853,21443"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 29.75,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 136,
+          "candidate_count": 138,
+          "added_pairs_at_matched_phase": [
+            "13849,21382",
+            "13875,21411",
+            "13875,21412",
+            "13875,21507"
+          ],
+          "removed_pairs_at_matched_phase": [
+            "13850,21380",
+            "13875,21581"
+          ]
+        },
+        "right_leg_torso": {
+          "baseline_count": 17,
+          "candidate_count": 17,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 29.875,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 132,
+          "candidate_count": 135,
+          "added_pairs_at_matched_phase": [
+            "13793,21357",
+            "13794,21357",
+            "13802,21357"
+          ],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 19,
+          "candidate_count": 19,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    },
+    {
+      "frame": 30.0,
+      "categories": {
+        "leg_leg": {
+          "baseline_count": 0,
+          "candidate_count": 0,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "left_leg_torso": {
+          "baseline_count": 123,
+          "candidate_count": 123,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        },
+        "right_leg_torso": {
+          "baseline_count": 18,
+          "candidate_count": 18,
+          "added_pairs_at_matched_phase": [],
+          "removed_pairs_at_matched_phase": []
+        }
+      }
+    }
+  ],
+  "component_interpretation": {
+    "5118": "Continuous waist/crotch/pants skin, spanning pelvis and upper legs",
+    "11165": "Upper-thigh strap/garment assembly",
+    "7464": "Small upper-thigh strap/buckle junction"
+  },
+  "component_families": {
+    "5118,17904": {
+      "baseline_pair_count": 29,
+      "candidate_pair_count": 29,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 11.913635826770165,
+      "candidate_chord_max_mm": 11.913635826770165,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "5118,7464": {
+      "baseline_pair_count": 96,
+      "candidate_pair_count": 97,
+      "new_pair_count": 1,
+      "baseline_chord_max_mm": 10.054354464584703,
+      "candidate_chord_max_mm": 10.018853229780174,
+      "new_pair_chord_max_mm": 0.08188442029086772,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "5118,11165": {
+      "baseline_pair_count": 427,
+      "candidate_pair_count": 423,
+      "new_pair_count": 6,
+      "baseline_chord_max_mm": 28.405434951759265,
+      "candidate_chord_max_mm": 28.204495595316182,
+      "new_pair_chord_max_mm": 1.0471917649383637,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "4942,17904": {
+      "baseline_pair_count": 85,
+      "candidate_pair_count": 85,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 11.251471773750708,
+      "candidate_chord_max_mm": 11.251471773750708,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "5118,5118": {
+      "baseline_pair_count": 148,
+      "candidate_pair_count": 145,
+      "new_pair_count": 1,
+      "baseline_chord_max_mm": 27.520212499364597,
+      "candidate_chord_max_mm": 28.168948044017803,
+      "new_pair_chord_max_mm": 1.4295172614023988,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "0,17904": {
+      "baseline_pair_count": 26,
+      "candidate_pair_count": 26,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 10.680751771738471,
+      "candidate_chord_max_mm": 10.680751771738471,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "5118,16372": {
+      "baseline_pair_count": 32,
+      "candidate_pair_count": 32,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 36.21649797295968,
+      "candidate_chord_max_mm": 36.29963934717738,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "5118,13350": {
+      "baseline_pair_count": 2,
+      "candidate_pair_count": 2,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 1.424151243873124,
+      "candidate_chord_max_mm": 1.424151243873124,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:LeftUpLeg"
+      ]
+    },
+    "5118,11623": {
+      "baseline_pair_count": 83,
+      "candidate_pair_count": 83,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 23.925899850784937,
+      "candidate_chord_max_mm": 23.925899850784937,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:RightUpLeg"
+      ]
+    },
+    "128,18662": {
+      "baseline_pair_count": 25,
+      "candidate_pair_count": 25,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 15.30524224202872,
+      "candidate_chord_max_mm": 15.30524224202872,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:RightUpLeg"
+      ]
+    },
+    "5118,17026": {
+      "baseline_pair_count": 3,
+      "candidate_pair_count": 3,
+      "new_pair_count": 0,
+      "baseline_chord_max_mm": 12.064307589100478,
+      "candidate_chord_max_mm": 12.048288131740762,
+      "new_pair_chord_max_mm": 0,
+      "dominant_tags": [
+        "mixamorig:Hips",
+        "mixamorig:RightUpLeg"
+      ]
+    }
+  },
+  "new_pair_extrema": {
+    "left_leg_torso:13596,14627": {
+      "geometry": {
+        "triangle_ids": [
+          13596,
+          14627
+        ],
+        "components": [
+          5118,
+          7464
+        ],
+        "dominant_tags": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "triangle_vertices": [
+          [
+            6958,
+            7118,
+            7125
+          ],
+          [
+            7502,
+            7501,
+            7497
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:Hips",
+              0.6547232866287231
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.29860169688860577
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.04667485008637111
+            ]
+          ],
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.6000000238418579
+            ],
+            [
+              "mixamorig:Hips",
+              0.4000000059604645
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 0.625,
+        "chord_mm": 0.08188442029086772,
+        "point": [
+          -0.023177597671747208,
+          -0.14189261198043823,
+          0.7986000776290894
+        ]
+      },
+      "new_pair_in_candidate": true
+    },
+    "left_leg_torso:13842,21366": {
+      "geometry": {
+        "triangle_ids": [
+          13842,
+          21366
+        ],
+        "components": [
+          5118,
+          11165
+        ],
+        "dominant_tags": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "triangle_vertices": [
+          [
+            7089,
+            7095,
+            7090
+          ],
+          [
+            11166,
+            11338,
+            11329
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:Hips",
+              0.8325860301653545
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.10081798334916432
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.06659225995341937
+            ]
+          ],
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.7912619709968567
+            ],
+            [
+              "mixamorig:Hips",
+              0.20374509195486706
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.00499294837936759
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 27.5,
+        "chord_mm": 0.09297508447887658,
+        "point": [
+          -0.1270521879196167,
+          -0.09952214360237122,
+          0.7276217937469482
+        ]
+      },
+      "new_pair_in_candidate": true
+    },
+    "left_leg_torso:13876,21508": {
+      "geometry": {
+        "triangle_ids": [
+          13876,
+          21508
+        ],
+        "components": [
+          5118,
+          11165
+        ],
+        "dominant_tags": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "triangle_vertices": [
+          [
+            7130,
+            7120,
+            7122
+          ],
+          [
+            11175,
+            11181,
+            11180
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:Hips",
+              0.4325614273548126
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.33206148942311603
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.23537696401278177
+            ]
+          ],
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.8931470314661663
+            ],
+            [
+              "mixamorig:Hips",
+              0.10396941006183624
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.002883561459990839
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 29.25,
+        "chord_mm": 1.0471917649383637,
+        "point": [
+          -0.051179759204387665,
+          -0.04554004967212677,
+          0.6976422071456909
+        ]
+      },
+      "new_pair_in_candidate": true
+    },
+    "left_leg_torso:13884,21411": {
+      "geometry": {
+        "triangle_ids": [
+          13884,
+          21411
+        ],
+        "components": [
+          5118,
+          11165
+        ],
+        "dominant_tags": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "triangle_vertices": [
+          [
+            7126,
+            7133,
+            7127
+          ],
+          [
+            11172,
+            11173,
+            11176
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:Hips",
+              0.6296814680099487
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.23306373755137125
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.13725406428178152
+            ]
+          ],
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.8342194159825642
+            ],
+            [
+              "mixamorig:Hips",
+              0.16057781875133514
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.005202765421320994
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 28.625,
+        "chord_mm": 0.7978468912458743,
+        "point": [
+          -0.10009986907243729,
+          -0.07926199585199356,
+          0.7154746055603027
+        ]
+      },
+      "new_pair_in_candidate": true
+    },
+    "left_leg_torso:13682,13887": {
+      "geometry": {
+        "triangle_ids": [
+          13682,
+          13887
+        ],
+        "components": [
+          5118,
+          5118
+        ],
+        "dominant_tags": [
+          "mixamorig:LeftUpLeg",
+          "mixamorig:Hips"
+        ],
+        "triangle_vertices": [
+          [
+            7001,
+            7069,
+            7068
+          ],
+          [
+            7130,
+            7133,
+            7132
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.8434970577557881
+            ],
+            [
+              "mixamorig:Hips",
+              0.14711534976959229
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.00919924397021532
+            ]
+          ],
+          [
+            [
+              "mixamorig:Hips",
+              0.5225575665632883
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.30477210879325867
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.17266999681790668
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 28.875,
+        "chord_mm": 1.4295172614023988,
+        "point": [
+          -0.08257578313350677,
+          -0.0742097869515419,
+          0.7146175503730774
+        ]
+      },
+      "new_pair_in_candidate": true
+    },
+    "left_leg_torso:13884,21455": {
+      "geometry": {
+        "triangle_ids": [
+          13884,
+          21455
+        ],
+        "components": [
+          5118,
+          11165
+        ],
+        "dominant_tags": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "triangle_vertices": [
+          [
+            7126,
+            7133,
+            7127
+          ],
+          [
+            11274,
+            11266,
+            11267
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:Hips",
+              0.6296814680099487
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.23306373755137125
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.13725406428178152
+            ]
+          ],
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.7137426535288492
+            ],
+            [
+              "mixamorig:Hips",
+              0.28033525745073956
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.005922083432475726
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 1.5,
+        "chord_mm": 0.12954558086413073,
+        "point": [
+          -0.05666819214820862,
+          -0.09669940173625946,
+          0.7381652593612671
+        ]
+      },
+      "new_pair_in_candidate": true
+    },
+    "left_leg_torso:13854,21446": {
+      "geometry": {
+        "triangle_ids": [
+          13854,
+          21446
+        ],
+        "components": [
+          5118,
+          11165
+        ],
+        "dominant_tags": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "triangle_vertices": [
+          [
+            7127,
+            7096,
+            7126
+          ],
+          [
+            11271,
+            11283,
+            11269
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:Hips",
+              0.7013024886449177
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.1577041670680046
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.1409919261932373
+            ]
+          ],
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.727451503276825
+            ],
+            [
+              "mixamorig:Hips",
+              0.26609402894973755
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.006454457528889178
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 0.25,
+        "chord_mm": 0.050756223287477656,
+        "point": [
+          -0.06831236928701401,
+          -0.10246612131595612,
+          0.7434081435203552
+        ]
+      },
+      "new_pair_in_candidate": true
+    },
+    "left_leg_torso:13854,21467": {
+      "geometry": {
+        "triangle_ids": [
+          13854,
+          21467
+        ],
+        "components": [
+          5118,
+          11165
+        ],
+        "dominant_tags": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "triangle_vertices": [
+          [
+            7127,
+            7096,
+            7126
+          ],
+          [
+            11305,
+            11330,
+            11304
+          ]
+        ],
+        "skin_weights": [
+          [
+            [
+              "mixamorig:Hips",
+              0.7013024886449177
+            ],
+            [
+              "mixamorig:LeftUpLeg",
+              0.1577041670680046
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.1409919261932373
+            ]
+          ],
+          [
+            [
+              "mixamorig:LeftUpLeg",
+              0.845099647839864
+            ],
+            [
+              "mixamorig:Hips",
+              0.1492821673552195
+            ],
+            [
+              "mixamorig:RightUpLeg",
+              0.0056181843392550945
+            ]
+          ]
+        ]
+      },
+      "baseline_peak": null,
+      "candidate_peak": {
+        "frame": 28.0,
+        "chord_mm": 0.3102692116822042,
+        "point": [
+          -0.11116014420986176,
+          -0.0917331650853157,
+          0.7130289673805237
+        ]
+      },
+      "new_pair_in_candidate": true
+    }
+  },
+  "interpretation": "No cross-leg finite triangle intersections. Eight new triangle pair IDs are confined to existing pants self-fold/upper-thigh strap/buckle families. Same fixed-camera neutral and colored component views show preserved native belt/pants/brace folding; no new limb/torso failure was identified. Individual new pair intersection chord was zero at its matched baseline phase. Chord is not penetration depth.",
+  "scope": "Actual finite triangle crossings at matched phases across both0.125s repair windows at240Hz, plus quarter center phases. Triangles classified by dominant skin influence; shared-vertex adjacency excluded. Chord is intersection-segment length, not penetration depth. Component and skin attribution distinguish inherited connected cloth/brace folds from newly introduced interlimb contacts. Not a watertight or continuous analytic penetration proof."
+}

@@ -1,0 +1,1334 @@
+{
+  "schema": "interior_fixtures_environment_batch_05_v1",
+  "batch": "05_interior_fixtures",
+  "title": "Everyday fittings: worn interior fixtures",
+  "license": "CC0-1.0",
+  "original_artwork": true,
+  "seed": 51073,
+  "units": "metres",
+  "source_coordinates": "right-handed +Z up; wall front -Y",
+  "gltf_coordinates": "right-handed +Y up; wall front +Z; exporter maps (x,y,z) to (x,z,-y)",
+  "pivot_policy": "Individual physical mounting reference at origin. Wall backs at Y=0, ceilings at Z=0. Do not floor-normalize or AABB-centre these fixtures. Suggested mounting heights are source Z / glTF Y above floor. Closed/open panels deliberately share the cabinet pivot.",
+  "texture_policy": "Original 192x192 base-colour PNG textures, packed in Blender and embedded in every GLB. Core metallic-roughness PBR; no procedural shader, transparency or emission dependency.",
+  "physics_material_suggestions": {
+    "steel": 4,
+    "wood": 2,
+    "glass": 3,
+    "plastic": "No automatically assigned ID; choose deliberately.",
+    "brass": "Metal visual category; do not infer ballistic response.",
+    "ceramic": "Choose an intentional gameplay mapping.",
+    "fabric": "No automatically assigned ID; do not infer carpet."
+  },
+  "engine_material_warning": "Suggested semantic mappings only. Reconfirm authoritative IDs in current game revision. No physics, collision, runtime light, animation, damage, power state, LOD or engine integration supplied.",
+  "asset_count": 20,
+  "total_triangles": 24501,
+  "assets": [
+    {
+      "asset_id": "toggle_light_switch",
+      "title": "Toggle light switch",
+      "file": "assets/toggle_light_switch.glb",
+      "dimensions_m_source_xyz": [
+        0.071,
+        0.036657,
+        0.115
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.071,
+        0.115,
+        0.036657
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.03550000116229057,
+          -0.03665687143802643,
+          -0.057500001043081284
+        ],
+        [
+          0.03550000116229057,
+          0.0,
+          0.057500001043081284
+        ]
+      ],
+      "triangles": 275,
+      "vertices_source": 160,
+      "materials": [
+        "IF05_ivory",
+        "IF05_steel",
+        "IF05_black",
+        "IF05_bone"
+      ],
+      "material_count": 4,
+      "surface_semantics": [
+        "plastic",
+        "steel"
+      ],
+      "mounting": "wall",
+      "pivot": "backplate centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.2,
+      "editable_vertex_groups": [
+        "edge_wear",
+        "toggle_and_recess",
+        "wall_plate"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 188060,
+      "sha256": "4577ac7d50abf94dfd9512d710de6262c72e392a8aff3eb47356124143a97f09"
+    },
+    {
+      "asset_id": "duplex_wall_outlet",
+      "title": "Duplex wall outlet",
+      "file": "assets/duplex_wall_outlet.glb",
+      "dimensions_m_source_xyz": [
+        0.071,
+        0.02315,
+        0.115
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.071,
+        0.115,
+        0.02315
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.03550000116229057,
+          -0.023150000721216202,
+          -0.057500001043081284
+        ],
+        [
+          0.03550000116229057,
+          0.0,
+          0.057500001043081284
+        ]
+      ],
+      "triangles": 623,
+      "vertices_source": 360,
+      "materials": [
+        "IF05_ivory",
+        "IF05_steel",
+        "IF05_black",
+        "IF05_bone",
+        "IF05_brass"
+      ],
+      "material_count": 5,
+      "surface_semantics": [
+        "plastic",
+        "ceramic",
+        "steel"
+      ],
+      "mounting": "wall",
+      "pivot": "backplate centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 0.35,
+      "editable_vertex_groups": [
+        "duplex_sockets",
+        "edge_wear",
+        "wall_plate"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 258056,
+      "sha256": "cb203f6bba10002c96bc282ce8d44dbdf1069a9995a48786ddf09a0e40ff0583"
+    },
+    {
+      "asset_id": "gfci_wall_outlet",
+      "title": "GFCI wall outlet",
+      "file": "assets/gfci_wall_outlet.glb",
+      "dimensions_m_source_xyz": [
+        0.071,
+        0.02825,
+        0.115
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.071,
+        0.115,
+        0.02825
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.03550000116229057,
+          -0.02825000137090683,
+          -0.057500001043081284
+        ],
+        [
+          0.03550000116229057,
+          0.0,
+          0.057500001043081284
+        ]
+      ],
+      "triangles": 723,
+      "vertices_source": 416,
+      "materials": [
+        "IF05_ivory",
+        "IF05_steel",
+        "IF05_black",
+        "IF05_bone",
+        "IF05_brass",
+        "IF05_red"
+      ],
+      "material_count": 6,
+      "surface_semantics": [
+        "plastic",
+        "ceramic",
+        "steel"
+      ],
+      "mounting": "wall",
+      "pivot": "backplate centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.12,
+      "editable_vertex_groups": [
+        "edge_wear",
+        "safety_receptacle",
+        "test_reset_buttons",
+        "wall_plate"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 309520,
+      "sha256": "a1c9de7d9bd4ebe03ec43d2f399bbfaf77753b3bdd4de11fd6f160b213b7a805"
+    },
+    {
+      "asset_id": "round_dial_thermostat",
+      "title": "Round dial thermostat",
+      "file": "assets/round_dial_thermostat.glb",
+      "dimensions_m_source_xyz": [
+        0.094,
+        0.049,
+        0.094
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.094,
+        0.094,
+        0.049
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.04699999839067459,
+          -0.04899999871850014,
+          -0.046999990940093994
+        ],
+        [
+          0.04699999839067459,
+          9.532348244079003e-09,
+          0.04699999466538429
+        ]
+      ],
+      "triangles": 1617,
+      "vertices_source": 891,
+      "materials": [
+        "IF05_ivory",
+        "IF05_bone",
+        "IF05_iron",
+        "IF05_paper",
+        "IF05_black",
+        "IF05_red",
+        "IF05_brass"
+      ],
+      "material_count": 7,
+      "surface_semantics": [
+        "plastic",
+        "brass"
+      ],
+      "mounting": "wall",
+      "pivot": "mounting disc centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.5,
+      "editable_vertex_groups": [
+        "dial_ticks",
+        "mounting_and_case",
+        "temperature_readout"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 393492,
+      "sha256": "a74a097658256e1d7ec4bc6f8d0214d562d121524427f95081a046aab65641ed"
+    },
+    {
+      "asset_id": "vented_smoke_alarm",
+      "title": "Vented smoke alarm",
+      "file": "assets/vented_smoke_alarm.glb",
+      "dimensions_m_source_xyz": [
+        0.146,
+        0.146,
+        0.057
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.146,
+        0.057,
+        0.146
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.0729999989271164,
+          -0.0729999989271164,
+          -0.05700000002980232
+        ],
+        [
+          0.0729999989271164,
+          0.0729999989271164,
+          0.0
+        ]
+      ],
+      "triangles": 2312,
+      "vertices_source": 1240,
+      "materials": [
+        "IF05_ivory",
+        "IF05_bone",
+        "IF05_black",
+        "IF05_red"
+      ],
+      "material_count": 4,
+      "surface_semantics": [
+        "plastic"
+      ],
+      "mounting": "ceiling",
+      "pivot": "ceiling contact centre",
+      "mount_plane_source": "Z=0; fixture extends downward -Z",
+      "mount_normal_source_xyz": [
+        0,
+        0,
+        -1
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "suggested_mount_height_m": 2.7,
+      "editable_vertex_groups": [
+        "ceiling_base",
+        "test_button",
+        "vented_housing"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 324652,
+      "sha256": "f525dbea7208f72307b4b1f8b314640aa28b71e82339658573d1932cf0e802c8"
+    },
+    {
+      "asset_id": "four_blade_ceiling_fan",
+      "title": "Four blade ceiling fan",
+      "file": "assets/four_blade_ceiling_fan.glb",
+      "dimensions_m_source_xyz": [
+        1.114,
+        1.114,
+        0.505
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.114,
+        0.505,
+        1.114
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.5569999814033508,
+          -0.5569999814033508,
+          -0.5049999952316284
+        ],
+        [
+          0.5569999814033508,
+          0.5569999814033508,
+          0.0
+        ]
+      ],
+      "triangles": 1388,
+      "vertices_source": 826,
+      "materials": [
+        "IF05_cream_metal",
+        "IF05_steel",
+        "IF05_iron",
+        "IF05_wood",
+        "IF05_brass",
+        "IF05_frosted"
+      ],
+      "material_count": 6,
+      "surface_semantics": [
+        "wood",
+        "steel",
+        "glass"
+      ],
+      "mounting": "ceiling",
+      "pivot": "ceiling canopy centre",
+      "mount_plane_source": "Z=0; fixture extends downward -Z",
+      "mount_normal_source_xyz": [
+        0,
+        0,
+        -1
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "suggested_mount_height_m": 2.7,
+      "editable_vertex_groups": [
+        "blades_and_brackets",
+        "ceiling_canopy",
+        "frosted_globe",
+        "motor_housing",
+        "pull_chains"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 370476,
+      "sha256": "836a1f5e5c90a4e2144af5fdf7ab6d3655c84827d07f35bb3d8ec6190a8122bc"
+    },
+    {
+      "asset_id": "frosted_dome_light",
+      "title": "Frosted dome ceiling light",
+      "file": "assets/frosted_dome_light.glb",
+      "dimensions_m_source_xyz": [
+        0.328,
+        0.328,
+        0.151
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.328,
+        0.151,
+        0.328
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.164000004529953,
+          -0.164000004529953,
+          -0.1509999930858612
+        ],
+        [
+          0.164000004529953,
+          0.164000004529953,
+          0.0
+        ]
+      ],
+      "triangles": 1412,
+      "vertices_source": 712,
+      "materials": [
+        "IF05_brass",
+        "IF05_bone",
+        "IF05_frosted"
+      ],
+      "material_count": 3,
+      "surface_semantics": [
+        "glass",
+        "brass"
+      ],
+      "mounting": "ceiling",
+      "pivot": "ceiling pan centre",
+      "mount_plane_source": "Z=0; fixture extends downward -Z",
+      "mount_normal_source_xyz": [
+        0,
+        0,
+        -1
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "suggested_mount_height_m": 2.7,
+      "editable_vertex_groups": [
+        "ceiling_pan",
+        "finial",
+        "frosted_dome"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 237748,
+      "sha256": "e105aef8c014e1c253ba45414bda021659609c28012d0256e354f8582afba38c"
+    },
+    {
+      "asset_id": "ribbed_glass_wall_sconce",
+      "title": "Ribbed glass wall sconce",
+      "file": "assets/ribbed_glass_wall_sconce.glb",
+      "dimensions_m_source_xyz": [
+        0.142768,
+        0.194384,
+        0.209
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.142768,
+        0.209,
+        0.194384
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.07138402760028839,
+          -0.19438402354717255,
+          -0.10450000315904617
+        ],
+        [
+          0.07138402760028839,
+          0.0,
+          0.10450000315904617
+        ]
+      ],
+      "triangles": 1138,
+      "vertices_source": 608,
+      "materials": [
+        "IF05_brass",
+        "IF05_steel",
+        "IF05_black",
+        "IF05_frosted",
+        "IF05_tube_glass"
+      ],
+      "material_count": 5,
+      "surface_semantics": [
+        "glass",
+        "brass"
+      ],
+      "mounting": "wall",
+      "pivot": "backplate centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.9,
+      "editable_vertex_groups": [
+        "bracket",
+        "bulb",
+        "ribbed_shade",
+        "wall_backplate"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 292448,
+      "sha256": "e38fb4f491ba38a29d533f18b724d5e0762ad695e6c6312f4b734fcf91195cad"
+    },
+    {
+      "asset_id": "twin_tube_fluorescent",
+      "title": "Twin tube fluorescent fixture",
+      "file": "assets/twin_tube_fluorescent.glb",
+      "dimensions_m_source_xyz": [
+        1.244,
+        0.26,
+        0.095
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.244,
+        0.095,
+        0.26
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.621999979019165,
+          -0.12999999523162842,
+          -0.0949999988079071
+        ],
+        [
+          0.621999979019165,
+          0.12999999523162842,
+          0.0
+        ]
+      ],
+      "triangles": 625,
+      "vertices_source": 344,
+      "materials": [
+        "IF05_cream_metal",
+        "IF05_ivory",
+        "IF05_tube_glass",
+        "IF05_bone",
+        "IF05_steel",
+        "IF05_rust"
+      ],
+      "material_count": 6,
+      "surface_semantics": [
+        "steel",
+        "glass",
+        "plastic"
+      ],
+      "mounting": "ceiling",
+      "pivot": "ceiling housing centre",
+      "mount_plane_source": "Z=0; fixture extends downward -Z",
+      "mount_normal_source_xyz": [
+        0,
+        0,
+        -1
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "suggested_mount_height_m": 2.7,
+      "editable_vertex_groups": [
+        "ceiling_housing",
+        "reflector",
+        "two_tubes",
+        "wear"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 343772,
+      "sha256": "36f329efca36b074ce7346d0a0050b5348480274098d8a505ed5c206bf83c674"
+    },
+    {
+      "asset_id": "finned_baseboard_heater",
+      "title": "Finned baseboard heater",
+      "file": "assets/finned_baseboard_heater.glb",
+      "dimensions_m_source_xyz": [
+        1.22,
+        0.1155,
+        0.19
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.22,
+        0.19,
+        0.1155
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.6100000143051147,
+          -0.11550000309944153,
+          0.0
+        ],
+        [
+          0.6100000143051147,
+          0.0,
+          0.1899999976158142
+        ]
+      ],
+      "triangles": 1905,
+      "vertices_source": 1052,
+      "materials": [
+        "IF05_cream_metal",
+        "IF05_steel",
+        "IF05_iron",
+        "IF05_bone",
+        "IF05_ivory",
+        "IF05_rust"
+      ],
+      "material_count": 6,
+      "surface_semantics": [
+        "steel"
+      ],
+      "mounting": "wall",
+      "pivot": "lower back contact centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 0.08,
+      "editable_vertex_groups": [
+        "cover_and_vents",
+        "end_control",
+        "heater_fins",
+        "rust_chips",
+        "wall_housing"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 422776,
+      "sha256": "4d0dcb70625c36fa6fb2aa497b9ddc6f0454f06535498d40d02a4a1d445c0ed8"
+    },
+    {
+      "asset_id": "louvred_return_air_grille",
+      "title": "Louvred return air grille",
+      "file": "assets/louvred_return_air_grille.glb",
+      "dimensions_m_source_xyz": [
+        0.405,
+        0.032996,
+        0.255
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.405,
+        0.255,
+        0.032996
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.20250000059604645,
+          -0.03299577534198761,
+          -0.1274999976158142
+        ],
+        [
+          0.20250000059604645,
+          0.0,
+          0.1274999976158142
+        ]
+      ],
+      "triangles": 803,
+      "vertices_source": 448,
+      "materials": [
+        "IF05_bone",
+        "IF05_black",
+        "IF05_cream_metal",
+        "IF05_steel",
+        "IF05_rust"
+      ],
+      "material_count": 5,
+      "surface_semantics": [
+        "steel"
+      ],
+      "mounting": "wall",
+      "pivot": "backplate centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 0.3,
+      "editable_vertex_groups": [
+        "angled_louvres",
+        "dark_recess",
+        "edge_chips",
+        "mounting_frame"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 268224,
+      "sha256": "4ccf4279561ca78a4f597f63609e024f16febcf4690893822b161b27591aed80"
+    },
+    {
+      "asset_id": "breaker_panel_closed",
+      "title": "Breaker panel closed",
+      "file": "assets/breaker_panel_closed.glb",
+      "dimensions_m_source_xyz": [
+        0.335,
+        0.1125,
+        0.49
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.335,
+        0.49,
+        0.1125
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.16750000417232513,
+          -0.11250000447034836,
+          -0.24500000476837158
+        ],
+        [
+          0.16750000417232513,
+          0.0,
+          0.24500000476837158
+        ]
+      ],
+      "triangles": 631,
+      "vertices_source": 360,
+      "materials": [
+        "IF05_sage",
+        "IF05_iron",
+        "IF05_steel",
+        "IF05_black",
+        "IF05_rust",
+        "IF05_paper"
+      ],
+      "material_count": 6,
+      "surface_semantics": [
+        "steel",
+        "plastic"
+      ],
+      "mounting": "wall",
+      "pivot": "cabinet back centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.45,
+      "editable_vertex_groups": [
+        "closed_door",
+        "door_wear",
+        "hinges",
+        "inspection_label",
+        "latch",
+        "mounting_screws",
+        "steel_cabinet"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 283760,
+      "sha256": "fde6ddd317c2e87f37c69422a56c17b9178ac960abe785f46d7ac56d5da70328"
+    },
+    {
+      "asset_id": "breaker_panel_open",
+      "title": "Breaker panel open",
+      "file": "assets/breaker_panel_open.glb",
+      "dimensions_m_source_xyz": [
+        0.446425,
+        0.387207,
+        0.49
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.446425,
+        0.49,
+        0.387207
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.2789249122142792,
+          -0.3872074484825134,
+          -0.24500000476837158
+        ],
+        [
+          0.16750000417232513,
+          0.0,
+          0.24500000476837158
+        ]
+      ],
+      "triangles": 3071,
+      "vertices_source": 1752,
+      "materials": [
+        "IF05_sage",
+        "IF05_iron",
+        "IF05_steel",
+        "IF05_black",
+        "IF05_bone",
+        "IF05_paper",
+        "IF05_rust"
+      ],
+      "material_count": 7,
+      "surface_semantics": [
+        "steel",
+        "plastic"
+      ],
+      "mounting": "wall",
+      "pivot": "cabinet back centre; same as closed variant",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.45,
+      "editable_vertex_groups": [
+        "breaker_switches",
+        "circuit_labels",
+        "dead_front_panel",
+        "door_110deg_open",
+        "door_wear",
+        "hinges",
+        "inspection_label",
+        "latch",
+        "main_breaker",
+        "mounting_screws",
+        "steel_cabinet"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 516052,
+      "sha256": "1cab24e80d109ee897ae2a2111b2323b8124f150734bdf724f37c3c3c55ec838"
+    },
+    {
+      "asset_id": "roller_blind_half_lowered",
+      "title": "Roller blind half lowered",
+      "file": "assets/roller_blind_half_lowered.glb",
+      "dimensions_m_source_xyz": [
+        1.0993,
+        0.111,
+        0.9295
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.0993,
+        0.9295,
+        0.111
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.54749995470047,
+          -0.11099999397993088,
+          -0.8889999985694885
+        ],
+        [
+          0.5517999529838562,
+          0.0,
+          0.04050000011920929
+        ]
+      ],
+      "triangles": 1168,
+      "vertices_source": 697,
+      "materials": [
+        "IF05_bone",
+        "IF05_ivory",
+        "IF05_fabric"
+      ],
+      "material_count": 3,
+      "surface_semantics": [
+        "fabric",
+        "steel",
+        "plastic"
+      ],
+      "mounting": "wall",
+      "pivot": "roller axis projected to wall contact plane",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 2.1,
+      "editable_vertex_groups": [
+        "hanging_fabric",
+        "mounting_brackets",
+        "pull_loop",
+        "roller",
+        "weighted_hem"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 226876,
+      "sha256": "5720dc4097ea928adce3ccdea5df8318bb9073105620bc6c6dd2fdd5a5e9a0c1"
+    },
+    {
+      "asset_id": "venetian_blind_bent_slat",
+      "title": "Venetian blind with bent slat",
+      "file": "assets/venetian_blind_bent_slat.glb",
+      "dimensions_m_source_xyz": [
+        1.04,
+        0.135863,
+        0.857
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.04,
+        0.857,
+        0.135863
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.5199999809265137,
+          -0.13586296141147614,
+          -0.8270000219345093
+        ],
+        [
+          0.5199999809265137,
+          0.0,
+          0.029999999329447746
+        ]
+      ],
+      "triangles": 1942,
+      "vertices_source": 1138,
+      "materials": [
+        "IF05_bone",
+        "IF05_cream_metal",
+        "IF05_ivory",
+        "IF05_fabric_band"
+      ],
+      "material_count": 4,
+      "surface_semantics": [
+        "plastic",
+        "steel",
+        "fabric"
+      ],
+      "mounting": "wall",
+      "pivot": "headrail centre projected to wall contact plane",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 2.1,
+      "editable_vertex_groups": [
+        "bottom_rail",
+        "headrail",
+        "ladder_cords",
+        "mounting_clips",
+        "pull_cord",
+        "slats",
+        "tilt_wand"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 344612,
+      "sha256": "3db92a893e8cc5421f301dc080cf5781e563ecc6f5b04e3d9cbc912d0c98c6a2"
+    },
+    {
+      "asset_id": "chrome_towel_rail",
+      "title": "Chrome towel rail",
+      "file": "assets/chrome_towel_rail.glb",
+      "dimensions_m_source_xyz": [
+        0.566,
+        0.0962,
+        0.056
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.566,
+        0.056,
+        0.0962
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.28299999237060547,
+          -0.09620000422000885,
+          -0.02799999713897705
+        ],
+        [
+          0.28299999237060547,
+          5.678846282108907e-09,
+          0.02800000086426735
+        ]
+      ],
+      "triangles": 520,
+      "vertices_source": 280,
+      "materials": [
+        "IF05_chrome",
+        "IF05_steel",
+        "IF05_black"
+      ],
+      "material_count": 3,
+      "surface_semantics": [
+        "steel"
+      ],
+      "mounting": "wall",
+      "pivot": "midpoint of wall rosettes",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.12,
+      "editable_vertex_groups": [
+        "rail",
+        "stand_offs",
+        "wall_rosettes",
+        "worn_underside"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 150404,
+      "sha256": "f77bfe087216a0224bfe3af4f68e3d4cd0e005aa1d9de7c32b8f0bb8ff708070"
+    },
+    {
+      "asset_id": "four_hook_coat_rack",
+      "title": "Four hook coat rack",
+      "file": "assets/four_hook_coat_rack.glb",
+      "dimensions_m_source_xyz": [
+        0.585,
+        0.135558,
+        0.143784
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.585,
+        0.143784,
+        0.135558
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.29249998927116394,
+          -0.13555780053138733,
+          -0.052000001072883606
+        ],
+        [
+          0.29249998927116394,
+          0.0,
+          0.09178446233272552
+        ]
+      ],
+      "triangles": 1500,
+      "vertices_source": 824,
+      "materials": [
+        "IF05_wood",
+        "IF05_steel",
+        "IF05_black",
+        "IF05_brass"
+      ],
+      "material_count": 4,
+      "surface_semantics": [
+        "wood",
+        "brass"
+      ],
+      "mounting": "wall",
+      "pivot": "wood rail back centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 1.65,
+      "editable_vertex_groups": [
+        "cast_hooks",
+        "wood_mount"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 251564,
+      "sha256": "634a97cf566336437b154ab23fe81fc5e1c89570cf2f3c2150450f2170c62e05"
+    },
+    {
+      "asset_id": "bathroom_ceiling_exhaust",
+      "title": "Bathroom ceiling exhaust grille",
+      "file": "assets/bathroom_ceiling_exhaust.glb",
+      "dimensions_m_source_xyz": [
+        0.268,
+        0.268,
+        0.0515
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.268,
+        0.0515,
+        0.268
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.1340000033378601,
+          -0.1340000033378601,
+          -0.051500000059604645
+        ],
+        [
+          0.1340000033378601,
+          0.1340000033378601,
+          0.0
+        ]
+      ],
+      "triangles": 880,
+      "vertices_source": 480,
+      "materials": [
+        "IF05_ivory",
+        "IF05_black",
+        "IF05_bone"
+      ],
+      "material_count": 3,
+      "surface_semantics": [
+        "plastic"
+      ],
+      "mounting": "ceiling",
+      "pivot": "ceiling contact centre",
+      "mount_plane_source": "Z=0; fixture extends downward -Z",
+      "mount_normal_source_xyz": [
+        0,
+        0,
+        -1
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "suggested_mount_height_m": 2.7,
+      "editable_vertex_groups": [
+        "ceiling_mount",
+        "central_support",
+        "slotted_grille",
+        "vent_cavity"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 186488,
+      "sha256": "6347f1187ebeb9cf7441050f348c3b53796530f1ec862f1c72c310bfc8195683"
+    },
+    {
+      "asset_id": "wood_doorbell_chime",
+      "title": "Wood doorbell chime",
+      "file": "assets/wood_doorbell_chime.glb",
+      "dimensions_m_source_xyz": [
+        0.183,
+        0.0685,
+        0.1
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.183,
+        0.1,
+        0.0685
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.09149999916553497,
+          -0.06850000470876694,
+          -0.05000000074505806
+        ],
+        [
+          0.09149999916553497,
+          0.0,
+          0.05000000074505806
+        ]
+      ],
+      "triangles": 440,
+      "vertices_source": 240,
+      "materials": [
+        "IF05_bone",
+        "IF05_wood",
+        "IF05_black",
+        "IF05_brass"
+      ],
+      "material_count": 4,
+      "surface_semantics": [
+        "wood",
+        "brass"
+      ],
+      "mounting": "wall",
+      "pivot": "backplate centre",
+      "mount_plane_source": "Y=0; fixture extends into -Y",
+      "mount_normal_source_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        0,
+        1
+      ],
+      "suggested_mount_height_m": 2.1,
+      "editable_vertex_groups": [
+        "chime_cover",
+        "small_badge",
+        "speaker_slots",
+        "wall_backplate"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 189624,
+      "sha256": "e482fc661f627f4e21eedd368121a4e2ec693af4065b72fe3872056e5c06baea"
+    },
+    {
+      "asset_id": "caged_pendant_bulb",
+      "title": "Caged pendant bulb",
+      "file": "assets/caged_pendant_bulb.glb",
+      "dimensions_m_source_xyz": [
+        0.100782,
+        0.100141,
+        0.546997
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.100782,
+        0.546997,
+        0.100141
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.050390779972076416,
+          -0.05007047578692436,
+          -0.5469969511032104
+        ],
+        [
+          0.050390779972076416,
+          0.05007047578692436,
+          0.0
+        ]
+      ],
+      "triangles": 1528,
+      "vertices_source": 788,
+      "materials": [
+        "IF05_bone",
+        "IF05_black",
+        "IF05_frosted",
+        "IF05_iron"
+      ],
+      "material_count": 4,
+      "surface_semantics": [
+        "steel",
+        "glass",
+        "plastic"
+      ],
+      "mounting": "ceiling",
+      "pivot": "ceiling rosette centre",
+      "mount_plane_source": "Z=0; fixture extends downward -Z",
+      "mount_normal_source_xyz": [
+        0,
+        0,
+        -1
+      ],
+      "mount_normal_gltf_xyz": [
+        0,
+        -1,
+        0
+      ],
+      "suggested_mount_height_m": 2.7,
+      "editable_vertex_groups": [
+        "bare_bulb",
+        "ceiling_rosette",
+        "cloth_cable",
+        "protective_cage",
+        "socket"
+      ],
+      "render_only": true,
+      "collision": "none",
+      "bytes": 249220,
+      "sha256": "2c448740eb81856ed8ca5b764e1a7c101b4874ac58627d7fb59ed3014d9d9e3a"
+    }
+  ]
+}

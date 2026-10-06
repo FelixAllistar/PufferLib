@@ -1,0 +1,63 @@
+{
+  "schema": "swat-crouch-motion-review/1",
+  "clip_id": "crouch_forward_shared_n_c1_loop_a_original_1s",
+  "animation_name": "Crouch Forward / Shared Ready N C1 Loop A",
+  "duration_s": 1.0,
+  "source_fps": 30,
+  "source_frame_range": [
+    0,
+    30
+  ],
+  "cyclic_source": true,
+  "runtime_loop_quality_approved": false,
+  "repair_windows_s": [
+    [
+      0,
+      0.125
+    ],
+    [
+      0.875,
+      1
+    ]
+  ],
+  "preserved_center_s": [
+    0.125,
+    0.875
+  ],
+  "preservation_scope": "The source center is unchanged; exported floating-point differences are measured separately. Exact683-curve edit is SOURCE_SAVED_CURVE_DIFF.json.",
+  "events": [],
+  "event_policy": "No authored footstep, reload, fire or ownership-transfer events. No gameplay commits are inferred from phase.",
+  "visibility": {
+    "all_five_skinned_objects_enabled": true,
+    "stored_spare_B_collapsed": false,
+    "stored_spare_node": 69,
+    "stored_spare_skin_slot": 69,
+    "stored_spare_world_linear_determinant_range": [
+      0.999996929430812,
+      1.0000018477446488
+    ],
+    "sleeve_skin_owner": "mixamorig:Hips",
+    "scope": "All source visibility, mesh geometry and binding retained; no accessory collision workaround baked into this clip."
+  },
+  "owners_all_phases": {
+    "rifle": "character carry",
+    "installed_A": "rifle",
+    "stored_B": "authored hips-relative pose, visible throughout",
+    "spare_sleeve": "Hips-skinned source sleeve"
+  },
+  "installed_A_vs_rifle_deformation_max_change": 2.220446049250313e-16,
+  "identity_policy": "Loop wrap keeps visual identities. Runtime owns magazine_seated, ammunition, chamber, inventory, replay and save/restore state; no persistent magazine/pouch ID is provided.",
+  "source_pace": {
+    "nominal_baked_m_s": 2.0390741825103778,
+    "independent_double_endpoint_m_s": 2.0390742532908934,
+    "original_source_fps": 60,
+    "source_fbx_sha256": "a53c3d0f5c872d268f067e8cccf7b509d1f3a3e846a975ea83082876db100b51",
+    "root_vector_removed_blender_m": [
+      -8.149072527885437e-08,
+      -2.039074182510376,
+      -2.384185791015625e-07
+    ],
+    "meaning": "Source provenance; not selected gameplay speed or current root animation."
+  },
+  "fit_qualification": "Motion/continuity/carry candidate with substantial stored-accessory collision. Not clearance-approved. Accessory representation/mapping is a separate engine/art decision."
+}

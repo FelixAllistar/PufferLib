@@ -1,0 +1,118 @@
+{
+  "status": "QUALIFIED_MOTION_AND_C1_CONTINUITY_CANDIDATE_WITH_STORED_ACCESSORY_COLLISION_LIMIT",
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend",
+  "candidate_sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+  "action": "Crouch Forward / Shared Ready N C1 Loop A",
+  "all_readonly_input_hashes_preserved": true,
+  "source_timing": {
+    "action": "Armature|mixamo.com|Layer0",
+    "frames": [
+      1.0,
+      61.0
+    ],
+    "fps": 60.0,
+    "duration_s": 1.0,
+    "world_root_delta_m": [
+      -8.149072527885437e-08,
+      -2.0390742532908916,
+      -2.384185791015625e-07
+    ],
+    "native_speed_m_s": 2.0390742532908934,
+    "human_bone_count": 65
+  },
+  "core": {
+    "source_grounding_reusable": true,
+    "floor_minimum_mm": {
+      "Left": 3.3368393778800964,
+      "Right": 3.8917176425457
+    },
+    "floor_rate_hz": 960,
+    "floor_sample_count": 961,
+    "center_matrix_delta": 0.0,
+    "center_body_delta_mm": 0.0,
+    "glove_surface_errors_mm": {
+      "Left": 0.001028424823104301,
+      "Right": 0.0008571504601788932
+    },
+    "native_geometry_identity": true,
+    "arm_forearm_vest_crossings": {
+      "Left": 0,
+      "Right": 0
+    },
+    "rifle_nonhand_crossings": 0,
+    "whole_sleeve_vest_pairs": {
+      "Left": [
+        50,
+        50
+      ],
+      "Right": [
+        63,
+        63
+      ]
+    },
+    "stock_center_gap_range_mm": [
+      2.1917326375842094,
+      2.192015526816249
+    ],
+    "author_saved_analytic_seam_report": {
+      "sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+      "worst_linear_velocity_gap_m_s": 5.249731592851773e-05,
+      "worst_angular_velocity_gap_deg_s": 0.007135674878907807,
+      "unsupported_FK_flags": []
+    }
+  },
+  "limits": {
+    "stored_sleeve": {
+      "maximum_sampled_inward_distance_into_closed_thigh_hardware_mm": 18.392138183116913,
+      "frame": 3,
+      "time_s": 0.1,
+      "body_component": 17904,
+      "maximum_sampled_body_inward_distance_into_closed_sleeve_wall_mm": 3.9998574910146134,
+      "sleeve_body_triangle_pair_range": [
+        28,
+        148
+      ],
+      "static_belt_mount_pairs": 28,
+      "classification": "New dynamic stored-accessory fit failure relative to planted static reference, inherited unchanged from pre-seam native carry. Source pose and shared mesh retained."
+    },
+    "stored_spare": {
+      "maximum_body_triangle_pairs": 12,
+      "body_component": 5118,
+      "actual_inward_depth": null,
+      "reason": "Magazine shell has30 boundary edges and pants component74 after coincident seam welding; no solid containment/depth classification is valid."
+    },
+    "opposing_hip_layers": {
+      "component_families": [
+        "5118,11165",
+        "11165,11623"
+      ],
+      "native_peak_pairs": 22,
+      "candidate_peak_pairs": 28,
+      "candidate_frames": [
+        28.5,
+        29,
+        29.5
+      ],
+      "native_observed_max_intersection_chord_mm": 14.998052698510051,
+      "candidate_observed_max_intersection_chord_mm": 13.447398390890779,
+      "cycle_new_component_pair_families": [],
+      "classification": "Existing upper-hip garment families; changed timing and pair counts inside the seam repair window. Chords are not penetration depths."
+    },
+    "material": "Inherited shoulder-root sleeve crossings, local same-sleeve folds, pants/brace compression and normal-transport reversals remain; not globally intersection-free."
+  },
+  "method_limits": [
+    "60Hz finite-triangle contact phases and960Hz surface/floor phases are sampled, not analytic continuous collision proof.",
+    "Closed-solid inward samples use three agreeing parity rays plus nearest actual triangle distance, or exact convex block halfspaces; disagreeing parity samples excluded.",
+    "Reported18.392mm is maximum observed sampled inward distance, not minimum whole-object separation and not a guaranteed global maximum.",
+    "Static hand-depth qualification transfers through measured all-surface rigidity; dense hand depths not rerun.",
+    "No engine or ADS acceptance, dynamic physical balance claim, runtime change, mesh edit or pose repair performed by this review."
+  ],
+  "evidence_files": [
+    "source_grounding_review.json",
+    "grounding_seam_origin.json",
+    "seam_a_dense_invariance.json",
+    "compact_cycle_contacts.json",
+    "accessory_inward.json",
+    "cycle_contact_changes.json"
+  ]
+}

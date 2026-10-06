@@ -1,0 +1,26 @@
+{
+  "schema": "swat-static-review-pose/1",
+  "clip_id": "crouch_ready_planted_shared_n_static",
+  "animation_name": "Crouch Ready / Planted Shared N Low-Ready",
+  "authored_duration_s": null,
+  "stored_animation_span_s": 0,
+  "static_key_time_s": 0,
+  "cyclic": false,
+  "events": [],
+  "motion_authored": false,
+  "visibility": {
+    "all_five_skinned_objects_enabled": true,
+    "stored_spare_B_collapsed": false,
+    "stored_spare_node": 69,
+    "stored_spare_skin_slot": 69,
+    "stored_spare_world_linear_determinant": 1.0000007748603474
+  },
+  "owners_at_pose": {
+    "rifle": "character carry",
+    "installed_A": "rifle",
+    "stored_B": "visibly stored at hip beside the spare sleeve",
+    "spare_sleeve": "hips"
+  },
+  "identity_policy": "Visual state only. No persistent magazine or pouch IDs are authored. Sampling/holding/resetting this pose must not alter gameplay magazine_seated, ammunition, chamber, inventory, replay or save/restore state.",
+  "runtime_mapping": "Unapproved static pose for preview integration. Engine/controller stance dimensions, transition, blend, visibility and achieved pose remain consumer authority."
+}

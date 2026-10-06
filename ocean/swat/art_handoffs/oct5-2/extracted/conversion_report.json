@@ -1,0 +1,3938 @@
+{
+  "source_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "source_curve_count": 700,
+  "source_key_count": 700,
+  "source_interpolation_counts": {
+    "LINEAR": 700
+  },
+  "output": "crouch_ready_planted_shared_n_static.glb",
+  "bytes": 3620792,
+  "sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "channels": [
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.02533753588795662,
+        0.6709743131695491,
+        -0.054387588531534976
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.006505545889742986,
+        -0.2124400072187779,
+        0.02576829226236097,
+        0.976812631121979
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.001846320927143097,
+        0.10788697695033356,
+        0.008494981583880738
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.1822274276102177,
+        0.0044581171629617155,
+        -0.05889716389513575,
+        0.9814807251816174
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.0,
+        0.9999999403953552
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.0,
+        0.1273164153099109,
+        -3.8184186479383755e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.13985187469672775,
+        -0.0151174605710326,
+        0.019279912727311943,
+        0.9898692845496933
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        1.0,
+        0.9999999403953552
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        2.9802322387695312e-08,
+        0.14550441503523848,
+        -7.823109626769947e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.1437633294700787,
+        -0.017814071390505053,
+        0.027738881524441063,
+        0.9890628485652186
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998211860657,
+        1.0,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -3.725290298461914e-08,
+        0.16369256919583072,
+        -7.575020718525343e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.23152714318987322,
+        0.005206003850690622,
+        0.06595358130990206,
+        0.9705762229740852
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998211860657,
+        1.0,
+        0.9999998807907104
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        7.450580596923828e-08,
+        0.06116712093353293,
+        0.024233052507043756
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.040135293941110775,
+        0.19219730561344273,
+        0.09014377719301439,
+        0.9763828415783277
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999997615814209,
+        0.9999997615814209,
+        0.9999998807907104
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -1.4901161193847656e-07,
+        0.23712730407714844,
+        0.09394464083015919
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.0,
+        -5.587932783157612e-09,
+        8.881784197001252e-16,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        1.000000238418579,
+        1.000000238418579
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.07670610542547887,
+        0.14260427490350736,
+        -0.003436808955455939
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.6430473167059861,
+        0.3919220143984774,
+        -0.3886673711855507,
+        0.5308718844342617
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000000596046377,
+        0.9999997615814209,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.0026843176917288117,
+        0.12583475597322943,
+        0.017169797673933576
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.3153418039406687,
+        -0.614345185139626,
+        0.4840914783070992,
+        0.5373964838121393
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092611,
+        1.0000012516974621,
+        0.9999998807907104
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -9.11986236146733e-05,
+        0.24938280829194923,
+        -0.00908074757051485
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.24951931201164973,
+        -0.7653237446877764,
+        0.14888593745010129,
+        0.5743280041752419
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000004768372008,
+        1.0000001192092896,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -7.077805006564889e-09,
+        0.24810053805628662,
+        2.9544997109988103e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.0904748865335622,
+        0.06338677010918418,
+        -0.30120362382938926,
+        0.9471392660395345
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999997019767761,
+        0.9999991059303284,
+        0.9999998807907104
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.02984694305358176,
+        0.03328291189268617,
+        0.01067983251132121
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.256244205791816,
+        0.03179405638257837,
+        0.4592805474239421,
+        0.8499349526492171
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999995231628418,
+        1.000000357627897,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.0072159375991936855,
+        0.03605609639173135,
+        3.8589253840503656e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.02152871117222769,
+        0.11565003549083776,
+        -0.03743481988834224,
+        0.9923508543585572
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        0.9999995231628951,
+        0.9999983906745911
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00031699892144396635,
+        0.036687293836090554,
+        -2.949386103763432e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.24920362760502487,
+        -0.06580339376501634,
+        0.1291010748617484,
+        0.9575491516507357
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999996423721491,
+        0.9999999403953339,
+        0.9999997615814316
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.006898852065133146,
+        0.028473854064981464,
+        5.681060397111534e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        3.72529195555701e-09,
+        -8.73114856475646e-08,
+        -1.2281828008601489e-08,
+        0.9999999999999962
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        1.0000000596046377,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.03535602902902273,
+        0.10290502493906507,
+        0.0008342081657408172
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.31853420941884203,
+        0.1310087753822199,
+        0.08104871806502548,
+        0.9353094479918291
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999995827674866,
+        0.9999999403953552,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00035888981073188965,
+        0.03339112523827174,
+        1.290953762205544e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.46768813434593404,
+        -0.0014000813962337893,
+        0.008592423785046531,
+        0.8838506768779449
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.99999791383717,
+        1.0000001192092896,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00017093680656646702,
+        0.03312826446084149,
+        -8.433425097554524e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.28651888244975504,
+        -0.0042346942732789635,
+        0.008495916839180764,
+        0.9580275657627065
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998211860728,
+        1.0000001192092611,
+        1.0000002980232026
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00018910318535436655,
+        0.026933932676124095,
+        -1.778829979967878e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -2.5145702745686815e-08,
+        2.421449943679577e-08,
+        -4.656641402436783e-09,
+        0.9999999999999994
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        0.9999999403953552,
+        0.9999998807907104
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.010239986556387548,
+        0.11065597830974265,
+        -0.00072015931864072
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.33548549428808316,
+        0.08658899415129459,
+        0.07983529438589754,
+        0.9346540295662693
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998211860657,
+        0.9999997615814209,
+        1.000000238418579
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.0002280790358032249,
+        0.03486457860708706,
+        7.135778782632675e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.575796349482017,
+        -4.4892094666235154e-05,
+        0.0018888396349604343,
+        0.8175909699799264
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998807907104,
+        0.9999980330469427,
+        0.9999995827675221
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00011395849270076218,
+        0.03333813639382366,
+        -2.4280853666177808e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.3490736350236044,
+        -0.003318218939649158,
+        0.0055349963450347615,
+        0.9370730764299742
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999985098838806,
+        0.9999996423720745,
+        0.999999880790682
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00011319201440937454,
+        0.027831036597470438,
+        1.782318288026663e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.4668332132261595e-08,
+        1.210719342750048e-08,
+        -6.519262035591114e-09,
+        0.9999999999999998
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        0.9999997019767974,
+        0.9999998211860728
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.012977989936677562,
+        0.11329308448560238,
+        -0.0013840388755125192
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.37781471859786775,
+        0.024133379442156152,
+        0.029221978964199296,
+        0.9251052342046988
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999991655350193,
+        1.0,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -7.484480710995678e-05,
+        0.02748880047778407,
+        -3.41510608198298e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.5570633455693657,
+        0.0005437996195651138,
+        -0.0005935174930171881,
+        0.8304696147614463
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998211860657,
+        1.0000002384185365,
+        0.9999997019767974
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.0001080296937201651,
+        0.02670443368496023,
+        -1.4170996837409655e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.2802212530426783,
+        -0.010534606793772794,
+        0.014719889347952526,
+        0.9597647608974169
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999997615814209,
+        1.0000001788139201,
+        1.0000000596046377
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00018292292952445596,
+        0.023205835372203512,
+        1.597218329627704e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -1.6298110840518409e-09,
+        1.688021757312661e-08,
+        2.561136404344297e-08,
+        0.9999999999999994
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        0.9999997615814316,
+        1.0000000596046377
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.03261801903308305,
+        0.09493999018384243,
+        -0.0011018740987991458
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.408674175292528,
+        -0.03552073282900964,
+        -0.08321781955480198,
+        0.9081841721241383
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        0.9999997019767761,
+        1.0000004768371582
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        6.0137826876658036e-05,
+        0.027528987827376287,
+        9.099402413146789e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.445294778456783,
+        -0.0035850778738658385,
+        -0.004104847476235805,
+        0.8953674428540273
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999995231628418,
+        1.0000000596046377,
+        0.9999995231628667
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00023104064163958826,
+        0.025022996230340783,
+        -1.4232793440948614e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.07685212319549098,
+        0.0013078300373561167,
+        -0.0071611095761095235,
+        0.9970159272802908
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001788139201,
+        1.0000001788139201,
+        0.9999998211860728
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00017202785238631946,
+        0.01793119870126887,
+        -4.7963112025442765e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.344597011444966e-08,
+        -5.442419765289857e-09,
+        2.1653255154294315e-08,
+        0.9999999999999998
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.0000000596046377,
+        0.9999999999999858
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.07670615758593492,
+        0.14232801261018216,
+        -0.0002783573551633618
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.7201191372874625,
+        -0.3959743922282942,
+        0.1954853736873977,
+        0.5351805092546742
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999997615814209,
+        0.9999997615814351,
+        0.9999998211860728
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.009943202974835391,
+        0.12567136084515834,
+        0.016563291241111014
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.13497530412687903,
+        0.30142068984196685,
+        -0.07890879975441181,
+        0.9405852626595675
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000011920928955,
+        1.000000417232485,
+        1.0000007152557373
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.012571054350018778,
+        0.2490981037275428,
+        -0.0080604295604655
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.5436124164633958,
+        0.2631913322963928,
+        -0.6246026874015947,
+        0.4950629719152738
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        0.9999990463256836,
+        1.0000005960464478
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        7.733493776355575e-08,
+        0.24811971687287052,
+        -1.10053455253058e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.19174138491701967,
+        -0.11639544419465742,
+        -0.1904033355243709,
+        0.9557373654420056
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.000000238418579,
+        0.999998927116394,
+        0.9999989867210388
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.030413803966143012,
+        0.03360899703704269,
+        0.012380001989697402
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.20183225583240894,
+        -0.19031851860672697,
+        -0.12683326783879528,
+        0.9523423355864604
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        0.9999999403953552,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00770187005369662,
+        0.0367929824021099,
+        -5.839733806332577e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.14240710805731382,
+        0.01493924409378872,
+        0.0415637686936364,
+        0.9888222730565087
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        1.0000001192092896,
+        1.0000001788139201
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00216270424379032,
+        0.035749996785970684,
+        -5.651641131399425e-09
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.1322064453644527,
+        0.0336160680120234,
+        0.12980791180697163,
+        0.9821106464181214
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999991059303284,
+        0.9999998211860657,
+        0.9999997615814209
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.005538931116482189,
+        0.02736318297681878,
+        3.6321650194461957e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        4.656611710379029e-08,
+        1.4645047546543515e-07,
+        -7.334161840343888e-09,
+        0.9999999999999882
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        1.0000001192092896,
+        1.0000000596046377
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.0350207656653671,
+        0.10675199926110773,
+        0.0005310255789187115
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.15733629175547645,
+        -0.05916385745730895,
+        -0.013030993948466157,
+        0.9856851030953657
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998211860657,
+        1.0,
+        0.9999980330468361
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00024095363946644068,
+        0.03366309362771243,
+        -4.448412549246581e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.16171798942726984,
+        0.0059613526752415325,
+        0.0020430838140412934,
+        0.9868168928319033
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.000000238418579,
+        0.9999999403953552,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        8.413381861523825e-05,
+        0.0315201434995786,
+        1.0140206126766316e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.07784336638631198,
+        0.023371380586145643,
+        -0.0007779081025000635,
+        0.9966913181813755
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998807907104,
+        1.0000000596046377,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00015719048678802805,
+        0.025567928329090245,
+        4.5867640463547954e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        2.4534528668884378e-08,
+        -5.122274364689479e-09,
+        -1.1641532012826108e-08,
+        0.9999999999999999
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        0.9999998807907104,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.008598927941611514,
+        0.11955007730494543,
+        -0.00181895916536145
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.18062752272045582,
+        0.009527737511725838,
+        0.10000738701217608,
+        0.9784076056515382
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999989867210388,
+        0.9999995231628418,
+        0.9999991059303284
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -5.1008537449011944e-06,
+        0.03070300929513131,
+        -3.341804645980738e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.6111205009821902,
+        0.02033829408441593,
+        -0.0707870307547424,
+        0.7881035993763384
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000002384185933,
+        1.0000002384185933,
+        1.0000004768372008
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00025189481668405584,
+        0.031993018489742696,
+        1.483984652226063e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.2329900812196381,
+        -0.013856953091404592,
+        0.0726034553965229,
+        0.9696660998347701
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        1.0000000596046377,
+        0.9999993443489075
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00024716462937105356,
+        0.021359996870119927,
+        4.057074783070301e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -1.2665987886664036e-07,
+        -1.7462366801582745e-09,
+        -2.6251654039054404e-08,
+        0.9999999999999918
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001788139201,
+        0.9999997615814316,
+        0.999999880790714
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.013237487667431883,
+        0.12402103421764786,
+        0.0008640838413167546
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.10262251850671837,
+        0.07880050222044581,
+        0.11919975307164662,
+        0.9844036359201455
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        1.0000001192092896,
+        0.9999991655350193
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        3.0964612643685196e-05,
+        0.025133972746461578,
+        1.1323878059637747e-09
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.7060401945014989,
+        0.007452085737012601,
+        0.019905693672965474,
+        0.707852720222118
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        1.0000001788139201,
+        1.0000002980232026
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        7.913261654974122e-05,
+        0.02347102117415218,
+        -1.4392632128136051e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.3757153489515472,
+        0.007950897415285915,
+        -0.042819415894098385,
+        0.9257112170731199
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.0,
+        0.9999995231628667
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.00011032447218894265,
+        0.01613902859392738,
+        5.774199292492203e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.1641496178507715e-09,
+        1.0884831801735935e-08,
+        -2.7008358536632553e-08,
+        0.9999999999999997
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        0.9999999403953552,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.03038237447567934,
+        0.09039010184628388,
+        -0.0017469683740040196
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.09830686756266749,
+        0.13337459524667364,
+        0.13735317514102183,
+        0.9765659641885344
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.999999880790714,
+        0.9999994039536091,
+        0.9999999403953552
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -3.102421757616219e-05,
+        0.029849922011517455,
+        3.5656578330260863e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.5282941259762042,
+        0.0003106726821536531,
+        0.008864051335148783,
+        0.8490151050101822
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999997615814209,
+        0.9999998807907104,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.00012106448470910855,
+        0.025731955836701688,
+        5.365173832159097e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.19201270371910875,
+        0.006417280105984028,
+        -0.0064208314525660256,
+        0.9813504537370822
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999983906745911,
+        1.0000005960464478,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -8.909404277823718e-05,
+        0.01904298365113683,
+        -7.450580624332533e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -7.287599139253712e-08,
+        2.2118911260741873e-08,
+        4.190952222846825e-09,
+        0.9999999999999972
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        1.0000001192092896,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.004471408767297943,
+        0.06216602426956549,
+        -0.0009459125480943695
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.33258479066323454,
+        -0.5086442385339895,
+        -0.5334485490449515,
+        0.5883035280767122
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        1.0000002384185933,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -1.7322615053451504e-07,
+        0.09000033140175387,
+        0.7299998998643568
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -6.146729481378442e-07,
+        2.5107583505546516e-06,
+        3.2049139968975547e-07,
+        0.9999999999966077
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0,
+        1.0000000596046377,
+        1.0000000596046377
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.13400271534917602,
+        -0.060397265534760464,
+        -0.007268162913637709
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.12020661508117009,
+        -0.49239074094503893,
+        -0.8609571794832375,
+        0.04306347661988636
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000001192092896,
+        0.9999999403952842,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -5.141510173317526e-09,
+        0.41064802294395303,
+        -4.0041379976728314e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.7590215545980761,
+        0.06454214529810538,
+        -0.052354872067959704,
+        0.6457395438615988
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999998211860657,
+        1.0000005960464478,
+        1.0000004768371582
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        3.9904025393217783e-08,
+        0.3668275515918559,
+        -2.4579569280951456e-10
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.7579272078597721,
+        -0.028850962436966485,
+        0.055055980520454684,
+        0.6493710869458866
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999995231628418,
+        0.9999989867210388,
+        0.9999994039535522
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -5.3478094517623e-08,
+        0.17808025043759748,
+        1.1464020495170038e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.3245966029629828,
+        -0.012905474449610285,
+        0.004429508092707247,
+        0.9457541295348272
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000003576278687,
+        1.0000001192092896,
+        1.0
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        4.9898518451059815e-08,
+        0.0720639750361505,
+        6.984985229108954e-10
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -7.5378929842575e-09,
+        -1.1053635517999104e-07,
+        1.0611983824971154e-07,
+        0.9999999999999882
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.0000001192092896,
+        1.0000001192092896
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.1340028345584498,
+        -0.06039768754748344,
+        -0.007970989225054969
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.12238474325074714,
+        -0.4514611122281996,
+        -0.8770297804214375,
+        -0.10965219112744946
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.0000002384185933,
+        1.0000001788139201
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -1.464921002195749e-07,
+        0.41064964745145427,
+        6.11122253867859e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.7840067703307046,
+        -0.0381974597762542,
+        0.014924962504172731,
+        0.6193961443506961
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.000000357627897,
+        0.9999999403953552
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        9.776520564135338e-08,
+        0.36669667141220674,
+        8.495803679729309e-08
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.8133959440695205,
+        -0.014325325843575676,
+        0.012426629203329272,
+        0.5814012401924954
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.0000001192092896,
+        0.999998927116394
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        9.686607357021128e-09,
+        0.17848828779289452,
+        1.0634112981313324e-07
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.3237468412490993,
+        0.012526960080052224,
+        -0.004287191664376172,
+        0.946051096949851
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999999403953552,
+        1.0000004768371582,
+        0.9999995231628418
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -5.253604678649966e-08,
+        0.07267508655786539,
+        -2.9103810793640357e-09
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -6.50106740351911e-08,
+        -6.730260794099407e-08,
+        9.022371126393402e-08,
+        0.9999999999999915
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.999999880790714,
+        0.9999997615814316,
+        0.9999999403953552
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.19262336194515228,
+        0.8148676156997684,
+        0.5914593338966369
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.572650399181798,
+        0.030869870393136163,
+        0.03766110535017899,
+        0.8183521323749582
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999995827674866,
+        1.0000008344650269,
+        1.0000004768371582
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.19262336194515228,
+        0.8148676156997684,
+        0.5914593338966369
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        -0.572650399181798,
+        0.030869870393136163,
+        0.03766110535017899,
+        0.8183521323749582
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.9999995827674866,
+        1.0000008344650269,
+        1.0000004768371582
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "translation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.19372357428073883,
+        0.7220333814620974,
+        0.2208663672208785
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "rotation",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        0.07636557640012098,
+        0.8411719282411949,
+        -0.5132589668127525,
+        0.15219500276412729
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "scale",
+      "keys": 1,
+      "time_s": 0,
+      "interpolation": "STEP",
+      "static_value": [
+        1.0000004768371582,
+        0.9999997019767761,
+        1.0000005960464478
+      ],
+      "source_scalar_interpolation": [
+        "LINEAR",
+        "LINEAR",
+        "LINEAR"
+      ]
+    }
+  ],
+  "raw_quaternion_norm_max_deviation": 5.998457774936128e-08,
+  "authored_duration_s": null,
+  "stored_animation_span_s": 0,
+  "normalization": "Source and exported key quaternions normalized for physical rotation; no tangent or temporal motion exists. Float32 rest/frame composition errors are measured independently.",
+  "static_geometry_template_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435"
+}

@@ -1,0 +1,108 @@
+{
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "source_capture_sha256": "6549a75c6687a0ef758e07e0cc5b3a00c577385160c8b139728b639695659c9f",
+  "mapping_npz_sha256": "602c67ea0f9fb57f56533af9598250650cc7462054470cf3a26685c7fc0200be",
+  "meaning": "Each array is indexed by the glTF primitive vertex index and yields its original F Blender mesh vertex index; wearer also maps to original N body IDs. All matches are unique by exact bind position plus all normalized weights.",
+  "primitives": [
+    {
+      "node": 72,
+      "mesh_name": "Rebuilt spare magazine sleeve",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node72_primitive0",
+      "vertices": 144
+    },
+    {
+      "node": 73,
+      "mesh_name": "SWAT_ElbowCap_L",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node73_primitive0",
+      "vertices": 193
+    },
+    {
+      "node": 73,
+      "mesh_name": "SWAT_ElbowCap_L",
+      "primitive": 1,
+      "source_F_mesh_vertex_array": "node73_primitive1",
+      "vertices": 225
+    },
+    {
+      "node": 74,
+      "mesh_name": "SWAT_ElbowCap_R",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node74_primitive0",
+      "vertices": 193
+    },
+    {
+      "node": 74,
+      "mesh_name": "SWAT_ElbowCap_R",
+      "primitive": 1,
+      "source_F_mesh_vertex_array": "node74_primitive1",
+      "vertices": 225
+    },
+    {
+      "node": 75,
+      "mesh_name": "SWAT_Headset_L",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node75_primitive0",
+      "vertices": 216
+    },
+    {
+      "node": 75,
+      "mesh_name": "SWAT_Headset_L",
+      "primitive": 1,
+      "source_F_mesh_vertex_array": "node75_primitive1",
+      "vertices": 150
+    },
+    {
+      "node": 76,
+      "mesh_name": "SWAT_Headset_R",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node76_primitive0",
+      "vertices": 216
+    },
+    {
+      "node": 76,
+      "mesh_name": "SWAT_Headset_R",
+      "primitive": 1,
+      "source_F_mesh_vertex_array": "node76_primitive1",
+      "vertices": 150
+    },
+    {
+      "node": 77,
+      "mesh_name": "SWAT_Wearer",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node77_primitive0",
+      "vertices": 7351,
+      "original_N_body_vertex_array": "node77_primitive0_original_N"
+    },
+    {
+      "node": 77,
+      "mesh_name": "SWAT_Wearer",
+      "primitive": 1,
+      "source_F_mesh_vertex_array": "node77_primitive1",
+      "vertices": 21612,
+      "original_N_body_vertex_array": "node77_primitive1_original_N"
+    },
+    {
+      "node": 79,
+      "mesh_name": "Rifle 7",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node79_primitive0",
+      "vertices": 14936
+    },
+    {
+      "node": 80,
+      "mesh_name": "Removed magazine",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node80_primitive0",
+      "vertices": 994
+    },
+    {
+      "node": 81,
+      "mesh_name": "Fresh magazine",
+      "primitive": 0,
+      "source_F_mesh_vertex_array": "node81_primitive0",
+      "vertices": 994
+    }
+  ]
+}

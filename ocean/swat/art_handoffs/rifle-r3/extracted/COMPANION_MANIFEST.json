@@ -1,0 +1,86 @@
+{
+  "primary_glb": "rifle7_visual_cleanup_r3.glb",
+  "primary_sha256": "011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a",
+  "files": [
+    {
+      "file": "RUNTIME_METADATA_R3.json",
+      "bytes": 11550,
+      "sha256": "75ad02c64633dff7262d12664d533761587728b263687d12f7dd0e6a6bbab498"
+    },
+    {
+      "file": "PROTECTED_SURFACES_R3.json",
+      "bytes": 1660,
+      "sha256": "1356a2dc8b4ba1eb0cf01b726a1ef993863247b0d80a83560d92615846458087"
+    },
+    {
+      "file": "rifle_bindings.json",
+      "bytes": 8848,
+      "sha256": "e5915804bb337513f5d3c89762458b79f6ef6036fe25881ad3caf5d5ee8f1a39"
+    },
+    {
+      "file": "FINAL_VALIDATION_R3.json",
+      "bytes": 7367,
+      "sha256": "0ad942fe3779e88cfcbafec34acd23a16138d7023110b83ac606d974c2cda6e6"
+    },
+    {
+      "file": "GEOMETRY_DELTA_R3.json",
+      "bytes": 3396,
+      "sha256": "76b44e79bf16c426ee0b8c83ea175a2dfc0481d3c4e92dd51a9a97c2daa8ed39"
+    },
+    {
+      "file": "MATERIAL_DELTA_R3.json",
+      "bytes": 1379,
+      "sha256": "d9d6f37dd887fda8c8ed8e4f93cdaf527555b1185bcb5677ac51c0ade5136d2d"
+    },
+    {
+      "file": "SURFACE_DISTANCE_QA.json",
+      "bytes": 2519,
+      "sha256": "5ff0f53df63eba19a3be129c185d56944b331afa1ec958c6ba25ae3a047f08be"
+    },
+    {
+      "file": "REOPENED_BLENDER_QA.json",
+      "bytes": 230,
+      "sha256": "0c8127a796593a8cf67b0e773e5cec0c083edf53adbc0de68a33a929a78322a3"
+    },
+    {
+      "file": "BEVEL_RECIPE.json",
+      "bytes": 70726,
+      "sha256": "04529868912795b5373ec77ba767fc84c64533194a46ba3a3a499bd0edcba70a"
+    },
+    {
+      "file": "README.md",
+      "bytes": 4479,
+      "sha256": "588c4c166638336d3ffff9bfb70effe9ecd1a53f08187a5ea1f1c723d8bc2c1d"
+    },
+    {
+      "file": "ENGINE_REFERENCE.json",
+      "bytes": 676,
+      "sha256": "cc6d300d21329f7a5717e9b422caf78c2d40f81eb10d97fad807d6aed1e1829f"
+    },
+    {
+      "file": "comparison_neutral.jpg",
+      "bytes": 163011,
+      "sha256": "f3b3e5d9670d5a8a63c33ec993b070052f3443d06499c1aea97947bd47306f64"
+    },
+    {
+      "file": "comparison_rear_detail.jpg",
+      "bytes": 163833,
+      "sha256": "f1edd8761f23e99be29c64b1cd828a2b33ce1d1b13ea3262cd9167bef41f7fd6"
+    },
+    {
+      "file": "comparison_receiver_detail.jpg",
+      "bytes": 330234,
+      "sha256": "9c27ae2997cdcd7a64c823a840d55e0ae0088aba6652b9694688dd606eda47aa"
+    },
+    {
+      "file": "comparison_offline_ads_120mm.jpg",
+      "bytes": 135605,
+      "sha256": "dbea91f9785ce13a2acac805184819453606cdab34643e4ff9a1565bc93a9d80"
+    },
+    {
+      "file": "comparison_receiver_decomposition.jpg",
+      "bytes": 647644,
+      "sha256": "5863e47ade8263e4ea43044417e682bc69dfb3400e34b50e547a309439e82a95"
+    }
+  ]
+}

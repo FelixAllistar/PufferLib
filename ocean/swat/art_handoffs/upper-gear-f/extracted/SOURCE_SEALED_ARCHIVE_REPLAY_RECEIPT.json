@@ -1,0 +1,7 @@
+{
+  "archive_sha256": "1e586e869db06e5e6a0026b5c56860e5e0ed7f2d9bc1ae9bbee0eb8ca1fd3e35",
+  "archive_bytes": 18171720,
+  "status": "Actual sealed archive extracted; bundled portable replay succeeded with exact canonical static and movement data",
+  "stdout": "Exact canonical geometry, skinning, UVs, normals, rests and actions reproduced: /tmp/swat_gear_f_replay_1w8xo_7a\n",
+  "sealed_archive_unchanged": true
+}

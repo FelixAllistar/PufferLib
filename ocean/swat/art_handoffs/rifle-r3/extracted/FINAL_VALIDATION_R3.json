@@ -1,0 +1,246 @@
+{
+  "status": "PASS",
+  "base_r2_unchanged_sha256": "09d659865fb4d75aaed64b91f973e98ae178d12ffd9df42b8fc401cac25fce98",
+  "original_source_unchanged_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+  "assets": [
+    {
+      "file": "rifle7_visual_cleanup_r3.glb",
+      "sha256": "011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a",
+      "bytes": 32252384,
+      "total_vertices": 21112,
+      "total_triangles": 14762,
+      "meshes": [
+        {
+          "name": "Rifle7_RigidBody_r3_cosmetic_bevels",
+          "vertices": 20116,
+          "triangles": 13982,
+          "bounds_engine": [
+            [
+              -1.0090490665248808e-09,
+              -0.12666592001914978,
+              -0.030266722664237022
+            ],
+            [
+              0.8999999761581421,
+              0.13055996596813202,
+              0.032860588282346725
+            ]
+          ],
+          "source_r2_prefix_attributes_exact": true,
+          "normal_tangent_frames": "PASS"
+        },
+        {
+          "name": "Rifle7_SeatedMagazine_triangulated",
+          "vertices": 996,
+          "triangles": 780,
+          "bounds_engine": [
+            [
+              0.3730941414833069,
+              -0.1758604198694229,
+              -0.013837491162121296
+            ],
+            [
+              0.469766229391098,
+              0.034097034484148026,
+              0.01383686438202858
+            ]
+          ],
+          "source_r2_prefix_attributes_exact": true,
+          "normal_tangent_frames": "PASS"
+        }
+      ],
+      "images": [
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_Normal",
+          "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+          "bytes": 4164967,
+          "size": [
+            4096,
+            4096
+          ]
+        },
+        {
+          "name": "Rifle7_finish_r3_BaseColor",
+          "sha256": "f0727e1120ce59e65fa47ba78538b847961e9292a0945fe89ca1566a82054a62",
+          "bytes": 12058542,
+          "size": [
+            4096,
+            4096
+          ]
+        },
+        {
+          "name": "Rifle7_finish_r3_ORM",
+          "sha256": "169a3e6a368f9a73f1e1255ceebaccce2c95b5080a53f385a08e29993f0c0618",
+          "bytes": 14923913,
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "entire_r2_ring_index_rows_and_vertex_attributes_retained": true,
+      "two_rigid_meshes_magazine_index1_no_animation_skin": true,
+      "status": "PASS"
+    },
+    {
+      "file": "rifle7_geometry_only_r3.glb",
+      "sha256": "ced35b875fe8cb35688f9b6b8854ce004b0cb7b126503b8b35e9dbdb9a3f12e8",
+      "bytes": 35981128,
+      "total_vertices": 21112,
+      "total_triangles": 14762,
+      "meshes": [
+        {
+          "name": "Rifle7_RigidBody_r3_cosmetic_bevels",
+          "vertices": 20116,
+          "triangles": 13982,
+          "bounds_engine": [
+            [
+              -1.0090490665248808e-09,
+              -0.12666592001914978,
+              -0.030266722664237022
+            ],
+            [
+              0.8999999761581421,
+              0.13055996596813202,
+              0.032860588282346725
+            ]
+          ],
+          "source_r2_prefix_attributes_exact": true,
+          "normal_tangent_frames": "PASS"
+        },
+        {
+          "name": "Rifle7_SeatedMagazine_triangulated",
+          "vertices": 996,
+          "triangles": 780,
+          "bounds_engine": [
+            [
+              0.3730941414833069,
+              -0.1758604198694229,
+              -0.013837491162121296
+            ],
+            [
+              0.469766229391098,
+              0.034097034484148026,
+              0.01383686438202858
+            ]
+          ],
+          "source_r2_prefix_attributes_exact": true,
+          "normal_tangent_frames": "PASS"
+        }
+      ],
+      "images": [
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_Normal",
+          "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+          "bytes": 4164967,
+          "size": [
+            4096,
+            4096
+          ]
+        },
+        {
+          "name": "Rifle7_finish_r2_BaseColor",
+          "sha256": "0d2caa1970a95cddbe5ffe1137be76d84eb8b2fb401ca3f14a1e127cd319dc22",
+          "bytes": 12963280,
+          "size": [
+            4096,
+            4096
+          ]
+        },
+        {
+          "name": "Rifle7_finish_r2_ORM",
+          "sha256": "68bcd5679a65fd1c759cceb9e9fbc0d9e34249c466970a507078e109921134d1",
+          "bytes": 17747924,
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "entire_r2_ring_index_rows_and_vertex_attributes_retained": true,
+      "two_rigid_meshes_magazine_index1_no_animation_skin": true,
+      "status": "PASS"
+    },
+    {
+      "file": "rifle7_material_only_r3.glb",
+      "sha256": "9da8e248900874020e0322ff85a1c94d59c740a18721a194d13538a81c382d37",
+      "bytes": 32035964,
+      "total_vertices": 16947,
+      "total_triangles": 12013,
+      "meshes": [
+        {
+          "name": "Rifle7_RigidBody_triangulated",
+          "vertices": 15951,
+          "triangles": 11233,
+          "bounds_engine": [
+            [
+              -1.0090490665248808e-09,
+              -0.12666592001914978,
+              -0.030266722664237022
+            ],
+            [
+              0.8999999761581421,
+              0.13055996596813202,
+              0.032860588282346725
+            ]
+          ],
+          "source_r2_prefix_attributes_exact": true,
+          "normal_tangent_frames": "PASS"
+        },
+        {
+          "name": "Rifle7_SeatedMagazine_triangulated",
+          "vertices": 996,
+          "triangles": 780,
+          "bounds_engine": [
+            [
+              0.3730941414833069,
+              -0.1758604198694229,
+              -0.013837491162121296
+            ],
+            [
+              0.469766229391098,
+              0.034097034484148026,
+              0.01383686438202858
+            ]
+          ],
+          "source_r2_prefix_attributes_exact": true,
+          "normal_tangent_frames": "PASS"
+        }
+      ],
+      "images": [
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_Normal",
+          "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+          "bytes": 4164967,
+          "size": [
+            4096,
+            4096
+          ]
+        },
+        {
+          "name": "Rifle7_finish_r3_BaseColor",
+          "sha256": "f0727e1120ce59e65fa47ba78538b847961e9292a0945fe89ca1566a82054a62",
+          "bytes": 12058542,
+          "size": [
+            4096,
+            4096
+          ]
+        },
+        {
+          "name": "Rifle7_finish_r3_ORM",
+          "sha256": "169a3e6a368f9a73f1e1255ceebaccce2c95b5080a53f385a08e29993f0c0618",
+          "bytes": 14923913,
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "entire_r2_ring_index_rows_and_vertex_attributes_retained": true,
+      "two_rigid_meshes_magazine_index1_no_animation_skin": true,
+      "status": "PASS"
+    }
+  ],
+  "runtime_status": "Not integrated or runtime tested; only prior R2 was engine tested.",
+  "scope": "Direct GLB byte/array contract, source/R2 retention, exact bound and aperture checks, 4K embedded textures and finite unit tangent frames."
+}

@@ -1,0 +1,1908 @@
+{
+  "source_curves": 700,
+  "source_keys": 168700,
+  "source_interpolation": "Mixed BEZIER boundary and LINEAR center; exact source curves included",
+  "source_extrapolation": "CONSTANT",
+  "native_curves_changed_from_carry_baseline": 683,
+  "source_fps": 30,
+  "native_human_source_hz": 60,
+  "authored_key_rate_hz": 240,
+  "nominal_duration_s": 1,
+  "native_frame_range": [
+    0,
+    30
+  ],
+  "rotation_note": "Component CUBICSPLINE with unit keys and normalized quaternion evaluation; per-second incoming/outgoing derivatives. Numerical conversion limits are explicit.",
+  "channels": [
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 66,
+      "name": "mixamorig:Hips",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 55,
+      "name": "mixamorig:Spine",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 54,
+      "name": "mixamorig:Spine1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 53,
+      "name": "mixamorig:Spine2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 2,
+      "name": "mixamorig:Neck",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 1,
+      "name": "mixamorig:Head",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 0,
+      "name": "mixamorig:HeadTop_End",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 26,
+      "name": "mixamorig:LeftShoulder",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 25,
+      "name": "mixamorig:LeftArm",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 24,
+      "name": "mixamorig:LeftForeArm",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 23,
+      "name": "mixamorig:LeftHand",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 6,
+      "name": "mixamorig:LeftHandThumb1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 5,
+      "name": "mixamorig:LeftHandThumb2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 4,
+      "name": "mixamorig:LeftHandThumb3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 3,
+      "name": "mixamorig:LeftHandThumb4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 10,
+      "name": "mixamorig:LeftHandIndex1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 9,
+      "name": "mixamorig:LeftHandIndex2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 8,
+      "name": "mixamorig:LeftHandIndex3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 7,
+      "name": "mixamorig:LeftHandIndex4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 14,
+      "name": "mixamorig:LeftHandMiddle1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 13,
+      "name": "mixamorig:LeftHandMiddle2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 12,
+      "name": "mixamorig:LeftHandMiddle3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 11,
+      "name": "mixamorig:LeftHandMiddle4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 18,
+      "name": "mixamorig:LeftHandRing1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 17,
+      "name": "mixamorig:LeftHandRing2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 16,
+      "name": "mixamorig:LeftHandRing3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 15,
+      "name": "mixamorig:LeftHandRing4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 22,
+      "name": "mixamorig:LeftHandPinky1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 21,
+      "name": "mixamorig:LeftHandPinky2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 20,
+      "name": "mixamorig:LeftHandPinky3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 19,
+      "name": "mixamorig:LeftHandPinky4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 52,
+      "name": "mixamorig:RightShoulder",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 51,
+      "name": "mixamorig:RightArm",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 50,
+      "name": "mixamorig:RightForeArm",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 49,
+      "name": "mixamorig:RightHand",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 30,
+      "name": "mixamorig:RightHandThumb1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 29,
+      "name": "mixamorig:RightHandThumb2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 28,
+      "name": "mixamorig:RightHandThumb3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 27,
+      "name": "mixamorig:RightHandThumb4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 34,
+      "name": "mixamorig:RightHandIndex1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 33,
+      "name": "mixamorig:RightHandIndex2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 32,
+      "name": "mixamorig:RightHandIndex3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 31,
+      "name": "mixamorig:RightHandIndex4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 38,
+      "name": "mixamorig:RightHandMiddle1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 37,
+      "name": "mixamorig:RightHandMiddle2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 36,
+      "name": "mixamorig:RightHandMiddle3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 35,
+      "name": "mixamorig:RightHandMiddle4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 42,
+      "name": "mixamorig:RightHandRing1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 41,
+      "name": "mixamorig:RightHandRing2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 40,
+      "name": "mixamorig:RightHandRing3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 39,
+      "name": "mixamorig:RightHandRing4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 46,
+      "name": "mixamorig:RightHandPinky1",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 45,
+      "name": "mixamorig:RightHandPinky2",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 44,
+      "name": "mixamorig:RightHandPinky3",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 43,
+      "name": "mixamorig:RightHandPinky4",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 48,
+      "name": "RifleSocket",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 47,
+      "name": "Muzzle",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 60,
+      "name": "mixamorig:LeftUpLeg",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 59,
+      "name": "mixamorig:LeftLeg",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 58,
+      "name": "mixamorig:LeftFoot",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 57,
+      "name": "mixamorig:LeftToeBase",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 56,
+      "name": "mixamorig:LeftToe_End",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 65,
+      "name": "mixamorig:RightUpLeg",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 64,
+      "name": "mixamorig:RightLeg",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 63,
+      "name": "mixamorig:RightFoot",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 62,
+      "name": "mixamorig:RightToeBase",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 61,
+      "name": "mixamorig:RightToe_End",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 67,
+      "name": "Prop_Rifle",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 68,
+      "name": "Prop_Magazine_A",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "translation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "rotation",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    },
+    {
+      "node": 69,
+      "name": "Prop_Magazine_B",
+      "path": "scale",
+      "interpolation": "CUBICSPLINE",
+      "key_count": 241,
+      "start_s": 0.0,
+      "end_s": 1.0
+    }
+  ]
+}

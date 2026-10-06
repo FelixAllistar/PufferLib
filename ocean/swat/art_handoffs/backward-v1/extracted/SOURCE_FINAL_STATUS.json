@@ -1,0 +1,43 @@
+{
+  "status": "QUALIFIED_SOURCE_CHECKPOINT_WITH_LOWER_MATERIAL_LIMITATIONS",
+  "review": "REVIEW.md",
+  "candidate": {
+    "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/walk_backward_n/seam_a/walk_backward_ready_n_c1.editable.blend",
+    "sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+    "action": "Walk Backward / Shared Ready N C1 Loop A"
+  },
+  "baseline": {
+    "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/walk_backward_n/native_carry/ready_walk.editable.blend",
+    "sha256": "e90cb6001ecd60f2b395eb94e3a4bb1c67fd9270c7111c2c8aacaa6c40d10f66",
+    "action": "Walk Backward / Shared Ready N Native Timing"
+  },
+  "verified": [
+    "one-second native timing and source backward travel intent",
+    "exact sealed N mesh topology, UV, complete weights and 70-bone rest hierarchy",
+    "source-world torso/gaze and foot orientation baseline",
+    "ankle-only-Z baseline grounding and native projected knee plane",
+    "exact central curves, world matrices and checked whole-body surfaces",
+    "actual-vertex-derived physical rifle frame and full glove carry invariance",
+    "small normalized-quaternion analytic wrap and join velocity residuals",
+    "sampled complete boots above floor",
+    "separate stored sleeve visible and checked",
+    "all83 restored RIGHT archive payloads unchanged"
+  ],
+  "qualifications": [
+    "nominal4mm sole target is not maintained at all sampled phases",
+    "source-on-N lower garment intersections exist before grounding",
+    "ankle grounding changes lower material pair identities and extent",
+    "seam changes pair identities and some component-family extent in the same region",
+    "upper sleeve-root folds and stretched elbow link remain",
+    "no new broad tear in targeted neutral/component views is not a no-regression proof",
+    "finite-triangle chord metrics are not penetration depth",
+    "imported LINEAR derivatives do not recover native FBX cubic-auto derivatives",
+    "boundary repair is not a claim of globally C1 imported center curves",
+    "native raised Ready14.947\u201317.206degrees remains; no ADS/camera/gameplay approval",
+    "historical original all16_actions.blend path unavailable in restored workspace"
+  ],
+  "recommendation": "Retain one qualified source checkpoint and its baseline comparison; current evidence does not justify another pose variant or gait alteration. Do not label material-clean or zero-regression.",
+  "no_pose_or_source_files_saved_by_review": true,
+  "external_F_gear_check": "../f_gear_preview/NEW_GEAR_SAMPLE_AUDIT.json",
+  "scope": "Saved Blender source only; no runtime, export, other-direction or anatomical optical-eye claim."
+}

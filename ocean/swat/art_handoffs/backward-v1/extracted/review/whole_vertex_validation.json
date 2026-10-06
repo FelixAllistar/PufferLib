@@ -1,0 +1,164 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "method": "Independent fresh native and stock/cubic-aware Blender captures at 151 phases; actual-byte normalized quaternion FK and full-influence skinning. Oriented triangle identity, every source weight and UV seam association verified.",
+  "sample_count": 151,
+  "total_exported_vertices": 48755,
+  "joint_world_matrix_max_error": 8.976661136639308e-07,
+  "every_oriented_source_triangle_preserved": true,
+  "uv_seam_association_max_error": 2.9802322387695312e-08,
+  "meshes": [
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "primitive": 0,
+      "vertices": 144,
+      "source_native_vertices": 48,
+      "ambiguous_equivalent_matches": 0,
+      "all_weight_max_error": 0.0,
+      "maximum_influences": 1,
+      "source_bind_position_max_error_m": 0.0,
+      "source_evaluated_surface_max_error_m": 2.1770641232990378e-07,
+      "cubic_reimport_vs_source_max_error_m": 1.850685827191803e-07,
+      "cubic_reimport_vs_binary_max_error_m": 1.769865723380272e-07,
+      "stock_reimport_vs_source_max_error_m": 0.00031956198339895444,
+      "reimport_bind_position_max_error_m": 0.0,
+      "four_weight_negative_max_error_m": 0.0
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 0,
+      "vertices": 7638,
+      "source_native_vertices": 24850,
+      "ambiguous_equivalent_matches": 0,
+      "all_weight_max_error": 2.1133167771303363e-08,
+      "maximum_influences": 5,
+      "source_bind_position_max_error_m": 0.0,
+      "source_evaluated_surface_max_error_m": 7.663784443587437e-07,
+      "cubic_reimport_vs_source_max_error_m": 1.0638427286506614e-06,
+      "cubic_reimport_vs_binary_max_error_m": 9.910138187817382e-07,
+      "stock_reimport_vs_source_max_error_m": 0.002378280673624398,
+      "reimport_bind_position_max_error_m": 7.254662120481942e-07,
+      "four_weight_negative_max_error_m": 0.0008513472753025455
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 1,
+      "vertices": 24049,
+      "source_native_vertices": 24850,
+      "ambiguous_equivalent_matches": 0,
+      "all_weight_max_error": 2.212510108456911e-08,
+      "maximum_influences": 7,
+      "source_bind_position_max_error_m": 0.0,
+      "source_evaluated_surface_max_error_m": 1.0878592978833764e-06,
+      "cubic_reimport_vs_source_max_error_m": 1.491307735824204e-06,
+      "cubic_reimport_vs_binary_max_error_m": 1.2371682426919732e-06,
+      "stock_reimport_vs_source_max_error_m": 0.0029150805951194203,
+      "reimport_bind_position_max_error_m": 8.679846453196227e-07,
+      "four_weight_negative_max_error_m": 0.001025814034558497
+    },
+    {
+      "name": "Rifle 7",
+      "primitive": 0,
+      "vertices": 14936,
+      "source_native_vertices": 5346,
+      "ambiguous_equivalent_matches": 0,
+      "all_weight_max_error": 0.0,
+      "maximum_influences": 1,
+      "source_bind_position_max_error_m": 0.0,
+      "source_evaluated_surface_max_error_m": 2.955511970745653e-07,
+      "cubic_reimport_vs_source_max_error_m": 3.6983709472390583e-07,
+      "cubic_reimport_vs_binary_max_error_m": 2.493578111648592e-07,
+      "stock_reimport_vs_source_max_error_m": 0.0003898156630224334,
+      "reimport_bind_position_max_error_m": 3.725290298461914e-08,
+      "four_weight_negative_max_error_m": 0.0
+    },
+    {
+      "name": "Removed magazine",
+      "primitive": 0,
+      "vertices": 994,
+      "source_native_vertices": 406,
+      "ambiguous_equivalent_matches": 0,
+      "all_weight_max_error": 0.0,
+      "maximum_influences": 1,
+      "source_bind_position_max_error_m": 0.0,
+      "source_evaluated_surface_max_error_m": 2.697417771942492e-07,
+      "cubic_reimport_vs_source_max_error_m": 2.682209014892578e-07,
+      "cubic_reimport_vs_binary_max_error_m": 2.3671903466392743e-07,
+      "stock_reimport_vs_source_max_error_m": 0.00028978054583029227,
+      "reimport_bind_position_max_error_m": 1.5914447131226827e-08,
+      "four_weight_negative_max_error_m": 0.0
+    },
+    {
+      "name": "Fresh magazine",
+      "primitive": 0,
+      "vertices": 994,
+      "source_native_vertices": 406,
+      "ambiguous_equivalent_matches": 0,
+      "all_weight_max_error": 0.0,
+      "maximum_influences": 1,
+      "source_bind_position_max_error_m": 0.0,
+      "source_evaluated_surface_max_error_m": 1.4901161221603232e-08,
+      "cubic_reimport_vs_source_max_error_m": 0.0,
+      "cubic_reimport_vs_binary_max_error_m": 1.4901161221603232e-08,
+      "stock_reimport_vs_source_max_error_m": 2.4755668231600746e-07,
+      "reimport_bind_position_max_error_m": 1.5914447131226827e-08,
+      "four_weight_negative_max_error_m": 0.0
+    }
+  ],
+  "allweight_negative": {
+    "four_weights_rejected": true,
+    "max_surface_error_m": 0.001025814034558497
+  },
+  "floor": {
+    "Left": {
+      "whole_connected_boot_minimum_m": 0.003685666957854432,
+      "whole_boot_minimum_time_s": 0.18125,
+      "native_vertex_at_minimum": 2948,
+      "weighted_sole_minimum_m": 0.003685666957854432,
+      "weighted_sole_minimum_time_s": 0.18125,
+      "exported_boot_vertices": 3275,
+      "sampled_clearance_above_3mm": true
+    },
+    "Right": {
+      "whole_connected_boot_minimum_m": 0.003371886938992728,
+      "whole_boot_minimum_time_s": 0.06354166666666666,
+      "native_vertex_at_minimum": 2473,
+      "weighted_sole_minimum_m": 0.003371886938992728,
+      "weighted_sole_minimum_time_s": 0.06354166666666666,
+      "exported_boot_vertices": 3274,
+      "sampled_clearance_above_3mm": true
+    }
+  },
+  "floor_sample_hz": 960,
+  "floor_scope": "Finite 961-phase sampling, not a proof of continuous collision freedom or an exact 4mm minimum",
+  "travel_and_facing": {
+    "anatomical_basis": "Native Head local +Z points outward through goggles; flattened to horizontal plane",
+    "native_travel_vs_head_dot_range": [
+      -0.977806537328743,
+      -0.9732814958402369
+    ],
+    "exported_travel_vs_head_dot_range": [
+      -0.9769875407356364,
+      -0.9732814911299714
+    ],
+    "native_travel_m": [
+      -1.7974525690078735e-07,
+      1.9212614097632468,
+      4.231929779052734e-06
+    ],
+    "native_duration_s": 1.0,
+    "native_pace_m_s": 1.921261409767916
+  },
+  "source_sleeve_visibility": {
+    "name": "Rebuilt spare magazine sleeve",
+    "vertices": 48,
+    "triangles": 72,
+    "materials": [
+      "Rebuilt carrier cloth"
+    ],
+    "uv_layers": [],
+    "maximum_influences": 1,
+    "hidden_viewport": false,
+    "hidden_render": false
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "status": "Exact canonical mesh/skin/UV/normals/native+gear rest/action replay passed",
+  "static_digest": "89952776ca10e15b453dbcfee7b9c80adc59f486ae6591f9cc08a3f340161926",
+  "movement_digest": "3bbe499c26e6ac9a24e3b2cc5cfb8871704243081fa077cc18972653868d75c3",
+  "replay_directory": "/tmp/upper_gear_f_replay",
+  "static_data_equal": true,
+  "movement_data_equal": true,
+  "file_byte_parity_claim": false,
+  "movement_curves": 720,
+  "movement_keys": 130320,
+  "source_inputs": [
+    {
+      "path": "shared_pose_fit/shared_ready_n.editable.blend",
+      "sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef"
+    },
+    {
+      "path": "shared_pose_fit/portable_recipe/native_frame_reference.json",
+      "sha256": "0025736d64407affe62022496767b75308480204f75ba9064338adbcb86ee1b0"
+    },
+    {
+      "path": "standing_ads_practical/R5_PHYSICAL_OPTICAL_BINDINGS.json",
+      "sha256": "1b8d2504906edb195df595192d313be886a356d2d6f50b7ae38b320eb6ab452c"
+    },
+    {
+      "path": "upper_body_gear_rebuild/review/native_inventory.json",
+      "sha256": "0f417f4c864c357babedd6e001b85342b8c2607a9a1384d740b30e4236edc5c2"
+    },
+    {
+      "path": "standing_ads_intent/anatomical_arm_solver.py",
+      "sha256": "cfe5a2313f7ddca8e1733d4abb945f9abbbd3b19c0ac40a3a6682369ef63c2f2"
+    },
+    {
+      "path": "rigid_weapon_package/package/rifle_bindings.json",
+      "sha256": "7bfa52f22345586caa1d7a9b17c2d3e5336772aff9745a36226c0e976448e447"
+    },
+    {
+      "path": "upper_body_gear_rebuild/stage_f/author_stage_f.py",
+      "sha256": "bafcd8ae577eabea8685f159d7ab1e01469a6e68245452271e57174883c87fa2"
+    },
+    {
+      "path": "upper_body_gear_rebuild/stage_f/author_movement_f.py",
+      "sha256": "76d03c2877c2b86b50419a0b83a0c4212f4366d7322c62fffd99747e412b0c67"
+    },
+    {
+      "path": "upper_body_gear_rebuild/stage_f/semantic_fingerprint.py",
+      "sha256": "a28292bbb8988e227e17ebdb0a74a886a67afa2f489bf168066563e5816541e8"
+    },
+    {
+      "path": "upper_body_gear_rebuild/stage_f/STATIC_F_SEMANTIC_PIN.json",
+      "sha256": "e958ec5523a5b7fea4b170613a3dffce264a5b5a6e732eec7dc8e786cb563835"
+    },
+    {
+      "path": "upper_body_gear_rebuild/stage_f/NEUTRAL_PEAK_POSE.json",
+      "sha256": "28e4064aff51e840c40e0eaea895bad7d68507960f4d310fab912eae6f7dea9d"
+    }
+  ]
+}

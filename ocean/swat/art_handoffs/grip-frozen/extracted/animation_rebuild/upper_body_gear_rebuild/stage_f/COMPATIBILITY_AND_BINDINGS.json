@@ -1,0 +1,123 @@
+{
+  "status": "Scoped geometry/rig review candidate; final QA gate is authoritative",
+  "source_N_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+  "static_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+  "movement_sha256": "7165d1454e0526f01ca85c81f12e0245dfecb22071191918f984477a42c091b1",
+  "native_bones_preserved": 70,
+  "additional_bones": {
+    "Gear_Elbow_L": {
+      "parent": "mixamorig:LeftArm",
+      "role": "Anatomical left guard frame"
+    },
+    "Gear_Elbow_R": {
+      "parent": "mixamorig:RightArm",
+      "role": "Anatomical right guard frame"
+    }
+  },
+  "total_bones": 72,
+  "requires_baked_carrier_channels": true,
+  "carrier_channels": 20,
+  "live_constraints_or_drivers": false,
+  "human_rest_proportions_and_weights": "Exact for retained native IDs",
+  "human_influences_up_to": 7,
+  "retained_native_vertices": 22645,
+  "removed_native_components": [
+    8676,
+    9916,
+    12404,
+    13098,
+    13704,
+    13712,
+    13776,
+    13884,
+    13892,
+    13956,
+    14596,
+    14834,
+    15733,
+    15971,
+    16480,
+    17134,
+    22065,
+    22196,
+    22203,
+    22955,
+    22959,
+    22983,
+    22991,
+    22992,
+    23093,
+    23705,
+    24637
+  ],
+  "new_parts": [
+    {
+      "name": "SWAT_ElbowCap_L",
+      "vertices": 386,
+      "polygons": 768,
+      "bone": "Gear_Elbow_L",
+      "weights": "Exactly one rigid influence of1.0"
+    },
+    {
+      "name": "SWAT_ElbowCap_R",
+      "vertices": 386,
+      "polygons": 768,
+      "bone": "Gear_Elbow_R",
+      "weights": "Exactly one rigid influence of1.0"
+    },
+    {
+      "name": "SWAT_Headset_L",
+      "vertices": 320,
+      "polygons": 290,
+      "bone": "mixamorig:Head",
+      "weights": "Exactly one rigid influence of1.0"
+    },
+    {
+      "name": "SWAT_Headset_R",
+      "vertices": 320,
+      "polygons": 290,
+      "bone": "mixamorig:Head",
+      "weights": "Exactly one rigid influence of1.0"
+    }
+  ],
+  "same_mesh_compatibility": false,
+  "body_source_mapping": "native_vertex_id and native_polygon_id attributes; full mapping in STAGE_F_SOURCE.json",
+  "optical_native_vertices": {
+    "left": 23263,
+    "right": 23516
+  },
+  "optical_derivative_vertices": {
+    "left": 21466,
+    "right": 21719
+  },
+  "optical_kind": "Goggle lens-surface proxies; no anatomical eyes or camera origins",
+  "rifle_and_ironsights": "Original geometry and bindings unchanged",
+  "physical_rifle_formula": "W_node @ inverse_bind_for_resolved_skin_slot @ B_bind_mesh",
+  "gltf_skin_slots": "Resolve exported node-to-skin-slot mapping; never assume native bone order",
+  "secondary_magazine_and_sleeve": "Original N geometry, bone states and visibility preserved",
+  "motion": {
+    "duration_seconds": 3,
+    "source_scene_fps": 30,
+    "baked_samples_hz": 60,
+    "curves": 720,
+    "keys": 130320,
+    "interpolation": "LINEAR transform channels with continuous quaternion signs",
+    "rifle_raise_deg": [
+      0,
+      4
+    ],
+    "clavicle_protraction_deg": [
+      0,
+      1.5
+    ],
+    "intended_use": "Bounded assembly articulation review, not a gameplay action"
+  },
+  "unresolved": [
+    "Approximate mounting; cupped rims stand off the sleeve",
+    "Shared neutral-to-aim shoulder support; old R5 bolster excluded",
+    "Broader retained native garment/accessory motion clearance",
+    "Force simulation and production fastening detail",
+    "Export/reimport/runtime validation of this72-bone derivative",
+    "Anatomical-eye/camera/ADS approval"
+  ]
+}

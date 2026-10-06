@@ -1,0 +1,95 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de",
+  "matrix_sample_count": 151,
+  "direct_full_surface_control_count": 9,
+  "total_exported_vertices": 48755,
+  "method": "All 151 independently evaluated Blender native and reimported joint/deformation matrices, every bind vertex/triangle/weight, and nine complete actual evaluated surface controls. Full 151-phase direct vertex capture was separately verified in whole_vertex_validation.json; this replay reconstructs full skin at all 151 phases and independently checks actual surface controls.",
+  "meshes": [
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "primitive": 0,
+      "vertices": 144,
+      "maximum_errors_m": {
+        "byte_to_source": 9.507561121896028e-08,
+        "byte_to_cubic_reimport": 1.137949089912502e-07,
+        "source_to_cubic_reimport": 1.0176020480490176e-07,
+        "source_to_stock_reimport": 0.0003195436827092436,
+        "source_actual_control": 1.4209849198428676e-07,
+        "cubic_reimport_actual_control": 1.0496569964138903e-07,
+        "stock_actual_control": 1.4284262639063873e-07
+      }
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 0,
+      "vertices": 7638,
+      "maximum_errors_m": {
+        "byte_to_source": 4.695992313087764e-07,
+        "byte_to_cubic_reimport": 9.754164514501009e-07,
+        "source_to_cubic_reimport": 8.615026452524835e-07,
+        "source_to_stock_reimport": 0.002378327029133347,
+        "source_actual_control": 3.456627179244647e-07,
+        "cubic_reimport_actual_control": 3.5818864185066984e-07,
+        "stock_actual_control": 4.354435701060076e-07
+      }
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "primitive": 1,
+      "vertices": 24049,
+      "maximum_errors_m": {
+        "byte_to_source": 8.191881927475614e-07,
+        "byte_to_cubic_reimport": 1.1513316155233426e-06,
+        "source_to_cubic_reimport": 1.287329983968853e-06,
+        "source_to_stock_reimport": 0.0029150870601021978,
+        "source_actual_control": 4.823389063719325e-07,
+        "cubic_reimport_actual_control": 4.547959569706343e-07,
+        "stock_actual_control": 4.890414621905586e-07
+      }
+    },
+    {
+      "name": "Rifle 7",
+      "primitive": 0,
+      "vertices": 14936,
+      "maximum_errors_m": {
+        "byte_to_source": 1.4729190840999203e-07,
+        "byte_to_cubic_reimport": 1.0677304977949254e-07,
+        "source_to_cubic_reimport": 1.871673228308782e-07,
+        "source_to_stock_reimport": 0.00038980293355823746,
+        "source_actual_control": 1.781539413549516e-07,
+        "cubic_reimport_actual_control": 1.8072623996853863e-07,
+        "stock_actual_control": 1.8057470329259305e-07
+      }
+    },
+    {
+      "name": "Removed magazine",
+      "primitive": 0,
+      "vertices": 994,
+      "maximum_errors_m": {
+        "byte_to_source": 1.2482606776749178e-07,
+        "byte_to_cubic_reimport": 8.105142601355778e-08,
+        "source_to_cubic_reimport": 1.405574814789973e-07,
+        "source_to_stock_reimport": 0.000289840731564659,
+        "source_actual_control": 1.7720240576014964e-07,
+        "cubic_reimport_actual_control": 1.7408552621867065e-07,
+        "stock_actual_control": 1.7425396184868303e-07
+      }
+    },
+    {
+      "name": "Fresh magazine",
+      "primitive": 0,
+      "vertices": 994,
+      "maximum_errors_m": {
+        "byte_to_source": 2.220446049250313e-16,
+        "byte_to_cubic_reimport": 2.220446049250313e-16,
+        "source_to_cubic_reimport": 0.0,
+        "source_to_stock_reimport": 2.4755668231600746e-07,
+        "source_actual_control": 1.4901161193847656e-08,
+        "cubic_reimport_actual_control": 1.4901161193847656e-08,
+        "stock_actual_control": 1.4901161193847656e-08
+      }
+    }
+  ],
+  "qualification": "Stock Blender import discards cubic tangent fidelity. Only the explicit byte-evaluated cubic-aware imported skin passes the cubic animation parity claim."
+}

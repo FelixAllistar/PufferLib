@@ -1,0 +1,46 @@
+{
+  "inputs": [
+    {
+      "role": "editable",
+      "file": "crouch_forward_ready_n_c1.editable.blend",
+      "bytes": 3670023,
+      "sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442"
+    },
+    {
+      "role": "actions",
+      "file": "candidate.actions.blend",
+      "bytes": 1744393,
+      "sha256": "9ac947da6efd66f8a2cbf37ab264b08f467e0a5d11f1293692028760d0948cb5"
+    },
+    {
+      "role": "checkpoint",
+      "file": "crouch-forward-shared-n-loop-a-selfcontained-checkpoint.tar.gz",
+      "bytes": 17482700,
+      "sha256": "e63cd72bbfcc43245a6eebc206cc5c89d15522c1bba10e3f2a6f43e08a1cf858"
+    },
+    {
+      "role": "native_preview",
+      "file": "normal-speed-comparison.mp4",
+      "bytes": 3696795,
+      "sha256": "1b931da6b40f7d84abd944bca2a30163c997086b0d6a7818c17e31fedbd56a79"
+    },
+    {
+      "role": "native_carry_source",
+      "file": "ready_walk.editable.blend",
+      "bytes": 3225723,
+      "sha256": "084a3548fc05ece81a77f4b83360a8e758103feeeb3c8cb7c7332325b60ca069"
+    },
+    {
+      "role": "original_crouch_forward_fbx",
+      "file": "walk crouching forward.fbx.bin",
+      "bytes": 424241,
+      "sha256": "a53c3d0f5c872d268f067e8cccf7b509d1f3a3e846a975ea83082876db100b51"
+    }
+  ],
+  "source_character": "Adobe Mixamo Ch15_nonPBR; original character/animation terms apply",
+  "weapon_source": "Numbered weapon7 upload; exact creator/product/license unknown",
+  "distribution": "Private review of licensed source; public redistribution not authorized",
+  "geometry_template_glb_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+  "engine_geometry_reference_commit": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+  "authoring_recovery": "Separate sealed source checkpoint; this package preserves exact scalar curves and curve diff plus copied source QA."
+}

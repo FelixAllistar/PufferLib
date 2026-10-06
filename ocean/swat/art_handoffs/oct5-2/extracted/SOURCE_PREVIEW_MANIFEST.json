@@ -1,0 +1,21 @@
+{
+  "static_pose_only": true,
+  "selected_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "panels": [
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch-ready-measured-front-side.jpg",
+      "bytes": 194074,
+      "sha256": "053398b1c2054f96888c348ca622ef5532664b5c36fe92f207b4cd97b1bc2110"
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/standing-crouch-native-scale.jpg",
+      "bytes": 191389,
+      "sha256": "f1e1d78b31e0696f629c5d7624e452cf7c14cb8e1465a4d2e4becbd227cdcdd7"
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch-ready-contact-detail.jpg",
+      "bytes": 331949,
+      "sha256": "c14d34ebd3c60f3cf33723d09f23afc244e11366f39f05101e64d82151dda8f1"
+    }
+  ]
+}

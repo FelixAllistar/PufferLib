@@ -20,8 +20,11 @@ swat_needs_build() {
                   ocean/swat/assets/environment/materials_v1/*.png \
                   ocean/swat/assets/environment/motel_v1/*.glb \
                   ocean/swat/assets/environment/storefront_v1/*.glb \
-                  build/swat/assets/characters/*.glb build/swat/assets/characters/upper_gear_f/*.glb \
-                  build/swat/assets/weapons/*.glb \
+                  ocean/swat/assets/characters/*.glb ocean/swat/assets/characters/upper_gear_f/*.glb \
+                  ocean/swat/assets/characters/textures/*.png \
+                  ocean/swat/assets/characters/*.json ocean/swat/assets/characters/upper_gear_f/*.json \
+                  ocean/swat/assets/weapons/*.glb ocean/swat/assets/weapons/*.json \
+                  ocean/swat/assets/ui/* \
                   ocean/swat/assets/audio/* \
                   config/swat.ini config/default.ini vendor/raygui.h \
                   vendor/enet/*.c vendor/enet/include/enet/*.h; do

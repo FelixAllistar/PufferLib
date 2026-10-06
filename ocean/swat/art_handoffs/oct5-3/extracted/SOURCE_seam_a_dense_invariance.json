@@ -1,0 +1,135 @@
+{
+  "pins_before": {
+    "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/native_carry/ready_walk.editable.blend": "084a3548fc05ece81a77f4b83360a8e758103feeeb3c8cb7c7332325b60ca069",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch_ready_n.editable.blend": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9"
+  },
+  "pins_after": {
+    "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/native_carry/ready_walk.editable.blend": "084a3548fc05ece81a77f4b83360a8e758103feeeb3c8cb7c7332325b60ca069",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+    "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch_ready_n.editable.blend": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9"
+  },
+  "samples": 961,
+  "rate_hz": 960,
+  "rows": [
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/native_carry/ready_walk.editable.blend",
+      "action": "Crouch Forward / Shared Ready N Native Timing",
+      "glove_rifle_relative_errors": {
+        "Left": {
+          "maximum_mm": 0.0011097653910263157,
+          "frame": 26.65625
+        },
+        "Right": {
+          "maximum_mm": 0.0009428122838322767,
+          "frame": 28.6875
+        },
+        "Rifle 7": {
+          "maximum_mm": 0.00019209276761233293,
+          "frame": 14.0625
+        },
+        "Removed magazine": {
+          "maximum_mm": 0.0001362870550352866,
+          "frame": 7.375
+        }
+      },
+      "spare_hips_relative_errors": {
+        "Fresh magazine": {
+          "maximum_mm": 0.0007353725039700906,
+          "frame": 27.5625
+        },
+        "Rebuilt spare magazine sleeve": {
+          "maximum_mm": 0.0002688591518947994,
+          "frame": 11.875
+        }
+      },
+      "feet": {
+        "Left": {
+          "minimum_mm": 3.701891750097275,
+          "maximum_sole_mm": 79.79890704154968,
+          "below_floor_samples": 0,
+          "below_3mm_samples": 0,
+          "minimum_frame": 25.3125
+        },
+        "Right": {
+          "minimum_mm": 3.8917176425457,
+          "maximum_sole_mm": 30.68813867866993,
+          "below_floor_samples": 0,
+          "below_3mm_samples": 0,
+          "minimum_frame": 10.0625
+        }
+      }
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend",
+      "action": "Crouch Forward / Shared Ready N C1 Loop A",
+      "glove_rifle_relative_errors": {
+        "Left": {
+          "maximum_mm": 0.001028424823104301,
+          "frame": 19.6875
+        },
+        "Right": {
+          "maximum_mm": 0.0008571504601788932,
+          "frame": 9.3125
+        },
+        "Rifle 7": {
+          "maximum_mm": 0.0001990418799457636,
+          "frame": 3.40625
+        },
+        "Removed magazine": {
+          "maximum_mm": 0.0001362870550352866,
+          "frame": 7.375
+        }
+      },
+      "spare_hips_relative_errors": {
+        "Fresh magazine": {
+          "maximum_mm": 0.08217589753003796,
+          "frame": 28.125
+        },
+        "Rebuilt spare magazine sleeve": {
+          "maximum_mm": 0.0002688591518947994,
+          "frame": 11.875
+        }
+      },
+      "feet": {
+        "Left": {
+          "minimum_mm": 3.3368393778800964,
+          "maximum_sole_mm": 79.80804145336151,
+          "below_floor_samples": 0,
+          "below_3mm_samples": 0,
+          "minimum_frame": 27.40625
+        },
+        "Right": {
+          "minimum_mm": 3.8917176425457,
+          "maximum_sole_mm": 30.68813867866993,
+          "below_floor_samples": 0,
+          "below_3mm_samples": 0,
+          "minimum_frame": 10.0625
+        }
+      }
+    }
+  ],
+  "center_max_bone_matrix_element_delta": 0.0,
+  "center_whole_body_max_delta_mm": 0.0,
+  "center_full_body_checked_frames": [
+    "3.75",
+    "7.5",
+    "15.0",
+    "22.5",
+    "26.25"
+  ],
+  "feet_departure": {
+    "Left": {
+      "maximum_change_mm": 26.29693840718838,
+      "center_maximum_change_mm": 0.0,
+      "boundary_minimum_mm": 3.3368393778800964
+    },
+    "Right": {
+      "maximum_change_mm": 4.210061705033735,
+      "center_maximum_change_mm": 0.0,
+      "boundary_minimum_mm": 3.969397395849228
+    }
+  },
+  "scope": "All actual connected glove vertices and original rifle/magazine vertices compared in rifle space to pinned static crouch, all spare/sleeve vertices in hips space; full foot skin (combined weights>65%) at960Hz. Exact static hand-depth qualification transfers only within this measured surface error. No new penetration-depth measurement implied. Center transforms every960Hz and full body at five phases. No continuous or runtime claim.",
+  "elapsed_seconds": 13.972984790802002
+}

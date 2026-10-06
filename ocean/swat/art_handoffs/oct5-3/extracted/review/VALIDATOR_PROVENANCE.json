@@ -1,0 +1,20 @@
+{
+  "status": "VALIDATED_ACTUAL_CROUCH_FORWARD_BINARY",
+  "origins": {
+    "replay_unit.py": "6fd2cb6815224e0a83f0e3fb7c3225985b1091bc17fae5d3cccb54304fa82120",
+    "inspect_binary.py": "2a4e6e883c9c349d8a403a62091494fac3b5fb79f415bf51c526cf780e351f23",
+    "inspect_curve_contract.py": "ef2243134a368c63a9f212ed2bc471091540c334c5d29d6e715b63a96202f32a"
+  },
+  "adaptations": [
+    "All B bone endpoint and angular checks enabled; no collapsed B exception",
+    "Positive B scale and nondegenerate world transform required; hips-relative motion verified",
+    "Direction-specific GLB and key-count pins replaced",
+    "Existing independent NumPy GLB evaluator and native scalar/FK evaluator reused; no converter or fixture writer imports"
+  ],
+  "independent_script_sha256": {
+    "inspect_binary.py": "76ec74330f91206f636cb8b2acfb9edbd4a4e00c6190a5755785b3fb5362dae9",
+    "inspect_curve_contract.py": "861df4f9164044459070a3eef48cf6489a7718ce2aafd649a5bf412d56e897e4",
+    "replay_unit.py": "933a8645a18dc050a28eb579d5fdbc1b6b8bc96acc3bc99e41fa258368dc51bf",
+    "inspect_native_controls.py": "d2f75abc603fa7e555341d937c9c0daa3c461a1511c692abaef7710937ca3b16"
+  }
+}

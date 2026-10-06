@@ -1,0 +1,10 @@
+{
+  "selected": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_ready/shared_ready_n_candidate/selected/crouch_ready_n.editable.blend",
+  "rebuilt": "/tmp/crouch-ready-n-rebuilt/crouch_ready_n.editable.blend",
+  "all_curve_key_handle_interpolation_values_equal": true,
+  "curve_count": 700,
+  "keys": 700,
+  "sampled_world_matrix_max_error": 0.0,
+  "canonical_curve_sha256": "5e888e71a00c3365c0cacaba3e65d8022dcf11fc7b62d63cc06db2af384ed06f",
+  "scope": "Exact saved animation values, not byte-identical Blender serialization or runtime export parity"
+}

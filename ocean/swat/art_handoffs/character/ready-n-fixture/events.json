@@ -1,0 +1,480 @@
+{
+  "schema": "swat-character-review-events/1",
+  "clip_id": "standing_empty_shared_ready_n_carry_f_original_6s",
+  "animation_name": "Standing Empty / Shared Ready N Carry F",
+  "duration_s": 6,
+  "source_fps": 24,
+  "source_frames": [
+    0,
+    144
+  ],
+  "loop": false,
+  "event_authority_sha256": "f593fee9177e28683ac58d6e322fb722dc2ae0b1629b0437f575c343710ad3c3",
+  "events": [
+    {
+      "id": "guided_unseat_start",
+      "clip_time_s": 0.7,
+      "source_decimal": "0.7",
+      "clip_time_rational": {
+        "numerator": 7,
+        "denominator": 10
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "old_mag_release",
+      "clip_time_s": 0.88,
+      "source_decimal": "0.88",
+      "clip_time_rational": {
+        "numerator": 22,
+        "denominator": 25
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "acquisition_start",
+      "clip_time_s": 1.05,
+      "source_decimal": "1.05",
+      "clip_time_rational": {
+        "numerator": 21,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "pickup",
+      "clip_time_s": 1.4,
+      "source_decimal": "1.4",
+      "clip_time_rational": {
+        "numerator": 7,
+        "denominator": 5
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "clear",
+      "clip_time_s": 1.928125,
+      "source_decimal": "1.928125",
+      "clip_time_rational": {
+        "numerator": 617,
+        "denominator": 320
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "preinsert",
+      "clip_time_s": 3.107862609329446,
+      "source_decimal": "3.107862609329446",
+      "clip_time_rational": {
+        "numerator": 1553931304664723,
+        "denominator": 500000000000000
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "seat",
+      "clip_time_s": 3.65,
+      "source_decimal": "3.65",
+      "clip_time_rational": {
+        "numerator": 73,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "finger_release_start",
+      "clip_time_s": 3.85,
+      "source_decimal": "3.85",
+      "clip_time_rational": {
+        "numerator": 77,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "retreat_complete",
+      "clip_time_s": 4.35,
+      "source_decimal": "4.35",
+      "clip_time_rational": {
+        "numerator": 87,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "receiver_precontact",
+      "clip_time_s": 4.55,
+      "source_decimal": "4.55",
+      "clip_time_rational": {
+        "numerator": 91,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "receiver_hold_start",
+      "clip_time_s": 4.7,
+      "source_decimal": "4.7",
+      "clip_time_rational": {
+        "numerator": 47,
+        "denominator": 10
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "receiver_hold_end",
+      "clip_time_s": 4.85,
+      "source_decimal": "4.85",
+      "clip_time_rational": {
+        "numerator": 97,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "receiver_retreat_complete",
+      "clip_time_s": 4.95,
+      "source_decimal": "4.95",
+      "clip_time_rational": {
+        "numerator": 99,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "foregrip_return",
+      "clip_time_s": 6.0,
+      "source_decimal": "6.0",
+      "clip_time_rational": {
+        "numerator": 6,
+        "denominator": 1
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "ready_end",
+      "clip_time_s": 6.0,
+      "source_decimal": "6.0",
+      "clip_time_rational": {
+        "numerator": 6,
+        "denominator": 1
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "foregrip_depart",
+      "clip_time_s": 0.18,
+      "source_decimal": "0.18",
+      "clip_time_rational": {
+        "numerator": 9,
+        "denominator": 50
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "finger_release_complete",
+      "clip_time_s": 4.05,
+      "source_decimal": "4.05",
+      "clip_time_rational": {
+        "numerator": 81,
+        "denominator": 20
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "foregrip_contact",
+      "clip_time_s": 5.9625,
+      "source_decimal": "5.9625",
+      "clip_time_rational": {
+        "numerator": 477,
+        "denominator": 80
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "sample_grid_rational": {
+        "numerator": 1431,
+        "denominator": 240
+      },
+      "measurement": "240 Hz sampled surface/proximity observation; not an exact continuous contact root",
+      "bracket_seconds": [
+        5.958333333333333,
+        5.9625
+      ]
+    },
+    {
+      "id": "foregrip_approach_arrival",
+      "clip_time_s": 5.8,
+      "source_decimal": "5.8",
+      "clip_time_rational": {
+        "numerator": 29,
+        "denominator": 5
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "meaning": "Open approach arrival/closure start, not support or surface-contact time"
+    },
+    {
+      "id": "foregrip_close_begin",
+      "clip_time_s": 5.8,
+      "source_decimal": "5.8",
+      "clip_time_rational": {
+        "numerator": 29,
+        "denominator": 5
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "meaning": "Open approach arrival/closure start, not support or surface-contact time"
+    },
+    {
+      "id": "foregrip_departure_surface_contact_end",
+      "clip_time_s": 0.03333333333333333,
+      "source_decimal": "0.03333333333333333",
+      "clip_time_rational": {
+        "numerator": 3333333333333333,
+        "denominator": 100000000000000000
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "sample_grid_rational": {
+        "numerator": 8,
+        "denominator": 240
+      },
+      "measurement": "240 Hz sampled surface/proximity observation; not an exact continuous contact root",
+      "bracket_seconds": [
+        0.03333333333333333,
+        0.0375
+      ]
+    },
+    {
+      "id": "old_mag_floor_impact",
+      "clip_time_s": 1.307136591519229,
+      "source_decimal": "1.307136591519229",
+      "clip_time_rational": {
+        "numerator": 1307136591519229,
+        "denominator": 1000000000000000
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "measurement": "Authored ballistic-to-settling transition at 4 mm mesh-floor clearance; not zero-gap physical impact"
+    },
+    {
+      "id": "old_mag_floor_settled",
+      "clip_time_s": 1.487136591519229,
+      "source_decimal": "1.487136591519229",
+      "clip_time_rational": {
+        "numerator": 1487136591519229,
+        "denominator": 1000000000000000
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false
+    },
+    {
+      "id": "foregrip_palm_within_2mm",
+      "clip_time_s": 5.9125,
+      "source_decimal": "5.9125",
+      "clip_time_rational": {
+        "numerator": 473,
+        "denominator": 80
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "sample_grid_rational": {
+        "numerator": 1419,
+        "denominator": 240
+      },
+      "measurement": "240 Hz sampled surface/proximity observation; not an exact continuous contact root"
+    },
+    {
+      "id": "foregrip_thumb_within_2mm",
+      "clip_time_s": 5.9375,
+      "source_decimal": "5.9375",
+      "clip_time_rational": {
+        "numerator": 95,
+        "denominator": 16
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "sample_grid_rational": {
+        "numerator": 1425,
+        "denominator": 240
+      },
+      "measurement": "240 Hz sampled surface/proximity observation; not an exact continuous contact root"
+    },
+    {
+      "id": "foregrip_opposed_support_within_2mm",
+      "clip_time_s": 5.954166666666667,
+      "source_decimal": "5.954166666666667",
+      "clip_time_rational": {
+        "numerator": 5954166666666667,
+        "denominator": 1000000000000000
+      },
+      "rational_semantics": "Exact representation of the source JSON decimal; no time snapping",
+      "authority": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json:visual_events_seconds",
+      "gameplay_notify": false,
+      "sample_grid_rational": {
+        "numerator": 1429,
+        "denominator": 240
+      },
+      "measurement": "240 Hz sampled surface/proximity observation; not an exact continuous contact root"
+    }
+  ],
+  "ownership_intervals": [
+    {
+      "interval_s": [
+        0,
+        0.7
+      ],
+      "old_magazine": "rifle",
+      "fresh_magazine": "spare sleeve attached to pelvis"
+    },
+    {
+      "interval_s": [
+        0.7,
+        0.88
+      ],
+      "old_magazine": "guided axial unseat from rifle",
+      "fresh_magazine": "spare sleeve attached to pelvis"
+    },
+    {
+      "interval_s": [
+        0.88,
+        1.4
+      ],
+      "old_magazine": "world gravity, impact, then floor",
+      "fresh_magazine": "spare sleeve attached to pelvis"
+    },
+    {
+      "interval_s": [
+        1.4,
+        3.65
+      ],
+      "old_magazine": "world/floor",
+      "fresh_magazine": "left opposed digit grasp"
+    },
+    {
+      "interval_s": [
+        3.65,
+        6
+      ],
+      "old_magazine": "fixed in world on floor",
+      "fresh_magazine": "seated in rifle"
+    }
+  ],
+  "old_magazine_release": {
+    "joint_world_model_space_column_major": [
+      0.6757891178131104,
+      0.6485247611999512,
+      -0.3503206968307495,
+      0.0,
+      -0.705625593662262,
+      0.7065902948379517,
+      -0.05313077196478844,
+      0.0,
+      0.21307654678821564,
+      0.2831003963947296,
+      0.9351215362548828,
+      0.0,
+      -0.06463492661714554,
+      1.3649822473526,
+      0.6450049877166748,
+      1.0
+    ],
+    "bind_mesh_to_model_column_major": [
+      0.6757891178131104,
+      0.6485247611999512,
+      -0.3503206968307495,
+      0.0,
+      -0.705625593662262,
+      0.7065902948379517,
+      -0.05313077196478844,
+      0.0,
+      0.21307654678821564,
+      0.2831003963947296,
+      0.9351215362548828,
+      0.0,
+      -0.06463492661714554,
+      1.3649822473526,
+      0.6450049877166748,
+      1.0
+    ],
+    "joint_origin_velocity_model_m_per_s": [
+      1.2332290745460917,
+      -0.8671953998012252,
+      0.0653366397110512
+    ],
+    "velocity_note": "Finite difference of the baked joint origin; not a calibrated center-of-mass launch velocity",
+    "authoring_space": "The authored floor is fixed in the isolated study. In this GLB the drop is baked under the model root and follows an externally moved root.",
+    "runtime_requirement": "For an independent cosmetic drop capture actor-world times bind-mesh-to-model once at accepted release; preserve its world state across actor motion, seeks and reload cancellation. Define deduplication and restore reconstruction in the consumer."
+  },
+  "visibility": {
+    "mode": "Both physical magazine meshes visible for the entire source clip",
+    "visibility_channels": 0,
+    "animated_parent_switches": 0
+  },
+  "initial_owners": {
+    "old_magazine": "rifle",
+    "fresh_magazine": "pelvis-mounted sleeve"
+  },
+  "final_owners": {
+    "old_magazine": "authored floor, baked model-relative in this preview",
+    "fresh_magazine": "rifle"
+  },
+  "loop_contract": "Actor/rifle/tool return to N. Magazine ownership differs: old remains on floor, fresh remains seated. Not a prop-state loop.",
+  "restart_policy": "Only a fresh isolated preview may reset to source time zero and initial props. Gameplay state persists: reconstruct committed seated/inventory/chamber state, held/drop ownership and world transforms before sampling or restoring; endpoint Ready does not restart this reload.",
+  "gameplay_mapping": {
+    "status": "pending; no runtime phase bake or uniform speedup",
+    "protocol": 8,
+    "baseline": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+    "tick_rate": 60,
+    "carbine_empty_commit_ticks": {
+      "REMOVE": 39,
+      "INSERT": 104,
+      "CHAMBER": 156
+    },
+    "authority_rule": "Animation never transfers ammo. magazine_seated and committed stages come from simulation/replica state. Old-round retention differs from the source cosmetic drop. Cancellation does not undo committed transfers; IDLE can be unseated.",
+    "save_restore": "Current solo F5/F9 verifies and reconstructs the authoritative journal with the same generated layout model. Cosmetic prop/animation persistence and seek handling are a pending consumer decision."
+  },
+  "historical_dictionary": "source_H_pose_keys_seconds in the verbatim authority file is historical reference only; do not use its 5.8 foregrip_contact as a current event."
+}

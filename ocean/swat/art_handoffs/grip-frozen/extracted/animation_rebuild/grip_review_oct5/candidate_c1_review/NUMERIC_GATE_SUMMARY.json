@@ -1,0 +1,172 @@
+{
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+  "sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "numeric_rejection_witnesses": [],
+  "numeric_checks_complete": true,
+  "overall_status": "pending_actual_visual_and_support_review",
+  "central_palm_comparison": {
+    "central_25_50": {
+      "A": {
+        "skin_area_mm2": 1739.9923531430352,
+        "opposed_skin_area_within_mm": {
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "10": 0.0,
+          "15": 63.621406479940845,
+          "20": 265.2372404426755,
+          "30": 945.2773218768475
+        },
+        "area_weighted_nearest_gap_percentiles_mm": {
+          "10": 16.647981479763985,
+          "25": 20.006883889436722,
+          "50": 23.151090368628502,
+          "75": 28.27453427016735,
+          "90": 34.140828996896744
+        },
+        "skin_center_rifle_mm": [
+          30.901352392382062,
+          -53.23802602867129,
+          21.201951542227206
+        ]
+      },
+      "C1": {
+        "skin_area_mm2": 1754.3568297981662,
+        "opposed_skin_area_within_mm": {
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "10": 54.34354640784606,
+          "15": 213.85077687737407,
+          "20": 768.3438608331139,
+          "30": 1166.616591803414
+        },
+        "area_weighted_nearest_gap_percentiles_mm": {
+          "10": 11.96843758225441,
+          "25": 15.636065974831581,
+          "50": 18.29509809613228,
+          "75": 24.296462535858154,
+          "90": 30.62267228960991
+        },
+        "skin_center_rifle_mm": [
+          28.333280656578623,
+          -54.38576000454415,
+          25.686970153787396
+        ]
+      }
+    },
+    "central_50_75": {
+      "A": {
+        "skin_area_mm2": 1813.5358314933865,
+        "opposed_skin_area_within_mm": {
+          "1": 0.0,
+          "2": 0.0,
+          "3": 1.1066868035683848,
+          "5": 81.30019349985245,
+          "10": 681.5309717783773,
+          "15": 960.1968241799889,
+          "20": 993.0728968734563,
+          "30": 1105.1607959290632
+        },
+        "area_weighted_nearest_gap_percentiles_mm": {
+          "10": 6.1951312236487865,
+          "25": 8.245737291872501,
+          "50": 10.56145690381527,
+          "75": 14.708621427416801,
+          "90": 22.73385412991047
+        },
+        "skin_center_rifle_mm": [
+          6.510799713130577,
+          -55.774217537839476,
+          22.095223079281254
+        ]
+      },
+      "C1": {
+        "skin_area_mm2": 1817.6498367963547,
+        "opposed_skin_area_within_mm": {
+          "1": 2.207077118032193,
+          "2": 75.57528529457079,
+          "3": 204.6682786609642,
+          "5": 650.1574371768576,
+          "10": 919.0844052429547,
+          "15": 971.2680523598609,
+          "20": 1095.2720387320585,
+          "30": 1171.8461508110086
+        },
+        "area_weighted_nearest_gap_percentiles_mm": {
+          "10": 2.594918245449662,
+          "25": 3.6897845566272736,
+          "50": 5.547546315938234,
+          "75": 10.38638036698103,
+          "90": 17.643360421061516
+        },
+        "skin_center_rifle_mm": [
+          3.802413186778224,
+          -56.51264540617925,
+          27.004724482348937
+        ]
+      }
+    },
+    "distal_75_100": {
+      "A": {
+        "skin_area_mm2": 1430.2343484182693,
+        "opposed_skin_area_within_mm": {
+          "1": 53.47052347551555,
+          "2": 220.21957089139377,
+          "3": 387.86502498487647,
+          "5": 632.4571491468877,
+          "10": 942.1249837168561,
+          "15": 1055.8201227578318,
+          "20": 1055.8201227578318,
+          "30": 1105.3517164611492
+        },
+        "area_weighted_nearest_gap_percentiles_mm": {
+          "10": 1.608755555935204,
+          "25": 2.4340981617569923,
+          "50": 4.5445687137544155,
+          "75": 8.12851544469595,
+          "90": 12.74007000029087
+        },
+        "skin_center_rifle_mm": [
+          -9.246603259037279,
+          -73.57228525923892,
+          27.55940642157125
+        ]
+      },
+      "C1": {
+        "skin_area_mm2": 1424.2746507236225,
+        "opposed_skin_area_within_mm": {
+          "1": 225.0527003483997,
+          "2": 410.04907235912503,
+          "3": 510.38423320772733,
+          "5": 651.9094269288059,
+          "10": 902.8189412232344,
+          "15": 1042.8099759492725,
+          "20": 1052.7159698353717,
+          "30": 1124.732476604916
+        },
+        "area_weighted_nearest_gap_percentiles_mm": {
+          "10": 0.4550866433419287,
+          "25": 1.2679836945608258,
+          "50": 3.133671823889017,
+          "75": 8.485520258545876,
+          "90": 13.096721842885017
+        },
+        "skin_center_rifle_mm": [
+          -12.142455864576972,
+          -74.43875890034631,
+          31.270618552525235
+        ]
+      }
+    }
+  },
+  "required_before_acceptance": [
+    "Actual matched physical-camera views show a more convincingly supported palm and finger wrap",
+    "Central palm support improves materially; larger distal overlap cannot count as support",
+    "Thumb opposition, nonlocal self-intersections, local material folds, anatomy and physical elbow-cap clearance reviewed together",
+    "Low penetration or lower wrist angle alone is never acceptance",
+    "No engine camera/eye-relief/shoulder acceptance follows from this gate"
+  ]
+}

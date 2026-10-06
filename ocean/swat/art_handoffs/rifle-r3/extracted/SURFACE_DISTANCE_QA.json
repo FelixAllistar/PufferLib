@@ -1,0 +1,93 @@
+[
+  {
+    "component": "rear_stalk",
+    "new_vertices_to_original_surface_max_m": 0.0001685023307800293,
+    "original_vertices_to_new_surface_max_m": 0.0003022238379344344,
+    "method": "Bidirectional nearest-triangle surface distances at all new and original vertices; not a continuous Hausdorff proof",
+    "source_component_bounds_m": [
+      [
+        0.2919219732284546,
+        0.08096573874354362,
+        -0.005171068012714386
+      ],
+      [
+        0.3040476441383362,
+        0.12080532684922218,
+        0.005171270342543721
+      ]
+    ],
+    "candidate_component_bounds_m": [
+      [
+        0.2919219732284546,
+        0.08096574246883392,
+        -0.005171068012714386
+      ],
+      [
+        0.3040476441383362,
+        0.12069635093212128,
+        0.00517126964405179
+      ]
+    ]
+  },
+  {
+    "component": "rear_sight_base",
+    "new_vertices_to_original_surface_max_m": 0.00012385845184326172,
+    "original_vertices_to_new_surface_max_m": 0.00024821609258651733,
+    "method": "Bidirectional nearest-triangle surface distances at all new and original vertices; not a continuous Hausdorff proof",
+    "source_component_bounds_m": [
+      [
+        0.28903526067733765,
+        0.07081945613026619,
+        -0.015138319693505764
+      ],
+      [
+        0.33073590695858,
+        0.09173815324902534,
+        0.015138501301407814
+      ]
+    ],
+    "candidate_component_bounds_m": [
+      [
+        0.28903526067733765,
+        0.07081945240497589,
+        -0.015138319693505764
+      ],
+      [
+        0.3307359218597412,
+        0.09173814952373505,
+        0.01513850037008524
+      ]
+    ]
+  },
+  {
+    "component": "receiver_upper",
+    "new_vertices_to_original_surface_max_m": 0.000486110569909215,
+    "original_vertices_to_new_surface_max_m": 0.0003023374010808766,
+    "method": "Bidirectional nearest-triangle surface distances at all new and original vertices; not a continuous Hausdorff proof",
+    "source_component_bounds_m": [
+      [
+        0.24435773491859436,
+        0.022912099957466125,
+        -0.018151232041418552
+      ],
+      [
+        0.46568405628204346,
+        0.06269272789359093,
+        0.022154861129820347
+      ]
+    ],
+    "candidate_component_bounds_m": [
+      [
+        0.24435773491859436,
+        0.022912099957466125,
+        -0.018151231110095978
+      ],
+      [
+        0.46568405628204346,
+        0.06269273161888123,
+        0.022154860198497772
+      ]
+    ],
+    "candidate_vertices_behind_protected_x315_max_surface_distance_m": 0.0
+  }
+]

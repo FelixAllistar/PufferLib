@@ -1,0 +1,302 @@
+{
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "clip": "Neutral Carry / Anatomical Gear F",
+  "time_s": 0,
+  "units": "metres",
+  "up": "+Y",
+  "root_node": 78,
+  "root_world_column_major": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "wearer_only_body_bounds_model_xyz_m": [
+    [
+      -0.5112964543810775,
+      0.004000025565570574,
+      -0.21627646856873955
+    ],
+    [
+      0.24972221206545425,
+      1.7369427658023646,
+      0.6764055595304864
+    ]
+  ],
+  "sole_support": {
+    "left": {
+      "selection": "Same-side Foot/Toe cumulative normalized weight>0.5; source support points within1mm of posed foot minimum",
+      "native_subset_count": 654,
+      "F_native_support_vertices": [
+        2903,
+        2910,
+        2924,
+        2973,
+        2974
+      ],
+      "support_mapping": [
+        {
+          "F_native_vertex": 2903,
+          "original_N_native_vertex": 2903,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1795,
+              "bind_mesh_point": [
+                0.1601635366678238,
+                -0.01055079884827137,
+                -0.10103186219930649
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2910,
+          "original_N_native_vertex": 2910,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1804,
+              "bind_mesh_point": [
+                0.14895527064800262,
+                -0.012529326602816582,
+                -0.08072821795940399
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2924,
+          "original_N_native_vertex": 2924,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1818,
+              "bind_mesh_point": [
+                0.16300223767757416,
+                -0.011436868458986282,
+                -0.09767518937587738
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2973,
+          "original_N_native_vertex": 2973,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1887,
+              "bind_mesh_point": [
+                0.15418300032615662,
+                -0.011745558120310307,
+                -0.09648237377405167
+              ]
+            },
+            {
+              "primitive": 1,
+              "vertex": 1888,
+              "bind_mesh_point": [
+                0.15418300032615662,
+                -0.011745558120310307,
+                -0.09648237377405167
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2974,
+          "original_N_native_vertex": 2974,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1889,
+              "bind_mesh_point": [
+                0.1577925682067871,
+                -0.012112148106098175,
+                -0.0905299186706543
+              ]
+            },
+            {
+              "primitive": 1,
+              "vertex": 1890,
+              "bind_mesh_point": [
+                0.1577925682067871,
+                -0.012112148106098175,
+                -0.0905299186706543
+              ]
+            }
+          ]
+        }
+      ],
+      "actual_export_min_y_m": 0.004000025565570574,
+      "native_evaluated_min_y_m": 0.003999984823167324,
+      "exported_subset_count_with_seams": 899,
+      "support_centroid_model_xyz_m": [
+        0.16775032217378524,
+        0.0043630393573769605,
+        0.06600842658273162
+      ],
+      "centroid_sampling": "One position per unique F source support vertex; coincident exported seam copies averaged first",
+      "original_ID_namespace": "Original N Rebuilt SWAT full body24850 vertices",
+      "F_ID_namespace": "Compacted SWAT_Wearer22645 vertices",
+      "GLTF_ID_namespace": "Per-primitive seam-split accessor indices; actual mapping supplied"
+    },
+    "right": {
+      "selection": "Same-side Foot/Toe cumulative normalized weight>0.5; source support points within1mm of posed foot minimum",
+      "native_subset_count": 668,
+      "F_native_support_vertices": [
+        2212,
+        2219,
+        2233,
+        2282,
+        2283
+      ],
+      "support_mapping": [
+        {
+          "F_native_vertex": 2212,
+          "original_N_native_vertex": 2212,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 852,
+              "bind_mesh_point": [
+                -0.1601635366678238,
+                -0.010550799779593945,
+                -0.10103186219930649
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2219,
+          "original_N_native_vertex": 2219,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 861,
+              "bind_mesh_point": [
+                -0.14895527064800262,
+                -0.012529328465461731,
+                -0.08072821795940399
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2233,
+          "original_N_native_vertex": 2233,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 875,
+              "bind_mesh_point": [
+                -0.16300223767757416,
+                -0.011436870321631432,
+                -0.09767518937587738
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2282,
+          "original_N_native_vertex": 2282,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 944,
+              "bind_mesh_point": [
+                -0.15418300032615662,
+                -0.011745559982955456,
+                -0.09648237377405167
+              ]
+            },
+            {
+              "primitive": 1,
+              "vertex": 945,
+              "bind_mesh_point": [
+                -0.15418300032615662,
+                -0.011745559982955456,
+                -0.09648237377405167
+              ]
+            }
+          ]
+        },
+        {
+          "F_native_vertex": 2283,
+          "original_N_native_vertex": 2283,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 946,
+              "bind_mesh_point": [
+                -0.1577925682067871,
+                -0.01211214903742075,
+                -0.0905299186706543
+              ]
+            },
+            {
+              "primitive": 1,
+              "vertex": 947,
+              "bind_mesh_point": [
+                -0.1577925682067871,
+                -0.01211214903742075,
+                -0.0905299186706543
+              ]
+            }
+          ]
+        }
+      ],
+      "actual_export_min_y_m": 0.004000420661701049,
+      "native_evaluated_min_y_m": 0.004000389017164707,
+      "exported_subset_count_with_seams": 916,
+      "support_centroid_model_xyz_m": [
+        -0.1284835133398935,
+        0.0043634309341556,
+        -0.15004509545366157
+      ],
+      "centroid_sampling": "One position per unique F source support vertex; coincident exported seam copies averaged first",
+      "original_ID_namespace": "Original N Rebuilt SWAT full body24850 vertices",
+      "F_ID_namespace": "Compacted SWAT_Wearer22645 vertices",
+      "GLTF_ID_namespace": "Per-primitive seam-split accessor indices; actual mapping supplied"
+    }
+  },
+  "preview_alignment_candidate": {
+    "heading": "Horizontal projection of physical rifle forward",
+    "model_to_engine_heading0_feet_origin_column_major": [
+      0.006459204592004639,
+      0.0,
+      -0.9999791391204311,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.9999791391204311,
+      0.0,
+      0.006459204592004639,
+      0.0,
+      0.04189064172008401,
+      -0.004000025565570574,
+      0.019904399865594745,
+      1.0
+    ],
+    "uniform_scale": 1,
+    "baked_into_asset": false,
+    "engine_axes": "+Xforward,+Yup,+Zright"
+  },
+  "optic": "physical_and_optical_bindings.json optical surface only",
+  "limits": "Reference fitting only. Feet preserve source clearance; no new ground solve, camera origin, collider height, gameplay pose or ADS calibration."
+}

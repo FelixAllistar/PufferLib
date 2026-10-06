@@ -1,0 +1,4005 @@
+{
+  "rows": [
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/native_carry/ready_walk.editable.blend",
+      "sha256": "084a3548fc05ece81a77f4b83360a8e758103feeeb3c8cb7c7332325b60ca069",
+      "opposing_hip_layer_contacts": [
+        {
+          "frame": 29.0,
+          "count": 22,
+          "families": {
+            "5118,11165": 8,
+            "11165,11623": 14
+          },
+          "maximum_intersection_chord_mm": 13.81634833176817,
+          "hits": [
+            {
+              "triangles": [
+                13350,
+                21607
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.513756457184331,
+              "midpoint_m": [
+                -0.014129290357232094,
+                -0.11130732297897339,
+                0.558749794960022
+              ]
+            },
+            {
+              "triangles": [
+                13351,
+                21607
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.9916666846293163,
+              "midpoint_m": [
+                -0.012125316075980663,
+                -0.10877837985754013,
+                0.5579732656478882
+              ]
+            },
+            {
+              "triangles": [
+                13348,
+                21607
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 4.271710611452679,
+              "midpoint_m": [
+                -0.012015968561172485,
+                -0.11038921773433685,
+                0.553034782409668
+              ]
+            },
+            {
+              "triangles": [
+                13350,
+                21571
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 1.4060252916185403,
+              "midpoint_m": [
+                -0.015837231650948524,
+                -0.11703839898109436,
+                0.5576121211051941
+              ]
+            },
+            {
+              "triangles": [
+                13348,
+                21571
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 4.830734119595212,
+              "midpoint_m": [
+                -0.013723911717534065,
+                -0.11612029373645782,
+                0.5518971681594849
+              ]
+            },
+            {
+              "triangles": [
+                12299,
+                21571
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.7939095241578356,
+              "midpoint_m": [
+                -0.0164647176861763,
+                -0.11883227527141571,
+                0.5553663372993469
+              ]
+            },
+            {
+              "triangles": [
+                12300,
+                21571
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.21279127366640876,
+              "midpoint_m": [
+                -0.017138471826910973,
+                -0.11942984908819199,
+                0.5575006008148193
+              ]
+            },
+            {
+              "triangles": [
+                12298,
+                21571
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 1.7780796038057016,
+              "midpoint_m": [
+                -0.015054130926728249,
+                -0.11805166304111481,
+                0.5505394339561462
+              ]
+            },
+            {
+              "triangles": [
+                21618,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 3.031417755853911,
+              "midpoint_m": [
+                -0.004026818089187145,
+                -0.0878334492444992,
+                0.5387477874755859
+              ]
+            },
+            {
+              "triangles": [
+                21619,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.8380778862594862,
+              "midpoint_m": [
+                -0.003659682348370552,
+                -0.09073548763990402,
+                0.5411684513092041
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.737444630841475,
+              "midpoint_m": [
+                -0.008022784255445004,
+                -0.0940854549407959,
+                0.5377088785171509
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 13.81634833176817,
+              "midpoint_m": [
+                -0.007730151526629925,
+                -0.09610770642757416,
+                0.5445398688316345
+              ]
+            },
+            {
+              "triangles": [
+                21614,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 3.3240152121440287,
+              "midpoint_m": [
+                -0.006375804077833891,
+                -0.09820646047592163,
+                0.5463261008262634
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.4145711667362666,
+              "midpoint_m": [
+                -0.010513643734157085,
+                -0.10275926440954208,
+                0.5390585660934448
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.7081798066675573,
+              "midpoint_m": [
+                -0.009051395580172539,
+                -0.10277613997459412,
+                0.5492898225784302
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22166
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 6.085036017889921,
+              "midpoint_m": [
+                -0.008170939050614834,
+                -0.08587181568145752,
+                0.5321177840232849
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22166
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 3.422050087923424,
+              "midpoint_m": [
+                -0.010661798529326916,
+                -0.0945456251502037,
+                0.5334675312042236
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.1256186283166878,
+              "midpoint_m": [
+                -0.010724077932536602,
+                -0.10197339951992035,
+                0.5475605726242065
+              ]
+            },
+            {
+              "triangles": [
+                21614,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.0912802526735044,
+              "midpoint_m": [
+                -0.009369730949401855,
+                -0.10407215356826782,
+                0.5493468642234802
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.9922276649258647,
+              "midpoint_m": [
+                -0.013507570140063763,
+                -0.10862495750188828,
+                0.5420793294906616
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.9008447803381643,
+              "midpoint_m": [
+                -0.012045321986079216,
+                -0.10864183306694031,
+                0.552310585975647
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 10.908508100264854,
+              "midpoint_m": [
+                -0.013582073152065277,
+                -0.10774515569210052,
+                0.5464896559715271
+              ]
+            }
+          ]
+        },
+        {
+          "frame": 29.5,
+          "count": 20,
+          "families": {
+            "5118,11165": 4,
+            "11165,11623": 16
+          },
+          "maximum_intersection_chord_mm": 14.998052698510051,
+          "hits": [
+            {
+              "triangles": [
+                13348,
+                21613
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.10604885121582831,
+              "midpoint_m": [
+                -0.011079248040914536,
+                -0.09875959157943726,
+                0.5524289011955261
+              ]
+            },
+            {
+              "triangles": [
+                13351,
+                21613
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.08315786025495094,
+              "midpoint_m": [
+                -0.011129522696137428,
+                -0.0975605845451355,
+                0.5576485395431519
+              ]
+            },
+            {
+              "triangles": [
+                13348,
+                21573
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.9737459024501559,
+              "midpoint_m": [
+                -0.014028370380401611,
+                -0.10460864752531052,
+                0.5521795153617859
+              ]
+            },
+            {
+              "triangles": [
+                13351,
+                21573
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.9382665229497612,
+              "midpoint_m": [
+                -0.014078645035624504,
+                -0.10340964049100876,
+                0.5573991537094116
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 10.03218973717339,
+              "midpoint_m": [
+                -0.008295554667711258,
+                -0.09035885334014893,
+                0.5420039296150208
+              ]
+            },
+            {
+              "triangles": [
+                21619,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.2497802709255175,
+              "midpoint_m": [
+                -0.0020528645254671574,
+                -0.08279469609260559,
+                0.5480788946151733
+              ]
+            },
+            {
+              "triangles": [
+                21618,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.4673236652338253,
+              "midpoint_m": [
+                -0.002359006553888321,
+                -0.08040978014469147,
+                0.5453234910964966
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.4394705593038019,
+              "midpoint_m": [
+                -0.006450516637414694,
+                -0.0867704376578331,
+                0.5451177954673767
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.4285544031229382,
+              "midpoint_m": [
+                -0.006227110978215933,
+                -0.0874745175242424,
+                0.5520338416099548
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.28948906297686794,
+              "midpoint_m": [
+                -0.01005144789814949,
+                -0.10108822584152222,
+                0.5627724528312683
+              ]
+            },
+            {
+              "triangles": [
+                21571,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.21442381759953097,
+              "midpoint_m": [
+                -0.011849934235215187,
+                -0.10685595124959946,
+                0.5624622106552124
+              ]
+            },
+            {
+              "triangles": [
+                21614,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.1798199453053141,
+              "midpoint_m": [
+                -0.007287493906915188,
+                -0.0971750020980835,
+                0.5593180060386658
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 14.998052698510051,
+              "midpoint_m": [
+                -0.008599262684583664,
+                -0.09548711776733398,
+                0.5573084354400635
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.9247788596076665,
+              "midpoint_m": [
+                -0.011548384092748165,
+                -0.10133618116378784,
+                0.5570590496063232
+              ]
+            },
+            {
+              "triangles": [
+                21572,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.7114660489189469,
+              "midpoint_m": [
+                -0.012035103514790535,
+                -0.1087917909026146,
+                0.5587583780288696
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.44358102415834355,
+              "midpoint_m": [
+                -0.011318608187139034,
+                -0.0962822437286377,
+                0.5448114275932312
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 4.457223735780457,
+              "midpoint_m": [
+                -0.013961588963866234,
+                -0.10451620817184448,
+                0.5473174452781677
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.146800117108787,
+              "midpoint_m": [
+                -0.014044323936104774,
+                -0.10283537954092026,
+                0.5514780879020691
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22348
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 8.29704421653792,
+              "midpoint_m": [
+                -0.015523858368396759,
+                -0.10582171380519867,
+                0.5585845708847046
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22349
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.2706996136553335,
+              "midpoint_m": [
+                -0.016174761578440666,
+                -0.10373249650001526,
+                0.5561174154281616
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "/workspace/scratch/eac4961518d4/animation_rebuild/crouch_locomotion/shared_ready_n_forward/seam_a/crouch_forward_ready_n_c1.editable.blend",
+      "sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+      "opposing_hip_layer_contacts": [
+        {
+          "frame": 28.5,
+          "count": 10,
+          "families": {
+            "11165,11623": 10
+          },
+          "maximum_intersection_chord_mm": 3.7689468094769043,
+          "hits": [
+            {
+              "triangles": [
+                21613,
+                22166
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.4318715257963515,
+              "midpoint_m": [
+                -0.007304042112082243,
+                -0.08691303431987762,
+                0.5363866686820984
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22166
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.644816570227685,
+              "midpoint_m": [
+                -0.010022355243563652,
+                -0.09260159730911255,
+                0.5347689390182495
+              ]
+            },
+            {
+              "triangles": [
+                21614,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.0656465636519026,
+              "midpoint_m": [
+                -0.005714851431548595,
+                -0.09723304212093353,
+                0.5438464879989624
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 3.7689468094769043,
+              "midpoint_m": [
+                -0.0071332817897200584,
+                -0.0949065238237381,
+                0.5422515273094177
+              ]
+            },
+            {
+              "triangles": [
+                21614,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.5670403040486672,
+              "midpoint_m": [
+                -0.008686038665473461,
+                -0.10303124785423279,
+                0.5470728874206543
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.6853889870426219,
+              "midpoint_m": [
+                -0.010104469023644924,
+                -0.10070472955703735,
+                0.5454779863357544
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22167
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.4394285130449442,
+              "midpoint_m": [
+                -0.013188688084483147,
+                -0.09737171977758408,
+                0.532368540763855
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22305
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.286915245251753,
+              "midpoint_m": [
+                -0.014340035617351532,
+                -0.10396575927734375,
+                0.5408320426940918
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22358
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.8055714834578755,
+              "midpoint_m": [
+                -0.014535181224346161,
+                -0.10293766111135483,
+                0.5352052450180054
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.30040631074227797,
+              "midpoint_m": [
+                -0.01282278262078762,
+                -0.10639329999685287,
+                0.5438601970672607
+              ]
+            }
+          ]
+        },
+        {
+          "frame": 29.0,
+          "count": 28,
+          "families": {
+            "5118,11165": 12,
+            "11165,11623": 16
+          },
+          "maximum_intersection_chord_mm": 13.447398390890779,
+          "hits": [
+            {
+              "triangles": [
+                13351,
+                21607
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 1.3343434509279537,
+              "midpoint_m": [
+                -0.012098426930606365,
+                -0.10619540512561798,
+                0.5602443218231201
+              ]
+            },
+            {
+              "triangles": [
+                13348,
+                21607
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 2.2647566249432525,
+              "midpoint_m": [
+                -0.01202022098004818,
+                -0.10777571052312851,
+                0.5552487373352051
+              ]
+            },
+            {
+              "triangles": [
+                13348,
+                21614
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.3681545341491852,
+              "midpoint_m": [
+                -0.009349921718239784,
+                -0.10337021201848984,
+                0.5521266460418701
+              ]
+            },
+            {
+              "triangles": [
+                13348,
+                21613
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.6507737477659776,
+              "midpoint_m": [
+                -0.010710927657783031,
+                -0.10138396918773651,
+                0.5502771139144897
+              ]
+            },
+            {
+              "triangles": [
+                13351,
+                21572
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.4345485999966767,
+              "midpoint_m": [
+                -0.014005346223711967,
+                -0.11337041854858398,
+                0.5554152727127075
+              ]
+            },
+            {
+              "triangles": [
+                13351,
+                21571
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 4.321606786281645,
+              "midpoint_m": [
+                -0.013810689561069012,
+                -0.11195889115333557,
+                0.5593559145927429
+              ]
+            },
+            {
+              "triangles": [
+                13350,
+                21572
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.5620604614874324,
+              "midpoint_m": [
+                -0.015991559252142906,
+                -0.11591283977031708,
+                0.5562022924423218
+              ]
+            },
+            {
+              "triangles": [
+                13348,
+                21573
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 7.516060903556327,
+              "midpoint_m": [
+                -0.013575883582234383,
+                -0.1072009801864624,
+                0.5494584441184998
+              ]
+            },
+            {
+              "triangles": [
+                12298,
+                21573
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.25375173440012955,
+              "midpoint_m": [
+                -0.014898931607604027,
+                -0.10913427919149399,
+                0.5480920076370239
+              ]
+            },
+            {
+              "triangles": [
+                12299,
+                21572
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.23664445281575208,
+              "midpoint_m": [
+                -0.016639214009046555,
+                -0.11768661439418793,
+                0.553905725479126
+              ]
+            },
+            {
+              "triangles": [
+                12300,
+                21572
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 0.04599860978905843,
+              "midpoint_m": [
+                -0.0173023771494627,
+                -0.11829575151205063,
+                0.5560591220855713
+              ]
+            },
+            {
+              "triangles": [
+                12298,
+                21572
+              ],
+              "components": [
+                5118,
+                11165
+              ],
+              "dominant_bones": [
+                "mixamorig:RightUpLeg",
+                "mixamorig:LeftUpLeg"
+              ],
+              "intersection_chord_mm": 2.501061992877847,
+              "midpoint_m": [
+                -0.015250189229846,
+                -0.11688399314880371,
+                0.5490531921386719
+              ]
+            },
+            {
+              "triangles": [
+                21619,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.7906338924610143,
+              "midpoint_m": [
+                -0.0036667119711637497,
+                -0.08856916427612305,
+                0.5429653525352478
+              ]
+            },
+            {
+              "triangles": [
+                21618,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.8301566998500824,
+              "midpoint_m": [
+                -0.004039136692881584,
+                -0.08580540120601654,
+                0.5404434204101562
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.4374493898148524,
+              "midpoint_m": [
+                -0.00957721471786499,
+                -0.10422247648239136,
+                0.5599576830863953
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 10.09740511243018,
+              "midpoint_m": [
+                -0.008043382316827774,
+                -0.09211364388465881,
+                0.5396661758422852
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.136784753501309,
+              "midpoint_m": [
+                -0.009043829515576363,
+                -0.10016265511512756,
+                0.5515017509460449
+              ]
+            },
+            {
+              "triangles": [
+                21614,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 3.464433519761274,
+              "midpoint_m": [
+                -0.006373531185090542,
+                -0.09575717151165009,
+                0.54837965965271
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 13.447398390890779,
+              "midpoint_m": [
+                -0.007734537124633789,
+                -0.09377092123031616,
+                0.5465301871299744
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 5.0096086703469425,
+              "midpoint_m": [
+                -0.010535912588238716,
+                -0.1006944328546524,
+                0.5413694381713867
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.4839380466928696,
+              "midpoint_m": [
+                -0.0072285495698452,
+                -0.09636761993169785,
+                0.554419219493866
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.661002161824064,
+              "midpoint_m": [
+                -0.012045994400978088,
+                -0.10602588951587677,
+                0.5545147657394409
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22349
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.9494056985092415,
+              "midpoint_m": [
+                -0.01419051643460989,
+                -0.10668694227933884,
+                0.5591103434562683
+              ]
+            },
+            {
+              "triangles": [
+                21607,
+                22348
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.6368127276596954,
+              "midpoint_m": [
+                -0.01353701762855053,
+                -0.10867857933044434,
+                0.5616358518600464
+              ]
+            },
+            {
+              "triangles": [
+                21614,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.0697160473045959,
+              "midpoint_m": [
+                -0.009375695139169693,
+                -0.1016203984618187,
+                0.551392674446106
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.07785752343659941,
+              "midpoint_m": [
+                -0.01073670294135809,
+                -0.09963415563106537,
+                0.5495430827140808
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 12.224424588185245,
+              "midpoint_m": [
+                -0.013601657003164291,
+                -0.10545116662979126,
+                0.5487244129180908
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.2935531179934949,
+              "midpoint_m": [
+                -0.013538076542317867,
+                -0.10655765980482101,
+                0.5443824529647827
+              ]
+            }
+          ]
+        },
+        {
+          "frame": 29.5,
+          "count": 12,
+          "families": {
+            "11165,11623": 12
+          },
+          "maximum_intersection_chord_mm": 12.92023244762121,
+          "hits": [
+            {
+              "triangles": [
+                21581,
+                22279
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 6.610159766468162,
+              "midpoint_m": [
+                -0.008321903645992279,
+                -0.08896462619304657,
+                0.5433706045150757
+              ]
+            },
+            {
+              "triangles": [
+                21618,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 2.9162833327747086,
+              "midpoint_m": [
+                -0.0023682457394897938,
+                -0.07901385426521301,
+                0.5465356111526489
+              ]
+            },
+            {
+              "triangles": [
+                21619,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.4691496197993406,
+              "midpoint_m": [
+                -0.0020584920421242714,
+                -0.0813005119562149,
+                0.5493406057357788
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22278
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 5.067183982869214,
+              "midpoint_m": [
+                -0.006467384751886129,
+                -0.0853835940361023,
+                0.5465017557144165
+              ]
+            },
+            {
+              "triangles": [
+                21619,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 1.3605500096153853,
+              "midpoint_m": [
+                -0.004436084069311619,
+                -0.08931262791156769,
+                0.5546128749847412
+              ]
+            },
+            {
+              "triangles": [
+                21613,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 12.92023244762121,
+              "midpoint_m": [
+                -0.008608832955360413,
+                -0.09386402368545532,
+                0.5586718916893005
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22183
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 5.657606694917026,
+              "midpoint_m": [
+                -0.011564607731997967,
+                -0.0997159406542778,
+                0.5585870146751404
+              ]
+            },
+            {
+              "triangles": [
+                21581,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.5480972034597608,
+              "midpoint_m": [
+                -0.011349894106388092,
+                -0.09488644450902939,
+                0.5461729168891907
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22348
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.23915626631130404,
+              "midpoint_m": [
+                -0.015469281002879143,
+                -0.10602007806301117,
+                0.5560147762298584
+              ]
+            },
+            {
+              "triangles": [
+                21573,
+                22348
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 3.98896758819507,
+              "midpoint_m": [
+                -0.015542889945209026,
+                -0.10420173406600952,
+                0.5601077079772949
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22349
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 0.6905591741630983,
+              "midpoint_m": [
+                -0.016119681298732758,
+                -0.1039297804236412,
+                0.553544819355011
+              ]
+            },
+            {
+              "triangles": [
+                21574,
+                22304
+              ],
+              "components": [
+                11165,
+                11623
+              ],
+              "dominant_bones": [
+                "mixamorig:LeftUpLeg",
+                "mixamorig:RightUpLeg"
+              ],
+              "intersection_chord_mm": 3.9553328440135704,
+              "midpoint_m": [
+                -0.013995914719998837,
+                -0.10302501171827316,
+                0.5488929748535156
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "boundary_changes": [
+    {
+      "frame": 0.0,
+      "material_normal_reversal_changes": {
+        "18406": {
+          "baseline_count": 2,
+          "candidate_count": 1,
+          "added_triangles": [],
+          "removed_triangles": [
+            33061
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "20619,20968": {
+          "baseline_count": 105,
+          "candidate_count": 106,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 74,
+          "candidate_count": 73,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 92,
+          "candidate_count": 97,
+          "new_family_this_frame": false
+        },
+        "19992,20968": {
+          "baseline_count": 34,
+          "candidate_count": 33,
+          "new_family_this_frame": false
+        },
+        "18406,18406": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 0.5,
+      "material_normal_reversal_changes": {
+        "5118": {
+          "baseline_count": 79,
+          "candidate_count": 79,
+          "added_triangles": [
+            13880
+          ],
+          "removed_triangles": [
+            13320
+          ]
+        },
+        "11010": {
+          "baseline_count": 33,
+          "candidate_count": 31,
+          "added_triangles": [],
+          "removed_triangles": [
+            21107,
+            21328
+          ]
+        },
+        "19727": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "added_triangles": [],
+          "removed_triangles": [
+            36043
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "96,256": {
+          "baseline_count": 54,
+          "candidate_count": 59,
+          "new_family_this_frame": false
+        },
+        "5118,7704": {
+          "baseline_count": 64,
+          "candidate_count": 67,
+          "new_family_this_frame": false
+        },
+        "5118,7339": {
+          "baseline_count": 49,
+          "candidate_count": 51,
+          "new_family_this_frame": false
+        },
+        "7308,11010": {
+          "baseline_count": 38,
+          "candidate_count": 42,
+          "new_family_this_frame": false
+        },
+        "5118,7464": {
+          "baseline_count": 56,
+          "candidate_count": 53,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 253,
+          "candidate_count": 263,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 24,
+          "candidate_count": 27,
+          "new_family_this_frame": false
+        },
+        "256,5118": {
+          "baseline_count": 33,
+          "candidate_count": 30,
+          "new_family_this_frame": false
+        },
+        "11165,11165": {
+          "baseline_count": 29,
+          "candidate_count": 31,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 96,
+          "candidate_count": 95,
+          "new_family_this_frame": false
+        },
+        "5118,13350": {
+          "baseline_count": 40,
+          "candidate_count": 42,
+          "new_family_this_frame": false
+        },
+        "5118,7336": {
+          "baseline_count": 34,
+          "candidate_count": 27,
+          "new_family_this_frame": false
+        },
+        "5118,17026": {
+          "baseline_count": 71,
+          "candidate_count": 69,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 77,
+          "candidate_count": 78,
+          "new_family_this_frame": false
+        },
+        "15023,18406": {
+          "baseline_count": 15,
+          "candidate_count": 17,
+          "new_family_this_frame": false
+        },
+        "64,256": {
+          "baseline_count": 43,
+          "candidate_count": 41,
+          "new_family_this_frame": false
+        },
+        "11623,11623": {
+          "baseline_count": 41,
+          "candidate_count": 38,
+          "new_family_this_frame": false
+        },
+        "16180,16340": {
+          "baseline_count": 8,
+          "candidate_count": 6,
+          "new_family_this_frame": false
+        },
+        "5118,11010": {
+          "baseline_count": 255,
+          "candidate_count": 253,
+          "new_family_this_frame": false
+        },
+        "11165,13428": {
+          "baseline_count": 21,
+          "candidate_count": 22,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 74,
+          "candidate_count": 73,
+          "new_family_this_frame": false
+        },
+        "7308,7308": {
+          "baseline_count": 6,
+          "candidate_count": 0,
+          "new_family_this_frame": false
+        },
+        "5118,17648": {
+          "baseline_count": 92,
+          "candidate_count": 98,
+          "new_family_this_frame": false
+        },
+        "5118,11623": {
+          "baseline_count": 291,
+          "candidate_count": 287,
+          "new_family_this_frame": false
+        },
+        "256,10300": {
+          "baseline_count": 275,
+          "candidate_count": 277,
+          "new_family_this_frame": false
+        },
+        "11165,16372": {
+          "baseline_count": 42,
+          "candidate_count": 44,
+          "new_family_this_frame": false
+        },
+        "16180,17648": {
+          "baseline_count": 14,
+          "candidate_count": 7,
+          "new_family_this_frame": false
+        },
+        "32,256": {
+          "baseline_count": 0,
+          "candidate_count": 4,
+          "new_family_this_frame": true
+        },
+        "19992,20619": {
+          "baseline_count": 91,
+          "candidate_count": 94,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 44,
+          "candidate_count": 46,
+          "new_family_this_frame": false
+        },
+        "13314,17648": {
+          "baseline_count": 10,
+          "candidate_count": 8,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 43,
+          "candidate_count": 53,
+          "new_family_this_frame": false
+        },
+        "13624,18662": {
+          "baseline_count": 10,
+          "candidate_count": 9,
+          "new_family_this_frame": false
+        },
+        "21145,24359": {
+          "baseline_count": 139,
+          "candidate_count": 140,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 1.0,
+      "material_normal_reversal_changes": {
+        "5118": {
+          "baseline_count": 79,
+          "candidate_count": 81,
+          "added_triangles": [
+            12037,
+            12308,
+            13815,
+            13886
+          ],
+          "removed_triangles": [
+            13316,
+            13494
+          ]
+        },
+        "11010": {
+          "baseline_count": 31,
+          "candidate_count": 33,
+          "added_triangles": [
+            21234,
+            21334
+          ],
+          "removed_triangles": []
+        },
+        "18406": {
+          "baseline_count": 2,
+          "candidate_count": 1,
+          "added_triangles": [],
+          "removed_triangles": [
+            33061
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "5118,7579": {
+          "baseline_count": 63,
+          "candidate_count": 59,
+          "new_family_this_frame": false
+        },
+        "13428,13428": {
+          "baseline_count": 8,
+          "candidate_count": 10,
+          "new_family_this_frame": false
+        },
+        "5118,17904": {
+          "baseline_count": 38,
+          "candidate_count": 40,
+          "new_family_this_frame": false
+        },
+        "96,256": {
+          "baseline_count": 55,
+          "candidate_count": 58,
+          "new_family_this_frame": false
+        },
+        "5118,7704": {
+          "baseline_count": 60,
+          "candidate_count": 55,
+          "new_family_this_frame": false
+        },
+        "5118,7339": {
+          "baseline_count": 52,
+          "candidate_count": 55,
+          "new_family_this_frame": false
+        },
+        "7308,11010": {
+          "baseline_count": 36,
+          "candidate_count": 42,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 279,
+          "candidate_count": 282,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 236,
+          "candidate_count": 243,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 21,
+          "candidate_count": 26,
+          "new_family_this_frame": false
+        },
+        "256,5118": {
+          "baseline_count": 33,
+          "candidate_count": 30,
+          "new_family_this_frame": false
+        },
+        "16266,17648": {
+          "baseline_count": 53,
+          "candidate_count": 51,
+          "new_family_this_frame": false
+        },
+        "11165,11165": {
+          "baseline_count": 32,
+          "candidate_count": 34,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 97,
+          "candidate_count": 95,
+          "new_family_this_frame": false
+        },
+        "16160,16340": {
+          "baseline_count": 16,
+          "candidate_count": 17,
+          "new_family_this_frame": false
+        },
+        "5118,7336": {
+          "baseline_count": 42,
+          "candidate_count": 36,
+          "new_family_this_frame": false
+        },
+        "16994,18406": {
+          "baseline_count": 30,
+          "candidate_count": 34,
+          "new_family_this_frame": false
+        },
+        "11340,17648": {
+          "baseline_count": 52,
+          "candidate_count": 50,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 74,
+          "candidate_count": 78,
+          "new_family_this_frame": false
+        },
+        "64,256": {
+          "baseline_count": 43,
+          "candidate_count": 41,
+          "new_family_this_frame": false
+        },
+        "5118,11010": {
+          "baseline_count": 262,
+          "candidate_count": 266,
+          "new_family_this_frame": false
+        },
+        "11165,13428": {
+          "baseline_count": 22,
+          "candidate_count": 18,
+          "new_family_this_frame": false
+        },
+        "11623,17026": {
+          "baseline_count": 66,
+          "candidate_count": 69,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 73,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "7308,7308": {
+          "baseline_count": 6,
+          "candidate_count": 0,
+          "new_family_this_frame": false
+        },
+        "5118,11623": {
+          "baseline_count": 294,
+          "candidate_count": 296,
+          "new_family_this_frame": false
+        },
+        "256,10300": {
+          "baseline_count": 277,
+          "candidate_count": 276,
+          "new_family_this_frame": false
+        },
+        "7336,11340": {
+          "baseline_count": 73,
+          "candidate_count": 77,
+          "new_family_this_frame": false
+        },
+        "11165,16372": {
+          "baseline_count": 40,
+          "candidate_count": 38,
+          "new_family_this_frame": false
+        },
+        "16180,17648": {
+          "baseline_count": 33,
+          "candidate_count": 19,
+          "new_family_this_frame": false
+        },
+        "15043,18406": {
+          "baseline_count": 11,
+          "candidate_count": 15,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 100,
+          "candidate_count": 97,
+          "new_family_this_frame": false
+        },
+        "5118,7548": {
+          "baseline_count": 30,
+          "candidate_count": 32,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 46,
+          "candidate_count": 47,
+          "new_family_this_frame": false
+        },
+        "13314,17648": {
+          "baseline_count": 11,
+          "candidate_count": 10,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 47,
+          "candidate_count": 51,
+          "new_family_this_frame": false
+        },
+        "18406,18406": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 1.5,
+      "material_normal_reversal_changes": {
+        "5118": {
+          "baseline_count": 87,
+          "candidate_count": 87,
+          "added_triangles": [
+            12240
+          ],
+          "removed_triangles": [
+            13299
+          ]
+        },
+        "11010": {
+          "baseline_count": 31,
+          "candidate_count": 29,
+          "added_triangles": [],
+          "removed_triangles": [
+            21107,
+            21108
+          ]
+        },
+        "11165": {
+          "baseline_count": 5,
+          "candidate_count": 6,
+          "added_triangles": [
+            21538
+          ],
+          "removed_triangles": []
+        },
+        "19727": {
+          "baseline_count": 0,
+          "candidate_count": 1,
+          "added_triangles": [
+            36043
+          ],
+          "removed_triangles": []
+        }
+      },
+      "crossing_family_count_changes": {
+        "5118,7579": {
+          "baseline_count": 52,
+          "candidate_count": 54,
+          "new_family_this_frame": false
+        },
+        "96,256": {
+          "baseline_count": 53,
+          "candidate_count": 58,
+          "new_family_this_frame": false
+        },
+        "5118,7339": {
+          "baseline_count": 53,
+          "candidate_count": 57,
+          "new_family_this_frame": false
+        },
+        "5118,7464": {
+          "baseline_count": 46,
+          "candidate_count": 53,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 271,
+          "candidate_count": 273,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 241,
+          "candidate_count": 247,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 21,
+          "candidate_count": 26,
+          "new_family_this_frame": false
+        },
+        "256,5118": {
+          "baseline_count": 34,
+          "candidate_count": 30,
+          "new_family_this_frame": false
+        },
+        "16266,17648": {
+          "baseline_count": 51,
+          "candidate_count": 53,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 97,
+          "candidate_count": 95,
+          "new_family_this_frame": false
+        },
+        "5118,13350": {
+          "baseline_count": 42,
+          "candidate_count": 40,
+          "new_family_this_frame": false
+        },
+        "5118,7336": {
+          "baseline_count": 37,
+          "candidate_count": 29,
+          "new_family_this_frame": false
+        },
+        "16994,18406": {
+          "baseline_count": 27,
+          "candidate_count": 36,
+          "new_family_this_frame": false
+        },
+        "5118,17026": {
+          "baseline_count": 63,
+          "candidate_count": 59,
+          "new_family_this_frame": false
+        },
+        "11340,17648": {
+          "baseline_count": 48,
+          "candidate_count": 50,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 72,
+          "candidate_count": 76,
+          "new_family_this_frame": false
+        },
+        "1811,5118": {
+          "baseline_count": 152,
+          "candidate_count": 148,
+          "new_family_this_frame": false
+        },
+        "64,256": {
+          "baseline_count": 43,
+          "candidate_count": 41,
+          "new_family_this_frame": false
+        },
+        "5118,11010": {
+          "baseline_count": 261,
+          "candidate_count": 259,
+          "new_family_this_frame": false
+        },
+        "11165,13428": {
+          "baseline_count": 18,
+          "candidate_count": 21,
+          "new_family_this_frame": false
+        },
+        "5118,11468": {
+          "baseline_count": 250,
+          "candidate_count": 252,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 73,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "5118,17648": {
+          "baseline_count": 92,
+          "candidate_count": 94,
+          "new_family_this_frame": false
+        },
+        "5118,11623": {
+          "baseline_count": 308,
+          "candidate_count": 305,
+          "new_family_this_frame": false
+        },
+        "7336,11340": {
+          "baseline_count": 73,
+          "candidate_count": 77,
+          "new_family_this_frame": false
+        },
+        "16180,17648": {
+          "baseline_count": 33,
+          "candidate_count": 27,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 179,
+          "candidate_count": 181,
+          "new_family_this_frame": false
+        },
+        "5118,11798": {
+          "baseline_count": 166,
+          "candidate_count": 162,
+          "new_family_this_frame": false
+        },
+        "15043,18406": {
+          "baseline_count": 0,
+          "candidate_count": 9,
+          "new_family_this_frame": true
+        },
+        "1381,17648": {
+          "baseline_count": 9,
+          "candidate_count": 11,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 98,
+          "candidate_count": 100,
+          "new_family_this_frame": false
+        },
+        "5118,7548": {
+          "baseline_count": 40,
+          "candidate_count": 42,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 47,
+          "candidate_count": 49,
+          "new_family_this_frame": false
+        },
+        "13314,17648": {
+          "baseline_count": 11,
+          "candidate_count": 10,
+          "new_family_this_frame": false
+        },
+        "7548,11468": {
+          "baseline_count": 33,
+          "candidate_count": 31,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 46,
+          "candidate_count": 42,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 2.0,
+      "material_normal_reversal_changes": {
+        "11165": {
+          "baseline_count": 6,
+          "candidate_count": 7,
+          "added_triangles": [
+            21501
+          ],
+          "removed_triangles": []
+        },
+        "13624": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "added_triangles": [],
+          "removed_triangles": [
+            24982
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "5118,7579": {
+          "baseline_count": 46,
+          "candidate_count": 44,
+          "new_family_this_frame": false
+        },
+        "224,256": {
+          "baseline_count": 26,
+          "candidate_count": 27,
+          "new_family_this_frame": false
+        },
+        "96,256": {
+          "baseline_count": 53,
+          "candidate_count": 58,
+          "new_family_this_frame": false
+        },
+        "5118,7704": {
+          "baseline_count": 59,
+          "candidate_count": 57,
+          "new_family_this_frame": false
+        },
+        "5118,7464": {
+          "baseline_count": 57,
+          "candidate_count": 61,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 271,
+          "candidate_count": 278,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 240,
+          "candidate_count": 250,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 33,
+          "candidate_count": 34,
+          "new_family_this_frame": false
+        },
+        "256,5118": {
+          "baseline_count": 34,
+          "candidate_count": 30,
+          "new_family_this_frame": false
+        },
+        "16266,17648": {
+          "baseline_count": 51,
+          "candidate_count": 53,
+          "new_family_this_frame": false
+        },
+        "1381,5118": {
+          "baseline_count": 185,
+          "candidate_count": 188,
+          "new_family_this_frame": false
+        },
+        "16994,18406": {
+          "baseline_count": 29,
+          "candidate_count": 33,
+          "new_family_this_frame": false
+        },
+        "5118,17026": {
+          "baseline_count": 59,
+          "candidate_count": 58,
+          "new_family_this_frame": false
+        },
+        "11340,17648": {
+          "baseline_count": 46,
+          "candidate_count": 44,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 72,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "5118,11010": {
+          "baseline_count": 261,
+          "candidate_count": 255,
+          "new_family_this_frame": false
+        },
+        "5118,11468": {
+          "baseline_count": 252,
+          "candidate_count": 254,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 73,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "7336,11340": {
+          "baseline_count": 73,
+          "candidate_count": 77,
+          "new_family_this_frame": false
+        },
+        "16180,17648": {
+          "baseline_count": 31,
+          "candidate_count": 9,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 183,
+          "candidate_count": 181,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 96,
+          "candidate_count": 93,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 51,
+          "candidate_count": 93,
+          "new_family_this_frame": false
+        },
+        "13314,17648": {
+          "baseline_count": 10,
+          "candidate_count": 8,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 40,
+          "candidate_count": 30,
+          "new_family_this_frame": false
+        },
+        "13624,18662": {
+          "baseline_count": 9,
+          "candidate_count": 6,
+          "new_family_this_frame": false
+        },
+        "21145,24359": {
+          "baseline_count": 139,
+          "candidate_count": 140,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 2.5,
+      "material_normal_reversal_changes": {},
+      "crossing_family_count_changes": {
+        "16404,19164": {
+          "baseline_count": 37,
+          "candidate_count": 35,
+          "new_family_this_frame": false
+        },
+        "5118,7579": {
+          "baseline_count": 42,
+          "candidate_count": 41,
+          "new_family_this_frame": false
+        },
+        "224,256": {
+          "baseline_count": 24,
+          "candidate_count": 26,
+          "new_family_this_frame": false
+        },
+        "96,256": {
+          "baseline_count": 53,
+          "candidate_count": 54,
+          "new_family_this_frame": false
+        },
+        "5118,7704": {
+          "baseline_count": 58,
+          "candidate_count": 54,
+          "new_family_this_frame": false
+        },
+        "5118,7339": {
+          "baseline_count": 75,
+          "candidate_count": 68,
+          "new_family_this_frame": false
+        },
+        "20619,20968": {
+          "baseline_count": 105,
+          "candidate_count": 106,
+          "new_family_this_frame": false
+        },
+        "5118,7464": {
+          "baseline_count": 61,
+          "candidate_count": 59,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 262,
+          "candidate_count": 261,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 245,
+          "candidate_count": 260,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 26,
+          "candidate_count": 6,
+          "new_family_this_frame": false
+        },
+        "256,5118": {
+          "baseline_count": 35,
+          "candidate_count": 31,
+          "new_family_this_frame": false
+        },
+        "16266,17648": {
+          "baseline_count": 53,
+          "candidate_count": 51,
+          "new_family_this_frame": false
+        },
+        "1381,5118": {
+          "baseline_count": 183,
+          "candidate_count": 188,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 72,
+          "candidate_count": 76,
+          "new_family_this_frame": false
+        },
+        "5118,11010": {
+          "baseline_count": 253,
+          "candidate_count": 251,
+          "new_family_this_frame": false
+        },
+        "13428,16372": {
+          "baseline_count": 9,
+          "candidate_count": 8,
+          "new_family_this_frame": false
+        },
+        "5118,11623": {
+          "baseline_count": 301,
+          "candidate_count": 299,
+          "new_family_this_frame": false
+        },
+        "16180,17648": {
+          "baseline_count": 9,
+          "candidate_count": 0,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 186,
+          "candidate_count": 185,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 97,
+          "candidate_count": 93,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 93,
+          "candidate_count": 104,
+          "new_family_this_frame": false
+        },
+        "13624,18662": {
+          "baseline_count": 9,
+          "candidate_count": 6,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 3.0,
+      "material_normal_reversal_changes": {
+        "19727": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "added_triangles": [],
+          "removed_triangles": [
+            36043
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "5118,5118": {
+          "baseline_count": 244,
+          "candidate_count": 246,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 12,
+          "candidate_count": 10,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 99,
+          "candidate_count": 96,
+          "new_family_this_frame": false
+        },
+        "1381,5118": {
+          "baseline_count": 182,
+          "candidate_count": 184,
+          "new_family_this_frame": false
+        },
+        "11623,18662": {
+          "baseline_count": 10,
+          "candidate_count": 8,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 182,
+          "candidate_count": 181,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 100,
+          "candidate_count": 92,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 102,
+          "candidate_count": 104,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 3.5,
+      "material_normal_reversal_changes": {},
+      "crossing_family_count_changes": {
+        "16404,19164": {
+          "baseline_count": 38,
+          "candidate_count": 35,
+          "new_family_this_frame": false
+        },
+        "11623,18662": {
+          "baseline_count": 8,
+          "candidate_count": 6,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 73,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 92,
+          "candidate_count": 95,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 26.5,
+      "material_normal_reversal_changes": {
+        "18406": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "added_triangles": [],
+          "removed_triangles": [
+            33061
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "21605,24057": {
+          "baseline_count": 73,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 96,
+          "candidate_count": 99,
+          "new_family_this_frame": false
+        },
+        "21145,22943": {
+          "baseline_count": 145,
+          "candidate_count": 146,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 27.0,
+      "material_normal_reversal_changes": {},
+      "crossing_family_count_changes": {
+        "256,7788": {
+          "baseline_count": 42,
+          "candidate_count": 40,
+          "new_family_this_frame": false
+        },
+        "20619,20968": {
+          "baseline_count": 105,
+          "candidate_count": 106,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 218,
+          "candidate_count": 220,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 102,
+          "candidate_count": 100,
+          "new_family_this_frame": false
+        },
+        "13624,17026": {
+          "baseline_count": 42,
+          "candidate_count": 40,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 57,
+          "candidate_count": 59,
+          "new_family_this_frame": false
+        },
+        "5118,13624": {
+          "baseline_count": 72,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 74,
+          "candidate_count": 73,
+          "new_family_this_frame": false
+        },
+        "10300,20619": {
+          "baseline_count": 228,
+          "candidate_count": 227,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 96,
+          "candidate_count": 102,
+          "new_family_this_frame": false
+        },
+        "19992,20968": {
+          "baseline_count": 33,
+          "candidate_count": 34,
+          "new_family_this_frame": false
+        },
+        "21145,22943": {
+          "baseline_count": 146,
+          "candidate_count": 145,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 27.5,
+      "material_normal_reversal_changes": {
+        "2502": {
+          "baseline_count": 25,
+          "candidate_count": 31,
+          "added_triangles": [
+            5093,
+            5098,
+            5105,
+            5106,
+            5401,
+            5835
+          ],
+          "removed_triangles": []
+        },
+        "5118": {
+          "baseline_count": 73,
+          "candidate_count": 74,
+          "added_triangles": [
+            10042
+          ],
+          "removed_triangles": []
+        },
+        "19727": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "added_triangles": [],
+          "removed_triangles": [
+            36043
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "224,256": {
+          "baseline_count": 27,
+          "candidate_count": 29,
+          "new_family_this_frame": false
+        },
+        "96,256": {
+          "baseline_count": 35,
+          "candidate_count": 39,
+          "new_family_this_frame": false
+        },
+        "5118,7704": {
+          "baseline_count": 70,
+          "candidate_count": 75,
+          "new_family_this_frame": false
+        },
+        "5118,7464": {
+          "baseline_count": 51,
+          "candidate_count": 55,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 229,
+          "candidate_count": 227,
+          "new_family_this_frame": false
+        },
+        "2502,2502": {
+          "baseline_count": 54,
+          "candidate_count": 56,
+          "new_family_this_frame": false
+        },
+        "1381,5118": {
+          "baseline_count": 184,
+          "candidate_count": 181,
+          "new_family_this_frame": false
+        },
+        "13624,17026": {
+          "baseline_count": 41,
+          "candidate_count": 38,
+          "new_family_this_frame": false
+        },
+        "7548,18406": {
+          "baseline_count": 16,
+          "candidate_count": 18,
+          "new_family_this_frame": false
+        },
+        "19727,19727": {
+          "baseline_count": 1,
+          "candidate_count": 0,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 63,
+          "candidate_count": 67,
+          "new_family_this_frame": false
+        },
+        "5118,13624": {
+          "baseline_count": 98,
+          "candidate_count": 96,
+          "new_family_this_frame": false
+        },
+        "5118,11010": {
+          "baseline_count": 253,
+          "candidate_count": 249,
+          "new_family_this_frame": false
+        },
+        "11623,18662": {
+          "baseline_count": 40,
+          "candidate_count": 42,
+          "new_family_this_frame": false
+        },
+        "21605,24057": {
+          "baseline_count": 73,
+          "candidate_count": 74,
+          "new_family_this_frame": false
+        },
+        "5118,11623": {
+          "baseline_count": 247,
+          "candidate_count": 245,
+          "new_family_this_frame": false
+        },
+        "10300,20619": {
+          "baseline_count": 227,
+          "candidate_count": 228,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 181,
+          "candidate_count": 185,
+          "new_family_this_frame": false
+        },
+        "21145,22943": {
+          "baseline_count": 146,
+          "candidate_count": 145,
+          "new_family_this_frame": false
+        },
+        "5118,18406": {
+          "baseline_count": 54,
+          "candidate_count": 56,
+          "new_family_this_frame": false
+        },
+        "15129,18406": {
+          "baseline_count": 57,
+          "candidate_count": 55,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 28.0,
+      "material_normal_reversal_changes": {
+        "2502": {
+          "baseline_count": 24,
+          "candidate_count": 29,
+          "added_triangles": [
+            5088,
+            5094,
+            5098,
+            5105,
+            5111,
+            5401
+          ],
+          "removed_triangles": [
+            5292
+          ]
+        },
+        "5118": {
+          "baseline_count": 76,
+          "candidate_count": 77,
+          "added_triangles": [
+            12196
+          ],
+          "removed_triangles": []
+        }
+      },
+      "crossing_family_count_changes": {
+        "96,256": {
+          "baseline_count": 45,
+          "candidate_count": 44,
+          "new_family_this_frame": false
+        },
+        "5118,7339": {
+          "baseline_count": 67,
+          "candidate_count": 63,
+          "new_family_this_frame": false
+        },
+        "5118,7464": {
+          "baseline_count": 65,
+          "candidate_count": 68,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 237,
+          "candidate_count": 238,
+          "new_family_this_frame": false
+        },
+        "2502,2502": {
+          "baseline_count": 46,
+          "candidate_count": 54,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 96,
+          "candidate_count": 97,
+          "new_family_this_frame": false
+        },
+        "1381,5118": {
+          "baseline_count": 184,
+          "candidate_count": 181,
+          "new_family_this_frame": false
+        },
+        "16994,18406": {
+          "baseline_count": 18,
+          "candidate_count": 17,
+          "new_family_this_frame": false
+        },
+        "7548,18406": {
+          "baseline_count": 16,
+          "candidate_count": 15,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 69,
+          "candidate_count": 71,
+          "new_family_this_frame": false
+        },
+        "1811,5118": {
+          "baseline_count": 117,
+          "candidate_count": 115,
+          "new_family_this_frame": false
+        },
+        "64,256": {
+          "baseline_count": 28,
+          "candidate_count": 32,
+          "new_family_this_frame": false
+        },
+        "11623,17026": {
+          "baseline_count": 71,
+          "candidate_count": 69,
+          "new_family_this_frame": false
+        },
+        "16160,17648": {
+          "baseline_count": 10,
+          "candidate_count": 0,
+          "new_family_this_frame": false
+        },
+        "11010,11010": {
+          "baseline_count": 23,
+          "candidate_count": 27,
+          "new_family_this_frame": false
+        },
+        "1811,1811": {
+          "baseline_count": 2,
+          "candidate_count": 3,
+          "new_family_this_frame": false
+        },
+        "5118,17648": {
+          "baseline_count": 111,
+          "candidate_count": 109,
+          "new_family_this_frame": false
+        },
+        "5118,11623": {
+          "baseline_count": 257,
+          "candidate_count": 259,
+          "new_family_this_frame": false
+        },
+        "10300,20619": {
+          "baseline_count": 227,
+          "candidate_count": 228,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 187,
+          "candidate_count": 181,
+          "new_family_this_frame": false
+        },
+        "15043,18406": {
+          "baseline_count": 18,
+          "candidate_count": 17,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 97,
+          "candidate_count": 103,
+          "new_family_this_frame": false
+        },
+        "11798,18406": {
+          "baseline_count": 48,
+          "candidate_count": 46,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 25,
+          "candidate_count": 26,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 50,
+          "candidate_count": 46,
+          "new_family_this_frame": false
+        },
+        "21145,24359": {
+          "baseline_count": 139,
+          "candidate_count": 140,
+          "new_family_this_frame": false
+        },
+        "7308,17648": {
+          "baseline_count": 13,
+          "candidate_count": 24,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 28.5,
+      "material_normal_reversal_changes": {
+        "2502": {
+          "baseline_count": 21,
+          "candidate_count": 25,
+          "added_triangles": [
+            5094,
+            5098,
+            5110,
+            5149,
+            5401
+          ],
+          "removed_triangles": [
+            5292
+          ]
+        },
+        "5118": {
+          "baseline_count": 81,
+          "candidate_count": 81,
+          "added_triangles": [
+            10043
+          ],
+          "removed_triangles": [
+            13408
+          ]
+        }
+      },
+      "crossing_family_count_changes": {
+        "5118,16372": {
+          "baseline_count": 6,
+          "candidate_count": 10,
+          "new_family_this_frame": false
+        },
+        "96,256": {
+          "baseline_count": 46,
+          "candidate_count": 49,
+          "new_family_this_frame": false
+        },
+        "5118,7704": {
+          "baseline_count": 67,
+          "candidate_count": 65,
+          "new_family_this_frame": false
+        },
+        "5118,7339": {
+          "baseline_count": 61,
+          "candidate_count": 60,
+          "new_family_this_frame": false
+        },
+        "20619,20745": {
+          "baseline_count": 34,
+          "candidate_count": 31,
+          "new_family_this_frame": false
+        },
+        "5118,7464": {
+          "baseline_count": 64,
+          "candidate_count": 58,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 202,
+          "candidate_count": 231,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 255,
+          "candidate_count": 258,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 21,
+          "candidate_count": 13,
+          "new_family_this_frame": false
+        },
+        "2502,2502": {
+          "baseline_count": 42,
+          "candidate_count": 50,
+          "new_family_this_frame": false
+        },
+        "11165,11165": {
+          "baseline_count": 21,
+          "candidate_count": 23,
+          "new_family_this_frame": false
+        },
+        "11165,11623": {
+          "baseline_count": 0,
+          "candidate_count": 10,
+          "new_family_this_frame": true
+        },
+        "16994,18406": {
+          "baseline_count": 19,
+          "candidate_count": 18,
+          "new_family_this_frame": false
+        },
+        "5118,17026": {
+          "baseline_count": 79,
+          "candidate_count": 81,
+          "new_family_this_frame": false
+        },
+        "7548,18406": {
+          "baseline_count": 13,
+          "candidate_count": 4,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 73,
+          "candidate_count": 75,
+          "new_family_this_frame": false
+        },
+        "15023,18406": {
+          "baseline_count": 4,
+          "candidate_count": 8,
+          "new_family_this_frame": false
+        },
+        "64,256": {
+          "baseline_count": 30,
+          "candidate_count": 32,
+          "new_family_this_frame": false
+        },
+        "11623,11623": {
+          "baseline_count": 42,
+          "candidate_count": 43,
+          "new_family_this_frame": false
+        },
+        "11623,18662": {
+          "baseline_count": 28,
+          "candidate_count": 26,
+          "new_family_this_frame": false
+        },
+        "5118,11468": {
+          "baseline_count": 237,
+          "candidate_count": 238,
+          "new_family_this_frame": false
+        },
+        "16160,17648": {
+          "baseline_count": 18,
+          "candidate_count": 21,
+          "new_family_this_frame": false
+        },
+        "13428,16372": {
+          "baseline_count": 8,
+          "candidate_count": 10,
+          "new_family_this_frame": false
+        },
+        "1811,1811": {
+          "baseline_count": 2,
+          "candidate_count": 3,
+          "new_family_this_frame": false
+        },
+        "5118,17648": {
+          "baseline_count": 107,
+          "candidate_count": 108,
+          "new_family_this_frame": false
+        },
+        "11165,16372": {
+          "baseline_count": 61,
+          "candidate_count": 56,
+          "new_family_this_frame": false
+        },
+        "13508,18406": {
+          "baseline_count": 16,
+          "candidate_count": 14,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 181,
+          "candidate_count": 180,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 98,
+          "candidate_count": 95,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 33,
+          "candidate_count": 35,
+          "new_family_this_frame": false
+        },
+        "19992,20968": {
+          "baseline_count": 34,
+          "candidate_count": 33,
+          "new_family_this_frame": false
+        },
+        "11165,16099": {
+          "baseline_count": 12,
+          "candidate_count": 13,
+          "new_family_this_frame": false
+        },
+        "11623,14962": {
+          "baseline_count": 31,
+          "candidate_count": 32,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 55,
+          "candidate_count": 53,
+          "new_family_this_frame": false
+        },
+        "13624,18662": {
+          "baseline_count": 10,
+          "candidate_count": 8,
+          "new_family_this_frame": false
+        },
+        "21145,24359": {
+          "baseline_count": 139,
+          "candidate_count": 140,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 29.0,
+      "material_normal_reversal_changes": {
+        "2502": {
+          "baseline_count": 16,
+          "candidate_count": 21,
+          "added_triangles": [
+            5042,
+            5108,
+            5110,
+            5116,
+            5118
+          ],
+          "removed_triangles": []
+        },
+        "5118": {
+          "baseline_count": 79,
+          "candidate_count": 79,
+          "added_triangles": [
+            13813
+          ],
+          "removed_triangles": [
+            12304
+          ]
+        },
+        "19727": {
+          "baseline_count": 0,
+          "candidate_count": 1,
+          "added_triangles": [
+            36043
+          ],
+          "removed_triangles": []
+        }
+      },
+      "crossing_family_count_changes": {
+        "5118,7339": {
+          "baseline_count": 52,
+          "candidate_count": 56,
+          "new_family_this_frame": false
+        },
+        "20619,20745": {
+          "baseline_count": 31,
+          "candidate_count": 30,
+          "new_family_this_frame": false
+        },
+        "7308,11010": {
+          "baseline_count": 42,
+          "candidate_count": 33,
+          "new_family_this_frame": false
+        },
+        "20619,20968": {
+          "baseline_count": 106,
+          "candidate_count": 105,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 237,
+          "candidate_count": 260,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 255,
+          "candidate_count": 246,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 26,
+          "candidate_count": 24,
+          "new_family_this_frame": false
+        },
+        "256,5118": {
+          "baseline_count": 35,
+          "candidate_count": 37,
+          "new_family_this_frame": false
+        },
+        "2502,2502": {
+          "baseline_count": 27,
+          "candidate_count": 40,
+          "new_family_this_frame": false
+        },
+        "11165,11165": {
+          "baseline_count": 26,
+          "candidate_count": 28,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 96,
+          "candidate_count": 94,
+          "new_family_this_frame": false
+        },
+        "11165,11623": {
+          "baseline_count": 14,
+          "candidate_count": 16,
+          "new_family_this_frame": false
+        },
+        "16994,18406": {
+          "baseline_count": 16,
+          "candidate_count": 22,
+          "new_family_this_frame": false
+        },
+        "11340,17648": {
+          "baseline_count": 48,
+          "candidate_count": 44,
+          "new_family_this_frame": false
+        },
+        "19727,19727": {
+          "baseline_count": 0,
+          "candidate_count": 1,
+          "new_family_this_frame": true
+        },
+        "256,4942": {
+          "baseline_count": 73,
+          "candidate_count": 75,
+          "new_family_this_frame": false
+        },
+        "15023,18406": {
+          "baseline_count": 8,
+          "candidate_count": 10,
+          "new_family_this_frame": false
+        },
+        "7464,11165": {
+          "baseline_count": 39,
+          "candidate_count": 41,
+          "new_family_this_frame": false
+        },
+        "64,256": {
+          "baseline_count": 34,
+          "candidate_count": 35,
+          "new_family_this_frame": false
+        },
+        "5118,13624": {
+          "baseline_count": 91,
+          "candidate_count": 94,
+          "new_family_this_frame": false
+        },
+        "11623,11623": {
+          "baseline_count": 44,
+          "candidate_count": 42,
+          "new_family_this_frame": false
+        },
+        "5118,11010": {
+          "baseline_count": 251,
+          "candidate_count": 253,
+          "new_family_this_frame": false
+        },
+        "16160,17648": {
+          "baseline_count": 21,
+          "candidate_count": 18,
+          "new_family_this_frame": false
+        },
+        "13428,16372": {
+          "baseline_count": 23,
+          "candidate_count": 33,
+          "new_family_this_frame": false
+        },
+        "5118,17648": {
+          "baseline_count": 103,
+          "candidate_count": 105,
+          "new_family_this_frame": false
+        },
+        "7308,13314": {
+          "baseline_count": 74,
+          "candidate_count": 73,
+          "new_family_this_frame": false
+        },
+        "13508,18406": {
+          "baseline_count": 12,
+          "candidate_count": 14,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 183,
+          "candidate_count": 179,
+          "new_family_this_frame": false
+        },
+        "5118,11798": {
+          "baseline_count": 169,
+          "candidate_count": 175,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 98,
+          "candidate_count": 100,
+          "new_family_this_frame": false
+        },
+        "5118,13428": {
+          "baseline_count": 37,
+          "candidate_count": 38,
+          "new_family_this_frame": false
+        },
+        "5118,15300": {
+          "baseline_count": 18,
+          "candidate_count": 16,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 52,
+          "candidate_count": 54,
+          "new_family_this_frame": false
+        },
+        "21145,24359": {
+          "baseline_count": 139,
+          "candidate_count": 140,
+          "new_family_this_frame": false
+        },
+        "15129,18406": {
+          "baseline_count": 60,
+          "candidate_count": 61,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 29.5,
+      "material_normal_reversal_changes": {
+        "2502": {
+          "baseline_count": 8,
+          "candidate_count": 13,
+          "added_triangles": [
+            5109,
+            5128,
+            5152,
+            5155,
+            5835
+          ],
+          "removed_triangles": []
+        },
+        "5118": {
+          "baseline_count": 78,
+          "candidate_count": 79,
+          "added_triangles": [
+            12307,
+            13682
+          ],
+          "removed_triangles": [
+            13501
+          ]
+        },
+        "11165": {
+          "baseline_count": 3,
+          "candidate_count": 4,
+          "added_triangles": [
+            21376
+          ],
+          "removed_triangles": []
+        }
+      },
+      "crossing_family_count_changes": {
+        "256,7788": {
+          "baseline_count": 42,
+          "candidate_count": 38,
+          "new_family_this_frame": false
+        },
+        "13428,13428": {
+          "baseline_count": 7,
+          "candidate_count": 8,
+          "new_family_this_frame": false
+        },
+        "96,256": {
+          "baseline_count": 50,
+          "candidate_count": 48,
+          "new_family_this_frame": false
+        },
+        "5118,7339": {
+          "baseline_count": 51,
+          "candidate_count": 52,
+          "new_family_this_frame": false
+        },
+        "20619,20968": {
+          "baseline_count": 106,
+          "candidate_count": 105,
+          "new_family_this_frame": false
+        },
+        "5118,11165": {
+          "baseline_count": 241,
+          "candidate_count": 242,
+          "new_family_this_frame": false
+        },
+        "5118,5118": {
+          "baseline_count": 253,
+          "candidate_count": 254,
+          "new_family_this_frame": false
+        },
+        "16340,17648": {
+          "baseline_count": 25,
+          "candidate_count": 28,
+          "new_family_this_frame": false
+        },
+        "2502,2502": {
+          "baseline_count": 18,
+          "candidate_count": 26,
+          "new_family_this_frame": false
+        },
+        "2502,5118": {
+          "baseline_count": 96,
+          "candidate_count": 94,
+          "new_family_this_frame": false
+        },
+        "5118,7336": {
+          "baseline_count": 23,
+          "candidate_count": 17,
+          "new_family_this_frame": false
+        },
+        "11165,11623": {
+          "baseline_count": 16,
+          "candidate_count": 12,
+          "new_family_this_frame": false
+        },
+        "11340,17648": {
+          "baseline_count": 50,
+          "candidate_count": 46,
+          "new_family_this_frame": false
+        },
+        "256,4942": {
+          "baseline_count": 74,
+          "candidate_count": 80,
+          "new_family_this_frame": false
+        },
+        "64,256": {
+          "baseline_count": 37,
+          "candidate_count": 43,
+          "new_family_this_frame": false
+        },
+        "5118,13624": {
+          "baseline_count": 86,
+          "candidate_count": 87,
+          "new_family_this_frame": false
+        },
+        "16160,17648": {
+          "baseline_count": 23,
+          "candidate_count": 21,
+          "new_family_this_frame": false
+        },
+        "1811,1811": {
+          "baseline_count": 2,
+          "candidate_count": 1,
+          "new_family_this_frame": false
+        },
+        "5118,11623": {
+          "baseline_count": 265,
+          "candidate_count": 268,
+          "new_family_this_frame": false
+        },
+        "5118,13546": {
+          "baseline_count": 34,
+          "candidate_count": 36,
+          "new_family_this_frame": false
+        },
+        "5118,11340": {
+          "baseline_count": 181,
+          "candidate_count": 183,
+          "new_family_this_frame": false
+        },
+        "1381,17648": {
+          "baseline_count": 9,
+          "candidate_count": 11,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 101,
+          "candidate_count": 106,
+          "new_family_this_frame": false
+        },
+        "15043,16994": {
+          "baseline_count": 19,
+          "candidate_count": 20,
+          "new_family_this_frame": false
+        },
+        "11165,16099": {
+          "baseline_count": 16,
+          "candidate_count": 18,
+          "new_family_this_frame": false
+        },
+        "11623,14962": {
+          "baseline_count": 32,
+          "candidate_count": 30,
+          "new_family_this_frame": false
+        },
+        "5118,7308": {
+          "baseline_count": 42,
+          "candidate_count": 52,
+          "new_family_this_frame": false
+        },
+        "21145,24359": {
+          "baseline_count": 140,
+          "candidate_count": 139,
+          "new_family_this_frame": false
+        }
+      }
+    },
+    {
+      "frame": 30.0,
+      "material_normal_reversal_changes": {
+        "19727": {
+          "baseline_count": 0,
+          "candidate_count": 1,
+          "added_triangles": [
+            36043
+          ],
+          "removed_triangles": []
+        }
+      },
+      "crossing_family_count_changes": {
+        "21605,24057": {
+          "baseline_count": 74,
+          "candidate_count": 73,
+          "new_family_this_frame": false
+        },
+        "19992,20619": {
+          "baseline_count": 90,
+          "candidate_count": 97,
+          "new_family_this_frame": false
+        },
+        "19992,20968": {
+          "baseline_count": 34,
+          "candidate_count": 33,
+          "new_family_this_frame": false
+        },
+        "21145,22943": {
+          "baseline_count": 145,
+          "candidate_count": 146,
+          "new_family_this_frame": false
+        },
+        "21145,24359": {
+          "baseline_count": 140,
+          "candidate_count": 139,
+          "new_family_this_frame": false
+        }
+      }
+    }
+  ],
+  "cycle_new_component_pair_families": [],
+  "scope": "Finite triangle pair identities and exact intersection chords. Opposing tags are localized upper-hip garment layers, not evidence of whole leg volumes interpenetrating. Chords are never penetration depths. Material normal reversal changes remain local skin diagnostics."
+}

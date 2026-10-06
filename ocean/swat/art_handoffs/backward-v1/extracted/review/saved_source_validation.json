@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "method": "Fresh read-only Blender evaluation, no producer capture trusted for equality",
+  "source_sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+  "static_N_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+  "all_curve_keys_and_both_handles_and_interpolation_exact": true,
+  "curves": 700,
+  "keys": 168700,
+  "all_bone_rest_world_and_parents_exact": true,
+  "source_geometry_vs_sealed_N": "Every mesh position, polygon, UV, weight, material assignment, object transform, and 70-bone rest identity exact",
+  "candidate_and_N_signatures": {
+    "Fresh magazine": "01bdbb5123e24b928110b3f676084931b71fbb9211bff5955ea44c38a2ed2d51",
+    "Rebuilt spare magazine sleeve": "24ce6de860a00d3f53c8dfd119ca1a1d95f5ad5d7ddf4848f2eb350baab88ba5",
+    "Rebuilt SWAT full body": "635c6a21ed73da220c0820cd49caa357be2264cd6bfd6ccf8941e635a1b359fe",
+    "Removed magazine": "5d585422a39ce6e94d2dd4a533979b17729a593158555fd413a7e857203790ab",
+    "Rifle 7": "8456ff654481f34a7bf809c53086be7ab605f3610b407bb6d3af65bb42c72e78",
+    "70_bone_rest_hierarchy": "f114d63c8722847324d083549f0f872e7ff72e7ae6b2cc8ac581240bff4b2cc2"
+  },
+  "read_only_hashes_preserved": true
+}

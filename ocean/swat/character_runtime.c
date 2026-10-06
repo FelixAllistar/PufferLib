@@ -154,7 +154,7 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
     char directory[2048],path[4096],error[256]; const char* custom=getenv("SWAT_CHARACTER_ASSETS");
     if(custom && strlen(custom)>=sizeof(directory)) return NULL;
     if(custom && *custom) snprintf(directory,sizeof(directory),"%s",custom);
-    else { snprintf(directory,sizeof(directory),"%sassets/characters",GetApplicationDirectory()); if(!DirectoryExists(directory)) snprintf(directory,sizeof(directory),"build/swat/assets/characters"); }
+    else { snprintf(directory,sizeof(directory),"%sassets/characters",GetApplicationDirectory()); if(!DirectoryExists(directory)) snprintf(directory,sizeof(directory),"ocean/swat/assets/characters"); }
     snprintf(path,sizeof(path),"%s/ready.glb",directory); if(!FileExists(path)) { TraceLog(LOG_INFO,"SWAT: private character absent; procedural actors"); return NULL; }
     SwatCharacterRuntime* runtime=calloc(1,sizeof(*runtime)); if(!runtime) return NULL;
     char geometry[4096]; snprintf(geometry,sizeof(geometry),"%s/upper_gear_f",directory);

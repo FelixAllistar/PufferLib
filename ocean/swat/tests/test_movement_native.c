@@ -17,6 +17,28 @@ static void adapter(void) {
     puf_step(&env); assert(terminal==1 && env.log.n==2);
     puf_close(&env); dict_clear(&options);
 }
+static void parallel_resets(void) {
+    enum { COUNT=64, RESETS=64 };
+    void* courses[COUNT];
+    for(int i=0;i<COUNT;i++) {
+        courses[i]=swat_training_create(73+i,i%2,i%5); assert(courses[i]);
+    }
+    for(int reset=0;reset<RESETS;reset++) {
+#pragma omp parallel for num_threads(4)
+        for(int i=0;i<COUNT;i++) {
+            swat_training_reset(courses[i],73+COUNT*reset+i,i%2,(i+reset)%5);
+            float obs[SWAT_LOCOMOTION_OBS]; swat_training_observe(courses[i],obs);
+            for(int j=0;j<SWAT_LOCOMOTION_OBS;j++) assert(isfinite(obs[j]));
+        }
+        for(int i=0;i<COUNT;i++) {
+            b3WorldId world=swat_training_sim(courses[i])->world.id;
+            assert(b3World_IsValid(world));
+            for(int j=0;j<i;j++) assert(world.index1!=swat_training_sim(courses[j])->world.id.index1);
+        }
+    }
+    for(int i=0;i<COUNT;i++) swat_training_close(courses[i]);
+    puts("PASS 4096 movement resets across four workers: unique, valid physics worlds");
+}
 static void native_weights(const char* path) {
     enum { H=8,L=1,N=32*H+19*H+3*H*H };
     FILE* file=fopen(path,"wb"); assert(file);
@@ -57,7 +79,7 @@ static void native_weights(const char* path) {
     swat_native_movement_free(&policy); free_puffernet(reference); free(storage); free(sim); remove(path);
 }
 int main(int argc,char** argv) {
-    adapter(); native_weights(argc>1 ? argv[1] : "movement-native-test.bin");
+    adapter(); parallel_resets(); native_weights(argc>1 ? argv[1] : "movement-native-test.bin");
     puts("PASS native movement: Ocean adapter terminal/reset, exact PufferNet inference, per-actor recurrent isolation, four-tick cadence, episode reset and atomic checkpoint rejection");
     return 0;
 }

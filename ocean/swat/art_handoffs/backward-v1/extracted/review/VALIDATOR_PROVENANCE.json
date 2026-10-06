@@ -1,0 +1,39 @@
+{
+  "method": "Independent source/direct Blender capture and actual-byte validation. NumPy GLB parser/FK and normalized quaternion differential reused from prior independent RIGHT review; inspect scripts adapted only for backward identity, key counts, and added fresh metadata/surface replay. No producer evaluator imports.",
+  "reused_independent_reader": {
+    "file": "replay_unit.py",
+    "sha256": "6fd2cb6815224e0a83f0e3fb7c3225985b1091bc17fae5d3cccb54304fa82120",
+    "same_as_restored_right_reader": true
+  },
+  "scripts": {
+    "verify_garments.py": "b01f3a46b1638a4a7a08a6e5e51c132fbdf5d7cdde23c992c05ed791f2b4373e",
+    "inspect_binary.py": "a48f474c720b1e1bfd52a92af5dd57dcb446a7e9869a94b588aca1708c4a15a8",
+    "verify_metadata.py": "1208665d6040078d6a4655410ff98419b5679e1e2fdfaf88a918e1c0934444b7",
+    "compact_reference_captures.py": "3318d914f28083a18cbbf9bc4df8dbabaf9ef50e9e607887f53297d70e3b6c3d",
+    "inspect_curve_contract.py": "9160270d1ffbfc281e724c631273c28327bc8c99ba98715717d0821210b2c0b3",
+    "audit_source_identity.py": "db0220b345a36f435cd2c019e6e5343392566dd086aab73b9a8178b1fa54cc80",
+    "capture_source.py": "ed3fe07bb58bf90b0be0357f8d29de90663513dffd03c00faf7eecef63067d24",
+    "replay_compact.py": "2dbf54e6019731deaa6a2ac8c22e2b7dcfa29b07da5cc459f710254e60c7ef8b",
+    "verify_saved_source.py": "829e03cbed10766c3863981a73569fe72ba253d2a479f90a11533b1e22f3057d",
+    "verify_surfaces.py": "bd54d0db610065e3fcea685edc10bd974f001f96ad6fc08e00bfc8bc05211ab5",
+    "replay_unit.py": "6fd2cb6815224e0a83f0e3fb7c3225985b1091bc17fae5d3cccb54304fa82120",
+    "capture_reimport.py": "5ff9b39d202536f760e31be13eb17a0454ecfd42a388bba03d0cff4097c365de"
+  },
+  "reports": {
+    "source_identity.json": "997c1456925ceb9df810a22bd65c6d0a75f8c2da061897f9b887cfa339210a67",
+    "binary_unit_validation.json": "5bf4f97110b646684f138bdf39bc07074dcf100e4a46211f80ca3f466625a306",
+    "endpoint_report.json": "fc5ac4413816695e98fe8161d36a9a8ce006a977927c040f4a299e7267eef6a6",
+    "structure_validation.json": "d3ce468d5ce1608deab2f6172a2af19a30c107773b085f00829697d9c7270d9a",
+    "metadata_validation.json": "4c43bacdf069b8a7b211fa9a2a1ce88b147061925c4f79fa2030cd42adf9c2a0",
+    "reimport_capture.json": "2721f5347b5b9a811b18042416c66cbe7502aaa2747abfbb515439ae7951d1b7",
+    "source_capture.json": "3ef910d9979cef1652e5c5a453015cf1ce3d480118ae44046b3c277e322f4ebd",
+    "curve_contract_validation.json": "fd7d8afe9f4bc5d152b280010538d7d9c3e6fdc5993431d7d989ef61891b3f80",
+    "portable_replay_validation.json": "63a2714bed62990b9985c721f8d27ed347a6bf919092f0ecf866ee0e4da54cb7",
+    "FINAL_REVIEW.json": "cc1ff817046095291bc99bc6b1d1456e0bc2de356fc51ef0a4c0d9d4b8d4487d",
+    "whole_vertex_validation.json": "0e1d982c8073c5a4dda60b23cfc40c1538d052ba7e525a9b83b1935d73888a6c",
+    "saved_source_validation.json": "4b7f5928718fb4b362005985b2071d17bcbba2379ab54dbd041b58e921fbc918",
+    "garment_qualification.json": "106fb2f11730c36af5a73524649aeccbb6a34efc10d090c9d06728cc0bc0e0c0"
+  },
+  "source_inputs_modified": false,
+  "large_direct_surface_caches_omitted_from_delivery": true
+}

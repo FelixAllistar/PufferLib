@@ -1,0 +1,13 @@
+{
+  "status": "Reviewable source export; artistic/runtime approval pending",
+  "known_limitations": [
+    "Native cloth and sleeve/link folds",
+    "Source acquisition finger crowding",
+    "Brisk foregrip departure",
+    "Intentional off-shoulder working carry; central rear-pad support at Ready entry/return only",
+    "Contact QA is bounded sampling, not a continuous collision proof",
+    "Engine full-body adapter, achieved-pose fit, camera-eye fit, reload timing mapping and cosmetic prop persistence remain pending"
+  ],
+  "timing": "Original six-second study preserved; no runtime phase compression",
+  "stock_contract": "Localized central rear-pad support at N Ready entry/return. The rifle is intentionally brought off the shoulder for working carry; full-path axial ray gap is not continuous shoulder support."
+}

@@ -27,7 +27,7 @@ def main(paths):
         if not source.is_relative_to(root) or hashlib.sha256(source.read_bytes()).hexdigest()!=sha:
             raise SystemExit(f'{name}: fixture does not match the calibrated original handoff')
         inputs.append((source,name))
-    destination=Path(__file__).resolve().parents[3]/'build/swat/assets/characters'
+    destination=Path(__file__).resolve().parents[3]/'ocean/swat/assets/characters'
     destination.mkdir(parents=True,exist_ok=True)
     for source,name in inputs:
         shutil.copyfile(source,destination/(name+'.glb'));print('Installed',name)

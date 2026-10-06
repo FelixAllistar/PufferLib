@@ -1,0 +1,17 @@
+{
+  "export_performed": false,
+  "unit": "metres",
+  "rig": "SWAT_Mixamo_Rig",
+  "new_skin": "72bones, with two baked Gear_Elbow carriers",
+  "weights": "Preserve all influences up to7; do not truncate to4",
+  "geometry": "SWAT_Wearer,4new rigid gear objects, original rifle and magazine objects; review floor/cameras are not character assets",
+  "materials": "Original native materials preserved; named polymer/padding materials added",
+  "normals": "Preserve custom split normals; original retained normals are near-exact after encoding, max0.034677deg difference",
+  "actions": "Two static t0 references and one3second articulation study; no automatic gameplay registration",
+  "bridge": "Resolve skin slot then W_node @ IBM @ B; physical rifle and optical proxy bindings included",
+  "validation_pending": [
+    "Export/reimport full-vertex parity",
+    "Engine skinning/attachments/slot mapping",
+    "Camera/ADS and gameplay approval"
+  ]
+}

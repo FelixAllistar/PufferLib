@@ -1,0 +1,70 @@
+{
+  "source": "/workspace/scratch/eac4961518d4/attachments/3107ee81-c21a-4492-8d1e-823c29714b3f/walk right.fbx.bin",
+  "source_sha256": "80f0debe85112dc5ae73fdd60d035cc5db3c343509a0e9541166264137a4fd82",
+  "action": "Armature|mixamo.com|Layer0",
+  "source_fps": 60.0,
+  "source_frames": [
+    1.0,
+    61.0
+  ],
+  "duration_s": 1.0,
+  "hips_displacement_m": [
+    -1.9212615489959717,
+    -9.782612323760986e-06,
+    -4.76837158203125e-07
+  ],
+  "horizontal_distance_m": 1.921261549020877,
+  "nominal_pace_m_s": 1.921261549020877,
+  "forward_stride_dot_at_start": 0.7677339159506573,
+  "native_chest_forward_stride_dot": 0.42475741127964284,
+  "native_pelvis_forward_stride_dot": 0.7545764480632897,
+  "heading_note": "Chest and pelvis material forward use pose-times-inverse-rest transport of the native rest forward. The separately reported posed shoulder-line normal is biased by the asymmetric rifle stance.",
+  "endpoints": [
+    {
+      "frame": 1.0,
+      "hips": [
+        -0.005047969054430723,
+        -0.005065218545496464,
+        0.8773689866065979
+      ],
+      "shoulder_axis_forward_xy": [
+        -0.7677306532859802,
+        -0.640772819519043,
+        0.0
+      ],
+      "native_chest_material_forward_xy": [
+        -0.424752801656723,
+        -0.9053093791007996,
+        0.0
+      ],
+      "native_pelvis_material_forward_xy": [
+        -0.7545731067657471,
+        -0.6562159657478333,
+        0.0
+      ]
+    },
+    {
+      "frame": 61.0,
+      "hips": [
+        -1.9263094663619995,
+        -0.005075001157820225,
+        0.8773685097694397
+      ],
+      "shoulder_axis_forward_xy": [
+        -0.767614483833313,
+        -0.6409119367599487,
+        0.0
+      ],
+      "native_chest_material_forward_xy": [
+        -0.4243430197238922,
+        -0.9055016040802002,
+        0.0
+      ],
+      "native_pelvis_material_forward_xy": [
+        -0.7545732259750366,
+        -0.6562158465385437,
+        0.0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "animations": [
+    {
+      "name": "Neutral Carry / Anatomical Gear F",
+      "channels": 216,
+      "unique_target_paths": true,
+      "quaternion_norm_residual_max": 2.8940970731028415e-08,
+      "minimum_successive_quaternion_dot": null,
+      "carrier_channels": 6,
+      "interpolation": [
+        "STEP"
+      ]
+    },
+    {
+      "name": "Upper Gear F / Three-second Carry Articulation",
+      "channels": 216,
+      "unique_target_paths": true,
+      "quaternion_norm_residual_max": 3.862117825548239e-08,
+      "minimum_successive_quaternion_dot": 0.9999997866035484,
+      "carrier_channels": 6,
+      "interpolation": [
+        "LINEAR"
+      ]
+    }
+  ],
+  "no_ads_animation": true,
+  "scope": "Neutral static STEP and bounded three-second LINEAR proof only. No seamless-loop or gameplay acceptance."
+}

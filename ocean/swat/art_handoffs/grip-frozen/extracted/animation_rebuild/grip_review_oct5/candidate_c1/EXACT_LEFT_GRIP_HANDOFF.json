@@ -1,0 +1,6434 @@
+{
+  "schema": "native-static-left-grip-handoff-v2",
+  "source_F": {
+    "file": "/workspace/scratch/eac4961518d4/animation_rebuild/upper_body_gear_rebuild/stage_f/upper_gear_stage_f.editable.blend",
+    "sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+    "action": "Neutral Carry / Anatomical Gear F"
+  },
+  "source_C": {
+    "file": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c/support_grip_surface_c.editable.blend",
+    "sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+    "action": "Support Grip / Surface Constrained Candidate C"
+  },
+  "candidate_C1": {
+    "file": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+    "sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+    "action": "Support Grip / Index Base Release Candidate C1",
+    "frame": 0,
+    "rig": "SWAT_Mixamo_Rig",
+    "bones": 72
+  },
+  "action_library": {
+    "file": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.actions.blend",
+    "sha256": "89bb9ada5f14941b0dc0a12262ce9111a9bdee8f176193b70ce3d1d706421c0a",
+    "verified_action_names": [
+      "Support Grip / Index Base Release Candidate C1"
+    ]
+  },
+  "source_application": {
+    "from_frozen_F": "Copy the original F action; replace only the listed desired C1 local channel curves using exact scalar key values. All other F curves stay exact. This is source authoring data, not an engine export or ADS transition specification.",
+    "from_sealed_C": "Copy the C action; replace only the four listed Index1 quaternion channels with C1 values. Keep Index1 location/scale, Index2/3/4 local channels, all other fingers, hand, arm and gear exact.",
+    "desired_C1_local_channels_relative_to_F": {
+      "mixamorig:LeftArm": {
+        "parent": "mixamorig:LeftShoulder",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          2.980232238769531e-07,
+          1.1920928955078125e-07,
+          -2.384185791015625e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.5236074328422546,
+          0.3361562490463257,
+          -0.6513930559158325,
+          0.43419042229652405
+        ],
+        "scale": [
+          1.0000008344650269,
+          1.0000014305114746,
+          1.000000238418579
+        ]
+      },
+      "mixamorig:LeftForeArm": {
+        "parent": "mixamorig:LeftArm",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          2.384185791015625e-07,
+          7.450580596923828e-08,
+          -5.960464477539063e-08
+        ],
+        "rotation_quaternion_wxyz": [
+          0.5365114808082581,
+          0.25394394993782043,
+          -0.7959202527999878,
+          0.11907517910003662
+        ],
+        "scale": [
+          0.9999999403953552,
+          1.0000001192092896,
+          0.9999995827674866
+        ]
+      },
+      "mixamorig:LeftHand": {
+        "parent": "mixamorig:LeftForeArm",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -5.960464477539063e-08,
+          1.1920928955078125e-07,
+          2.384185791015625e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.943625271320343,
+          0.0541180819272995,
+          -0.056667231023311615,
+          -0.3216075301170349
+        ],
+        "scale": [
+          0.9999997615814209,
+          0.9999985694885254,
+          1.0000003576278687
+        ]
+      },
+      "mixamorig:LeftHandThumb1": {
+        "parent": "mixamorig:LeftHand",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -1.043081283569336e-07,
+          -3.5762786865234375e-07,
+          -1.7881393432617188e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9661445021629333,
+          0.12457004934549332,
+          -0.01360645517706871,
+          0.22552618384361267
+        ],
+        "scale": [
+          0.9999996423721313,
+          0.9999999403953552,
+          0.9999998211860657
+        ]
+      },
+      "mixamorig:LeftHandThumb2": {
+        "parent": "mixamorig:LeftHandThumb1",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -4.172325134277344e-07,
+          -2.384185791015625e-07,
+          3.2782554626464844e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9894753098487854,
+          -0.0784999281167984,
+          0.11143896728754044,
+          -0.048555776476860046
+        ],
+        "scale": [
+          0.9999998807907104,
+          0.9999997019767761,
+          0.9999984502792358
+        ]
+      },
+      "mixamorig:LeftHandThumb3": {
+        "parent": "mixamorig:LeftHandThumb2",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          2.9802322387695312e-08,
+          0.0,
+          -2.980232238769531e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9833108186721802,
+          -0.1100124716758728,
+          -0.08331857621669769,
+          0.11855421960353851
+        ],
+        "scale": [
+          0.9999995827674866,
+          1.0000001192092896,
+          1.0
+        ]
+      },
+      "mixamorig:LeftHandThumb4": {
+        "parent": "mixamorig:LeftHandThumb3",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          2.384185791015625e-07,
+          -3.5762786865234375e-07,
+          -1.1920928955078125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          1.0,
+          -5.960463766996327e-08,
+          -2.2351741790771484e-08,
+          2.607702853651972e-08
+        ],
+        "scale": [
+          1.0,
+          1.0000001192092896,
+          1.0
+        ]
+      },
+      "mixamorig:LeftHandIndex1": {
+        "parent": "mixamorig:LeftHand",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          1.7881393432617188e-07,
+          4.76837158203125e-07,
+          4.76837158203125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9322575330734253,
+          0.3415583074092865,
+          0.11279990524053574,
+          0.03885994479060173
+        ],
+        "scale": [
+          0.9999996423721313,
+          0.9999998211860657,
+          0.9999999403953552
+        ]
+      },
+      "mixamorig:LeftHandIndex2": {
+        "parent": "mixamorig:LeftHandIndex1",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -2.980232238769531e-07,
+          0.0,
+          2.9802322387695312e-08
+        ],
+        "rotation_quaternion_wxyz": [
+          0.928981363773346,
+          0.3700241446495056,
+          -0.0006393234361894429,
+          0.00868113525211811
+        ],
+        "scale": [
+          0.9999978542327881,
+          1.0000003576278687,
+          0.9999998807907104
+        ]
+      },
+      "mixamorig:LeftHandIndex3": {
+        "parent": "mixamorig:LeftHandIndex2",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -5.960464477539062e-07,
+          2.980232238769531e-07,
+          5.960464477539062e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9606928825378418,
+          0.2774510383605957,
+          -0.004122893791645765,
+          0.008552019484341145
+        ],
+        "scale": [
+          0.9999998807907104,
+          0.9999999403953552,
+          1.0000001192092896
+        ]
+      },
+      "mixamorig:LeftHandIndex4": {
+        "parent": "mixamorig:LeftHandIndex3",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -2.384185791015625e-07,
+          -1.4901161193847656e-08,
+          -4.76837158203125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          1.0,
+          8.791684535935929e-07,
+          8.121133419081161e-07,
+          8.754432201385498e-08
+        ],
+        "scale": [
+          0.9999998807907104,
+          1.0000001192092896,
+          1.0
+        ]
+      },
+      "mixamorig:LeftHandMiddle1": {
+        "parent": "mixamorig:LeftHand",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          1.7881393432617188e-07,
+          -2.980232238769531e-07,
+          -1.1920928955078125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.926479697227478,
+          0.3547976016998291,
+          0.09049269556999207,
+          0.08697788417339325
+        ],
+        "scale": [
+          0.9999998807907104,
+          0.9999995827674866,
+          1.0
+        ]
+      },
+      "mixamorig:LeftHandMiddle2": {
+        "parent": "mixamorig:LeftHandMiddle1",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          1.1920928955078125e-07,
+          -7.152557373046875e-07,
+          -1.4156103134155273e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.8565396666526794,
+          0.5160776972770691,
+          9.333687194157392e-05,
+          0.0018871295033022761
+        ],
+        "scale": [
+          0.9999999403953552,
+          0.9999982118606567,
+          0.9999995827674866
+        ]
+      },
+      "mixamorig:LeftHandMiddle3": {
+        "parent": "mixamorig:LeftHandMiddle2",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          2.384185791015625e-07,
+          1.1920928955078125e-07,
+          -1.1920928955078125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9380650520324707,
+          0.34639912843704224,
+          -0.0032825064845383167,
+          0.005557394586503506
+        ],
+        "scale": [
+          0.9999985098838806,
+          0.9999995827674866,
+          0.9999999403953552
+        ]
+      },
+      "mixamorig:LeftHandMiddle4": {
+        "parent": "mixamorig:LeftHandMiddle3",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          4.172325134277344e-07,
+          2.980232238769531e-07,
+          1.1920928955078125e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          1.0,
+          1.8626433728741176e-09,
+          -9.313223969797946e-09,
+          -2.0954755708402217e-09
+        ],
+        "scale": [
+          1.0,
+          0.9999999403953552,
+          1.0000001192092896
+        ]
+      },
+      "mixamorig:LeftHandRing1": {
+        "parent": "mixamorig:LeftHand",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -1.7881393432617188e-07,
+          -3.5762786865234375e-07,
+          -5.364418029785156e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9415784478187561,
+          0.3297975957393646,
+          0.03880275413393974,
+          0.056195810437202454
+        ],
+        "scale": [
+          0.9999992251396179,
+          0.9999998807907104,
+          1.0000001192092896
+        ]
+      },
+      "mixamorig:LeftHandRing2": {
+        "parent": "mixamorig:LeftHandRing1",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          1.7881393432617188e-07,
+          -2.384185791015625e-07,
+          -3.8743019104003906e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.8326197862625122,
+          0.5538444519042969,
+          0.0005338496994227171,
+          -0.0006027925992384553
+        ],
+        "scale": [
+          0.9999998211860657,
+          1.000000238418579,
+          0.9999997019767761
+        ]
+      },
+      "mixamorig:LeftHandRing3": {
+        "parent": "mixamorig:LeftHandRing2",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          0.0,
+          3.5762786865234375e-07,
+          3.5762786865234375e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9292237758636475,
+          0.3690739870071411,
+          -0.011854118667542934,
+          0.013679131865501404
+        ],
+        "scale": [
+          0.9999998211860657,
+          1.0,
+          1.000000238418579
+        ]
+      },
+      "mixamorig:LeftHandRing4": {
+        "parent": "mixamorig:LeftHandRing3",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -1.7881393432617188e-07,
+          2.086162567138672e-07,
+          -2.384185791015625e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          1.0,
+          -6.332993507385254e-08,
+          -3.166496753692627e-08,
+          -2.9336661100387573e-08
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "mixamorig:LeftHandPinky1": {
+        "parent": "mixamorig:LeftHand",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          5.960464477539063e-08,
+          1.1920928955078125e-07,
+          2.384185791015625e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.925613522529602,
+          0.3769116997718811,
+          -0.01744968071579933,
+          -0.029542598873376846
+        ],
+        "scale": [
+          0.9999999403953552,
+          0.9999998807907104,
+          1.000000238418579
+        ]
+      },
+      "mixamorig:LeftHandPinky2": {
+        "parent": "mixamorig:LeftHandPinky1",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          4.76837158203125e-07,
+          7.152557373046875e-07,
+          2.086162567138672e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9327450394630432,
+          0.3604954779148102,
+          -0.003977603744715452,
+          -0.0037257259245961905
+        ],
+        "scale": [
+          0.9999996423721313,
+          1.0000003576278687,
+          0.9999995231628418
+        ]
+      },
+      "mixamorig:LeftHandPinky3": {
+        "parent": "mixamorig:LeftHandPinky2",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          5.960464477539063e-08,
+          -3.5762786865234375e-07,
+          1.7881393432617188e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.9714787602424622,
+          0.23701469600200653,
+          0.0024336925707757473,
+          -0.0068607390858232975
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          0.9999997615814209
+        ]
+      },
+      "mixamorig:LeftHandPinky4": {
+        "parent": "mixamorig:LeftHandPinky3",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          4.76837158203125e-07,
+          -5.960464477539063e-08,
+          0.0
+        ],
+        "rotation_quaternion_wxyz": [
+          1.0,
+          7.4505734914964705e-09,
+          -5.5879372240497105e-09,
+          -7.450577932388569e-09
+        ],
+        "scale": [
+          1.000000238418579,
+          1.0000001192092896,
+          1.0
+        ]
+      },
+      "Gear_Elbow_L": {
+        "parent": "mixamorig:LeftArm",
+        "rotation_mode": "QUATERNION",
+        "location": [
+          -1.1920928955078125e-07,
+          -5.960464477539063e-08,
+          2.384185791015625e-07
+        ],
+        "rotation_quaternion_wxyz": [
+          0.3187331259250641,
+          0.3476177752017975,
+          -0.5916652679443359,
+          0.6538373827934265
+        ],
+        "scale": [
+          0.9999998211860657,
+          0.9999998807907104,
+          0.9999998807907104
+        ]
+      }
+    },
+    "exact_C1_scalar_curves_relative_to_F": [
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.980232238769531e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.980232238769531e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.980232238769531e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.5236074328422546,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.5236074328422546
+            ],
+            "handle_right": [
+              1.0,
+              0.5236074328422546
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3361562490463257,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3361562490463257
+            ],
+            "handle_right": [
+              1.0,
+              0.3361562490463257
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.6513930559158325,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.6513930559158325
+            ],
+            "handle_right": [
+              1.0,
+              -0.6513930559158325
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.43419042229652405,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.43419042229652405
+            ],
+            "handle_right": [
+              1.0,
+              0.43419042229652405
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000008344650269,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000008344650269
+            ],
+            "handle_right": [
+              1.0,
+              1.0000008344650269
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000014305114746,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000014305114746
+            ],
+            "handle_right": [
+              1.0,
+              1.0000014305114746
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.000000238418579,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.000000238418579
+            ],
+            "handle_right": [
+              1.0,
+              1.000000238418579
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 7.450580596923828e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              7.450580596923828e-08
+            ],
+            "handle_right": [
+              1.0,
+              7.450580596923828e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.960464477539063e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_right": [
+              1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.5365114808082581,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.5365114808082581
+            ],
+            "handle_right": [
+              1.0,
+              0.5365114808082581
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.25394394993782043,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.25394394993782043
+            ],
+            "handle_right": [
+              1.0,
+              0.25394394993782043
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.7959202527999878,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.7959202527999878
+            ],
+            "handle_right": [
+              1.0,
+              -0.7959202527999878
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.11907517910003662,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.11907517910003662
+            ],
+            "handle_right": [
+              1.0,
+              0.11907517910003662
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999995827674866,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999995827674866
+            ],
+            "handle_right": [
+              1.0,
+              0.9999995827674866
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.960464477539063e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_right": [
+              1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.943625271320343,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.943625271320343
+            ],
+            "handle_right": [
+              1.0,
+              0.943625271320343
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0541180819272995,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0541180819272995
+            ],
+            "handle_right": [
+              1.0,
+              0.0541180819272995
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.056667231023311615,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.056667231023311615
+            ],
+            "handle_right": [
+              1.0,
+              -0.056667231023311615
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.3216075301170349,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.3216075301170349
+            ],
+            "handle_right": [
+              1.0,
+              -0.3216075301170349
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999997615814209,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999997615814209
+            ],
+            "handle_right": [
+              1.0,
+              0.9999997615814209
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999985694885254,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999985694885254
+            ],
+            "handle_right": [
+              1.0,
+              0.9999985694885254
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000003576278687,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000003576278687
+            ],
+            "handle_right": [
+              1.0,
+              1.0000003576278687
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.043081283569336e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.043081283569336e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.043081283569336e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -3.5762786865234375e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_right": [
+              1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.7881393432617188e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.7881393432617188e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.7881393432617188e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9661445021629333,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9661445021629333
+            ],
+            "handle_right": [
+              1.0,
+              0.9661445021629333
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.12457004934549332,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.12457004934549332
+            ],
+            "handle_right": [
+              1.0,
+              0.12457004934549332
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.01360645517706871,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.01360645517706871
+            ],
+            "handle_right": [
+              1.0,
+              -0.01360645517706871
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.22552618384361267,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.22552618384361267
+            ],
+            "handle_right": [
+              1.0,
+              0.22552618384361267
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999996423721313,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999996423721313
+            ],
+            "handle_right": [
+              1.0,
+              0.9999996423721313
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998211860657,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998211860657
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998211860657
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -4.172325134277344e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -4.172325134277344e-07
+            ],
+            "handle_right": [
+              1.0,
+              -4.172325134277344e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 3.2782554626464844e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              3.2782554626464844e-07
+            ],
+            "handle_right": [
+              1.0,
+              3.2782554626464844e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9894753098487854,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9894753098487854
+            ],
+            "handle_right": [
+              1.0,
+              0.9894753098487854
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.0784999281167984,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.0784999281167984
+            ],
+            "handle_right": [
+              1.0,
+              -0.0784999281167984
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.11143896728754044,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.11143896728754044
+            ],
+            "handle_right": [
+              1.0,
+              0.11143896728754044
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.048555776476860046,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.048555776476860046
+            ],
+            "handle_right": [
+              1.0,
+              -0.048555776476860046
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999997019767761,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999997019767761
+            ],
+            "handle_right": [
+              1.0,
+              0.9999997019767761
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999984502792358,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999984502792358
+            ],
+            "handle_right": [
+              1.0,
+              0.9999984502792358
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.9802322387695312e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.9802322387695312e-08
+            ],
+            "handle_right": [
+              1.0,
+              2.9802322387695312e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0
+            ],
+            "handle_right": [
+              1.0,
+              0.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.980232238769531e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.980232238769531e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.980232238769531e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9833108186721802,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9833108186721802
+            ],
+            "handle_right": [
+              1.0,
+              0.9833108186721802
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.1100124716758728,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.1100124716758728
+            ],
+            "handle_right": [
+              1.0,
+              -0.1100124716758728
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.08331857621669769,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.08331857621669769
+            ],
+            "handle_right": [
+              1.0,
+              -0.08331857621669769
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.11855421960353851,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.11855421960353851
+            ],
+            "handle_right": [
+              1.0,
+              0.11855421960353851
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999995827674866,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999995827674866
+            ],
+            "handle_right": [
+              1.0,
+              0.9999995827674866
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -3.5762786865234375e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_right": [
+              1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.960463766996327e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.960463766996327e-08
+            ],
+            "handle_right": [
+              1.0,
+              -5.960463766996327e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.2351741790771484e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.2351741790771484e-08
+            ],
+            "handle_right": [
+              1.0,
+              -2.2351741790771484e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.607702853651972e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.607702853651972e-08
+            ],
+            "handle_right": [
+              1.0,
+              2.607702853651972e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.7881393432617188e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 4.76837158203125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              4.76837158203125e-07
+            ],
+            "handle_right": [
+              1.0,
+              4.76837158203125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 4.76837158203125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              4.76837158203125e-07
+            ],
+            "handle_right": [
+              1.0,
+              4.76837158203125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9322575330734253,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9322575330734253
+            ],
+            "handle_right": [
+              1.0,
+              0.9322575330734253
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3415583074092865,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3415583074092865
+            ],
+            "handle_right": [
+              1.0,
+              0.3415583074092865
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.11279990524053574,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.11279990524053574
+            ],
+            "handle_right": [
+              1.0,
+              0.11279990524053574
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.03885994479060173,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.03885994479060173
+            ],
+            "handle_right": [
+              1.0,
+              0.03885994479060173
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999996423721313,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999996423721313
+            ],
+            "handle_right": [
+              1.0,
+              0.9999996423721313
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998211860657,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998211860657
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998211860657
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.980232238769531e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.980232238769531e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.980232238769531e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0
+            ],
+            "handle_right": [
+              1.0,
+              0.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.9802322387695312e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.9802322387695312e-08
+            ],
+            "handle_right": [
+              1.0,
+              2.9802322387695312e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.928981363773346,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.928981363773346
+            ],
+            "handle_right": [
+              1.0,
+              0.928981363773346
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3700241446495056,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3700241446495056
+            ],
+            "handle_right": [
+              1.0,
+              0.3700241446495056
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.0006393234361894429,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.0006393234361894429
+            ],
+            "handle_right": [
+              1.0,
+              -0.0006393234361894429
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.00868113525211811,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.00868113525211811
+            ],
+            "handle_right": [
+              1.0,
+              0.00868113525211811
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999978542327881,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999978542327881
+            ],
+            "handle_right": [
+              1.0,
+              0.9999978542327881
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000003576278687,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000003576278687
+            ],
+            "handle_right": [
+              1.0,
+              1.0000003576278687
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.960464477539062e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.960464477539062e-07
+            ],
+            "handle_right": [
+              1.0,
+              -5.960464477539062e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.980232238769531e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.980232238769531e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.980232238769531e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 5.960464477539062e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              5.960464477539062e-07
+            ],
+            "handle_right": [
+              1.0,
+              5.960464477539062e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9606928825378418,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9606928825378418
+            ],
+            "handle_right": [
+              1.0,
+              0.9606928825378418
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.2774510383605957,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.2774510383605957
+            ],
+            "handle_right": [
+              1.0,
+              0.2774510383605957
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.004122893791645765,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.004122893791645765
+            ],
+            "handle_right": [
+              1.0,
+              -0.004122893791645765
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.008552019484341145,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.008552019484341145
+            ],
+            "handle_right": [
+              1.0,
+              0.008552019484341145
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.4901161193847656e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.4901161193847656e-08
+            ],
+            "handle_right": [
+              1.0,
+              -1.4901161193847656e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -4.76837158203125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -4.76837158203125e-07
+            ],
+            "handle_right": [
+              1.0,
+              -4.76837158203125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 8.791684535935929e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              8.791684535935929e-07
+            ],
+            "handle_right": [
+              1.0,
+              8.791684535935929e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 8.121133419081161e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              8.121133419081161e-07
+            ],
+            "handle_right": [
+              1.0,
+              8.121133419081161e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 8.754432201385498e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              8.754432201385498e-08
+            ],
+            "handle_right": [
+              1.0,
+              8.754432201385498e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.7881393432617188e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.980232238769531e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.980232238769531e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.980232238769531e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.926479697227478,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.926479697227478
+            ],
+            "handle_right": [
+              1.0,
+              0.926479697227478
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3547976016998291,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3547976016998291
+            ],
+            "handle_right": [
+              1.0,
+              0.3547976016998291
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.09049269556999207,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.09049269556999207
+            ],
+            "handle_right": [
+              1.0,
+              0.09049269556999207
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.08697788417339325,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.08697788417339325
+            ],
+            "handle_right": [
+              1.0,
+              0.08697788417339325
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999995827674866,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999995827674866
+            ],
+            "handle_right": [
+              1.0,
+              0.9999995827674866
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -7.152557373046875e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -7.152557373046875e-07
+            ],
+            "handle_right": [
+              1.0,
+              -7.152557373046875e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.4156103134155273e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.4156103134155273e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.4156103134155273e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.8565396666526794,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.8565396666526794
+            ],
+            "handle_right": [
+              1.0,
+              0.8565396666526794
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.5160776972770691,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.5160776972770691
+            ],
+            "handle_right": [
+              1.0,
+              0.5160776972770691
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 9.333687194157392e-05,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              9.333687194157392e-05
+            ],
+            "handle_right": [
+              1.0,
+              9.333687194157392e-05
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0018871295033022761,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0018871295033022761
+            ],
+            "handle_right": [
+              1.0,
+              0.0018871295033022761
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999982118606567,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999982118606567
+            ],
+            "handle_right": [
+              1.0,
+              0.9999982118606567
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999995827674866,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999995827674866
+            ],
+            "handle_right": [
+              1.0,
+              0.9999995827674866
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9380650520324707,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9380650520324707
+            ],
+            "handle_right": [
+              1.0,
+              0.9380650520324707
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.34639912843704224,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.34639912843704224
+            ],
+            "handle_right": [
+              1.0,
+              0.34639912843704224
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.0032825064845383167,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.0032825064845383167
+            ],
+            "handle_right": [
+              1.0,
+              -0.0032825064845383167
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.005557394586503506,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.005557394586503506
+            ],
+            "handle_right": [
+              1.0,
+              0.005557394586503506
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999985098838806,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999985098838806
+            ],
+            "handle_right": [
+              1.0,
+              0.9999985098838806
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999995827674866,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999995827674866
+            ],
+            "handle_right": [
+              1.0,
+              0.9999995827674866
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 4.172325134277344e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              4.172325134277344e-07
+            ],
+            "handle_right": [
+              1.0,
+              4.172325134277344e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.980232238769531e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.980232238769531e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.980232238769531e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.8626433728741176e-09,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.8626433728741176e-09
+            ],
+            "handle_right": [
+              1.0,
+              1.8626433728741176e-09
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -9.313223969797946e-09,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -9.313223969797946e-09
+            ],
+            "handle_right": [
+              1.0,
+              -9.313223969797946e-09
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.0954755708402217e-09,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.0954755708402217e-09
+            ],
+            "handle_right": [
+              1.0,
+              -2.0954755708402217e-09
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.7881393432617188e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.7881393432617188e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.7881393432617188e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -3.5762786865234375e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_right": [
+              1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.364418029785156e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.364418029785156e-07
+            ],
+            "handle_right": [
+              1.0,
+              -5.364418029785156e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9415784478187561,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9415784478187561
+            ],
+            "handle_right": [
+              1.0,
+              0.9415784478187561
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3297975957393646,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3297975957393646
+            ],
+            "handle_right": [
+              1.0,
+              0.3297975957393646
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.03880275413393974,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.03880275413393974
+            ],
+            "handle_right": [
+              1.0,
+              0.03880275413393974
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.056195810437202454,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.056195810437202454
+            ],
+            "handle_right": [
+              1.0,
+              0.056195810437202454
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999992251396179,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999992251396179
+            ],
+            "handle_right": [
+              1.0,
+              0.9999992251396179
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.7881393432617188e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -3.8743019104003906e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -3.8743019104003906e-07
+            ],
+            "handle_right": [
+              1.0,
+              -3.8743019104003906e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.8326197862625122,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.8326197862625122
+            ],
+            "handle_right": [
+              1.0,
+              0.8326197862625122
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.5538444519042969,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.5538444519042969
+            ],
+            "handle_right": [
+              1.0,
+              0.5538444519042969
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0005338496994227171,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0005338496994227171
+            ],
+            "handle_right": [
+              1.0,
+              0.0005338496994227171
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.0006027925992384553,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.0006027925992384553
+            ],
+            "handle_right": [
+              1.0,
+              -0.0006027925992384553
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998211860657,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998211860657
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998211860657
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.000000238418579,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.000000238418579
+            ],
+            "handle_right": [
+              1.0,
+              1.000000238418579
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999997019767761,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999997019767761
+            ],
+            "handle_right": [
+              1.0,
+              0.9999997019767761
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0
+            ],
+            "handle_right": [
+              1.0,
+              0.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 3.5762786865234375e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              3.5762786865234375e-07
+            ],
+            "handle_right": [
+              1.0,
+              3.5762786865234375e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 3.5762786865234375e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              3.5762786865234375e-07
+            ],
+            "handle_right": [
+              1.0,
+              3.5762786865234375e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9292237758636475,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9292237758636475
+            ],
+            "handle_right": [
+              1.0,
+              0.9292237758636475
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3690739870071411,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3690739870071411
+            ],
+            "handle_right": [
+              1.0,
+              0.3690739870071411
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.011854118667542934,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.011854118667542934
+            ],
+            "handle_right": [
+              1.0,
+              -0.011854118667542934
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.013679131865501404,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.013679131865501404
+            ],
+            "handle_right": [
+              1.0,
+              0.013679131865501404
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998211860657,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998211860657
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998211860657
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.000000238418579,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.000000238418579
+            ],
+            "handle_right": [
+              1.0,
+              1.000000238418579
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.7881393432617188e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.7881393432617188e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.7881393432617188e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.086162567138672e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.086162567138672e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.086162567138672e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              -2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -6.332993507385254e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -6.332993507385254e-08
+            ],
+            "handle_right": [
+              1.0,
+              -6.332993507385254e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -3.166496753692627e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -3.166496753692627e-08
+            ],
+            "handle_right": [
+              1.0,
+              -3.166496753692627e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -2.9336661100387573e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -2.9336661100387573e-08
+            ],
+            "handle_right": [
+              1.0,
+              -2.9336661100387573e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 5.960464477539063e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              5.960464477539063e-08
+            ],
+            "handle_right": [
+              1.0,
+              5.960464477539063e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.925613522529602,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.925613522529602
+            ],
+            "handle_right": [
+              1.0,
+              0.925613522529602
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3769116997718811,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3769116997718811
+            ],
+            "handle_right": [
+              1.0,
+              0.3769116997718811
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.01744968071579933,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.01744968071579933
+            ],
+            "handle_right": [
+              1.0,
+              -0.01744968071579933
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.029542598873376846,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.029542598873376846
+            ],
+            "handle_right": [
+              1.0,
+              -0.029542598873376846
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999999403953552,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999999403953552
+            ],
+            "handle_right": [
+              1.0,
+              0.9999999403953552
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.000000238418579,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.000000238418579
+            ],
+            "handle_right": [
+              1.0,
+              1.000000238418579
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 4.76837158203125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              4.76837158203125e-07
+            ],
+            "handle_right": [
+              1.0,
+              4.76837158203125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 7.152557373046875e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              7.152557373046875e-07
+            ],
+            "handle_right": [
+              1.0,
+              7.152557373046875e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.086162567138672e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.086162567138672e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.086162567138672e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9327450394630432,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9327450394630432
+            ],
+            "handle_right": [
+              1.0,
+              0.9327450394630432
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3604954779148102,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3604954779148102
+            ],
+            "handle_right": [
+              1.0,
+              0.3604954779148102
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.003977603744715452,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.003977603744715452
+            ],
+            "handle_right": [
+              1.0,
+              -0.003977603744715452
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.0037257259245961905,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.0037257259245961905
+            ],
+            "handle_right": [
+              1.0,
+              -0.0037257259245961905
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999996423721313,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999996423721313
+            ],
+            "handle_right": [
+              1.0,
+              0.9999996423721313
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000003576278687,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000003576278687
+            ],
+            "handle_right": [
+              1.0,
+              1.0000003576278687
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999995231628418,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999995231628418
+            ],
+            "handle_right": [
+              1.0,
+              0.9999995231628418
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 5.960464477539063e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              5.960464477539063e-08
+            ],
+            "handle_right": [
+              1.0,
+              5.960464477539063e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -3.5762786865234375e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_right": [
+              1.0,
+              -3.5762786865234375e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.7881393432617188e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_right": [
+              1.0,
+              1.7881393432617188e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9714787602424622,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9714787602424622
+            ],
+            "handle_right": [
+              1.0,
+              0.9714787602424622
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.23701469600200653,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.23701469600200653
+            ],
+            "handle_right": [
+              1.0,
+              0.23701469600200653
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0024336925707757473,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0024336925707757473
+            ],
+            "handle_right": [
+              1.0,
+              0.0024336925707757473
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.0068607390858232975,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.0068607390858232975
+            ],
+            "handle_right": [
+              1.0,
+              -0.0068607390858232975
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999997615814209,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999997615814209
+            ],
+            "handle_right": [
+              1.0,
+              0.9999997615814209
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 4.76837158203125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              4.76837158203125e-07
+            ],
+            "handle_right": [
+              1.0,
+              4.76837158203125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.960464477539063e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_right": [
+              1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.0
+            ],
+            "handle_right": [
+              1.0,
+              0.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 7.4505734914964705e-09,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              7.4505734914964705e-09
+            ],
+            "handle_right": [
+              1.0,
+              7.4505734914964705e-09
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.5879372240497105e-09,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.5879372240497105e-09
+            ],
+            "handle_right": [
+              1.0,
+              -5.5879372240497105e-09
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -7.450577932388569e-09,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -7.450577932388569e-09
+            ],
+            "handle_right": [
+              1.0,
+              -7.450577932388569e-09
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.000000238418579,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.000000238418579
+            ],
+            "handle_right": [
+              1.0,
+              1.000000238418579
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0000001192092896,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0000001192092896
+            ],
+            "handle_right": [
+              1.0,
+              1.0000001192092896
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 1.0,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              1.0
+            ],
+            "handle_right": [
+              1.0,
+              1.0
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].location",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -1.1920928955078125e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_right": [
+              1.0,
+              -1.1920928955078125e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].location",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -5.960464477539063e-08,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_right": [
+              1.0,
+              -5.960464477539063e-08
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].location",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 2.384185791015625e-07,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              2.384185791015625e-07
+            ],
+            "handle_right": [
+              1.0,
+              2.384185791015625e-07
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3187331259250641,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3187331259250641
+            ],
+            "handle_right": [
+              1.0,
+              0.3187331259250641
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.3476177752017975,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.3476177752017975
+            ],
+            "handle_right": [
+              1.0,
+              0.3476177752017975
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": -0.5916652679443359,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              -0.5916652679443359
+            ],
+            "handle_right": [
+              1.0,
+              -0.5916652679443359
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].rotation_quaternion",
+        "array_index": 3,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.6538373827934265,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.6538373827934265
+            ],
+            "handle_right": [
+              1.0,
+              0.6538373827934265
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].scale",
+        "array_index": 0,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998211860657,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998211860657
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998211860657
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].scale",
+        "array_index": 1,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"Gear_Elbow_L\"].scale",
+        "array_index": 2,
+        "extrapolation": "CONSTANT",
+        "keyframes": [
+          {
+            "frame": 0.0,
+            "value": 0.9999998807907104,
+            "interpolation": "LINEAR",
+            "easing": "AUTO",
+            "handle_left": [
+              -1.0,
+              0.9999998807907104
+            ],
+            "handle_right": [
+              1.0,
+              0.9999998807907104
+            ],
+            "handle_left_type": "AUTO_CLAMPED",
+            "handle_right_type": "AUTO_CLAMPED"
+          }
+        ]
+      }
+    ],
+    "separate_C_to_C1_four_channel_replacement": [
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 0,
+        "C_key_values": [
+          [
+            0.0,
+            0.9183064699172974
+          ]
+        ],
+        "C1_key_values": [
+          [
+            0.0,
+            0.9322575330734253
+          ]
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 1,
+        "C_key_values": [
+          [
+            0.0,
+            0.3775091767311096
+          ]
+        ],
+        "C1_key_values": [
+          [
+            0.0,
+            0.3415583074092865
+          ]
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 2,
+        "C_key_values": [
+          [
+            0.0,
+            0.11409011483192444
+          ]
+        ],
+        "C1_key_values": [
+          [
+            0.0,
+            0.11279990524053574
+          ]
+        ]
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 3,
+        "C_key_values": [
+          [
+            0.0,
+            0.034403182566165924
+          ]
+        ],
+        "C1_key_values": [
+          [
+            0.0,
+            0.03885994479060173
+          ]
+        ]
+      }
+    ],
+    "C_to_C1_right_multiplicative_delta_quaternion_wxyz": [
+      0.9992457032203674,
+      -0.038833413273096085,
+      0.00014280076720751822,
+      -1.8589198589324951e-06
+    ]
+  },
+  "coordinate_convention": {
+    "matrix_storage": "row-major arrays; column vectors; metres; quaternion w,x,y,z",
+    "native_rifle_mesh_frame": "Original Rifle 7 mesh coordinates; not stock-origin coordinates",
+    "native_rifle_mesh_to_world_matrix": [
+      [
+        0.9999787832580076,
+        -0.006370907261819936,
+        -0.0010643540343950597,
+        -0.24581845129656915
+      ],
+      [
+        0.006459215113751291,
+        0.9863092938423672,
+        0.16477860828814367,
+        -0.5177439465669915
+      ],
+      [
+        3.5917437587454096e-08,
+        -0.16478201744968324,
+        0.9863300056348903,
+        1.3884277359262627
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "physical_rifle_frame": "Established stock origin; +X forward, +Y up, +Z right",
+    "native_rifle_mesh_to_physical_rifle_matrix": [
+      [
+        0.0,
+        -1.0,
+        0.0,
+        0.44999998807907104
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        -0.02265022322535515
+      ],
+      [
+        -1.0,
+        0.0,
+        0.0,
+        0.00129691231995821
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "physical_rifle_to_world_matrix": [
+      [
+        0.006370907261819936,
+        -0.0010643540343950597,
+        -0.9999787832580076,
+        -0.2474125825412067
+      ],
+      [
+        -0.9863092938423672,
+        0.16477860828814367,
+        -0.006459215113751291,
+        -0.07016412679950118
+      ],
+      [
+        0.16478201744968324,
+        0.9863300056348903,
+        -3.5917437587454096e-08,
+        1.3366164248863377
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "left_hand_in_native_rifle_mesh_frame": {
+    "bone_name": "mixamorig:LeftHand",
+    "matrix": [
+      [
+        -0.30089285461521376,
+        -0.9039962238242588,
+        0.3037321175478558,
+        0.055108426089574364
+      ],
+      [
+        0.9516135150955765,
+        -0.30545492590924866,
+        0.033591880296332394,
+        -0.04442740562218095
+      ],
+      [
+        0.0624097908892889,
+        0.29914245352829805,
+        0.952165499086917,
+        -0.004759000666852753
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "left_hand_in_physical_rifle_frame": {
+    "bone_name": "mixamorig:LeftHand",
+    "matrix": [
+      [
+        -0.9516135150955765,
+        0.30545492590924866,
+        -0.033591880296332394,
+        0.494427393701252
+      ],
+      [
+        0.0624097908892889,
+        0.29914245352829805,
+        0.952165499086917,
+        -0.0274092238922079
+      ],
+      [
+        0.30089285461521376,
+        0.9039962238242588,
+        -0.3037321175478558,
+        -0.053811513769616154
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "wrist_position_m": [
+      0.494427393701252,
+      -0.0274092238922079,
+      -0.053811513769616154
+    ]
+  },
+  "authored_parameter_axes": "palm_rifle_* names remain native Rifle 7 mesh axes; finger parameters are native bone-local axes",
+  "desired_C1_parameters_relative_to_F": {
+    "palm_rifle_x_mm": -2.7979471118292807,
+    "palm_rifle_y_mm": -0.8871079536060553,
+    "palm_rifle_z_mm": 4.126392850821976,
+    "palm_rifle_x_deg": 5.053634901962425,
+    "palm_rifle_y_deg": 1.7774732601216603,
+    "palm_rifle_z_deg": -1.0199562656250594,
+    "Thumb1_native_local_x_deg": -2.023175145459211,
+    "Thumb2_native_local_x_deg": -0.17183959846294639,
+    "Thumb3_native_local_x_deg": 0.11285693496678417,
+    "Index1_native_local_x_deg": 0.0,
+    "Index2_native_local_x_deg": -1.1330638470482677,
+    "Index3_native_local_x_deg": 0.2190997688838846,
+    "Middle1_native_local_x_deg": 2.8165432454726496,
+    "Middle2_native_local_x_deg": 0.10571355279465024,
+    "Middle3_native_local_x_deg": 0.21758569856263904,
+    "Ring1_native_local_x_deg": 2.276934574539797,
+    "Ring2_native_local_x_deg": 0.7335517258692137,
+    "Ring3_native_local_x_deg": 0.0637280703593449,
+    "Pinky1_native_local_x_deg": 1.9754493994189322,
+    "Pinky2_native_local_x_deg": 0.42930301607609667,
+    "Pinky3_native_local_x_deg": 0.12109406568302156,
+    "Thumb1_native_local_z_spread_deg": 0.16105849021647106,
+    "Index1_native_local_z_spread_deg": 0.42138296301187816,
+    "Middle1_native_local_z_spread_deg": 0.3363405075230255,
+    "Ring1_native_local_z_spread_deg": 0.43378802964808766,
+    "Pinky1_native_local_z_spread_deg": 0.473403201562721
+  },
+  "physical_palm_delta_from_F": {
+    "translation_xyz_mm": [
+      0.8871079536060553,
+      4.126392850821976,
+      2.7979471118292807
+    ],
+    "rotation_vector_xyz_deg": [
+      -1.7774732601216603,
+      -1.0199562656250594,
+      -5.053634901962425
+    ],
+    "axes": "+X forward, +Y up, +Z right"
+  },
+  "C_to_C1_preservation_proof": {
+    "C_source_sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+    "C1_sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+    "C_action_retained_exact": true,
+    "C1_action": "Support Grip / Index Base Release Candidate C1",
+    "frame": 0,
+    "rig_bones": 72,
+    "only_changed_curves": [
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 0
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 1
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 2
+      },
+      {
+        "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+        "index": 3
+      }
+    ],
+    "untouched_fcurve_count": 716,
+    "all_716_untouched_curves_exact": true,
+    "other_bone_local_matrix_max_abs_error": 0.0,
+    "hand_arm_gear_rifle_right_and_other_fingers_world_matrix_max_abs_error": 0.0,
+    "rifle_evaluated_vertex_max_delta_mm": 0.0,
+    "native_bone": "mixamorig:LeftHandIndex1",
+    "C_rotation_quaternion_wxyz": [
+      0.9183064699172974,
+      0.3775091767311096,
+      0.11409011483192444,
+      0.034403182566165924
+    ],
+    "C1_rotation_quaternion_wxyz": [
+      0.9322575330734253,
+      0.3415583074092865,
+      0.11279990524053574,
+      0.03885994479060173
+    ],
+    "right_multiplicative_delta_quaternion_wxyz": [
+      0.9992457032203674,
+      -0.038833413273096085,
+      0.00014280076720751822,
+      -1.8589198589324951e-06
+    ],
+    "native_local_added_x_flexion_deg": {
+      "C": 4.451142948549993,
+      "C1": 0.0
+    },
+    "native_local_added_z_spread_deg_unchanged": 0.42138296301187816,
+    "children": "Index2, Index3 and Index4 keep exact C local curves; their world poses follow Index1",
+    "hand_and_coordinate_frames": "Hand matrix is unchanged from corrected candidate_c/EXACT_LEFT_GRIP_HANDOFF.json; native mesh and stock-origin physical frames remain distinct"
+  },
+  "one_dimensional_selection_evidence": {
+    "index1_added_native_local_x_deg": 0.0,
+    "index1_added_native_local_z_spread_deg": 0.42138296301187816,
+    "release_from_C_deg": 4.451142948549993,
+    "target_native_triangle": [
+      8513,
+      8515,
+      8516
+    ],
+    "triangle_area_mm2": 6.123957202571087,
+    "triangle_area_over_F": 0.992333753009131,
+    "triangle_area_over_rest": 0.15963495679823217,
+    "triangle_altitude_to_longest_edge_mm": 0.8535179210201308,
+    "triangle_normal_transport_alignment": 0.9821859178791934,
+    "left_glove_faces_below_10pct_rest": 0,
+    "left_glove_negative_normal_faces": 3,
+    "index_rifle_exact_triangle_pairs": 0,
+    "dense_local_rifle_sample_count": 38986,
+    "maximum_local_index_parity_confirmed_depth_mm": 0.0,
+    "local_index_samples_deeper_than1mm": 0,
+    "deepest_index_witnesses": [],
+    "nonlocal_glove_self_triangle_pairs": 0,
+    "bidirectional_dense_index23_middle23_minimum_gap_mm": 0.774288026150316,
+    "nonlocal_self_witnesses": [],
+    "index_opposed_contact": {
+      "area_within1mm_mm2": 0.0,
+      "area_within2mm_mm2": 0.0,
+      "min_surface_gap_mm": 2.003839472308755
+    },
+    "central_palm": {
+      "central_25_50": {
+        "median_gap_mm": 18.29509809613228,
+        "opposed_area_within2mm_mm2": 0.0,
+        "opposed_area_within5mm_mm2": 0.0
+      },
+      "central_50_75": {
+        "median_gap_mm": 5.547546315938234,
+        "opposed_area_within2mm_mm2": 75.57528529457079,
+        "opposed_area_within5mm_mm2": 650.1574371768576
+      }
+    },
+    "unchanged_other_local_matrix_max_error": 0.0,
+    "unchanged_hand_arm_gear_other_digits_world_matrix_max_error": 0.0,
+    "index1_rotation_quaternion_wxyz": [
+      0.9322575330734253,
+      0.3415583074092865,
+      0.11279990524053574,
+      0.03885994479060173
+    ],
+    "target_triangle_evaluated_world_vertices_m": [
+      [
+        -0.26431018114089966,
+        -0.6281987428665161,
+        1.440609335899353
+      ],
+      [
+        -0.2690232992172241,
+        -0.6196341514587402,
+        1.445753812789917
+      ],
+      [
+        -0.2713755965232849,
+        -0.6176576614379883,
+        1.4473090171813965
+      ]
+    ]
+  },
+  "scope_limits": [
+    "C hand/arm/gear/rifle/right grip and other finger local channels are unchanged; only Index1 quaternion changes and its children follow",
+    "Index1 spread remains +0.42138296301187816 degrees; added flexion is reduced from +4.451142948549993 degrees to 0",
+    "Index pad nearest sampled gap is about 2.004 mm and strict opposed area within2mm is zero; partial support remains through palm, thumb and other digits",
+    "No geometry/rest/weight edits, no R5 transplant, no animation-bank propagation or engine/camera/ADS transition approval",
+    "Independent whole-candidate static review remains authoritative"
+  ],
+  "independent_contact_summary": {
+    "source": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1_review/C1_static_skin_grip_audit.json",
+    "maximum_sampled_confirmed_depth_mm": 0.8249042357419967,
+    "rifle_samples_deeper_than1mm": 0,
+    "exact_rifle_hand_triangle_pairs": 103,
+    "nonlocal_cross_digit_pairs": 0
+  }
+}

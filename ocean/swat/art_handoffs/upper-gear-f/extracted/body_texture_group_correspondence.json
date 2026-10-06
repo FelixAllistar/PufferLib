@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "native_correspondence_sha256": "84cc7f23469e7a4a9c0c1dd906e37c704ca7d1920bedc522b802bca060465858",
+  "export_correspondence_sha256": "c08de9bd1c8838fdc95d53a720412ed3a60219d0e8286f8e1f3650e3b4865187",
+  "wearer_mesh": 5,
+  "all_retained_triangles_mapped": 42339,
+  "material_groups": [
+    {
+      "gltf_primitive": 0,
+      "gltf_material_index": 3,
+      "gltf_material_name": "Ch15_body.001",
+      "F_material_slot": 0,
+      "original_N_material_slot": 0,
+      "original_texture_group": "Ch15_1001",
+      "exported_vertices": 7351,
+      "exported_triangles": 13004,
+      "unique_original_polygons": 6770,
+      "max_UV_error_after_standard_V_flip": 2.9802322387695312e-08,
+      "normalization_scope": "Exact retained original UV/material group; float32 UV encoding tolerance measured. No spec/gloss/normal texture reinterpretation."
+    },
+    {
+      "gltf_primitive": 1,
+      "gltf_material_index": 4,
+      "gltf_material_name": "Ch15_body1.001",
+      "F_material_slot": 1,
+      "original_N_material_slot": 1,
+      "original_texture_group": "Ch15_1002",
+      "exported_vertices": 21612,
+      "exported_triangles": 29335,
+      "unique_original_polygons": 16112,
+      "max_UV_error_after_standard_V_flip": 2.9802322387695312e-08,
+      "normalization_scope": "Exact retained original UV/material group; float32 UV encoding tolerance measured. No spec/gloss/normal texture reinterpretation."
+    }
+  ],
+  "separate_original_character_texture_package_sha256": "be6b60251053f034761c400eec63b66ea870ac4336f67400eba3a882bdeb1b7f",
+  "new_gear_materials": "Separate source-authored polymer/padding factors and planar untextured UVs. No original body texture group is reassigned to those parts."
+}

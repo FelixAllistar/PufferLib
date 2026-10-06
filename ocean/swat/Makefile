@@ -40,13 +40,9 @@ spatial-test: | $(BUILD)
 	$(BUILD)/test_spatial_audio
 all: test viewer
 ui-assets: | $(BUILD)
-	mkdir -p $(BUILD)/assets/ui
+	mkdir -p $(BUILD)/assets
+	cp -R $(ROOT)/ocean/swat/assets/. $(BUILD)/assets/
 	cp $(ROOT)/resources/shared/Roboto-Regular.ttf $(BUILD)/assets/ui/
-	mkdir -p $(BUILD)/assets/environment
-	cp $(ROOT)/ocean/swat/assets/environment/*.png $(ROOT)/ocean/swat/assets/environment/*.glb $(ROOT)/ocean/swat/assets/environment/*.json $(ROOT)/ocean/swat/assets/environment/*.txt $(BUILD)/assets/environment/
-	cp -R $(ROOT)/ocean/swat/assets/environment/materials_v1 $(BUILD)/assets/environment/
-	mkdir -p $(BUILD)/assets/audio
-	cp $(ROOT)/ocean/swat/assets/audio/* $(BUILD)/assets/audio/
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/include/enet/*.h)
@@ -84,7 +80,7 @@ environment-props-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_props.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_environment_props
 	$(BUILD)/test_environment_props
 movement-native-test: | $(BUILD)
-	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_movement_native.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_movement_native
+	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) tests/test_movement_native.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_movement_native
 	$(BUILD)/test_movement_native $(BUILD)/movement-native-test.bin
 locomotion-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_locomotion.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_locomotion

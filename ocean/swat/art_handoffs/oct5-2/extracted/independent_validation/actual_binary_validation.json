@@ -1,0 +1,370 @@
+{
+  "schema": "independent-static-step-validation/1",
+  "status": "PASS",
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "method": "Actual binary accessor validation, normalized-quaternion hierarchical FK, all-influence normalized linear blend skinning; no producer imports",
+  "static_contract": {
+    "channels": 210,
+    "samplers": 210,
+    "interpolation": "STEP",
+    "keys_per_channel": 1,
+    "only_authored_time_s": 0.0,
+    "stored_animation_span_s": 0.0,
+    "authored_duration_s": null,
+    "quaternion_norm_residual_max": 3.887685251502404e-08
+  },
+  "nodes": 76,
+  "skin_joints": 70,
+  "accessors": 459,
+  "primitives": 6,
+  "prop_magazine_B": {
+    "node": 69,
+    "skin_joint_slot": 69,
+    "world_linear_determinant": 1.0000007748603474,
+    "world_linear_singular_values": [
+      1.0000005960464482,
+      1.0000004768371586,
+      0.9999997019767759
+    ],
+    "noncollapsed": true
+  },
+  "scene_roots": [
+    {
+      "node": 70,
+      "name": "Rebuilt spare magazine sleeve",
+      "world_matrix_column_major": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "node": 72,
+      "name": "SWAT_Mixamo_Rig",
+      "world_matrix_column_major": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "node": 73,
+      "name": "Rifle 7",
+      "world_matrix_column_major": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "node": 74,
+      "name": "Removed magazine",
+      "world_matrix_column_major": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "node": 75,
+      "name": "Fresh magazine",
+      "world_matrix_column_major": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "static_identity": {
+    "status": "PASS",
+    "reference_glb_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+    "static_accessor_count": 39,
+    "checks": {
+      "nodes": true,
+      "skins": true,
+      "meshes": true,
+      "materials": true,
+      "scenes": true,
+      "scene": true,
+      "images": true,
+      "textures": true,
+      "samplers": true,
+      "all_static_accessor_arrays_exact": true,
+      "all_static_accessor_definitions_exact": true,
+      "embedded_image_bytes_exact": true
+    }
+  },
+  "source_parity": {
+    "status": "PASS",
+    "source_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+    "capture_npz_sha256": "fb734c5f0925295e7032f363039bd47256c856a15efdd977b3acb34fb96e3af0",
+    "bone_world_max_abs_error": 5.573743372400131e-07,
+    "every_oriented_source_triangle_preserved": true,
+    "total_exported_vertices": 48755,
+    "meshes": [
+      {
+        "name": "Rebuilt spare magazine sleeve",
+        "primitive": 0,
+        "exported_vertices": 144,
+        "maximum_influences": 1,
+        "max_weight_error": 0.0,
+        "max_position_error_m": 1.1417995881291367e-07,
+        "rms_position_error_m": 4.2938544249653186e-08,
+        "ambiguous_equivalent_bind_matches": 0
+      },
+      {
+        "name": "Rebuilt SWAT full body",
+        "primitive": 0,
+        "exported_vertices": 7638,
+        "maximum_influences": 5,
+        "max_weight_error": 2.1133167771303363e-08,
+        "max_position_error_m": 7.163908329138777e-07,
+        "rms_position_error_m": 1.9171480649252198e-07,
+        "ambiguous_equivalent_bind_matches": 0
+      },
+      {
+        "name": "Rebuilt SWAT full body",
+        "primitive": 1,
+        "exported_vertices": 24049,
+        "maximum_influences": 7,
+        "max_weight_error": 2.212510108456911e-08,
+        "max_position_error_m": 8.116653597730939e-07,
+        "rms_position_error_m": 2.3409857128833763e-07,
+        "ambiguous_equivalent_bind_matches": 0
+      },
+      {
+        "name": "Rifle 7",
+        "primitive": 0,
+        "exported_vertices": 14936,
+        "maximum_influences": 1,
+        "max_weight_error": 0.0,
+        "max_position_error_m": 1.207309092028219e-07,
+        "rms_position_error_m": 3.322527460052599e-08,
+        "ambiguous_equivalent_bind_matches": 0
+      },
+      {
+        "name": "Removed magazine",
+        "primitive": 0,
+        "exported_vertices": 994,
+        "maximum_influences": 1,
+        "max_weight_error": 0.0,
+        "max_position_error_m": 9.680268863598106e-08,
+        "rms_position_error_m": 2.992370477347487e-08,
+        "ambiguous_equivalent_bind_matches": 0
+      },
+      {
+        "name": "Fresh magazine",
+        "primitive": 0,
+        "exported_vertices": 994,
+        "maximum_influences": 1,
+        "max_weight_error": 0.0,
+        "max_position_error_m": 1.1630817424275645e-07,
+        "rms_position_error_m": 3.175056128394655e-08,
+        "ambiguous_equivalent_bind_matches": 0
+      }
+    ]
+  },
+  "native_static_identity": {
+    "status": "PASS",
+    "native_baseline_sha256": "944b032d6b5f352fe8f715e609568fb686b1187d08e08a76159555d3702a8d44",
+    "checks": {
+      "bone_names": true,
+      "bone_parent_hierarchy": true,
+      "bone_rest": true,
+      "rig_world": true
+    },
+    "meshes": [
+      {
+        "name": "Fresh magazine",
+        "material_slots_exact": true,
+        "uv_names_exact": true,
+        "p_exact": true,
+        "local_p_exact": true,
+        "world_exact": true,
+        "w_exact": true,
+        "tris_exact": true,
+        "mat_exact": true,
+        "loop_vert_exact": true,
+        "loop_normal_exact": true,
+        "uv0_exact": true
+      },
+      {
+        "name": "Rebuilt SWAT full body",
+        "material_slots_exact": true,
+        "uv_names_exact": true,
+        "p_exact": true,
+        "local_p_exact": true,
+        "world_exact": true,
+        "w_exact": true,
+        "tris_exact": true,
+        "mat_exact": true,
+        "loop_vert_exact": true,
+        "loop_normal_exact": true,
+        "uv0_exact": true
+      },
+      {
+        "name": "Rebuilt spare magazine sleeve",
+        "material_slots_exact": true,
+        "uv_names_exact": true,
+        "p_exact": true,
+        "local_p_exact": true,
+        "world_exact": true,
+        "w_exact": true,
+        "tris_exact": true,
+        "mat_exact": true,
+        "loop_vert_exact": true,
+        "loop_normal_exact": true
+      },
+      {
+        "name": "Removed magazine",
+        "material_slots_exact": true,
+        "uv_names_exact": true,
+        "p_exact": true,
+        "local_p_exact": true,
+        "world_exact": true,
+        "w_exact": true,
+        "tris_exact": true,
+        "mat_exact": true,
+        "loop_vert_exact": true,
+        "loop_normal_exact": true,
+        "uv0_exact": true
+      },
+      {
+        "name": "Rifle 7",
+        "material_slots_exact": true,
+        "uv_names_exact": true,
+        "p_exact": true,
+        "local_p_exact": true,
+        "world_exact": true,
+        "w_exact": true,
+        "tris_exact": true,
+        "mat_exact": true,
+        "loop_vert_exact": true,
+        "loop_normal_exact": true,
+        "uv0_exact": true
+      }
+    ]
+  },
+  "stock_blender_reimport": {
+    "status": "PASS",
+    "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+    "blender_version": "4.3.2",
+    "read_only_glb_hash_preserved": true,
+    "single_key_no_authored_duration_preserved": true,
+    "bone_world_origin_max_error_m": 5.226432434382393e-07,
+    "total_vertices": 48755,
+    "meshes": [
+      {
+        "name": "Fresh magazine",
+        "vertices": 994,
+        "bind_position_max_error_m": 1.5914447131226827e-08,
+        "actual_binary_to_stock_blender_evaluated_max_error_m": 2.253623834753234e-07,
+        "native_to_stock_blender_evaluated_max_error_m": 2.4755668231600746e-07,
+        "all_normalized_weight_max_error": 0.0,
+        "oriented_index_topology_exact": true
+      },
+      {
+        "name": "Rebuilt SWAT full body",
+        "vertices": 31687,
+        "bind_position_max_error_m": 8.679846453196227e-07,
+        "actual_binary_to_stock_blender_evaluated_max_error_m": 7.004679618014766e-07,
+        "native_to_stock_blender_evaluated_max_error_m": 9.348623240803553e-07,
+        "all_normalized_weight_max_error": 0.0,
+        "oriented_index_topology_exact": true
+      },
+      {
+        "name": "Rebuilt spare magazine sleeve",
+        "vertices": 144,
+        "bind_position_max_error_m": 0.0,
+        "actual_binary_to_stock_blender_evaluated_max_error_m": 1.1789309819930941e-07,
+        "native_to_stock_blender_evaluated_max_error_m": 1.2644054553268208e-07,
+        "all_normalized_weight_max_error": 0.0,
+        "oriented_index_topology_exact": true
+      },
+      {
+        "name": "Removed magazine",
+        "vertices": 994,
+        "bind_position_max_error_m": 1.5914447131226827e-08,
+        "actual_binary_to_stock_blender_evaluated_max_error_m": 2.407100892031174e-07,
+        "native_to_stock_blender_evaluated_max_error_m": 2.1696418193818683e-07,
+        "all_normalized_weight_max_error": 0.0,
+        "oriented_index_topology_exact": true
+      },
+      {
+        "name": "Rifle 7",
+        "vertices": 14936,
+        "bind_position_max_error_m": 3.725290298461914e-08,
+        "actual_binary_to_stock_blender_evaluated_max_error_m": 2.957965434044319e-07,
+        "native_to_stock_blender_evaluated_max_error_m": 3.01357335092972e-07,
+        "all_normalized_weight_max_error": 0.0,
+        "oriented_index_topology_exact": true
+      }
+    ],
+    "scope": "Stock glTF import evaluated at frame0. All exported vertices, normalized influences and oriented topology checked. Blender may choose new display-bone bind frames; imported head/tail basis is not treated as a byte-preserved GLB joint frame."
+  }
+}

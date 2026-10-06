@@ -1,0 +1,7 @@
+CC0 1.0 Universal
+
+To the extent possible under law, the creator has waived all copyright and related or neighboring rights to the original geometry, textures, renders, scene and source scripts in this garage/workshop environment batch.
+
+This work is provided without warranty, including no guarantee of merchantability, fitness for a particular purpose, or noninfringement. No real brands or third-party source artwork are included. No endorsement by any entity is implied.
+
+Full legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode

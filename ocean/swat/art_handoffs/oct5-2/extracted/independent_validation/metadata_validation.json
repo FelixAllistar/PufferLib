@@ -1,0 +1,47 @@
+{
+  "schema": "independent-static-metadata-validation/1",
+  "status": "PASS",
+  "glb_sha256": "54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66",
+  "joint_bindings_verified": 70,
+  "single_key_STEP_channel_rows_verified": 210,
+  "static_zero_span_no_duration_no_motion_no_loop_verified": true,
+  "visible_B_preserved": true,
+  "native_and_actual_node_world_matrices_verified": true,
+  "bridge_reference_vertices": 5346,
+  "bridge_native_vertex_error_m": 1.3792390308551066e-08,
+  "rifle_node_and_slot": [
+    67,
+    67
+  ],
+  "head_node_and_slot": [
+    1,
+    5
+  ],
+  "lens_mapping_rows": 2,
+  "sole_mapping_rows": [
+    {
+      "side": "left",
+      "native_subset_vertices": 654,
+      "native_1mm_support_vertices": 5,
+      "exported_mappings": 7,
+      "exported_subset_vertices": 899,
+      "mapped_position_max_error_vs_source_m": 2.220123410629905e-07,
+      "metadata_centroid_max_error_m": 2.1067250692457302e-07
+    },
+    {
+      "side": "right",
+      "native_subset_vertices": 668,
+      "native_1mm_support_vertices": 5,
+      "exported_mappings": 7,
+      "exported_subset_vertices": 916,
+      "mapped_position_max_error_vs_source_m": 6.638846810438683e-08,
+      "metadata_centroid_max_error_m": 6.922564794823989e-08
+    }
+  ],
+  "measured_rifle_visor_sight_metadata_matches_binary": true,
+  "preview_heading_to_X_and_feet_origin_to_zero_verified": true,
+  "preview_scale_one_and_unbaked_root_identity": true,
+  "material_assignments_match_binary": true,
+  "ready_empty_body_static_arrays_compared": true,
+  "limits": "Native/source evaluated heights and exported float32 replay differ by submicrometre tolerances; source named support subsets (>0.5 weights and 1mm patch) differ explicitly from source QA sole qualification (>0.65 weights and 8mm patch). No runtime, ADS, camera, loop or transition approval."
+}

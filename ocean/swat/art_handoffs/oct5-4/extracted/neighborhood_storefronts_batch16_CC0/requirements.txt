@@ -1,0 +1,5 @@
+# Blender 4.3.2 provides bpy, bmesh, mathutils and NumPy for build/render scripts.
+# Standalone QA, contact sheets and packaging:
+numpy>=1.24
+Pillow>=9.2
+# DejaVu Sans system font for contact-sheet labels; no font input to model build.

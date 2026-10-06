@@ -1,0 +1,104 @@
+{
+  "status": "Sealed qualified source ready for private backup and separately assigned checked cubic export. Not material-clean or gameplay/ADS approved.",
+  "action": "Walk Backward / Shared Ready N C1 Loop A",
+  "rig": "SWAT_Mixamo_Rig",
+  "body": "Rebuilt SWAT full body",
+  "bones": 70,
+  "maximum_influences": 7,
+  "frame_range": [
+    0,
+    30
+  ],
+  "scene_fps": 30,
+  "duration_s": 1.0,
+  "native_recording_hz": 60,
+  "authored_sample_hz": 240,
+  "nominal_source_pace_m_s": 1.92126144912079,
+  "native_world_travel_m": [
+    -1.7974525690078735e-07,
+    1.9212614297866821,
+    0.0
+  ],
+  "root_policy": "Source Hips Z retained; initial XY and linear cycle XY travel removed. No engine retime/height scaling.",
+  "loop_boundary_windows_s": [
+    [
+      0,
+      0.125
+    ],
+    [
+      0.875,
+      1
+    ]
+  ],
+  "changed_curve_count": 604,
+  "source_events": "checkpoint/EVENTS.json",
+  "source_pins": {
+    "seam_a/walk_backward_ready_n_c1.editable.blend": {
+      "sha256": "91cc7919e4eaba63a8e6ddd658448bb7be0d2ac406738d22c9a0641d22e135e5",
+      "bytes": 3474349
+    },
+    "seam_a/candidate.actions.blend": {
+      "sha256": "326b2b54559f36fb43f26249b0d64f2c6372e3335cdb93ae223def9f7bf58a17",
+      "bytes": 1547982
+    },
+    "native_carry/ready_walk.editable.blend": {
+      "sha256": "e90cb6001ecd60f2b395eb94e3a4bb1c67fd9270c7111c2c8aacaa6c40d10f66",
+      "bytes": 3354708
+    },
+    "raw_body/original_walk_backward.actions.blend": {
+      "sha256": "4ccac806fe0b0fb4c9df6edaaa4fedd4050b66637ad157d7f7596b4cd0d72b5d",
+      "bytes": 1154491
+    },
+    "source/shared_ready_n_static.blend": {
+      "sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+      "bytes": 2010211
+    },
+    "source/walk_backward.fbx.bin": {
+      "sha256": "97b1662e913c09ad61f3aa3a2840fa6dc87dfc6ec4b38636f1f3f152b54871eb",
+      "bytes": 424177
+    },
+    "source/prop_magazine_b_compatibility.json": {
+      "sha256": "6c3a1a441974d320f222f16ed0be2941a03269b96a59613536488887361b5cba",
+      "bytes": 1239
+    },
+    "seam_a/saved_curve_diff.json": {
+      "sha256": "e55f0930fc682143d7c17a2588ee96c6601cb4c7a96238ba0d3e2232d235fccd",
+      "bytes": 28641696
+    },
+    "seam_a/curve_diff.json": {
+      "sha256": "1fabb788347abe6542543415127b66c3fd55e89e74a02915f9ad30854700f530",
+      "bytes": 263968
+    },
+    "seam_a/endpoint_target_derivatives.json": {
+      "sha256": "a71a8c4f7c5d8bd2e7ebbd54d1a88cbfef6763a0994f5b8e124b6281c07eef06",
+      "bytes": 35604
+    },
+    "independent_review/curve_contract.json": {
+      "sha256": "aff80f20de0b2f032ed10b4fc061358b67efaf1b4b7e7447e327476005ca85e1",
+      "bytes": 37449482
+    },
+    "independent_review/REVIEW.md": {
+      "sha256": "963e9dd4a3f322a6ac9311004d98833682b4905367a4e568e70fa8dc10dc48ff",
+      "bytes": 11247
+    },
+    "independent_review/FINAL_STATUS.json": {
+      "sha256": "27b771074adc67a5b97711783a6180657e5320c83e24e73d7337acc2082af290",
+      "bytes": 2703
+    },
+    "checkpoint/EVENTS.json": {
+      "sha256": "692c2aa1000652c307192bd89e362fbdfbe92426c327b44bae5462c017dbe70f",
+      "bytes": 423
+    }
+  },
+  "geometry": "Exact sealed N geometry/rest/weights/UV/materials. Source70 contract unchanged. Existing F72 gear is a separate preview/engine geometry mapping, not a new source bank.",
+  "prop_state": "Prop_Magazine_B scale0 inherited explicitly from prior upright compatibility; separate stored sleeve remains visible in source.",
+  "optical_rigid_conventions": "Physical rifle uses Wnode \u00d7 inverse_bind[resolved skin slot] \u00d7 B_bind_mesh. Resolve exported slots/nodes again. Visor uses native lens surface vertices23263/23516, not anatomical eyes or camera. Source bindings and optical reference are bundled.",
+  "key_limits": [
+    "Native raised Ready rifle14.947\u201317.206deg; no ADS approval",
+    "Soles sampled at960Hz remain above3mm, nominal4mm target not exact",
+    "Source-on-N thigh/pants/strap contacts exist; grounding/seam change local membership/extent; not zero-regression",
+    "Upper sleeve/link folds and source sleeve hip nesting retained",
+    "Hands are original sealed N, not gripC/C1 diagnostics; final game hand tuning is separate",
+    "C1 in action name refers to loop continuity, not the frozen grip diagnostic"
+  ]
+}

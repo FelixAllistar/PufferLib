@@ -1,0 +1,103 @@
+{
+  "asset": "Mixamo SWAT + Pro Rifle animation comparison",
+  "source": "User-authorized download from https://www.mixamo.com/",
+  "source_character": "Ch15_nonPBR.fbx",
+  "source_pack": "Pro Rifle Pack",
+  "source_archive_entries": 50,
+  "source_animation_fbx_count": 49,
+  "provenance_notice": "Third-party Adobe Mixamo content, separate from the original procedural proxy. The original FBX download is not bundled. Applicable Adobe/Mixamo terms remain in effect; this conversion does not establish suitability for ML training.",
+  "body": "swat_mixamo.glb",
+  "editable": "swat_mixamo.blend",
+  "prop": "rifle_proxy.glb",
+  "units": "meters",
+  "up_axis": "+Y",
+  "forward_axis": "+Z",
+  "object_transforms": "identity, normalized before baking",
+  "root_motion": "linear horizontal locomotion removed, hips bob/sway retained",
+  "fps": 30,
+  "clips": [
+    {
+      "name": "Idle",
+      "source_fbx": "idle.fbx",
+      "frames": 64,
+      "duration_seconds": 2.1,
+      "removed_linear_root_travel_m": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Walk",
+      "source_fbx": "walk forward.fbx",
+      "frames": 31,
+      "duration_seconds": 1.0,
+      "removed_linear_root_travel_m": [
+        8.218921720981598e-07,
+        -1.921260189730674,
+        0
+      ]
+    },
+    {
+      "name": "CrouchIdle",
+      "source_fbx": "idle crouching.fbx",
+      "frames": 64,
+      "duration_seconds": 2.1,
+      "removed_linear_root_travel_m": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "CrouchWalk",
+      "source_fbx": "walk crouching forward.fbx",
+      "frames": 31,
+      "duration_seconds": 1.0,
+      "removed_linear_root_travel_m": [
+        -8.149072527885437e-08,
+        -2.0390742532908916,
+        0
+      ]
+    },
+    {
+      "name": "Aim",
+      "source_fbx": "idle aiming.fbx",
+      "frames": 64,
+      "duration_seconds": 2.1,
+      "removed_linear_root_travel_m": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "socket": {
+    "bone": "RifleSocket",
+    "parent": "mixamorig:RightHand",
+    "local_forward": "+Z",
+    "local_up": "+Y",
+    "calibration": "Rigid grip calibrated between palms in first Idle frame; no runtime support-hand IK"
+  },
+  "muzzle": {
+    "bone": "Muzzle",
+    "local_to_socket": [
+      0,
+      0.09,
+      0.73
+    ]
+  },
+  "limitations": [
+    "Rifle is a simple original proxy, not a model supplied with Mixamo.",
+    "Rigid socket calibrated in Idle can show support-hand mismatch in other clips.",
+    "No runtime IK, animation blending, root-motion motor, aim-offset layer or physics is encoded in GLB.",
+    "Natural clip seams are not corrected by this conversion.",
+    "Source CrouchIdle is a kneeling stance, whereas CrouchWalk is a moving crouch; transitions may need a dedicated clip.",
+    "Idle-calibrated support palm sits a few centimeters below the proxy foregrip; runtime support-hand IK or weapon-grip retargeting is future work."
+  ],
+  "joint_aliases": {
+    "Chest": "mixamorig:Spine2",
+    "Hand.L": "mixamorig:LeftHand",
+    "Hand.R": "mixamorig:RightHand"
+  }
+}

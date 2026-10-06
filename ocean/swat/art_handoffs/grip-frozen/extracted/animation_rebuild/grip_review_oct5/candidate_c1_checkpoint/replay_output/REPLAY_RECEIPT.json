@@ -1,0 +1,10 @@
+{
+  "status": "Exact saved scalar-curve replay passes; generated Blender file is not claimed byte-identical",
+  "candidate_sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "baseline_sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+  "action": "Support Grip / Index Base Release Candidate C1",
+  "curves": 720,
+  "changed_curve_channels": 4,
+  "max_pose_matrix_element_error": 0.0,
+  "max_evaluated_vertex_error_m": 0.0
+}

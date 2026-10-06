@@ -1,0 +1,57 @@
+{
+  "C_source_sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+  "C1_sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "C_action_retained_exact": true,
+  "C1_action": "Support Grip / Index Base Release Candidate C1",
+  "frame": 0,
+  "rig_bones": 72,
+  "only_changed_curves": [
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 0
+    },
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 1
+    },
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 2
+    },
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 3
+    }
+  ],
+  "untouched_fcurve_count": 716,
+  "all_716_untouched_curves_exact": true,
+  "other_bone_local_matrix_max_abs_error": 0.0,
+  "hand_arm_gear_rifle_right_and_other_fingers_world_matrix_max_abs_error": 0.0,
+  "rifle_evaluated_vertex_max_delta_mm": 0.0,
+  "native_bone": "mixamorig:LeftHandIndex1",
+  "C_rotation_quaternion_wxyz": [
+    0.9183064699172974,
+    0.3775091767311096,
+    0.11409011483192444,
+    0.034403182566165924
+  ],
+  "C1_rotation_quaternion_wxyz": [
+    0.9322575330734253,
+    0.3415583074092865,
+    0.11279990524053574,
+    0.03885994479060173
+  ],
+  "right_multiplicative_delta_quaternion_wxyz": [
+    0.9992457032203674,
+    -0.038833413273096085,
+    0.00014280076720751822,
+    -1.8589198589324951e-06
+  ],
+  "native_local_added_x_flexion_deg": {
+    "C": 4.451142948549993,
+    "C1": 0.0
+  },
+  "native_local_added_z_spread_deg_unchanged": 0.42138296301187816,
+  "children": "Index2, Index3 and Index4 keep exact C local curves; their world poses follow Index1",
+  "hand_and_coordinate_frames": "Hand matrix is unchanged from corrected candidate_c/EXACT_LEFT_GRIP_HANDOFF.json; native mesh and stock-origin physical frames remain distinct"
+}

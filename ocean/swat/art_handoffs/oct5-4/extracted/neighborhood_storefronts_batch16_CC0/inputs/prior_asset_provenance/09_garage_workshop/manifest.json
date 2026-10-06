@@ -1,0 +1,945 @@
+{
+  "schema": "garage_workshop_environment_batch_09_v1",
+  "batch": "09_garage_workshop",
+  "title": "Late Shift: garage and workshop",
+  "license": "CC0-1.0",
+  "original_artwork": true,
+  "seed": 91073,
+  "units": "metres",
+  "source_coordinates": "right-handed +Z up, front -Y",
+  "gltf_coordinates": "right-handed +Y up, front +Z; exporter converts (x,y,z) to (x,z,-y)",
+  "pivot_policy": "All assets: XY AABB centred, lowest surface at source Z=0 / glTF Y=0. Small tools lie in resting/display pose; surface placement heights supplied by level author.",
+  "material_suggestions": "Original packed 192px base-colour PNGs, UV0, core metallic-roughness PBR. Shared material palette GW09_*: muted blue/red worn paint, rubbed steel, rust, wood and rubber. Reuse matching engine materials if batching; preserve per-slot assignments.",
+  "collision_policy": "All artwork collider_enabled=false. No colliders, physics, gameplay binding, destruction, animation, LODs or PufferLib runtime tests supplied.",
+  "asset_count": 18,
+  "total_triangles": 35419,
+  "assets": [
+    {
+      "id": "gw09_mechanic_toolbox_open",
+      "name": "mechanic_toolbox_open",
+      "title": "Open mechanic toolbox",
+      "file": "assets/mechanic_toolbox_open.glb",
+      "dimensions_m_source_xyz": [
+        0.566,
+        0.4143,
+        0.43132
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.566,
+        0.43132,
+        0.4143
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.283,
+          -0.207148,
+          0.0
+        ],
+        [
+          0.283,
+          0.207148,
+          0.431322
+        ]
+      ],
+      "triangles": 1394,
+      "vertices_source": 820,
+      "material_count": 6,
+      "materials": [
+        "GW09_paint_red",
+        "GW09_steel",
+        "GW09_iron",
+        "GW09_rubber",
+        "GW09_steel_light",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "latches_handle",
+        "open_lid",
+        "removable_tray",
+        "rubbed_edges",
+        "sheet_steel_case"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 343740,
+      "sha256": "cae58cdb9bfcba1c132e2d278f0f5eaa887ae7e001bdf8c23f1e6f51e7560f4e"
+    },
+    {
+      "id": "gw09_socket_rail_tray",
+      "name": "socket_rail_tray",
+      "title": "Socket tray + ratchet",
+      "file": "assets/socket_rail_tray.glb",
+      "dimensions_m_source_xyz": [
+        0.335,
+        0.161,
+        0.0605
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.335,
+        0.0605,
+        0.161
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.1675,
+          -0.0805,
+          0.0
+        ],
+        [
+          0.1675,
+          0.0805,
+          0.0605
+        ]
+      ],
+      "triangles": 2111,
+      "vertices_source": 1100,
+      "material_count": 6,
+      "materials": [
+        "GW09_paint_blue",
+        "GW09_steel_light",
+        "GW09_steel",
+        "GW09_rubber",
+        "GW09_iron",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "hollow_sockets",
+        "pressed_socket_tray",
+        "ratchet_driver"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 366772,
+      "sha256": "be3512f94c8a5213917e2875b3b84ff0fe4828497d91b8825e8edfe71901557a"
+    },
+    {
+      "id": "gw09_heavy_bench_vise",
+      "name": "heavy_bench_vise",
+      "title": "Heavy bench vise",
+      "file": "assets/heavy_bench_vise.glb",
+      "dimensions_m_source_xyz": [
+        0.38,
+        0.30801,
+        0.2505
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.38,
+        0.2505,
+        0.30801
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.19,
+          -0.154004,
+          0.0
+        ],
+        [
+          0.19,
+          0.154004,
+          0.2505
+        ]
+      ],
+      "triangles": 3231,
+      "vertices_source": 1716,
+      "material_count": 5,
+      "materials": [
+        "GW09_paint_blue",
+        "GW09_steel",
+        "GW09_steel_light",
+        "GW09_iron",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "cast_body",
+        "mounting_foot",
+        "sliding_jaw",
+        "threaded_leadscrew",
+        "wear"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 422952,
+      "sha256": "f803492cb802bc9237a9e50a6687efb819d589b55425221a914e6c67e58ec783"
+    },
+    {
+      "id": "gw09_twin_wheel_bench_grinder",
+      "name": "twin_wheel_bench_grinder",
+      "title": "Twin-wheel bench grinder",
+      "file": "assets/twin_wheel_bench_grinder.glb",
+      "dimensions_m_source_xyz": [
+        0.46144,
+        0.33195,
+        0.31178
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.46144,
+        0.31178,
+        0.33195
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.230722,
+          -0.165977,
+          0.0
+        ],
+        [
+          0.230722,
+          0.165977,
+          0.311775
+        ]
+      ],
+      "triangles": 2832,
+      "vertices_source": 1462,
+      "material_count": 8,
+      "materials": [
+        "GW09_paint_taupe",
+        "GW09_iron",
+        "GW09_paint_blue",
+        "GW09_abrasive",
+        "GW09_steel",
+        "GW09_steel_light",
+        "GW09_red",
+        "GW09_rubber"
+      ],
+      "editable_vertex_groups": [
+        "cast_base",
+        "grinding_wheels",
+        "motor"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 503968,
+      "sha256": "dfb32fb7a1cd8a3f590f46e0ae53a47b6d214eb20906d9436a89c320666c4ca4"
+    },
+    {
+      "id": "gw09_corded_power_drill",
+      "name": "corded_power_drill",
+      "title": "Corded power drill",
+      "file": "assets/corded_power_drill.glb",
+      "dimensions_m_source_xyz": [
+        0.34795,
+        0.15985,
+        0.15115
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.34795,
+        0.15115,
+        0.15985
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.173975,
+          -0.079923,
+          0.0
+        ],
+        [
+          0.173975,
+          0.079923,
+          0.151146
+        ]
+      ],
+      "triangles": 1310,
+      "vertices_source": 705,
+      "material_count": 5,
+      "materials": [
+        "GW09_paint_blue",
+        "GW09_iron",
+        "GW09_rubber",
+        "GW09_steel",
+        "GW09_steel_light"
+      ],
+      "editable_vertex_groups": [
+        "chuck_and_bit",
+        "motor_housing",
+        "trailing_cable"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 292032,
+      "sha256": "db801d2a97677f7f3d3bf81df6c616a146a7164b813f46f0ae4a39fbf0b1865e"
+    },
+    {
+      "id": "gw09_extension_cable_reel",
+      "name": "extension_cable_reel",
+      "title": "Extension cable reel",
+      "file": "assets/extension_cable_reel.glb",
+      "dimensions_m_source_xyz": [
+        0.36914,
+        0.31855,
+        0.3455
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.36914,
+        0.3455,
+        0.31855
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.184569,
+          -0.159273,
+          0.0
+        ],
+        [
+          0.184569,
+          0.159273,
+          0.3455
+        ]
+      ],
+      "triangles": 4108,
+      "vertices_source": 2100,
+      "material_count": 7,
+      "materials": [
+        "GW09_iron",
+        "GW09_rubber",
+        "GW09_paint_taupe",
+        "GW09_paint_blue",
+        "GW09_cable",
+        "GW09_steel",
+        "GW09_red"
+      ],
+      "editable_vertex_groups": [
+        "bent_tube_frame",
+        "cable_drum",
+        "loose_lead",
+        "socket_face"
+      ],
+      "mounting": "floor",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 542912,
+      "sha256": "dd3c55c048fad9268d6599112654067265e55992884a45b8302f87d05504202e"
+    },
+    {
+      "id": "gw09_wood_handle_handsaw",
+      "name": "wood_handle_handsaw",
+      "title": "Wood-handle handsaw",
+      "file": "assets/wood_handle_handsaw.glb",
+      "dimensions_m_source_xyz": [
+        0.591,
+        0.142,
+        0.03
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.591,
+        0.03,
+        0.142
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.2955,
+          -0.071,
+          0.0
+        ],
+        [
+          0.2955,
+          0.071,
+          0.03
+        ]
+      ],
+      "triangles": 456,
+      "vertices_source": 270,
+      "material_count": 4,
+      "materials": [
+        "GW09_steel",
+        "GW09_bare_wood",
+        "GW09_brass",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "blade_scuffs",
+        "tapered_blade",
+        "wood_grip"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 210296,
+      "sha256": "09018627fd078ce33f1a36e5eb345e95a41fdaa3bf0dc46cf7c449f1b34db7e3"
+    },
+    {
+      "id": "gw09_combination_pliers",
+      "name": "combination_pliers",
+      "title": "Combination pliers",
+      "file": "assets/combination_pliers.glb",
+      "dimensions_m_source_xyz": [
+        0.19818,
+        0.12914,
+        0.02741
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.19818,
+        0.02741,
+        0.12914
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.099091,
+          -0.06457,
+          0.0
+        ],
+        [
+          0.099091,
+          0.06457,
+          0.027413
+        ]
+      ],
+      "triangles": 856,
+      "vertices_source": 464,
+      "material_count": 4,
+      "materials": [
+        "GW09_steel",
+        "GW09_paint_red",
+        "GW09_steel_light",
+        "GW09_iron"
+      ],
+      "editable_vertex_groups": [
+        "forged_handles",
+        "pivot_jaws"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 233960,
+      "sha256": "fbfba8c7d06c38aa5b5d24bbe50806f0e8eda7819fa9047e30c6b85fca3b5fef"
+    },
+    {
+      "id": "gw09_combination_wrench",
+      "name": "combination_wrench",
+      "title": "Combination wrench",
+      "file": "assets/combination_wrench.glb",
+      "dimensions_m_source_xyz": [
+        0.281,
+        0.062,
+        0.013
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.281,
+        0.013,
+        0.062
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.1405,
+          -0.031,
+          0.0
+        ],
+        [
+          0.1405,
+          0.031,
+          0.013
+        ]
+      ],
+      "triangles": 280,
+      "vertices_source": 150,
+      "material_count": 3,
+      "materials": [
+        "GW09_steel",
+        "GW09_steel_light",
+        "GW09_iron"
+      ],
+      "editable_vertex_groups": [
+        "box_end",
+        "open_jaw",
+        "recessed_shank",
+        "slim_forging"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 150880,
+      "sha256": "3b823a18939386037608e734d65d4efa14a4f8452ca38312c4864d978d9b51ab"
+    },
+    {
+      "id": "gw09_wood_claw_hammer",
+      "name": "wood_claw_hammer",
+      "title": "Wood-handled claw hammer",
+      "file": "assets/wood_claw_hammer.glb",
+      "dimensions_m_source_xyz": [
+        0.298,
+        0.16,
+        0.0465
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.298,
+        0.0465,
+        0.16
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.149,
+          -0.08,
+          0.0
+        ],
+        [
+          0.149,
+          0.08,
+          0.0465
+        ]
+      ],
+      "triangles": 320,
+      "vertices_source": 176,
+      "material_count": 4,
+      "materials": [
+        "GW09_bare_wood",
+        "GW09_wood",
+        "GW09_steel",
+        "GW09_steel_light"
+      ],
+      "editable_vertex_groups": [
+        "forged_head",
+        "shaped_wood_handle"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 212428,
+      "sha256": "1eb764b734b9517f4c6c31e480e3d402890dec0e426c0f4a3880b314d4f816b2"
+    },
+    {
+      "id": "gw09_open_paint_can_brush",
+      "name": "open_paint_can_brush",
+      "title": "Paint can + used brush",
+      "file": "assets/open_paint_can_brush.glb",
+      "dimensions_m_source_xyz": [
+        0.25258,
+        0.2378,
+        0.2005
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.25258,
+        0.2005,
+        0.2378
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.126291,
+          -0.118899,
+          0.0
+        ],
+        [
+          0.126291,
+          0.118899,
+          0.2005
+        ]
+      ],
+      "triangles": 1740,
+      "vertices_source": 956,
+      "material_count": 9,
+      "materials": [
+        "GW09_paint_taupe",
+        "GW09_steel",
+        "GW09_steel_light",
+        "GW09_paint_cream",
+        "GW09_paper",
+        "GW09_paint_blue",
+        "GW09_bare_wood",
+        "GW09_wood",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "bail_handle",
+        "generic_label",
+        "open_tin",
+        "resting_brush",
+        "scuffed_tin"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 541400,
+      "sha256": "593230be85e5d58c268ebc5b968053e90aa985f97cae28534c88fbad2289f8a0"
+    },
+    {
+      "id": "gw09_ribbed_motor_oil_jug",
+      "name": "ribbed_motor_oil_jug",
+      "title": "Motor-oil jug",
+      "file": "assets/ribbed_motor_oil_jug.glb",
+      "dimensions_m_source_xyz": [
+        0.235,
+        0.1255,
+        0.297
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.235,
+        0.297,
+        0.1255
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.1175,
+          -0.06275,
+          0.0
+        ],
+        [
+          0.1175,
+          0.06275,
+          0.297
+        ]
+      ],
+      "triangles": 1308,
+      "vertices_source": 708,
+      "material_count": 5,
+      "materials": [
+        "GW09_plastic_charcoal",
+        "GW09_red",
+        "GW09_paper",
+        "GW09_paint_red",
+        "GW09_iron"
+      ],
+      "editable_vertex_groups": [
+        "integral_handle",
+        "molded_body",
+        "molded_ribs",
+        "neck_cap",
+        "unbranded_label"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 302316,
+      "sha256": "d3dd096ccf235c9228fb92240b7a20a90f6262ab868cdfc69b1dced2889ddc8d"
+    },
+    {
+      "id": "gw09_workshop_funnel_pair",
+      "name": "workshop_funnel_pair",
+      "title": "Workshop funnel pair",
+      "file": "assets/workshop_funnel_pair.glb",
+      "dimensions_m_source_xyz": [
+        0.2795,
+        0.1905,
+        0.13946
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.2795,
+        0.13946,
+        0.1905
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.13975,
+          -0.09525,
+          0.0
+        ],
+        [
+          0.13975,
+          0.09525,
+          0.139464
+        ]
+      ],
+      "triangles": 1552,
+      "vertices_source": 828,
+      "material_count": 3,
+      "materials": [
+        "GW09_paint_red",
+        "GW09_steel",
+        "GW09_steel_light"
+      ],
+      "editable_vertex_groups": [
+        "large_hollow_funnel",
+        "small_funnel"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 240008,
+      "sha256": "d7ecd2b715cfd8df75d75b6aebf9f28db6f21b6fcbdbbe76c78f14717c698b39"
+    },
+    {
+      "id": "gw09_folding_timber_sawhorse",
+      "name": "folding_timber_sawhorse",
+      "title": "Folding timber sawhorse",
+      "file": "assets/folding_timber_sawhorse.glb",
+      "dimensions_m_source_xyz": [
+        0.99,
+        0.574,
+        0.767
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.99,
+        0.767,
+        0.574
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.495,
+          -0.287,
+          0.0
+        ],
+        [
+          0.495,
+          0.287,
+          0.767
+        ]
+      ],
+      "triangles": 1139,
+      "vertices_source": 680,
+      "material_count": 6,
+      "materials": [
+        "GW09_bare_wood",
+        "GW09_wood",
+        "GW09_iron",
+        "GW09_steel",
+        "GW09_steel_light",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "cross_bracing",
+        "cuts_and_chips",
+        "hinge_plates",
+        "splayed_legs",
+        "wood_top"
+      ],
+      "mounting": "floor",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 350904,
+      "sha256": "30c2396c538956f4f5c77320b3bb689c2399f92dfb16eb591ddbfd56678da87d"
+    },
+    {
+      "id": "gw09_treaded_tire_steel_rim",
+      "name": "treaded_tire_steel_rim",
+      "title": "Treaded tire + steel rim",
+      "file": "assets/treaded_tire_steel_rim.glb",
+      "dimensions_m_source_xyz": [
+        0.662,
+        0.27628,
+        0.662
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.662,
+        0.662,
+        0.27628
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.331,
+          -0.138138,
+          0.0
+        ],
+        [
+          0.331,
+          0.138138,
+          0.662
+        ]
+      ],
+      "triangles": 5992,
+      "vertices_source": 3172,
+      "material_count": 4,
+      "materials": [
+        "GW09_rubber",
+        "GW09_steel",
+        "GW09_steel_light",
+        "GW09_iron"
+      ],
+      "editable_vertex_groups": [
+        "chunky_tread",
+        "rubber_carcass",
+        "stamped_rim"
+      ],
+      "mounting": "floor",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 579440,
+      "sha256": "3c647e24a1022eb67b77a045766ca0b298ed5009174e5e726c448e73a0743ab9"
+    },
+    {
+      "id": "gw09_automotive_battery_case",
+      "name": "automotive_battery_case",
+      "title": "Automotive battery case",
+      "file": "assets/automotive_battery_case.glb",
+      "dimensions_m_source_xyz": [
+        0.293,
+        0.19999,
+        0.26626
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.293,
+        0.26626,
+        0.19999
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.1465,
+          -0.099993,
+          0.0
+        ],
+        [
+          0.1465,
+          0.099993,
+          0.266258
+        ]
+      ],
+      "triangles": 1588,
+      "vertices_source": 864,
+      "material_count": 7,
+      "materials": [
+        "GW09_plastic_charcoal",
+        "GW09_iron",
+        "GW09_steel",
+        "GW09_red",
+        "GW09_paper",
+        "GW09_rubber",
+        "GW09_paint_blue"
+      ],
+      "editable_vertex_groups": [
+        "cell_caps",
+        "faded_generic_label",
+        "folded_carry_handle",
+        "ribbed_case",
+        "terminal_posts"
+      ],
+      "mounting": "surface",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 397400,
+      "sha256": "baaf42aafe682d01c5eecbe5498b92aaeb49b9fb5fef0c9d4388c3cdba857875"
+    },
+    {
+      "id": "gw09_ratcheting_jack_stand",
+      "name": "ratcheting_jack_stand",
+      "title": "Ratcheting jack stand",
+      "file": "assets/ratcheting_jack_stand.glb",
+      "dimensions_m_source_xyz": [
+        0.295,
+        0.24,
+        0.4135
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.295,
+        0.4135,
+        0.24
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.1475,
+          -0.12,
+          0.0
+        ],
+        [
+          0.1475,
+          0.12,
+          0.4135
+        ]
+      ],
+      "triangles": 796,
+      "vertices_source": 484,
+      "material_count": 4,
+      "materials": [
+        "GW09_paint_red",
+        "GW09_steel",
+        "GW09_rubber",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "four_splayed_feet",
+        "pyramid_head",
+        "ratchet_column",
+        "release_lever",
+        "saddle"
+      ],
+      "mounting": "floor",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 216516,
+      "sha256": "f9f0ca52b9b7d8528a075fa5ad921eafca9f6cbf95e6f3b323b85d228eb8d46b"
+    },
+    {
+      "id": "gw09_workbench_pegboard",
+      "name": "workbench_pegboard",
+      "title": "Workbench + pegboard",
+      "file": "assets/workbench_pegboard.glb",
+      "dimensions_m_source_xyz": [
+        1.82,
+        0.659,
+        1.663
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.82,
+        1.663,
+        0.659
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.91,
+          -0.3295,
+          0.0
+        ],
+        [
+          0.91,
+          0.3295,
+          1.663
+        ]
+      ],
+      "triangles": 4406,
+      "vertices_source": 3896,
+      "material_count": 8,
+      "materials": [
+        "GW09_wood",
+        "GW09_bare_wood",
+        "GW09_paint_blue",
+        "GW09_iron",
+        "GW09_paint_taupe",
+        "GW09_steel",
+        "GW09_steel_light",
+        "GW09_rust"
+      ],
+      "editable_vertex_groups": [
+        "bench_wear",
+        "fasteners",
+        "peg_hooks",
+        "pegboard_frame",
+        "pegboard_perforation_insets",
+        "scarred_plank_top",
+        "shallow_drawers",
+        "slatted_lower_shelf",
+        "steel_angle_frame"
+      ],
+      "mounting": "floor",
+      "pivot": "floor-centred placement origin",
+      "collider_enabled": false,
+      "colliders_supplied": false,
+      "collision": "render-only; no colliders supplied",
+      "bytes": 637724,
+      "sha256": "dd496a99dc869234e0d8f5f495929df3c38503512b320d0fc77e71c3cacbd77f"
+    }
+  ]
+}

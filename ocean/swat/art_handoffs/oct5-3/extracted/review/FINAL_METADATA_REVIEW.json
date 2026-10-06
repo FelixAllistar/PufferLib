@@ -1,0 +1,77 @@
+{
+  "status": "QUALIFIED_FAITHFUL_CUBIC_MOTION_CONTINUITY_CARRY_EXPORT_WITH_SUBSTANTIVE_STORED_ACCESSORY_COLLISION",
+  "glb_sha256": "ea828e53f305de77b35ba55abdf67470ae98e871911c43fae5505c5022d47dd1",
+  "source_sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+  "source_and_checkpoint_identity_verified": true,
+  "all_source_input_hashes_preserved": true,
+  "binary_pose_seam_matrix_max_gap": 0.0,
+  "binary_joint_velocity_residual_m_s": 5.240481485770677e-05,
+  "binary_joint_angular_velocity_residual_deg_s": 0.007128119492911435,
+  "binary_all_vertex_velocity_residual_m_s": 5.5625678900413646e-05,
+  "maximum_native_scalar_animation_vertex_error_m": 4.550976142801087e-07,
+  "maximum_native_captured_vertex_error_m": 3.7721248685044478e-06,
+  "maximum_native_direct_evaluated_vertex_error_m": 9.769742296441435e-07,
+  "exported_vertices": 48755,
+  "source_capture_phases": 1243,
+  "source_evaluated_controls": 16,
+  "static_arrays_exact_to_pinned_template": {
+    "status": "PASS",
+    "comparison_glb_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+    "accessors_checked": 39,
+    "checks": {
+      "nodes": true,
+      "skins": true,
+      "meshes": true,
+      "materials": true,
+      "scenes": true,
+      "scene": true,
+      "geometry_and_inverse_bind_arrays_exact": true
+    }
+  },
+  "visible_B_and_hips_sleeve_preserved": true,
+  "B_relative_position_deviation_m": 8.200130001381817e-05,
+  "B_relative_matrix_max_error_vs_native": 7.976561239297908e-08,
+  "rifle_attachment_formula": "Wnode[resolved Prop_Rifle node] * IBM[resolved skin joint slot] * B_bind_mesh",
+  "optic_head_node": 1,
+  "optic_head_skin_slot": 5,
+  "source_accessory_limit": {
+    "maximum_sampled_inward_distance_into_closed_thigh_hardware_mm": 18.392138183116913,
+    "frame": 3,
+    "time_s": 0.1,
+    "body_component": 17904,
+    "maximum_sampled_body_inward_distance_into_closed_sleeve_wall_mm": 3.9998574910146134,
+    "sleeve_body_triangle_pair_range": [
+      28,
+      148
+    ],
+    "static_belt_mount_pairs": 28,
+    "classification": "New dynamic stored-accessory fit failure relative to planted static reference, inherited unchanged from pre-seam native carry. Source pose and shared mesh retained."
+  },
+  "source_spare_open_shell_limit": {
+    "maximum_body_triangle_pairs": 12,
+    "body_component": 5118,
+    "actual_inward_depth": null,
+    "reason": "Magazine shell has30 boundary edges and pants component74 after coincident seam welding; no solid containment/depth classification is valid."
+  },
+  "full_clearance_approved": false,
+  "runtime_approved": false,
+  "ADS_approved": false,
+  "source_body_and_material_defects_retained": true,
+  "independent_review_scope": "Actual binary, source scalar replay, direct native capture comparison and package mapping metadata. Source collision depths are inherited from pinned independent native source review, not reclassified as zero-depth or hidden by this export.",
+  "final_zip_integrity": "Pending producer sealing; byte pin and script portability verified separately after final package creation.",
+  "README_review": {
+    "status": "PASS",
+    "sha256": "a4c69bcc08f28a72b98da0853a8af73eb7684d8907b748afed4deb876d29404a",
+    "checks": [
+      "Correct source and binary pins, timing, 683 changed scalar curves and168700 keys",
+      "18.392mm inward-distance collision prominent and not presented as clearance",
+      "Visible noncollapsed B and sleeve source state retained independently of engine policy",
+      "Native B0.082mm relative variation and exact source/export numerical differences disclosed",
+      "Analytic derivatives distinguished from practical finite wrap chords",
+      "Correct rifle Wnode\u00d7IBM\u00d7B and Head node1\u2192slot5 optics",
+      "Stock Blender importer failure distinguished from cubic-aware replay",
+      "Source-only GLB flags explicitly distinguished from current numerical export qualification"
+    ]
+  },
+  "body_vertices_above_four_influences_verified": 444
+}

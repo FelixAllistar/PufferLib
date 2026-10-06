@@ -1,0 +1,1884 @@
+{
+  "candidate": "/workspace/scratch/eac4961518d4/animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_right/seam_a/walk_right_ready_n_c1.editable.blend",
+  "sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+  "action": "Walk Right / Shared Ready N C1 Loop A",
+  "unsupported_FK_flags": [],
+  "angular_undefined_collapsed_bones": [
+    "Prop_Magazine_B"
+  ],
+  "endpoint_matrix_verification_max_error": [
+    4.43346426459712e-07,
+    4.43346426459712e-07
+  ],
+  "endpoint_basis_verification_max_error": [
+    1.7869683921478696e-07,
+    1.7869683921478696e-07
+  ],
+  "worst_linear": {
+    "bone": "mixamorig:LeftToe_End",
+    "linear_velocity_gap_m_s": 6.85298261758363e-05,
+    "angular_velocity_gap_deg_s": 0.0037468374513454825,
+    "outgoing_linear_m_s": [
+      -4.410575711647589,
+      -0.5935303124009361,
+      0.5406768232163521
+    ],
+    "incoming_linear_m_s": [
+      -4.410643130202063,
+      -0.5935394063405184,
+      0.5406850921855315
+    ],
+    "outgoing_angular_deg_s": [
+      -142.21214959322796,
+      189.72494406970603,
+      60.25526096551635
+    ],
+    "incoming_angular_deg_s": [
+      -142.21433012714104,
+      189.72784266215047,
+      60.256200233626046
+    ],
+    "matrix_derivative_max_abs_gap_per_s": 6.741855447334189e-05
+  },
+  "worst_angular": {
+    "bone": "mixamorig:LeftLeg",
+    "linear_velocity_gap_m_s": 3.0114263246710587e-05,
+    "angular_velocity_gap_deg_s": 0.004866553584832237,
+    "outgoing_linear_m_s": [
+      -1.8358319181375224,
+      0.13559894020951826,
+      0.7007200195155961
+    ],
+    "incoming_linear_m_s": [
+      -1.8358599858752767,
+      0.13560101332313879,
+      0.7007307327386485
+    ],
+    "outgoing_angular_deg_s": [
+      -91.59140636614066,
+      303.3363615022541,
+      -30.298209560405923
+    ],
+    "incoming_angular_deg_s": [
+      -91.59280669109418,
+      303.34099915870223,
+      -30.298672784419765
+    ],
+    "matrix_derivative_max_abs_gap_per_s": 7.254401182876791e-05
+  },
+  "bones": [
+    {
+      "bone": "mixamorig:Hips",
+      "linear_velocity_gap_m_s": 6.199730401591267e-06,
+      "angular_velocity_gap_deg_s": 0.0011403956222283203,
+      "outgoing_linear_m_s": [
+        -0.11605817478721814,
+        -0.05831492358316828,
+        -0.3841432814555383
+      ],
+      "incoming_linear_m_s": [
+        -0.11605994918030442,
+        -0.05831581514981082,
+        -0.384149154554818
+      ],
+      "outgoing_angular_deg_s": [
+        1.3529831403543406,
+        15.804106628297948,
+        -72.88408000045311
+      ],
+      "incoming_angular_deg_s": [
+        1.3530038258763692,
+        15.804348254513318,
+        -72.88519431237373
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 1.4334089280976237e-05
+    },
+    {
+      "bone": "mixamorig:Spine",
+      "linear_velocity_gap_m_s": 6.134249003622613e-06,
+      "angular_velocity_gap_deg_s": 0.0006418288840258135,
+      "outgoing_linear_m_s": [
+        -0.05512312402605465,
+        -0.08367842000614556,
+        -0.3885104322801848
+      ],
+      "incoming_linear_m_s": [
+        -0.055123966793833364,
+        -0.08367969935083802,
+        -0.3885163721480678
+      ],
+      "outgoing_angular_deg_s": [
+        -5.744440248954902,
+        4.159629394204102,
+        -41.376821881947315
+      ],
+      "incoming_angular_deg_s": [
+        -5.744528074694712,
+        4.159692990048611,
+        -41.37745448492261
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 8.481668121618213e-06
+    },
+    {
+      "bone": "mixamorig:Spine1",
+      "linear_velocity_gap_m_s": 6.084001415727553e-06,
+      "angular_velocity_gap_deg_s": 0.0005060583195805206,
+      "outgoing_linear_m_s": [
+        -0.04792739992947593,
+        -0.07230987912342524,
+        -0.3883667683323713
+      ],
+      "incoming_linear_m_s": [
+        -0.04792813268309052,
+        -0.07231098465648934,
+        -0.38837270600380136
+      ],
+      "outgoing_angular_deg_s": [
+        -4.288707683654785,
+        5.792882859655694,
+        -32.3056001308436
+      ],
+      "incoming_angular_deg_s": [
+        -4.28877325295463,
+        5.792971426026096,
+        -32.30609404549997
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 6.3599751897736034e-06
+    },
+    {
+      "bone": "mixamorig:Spine2",
+      "linear_velocity_gap_m_s": 5.900182357286595e-06,
+      "angular_velocity_gap_deg_s": 0.0003063255557563664,
+      "outgoing_linear_m_s": [
+        -0.04803707800197651,
+        -0.033844629261942275,
+        -0.38141470428573865
+      ],
+      "incoming_linear_m_s": [
+        -0.04803781243161542,
+        -0.03384514670568497,
+        -0.38142053566781564
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771237595,
+        1.308145844521567,
+        -11.130318111743248
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695813365,
+        1.3081658445395177,
+        -11.130488281232907
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.281862013415626e-05
+    },
+    {
+      "bone": "mixamorig:Neck",
+      "linear_velocity_gap_m_s": 5.473120741548313e-06,
+      "angular_velocity_gap_deg_s": 0.0003386974518073046,
+      "outgoing_linear_m_s": [
+        -0.053881905937464905,
+        0.02077371017490895,
+        -0.36627421997198784
+      ],
+      "incoming_linear_m_s": [
+        -0.05388712594327379,
+        0.020772130454203327,
+        -0.36627467939825936
+      ],
+      "outgoing_angular_deg_s": [
+        -7.53077545920207,
+        5.156476846694437,
+        -20.185773957877117
+      ],
+      "incoming_angular_deg_s": [
+        -7.530890595895203,
+        5.156555683174134,
+        -20.186082574654407
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.441909130363907e-05
+    },
+    {
+      "bone": "mixamorig:Head",
+      "linear_velocity_gap_m_s": 7.423675023129319e-06,
+      "angular_velocity_gap_deg_s": 0.000310081732924596,
+      "outgoing_linear_m_s": [
+        -0.06246286768087368,
+        0.04180068269078516,
+        -0.3577120371424276
+      ],
+      "incoming_linear_m_s": [
+        -0.06246981434201726,
+        0.04179863657197712,
+        -0.3577104036652687
+      ],
+      "outgoing_angular_deg_s": [
+        -15.931520810541201,
+        1.8641551053202912,
+        -12.411874854710963
+      ],
+      "incoming_angular_deg_s": [
+        -15.931764384777454,
+        1.8641836060351102,
+        -12.412064617673053
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 6.45532050030373e-05
+    },
+    {
+      "bone": "mixamorig:HeadTop_End",
+      "linear_velocity_gap_m_s": 1.6942489110495938e-05,
+      "angular_velocity_gap_deg_s": 0.000310081732924596,
+      "outgoing_linear_m_s": [
+        -0.08708311018836726,
+        0.11569443776650819,
+        -0.3150099745040703
+      ],
+      "incoming_linear_m_s": [
+        -0.08709447704581899,
+        0.11568793187527006,
+        -0.3149992266732134
+      ],
+      "outgoing_angular_deg_s": [
+        -15.931520810541201,
+        1.8641551053202912,
+        -12.411874854710963
+      ],
+      "incoming_angular_deg_s": [
+        -15.931764384777454,
+        1.8641836060351102,
+        -12.412064617673053
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 6.45532050030373e-05
+    },
+    {
+      "bone": "mixamorig:LeftShoulder",
+      "linear_velocity_gap_m_s": 4.806194256968572e-06,
+      "angular_velocity_gap_deg_s": 0.00030632557305344907,
+      "outgoing_linear_m_s": [
+        -0.0632873036258298,
+        0.010511139038941957,
+        -0.3534450196481955
+      ],
+      "incoming_linear_m_s": [
+        -0.0632900617146255,
+        0.010507203871816041,
+        -0.3534451027693228
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877129007,
+        1.3081458444286276,
+        -11.130318111613711
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695839626,
+        1.3081658444930522,
+        -11.130488281168164
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.396930339508164e-05
+    },
+    {
+      "bone": "mixamorig:LeftArm",
+      "linear_velocity_gap_m_s": 7.595549235231211e-06,
+      "angular_velocity_gap_deg_s": 0.0003063257044500563,
+      "outgoing_linear_m_s": [
+        -0.08373221468107671,
+        -0.00969505561518961,
+        -0.3253168905678649
+      ],
+      "incoming_linear_m_s": [
+        -0.08373134363320257,
+        -0.009702579153896683,
+        -0.32531631610367195
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877106852,
+        1.3081458441448481,
+        -11.130318111504444
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695728707,
+        1.308165844351135,
+        -11.13048828111367
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.281488377027131e-05
+    },
+    {
+      "bone": "mixamorig:LeftForeArm",
+      "linear_velocity_gap_m_s": 8.478407945625572e-06,
+      "angular_velocity_gap_deg_s": 0.0003063258199224712,
+      "outgoing_linear_m_s": [
+        -0.1182085487336862,
+        -0.02189190179416322,
+        -0.27533219058810654
+      ],
+      "incoming_linear_m_s": [
+        -0.11820899340563369,
+        -0.021900037652561394,
+        -0.27532984677150185
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508770741143,
+        1.3081458439860767,
+        -11.13031811159582
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695564998,
+        1.3081658442717565,
+        -11.130488281159355
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.93670729365203e-05
+    },
+    {
+      "bone": "mixamorig:LeftHand",
+      "linear_velocity_gap_m_s": 1.3303575239701309e-05,
+      "angular_velocity_gap_deg_s": 0.00030632542543477945,
+      "outgoing_linear_m_s": [
+        -0.14704197779733386,
+        0.016034316973205766,
+        -0.22787018280142785
+      ],
+      "incoming_linear_m_s": [
+        -0.14704760671272935,
+        0.016025322427462622,
+        -0.22786215792931028
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771440405,
+        1.3081458448140082,
+        -11.130318111875276
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269591461,
+        1.3081658446856892,
+        -11.130488281299089
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.4734679308331615e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb1",
+      "linear_velocity_gap_m_s": 1.5014985703165321e-05,
+      "angular_velocity_gap_deg_s": 0.00030632537757370123,
+      "outgoing_linear_m_s": [
+        -0.15234134837044794,
+        0.02732814708500493,
+        -0.21863734834963383
+      ],
+      "incoming_linear_m_s": [
+        -0.15234791980460005,
+        0.02731858525865841,
+        -0.21862781747738783
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877188245,
+        1.3081458446708571,
+        -11.130318111404943
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696135607,
+        1.3081658446140652,
+        -11.13048828106404
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.519573910468199e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb2",
+      "linear_velocity_gap_m_s": 1.6489079039511018e-05,
+      "angular_velocity_gap_deg_s": 0.0003063255535805258,
+      "outgoing_linear_m_s": [
+        -0.1577837601658265,
+        0.03426601774824917,
+        -0.20970182297070433
+      ],
+      "incoming_linear_m_s": [
+        -0.15779049414417634,
+        0.03425549571778751,
+        -0.20969106052961883
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771547772,
+        1.3081458443171734,
+        -11.130318111312576
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695968423,
+        1.308165844437251,
+        -11.130488281017785
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.5617337880544664e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb3",
+      "linear_velocity_gap_m_s": 1.8025887931686386e-05,
+      "angular_velocity_gap_deg_s": 0.0003063258047600192,
+      "outgoing_linear_m_s": [
+        -0.1619590274707849,
+        0.043837095674879256,
+        -0.20234734776052557
+      ],
+      "incoming_linear_m_s": [
+        -0.161966284579992,
+        0.04382584443797731,
+        -0.20233527810146418
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508770746887,
+        1.3081458440323874,
+        -11.130318111637084
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695568018,
+        1.3081658442948543,
+        -11.130488281180117
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.659121996271719e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandThumb4",
+      "linear_velocity_gap_m_s": 1.9066921261542794e-05,
+      "angular_velocity_gap_deg_s": 0.00030632552181634467,
+      "outgoing_linear_m_s": [
+        -0.166544678045785,
+        0.04861592280832328,
+        -0.19494499557165904
+      ],
+      "incoming_linear_m_s": [
+        -0.16655228115527723,
+        0.04860417070531915,
+        -0.19493204843732656
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508767080334,
+        1.3081458557590309,
+        -11.13031811450744
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762691719875,
+        1.308165856011966,
+        -11.130488283813227
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.6591225352489154e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex1",
+      "linear_velocity_gap_m_s": 1.6426762202662986e-05,
+      "angular_velocity_gap_deg_s": 0.00030632549935807657,
+      "outgoing_linear_m_s": [
+        -0.1538579344710682,
+        0.041913563243756176,
+        -0.21466401311893282
+      ],
+      "incoming_linear_m_s": [
+        -0.15386679918189566,
+        0.04190482071231573,
+        -0.21465329754324036
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877184807,
+        1.3081458442913907,
+        -11.130318111062026
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696118323,
+        1.3081658444243152,
+        -11.130488280892541
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.227139849223265e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex2",
+      "linear_velocity_gap_m_s": 1.7616401299119286e-05,
+      "angular_velocity_gap_deg_s": 0.00030632512972376394,
+      "outgoing_linear_m_s": [
+        -0.15340799247168316,
+        0.05346191830858721,
+        -0.21397759315669873
+      ],
+      "incoming_linear_m_s": [
+        -0.15341789926092797,
+        0.053453194836212733,
+        -0.2139659272169028
+      ],
+      "outgoing_angular_deg_s": [
+        -16.6085087733033,
+        1.3081458445217284,
+        -11.130318110193954
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269684574,
+        1.3081658445395015,
+        -11.13048828045864
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.218654895571207e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex3",
+      "linear_velocity_gap_m_s": 1.8216056139391418e-05,
+      "angular_velocity_gap_deg_s": 0.0003063251703634564,
+      "outgoing_linear_m_s": [
+        -0.1508926506322192,
+        0.06114875742077954,
+        -0.21682441399030486
+      ],
+      "incoming_linear_m_s": [
+        -0.15090280797641425,
+        0.061139798744261106,
+        -0.21681223223447021
+      ],
+      "outgoing_angular_deg_s": [
+        -16.6085087735426,
+        1.3081458442240628,
+        -11.130318109725483
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269696534,
+        1.3081658443906306,
+        -11.130488280224457
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.2026963579133254e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandIndex4",
+      "linear_velocity_gap_m_s": 1.816559195803124e-05,
+      "angular_velocity_gap_deg_s": 0.0003063251715696181,
+      "outgoing_linear_m_s": [
+        -0.14867628368292507,
+        0.06251946375056285,
+        -0.21996778816754511
+      ],
+      "incoming_linear_m_s": [
+        -0.14868612786316734,
+        0.06251026099807112,
+        -0.21995560661620223
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508774209604,
+        1.3081458486003,
+        -11.130318111454445
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762697594706,
+        1.3081658487945382,
+        -11.130488282008496
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.20269634552341e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle1",
+      "linear_velocity_gap_m_s": 1.5985613174029916e-05,
+      "angular_velocity_gap_deg_s": 0.000306325517877334,
+      "outgoing_linear_m_s": [
+        -0.14912410449921507,
+        0.04296659457680255,
+        -0.2216029875595469
+      ],
+      "incoming_linear_m_s": [
+        -0.14913347199045274,
+        0.04295867905455118,
+        -0.22159273405068652
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771837926,
+        1.3081458442370792,
+        -11.130318111016944
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269611329,
+        1.3081658443971471,
+        -11.130488280869974
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.145758069996937e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle2",
+      "linear_velocity_gap_m_s": 1.728585784482827e-05,
+      "angular_velocity_gap_deg_s": 0.0003063257991297365,
+      "outgoing_linear_m_s": [
+        -0.14879675161944947,
+        0.05506577347402529,
+        -0.22066882952116718
+      ],
+      "incoming_linear_m_s": [
+        -0.14880717661888512,
+        0.055057830762576324,
+        -0.22065755860270253
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508770772218,
+        1.3081458440335105,
+        -11.130318111618719
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695580534,
+        1.3081658442954065,
+        -11.13048828117081
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.3042182477394794e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle3",
+      "linear_velocity_gap_m_s": 1.7609271219120127e-05,
+      "angular_velocity_gap_deg_s": 0.00030632574898861834,
+      "outgoing_linear_m_s": [
+        -0.1464564499870114,
+        0.060106829509745094,
+        -0.22356519704372013
+      ],
+      "incoming_linear_m_s": [
+        -0.1464667810489196,
+        0.06009853477223479,
+        -0.22355359734879515
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877151312,
+        1.3081458436942497,
+        -11.13031811073351
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269595092,
+        1.3081658441257737,
+        -11.130488280728281
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.131741828381503e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandMiddle4",
+      "linear_velocity_gap_m_s": 1.7172325072212984e-05,
+      "angular_velocity_gap_deg_s": 0.0003063257724865476,
+      "outgoing_linear_m_s": [
+        -0.1447372237851524,
+        0.05756260625784584,
+        -0.22642722581419567
+      ],
+      "incoming_linear_m_s": [
+        -0.14474688771128938,
+        0.05755402971001596,
+        -0.2264159147529136
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850874802251,
+        1.3081458486374755,
+        -11.130318102001496
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762672425698,
+        1.3081658491530421,
+        -11.130488272080337
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.131741488896292e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandRing1",
+      "linear_velocity_gap_m_s": 1.552569388744258e-05,
+      "angular_velocity_gap_deg_s": 0.000306325369204918,
+      "outgoing_linear_m_s": [
+        -0.1447124840276064,
+        0.043030774136192676,
+        -0.2281772172616652
+      ],
+      "incoming_linear_m_s": [
+        -0.14472216461914275,
+        0.04302355806903782,
+        -0.2281674570519846
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508772589285,
+        1.3081458442167269,
+        -11.130318110433478
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696488995,
+        1.308165844386994,
+        -11.130488280578229
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.9483864960128114e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandRing2",
+      "linear_velocity_gap_m_s": 1.6540598775935346e-05,
+      "angular_velocity_gap_deg_s": 0.0003063251847747398,
+      "outgoing_linear_m_s": [
+        -0.14414219748020934,
+        0.052620461937920346,
+        -0.22790036443299774
+      ],
+      "incoming_linear_m_s": [
+        -0.14415268764375594,
+        0.05261322320548539,
+        -0.2278898217279669
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508773178936,
+        1.308145844424604,
+        -11.130318110193091
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696783792,
+        1.3081658444908708,
+        -11.13048828045804
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.426244621814942e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandRing3",
+      "linear_velocity_gap_m_s": 1.6812447407938322e-05,
+      "angular_velocity_gap_deg_s": 0.00030632509924692495,
+      "outgoing_linear_m_s": [
+        -0.14288645565194463,
+        0.05632754107963462,
+        -0.22933595359997677
+      ],
+      "incoming_linear_m_s": [
+        -0.1428967887438641,
+        0.05631991394283711,
+        -0.22932510406618492
+      ],
+      "outgoing_angular_deg_s": [
+        -16.6085087734384,
+        1.3081458445306275,
+        -11.130318110101385
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696913526,
+        1.3081658445438886,
+        -11.130488280412184
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.899982956722745e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandRing4",
+      "linear_velocity_gap_m_s": 1.659477108155249e-05,
+      "angular_velocity_gap_deg_s": 0.0003063251920538876,
+      "outgoing_linear_m_s": [
+        -0.14211076397472297,
+        0.055050032607121525,
+        -0.23064164589344596
+      ],
+      "incoming_linear_m_s": [
+        -0.14212054801717028,
+        0.055042041474695144,
+        -0.230630884818073
+      ],
+      "outgoing_angular_deg_s": [
+        -16.6085087852892,
+        1.3081458437790898,
+        -11.130318114492042
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762708838928,
+        1.3081658438947619,
+        -11.13048828484655
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.899983627406219e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky1",
+      "linear_velocity_gap_m_s": 1.461207135211419e-05,
+      "angular_velocity_gap_deg_s": 0.0003063256605426046,
+      "outgoing_linear_m_s": [
+        -0.14092860002401894,
+        0.03828614376325166,
+        -0.23437921715357943
+      ],
+      "incoming_linear_m_s": [
+        -0.14093783660971057,
+        0.038279255980302664,
+        -0.23437023068820043
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877150103,
+        1.3081458439950873,
+        -11.130318111034775
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695944968,
+        1.3081658442761723,
+        -11.13048828087885
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.926166424449539e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky2",
+      "linear_velocity_gap_m_s": 1.5516963650671716e-05,
+      "angular_velocity_gap_deg_s": 0.0003063252212408196,
+      "outgoing_linear_m_s": [
+        -0.13944489684858458,
+        0.047730105220130194,
+        -0.23548204269707826
+      ],
+      "incoming_linear_m_s": [
+        -0.1394549391764776,
+        0.04772328540488849,
+        -0.23547237740186838
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508772748028,
+        1.3081458445978256,
+        -11.130318110684815
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696568462,
+        1.30816584457746,
+        -11.130488280703911
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.6679258922305e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky3",
+      "linear_velocity_gap_m_s": 1.5968592880099914e-05,
+      "angular_velocity_gap_deg_s": 0.0003063252146741964,
+      "outgoing_linear_m_s": [
+        -0.1386116385988761,
+        0.052693765088875945,
+        -0.23613986906516915
+      ],
+      "incoming_linear_m_s": [
+        -0.13862168212620118,
+        0.05268656214585997,
+        -0.23612975762959604
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877276835,
+        1.308145844605694,
+        -11.130318110677363
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696578655,
+        1.308165844581365,
+        -11.130488280700215
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.625296094360991e-05
+    },
+    {
+      "bone": "mixamorig:LeftHandPinky4",
+      "linear_velocity_gap_m_s": 1.6204015209128437e-05,
+      "angular_velocity_gap_deg_s": 0.0003063252144688821,
+      "outgoing_linear_m_s": [
+        -0.1380282932499241,
+        0.05540003743375825,
+        -0.23669065436338832
+      ],
+      "incoming_linear_m_s": [
+        -0.13803823863122927,
+        0.05539253794476611,
+        -0.23668029013816647
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508765690665,
+        1.3081458411861953,
+        -11.130318099839144
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876268950063,
+        1.3081658411619466,
+        -11.130488269862123
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.6252961074324797e-05
+    },
+    {
+      "bone": "mixamorig:RightShoulder",
+      "linear_velocity_gap_m_s": 6.966132057730587e-06,
+      "angular_velocity_gap_deg_s": 0.00030632560978339054,
+      "outgoing_linear_m_s": [
+        -0.042479422186531446,
+        0.017213792632594087,
+        -0.38370683765327995
+      ],
+      "incoming_linear_m_s": [
+        -0.04248593345563129,
+        0.017214849085349742,
+        -0.3837090769116684
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771295238,
+        1.3081458443036516,
+        -11.130318111488489
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695842223,
+        1.308165844430547,
+        -11.130488281105553
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.338811786912643e-05
+    },
+    {
+      "bone": "mixamorig:RightArm",
+      "linear_velocity_gap_m_s": 1.0646707681930639e-05,
+      "angular_velocity_gap_deg_s": 0.00030632572804680744,
+      "outgoing_linear_m_s": [
+        -0.035464656157002616,
+        0.007560638440091054,
+        -0.39531573427743244
+      ],
+      "incoming_linear_m_s": [
+        -0.03547319002048219,
+        0.007565237103456818,
+        -0.39532013630580864
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508770449998,
+        1.3081458444886596,
+        -11.130318112302234
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695419596,
+        1.30816584452307,
+        -11.13048828151244
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.949896962736731e-05
+    },
+    {
+      "bone": "mixamorig:RightForeArm",
+      "linear_velocity_gap_m_s": 1.7287645722499185e-05,
+      "angular_velocity_gap_deg_s": 0.0003063258942919559,
+      "outgoing_linear_m_s": [
+        -0.041050018317254834,
+        0.013231879670454205,
+        -0.38633541753492906
+      ],
+      "incoming_linear_m_s": [
+        -0.041064032254223115,
+        0.013240956278575787,
+        -0.38633989943745844
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877091013,
+        1.3081458436251785,
+        -11.130318111118857
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269564964,
+        1.3081658440913204,
+        -11.130488280920915
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.080484833398178e-05
+    },
+    {
+      "bone": "mixamorig:RightHand",
+      "linear_velocity_gap_m_s": 8.444636280950428e-06,
+      "angular_velocity_gap_deg_s": 0.00030632545032295084,
+      "outgoing_linear_m_s": [
+        -0.08425535125549612,
+        -0.008396166074588669,
+        -0.3244161532836482
+      ],
+      "incoming_linear_m_s": [
+        -0.08426357540434096,
+        -0.008394732752441085,
+        -0.3244174264078828
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771449216,
+        1.3081458447258867,
+        -11.130318111783204
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695919093,
+        1.308165844641665,
+        -11.130488281253093
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.2002990702967304e-05
+    },
+    {
+      "bone": "mixamorig:RightHandThumb1",
+      "linear_velocity_gap_m_s": 8.174395114181819e-06,
+      "angular_velocity_gap_deg_s": 0.0003063254153453873,
+      "outgoing_linear_m_s": [
+        -0.08757246640579773,
+        0.0012449262335519826,
+        -0.3183314300791406
+      ],
+      "incoming_linear_m_s": [
+        -0.08758063798263216,
+        0.0012451225300963873,
+        -0.3183313432736774
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771469857,
+        1.3081458448273773,
+        -11.13031811186626
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695929332,
+        1.3081658446924136,
+        -11.130488281294667
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.3021804094986174e-05
+    },
+    {
+      "bone": "mixamorig:RightHandThumb2",
+      "linear_velocity_gap_m_s": 7.768475692195247e-06,
+      "angular_velocity_gap_deg_s": 0.0003063254841973165,
+      "outgoing_linear_m_s": [
+        -0.09167811078362867,
+        0.0045015099526133995,
+        -0.3118213929379537
+      ],
+      "incoming_linear_m_s": [
+        -0.09168575618708219,
+        0.004500513634922267,
+        -0.31182044195337366
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877136138,
+        1.308145844673676,
+        -11.130318111798477
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695875104,
+        1.3081658446155777,
+        -11.130488281260844
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.2511734643581036e-05
+    },
+    {
+      "bone": "mixamorig:RightHandThumb3",
+      "linear_velocity_gap_m_s": 7.220060661763067e-06,
+      "angular_velocity_gap_deg_s": 0.00030632565646950786,
+      "outgoing_linear_m_s": [
+        -0.09675022790094048,
+        0.0023760412233934445,
+        -0.30450278691888444
+      ],
+      "incoming_linear_m_s": [
+        -0.09675697039992483,
+        0.002373885541298665,
+        -0.3045013652937187
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877090867,
+        1.30814584441263,
+        -11.130318111884637
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695648814,
+        1.3081658444850717,
+        -11.130488281303913
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.2036003934247936e-05
+    },
+    {
+      "bone": "mixamorig:RightHandThumb4",
+      "linear_velocity_gap_m_s": 7.155307625231565e-06,
+      "angular_velocity_gap_deg_s": 0.00030632570636605276,
+      "outgoing_linear_m_s": [
+        -0.10198324792330461,
+        0.000733343780967024,
+        -0.29688865474639087
+      ],
+      "incoming_linear_m_s": [
+        -0.10198947574458757,
+        0.0007303593146113813,
+        -0.296886782413661
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508773193044,
+        1.3081458495030531,
+        -11.130318116993491
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762697947697,
+        1.3081658497126407,
+        -11.130488286464823
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.2036001050464447e-05
+    },
+    {
+      "bone": "mixamorig:RightHandIndex1",
+      "linear_velocity_gap_m_s": 8.749029318581798e-06,
+      "angular_velocity_gap_deg_s": 0.0003063252759377592,
+      "outgoing_linear_m_s": [
+        -0.10023180465533767,
+        0.011199924033887263,
+        -0.29827462315702635
+      ],
+      "incoming_linear_m_s": [
+        -0.10024003650331563,
+        0.011198138848885436,
+        -0.2982722577168148
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877085765,
+        1.3081458457058106,
+        -11.130318113179085
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269562333,
+        1.30816584513161,
+        -11.130488281951253
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.3843084165575965e-05
+    },
+    {
+      "bone": "mixamorig:RightHandIndex2",
+      "linear_velocity_gap_m_s": 9.434811039813081e-06,
+      "angular_velocity_gap_deg_s": 0.00030632519260480746,
+      "outgoing_linear_m_s": [
+        -0.10587554369264071,
+        0.016245409964288464,
+        -0.2892619263441993
+      ],
+      "incoming_linear_m_s": [
+        -0.10588395627733523,
+        0.016242839669466286,
+        -0.28925851494234056
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771372634,
+        1.3081458456303081,
+        -11.13031811271928
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695880742,
+        1.3081658450938607,
+        -11.130488281721345
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.364842243801236e-05
+    },
+    {
+      "bone": "mixamorig:RightHandIndex3",
+      "linear_velocity_gap_m_s": 9.926653963122766e-06,
+      "angular_velocity_gap_deg_s": 0.00030632539416941437,
+      "outgoing_linear_m_s": [
+        -0.11143257358749216,
+        0.019085089876109115,
+        -0.2806373069338467
+      ],
+      "incoming_linear_m_s": [
+        -0.11144080918408143,
+        0.019081586975571257,
+        -0.28063301239131644
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771191367,
+        1.3081458450872985,
+        -11.130318112328018
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695790134,
+        1.308165844822384,
+        -11.130488281525736
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.168646753795579e-05
+    },
+    {
+      "bone": "mixamorig:RightHandIndex4",
+      "linear_velocity_gap_m_s": 1.031913019992862e-05,
+      "angular_velocity_gap_deg_s": 0.00030632531176251915,
+      "outgoing_linear_m_s": [
+        -0.11586369839368857,
+        0.020607860878661875,
+        -0.2738470594289195
+      ],
+      "incoming_linear_m_s": [
+        -0.11587166200546158,
+        0.02060355152871397,
+        -0.2738421102028549
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508781972183,
+        1.308145867773193,
+        -11.13031812014196
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762706477933,
+        1.3081658674933838,
+        -11.130488289331879
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.16864660578689e-05
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle1",
+      "linear_velocity_gap_m_s": 8.362201804441087e-06,
+      "angular_velocity_gap_deg_s": 0.00030632562484709033,
+      "outgoing_linear_m_s": [
+        -0.10470954495014415,
+        0.005127376355960318,
+        -0.2923095367605782
+      ],
+      "incoming_linear_m_s": [
+        -0.1047173245446372,
+        0.005125300958222066,
+        -0.29230727909524207
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877127333,
+        1.3081458442686273,
+        -11.130318111471222
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695831167,
+        1.3081658444130415,
+        -11.130488281097149
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.199118288471636e-05
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle2",
+      "linear_velocity_gap_m_s": 8.286901609234256e-06,
+      "angular_velocity_gap_deg_s": 0.00030632571003122905,
+      "outgoing_linear_m_s": [
+        -0.11007683061923762,
+        0.004040098456043332,
+        -0.28442932801721743
+      ],
+      "incoming_linear_m_s": [
+        -0.11008400560165872,
+        0.004037040877369199,
+        -0.2844265273783279
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508770986294,
+        1.3081458441825533,
+        -11.130318111602982
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695687663,
+        1.3081658443700053,
+        -11.130488281163021
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.0328392936061765e-05
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle3",
+      "linear_velocity_gap_m_s": 7.5584800929470175e-06,
+      "angular_velocity_gap_deg_s": 0.0003063257217463184,
+      "outgoing_linear_m_s": [
+        -0.1089273515007242,
+        -0.00033916458118144973,
+        -0.2866569193066809
+      ],
+      "incoming_linear_m_s": [
+        -0.10893361442787035,
+        -0.00034263077101571044,
+        -0.28665449198451226
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771052286,
+        1.3081458440987863,
+        -11.130318111472322
+      ],
+      "incoming_angular_deg_s": [
+        -16.6087626957206,
+        1.3081658443281363,
+        -11.130488281097845
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.2771421765095954e-05
+    },
+    {
+      "bone": "mixamorig:RightHandMiddle4",
+      "linear_velocity_gap_m_s": 6.956264469581498e-06,
+      "angular_velocity_gap_deg_s": 0.0003063256947584775,
+      "outgoing_linear_m_s": [
+        -0.10666006552936262,
+        -0.004297735747185155,
+        -0.2905038059093708
+      ],
+      "incoming_linear_m_s": [
+        -0.10666583101265062,
+        -0.004301134347889392,
+        -0.2905019089826248
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850876624082,
+        1.3081458483555146,
+        -11.13031811275824
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762690887573,
+        1.3081658485550303,
+        -11.130488282370864
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.277142172828512e-05
+    },
+    {
+      "bone": "mixamorig:RightHandRing1",
+      "linear_velocity_gap_m_s": 7.86101583957218e-06,
+      "angular_velocity_gap_deg_s": 0.0003063253028341228,
+      "outgoing_linear_m_s": [
+        -0.1072906723957785,
+        -0.001244617917971357,
+        -0.28920873431628674
+      ],
+      "incoming_linear_m_s": [
+        -0.10729796348889964,
+        -0.0012468240112052484,
+        -0.28920679300647834
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771508195,
+        1.3081458451734418,
+        -11.13031811217353
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695948577,
+        1.308165844865439,
+        -11.13048828144823
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.0939685331434624e-05
+    },
+    {
+      "bone": "mixamorig:RightHandRing2",
+      "linear_velocity_gap_m_s": 7.89399746924434e-06,
+      "angular_velocity_gap_deg_s": 0.0003063254106440836,
+      "outgoing_linear_m_s": [
+        -0.11192569375925067,
+        -0.001644367626465001,
+        -0.2823405003980071
+      ],
+      "incoming_linear_m_s": [
+        -0.11193258245586662,
+        -0.0016473515821393877,
+        -0.28233805968837444
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508771250733,
+        1.3081458449924295,
+        -11.13031811219093
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695819877,
+        1.3081658447749425,
+        -11.130488281456929
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.06086774391201e-05
+    },
+    {
+      "bone": "mixamorig:RightHandRing3",
+      "linear_velocity_gap_m_s": 7.3396780570507785e-06,
+      "angular_velocity_gap_deg_s": 0.0003063256237243899,
+      "outgoing_linear_m_s": [
+        -0.1106446438171595,
+        -0.004872890496467389,
+        -0.2846296906887632
+      ],
+      "incoming_linear_m_s": [
+        -0.11065089564651229,
+        -0.004876101593500898,
+        -0.2846275754205613
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508770502674,
+        1.3081458447975636,
+        -11.130318112563108
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695445797,
+        1.3081658446775137,
+        -11.130488281643174
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.0595888482878864e-05
+    },
+    {
+      "bone": "mixamorig:RightHandRing4",
+      "linear_velocity_gap_m_s": 7.0643342986159725e-06,
+      "angular_velocity_gap_deg_s": 0.0003063256595259879,
+      "outgoing_linear_m_s": [
+        -0.10789620885651575,
+        -0.0057492670730423185,
+        -0.28883237798575756
+      ],
+      "incoming_linear_m_s": [
+        -0.10790235760969433,
+        -0.00575225686733466,
+        -0.28883060068906846
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508767960043,
+        1.3081458431914934,
+        -11.130318111443485
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762692947085,
+        1.308165843079447,
+        -11.130488280521527
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.059588636949995e-05
+    },
+    {
+      "bone": "mixamorig:RightHandPinky1",
+      "linear_velocity_gap_m_s": 7.384657241443223e-06,
+      "angular_velocity_gap_deg_s": 0.00030632544705195424,
+      "outgoing_linear_m_s": [
+        -0.10278555594226305,
+        -0.00875760800207036,
+        -0.29681439931257786
+      ],
+      "incoming_linear_m_s": [
+        -0.10279281693253269,
+        -0.008758751086871927,
+        -0.29681368900277627
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877206083,
+        1.3081458443197942,
+        -11.130318110930109
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762696224872,
+        1.308165844438617,
+        -11.130488280826611
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.0790635583571174e-05
+    },
+    {
+      "bone": "mixamorig:RightHandPinky2",
+      "linear_velocity_gap_m_s": 7.185422745037329e-06,
+      "angular_velocity_gap_deg_s": 0.0003063256247886769,
+      "outgoing_linear_m_s": [
+        -0.10830849879493247,
+        -0.009518335614323477,
+        -0.28866389232522416
+      ],
+      "incoming_linear_m_s": [
+        -0.10831526208836388,
+        -0.009520397589695093,
+        -0.28866261309907043
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508770964217,
+        1.3081458444793717,
+        -11.130318111907833
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876269567653,
+        1.3081658445184063,
+        -11.130488281315536
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.958150899080858e-05
+    },
+    {
+      "bone": "mixamorig:RightHandPinky3",
+      "linear_velocity_gap_m_s": 6.681090189033763e-06,
+      "angular_velocity_gap_deg_s": 0.00030632647338561553,
+      "outgoing_linear_m_s": [
+        -0.10904712085790742,
+        -0.012095482726651114,
+        -0.2878631819520109
+      ],
+      "incoming_linear_m_s": [
+        -0.10905312556241815,
+        -0.012098133221650842,
+        -0.28786193480883177
+      ],
+      "outgoing_angular_deg_s": [
+        -16.60850877028191,
+        1.3081458421378285,
+        -11.130318110146057
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762695335344,
+        1.3081658433475887,
+        -11.130488280434724
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.9791478356522294e-05
+    },
+    {
+      "bone": "mixamorig:RightHandPinky4",
+      "linear_velocity_gap_m_s": 6.321429277797737e-06,
+      "angular_velocity_gap_deg_s": 0.0003063264894546865,
+      "outgoing_linear_m_s": [
+        -0.10817028506397636,
+        -0.01394105963222353,
+        -0.28938693850364555
+      ],
+      "incoming_linear_m_s": [
+        -0.10817580357331204,
+        -0.013943949659777632,
+        -0.2893858641370588
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508776596175,
+        1.3081458423934387,
+        -11.130318111896791
+      ],
+      "incoming_angular_deg_s": [
+        -16.60876270160137,
+        1.308165843662559,
+        -11.130488282279385
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 2.9791476871512262e-05
+    },
+    {
+      "bone": "RifleSocket",
+      "linear_velocity_gap_m_s": 8.022318052506141e-06,
+      "angular_velocity_gap_deg_s": 0.00030632527166990335,
+      "outgoing_linear_m_s": [
+        -0.09489151256462416,
+        -0.0013639495794742413,
+        -0.30772074479803396
+      ],
+      "incoming_linear_m_s": [
+        -0.09489950554311578,
+        -0.0013643407896671556,
+        -0.30772018191585
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608508768068834,
+        1.308145830106136,
+        -11.130318113371517
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762692234702,
+        1.3081658299335182,
+        -11.130488282983837
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.102340936142478e-05
+    },
+    {
+      "bone": "Muzzle",
+      "linear_velocity_gap_m_s": 2.908294508548706e-05,
+      "angular_velocity_gap_deg_s": 0.00030632530083722506,
+      "outgoing_linear_m_s": [
+        -0.22468645703520465,
+        -0.0003693971410661613,
+        -0.11394972085413455
+      ],
+      "incoming_linear_m_s": [
+        -0.2246825139938778,
+        -0.00039336589479805603,
+        -0.11393372807562423
+      ],
+      "outgoing_angular_deg_s": [
+        -16.6085087744922,
+        1.3081458488703517,
+        -11.130318108537598
+      ],
+      "incoming_angular_deg_s": [
+        -16.608762698724043,
+        1.308165848701256,
+        -11.130488278103567
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.102345437162868e-05
+    },
+    {
+      "bone": "mixamorig:LeftUpLeg",
+      "linear_velocity_gap_m_s": 7.911205675835717e-06,
+      "angular_velocity_gap_deg_s": 0.004160122142275164,
+      "outgoing_linear_m_s": [
+        -0.2648078480021535,
+        -0.16944704040082856,
+        -0.4109981610261013
+      ],
+      "incoming_linear_m_s": [
+        -0.2648118965958813,
+        -0.16944963105410998,
+        -0.41100444470174924
+      ],
+      "outgoing_angular_deg_s": [
+        -29.74229119457231,
+        247.16026939574382,
+        -109.8488968663292
+      ],
+      "incoming_angular_deg_s": [
+        -29.74274591924783,
+        247.16404818576896,
+        -109.85057632685393
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 5.849094503806995e-05
+    },
+    {
+      "bone": "mixamorig:LeftLeg",
+      "linear_velocity_gap_m_s": 3.0114263246710587e-05,
+      "angular_velocity_gap_deg_s": 0.004866553584832237,
+      "outgoing_linear_m_s": [
+        -1.8358319181375224,
+        0.13559894020951826,
+        0.7007200195155961
+      ],
+      "incoming_linear_m_s": [
+        -1.8358599858752767,
+        0.13560101332313879,
+        0.7007307327386485
+      ],
+      "outgoing_angular_deg_s": [
+        -91.59140636614066,
+        303.3363615022541,
+        -30.298209560405923
+      ],
+      "incoming_angular_deg_s": [
+        -91.59280669109418,
+        303.34099915870223,
+        -30.298672784419765
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 7.254401182876791e-05
+    },
+    {
+      "bone": "mixamorig:LeftFoot",
+      "linear_velocity_gap_m_s": 5.515872110225095e-05,
+      "angular_velocity_gap_deg_s": 0.004544367558873902,
+      "outgoing_linear_m_s": [
+        -3.5743124556319876,
+        -0.47240978660223565,
+        -0.1310923721518779
+      ],
+      "incoming_linear_m_s": [
+        -3.5743671026934916,
+        -0.4724170092279439,
+        -0.13109437636257046
+      ],
+      "outgoing_angular_deg_s": [
+        -17.615934479602014,
+        294.9264731704611,
+        -32.50318067990385
+      ],
+      "incoming_angular_deg_s": [
+        -17.61620380653579,
+        294.93098224960113,
+        -32.50367761533457
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 6.867910785857134e-05
+    },
+    {
+      "bone": "mixamorig:LeftToeBase",
+      "linear_velocity_gap_m_s": 6.739119055915642e-05,
+      "angular_velocity_gap_deg_s": 0.003746835641210008,
+      "outgoing_linear_m_s": [
+        -4.374264457089091,
+        -0.47711040031994173,
+        0.2598051339836494
+      ],
+      "incoming_linear_m_s": [
+        -4.374331334476493,
+        -0.4771176948125091,
+        0.2598091061363936
+      ],
+      "outgoing_angular_deg_s": [
+        -142.2120630223325,
+        189.72489226346366,
+        60.25515836121489
+      ],
+      "incoming_angular_deg_s": [
+        -142.21424355490123,
+        189.7277908550862,
+        60.25609762776101
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 6.687738740218663e-05
+    },
+    {
+      "bone": "mixamorig:LeftToe_End",
+      "linear_velocity_gap_m_s": 6.85298261758363e-05,
+      "angular_velocity_gap_deg_s": 0.0037468374513454825,
+      "outgoing_linear_m_s": [
+        -4.410575711647589,
+        -0.5935303124009361,
+        0.5406768232163521
+      ],
+      "incoming_linear_m_s": [
+        -4.410643130202063,
+        -0.5935394063405184,
+        0.5406850921855315
+      ],
+      "outgoing_angular_deg_s": [
+        -142.21214959322796,
+        189.72494406970603,
+        60.25526096551635
+      ],
+      "incoming_angular_deg_s": [
+        -142.21433012714104,
+        189.72784266215047,
+        60.256200233626046
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 6.741855447334189e-05
+    },
+    {
+      "bone": "mixamorig:RightUpLeg",
+      "linear_velocity_gap_m_s": 5.536046025671311e-06,
+      "angular_velocity_gap_deg_s": 0.0023279759327152864,
+      "outgoing_linear_m_s": [
+        -0.015238639162004136,
+        0.05680689641543982,
+        -0.3572889578189169
+      ],
+      "incoming_linear_m_s": [
+        -0.015238872142886571,
+        0.05680776492611936,
+        -0.3572944203471508
+      ],
+      "outgoing_angular_deg_s": [
+        0.3597267955314826,
+        -146.83000942596271,
+        -40.32255141257797
+      ],
+      "incoming_angular_deg_s": [
+        0.35973229533142204,
+        -146.8322542842337,
+        -40.32316789699689
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.512435729602359e-05
+    },
+    {
+      "bone": "mixamorig:RightLeg",
+      "linear_velocity_gap_m_s": 1.7727191609045624e-05,
+      "angular_velocity_gap_deg_s": 0.0029163459124430975,
+      "outgoing_linear_m_s": [
+        0.9281670787591892,
+        0.14747906555545906,
+        -0.6790917014503325
+      ],
+      "incoming_linear_m_s": [
+        0.9281812693429496,
+        0.1474813203398809,
+        -0.6791020839645797
+      ],
+      "outgoing_angular_deg_s": [
+        -3.9046681975524793,
+        -188.50788273567326,
+        -28.89909505995491
+      ],
+      "incoming_angular_deg_s": [
+        -3.90472789533767,
+        -188.51076479970214,
+        -28.899536893168925
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 6.582785028763638e-05
+    },
+    {
+      "bone": "mixamorig:RightFoot",
+      "linear_velocity_gap_m_s": 4.0519452873399544e-05,
+      "angular_velocity_gap_deg_s": 2.6422855856708016e-05,
+      "outgoing_linear_m_s": [
+        1.9254719496880814,
+        0.023238450236177786,
+        -0.0033883918546932378
+      ],
+      "incoming_linear_m_s": [
+        1.925510279228603,
+        0.023242538494253874,
+        -0.0034008801904699577
+      ],
+      "outgoing_angular_deg_s": [
+        1.6869716650663087,
+        -0.13137326067799523,
+        0.35169869773024054
+      ],
+      "incoming_angular_deg_s": [
+        1.6869974569272994,
+        -0.13137526931335022,
+        0.351704074774249
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 3.9900318242469535e-05
+    },
+    {
+      "bone": "mixamorig:RightToeBase",
+      "linear_velocity_gap_m_s": 4.050294223847642e-05,
+      "angular_velocity_gap_deg_s": 2.6418215310185483e-05,
+      "outgoing_linear_m_s": [
+        1.9260225916544125,
+        0.025620538534080833,
+        -0.005181828048042621
+      ],
+      "incoming_linear_m_s": [
+        1.9260609038213476,
+        0.025624652385542675,
+        -0.005194307728361232
+      ],
+      "outgoing_angular_deg_s": [
+        1.6868566904629203,
+        -0.131294584850988,
+        0.35077634446067163
+      ],
+      "incoming_angular_deg_s": [
+        1.6868824805920435,
+        -0.13129659236492033,
+        0.3507817074102148
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 4.005361487099219e-05
+    },
+    {
+      "bone": "mixamorig:RightToe_End",
+      "linear_velocity_gap_m_s": 3.8983213013786856e-05,
+      "angular_velocity_gap_deg_s": 2.6418264474920585e-05,
+      "outgoing_linear_m_s": [
+        1.9261862988634366,
+        0.025193635326327447,
+        -0.006128177423202518
+      ],
+      "incoming_linear_m_s": [
+        1.9262235282382463,
+        0.025197278633963253,
+        -0.006139149699977707
+      ],
+      "outgoing_angular_deg_s": [
+        1.686855810703042,
+        -0.13129302881243773,
+        0.3508019580216929
+      ],
+      "incoming_angular_deg_s": [
+        1.6868816008059988,
+        -0.1312950362661976,
+        0.3508073213617655
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 4.0053616289099144e-05
+    },
+    {
+      "bone": "Prop_Rifle",
+      "linear_velocity_gap_m_s": 4.285697168232e-06,
+      "angular_velocity_gap_deg_s": 0.0003063211361541937,
+      "outgoing_linear_m_s": [
+        -0.1353979070366053,
+        0.024826525901957577,
+        -0.24418830143844183
+      ],
+      "incoming_linear_m_s": [
+        -0.13539997711146715,
+        0.02482690547035935,
+        -0.24419203479056995
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608000978709313,
+        1.3069402253286773,
+        -11.130697327862553
+      ],
+      "incoming_angular_deg_s": [
+        -16.608254895524457,
+        1.3069602069086415,
+        -11.130867503142493
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 4.754233964787691e-06
+    },
+    {
+      "bone": "Prop_Magazine_A",
+      "linear_velocity_gap_m_s": 4.285697168232e-06,
+      "angular_velocity_gap_deg_s": 0.0003063211361541937,
+      "outgoing_linear_m_s": [
+        -0.1353979070366053,
+        0.024826525901957577,
+        -0.24418830143844183
+      ],
+      "incoming_linear_m_s": [
+        -0.13539997711146715,
+        0.02482690547035935,
+        -0.24419203479056995
+      ],
+      "outgoing_angular_deg_s": [
+        -16.608000978709313,
+        1.3069402253286773,
+        -11.130697327862553
+      ],
+      "incoming_angular_deg_s": [
+        -16.608254895524457,
+        1.3069602069086415,
+        -11.130867503142493
+      ],
+      "matrix_derivative_max_abs_gap_per_s": 4.754233964787691e-06
+    },
+    {
+      "bone": "Prop_Magazine_B",
+      "linear_velocity_gap_m_s": 0.0,
+      "angular_velocity_gap_deg_s": null,
+      "outgoing_linear_m_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "incoming_linear_m_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "outgoing_angular_deg_s": null,
+      "incoming_angular_deg_s": null,
+      "matrix_derivative_max_abs_gap_per_s": 0.0
+    }
+  ],
+  "method": "Saved Bezier/linear/constant channel endpoint derivatives, normalized quaternion tangent projection, float64 rotation/scale product rule and rest hierarchy FK. Analytic world angular velocity comes from polar-decomposition derivative. Reconstruction independently checked against evaluated Blender matrices; float32 stored handles cause remaining numerical residuals. This audit applies only to this Blender action, not a resampled GLB."
+}

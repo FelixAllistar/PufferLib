@@ -1,0 +1,113 @@
+{
+  "schema": "independent-upper-gear-f-metadata/1",
+  "status": "PASS",
+  "glb_sha256": "5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835",
+  "metadata_sha256": {
+    "bindings.json": "2665b80446abac59fee7363f9711010e66759735eb4db329030d09f8d9b68232",
+    "clips_and_state.json": "5dd641fc01ce8c9cb9440a193671358b69d3d5e1494f27e7203dc44cd2462e1e",
+    "geometry_material_changes.json": "94663d87db1c2842c238285e0ca8341b0e122064d9b8358b9634db28605ed946",
+    "native_vertex_and_polygon_map.json": "d1409546e6c1bf3daf87dcf7131f6a710e66f81a4a3f8a0223f35d2a384c8964",
+    "physical_and_optical_bindings.json": "70728ef674b804c88672c091343e801f2bc931d0d42d6027630ea0e29db7e3ff",
+    "measured_attachment_poses.json": "f87061d2c7c5c850710ec827de2f10c4f197258b8e249fa4500c7551301defd4"
+  },
+  "joint_maps_and_parent_slots_exact": true,
+  "clip_keys_spans_interpolation_exact": true,
+  "mesh_material_UV_inventory_exact": true,
+  "original_to_F_optical_remap_exact": [
+    {
+      "side": "left",
+      "original_vertex": 23263,
+      "F_vertex": 21466,
+      "gltf_vertices": [
+        [
+          1,
+          19982
+        ]
+      ]
+    },
+    {
+      "side": "right",
+      "original_vertex": 23516,
+      "F_vertex": 21719,
+      "gltf_vertices": [
+        [
+          1,
+          20379
+        ]
+      ]
+    }
+  ],
+  "matrix_layout_and_attachment_composition_checked": true,
+  "measured_attachment_replay": [
+    {
+      "animation": "Neutral Carry / Anatomical Gear F",
+      "samples": 1,
+      "max_rifle_matrix_error": 4.440892098500626e-16,
+      "max_optical_matrix_error": 1.5959455978986625e-16,
+      "max_equivalent_attachment_formula_error": 5.551115123125783e-17,
+      "max_optic_midpoint_error_m": 5.551115123125783e-17,
+      "range_residuals": {
+        "visor_surface_y_m": 0.0,
+        "physical_stock_y_m": 2.220446049250313e-16,
+        "physical_muzzle_y_m": 2.220446049250313e-16,
+        "physical_rifle_elevation_deg": 2.1316282072803006e-14,
+        "visor_surface_perpendicular_to_sightline_m": 8.326672684688674e-17
+      }
+    },
+    {
+      "animation": "Upper Gear F / Three-second Carry Articulation",
+      "samples": 363,
+      "max_rifle_matrix_error": 6.661338147750939e-16,
+      "max_optical_matrix_error": 2.220446049250313e-16,
+      "max_equivalent_attachment_formula_error": 2.220446049250313e-16,
+      "max_optic_midpoint_error_m": 2.3055512673781017e-16,
+      "range_residuals": {
+        "visor_surface_y_m": 0.0,
+        "physical_stock_y_m": 0.0,
+        "physical_muzzle_y_m": 0.0,
+        "physical_rifle_elevation_deg": 2.3092638912203256e-14,
+        "visor_surface_perpendicular_to_sightline_m": 1.6653345369377348e-16
+      }
+    }
+  ],
+  "limitations": [
+    "No eye/camera/ADS or gameplay claim",
+    "Original external rigid-rifle asset hash is referenced; separate asset bytes are not redistributed by this check",
+    "This metadata replay checks physical source landmark composition and midpoint proxy, not anatomical registration"
+  ],
+  "canonical_rifle_landmarks": {
+    "source_manifest_sha256": "7bfa52f22345586caa1d7a9b17c2d3e5336772aff9745a36226c0e976448e447",
+    "original_asset_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+    "exact_engine_landmark_values": true,
+    "bind_mapping": [
+      {
+        "landmark": "stock_contact",
+        "bind_space_error_m": 0.0
+      },
+      {
+        "landmark": "muzzle",
+        "bind_space_error_m": 0.0
+      },
+      {
+        "landmark": "rear_sight",
+        "bind_space_error_m": 0.0
+      },
+      {
+        "landmark": "front_sight",
+        "bind_space_error_m": 0.0
+      },
+      {
+        "landmark": "grip_center",
+        "bind_space_error_m": 0.0
+      },
+      {
+        "landmark": "right_hand_surface_candidate",
+        "bind_space_error_m": 0.0
+      },
+      {
+        "landmark": "support_hand_surface_candidate",
+        "bind_space_error_m": 0.0
+      }
+    ]
+  }
+}

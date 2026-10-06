@@ -1,0 +1,14 @@
+{
+  "source_checkpoint": {
+    "file": "swat-upper-gear-remake-f-selfcontained-checkpoint.tar.gz",
+    "bytes": 18171720,
+    "sha256": "1e586e869db06e5e6a0026b5c56860e5e0ed7f2d9bc1ae9bbee0eb8ca1fd3e35"
+  },
+  "static_source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+  "movement_source_sha256": "7165d1454e0526f01ca85c81f12e0245dfecb22071191918f984477a42c091b1",
+  "original_N_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+  "original_character": "Adobe Mixamo character; inherited character/animation terms apply",
+  "original_rifle": "Numbered weapon7 user upload; exact product/creator/license identity remains unresolved",
+  "new_gear": "Locally authored F derivative in sealed source scripts; does not remove original-source licensing obligations",
+  "distribution": "Private project review; no public raw asset redistribution authorization"
+}

@@ -1,0 +1,41 @@
+{
+  "A": {
+    "source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+    "saved_action": "Neutral Carry / Anatomical Gear F",
+    "geometry": {
+      "SWAT_Wearer": "accba665a5c0b1c691087e7477dbf8f2a5538a655b791d26cff55375976ee69b",
+      "Rifle 7": "363a83e125486d50794e8eb8dc3eb36df6280750b938478f6e5f9f28f4c64be5",
+      "SWAT_ElbowCap_L": "5c90659ea0d0278ff8c8ea85995c375fb8170c0a1eb1f26a209337939470ed52",
+      "SWAT_ElbowCap_R": "73af4dbb02f0839515f74313e5480e32b4a8f2994ad26721fbefebd68e4488f7",
+      "SWAT_Headset_L": "8d6e61315bade86f53414ddd0e8e5657e0485330d658a7131cd334925d24bd8e",
+      "SWAT_Headset_R": "b8032e7712e36a585467f7762c60d987eeb75a3d23841c592af9514dddf2543a",
+      "Removed magazine": "9bf4ccad37ee7d05275dd37359e85939ce3f473bd067ee6c33c4a7dd5634d19c",
+      "Fresh magazine": "621818a41c360d9414ea9399c406f9fdd3b05df56f000b6856244f11c1a278dc"
+    },
+    "rig_rest_hash": "ef0227cc2d32727c188630c297832f8956613b1bdde55b6b93be839af99e7b1e",
+    "supplemental_left_elbow_axis_angle_degrees": 34.03864046463582,
+    "source_sha256_after": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0"
+  },
+  "C1": {
+    "source_sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+    "saved_action": "Support Grip / Index Base Release Candidate C1",
+    "geometry": {
+      "SWAT_Wearer": "accba665a5c0b1c691087e7477dbf8f2a5538a655b791d26cff55375976ee69b",
+      "Rifle 7": "363a83e125486d50794e8eb8dc3eb36df6280750b938478f6e5f9f28f4c64be5",
+      "SWAT_ElbowCap_L": "5c90659ea0d0278ff8c8ea85995c375fb8170c0a1eb1f26a209337939470ed52",
+      "SWAT_ElbowCap_R": "73af4dbb02f0839515f74313e5480e32b4a8f2994ad26721fbefebd68e4488f7",
+      "SWAT_Headset_L": "8d6e61315bade86f53414ddd0e8e5657e0485330d658a7131cd334925d24bd8e",
+      "SWAT_Headset_R": "b8032e7712e36a585467f7762c60d987eeb75a3d23841c592af9514dddf2543a",
+      "Removed magazine": "9bf4ccad37ee7d05275dd37359e85939ce3f473bd067ee6c33c4a7dd5634d19c",
+      "Fresh magazine": "621818a41c360d9414ea9399c406f9fdd3b05df56f000b6856244f11c1a278dc"
+    },
+    "rig_rest_hash": "ef0227cc2d32727c188630c297832f8956613b1bdde55b6b93be839af99e7b1e",
+    "supplemental_left_elbow_axis_angle_degrees": 34.04368114424329,
+    "comparison_to_A": {
+      "all_listed_mesh_rest_topology_weight_uv_hashes_equal": true,
+      "rig_rest_hash_equal": true,
+      "maximum_evaluated_rifle_vertex_delta_mm": 0.0
+    },
+    "source_sha256_after": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99"
+  }
+}

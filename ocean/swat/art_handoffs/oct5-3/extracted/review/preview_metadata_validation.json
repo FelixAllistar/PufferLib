@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "glb_sha256": "ea828e53f305de77b35ba55abdf67470ae98e871911c43fae5505c5022d47dd1",
+  "heading_maps_to_engine_X": true,
+  "feet_origin_maps_to_zero": true,
+  "travel_matches_native_source": true,
+  "source_travel_preview_angle_from_engine_X_degrees": 5.921150284876537,
+  "source_travel_blender_m": [
+    -8.149072527885437e-08,
+    -2.039074182510376,
+    -2.384185791015625e-07
+  ],
+  "source_travel_after_preview_m": [
+    2.0281953226839753,
+    -2.384185791015625e-07,
+    0.21035031453080832
+  ],
+  "source_pace_m_s": 2.0390741825103778,
+  "events_and_timing_match_glb": true,
+  "corrected_bridge_matches_binary": true,
+  "classification": "Fixed unbaked preview candidate only, no runtime placement or ADS validation"
+}

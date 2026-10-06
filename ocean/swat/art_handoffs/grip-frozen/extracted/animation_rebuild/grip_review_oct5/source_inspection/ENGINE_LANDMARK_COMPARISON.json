@@ -1,0 +1,164 @@
+{
+  "N": {
+    "source_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+    "physical_frame": "Metres stock-origin; +Xforward +Yup +Zright, displayedmm",
+    "actual_bone_head_points_mm": {
+      "LeftHand": [
+        495.5340027809143,
+        -31.70735016465187,
+        -57.27603659033775
+      ],
+      "LeftHandThumb4": [
+        618.6894178390503,
+        39.08427804708481,
+        -34.050922840833664
+      ],
+      "LeftHandIndex4": [
+        542.3831939697266,
+        73.95811378955841,
+        16.774877905845642
+      ],
+      "LeftHandMiddle4": [
+        519.3535089492798,
+        61.93073466420174,
+        17.587488517165184
+      ]
+    },
+    "engine_rounded_samples_mm": {
+      "wrist": [
+        495.53,
+        -31.71,
+        -57.28
+      ],
+      "thumbtip": [
+        618.69,
+        39.08,
+        -34.05
+      ],
+      "indextip": [
+        542.38,
+        73.96,
+        16.77
+      ],
+      "middletip": [
+        519.35,
+        61.93,
+        17.59
+      ]
+    },
+    "point_error_to_engine_mm": {
+      "wrist": 0.00622176451597897,
+      "thumbtip": 0.004417157535991943,
+      "indextip": 0.006116403146392439,
+      "middletip": 0.004402721326350444
+    }
+  },
+  "F": {
+    "source_sha256": "4271f2279bc3cbbcb46594157752b2ac0ca052628c24b4c8629a82c6771a3fc0",
+    "physical_frame": "Metres stock-origin; +Xforward +Yup +Zright, displayedmm",
+    "actual_bone_head_points_mm": {
+      "LeftHand": [
+        495.5340027809143,
+        -31.70735016465187,
+        -57.27603659033775
+      ],
+      "LeftHandThumb4": [
+        618.6894178390503,
+        39.08427804708481,
+        -34.050922840833664
+      ],
+      "LeftHandIndex4": [
+        542.3831939697266,
+        73.95811378955841,
+        16.774877905845642
+      ],
+      "LeftHandMiddle4": [
+        519.3535089492798,
+        61.93073466420174,
+        17.587488517165184
+      ]
+    },
+    "engine_rounded_samples_mm": {
+      "wrist": [
+        495.53,
+        -31.71,
+        -57.28
+      ],
+      "thumbtip": [
+        618.69,
+        39.08,
+        -34.05
+      ],
+      "indextip": [
+        542.38,
+        73.96,
+        16.77
+      ],
+      "middletip": [
+        519.35,
+        61.93,
+        17.59
+      ]
+    },
+    "point_error_to_engine_mm": {
+      "wrist": 0.00622176451597897,
+      "thumbtip": 0.004417157535991943,
+      "indextip": 0.006116403146392439,
+      "middletip": 0.004402721326350444
+    }
+  },
+  "R5": {
+    "source_sha256": "e262c13a88d5005bedf9da3726ad960f407bf92fb2be78c3368c930dd50d4ddc",
+    "physical_frame": "Metres stock-origin; +Xforward +Yup +Zright, displayedmm",
+    "actual_bone_head_points_mm": {
+      "LeftHand": [
+        495.53394317626953,
+        -31.707391142845154,
+        -57.275984436273575
+      ],
+      "LeftHandThumb4": [
+        618.6894178390503,
+        39.08456861972809,
+        -34.050870686769485
+      ],
+      "LeftHandIndex4": [
+        542.3831939697266,
+        73.95797967910767,
+        16.774913296103477
+      ],
+      "LeftHandMiddle4": [
+        519.3536877632141,
+        61.931028962135315,
+        17.587507143616676
+      ]
+    },
+    "engine_rounded_samples_mm": {
+      "wrist": [
+        495.53,
+        -31.71,
+        -57.28
+      ],
+      "thumbtip": [
+        618.69,
+        39.08,
+        -34.05
+      ],
+      "indextip": [
+        542.38,
+        73.96,
+        16.77
+      ],
+      "middletip": [
+        519.35,
+        61.93,
+        17.59
+      ]
+    },
+    "point_error_to_engine_mm": {
+      "wrist": 0.006196858295468446,
+      "thumbtip": 0.004688188445179939,
+      "indextip": 0.006188831102178915,
+      "middletip": 0.004597522537188952
+    }
+  }
+}

@@ -99,7 +99,7 @@ def main():
         raise SystemExit(__doc__)
     fixture = Path(sys.argv[1]).resolve()
     geometry, binary = read_glb(fixture/'swat_upper_gear_remake_f_v1.glb', GEOMETRY_SHA)
-    root = Path(__file__).resolve().parents[3]/'build/swat/assets/characters'
+    root = Path(__file__).resolve().parents[3]/'ocean/swat/assets/characters'
     outputs = {}
     installed_motion = {}
     for name, sha in MOTION_SHA.items():

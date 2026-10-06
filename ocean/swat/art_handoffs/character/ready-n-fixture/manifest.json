@@ -1,0 +1,135 @@
+{
+  "schema": "swat-character-review-package/1",
+  "clip_id": "standing_empty_shared_ready_n_carry_f_original_6s",
+  "animation_name": "Standing Empty / Shared Ready N Carry F",
+  "asset": "standing_empty_shared_ready_n_original_timing.glb",
+  "glb_sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+  "source_sha256": "2b801425c0c3b42e1042532fd0b2744973665b68f17f3fdf286f0aa7d78fd771",
+  "engine_reference": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+  "status": "Separate review export; numerical parity passes; original timing; engine preview adapter pending",
+  "loop": false,
+  "runtime_activated": false,
+  "public_distribution_authorized": false,
+  "files": [
+    {
+      "path": "CHARACTER_MATERIAL_INVENTORY.json",
+      "bytes": 18042,
+      "sha256": "c5aac12d18ff313a5fa0ae49d72cc2ac47e35a9c6cc3301d0b096b1bc3533e82"
+    },
+    {
+      "path": "README.md",
+      "bytes": 6443,
+      "sha256": "25704dbf5d86c27098a1e0d76ed6b14a7443bf31994a26710eadb50a2b6ef55e"
+    },
+    {
+      "path": "SOURCE_PROVENANCE.json",
+      "bytes": 2639,
+      "sha256": "297bc7ab3dcb0b5c9ca11fa7657d415dec2a68477ae83c2ebde74d5cb8c32d29"
+    },
+    {
+      "path": "SOURCE_QUALITY_STATUS.json",
+      "bytes": 824,
+      "sha256": "cac5b4198bf3ef015a185eb6ff4ac784416c6d847d3de7983e1dfedf75942906"
+    },
+    {
+      "path": "VISUAL_EVENTS_AND_OWNERSHIP_READY_N.json",
+      "bytes": 5014,
+      "sha256": "f593fee9177e28683ac58d6e322fb722dc2ae0b1629b0437f575c343710ad3c3"
+    },
+    {
+      "path": "animation_channels.json",
+      "bytes": 41487,
+      "sha256": "909b94a515c7fe1f1a3768f8ae25481c6c475d20e6e97b220025880e4b3ac163"
+    },
+    {
+      "path": "bindings.json",
+      "bytes": 72218,
+      "sha256": "ade64df4fe5c57c40b255543b86ba5d3ac2a2ae852d0b5d0d4b80de4ffb07f49"
+    },
+    {
+      "path": "events.json",
+      "bytes": 16992,
+      "sha256": "bb509406c1bf64e8ed44a5a5c169ddf01f3317e42865552fea68037a16ccf709"
+    },
+    {
+      "path": "export_report.json",
+      "bytes": 1571,
+      "sha256": "026fc9c5c6a95fe1c4b44ea6a8783fdd3b52a89475b5baec1f086ed1263c7ebb"
+    },
+    {
+      "path": "measured_preview_fit.json",
+      "bytes": 6514,
+      "sha256": "d4aa479f57c81c0f8d680da52032f9600394963897a59b69a7777982c28d7ad8"
+    },
+    {
+      "path": "native_authoring_comparison.mp4",
+      "bytes": 967768,
+      "sha256": "1fbad90cac318827fe008b47b286624bdb5d6aad066215548aff7cce1ab19b20"
+    },
+    {
+      "path": "native_ready.png",
+      "bytes": 309177,
+      "sha256": "932fdf5278a428843e0bfa7ab3fa47cb983bb02a5b8bc7da5a1b5bc93f39e9e0"
+    },
+    {
+      "path": "native_seated.png",
+      "bytes": 312036,
+      "sha256": "bb817596809b8108db773ed56d8fe0120c6bb66848ef059f92dcad2311084a3a"
+    },
+    {
+      "path": "preflight_4_influences.json",
+      "bytes": 1468,
+      "sha256": "7914781cf348c313db74496f2d694918ca11f8accf2608320c7b355c6f1ec550"
+    },
+    {
+      "path": "preflight_8_influences.json",
+      "bytes": 1406,
+      "sha256": "048723e5e3986d9edfc24e27fbac14f1244dead4efe6835e2e00a03e0853d5ef"
+    },
+    {
+      "path": "preview_views.json",
+      "bytes": 673,
+      "sha256": "f1e406eba994b6ee18dff7e93e38a2ce6caed695beaef757e3635384dec5c6bc"
+    },
+    {
+      "path": "reimport_ready.png",
+      "bytes": 309146,
+      "sha256": "82eb84938eb20c6546b60464a4a318d09b7362b6de66c829e008803ac521d052"
+    },
+    {
+      "path": "reimport_seated.png",
+      "bytes": 311877,
+      "sha256": "ec488d09da8cb5220140de36eb59e530c00c6cd1f5310ebc9dc85d5ae0695a77"
+    },
+    {
+      "path": "standing_empty_shared_ready_n_original_timing.glb",
+      "bytes": 5257132,
+      "sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81"
+    },
+    {
+      "path": "tools/capture_parity.py",
+      "bytes": 5634,
+      "sha256": "9098523a14cf7eeb07481491b84a44ebe8fceb670b951fd7032bf6c6a69bcb96"
+    },
+    {
+      "path": "tools/check_animation_glb.py",
+      "bytes": 7699,
+      "sha256": "5080b74555d61c0492b3d61f793ddd8312adf68344dbb4a3106a7548175baf9d"
+    },
+    {
+      "path": "tools/export_fixture.py",
+      "bytes": 3439,
+      "sha256": "68621b03eb8c6e3b71ab106c19aac499e903524ff3faf0859bbbe4296349d402"
+    },
+    {
+      "path": "tools/validate_fixture.py",
+      "bytes": 11903,
+      "sha256": "fb8b743dd303ea28619a495af727f9d60cdd9af93e82ec10d53d9d52db6d51f2"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 9649,
+      "sha256": "d3a7b79d55a314e6209bec6851928d51b3c86679e8c0c18ac661660c1aab5974"
+    }
+  ]
+}

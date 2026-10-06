@@ -1,0 +1,455 @@
+{
+  "schema": "swat-character-preview-fit/2",
+  "glb_sha256": "edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899",
+  "units": "meters",
+  "coordinate_space": "glTF model coordinates,+Y up",
+  "reference_time_s": 0,
+  "root": {
+    "name": "SWAT_Mixamo_Rig",
+    "node": 72,
+    "transform_column_major": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "sampled_root_identity_max_error": 0.0,
+    "basis_change_applied_to_asset": false,
+    "blender_to_gltf": "(x,y,z)->(x,z,-y)"
+  },
+  "sole_support": {
+    "left": {
+      "selection": "Cumulative same-side Foot/Toe weight >0.5; phase-zero support vertices within1mm of subset minimum Y",
+      "phase_zero_minimum_y_m": 0.015411545401228965,
+      "phase_zero_support_vertex_indices": [
+        3046,
+        3050,
+        3058,
+        3059,
+        3077
+      ],
+      "phase_zero_support_centroid_model_xyz_m": [
+        -0.14265169700736635,
+        0.015694111679272947,
+        0.2693720530661238
+      ],
+      "subset_vertices": 654,
+      "cycle_minimum_y_m": 0.003954401465931075,
+      "cycle_minimum_y_range_m": [
+        0.003954401465931075,
+        0.047401567313248495
+      ],
+      "vertex_index_namespace": "Native source Blender mesh Rebuilt SWAT full body, 24850 vertices; original support_vertex_indices are not glTF seam-split indices",
+      "native_mesh_name": "Rebuilt SWAT full body",
+      "native_mesh_vertex_count": 24850,
+      "exported_body_node": 71,
+      "exported_body_mesh": 1,
+      "phase_zero_support_export_mapping": [
+        {
+          "native_vertex": 3046,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1998,
+              "position_bind_mesh_gltf_m": [
+                0.13243705034255981,
+                -0.014895109459757805,
+                0.15074321627616882
+              ]
+            }
+          ]
+        },
+        {
+          "native_vertex": 3050,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 2002,
+              "position_bind_mesh_gltf_m": [
+                0.1326274871826172,
+                -0.011761329136788845,
+                0.16116110980510712
+              ]
+            }
+          ]
+        },
+        {
+          "native_vertex": 3058,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 2014,
+              "position_bind_mesh_gltf_m": [
+                0.1404273808002472,
+                -0.0049501871690154076,
+                0.18073256313800812
+              ]
+            }
+          ]
+        },
+        {
+          "native_vertex": 3059,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 2015,
+              "position_bind_mesh_gltf_m": [
+                0.13881078362464905,
+                -0.0064589777030050755,
+                0.1761634200811386
+              ]
+            }
+          ]
+        },
+        {
+          "native_vertex": 3077,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 2040,
+              "position_bind_mesh_gltf_m": [
+                0.13007262349128723,
+                -0.012972729280591011,
+                0.15685948729515076
+              ]
+            }
+          ]
+        }
+      ],
+      "exported_subset_vertex_count_including_seams": 899
+    },
+    "right": {
+      "selection": "Cumulative same-side Foot/Toe weight >0.5; phase-zero support vertices within1mm of subset minimum Y",
+      "phase_zero_minimum_y_m": 0.004000049925704928,
+      "phase_zero_support_vertex_indices": [
+        2445,
+        2472,
+        2473,
+        2474
+      ],
+      "phase_zero_support_centroid_model_xyz_m": [
+        -0.10309921543641265,
+        0.0044565554069762895,
+        -0.10355099584479846
+      ],
+      "subset_vertices": 668,
+      "cycle_minimum_y_m": 0.002931974963356173,
+      "cycle_minimum_y_range_m": [
+        0.002931974963356173,
+        0.05675402617966996
+      ],
+      "vertex_index_namespace": "Native source Blender mesh Rebuilt SWAT full body, 24850 vertices; original support_vertex_indices are not glTF seam-split indices",
+      "native_mesh_name": "Rebuilt SWAT full body",
+      "native_mesh_vertex_count": 24850,
+      "exported_body_node": 71,
+      "exported_body_mesh": 1,
+      "phase_zero_support_export_mapping": [
+        {
+          "native_vertex": 2445,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1187,
+              "position_bind_mesh_gltf_m": [
+                -0.1910136342048645,
+                -0.02466912940144539,
+                0.04624975472688675
+              ]
+            }
+          ]
+        },
+        {
+          "native_vertex": 2472,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1220,
+              "position_bind_mesh_gltf_m": [
+                -0.16886071860790253,
+                -0.024692397564649582,
+                0.0588567815721035
+              ]
+            }
+          ]
+        },
+        {
+          "native_vertex": 2473,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1221,
+              "position_bind_mesh_gltf_m": [
+                -0.17616769671440125,
+                -0.025539107620716095,
+                0.06220389902591705
+              ]
+            }
+          ]
+        },
+        {
+          "native_vertex": 2474,
+          "gltf_matches": [
+            {
+              "primitive": 1,
+              "vertex": 1222,
+              "position_bind_mesh_gltf_m": [
+                -0.17200523614883423,
+                -0.025429777801036835,
+                0.06327825784683228
+              ]
+            }
+          ]
+        }
+      ],
+      "exported_subset_vertex_count_including_seams": 916
+    }
+  },
+  "phase_zero_support_floor_y_m": 0.004000049925704928,
+  "phase_zero_body_bounds_model_xyz_m": [
+    [
+      -0.5239583998002291,
+      0.004000049925704928,
+      -0.2002472937364695
+    ],
+    [
+      0.20045913890321487,
+      1.6119772267000565,
+      0.6210217773171864
+    ]
+  ],
+  "preview_alignment_candidate": {
+    "status": "Unbaked measured phase-zero preview candidate; not accepted controller retarget or eye fit",
+    "heading_definition": "Horizontal projection of measured phase-zero rifle forward axis",
+    "source_forward_model_xyz": [
+      -0.27205711521135567,
+      0.0,
+      0.9622811055314737
+    ],
+    "source_up_model_xyz": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "source_right_model_xyz": [
+      -0.9622811055314737,
+      0.0,
+      -0.27205711521135567
+    ],
+    "source_feet_origin_model_xyz_m": [
+      -0.1228754562218895,
+      0.004000049925704928,
+      0.08291052861066266
+    ],
+    "model_to_engine_heading0_feet_origin_column_major": [
+      -0.27205711521135567,
+      0.0,
+      -0.9622811055314737,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.9622811055314737,
+      0.0,
+      -0.27205711521135567,
+      0.0,
+      -0.11321237728167383,
+      -0.004000049925704928,
+      -0.09568433062141858,
+      1.0
+    ],
+    "uniform_scale": 1,
+    "engine_axes": "+X forward,+Y up,+Z right",
+    "warning": "A fixed whole-cycle preview transform only. Do not re-ground from each frame minimum or infer gameplay translation from cyclic hips."
+  },
+  "eye": {
+    "status": "Anatomical eye/camera unresolved; measured goggle-surface proxy provided separately",
+    "optical_surface_proxy": "optical_proxy_bindings.json",
+    "head_node": 1,
+    "head_skin_joint_slot": 5,
+    "phase_zero_head_origin_model_xyz_m": [
+      -0.18088919161578876,
+      1.3947024603977347,
+      0.07842417914625852
+    ]
+  },
+  "weapon_bridge": {
+    "skin_index": 0,
+    "prop_rifle_node_index": 67,
+    "prop_rifle_skin_joint_slot": 67,
+    "joint_slot_resolution": "Resolve Prop_Rifle node by name, then find it in skin.joints; node index and joint slot are separate namespaces",
+    "native_bind_vertex_max_difference_m": 0,
+    "rigid_asset_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+    "rigid_stockpad_engine_frame_to_bind_mesh_gltf_column_major": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.00129691231995821,
+      0.02265022322535515,
+      -0.44999998807907104,
+      1.0
+    ],
+    "inverse_bind_for_Prop_Rifle_column_major": [
+      1.0,
+      -0.0,
+      0.0,
+      -0.0,
+      -0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      -0.0,
+      -0.0,
+      0.0,
+      -0.0,
+      1.0
+    ],
+    "rigid_stockpad_engine_frame_to_Prop_Rifle_joint_local_gltf_column_major": [
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.00129691231995821,
+      0.44999998807907104,
+      0.02265022322535515,
+      1.0
+    ],
+    "phase_zero_rigid_stockpad_frame_to_model_column_major": [
+      -0.27201329717573347,
+      0.01798689437126197,
+      0.9621261187092103,
+      0.0,
+      -0.12179100938439878,
+      0.9911424631679115,
+      -0.05296223419155051,
+      0.0,
+      -0.9545552548889533,
+      -0.13158454702459202,
+      -0.26741288887959824,
+      0.0,
+      -0.257493655707462,
+      1.2274949757003317,
+      0.014008414134255076,
+      1.0
+    ],
+    "phase_zero_measured_points_model_xyz_m": {
+      "stock": [
+        -0.257493655707462,
+        1.2274949757003317,
+        0.014008414134255076
+      ],
+      "muzzle": [
+        -0.5076189067672143,
+        1.2869231077331482,
+        0.8776113239006158
+      ],
+      "rear_sight": [
+        -0.3542424089727957,
+        1.3565316096696616,
+        0.29586769219202674
+      ],
+      "front_sight": [
+        -0.4508456856242985,
+        1.3628970529459383,
+        0.6375698882974855
+      ],
+      "right_hand_candidate": [
+        -0.3340516098494191,
+        1.1599058599602274,
+        0.26570567763737085
+      ],
+      "left_hand_candidate": [
+        -0.4107855255965849,
+        1.249646290619304,
+        0.5502981561719852
+      ]
+    },
+    "formula_bind_mesh": "model_from_rigid(t)=world_node_gltf(Prop_Rifle,t)*inverse_bind[resolved_slot]*B_bind_mesh",
+    "formula_joint_local": "J_joint_local=inverse_bind[resolved_slot]*B_bind_mesh; model_from_rigid(t)=world_node_gltf(Prop_Rifle,t)*J_joint_local",
+    "world_node_definition": "Actual global scene-node transform BEFORE inverse-bind multiplication",
+    "deformation_definition": "If already using Wnode*IBM, multiply B directly; do not multiply IBM twice",
+    "external_placement": "external_model_placement*model_from_rigid, or actor_world*preview_fit*model_from_rigid; each factor once",
+    "validation": "bridge_validation.json; all sampled times and all native rifle vertices"
+  },
+  "rifle_elevation_degrees_sampled": [
+    -2.295296930021417,
+    4.63381246198888
+  ],
+  "legacy_helper_comparison": {
+    "Muzzle": {
+      "node": 47,
+      "skin_joint_slot": 56,
+      "compared_to": "muzzle",
+      "phase_zero_distance_m": 0.37585062290394106,
+      "sampled_min_distance_m": 0.37584968850240935,
+      "sampled_max_distance_m": 0.37585157786518675,
+      "status": "Preserved helper, not a calibrated physical socket"
+    },
+    "RifleSocket": {
+      "node": 48,
+      "skin_joint_slot": 55,
+      "compared_to": "stock",
+      "phase_zero_distance_m": 0.25269462102240403,
+      "sampled_min_distance_m": 0.2526941566163672,
+      "sampled_max_distance_m": 0.2526956580843091,
+      "status": "Preserved helper, not a calibrated physical socket"
+    }
+  },
+  "runtime_reference_commit": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+  "runtime_or_gameplay_fit_tested": false,
+  "source_travel_reference": {
+    "source_measurement_file": "NATIVE_SOURCE_MEASUREMENT.json",
+    "source_measurement_sha256": "1b539889b889553cef7b9c5cbcbe7e420a4148401befdfc18d691f3f7a8e687d",
+    "source_clip_label": "walk right",
+    "source_displacement_blender_xyz_m": [
+      -1.9212615489959717,
+      -9.782612323760986e-06,
+      -4.76837158203125e-07
+    ],
+    "source_displacement_gltf_xyz_m": [
+      -1.9212615489959717,
+      -4.76837158203125e-07,
+      9.782612323760986e-06
+    ],
+    "source_displacement_after_preview_alignment_engine_xyz_m": [
+      0.5227022882093466,
+      -4.76837158203125e-07,
+      1.8487910259536673
+    ],
+    "nominal_source_pace_m_s": 1.921261549020877,
+    "current_glb_root_motion": "In-place; original travel removed before this source. This is a provenance reference, not animated GLB translation.",
+    "orientation_warning": "Native chest/pelvis counter-rotation is preserved. Measured rifle-facing preview heading is not travel heading. Do not infer yaw correction or mirrored LEFT body angles from the right label."
+  }
+}

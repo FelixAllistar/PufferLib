@@ -1,0 +1,31 @@
+{
+  "source": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c/support_grip_surface_c.editable.blend",
+  "sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+  "disposition": "qualified_static_A_B_option_with_local_crease_and_overlap_caveats",
+  "automatic_baseline_replacement": false,
+  "material_clean": false,
+  "matched_visual_review_completed": true,
+  "targeted_crease_review_completed": true,
+  "maximum_sampled_overlap_mm": {
+    "A": 0.5382207527873106,
+    "C": 0.8249042357419967
+  },
+  "local_crease_native_vertices": [
+    8513,
+    8515,
+    8516
+  ],
+  "crease_area_mm2": {
+    "rest": 38.3622567725649,
+    "A": 6.171267664735715,
+    "C": 2.559733376783651
+  },
+  "crease_altitude_mm": {
+    "A": 0.8589031337766619,
+    "C": 0.3575073054076434
+  },
+  "no_full_palm_support_claim": true,
+  "no_engine_ADS_or_camera_claim": true,
+  "no_motion_qualification": true,
+  "input_preserved": true
+}

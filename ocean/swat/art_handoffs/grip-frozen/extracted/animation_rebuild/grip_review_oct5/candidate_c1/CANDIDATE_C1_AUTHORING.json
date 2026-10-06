@@ -1,0 +1,150 @@
+{
+  "status": "Chosen one-parameter release; requires independent combined final gate",
+  "source_C": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c/support_grip_surface_c.editable.blend",
+  "source_C_sha256": "f1b39d78b32da500f9fd4370d942d364c49a1d9d788ac1122282b4275e371dcb",
+  "output": "/workspace/scratch/eac4961518d4/animation_rebuild/grip_review_oct5/candidate_c1/support_grip_index_release_c1.editable.blend",
+  "output_sha256": "17c1c13ffbea9d8fac459914eb2bbb1c6c336b785f9382450002f0ad6a53ac99",
+  "action": "Support Grip / Index Base Release Candidate C1",
+  "frame": 0,
+  "chosen": {
+    "index1_added_native_local_x_deg": 0.0,
+    "index1_added_native_local_z_spread_deg": 0.42138296301187816,
+    "release_from_C_deg": 4.451142948549993,
+    "target_native_triangle": [
+      8513,
+      8515,
+      8516
+    ],
+    "triangle_area_mm2": 6.123957202571087,
+    "triangle_area_over_F": 0.992333753009131,
+    "triangle_area_over_rest": 0.15963495679823217,
+    "triangle_altitude_to_longest_edge_mm": 0.8535179210201308,
+    "triangle_normal_transport_alignment": 0.9821859178791934,
+    "left_glove_faces_below_10pct_rest": 0,
+    "left_glove_negative_normal_faces": 3,
+    "index_rifle_exact_triangle_pairs": 0,
+    "dense_local_rifle_sample_count": 38986,
+    "maximum_local_index_parity_confirmed_depth_mm": 0.0,
+    "local_index_samples_deeper_than1mm": 0,
+    "deepest_index_witnesses": [],
+    "nonlocal_glove_self_triangle_pairs": 0,
+    "bidirectional_dense_index23_middle23_minimum_gap_mm": 0.774288026150316,
+    "nonlocal_self_witnesses": [],
+    "index_opposed_contact": {
+      "area_within1mm_mm2": 0.0,
+      "area_within2mm_mm2": 0.0,
+      "min_surface_gap_mm": 2.003839472308755
+    },
+    "central_palm": {
+      "central_25_50": {
+        "median_gap_mm": 18.29509809613228,
+        "opposed_area_within2mm_mm2": 0.0,
+        "opposed_area_within5mm_mm2": 0.0
+      },
+      "central_50_75": {
+        "median_gap_mm": 5.547546315938234,
+        "opposed_area_within2mm_mm2": 75.57528529457079,
+        "opposed_area_within5mm_mm2": 650.1574371768576
+      }
+    },
+    "unchanged_other_local_matrix_max_error": 0.0,
+    "unchanged_hand_arm_gear_other_digits_world_matrix_max_error": 0.0,
+    "index1_rotation_quaternion_wxyz": [
+      0.9322575330734253,
+      0.3415583074092865,
+      0.11279990524053574,
+      0.03885994479060173
+    ],
+    "target_triangle_evaluated_world_vertices_m": [
+      [
+        -0.26431018114089966,
+        -0.6281987428665161,
+        1.440609335899353
+      ],
+      [
+        -0.2690232992172241,
+        -0.6196341514587402,
+        1.445753812789917
+      ],
+      [
+        -0.2713755965232849,
+        -0.6176576614379883,
+        1.4473090171813965
+      ]
+    ]
+  },
+  "changed_curves": [
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 0,
+      "C_key_values": [
+        [
+          0.0,
+          0.9183064699172974
+        ]
+      ],
+      "C1_key_values": [
+        [
+          0.0,
+          0.9322575330734253
+        ]
+      ]
+    },
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 1,
+      "C_key_values": [
+        [
+          0.0,
+          0.3775091767311096
+        ]
+      ],
+      "C1_key_values": [
+        [
+          0.0,
+          0.3415583074092865
+        ]
+      ]
+    },
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 2,
+      "C_key_values": [
+        [
+          0.0,
+          0.11409011483192444
+        ]
+      ],
+      "C1_key_values": [
+        [
+          0.0,
+          0.11279990524053574
+        ]
+      ]
+    },
+    {
+      "data_path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "index": 3,
+      "C_key_values": [
+        [
+          0.0,
+          0.034403182566165924
+        ]
+      ],
+      "C1_key_values": [
+        [
+          0.0,
+          0.03885994479060173
+        ]
+      ]
+    }
+  ],
+  "local_delta_quaternion_wxyz": [
+    0.9992457032203674,
+    -0.038833413273096085,
+    0.00014280076720751822,
+    -1.8589198589324951e-06
+  ],
+  "selection": "Closest-to-C admissible bracket point reaching >=90% F face area; otherwise maximal restored face area among admissible points with >=10% rest area",
+  "scope": "Only Index1 local quaternion changes. C hand/arm/gear/rifle/right grip and all other finger local curves remain exact. Children follow their unchanged local poses. Native geometry, rests, weights, C files and bank/engine exports unchanged."
+}

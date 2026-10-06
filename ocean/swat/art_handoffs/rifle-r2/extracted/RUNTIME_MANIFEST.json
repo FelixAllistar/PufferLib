@@ -1,0 +1,69 @@
+{
+  "status": "OFFLINE_ART_CANDIDATE_PENDING_RUNTIME_REVIEW",
+  "files": [
+    {
+      "file": "rifle7_visual_cleanup_r2.glb",
+      "bytes": 35764708,
+      "sha256": "09d659865fb4d75aaed64b91f973e98ae178d12ffd9df42b8fc401cac25fce98"
+    },
+    {
+      "file": "rifle7_material_only_r2.glb",
+      "bytes": 35712868,
+      "sha256": "de255f8596a7bdd4b633abb7969865989c998c281ce89899bbd3820a18a62c0a"
+    },
+    {
+      "file": "rifle_bindings.json",
+      "bytes": 9037,
+      "sha256": "0a820a2faa5cffa57fefc17459a8fdfb632c5a51e1206674ad74f85848bb977c"
+    },
+    {
+      "file": "GEOMETRY_VALIDATION.json",
+      "bytes": 2991,
+      "sha256": "d71915515f807a35fcc4d08e68ba27fd3f12d5575568f925213c30349a961c8e"
+    },
+    {
+      "file": "FINAL_VALIDATION.json",
+      "bytes": 3864,
+      "sha256": "d2b759ffd31fb30c2aba5cdeafa760bd92f9c939ffa6ea6cc75dd68f81def338"
+    },
+    {
+      "file": "MATERIAL_RECIPE.json",
+      "bytes": 1108,
+      "sha256": "0175086e08d6132cf313b19f13b0536309ac3150c8aa9be6f1f5e1dccb2fa412"
+    },
+    {
+      "file": "README.md",
+      "bytes": 3869,
+      "sha256": "a3fc6c879123232e0c452ff7b24d0d90dd66406870f83197e81ab61eff5ee627"
+    },
+    {
+      "file": "comparison_neutral.jpg",
+      "bytes": 169525,
+      "sha256": "afb3d7a4ba5000f8d08ab50278fd29de90c462750a4afd8a7d5efecf971af1d2"
+    },
+    {
+      "file": "comparison_rear_detail.jpg",
+      "bytes": 169156,
+      "sha256": "46006fae8836a83dc803120d912abaae875dc9b95770de0ccf3f4a6124f4f336"
+    },
+    {
+      "file": "comparison_offline_ads_120mm.jpg",
+      "bytes": 141523,
+      "sha256": "8c790fcab3c38578bf448b8e86f2af9296d8f25b63afd1bfba2b46e9e027ad63"
+    },
+    {
+      "file": "ORIGINAL_SOURCE_PROVENANCE.json",
+      "bytes": 3214,
+      "sha256": "31e02ea2cff2dd9db41852c265918295211d412a9290e5af4f485049803418e2"
+    },
+    {
+      "file": "ORIGINAL_TEXTURE_PROVENANCE.json",
+      "bytes": 1068,
+      "sha256": "6042f74575390ac1052ceef65b5d9c6781111eb77c145c63fc85ebea79efa206"
+    }
+  ],
+  "primary_export": "rifle7_visual_cleanup_r2.glb",
+  "material_only_fallback": "rifle7_material_only_r2.glb",
+  "actual_runtime_ads_review": "pending engine",
+  "source_original_frozen": true
+}

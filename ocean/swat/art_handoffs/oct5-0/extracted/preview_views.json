@@ -1,0 +1,82 @@
+{
+  "scope": "Matched source versus explicit cubic-aware GLB pose adapter; separate stock importer diagnostics. Static views do not establish velocity.",
+  "times_s": [
+    0,
+    0.95
+  ],
+  "source_files": [
+    "native_phase000.png",
+    "native_phase950.png"
+  ],
+  "reimport_files": [
+    "cubic_reimport_phase000.png",
+    "cubic_reimport_phase950.png"
+  ],
+  "camera_blender_xyz": [
+    3.5,
+    -5.5,
+    2.6
+  ],
+  "look_at_blender_xyz": [
+    0,
+    -0.05,
+    0.95
+  ],
+  "projection": "orthographic",
+  "ortho_scale_m": 2.35,
+  "resolution": [
+    600,
+    700
+  ],
+  "engine": "Cycles CPU",
+  "samples": 16,
+  "denoising": false,
+  "world_background": [
+    0.15,
+    0.15,
+    0.15,
+    1
+  ],
+  "world_strength": 0.7,
+  "area_lights": [
+    {
+      "name": "Key",
+      "xyz": [
+        3,
+        -4,
+        5
+      ],
+      "power": 600,
+      "size": 4
+    },
+    {
+      "name": "Fill",
+      "xyz": [
+        -3,
+        -1,
+        3
+      ],
+      "power": 350,
+      "size": 3
+    },
+    {
+      "name": "Rim",
+      "xyz": [
+        0,
+        3,
+        4
+      ],
+      "power": 500,
+      "size": 3
+    }
+  ],
+  "view_transform": "AgX",
+  "look": "None",
+  "exposure": 0,
+  "gamma": 1,
+  "native_movie": "Independent source before/after comparison at normal speed, not GLB playback",
+  "stock_diagnostic_files": [
+    "stock_reimport_phase000.png",
+    "stock_reimport_phase950.png"
+  ]
+}

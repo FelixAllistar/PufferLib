@@ -1,0 +1,7 @@
+{
+  "checkpoint": "rifle7_visual_cleanup_r3.editable.blend",
+  "all_images_packed_and_4096square_after_reopen": true,
+  "render_comparison": "offline ADS 120 mm",
+  "max_pixel_integer_error": 0,
+  "mean_pixel_integer_error": 0.0
+}

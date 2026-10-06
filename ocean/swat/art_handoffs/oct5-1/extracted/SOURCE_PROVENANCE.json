@@ -1,0 +1,48 @@
+{
+  "schema": "swat-character-review-provenance/1",
+  "inputs": [
+    {
+      "role": "editable",
+      "file": "walk_right_ready_n_c1.editable.blend",
+      "bytes": 3583236,
+      "sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770"
+    },
+    {
+      "role": "actions",
+      "file": "candidate.actions.blend",
+      "bytes": 1658887,
+      "sha256": "5d6635d30198d2454dcb6f773ecae44a6d4f89a2ba5148e1af65131de33b8fd8"
+    },
+    {
+      "role": "checkpoint",
+      "file": "walk_right_ready_n_c1-selfcontained-checkpoint.tar.gz",
+      "bytes": 17702044,
+      "sha256": "93a8ec6e810c9d161c16cc90e5842952a07311a1dd5f9ab4e8a8ef669ef32180"
+    },
+    {
+      "role": "native_preview",
+      "file": "normal-speed-comparison.mp4",
+      "bytes": 3183453,
+      "sha256": "459976a23994af475ba0baab1bcc4a372fe564851d7a84b39cc44e0e958e145c"
+    },
+    {
+      "role": "native_right_carry_source",
+      "file": "ready_walk.editable.blend",
+      "bytes": 3175656,
+      "sha256": "d3f1bf10decdcb52d7d227b3c3f03b8dde1a4f947f4268955f87a22be40936f4"
+    },
+    {
+      "role": "original_walk_fbx",
+      "file": "walk right.fbx.bin",
+      "bytes": 424097,
+      "sha256": "80f0debe85112dc5ae73fdd60d035cc5db3c343509a0e9541166264137a4fd82"
+    }
+  ],
+  "source_character": "Adobe Mixamo Ch15_nonPBR; original body and animation terms apply",
+  "weapon_source": "Numbered weapon7 upload; exact product/creator/license identity not established",
+  "distribution": "Private project review only; no public asset redistribution authority",
+  "authoring_recovery": "Separate pinned checkpoint includes editable, standalone recipe, inputs and QA. Full source scalar curves and exact saved diff accompany this export.",
+  "engine_geometry_reference_commit": "5f71596d8bed78048d10b0a454bd3a6b02255327",
+  "geometry_template_glb_sha256": "e44a396d19686b172184e241ed42e52291c96a3e27422770da899d18b5912435",
+  "geometry_template_archive_sha256": "015ddbc4105c598d636b3b4bb5c42cb56498e9957a9b1ceae4693119aac1d33e"
+}

@@ -1,0 +1,386 @@
+{
+  "schema": "swat-goggle-proxy-export-binding/2",
+  "status": "PASS",
+  "name": "binocular_goggle_lens_surface_midpoint",
+  "classification": "Optical-surface proxy, not an anatomical eye, eyeball center, optical nodal point or camera origin",
+  "glb_sha256": "ea828e53f305de77b35ba55abdf67470ae98e871911c43fae5505c5022d47dd1",
+  "source_landmark_sha256": "0722c0dad1f433dadaa6f2b2423dd7a8bac5344be99072327dca6755e263a0dd",
+  "source_N_blend_sha256": "de60108a89bfe7f2f5bb92f2b35f2d692d3a659ca7f1dbc310ca7023572a33ef",
+  "source_walk_blend_sha256": "897771dc55846b4ad2b1181fcb560a55d364a4e22fc5510177b905bbb28ee442",
+  "units": "meters",
+  "matrix_order": "column-major; column vectors; rightmost applied first",
+  "optical_frame_axes": "+X outward/forward,+Y up,+Z character-right",
+  "skin_index": 0,
+  "head_node_index": 1,
+  "head_skin_joint_slot": 5,
+  "head_inverse_bind_column_major": [
+    1.0,
+    -0.0,
+    -0.0,
+    -0.0,
+    -0.0,
+    1.0,
+    3.740067811008885e-08,
+    0.0,
+    0.0,
+    -1.4777601364812654e-10,
+    1.0,
+    -0.0,
+    -0.0,
+    -1.5440106391906738,
+    0.017461901530623436,
+    1.0
+  ],
+  "body_node": 71,
+  "lens_vertex_mapping": {
+    "left": {
+      "native_vertex": 23263,
+      "matches": [
+        {
+          "primitive": 1,
+          "vertex": 21838,
+          "position_accessor": 14,
+          "position_bind_mesh_gltf": [
+            0.032183121889829636,
+            1.6498162746429443,
+            0.14902840554714203
+          ],
+          "head_weight": 1.0,
+          "skin_joint_slot": 5
+        }
+      ]
+    },
+    "right": {
+      "native_vertex": 23516,
+      "matches": [
+        {
+          "primitive": 1,
+          "vertex": 22235,
+          "position_accessor": 14,
+          "position_bind_mesh_gltf": [
+            -0.03218313679099083,
+            1.6498162746429443,
+            0.14902840554714203
+          ],
+          "head_weight": 1.0,
+          "skin_joint_slot": 5
+        }
+      ]
+    }
+  },
+  "optical_frame_to_bind_mesh_gltf_column_major": [
+    0.0,
+    -3.0582586418859137e-07,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    2.6857296120397223e-07,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    -7.450580596923828e-09,
+    1.6498162746429443,
+    0.14902840554714203,
+    1.0
+  ],
+  "optical_frame_to_head_node_local_gltf_column_major": [
+    0.0,
+    -3.059736402022395e-07,
+    0.9999999999999886,
+    0.0,
+    0.0,
+    1.0,
+    3.059736393140611e-07,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    -7.450580596923828e-09,
+    0.10580563543024768,
+    0.1664903687820129,
+    1.0
+  ],
+  "phase_zero_optical_frame_to_model_column_major": [
+    -0.036322306544438174,
+    -0.3928673949429577,
+    0.9188772183334866,
+    0.0,
+    -0.2784879317846413,
+    0.8870390598366048,
+    0.36824662084134563,
+    0.0,
+    -0.9597525535172584,
+    -0.24252062061082938,
+    -0.1416285118650541,
+    0.0,
+    -0.17716990075706224,
+    1.1538012215064897,
+    0.487259261312805,
+    1.0
+  ],
+  "formula_bind": "model_from_optical(t)=W_head_node(t)*IBM[resolved_head_slot]*B_bind_mesh",
+  "formula_joint_local": "J_head_node_local=IBM[resolved_head_slot]*B_bind_mesh; model_from_optical(t)=W_head_node(t)*J_head_node_local",
+  "placement": "Apply external model placement once; native Head-local and exported glTF Head-local are different frames",
+  "lens_separation_m": 0.06436625868082047,
+  "sample_count": 1243,
+  "sample_scope": "960 Hz plus every source/export key, boundary probes and finite-difference epsilon pairs; source references +/-10 microseconds",
+  "max_origin_error_vs_native_m": 9.008167011204771e-07,
+  "max_matrix_error_vs_native": 7.998676411213879e-07,
+  "max_lens_vertex_error_vs_native_m": {
+    "left": 9.010977242601907e-07,
+    "right": 9.005648722425826e-07
+  },
+  "max_actual_lens_midpoint_vs_frame_origin_m": 4.996003610813204e-16,
+  "two_correct_forms_max_error": 4.440892098500626e-16,
+  "native_blender_evaluated_control_samples": [
+    {
+      "time_s": 0.0,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14628204703330994,
+          1.1616060733795166,
+          0.4918173551559448
+        ],
+        "right": [
+          -0.2080577313899994,
+          1.1459959745407104,
+          0.48270124197006226
+        ]
+      }
+    },
+    {
+      "time_s": 0.005,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14630109071731567,
+          1.1624819040298462,
+          0.4879434108734131
+        ],
+        "right": [
+          -0.20808300375938416,
+          1.1468915939331055,
+          0.4788358211517334
+        ]
+      }
+    },
+    {
+      "time_s": 0.025,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14664220809936523,
+          1.1658101081848145,
+          0.47662317752838135
+        ],
+        "right": [
+          -0.20843929052352905,
+          1.1502816677093506,
+          0.46751338243484497
+        ]
+      }
+    },
+    {
+      "time_s": 0.05,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14770615100860596,
+          1.1690765619277954,
+          0.475522518157959
+        ],
+        "right": [
+          -0.20951062440872192,
+          1.1536506414413452,
+          0.4662894010543823
+        ]
+      }
+    },
+    {
+      "time_s": 0.1,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14906588196754456,
+          1.1719063520431519,
+          0.47326117753982544
+        ],
+        "right": [
+          -0.2108941376209259,
+          1.156635046005249,
+          0.4639301300048828
+        ]
+      }
+    },
+    {
+      "time_s": 0.1249,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14954519271850586,
+          1.1725068092346191,
+          0.46912050247192383
+        ],
+        "right": [
+          -0.21138077974319458,
+          1.1572315692901611,
+          0.45984458923339844
+        ]
+      }
+    },
+    {
+      "time_s": 0.125,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14954712986946106,
+          1.1725095510482788,
+          0.4690949320793152
+        ],
+        "right": [
+          -0.21138271689414978,
+          1.1572341918945312,
+          0.45981931686401367
+        ]
+      }
+    },
+    {
+      "time_s": 0.25,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14945819973945618,
+          1.1600408554077148,
+          0.469887912273407
+        ],
+        "right": [
+          -0.21126019954681396,
+          1.1444315910339355,
+          0.46095025539398193
+        ]
+      }
+    },
+    {
+      "time_s": 0.5,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14616984128952026,
+          1.1689482927322388,
+          0.5130473971366882
+        ],
+        "right": [
+          -0.2077605128288269,
+          1.1533886194229126,
+          0.502679169178009
+        ]
+      }
+    },
+    {
+      "time_s": 0.75,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14193803071975708,
+          1.1516683101654053,
+          0.5566040277481079
+        ],
+        "right": [
+          -0.20357400178909302,
+          1.136352300643921,
+          0.5461424589157104
+        ]
+      }
+    },
+    {
+      "time_s": 0.875,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14268958568572998,
+          1.134621024131775,
+          0.5216081738471985
+        ],
+        "right": [
+          -0.20437216758728027,
+          1.1187903881072998,
+          0.5122450590133667
+        ]
+      }
+    },
+    {
+      "time_s": 0.9,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14316806197166443,
+          1.138633370399475,
+          0.5186764001846313
+        ],
+        "right": [
+          -0.20487302541732788,
+          1.1228339672088623,
+          0.5094087719917297
+        ]
+      }
+    },
+    {
+      "time_s": 0.95,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14493945240974426,
+          1.15068781375885,
+          0.5156748294830322
+        ],
+        "right": [
+          -0.20667710900306702,
+          1.1349272727966309,
+          0.5065605640411377
+        ]
+      }
+    },
+    {
+      "time_s": 0.975,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14597243070602417,
+          1.1567227840423584,
+          0.5081450939178467
+        ],
+        "right": [
+          -0.20772245526313782,
+          1.1410222053527832,
+          0.49901098012924194
+        ]
+      }
+    },
+    {
+      "time_s": 0.995,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14626356959342957,
+          1.1607277393341064,
+          0.4957064390182495
+        ],
+        "right": [
+          -0.20803296566009521,
+          1.1450977325439453,
+          0.48658162355422974
+        ]
+      }
+    },
+    {
+      "time_s": 1.0,
+      "native_evaluated_lens_points_model_xyz_m": {
+        "left": [
+          -0.14628204703330994,
+          1.1616060733795166,
+          0.4918173551559448
+        ],
+        "right": [
+          -0.2080577313899994,
+          1.1459959745407104,
+          0.48270124197006226
+        ]
+      }
+    }
+  ],
+  "limits": [
+    "Virtual mean of two goggle-surface vertices; not an added eye joint",
+    "Not anatomical eyes, IPD, gaze, lens optics, optical nodal point or camera origin",
+    "No camera/controller calibration or geometry edits"
+  ]
+}

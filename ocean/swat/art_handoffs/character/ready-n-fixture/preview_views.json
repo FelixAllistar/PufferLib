@@ -1,0 +1,31 @@
+{
+  "source": "native_*.png from pinned editable; reimport_*.png from final GLB",
+  "times_seconds": {
+    "ready": 0,
+    "seated": 3.65
+  },
+  "camera_location_blender": [
+    3.5,
+    -5.5,
+    2.6
+  ],
+  "camera_target_blender": [
+    0,
+    -0.05,
+    0.95
+  ],
+  "projection": "ORTHO",
+  "orthographic_scale": 2.35,
+  "dimensions": [
+    600,
+    700
+  ],
+  "color_management": {
+    "view": "AgX",
+    "look": "None",
+    "exposure": 0,
+    "gamma": 1
+  },
+  "renderer": "Blender4.3.2 Cycles CPU,16samples, no denoising",
+  "scope": "Matched static visual sanity; numerical deformation parity is independent. No animated normal or renderer material parity claim."
+}

@@ -1,0 +1,49 @@
+{
+  "status": "PASS_SOURCE_IDENTITY_AND_DISCLOSED_QUALIFICATION",
+  "source": "animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_right/seam_a/walk_right_ready_n_c1.editable.blend",
+  "source_bytes": 3583236,
+  "source_sha256": "f85525ba445013f73884677bd8202d7ffff226b04fedee930250c90cbe402770",
+  "checkpoint": "animation_rebuild/upright_locomotion/shared_ready_n_lateral_pair/walk_right/seam_a/walk_right_ready_n_c1-selfcontained-checkpoint.tar.gz",
+  "checkpoint_bytes": 17702044,
+  "checkpoint_sha256": "93a8ec6e810c9d161c16cc90e5842952a07311a1dd5f9ab4e8a8ef669ef32180",
+  "archive_file_count": 84,
+  "archive_manifest_verified_file_count": 83,
+  "archive_manifest_self_excluded": true,
+  "action": "Walk Right / Shared Ready N C1 Loop A",
+  "saved_timing": {
+    "fps": 30.0,
+    "range": [
+      0.0,
+      30.0
+    ],
+    "duration_s": 1
+  },
+  "saved_curve_count": 700,
+  "boundary_changed_curve_count_verified": 661,
+  "source_handoff_typo": "Initial handoff said657; saved_curve_diff, source manifest and QUALITY all establish661.",
+  "repair_windows_seconds": [
+    [
+      0,
+      0.125
+    ],
+    [
+      0.875,
+      1
+    ]
+  ],
+  "source_qualification": "QUALIFIED_SAVED_RIGHT_CONTINUITY_AND_N_CARRY_WITH_DISCLOSED_MATERIAL_LIMITS",
+  "limits": [
+    "Visible inherited opposing upper-thigh pants/strap contact remains; RIGHT is not interlimb-clear",
+    "Bounded seam repair introduces five small cross-leg pair identities and one same-side hip/strap pair; zero-regression by pair identity is not claimed",
+    "Ready N inherited sleeve root folds, stretched connecting sleeve panel and thin/flattened elbow link remain visible",
+    "Right sole minimum2.931984141mm remains abovez=0;17of961 phases are below3mm",
+    "Finite samples and finite triangle crossings are not continuous analytic or watertight penetration proof",
+    "No ADS, runtime engine, resampled-export or other-direction qualification is implied"
+  ],
+  "source_qa_hashes": {
+    "independent_review/FINAL_STATUS.json": "91357335738160caebb36896dc3f81e127e8a0be5e8bfa1a3aec939960f7c269",
+    "seam_a/saved_curve_diff.json": "acda53d42a152dca1bb71ac4d7d9e2f9bbb00180c64ed63d2f4e506955b7b31a",
+    "seam_a/QUALITY.md": "3eee51c78d0b03104405e4a53db42d7e947f64be32df95afb1026c9d98d5ca64"
+  },
+  "binary_export_review": "PENDING_FINAL_PACKAGE"
+}

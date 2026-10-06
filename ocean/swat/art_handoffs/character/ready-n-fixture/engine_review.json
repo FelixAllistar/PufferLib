@@ -1,0 +1,31 @@
+{
+  "schema": "swat-engine-handoff-review/1",
+  "clip": "Standing Empty / Shared Ready N Carry F",
+  "glb_sha256": "3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81",
+  "zip_sha256": "2b32a3141d4f0a2a90a4e90dcd52b00fe8170d416e6fcd88406434df12154b28",
+  "manifest_files_verified": 24,
+  "independent_poses_verified": 672,
+  "authored_unique_key_times": 595,
+  "max_matrix_component_error": 6.813930356064368e-07,
+  "max_position_component_error_m": 8.217940092869469e-07,
+  "max_normal_component_error": 7.186763835154153e-07,
+  "all_influences_preserved": true,
+  "four_influence_consumer_rejected": true,
+  "rigid_bridge_correct_formula": "actor_world * joint_world * inverse_bind_for_skin_joint * bridge_from_rigid_to_bind_mesh",
+  "original_bridge_formula_missing_inverse_bind": true,
+  "corrected_ready_matrix_max_error": 5.960464477539063e-08,
+  "source_handoff_unchanged": true,
+  "eye_fit": "unresolved",
+  "native_gpu_preview": "build/swat/windows/character-ready-n.png",
+  "source_timing_s": 6,
+  "gameplay_activated": false,
+  "character_texture_maps_received": 9,
+  "character_texture_zip_sha256": "be6b60251053f034761c400eec63b66ea870ac4336f67400eba3a882bdeb1b7f",
+  "material_adapter_pending": [
+    "tangent construction",
+    "normal green convention verification",
+    "source diffuse/specular/emissive semantics",
+    "source scalar roughness .78; gloss remains unlinked"
+  ],
+  "coordination": "User direct Slack confirmation read; Sunder acknowledged. Environment assets branch planned: swat/environment-material-quality-v1; painted plaster and door paint priority; PR pending."
+}

@@ -1,0 +1,16 @@
+CC0 1.0 Universal — Public Domain Dedication
+
+This batch's original geometry, generated textures, procedural generation scripts,
+rendered previews and documentation are offered under CC0 1.0 Universal.
+To the extent possible under law, all copyright and related or neighbouring rights
+in these original works are waived. You may copy, modify and distribute them,
+including commercially, without permission or attribution.
+
+https://creativecommons.org/publicdomain/zero/1.0/
+
+No external models, scans, logos or texture photographs were used. Generic fixture
+forms and markings are original procedural artwork; no manufacturer affiliation or
+functional/safety certification is claimed. Work is provided without warranty.
+Blender and Python/Pillow software remain under their respective licenses and are
+not redistributed in this archive. System font rasterization is used only in preview
+catalogue labels, not embedded in the models.

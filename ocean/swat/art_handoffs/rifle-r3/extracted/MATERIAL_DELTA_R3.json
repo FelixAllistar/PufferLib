@@ -1,0 +1,33 @@
+{
+  "source_r2_base_sha256": "0d2caa1970a95cddbe5ffe1137be76d84eb8b2fb401ca3f14a1e127cd319dc22",
+  "source_r2_orm_sha256": "68bcd5679a65fd1c759cceb9e9fbc0d9e34249c466970a507078e109921134d1",
+  "scope": [
+    "rear_sight_base",
+    "receiver_upper"
+  ],
+  "mask_uv_raster": "Original source loop UV triangles at 4096x4096, four-pixel max-filter gutter",
+  "scope_texels": 795259,
+  "gutter_texels_excluded_to_protect_other_active_uv_regions": 23478,
+  "all_other_active_uv_regions_byte_identical": true,
+  "changed_base_texels": 325586,
+  "changed_roughness_texels": 654672,
+  "outside_mask_pixels_exact": true,
+  "metallic_and_ao_channels_exact": true,
+  "base_linear_formula": "min(R2,0.025)+0.65*max(R2-0.025,0)",
+  "roughness": "R2 preserved with selected-region floor 0.73",
+  "normal_png": "Exact original retained; normalTexture.scale remains .65",
+  "geometry_only_file": "rifle7_geometry_only_r3.glb",
+  "material_only_geometry": "R2 exact, including R2 rounded ring; this fallback does not revert to pre-R2 geometry",
+  "exports": [
+    {
+      "file": "rifle7_visual_cleanup_r3.glb",
+      "bytes": 32252384,
+      "sha256": "011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a"
+    },
+    {
+      "file": "rifle7_material_only_r3.glb",
+      "bytes": 32035964,
+      "sha256": "9da8e248900874020e0322ff85a1c94d59c740a18721a194d13538a81c382d37"
+    }
+  ]
+}

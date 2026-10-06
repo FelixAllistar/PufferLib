@@ -1,23 +1,23 @@
 # Rigid weapon integration
 
-The local player loads the privately supplied `rifle7_rigid_textured.glb` for
+The local player loads the supplied `rifle7_rigid_textured.glb` for
 carbine profile 0, in officer and world views. Other profiles and absent assets
 use procedural geometry. Live animated officers, camera feeds, shadows and
 first-person arms borrow the revised rigid body at the sampled `Prop_Rifle`
 transform. The original character rifle body is suppressed; the original
 magazine meshes keep their authored reload motion and use the revised maps.
 
-Install the approved export at
-`build/swat/assets/weapons/rifle7_rigid_textured.glb`. The Windows builder copies
-that local file to its executable's `assets/weapons` directory; CMake copies it
-when available at configuration time. Alternatively set `SWAT_WEAPON_ASSETS` to
+The approved export is tracked at
+`ocean/swat/assets/weapons/rifle7_rigid_textured.glb`. The Windows builder copies
+the weapon bank to its executable's `assets/weapons` directory; CMake and Make
+copy the same repository assets. Alternatively set `SWAT_WEAPON_ASSETS` to
 a directory containing that filename. Explicit directories never mix in default
 files. `SWAT_WEAPON_ART=0 ./swat` selects the procedural comparison. WSL forwards
 both overrides to the native player, translating the directory path.
 
-The source has no public redistribution authorization. Its binary, textures,
-neutral views and editable sources stay in private Drive/local ignored build
-storage. The public repository contains only the consumer and measured interface.
+The supplied binaries and embedded textures are tracked in `assets/weapons/`.
+Original deliveries, measured bindings and review sources are retained in
+`art_handoffs/`. Preserve their included provenance and license records.
 The installed R3 source SHA-256 is
 `011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a`.
 R2 is retained separately with SHA-256
@@ -116,7 +116,7 @@ response and authored strength, immutable arsenal, opt-out/missing-asset/equipme
 
 ```
 make -C ocean/swat weapon-art-test-build
-GALLIUM_DRIVER=d3d12 ./build/swat/test_weapon_art build/swat/assets/weapons build/swat
+GALLIUM_DRIVER=d3d12 ./build/swat/test_weapon_art ocean/swat/assets/weapons build/swat
 ```
 
 On Windows run `test_weapon_art.exe assets/weapons .` from `build/swat/windows`.

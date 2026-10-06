@@ -1,0 +1,448 @@
+{
+  "schema": "rifle7-runtime-review/3",
+  "primary": {
+    "file": "rifle7_visual_cleanup_r3.glb",
+    "sha256": "011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a",
+    "bytes": 32252384,
+    "total_vertices": 21112,
+    "total_triangles": 14762,
+    "meshes": [
+      {
+        "name": "Rifle7_RigidBody_r3_cosmetic_bevels",
+        "vertices": 20116,
+        "triangles": 13982,
+        "bounds_engine": [
+          [
+            -1.0090490665248808e-09,
+            -0.12666592001914978,
+            -0.030266722664237022
+          ],
+          [
+            0.8999999761581421,
+            0.13055996596813202,
+            0.032860588282346725
+          ]
+        ],
+        "source_r2_prefix_attributes_exact": true,
+        "normal_tangent_frames": "PASS"
+      },
+      {
+        "name": "Rifle7_SeatedMagazine_triangulated",
+        "vertices": 996,
+        "triangles": 780,
+        "bounds_engine": [
+          [
+            0.3730941414833069,
+            -0.1758604198694229,
+            -0.013837491162121296
+          ],
+          [
+            0.469766229391098,
+            0.034097034484148026,
+            0.01383686438202858
+          ]
+        ],
+        "source_r2_prefix_attributes_exact": true,
+        "normal_tangent_frames": "PASS"
+      }
+    ],
+    "images": [
+      {
+        "name": "7_uv_checker_material_uv_grid_4096x4096_Normal",
+        "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+        "bytes": 4164967,
+        "size": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "Rifle7_finish_r3_BaseColor",
+        "sha256": "f0727e1120ce59e65fa47ba78538b847961e9292a0945fe89ca1566a82054a62",
+        "bytes": 12058542,
+        "size": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "Rifle7_finish_r3_ORM",
+        "sha256": "169a3e6a368f9a73f1e1255ceebaccce2c95b5080a53f385a08e29993f0c0618",
+        "bytes": 14923913,
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "entire_r2_ring_index_rows_and_vertex_attributes_retained": true,
+    "two_rigid_meshes_magazine_index1_no_animation_skin": true,
+    "status": "PASS"
+  },
+  "controls": [
+    {
+      "file": "rifle7_geometry_only_r3.glb",
+      "bytes": 35981128,
+      "sha256": "ced35b875fe8cb35688f9b6b8854ce004b0cb7b126503b8b35e9dbdb9a3f12e8",
+      "total_vertices": 21112,
+      "total_triangles": 14762
+    },
+    {
+      "file": "rifle7_material_only_r3.glb",
+      "bytes": 32035964,
+      "sha256": "9da8e248900874020e0322ff85a1c94d59c740a18721a194d13538a81c382d37",
+      "total_vertices": 16947,
+      "total_triangles": 12013
+    }
+  ],
+  "units": "meters",
+  "axes": {
+    "forward": "+X",
+    "up": "+Y",
+    "right": "+Z"
+  },
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "Rifle7_RigidBody"
+    },
+    {
+      "mesh": 1,
+      "name": "Rifle7_SeatedMagazine"
+    }
+  ],
+  "node_transforms": "All unchanged from R2, identity/no separate transform fields",
+  "meshes": 2,
+  "magazine_mesh_index": 1,
+  "primitives_per_mesh": 1,
+  "material_count": 1,
+  "skin_count": 0,
+  "animation_count": 0,
+  "material_interpretation": {
+    "base_color_texture": {
+      "file": "Rifle7_finish_r3_BaseColor.png",
+      "encoding": "PNG RGB 8-bit sRGB",
+      "shader_decode": "sRGB to scene-linear before shading",
+      "base_color_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "derivation": "sRGB R2 decoded to linear; selected bright contrast compressed; encoded back to sRGB; texels outside mask exact"
+    },
+    "metallic_roughness_texture": {
+      "file": "Rifle7_finish_r3_ORM.png",
+      "encoding": "PNG RGB 8-bit linear / Non-Color",
+      "channels": {
+        "R": "retained source channel; not bound as occlusion in this material",
+        "G": "roughness",
+        "B": "metallic"
+      },
+      "roughness_factor": 1,
+      "metallic_factor": 1,
+      "local_target_roughness_floor": 0.73,
+      "stored_8bit_roughness_floor": 186,
+      "effective_linear_floor": 0.7294117647058823,
+      "metallic_and_R_channels": "Byte-exact R2 everywhere",
+      "outside_scope": "Byte-exact R2 texels"
+    },
+    "normal_texture": {
+      "file": "7_uv_checker_material_uv_grid_4096x4096_Normal.png",
+      "encoding": "PNG RGB 8-bit linear / Non-Color tangent-space normal data",
+      "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+      "normal_texture_scale": 0.65,
+      "source_bytes": "Exact original, also identical to R2",
+      "tangent_handedness": "Exported glTF tangent.w retained on protected surfaces; new patch frames orthonormalized"
+    },
+    "double_sided": true,
+    "alpha_mode": "OPAQUE",
+    "texture_resolution": [
+      4096,
+      4096
+    ]
+  },
+  "geometry_delta_versus_r2": {
+    "vertices": 4165,
+    "triangles": 2749,
+    "scoped_replaced_triangles": 516,
+    "unmodified_r2_body_triangle_rows": 10717
+  },
+  "protected_surfaces_report": "PROTECTED_SURFACES_R3.json",
+  "binding_landmarks": [
+    {
+      "id": "stock_contact",
+      "position_native_rifle": [
+        0.00129691231995821,
+        0.44999998807907104,
+        0.02265022322535515
+      ],
+      "position_export_engine": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "method": "Bounding-box center of the true rear pad; lies on source loop triangle 3978",
+      "kind": "measured stock-pad reference, not a fitted shoulder pose",
+      "source_vertex_ids": [
+        3854,
+        3857,
+        3859,
+        3860,
+        3861,
+        3864,
+        3894,
+        3895,
+        3896,
+        3897,
+        3899,
+        3902,
+        3905,
+        3907,
+        3908,
+        3909,
+        3912,
+        3947
+      ],
+      "surface_triangle": 3978
+    },
+    {
+      "id": "muzzle",
+      "position_native_rifle": [
+        0.0012969920644536614,
+        -0.44999996200203896,
+        0.06627657171338797
+      ],
+      "position_export_engine": [
+        0.89999995008111,
+        0.04362634848803282,
+        -7.974449545145035e-08
+      ],
+      "method": "Center of the eight-vertex inner tip ring at the foremost muzzle plane",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79
+      ]
+    },
+    {
+      "id": "rear_sight",
+      "position_native_rifle": [
+        0.0012967195361852646,
+        0.15017832815647125,
+        0.1473989635705948
+      ],
+      "position_export_engine": [
+        0.2998216599225998,
+        0.12474874034523964,
+        1.9278377294540405e-07
+      ],
+      "method": "Center of the rear aperture component bounds in X/Z and mean front/back Y planes",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        5186,
+        5187,
+        5188,
+        5189,
+        5190,
+        5191,
+        5192,
+        5193,
+        5194,
+        5195,
+        5196,
+        5197,
+        5198,
+        5199,
+        5200,
+        5201,
+        5202,
+        5203,
+        5204,
+        5205,
+        5206,
+        5207,
+        5208,
+        5209,
+        5210,
+        5211,
+        5212,
+        5213,
+        5214,
+        5215,
+        5216,
+        5217
+      ]
+    },
+    {
+      "id": "front_sight",
+      "position_native_rifle": [
+        0.0012967658888859053,
+        -0.20497363805770874,
+        0.14737612009048462
+      ],
+      "position_export_engine": [
+        0.6549736261367798,
+        0.12472589686512947,
+        1.4643107230471845e-07
+      ],
+      "method": "Center of the six top-face boundary vertices of the front sight post",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        5247,
+        5249,
+        5251,
+        5253,
+        5255,
+        5257
+      ]
+    },
+    {
+      "id": "grip_center",
+      "position_native_rifle": [
+        0.0012971572577953339,
+        0.18822678923606873,
+        -0.04834649385884404
+      ],
+      "position_export_engine": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        -2.4493783712387085e-07
+      ],
+      "method": "Bounding-box center of the separate pistol-grip component",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        1850,
+        1851,
+        1852,
+        1853,
+        1854,
+        1855,
+        1856,
+        1857,
+        1858,
+        1859,
+        1860,
+        1861,
+        1862,
+        1863,
+        1864,
+        1865,
+        1866,
+        1867,
+        1868,
+        1869,
+        1870,
+        1871,
+        1872,
+        1873,
+        1874,
+        1875,
+        1876,
+        1877,
+        1878,
+        1879,
+        1880,
+        1881,
+        1882,
+        1883,
+        1884,
+        1885,
+        1886,
+        1887,
+        1888,
+        1889,
+        1890,
+        1891,
+        1892,
+        1893,
+        1894,
+        1895,
+        1896,
+        1897,
+        1898,
+        1899,
+        1900,
+        1901,
+        1902,
+        1903,
+        1904,
+        1905,
+        1906,
+        1907,
+        1908,
+        1909,
+        1910
+      ]
+    },
+    {
+      "id": "right_hand_surface_candidate",
+      "position_native_rifle": [
+        -0.01336847496817406,
+        0.18822678923606873,
+        -0.04834649385884404
+      ],
+      "position_export_engine": [
+        0.2617731988430023,
+        -0.07099671708419919,
+        0.01466538728813227
+      ],
+      "method": "Ray from native -X onto pistol-grip side at its mid-height/length",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        1867,
+        1860,
+        1862
+      ],
+      "surface_triangle": 2590,
+      "barycentric": [
+        0.4654029393868774,
+        0.12894403974164492,
+        0.4056530208714777
+      ],
+      "fit_status": "provisional surface candidate; hand wrap/orientation not fitted"
+    },
+    {
+      "id": "support_hand_surface_candidate",
+      "position_native_rifle": [
+        0.0012970571406185627,
+        -0.10807344317436218,
+        0.03487178310755068
+      ],
+      "position_export_engine": [
+        0.5580734312534332,
+        0.012221559882195532,
+        -1.448206603527069e-07
+      ],
+      "method": "Upward ray onto fore-end lower rail at its component midpoint",
+      "kind": "measured geometric landmark; not a calibrated hand/body contact",
+      "source_vertex_ids": [
+        4981,
+        4847,
+        4982
+      ],
+      "surface_triangle": 6822,
+      "barycentric": [
+        1.0726561006091373e-06,
+        0.49999998480181357,
+        0.4999989425420859
+      ],
+      "fit_status": "provisional underside candidate; palm/finger clearance not fitted"
+    }
+  ],
+  "stock_to_muzzle_length_m": 0.901056695457287,
+  "cosmetic_departure": {
+    "maximum_tested_new_or_source_vertex_nearest_surface_distance_m": 0.000486110569909215,
+    "measurement": "Sampled at all original and new vertices of scoped components; not a guaranteed continuous Hausdorff bound",
+    "details": "SURFACE_DISTANCE_QA.json"
+  },
+  "runtime_qa": "R3 offline checks only; engine must test live/FPS, seven motion banks, thumb/reload/cached poses and actual ADS before adoption",
+  "offline_camera": "Matched 120 mm eye relief along measured sight direction, 55 mm lens; see README",
+  "base_r2_immutable_sha256": "09d659865fb4d75aaed64b91f973e98ae178d12ffd9df42b8fc401cac25fce98"
+}

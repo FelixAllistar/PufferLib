@@ -1,0 +1,181 @@
+{
+  "schema": "swat-rigid-weapon-validation/1",
+  "assets": [
+    {
+      "file": "rifle7_rigid_textured.glb",
+      "sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+      "bytes": 40189468,
+      "skins": 0,
+      "animations": 0,
+      "meshes": [
+        {
+          "node": "Rifle7_RigidBody",
+          "source_vertices": 5346,
+          "source_rendered_vertices": 5340,
+          "export_vertices_with_seams": 14991,
+          "source_triangles": 10273,
+          "export_triangles": 10273,
+          "oriented_surface_triangles_and_uvs_preserved": true,
+          "position_max_error_m": 7.426339355194054e-08,
+          "uv_max_error": 2.9802322387695312e-08,
+          "normal_component_max_error": 0.000512830922902538,
+          "normal_length_max_error": 1.1920928955078125e-07,
+          "normal_tangent_dot_max_error": 9.599558552508825e-07,
+          "tangents_present_finite": true,
+          "bounds_export_engine": [
+            [
+              -1.0090490665248808e-09,
+              -0.12666592001914978,
+              -0.030266722664237022
+            ],
+            [
+              0.8999999761581421,
+              0.13055996596813202,
+              0.032860588282346725
+            ]
+          ],
+          "normal_direction_conservative_bound_deg": 0.050892932800235983
+        },
+        {
+          "node": "Rifle7_SeatedMagazine",
+          "source_vertices": 406,
+          "source_rendered_vertices": 406,
+          "export_vertices_with_seams": 996,
+          "source_triangles": 780,
+          "export_triangles": 780,
+          "oriented_surface_triangles_and_uvs_preserved": true,
+          "position_max_error_m": 3.810463947333169e-08,
+          "uv_max_error": 2.9802322387695312e-08,
+          "normal_component_max_error": 0.0003934843485376982,
+          "normal_length_max_error": 1.1920928955078125e-07,
+          "normal_tangent_dot_max_error": 5.960464477539063e-08,
+          "tangents_present_finite": true,
+          "bounds_export_engine": [
+            [
+              0.3730941414833069,
+              -0.1758604198694229,
+              -0.013837491162121296
+            ],
+            [
+              0.469766229391098,
+              0.034097034484148026,
+              0.01383686438202858
+            ]
+          ],
+          "normal_direction_conservative_bound_deg": 0.039049073179855155
+        }
+      ],
+      "embedded_images": [
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_Normal",
+          "bytes": 4164967,
+          "sha256": "a260b86a263c7be84fb2c1ba6a64a7f95247e0e5a4b71566a2a18ea62aacbbe5",
+          "size": [
+            4096,
+            4096
+          ],
+          "mode": "RGB",
+          "original_png_bytes_identical": true
+        },
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_BaseColor",
+          "bytes": 13876902,
+          "sha256": "82ba8169d041537751ba1143ccadb37181b59e848874c49cce770f2aac42f425",
+          "size": [
+            4096,
+            4096
+          ],
+          "mode": "RGB",
+          "original_png_bytes_identical": true
+        },
+        {
+          "name": "7_uv_checker_material_uv_grid_4096x4096_Metallic-7_uv_checker_material_uv_grid_4096x4096_Roughness",
+          "bytes": 21310815,
+          "sha256": "a37794d8faad9835d16ad59747db0af1755f9910dba758d64597425321322373",
+          "size": [
+            4096,
+            4096
+          ],
+          "mode": "RGB",
+          "metallic_blue_max_integer_error": 0,
+          "roughness_green_max_integer_error": 0
+        }
+      ],
+      "materials": [
+        {
+          "doubleSided": true,
+          "name": "Rifle7_OriginalPBR",
+          "normalTexture": {
+            "index": 0
+          },
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 1
+            },
+            "metallicRoughnessTexture": {
+              "index": 2
+            }
+          }
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "file": "sidearm50_rigid_source_scale.glb",
+      "sha256": "04a163b5f0a2bcd166b59b38ccda50a7d50107e9710bb7b72dc36e07ea4ff450",
+      "bytes": 1106804,
+      "skins": 0,
+      "animations": 0,
+      "meshes": [
+        {
+          "node": "Sidearm50_SourceScale",
+          "source_vertices": 13608,
+          "source_rendered_vertices": 13608,
+          "export_vertices_with_seams": 19677,
+          "source_triangles": 26806,
+          "export_triangles": 26806,
+          "oriented_surface_triangles_and_uvs_preserved": true,
+          "position_max_error_m": 1.1660892008897538e-07,
+          "uv_max_error": 2.9802322387695312e-08,
+          "normal_component_max_error": 0.0005757002442619286,
+          "normal_length_max_error": 1.1920928955078125e-07,
+          "normal_tangent_dot_max_error": 9.199939086101949e-07,
+          "tangents_present_finite": true,
+          "bounds_export_engine": [
+            [
+              -0.08943202346563339,
+              -1.0112659931182861,
+              -0.12761631608009338
+            ],
+            [
+              2.625506639480591,
+              0.12151734530925751,
+              0.18669338524341583
+            ]
+          ],
+          "normal_direction_conservative_bound_deg": 0.057132034724251754
+        }
+      ],
+      "embedded_images": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "name": "uv_checker_material_uv_grid_4096x4096",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.800000011920929,
+              0.800000011920929,
+              0.800000011920929,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.4000000059604645
+          }
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "scope": "Rigid mesh, unit/frame transform, UV, normals/tangents and embedded image validation. No game runtime, lighting calibration, skinning or hand-fit claim."
+}

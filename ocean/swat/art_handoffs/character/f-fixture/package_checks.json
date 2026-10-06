@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "glb_sha256": "2410005918b2b3e87c157229c12debb5743d228fefee1f29cd4bccb9e14ec45f",
+  "joint_map_entries_verified": 70,
+  "source_event_key_nearest_time_max_error_s": 2.384185791015625e-07,
+  "external_payload_uris": 0,
+  "source_unchanged": true,
+  "two_reimport_stills_inspected": true
+}

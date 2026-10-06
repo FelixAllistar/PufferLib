@@ -1,0 +1,42 @@
+[
+  {
+    "input_sha256": "777087accd1b9774be285c7dcb9b2e288f09e0105b39f73db2328834eba12d4a",
+    "output_sha256": "daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48",
+    "meshes": [
+      {
+        "mesh": "Rifle7_RigidBody_triangulated",
+        "vertices": 14991,
+        "reorthonormalized": 9008,
+        "original_invalid_at_1e_4": 31,
+        "degenerate_direction_fallbacks": 12,
+        "fallback_rule": "Cross normal with its least-parallel coordinate axis; preserve source tangent handedness"
+      },
+      {
+        "mesh": "Rifle7_SeatedMagazine_triangulated",
+        "vertices": 996,
+        "reorthonormalized": 914,
+        "original_invalid_at_1e_4": 2,
+        "degenerate_direction_fallbacks": 0,
+        "fallback_rule": "Cross normal with its least-parallel coordinate axis; preserve source tangent handedness"
+      }
+    ],
+    "scope": "Only TANGENT xyz bytes changed. Positions, indices, UVs, normals, images, materials and tangent handedness remain unchanged.",
+    "file": "rifle7_rigid_textured.glb"
+  },
+  {
+    "input_sha256": "d5419a7b4e9270b0da62e795b0c3010b8f1898c6b928ee73f1660c0800edf5f6",
+    "output_sha256": "04a163b5f0a2bcd166b59b38ccda50a7d50107e9710bb7b72dc36e07ea4ff450",
+    "meshes": [
+      {
+        "mesh": "Sidearm50_ExplicitTriangles",
+        "vertices": 19677,
+        "reorthonormalized": 16472,
+        "original_invalid_at_1e_4": 50,
+        "degenerate_direction_fallbacks": 3,
+        "fallback_rule": "Cross normal with its least-parallel coordinate axis; preserve source tangent handedness"
+      }
+    ],
+    "scope": "Only TANGENT xyz bytes changed. Positions, indices, UVs, normals, images, materials and tangent handedness remain unchanged.",
+    "file": "sidearm50_rigid_source_scale.glb"
+  }
+]

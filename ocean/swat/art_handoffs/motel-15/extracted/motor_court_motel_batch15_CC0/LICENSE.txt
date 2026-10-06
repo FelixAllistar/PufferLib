@@ -1,0 +1,7 @@
+CC0 1.0 Universal (CC0-1.0)
+
+To the extent possible under law, the authors have waived all copyright and related or neighboring rights to the original geometry, scene composition, sign artwork, textures, scripts and documentation in this package. Reused assets were created for the same CC0 environment library and retain their provenance. You may copy, modify, distribute and use this work, including commercially, without asking permission.
+
+This work is provided without warranty. No game-engine, building-code or operational certification is implied. Reference links identify context only; no linked source image is included and this dedication does not apply to material on those external sites.
+
+Full legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode

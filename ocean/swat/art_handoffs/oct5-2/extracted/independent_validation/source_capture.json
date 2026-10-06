@@ -1,0 +1,7978 @@
+{
+  "schema": "independent-blender-static-capture/1",
+  "source_filename": "crouch_ready_n.editable.blend",
+  "source_sha256": "b316df0d4c4af329dffe5f5330c502da14d17c0d3af77eecd257262a435445d9",
+  "blender_version": "4.3.2",
+  "frame": 0,
+  "action": "Crouch Ready / Planted Shared N Low-Ready",
+  "action_frame_range": [
+    0.0,
+    0.0
+  ],
+  "curves": [
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.02533753588795662,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.2683056592941284,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.06026460602879524,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9768126606941223,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.0065055545419454575,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.21244001388549805,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.02576829120516777,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Hips\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.001846320927143097,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.0023927688598632812,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.01786881498992443,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9725946187973022,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.22488011419773102,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.007023808546364307,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.0586465448141098,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9898692965507507,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.13985179364681244,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.015117458999156952,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.01927991397678852,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9890628457069397,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.14376340806484222,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.017814073711633682,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.02773888036608696,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Spine2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -3.725290298461914e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9595493078231812,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.27365705370903015,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.008078884333372116,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.06566360592842102,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Neck\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          7.450580596923828e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.976382851600647,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.04013529792428017,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.1921973079442978,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.09014377743005753,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:Head\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -1.4901161193847656e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.029141902923584e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.587932783157612e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          8.881784197001252e-16,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:HeadTop_End\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -4.470348358154297e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9721002578735352,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.06781776994466782,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.08632909506559372,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.20729009807109833,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftShoulder\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          4.470348358154297e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.5263370871543884,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.33797672390937805,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.6514997482299805,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.4292891025543213,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000001311302185,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftArm\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -7.450580596923828e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.5726487636566162,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.24814577400684357,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.7703444361686707,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.13063880801200867,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000003576278687,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftForeArm\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -1.0244548320770264e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9418176412582397,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.08516912162303925,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.05566270276904106,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.32035520672798157,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999997019767761,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999991059303284,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHand\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -1.210719347000122e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -4.172325134277344e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9641106128692627,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.14162655174732208,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.009447606280446053,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.22437328100204468,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999995231628418,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -3.2782554626464844e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          3.129243850708008e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9895919561386108,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.07701604813337326,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.11136601120233536,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.048722825944423676,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999997019767761,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999983906745911,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9832019805908203,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.11098083108663559,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.08343526721000671,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.11847208440303802,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999997019767761,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539062e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -4.8428766774577525e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.9604641222676946e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          5.4016702222270396e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandThumb4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.6391277313232422e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.960464477539062e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9323941469192505,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.34114113450050354,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.11405520141124725,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.03543160483241081,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999995827674866,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -5.066394805908203e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.30385160446167e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9252772927284241,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.3791915476322174,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.000553369871340692,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.008687040768563747,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999977946281433,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -4.470348358154297e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          5.960464477539062e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          3.5762786865234375e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9612215757369995,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.2756136953830719,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.004139283671975136,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.008544153533875942,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000003576278687,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -2.980232238769531e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          8.791685672804306e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          8.53091592034616e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          1.1548401346317405e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandIndex4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9351707696914673,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.33165374398231506,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.08936871588230133,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.08645627647638321,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.5331974029541016e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -7.152557373046875e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.029141902923584e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.8570154309272766,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.5152873396873474,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          9.158545435639098e-05,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.001887190737761557,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.999998152256012,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999997019767761,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          4.3213367462158203e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9387211203575134,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.3446172773838043,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.003293062560260296,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.005551183596253395,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999985098838806,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999995231628418,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.043081283569336e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.4901162970204496e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.1175870895385742e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -3.725293851175593e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandMiddle4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -3.5762786865234375e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.948151171207428,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.3108752965927124,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.038926754146814346,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.0533912368118763,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999992251396179,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          3.129243850708008e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -3.948807716369629e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.8361480832099915,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.5485032200813293,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.0005376969347707927,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.0005993936210870743,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000003576278687,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          4.172325134277344e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9294288754463196,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.3685570955276489,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.011861761100590229,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.013672558590769768,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -3.129243850708008e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.30385160446167e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -2.2351741790771484e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.862644793959589e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          2.048908953611317e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandRing4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          8.940696716308594e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9318432807922363,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.360968679189682,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.015380573458969593,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.03366239741444588,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999997019767761,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000004768371582,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          6.258487701416016e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          3.5762786865234375e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.7136335372924805e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9340890049934387,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.35699862241744995,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.00396361481398344,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.003740598214790225,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999995231628418,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999995827674866,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9717287421226501,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.2359878420829773,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.002440948970615864,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.006858151406049728,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          5.066394805908203e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          7.450581485102248e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.58793900040655e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          2.2351747119842003e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftHandPinky4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9142827987670898,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.12432605028152466,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.23294349014759064,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.3071926534175873,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightShoulder\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.086162567138672e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.4901161193847656e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9453407526016235,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.061043933033943176,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.31069520115852356,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.07792931795120239,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000011920928955,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000004768371582,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightArm\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000007152557373,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          8.568167686462402e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.51267009973526,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.5392028093338013,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.29189395904541016,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.6010221838951111,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999990463256836,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightForeArm\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000005960464478,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.043081283569336e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9578714370727539,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.24743619561195374,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.04660383611917496,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.13815093040466309,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.999998927116394,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHand\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999989867210388,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -5.364418029785156e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -5.066394805908203e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -3.8743019104003906e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9771724343299866,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.11236397176980972,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.11392176151275635,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.1397506147623062,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -4.172325134277344e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9956432580947876,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.08212064206600189,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.017436185851693153,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.04057988151907921,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.086162567138672e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9909563064575195,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.0050458456389606,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.015320655889809132,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.13321226835250854,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999991059303284,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.1047890186309814e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.9802318834981634e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.4901159417490817e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -5.5879347371501353e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandThumb4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9860715270042419,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.14857719838619232,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.06679133325815201,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.03356780484318733,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999980926513672,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          3.5762786865234375e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.086162567138672e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.4901161193847656e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9968905448913574,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.07854684442281723,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.0061103580519557,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.0015370178734883666,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          5.364418029785156e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9984773993492126,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.04996092617511749,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.023340776562690735,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.001430752919986844,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          2.086162567138672e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.7549609765410423e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          3.259629011154175e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandIndex4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.4901161193847656e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          3.8743019104003906e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9782537817955017,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.17896480858325958,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.010497338138520718,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.10431165993213654,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999989867210388,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999995231628418,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999991059303284,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.905726432800293e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.833001971244812,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.5483459234237671,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.01480365265160799,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.07214809209108353,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000003576278687,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          5.21540641784668e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.4901161193847656e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9115296602249146,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.40453746914863586,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.026759592816233635,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.06889868527650833,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999993443489075,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -5.364418029785156e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -6.239861249923706e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.5553088417163963e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          3.725284969391396e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -3.725290298461914e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandMiddle4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          5.811452865600586e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.4901161193847656e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.990615963935852,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.0728730708360672,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.07828482985496521,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.08509419858455658,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999992251396179,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.6507692635059357e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.043081283569336e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.7229047417640686,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.6906207203865051,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.007878518663346767,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.019741462543606758,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000003576278687,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          5.364418029785156e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -2.4028122425079346e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.8784139752388,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.4759120047092438,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.012643060646951199,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.04167497903108597,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999995827674866,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -6.556510925292969e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.2852251529693604e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.662441253662109e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          3.050081076594324e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0244548320770264e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -2.980232594040899e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandRing4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.1548399925231934e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          7.450580596923828e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9885774850845337,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.06907445192337036,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.12611034512519836,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.045161306858062744,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999995231628418,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky1\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.7881393432617188e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -3.948807716369629e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.8860873579978943,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.4634333550930023,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.0009716491331346333,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.008816268295049667,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999997615814209,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999998807907104,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky2\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          4.172325134277344e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          3.725290298461914e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          2.5331974029541016e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9513024091720581,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.3081256151199341,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.007138395216315985,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.005606072023510933,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999983906745911,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000005960464478,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky3\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          3.5762786865234375e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -7.450580596923828e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          3.725290298461914e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.0244548320770264e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          2.2351741790771484e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          7.450580596923828e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightHandPinky4\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -5.960464477539063e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -1.1920928955078125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.043081283569336e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -8.881784197001252e-16,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.7491402104496956e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -8.149072527885437e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"RifleSocket\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -8.940696716308594e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.384185791015625e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -7.4505797087454084e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -2.8812774388597973e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          2.4447199820087917e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Muzzle\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.4901161193847656e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.3113021850585938e-06,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.4156103134155273e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.8579662442207336,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.4975840151309967,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.12046456336975098,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.04233631491661072,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftUpLeg\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.4901161193847656e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -3.5762786865234375e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.6697534322738647,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.7353788614273071,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.08200488984584808,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.06263751536607742,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000005960464478,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftLeg\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000004768371582,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -4.76837158203125e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.736947059631348e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9329416155815125,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.3578716218471527,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.005853391718119383,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.03890518099069595,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999995231628418,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999989867210388,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftFoot\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999994039535522,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -4.470348358154297e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -1.7695128917694092e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          3.725291186640334e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          3.012246807543306e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          2.8310735089576156e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000003576278687,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToeBase\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -5.122274160385132e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -8.881784197001252e-16,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.8200555486109806e-11,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          1.4555467942045652e-11,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:LeftToe_End\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.043081283569336e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.7285346984863281e-06,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          2.4586915969848633e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.8741554617881775,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.45700177550315857,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.12307622283697128,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -0.10887560248374939,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightUpLeg\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -1.043081283569336e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -9.98377799987793e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.6430715918540955,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.7634071111679077,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.054836828261613846,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.025720050558447838,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.000000238418579,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightLeg\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          8.940696716308594e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -2.086162567138672e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          5.252659320831299e-07,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.8971230983734131,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.43861836194992065,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.025659795850515366,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.04610483720898628,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000001192092896,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightFoot\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.999998927116394,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          4.470348358154297e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          7.636845111846924e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -9.313261273291573e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -4.237518425043163e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -3.841707751917056e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000004768371582,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToeBase\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999995231628418,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -1.4901161193847656e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -2.9802322387695312e-08,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          9.313225746154785e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.8626522546583146e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          4.656612873077393e-10,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          -2.7357565102192893e-09,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999998211860657,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"mixamorig:RightToe_End\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.9999999403953552,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -0.19262336194515228,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.591459333896637,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.8148676156997681,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9835873246192932,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.17373736202716827,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.004802128300070763,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.04845871776342392,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999995827674866,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000008344650269,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Rifle\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000004768371582,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          -0.19262336194515228,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.591459333896637,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.8148676156997681,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9835873246192932,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.17373736202716827,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          -0.004802128300070763,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.04845871776342392,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.9999995827674866,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          1.0000008344650269,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_A\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000004768371582,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].location",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.19372357428073883,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].location",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          -0.2208663672208786,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].location",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.7220333814620972,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].rotation_quaternion",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          0.05361950397491455,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].rotation_quaternion",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.1616167426109314,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].rotation_quaternion",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          0.957727313041687,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].rotation_quaternion",
+      "component": 3,
+      "keys": [
+        [
+          0.0,
+          0.23186948895454407,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].scale",
+      "component": 0,
+      "keys": [
+        [
+          0.0,
+          1.0000004768371582,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].scale",
+      "component": 1,
+      "keys": [
+        [
+          0.0,
+          0.9999997019767761,
+          "LINEAR"
+        ]
+      ]
+    },
+    {
+      "path": "pose.bones[\"Prop_Magazine_B\"].scale",
+      "component": 2,
+      "keys": [
+        [
+          0.0,
+          1.0000005960464478,
+          "LINEAR"
+        ]
+      ]
+    }
+  ],
+  "curve_count": 700,
+  "key_count": 700,
+  "rig_name": "SWAT_Mixamo_Rig",
+  "rig_world": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "bone_names": [
+    "mixamorig:Hips",
+    "mixamorig:Spine",
+    "mixamorig:Spine1",
+    "mixamorig:Spine2",
+    "mixamorig:Neck",
+    "mixamorig:Head",
+    "mixamorig:HeadTop_End",
+    "mixamorig:LeftShoulder",
+    "mixamorig:LeftArm",
+    "mixamorig:LeftForeArm",
+    "mixamorig:LeftHand",
+    "mixamorig:LeftHandThumb1",
+    "mixamorig:LeftHandThumb2",
+    "mixamorig:LeftHandThumb3",
+    "mixamorig:LeftHandThumb4",
+    "mixamorig:LeftHandIndex1",
+    "mixamorig:LeftHandIndex2",
+    "mixamorig:LeftHandIndex3",
+    "mixamorig:LeftHandIndex4",
+    "mixamorig:LeftHandMiddle1",
+    "mixamorig:LeftHandMiddle2",
+    "mixamorig:LeftHandMiddle3",
+    "mixamorig:LeftHandMiddle4",
+    "mixamorig:LeftHandRing1",
+    "mixamorig:LeftHandRing2",
+    "mixamorig:LeftHandRing3",
+    "mixamorig:LeftHandRing4",
+    "mixamorig:LeftHandPinky1",
+    "mixamorig:LeftHandPinky2",
+    "mixamorig:LeftHandPinky3",
+    "mixamorig:LeftHandPinky4",
+    "mixamorig:RightShoulder",
+    "mixamorig:RightArm",
+    "mixamorig:RightForeArm",
+    "mixamorig:RightHand",
+    "mixamorig:RightHandThumb1",
+    "mixamorig:RightHandThumb2",
+    "mixamorig:RightHandThumb3",
+    "mixamorig:RightHandThumb4",
+    "mixamorig:RightHandIndex1",
+    "mixamorig:RightHandIndex2",
+    "mixamorig:RightHandIndex3",
+    "mixamorig:RightHandIndex4",
+    "mixamorig:RightHandMiddle1",
+    "mixamorig:RightHandMiddle2",
+    "mixamorig:RightHandMiddle3",
+    "mixamorig:RightHandMiddle4",
+    "mixamorig:RightHandRing1",
+    "mixamorig:RightHandRing2",
+    "mixamorig:RightHandRing3",
+    "mixamorig:RightHandRing4",
+    "mixamorig:RightHandPinky1",
+    "mixamorig:RightHandPinky2",
+    "mixamorig:RightHandPinky3",
+    "mixamorig:RightHandPinky4",
+    "RifleSocket",
+    "Muzzle",
+    "mixamorig:LeftUpLeg",
+    "mixamorig:LeftLeg",
+    "mixamorig:LeftFoot",
+    "mixamorig:LeftToeBase",
+    "mixamorig:LeftToe_End",
+    "mixamorig:RightUpLeg",
+    "mixamorig:RightLeg",
+    "mixamorig:RightFoot",
+    "mixamorig:RightToeBase",
+    "mixamorig:RightToe_End",
+    "Prop_Rifle",
+    "Prop_Magazine_A",
+    "Prop_Magazine_B"
+  ],
+  "bone_parents": {
+    "mixamorig:Hips": null,
+    "mixamorig:Spine": "mixamorig:Hips",
+    "mixamorig:Spine1": "mixamorig:Spine",
+    "mixamorig:Spine2": "mixamorig:Spine1",
+    "mixamorig:Neck": "mixamorig:Spine2",
+    "mixamorig:Head": "mixamorig:Neck",
+    "mixamorig:HeadTop_End": "mixamorig:Head",
+    "mixamorig:LeftShoulder": "mixamorig:Spine2",
+    "mixamorig:LeftArm": "mixamorig:LeftShoulder",
+    "mixamorig:LeftForeArm": "mixamorig:LeftArm",
+    "mixamorig:LeftHand": "mixamorig:LeftForeArm",
+    "mixamorig:LeftHandThumb1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandThumb2": "mixamorig:LeftHandThumb1",
+    "mixamorig:LeftHandThumb3": "mixamorig:LeftHandThumb2",
+    "mixamorig:LeftHandThumb4": "mixamorig:LeftHandThumb3",
+    "mixamorig:LeftHandIndex1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandIndex2": "mixamorig:LeftHandIndex1",
+    "mixamorig:LeftHandIndex3": "mixamorig:LeftHandIndex2",
+    "mixamorig:LeftHandIndex4": "mixamorig:LeftHandIndex3",
+    "mixamorig:LeftHandMiddle1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandMiddle2": "mixamorig:LeftHandMiddle1",
+    "mixamorig:LeftHandMiddle3": "mixamorig:LeftHandMiddle2",
+    "mixamorig:LeftHandMiddle4": "mixamorig:LeftHandMiddle3",
+    "mixamorig:LeftHandRing1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandRing2": "mixamorig:LeftHandRing1",
+    "mixamorig:LeftHandRing3": "mixamorig:LeftHandRing2",
+    "mixamorig:LeftHandRing4": "mixamorig:LeftHandRing3",
+    "mixamorig:LeftHandPinky1": "mixamorig:LeftHand",
+    "mixamorig:LeftHandPinky2": "mixamorig:LeftHandPinky1",
+    "mixamorig:LeftHandPinky3": "mixamorig:LeftHandPinky2",
+    "mixamorig:LeftHandPinky4": "mixamorig:LeftHandPinky3",
+    "mixamorig:RightShoulder": "mixamorig:Spine2",
+    "mixamorig:RightArm": "mixamorig:RightShoulder",
+    "mixamorig:RightForeArm": "mixamorig:RightArm",
+    "mixamorig:RightHand": "mixamorig:RightForeArm",
+    "mixamorig:RightHandThumb1": "mixamorig:RightHand",
+    "mixamorig:RightHandThumb2": "mixamorig:RightHandThumb1",
+    "mixamorig:RightHandThumb3": "mixamorig:RightHandThumb2",
+    "mixamorig:RightHandThumb4": "mixamorig:RightHandThumb3",
+    "mixamorig:RightHandIndex1": "mixamorig:RightHand",
+    "mixamorig:RightHandIndex2": "mixamorig:RightHandIndex1",
+    "mixamorig:RightHandIndex3": "mixamorig:RightHandIndex2",
+    "mixamorig:RightHandIndex4": "mixamorig:RightHandIndex3",
+    "mixamorig:RightHandMiddle1": "mixamorig:RightHand",
+    "mixamorig:RightHandMiddle2": "mixamorig:RightHandMiddle1",
+    "mixamorig:RightHandMiddle3": "mixamorig:RightHandMiddle2",
+    "mixamorig:RightHandMiddle4": "mixamorig:RightHandMiddle3",
+    "mixamorig:RightHandRing1": "mixamorig:RightHand",
+    "mixamorig:RightHandRing2": "mixamorig:RightHandRing1",
+    "mixamorig:RightHandRing3": "mixamorig:RightHandRing2",
+    "mixamorig:RightHandRing4": "mixamorig:RightHandRing3",
+    "mixamorig:RightHandPinky1": "mixamorig:RightHand",
+    "mixamorig:RightHandPinky2": "mixamorig:RightHandPinky1",
+    "mixamorig:RightHandPinky3": "mixamorig:RightHandPinky2",
+    "mixamorig:RightHandPinky4": "mixamorig:RightHandPinky3",
+    "RifleSocket": "mixamorig:RightHand",
+    "Muzzle": "RifleSocket",
+    "mixamorig:LeftUpLeg": "mixamorig:Hips",
+    "mixamorig:LeftLeg": "mixamorig:LeftUpLeg",
+    "mixamorig:LeftFoot": "mixamorig:LeftLeg",
+    "mixamorig:LeftToeBase": "mixamorig:LeftFoot",
+    "mixamorig:LeftToe_End": "mixamorig:LeftToeBase",
+    "mixamorig:RightUpLeg": "mixamorig:Hips",
+    "mixamorig:RightLeg": "mixamorig:RightUpLeg",
+    "mixamorig:RightFoot": "mixamorig:RightLeg",
+    "mixamorig:RightToeBase": "mixamorig:RightFoot",
+    "mixamorig:RightToe_End": "mixamorig:RightToeBase",
+    "Prop_Rifle": null,
+    "Prop_Magazine_A": null,
+    "Prop_Magazine_B": null
+  },
+  "bone_count": 70,
+  "mesh_names": [
+    "Fresh magazine",
+    "Rebuilt SWAT full body",
+    "Rebuilt spare magazine sleeve",
+    "Removed magazine",
+    "Rifle 7"
+  ],
+  "meshes": [
+    {
+      "name": "Fresh magazine",
+      "native_vertices": 406,
+      "evaluated_vertices": 406,
+      "triangles": 780,
+      "materials": [
+        "uv_checker_material_uv_grid_4096x4096"
+      ],
+      "uv_names": [
+        "UVMap"
+      ],
+      "max_skin_influences": 1,
+      "modifiers": [
+        "ARMATURE"
+      ]
+    },
+    {
+      "name": "Rebuilt SWAT full body",
+      "native_vertices": 24850,
+      "evaluated_vertices": 24850,
+      "triangles": 46301,
+      "materials": [
+        "Ch15_body.001",
+        "Ch15_body1.001"
+      ],
+      "uv_names": [
+        "map1"
+      ],
+      "max_skin_influences": 7,
+      "modifiers": [
+        "ARMATURE"
+      ]
+    },
+    {
+      "name": "Rebuilt spare magazine sleeve",
+      "native_vertices": 48,
+      "evaluated_vertices": 48,
+      "triangles": 72,
+      "materials": [
+        "Rebuilt carrier cloth"
+      ],
+      "uv_names": [],
+      "max_skin_influences": 1,
+      "modifiers": [
+        "ARMATURE"
+      ]
+    },
+    {
+      "name": "Removed magazine",
+      "native_vertices": 406,
+      "evaluated_vertices": 406,
+      "triangles": 780,
+      "materials": [
+        "uv_checker_material_uv_grid_4096x4096"
+      ],
+      "uv_names": [
+        "UVMap"
+      ],
+      "max_skin_influences": 1,
+      "modifiers": [
+        "ARMATURE"
+      ]
+    },
+    {
+      "name": "Rifle 7",
+      "native_vertices": 5346,
+      "evaluated_vertices": 5346,
+      "triangles": 10273,
+      "materials": [
+        "uv_checker_material_uv_grid_4096x4096"
+      ],
+      "uv_names": [
+        "UVMap"
+      ],
+      "max_skin_influences": 1,
+      "modifiers": [
+        "ARMATURE"
+      ]
+    }
+  ],
+  "read_only_source_hash_preserved": true,
+  "capture_npz_sha256": "fb734c5f0925295e7032f363039bd47256c856a15efdd977b3acb34fb96e3af0"
+}
