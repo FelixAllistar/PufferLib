@@ -1,9 +1,144 @@
-# Kaggriculture on upstream PufferLib 5.0
+# Kaggriculture on PufferLib 5.0
 
-This is the training port onto upstream revision `6ffa5b10d`, not the accumulated
-5c trainer. It supports the current **2/2 controller, entity observation v3,
-policy ABI 5**: 1,424 observations, 47 heads, 1,978 action logits and the entity
-encoder with separate actor/value branches around upstream MinGRU.
+## Active setup: direct PufferNet, Final-B-inspired rules
+
+There is one active config: `config/kaggriculture.ini`. Build with
+`bash build.sh kaggriculture`; `./puffer train` reads that config directly.
+The implementation lives in `ocean/kaggriculture_direct/`, but there is no
+second environment config or profile overlay. The old macro controller is
+retained for archived tools/checkpoints and is not executed by the new policy.
+
+Current contract: policy ABI 6 / observation version 4, 5,856 actor features
+plus 256 privileged paired-critic features, 20 unit heads × 500 candidates and
+10 market heads × 1,903 candidates. The encoder is one stock PufferNet linear
+projection followed by upstream MinGRU. Separate nonlinear unit/market heads
+and the compact same-state paired critic remain; there is **no Transformer**.
+The actor never receives the appended opponent-private critic features.
+
+The action vocabulary and rule-aware design follow
+[M & M & P & Q's Final B](https://github.com/msdsm/kaggriculture-solution).
+Actions are primitive moves, work, inventory operations and exact-quantity
+market orders, not macro requests to a route executor. Farmer then workers
+reserve seeds and tile tasks. Market slots reserve money and inventory.
+Invalid boundary moves, unproductive care/fertilizer, conflicting tasks and
+seed overspending are masked. Overflow/final cash-out SELL and final shed DROP
+are forced with singleton masks: probability one, entropy zero and no policy
+gradient. The same conditional masks are stored during rollout and reused by
+PPO, teacher KL and evaluation. Masking is not a full forward simulator:
+an otherwise supported primitive action can still do nothing in the game.
+
+The baseline uses terminal +1/0/-1 WLD, gamma 1, paired zero-sum value,
+lambda .97, PPO clip .2, entropy .0015 and frozen-teacher KL .2.
+Both current-policy seats train. Historical league, scripted training
+opponents, opponent action noise, replay resets, PBRS and auxiliary rewards
+are off. `root_money` remains visible. Optional land/crop/animal bonuses
+remain available for later experiments; adding them is no longer pure WLD.
+
+The shared profile has a 500M-agent-step budget, horizon 720, 128 agent rows
+and two full sequences per minibatch. A game has 719 action steps; Puffer's
+BF16 GAE needs a horizon divisible by eight. The conservative vector size
+also fits the requested 1024×3 architecture on the 16GB GPU in qualification.
+Do not infer stronger play or production throughput from smoke tests.
+
+### Fresh BC: six shapes, one configuration
+
+`bc_grid.hidden_sizes = 256,512,1024` and `bc_grid.num_layers = 2,3`
+describe the requested models. The runner launches all six with CLI shape
+overrides; it does not write six INI files. Each has its own checkpoint,
+training log and provenance receipt under
+`saved/kaggriculture/direct_v6/h{hidden}_l{layers}/`.
+
+```bash
+python ocean/kaggriculture/run.py build-bc
+uv run --no-project --with numpy python ocean/kaggriculture/run.py prepare-bc
+python ocean/kaggriculture/run.py bc-grid --dry-run
+python ocean/kaggriculture/run.py bc-grid
+# After an interruption: verify/keep completed shapes and run only the rest.
+python ocean/kaggriculture/run.py bc-grid --resume
+```
+
+`--resume` does not overwrite or retrain completed models. It checks their
+checkpoint checksums, receipts, architecture, command, config, dataset and
+trainer binary before starting any remaining shape. Incomplete/mismatched
+checkpoint-receipt pairs stop the queue for inspection. New receipts also
+snapshot `default.ini` (older receipts only recorded the main config).
+An unfinished model starts fresh; this is queue resume, not optimizer/epoch
+resume. `--dry-run` only prints commands; it does not verify saved files.
+
+Each pending model first runs a short-lived CUDA check, whose output is kept
+in that model's timestamped log. This reports the actual CUDA error without
+changing the trainer or retaining a GPU context in the queue process. Check
+CUDA separately with `python ocean/kaggriculture_direct/check_cuda.py`.
+Successful `nvidia-smi` output alone is not a CUDA compute health check.
+
+Preparation re-encodes the existing, parity-checked Majkel1337 replay cache
+into primitive ABI-6 labels, not old macro labels. These are not demonstrations
+from the winning Final B policy. Unsupported, masked and forced teacher
+components are ignored. Original actions still advance the replay so state
+parity is preserved. Episodes cannot cross training and validation splits.
+The dataset is streamed to disk and published without replacing existing files.
+
+Fresh BC runs for 30 epochs with Adam 1e-4, epsilon 1e-5 and global gradient
+clip 5; only the best held-out-CE weights are saved. Every shape starts fresh.
+The critic is frozen during actor BC. Subsequent teacher-guided PPO uses the
+matching BC policy as its frozen reference, with the teacher's own recurrent
+state. Changing `bc_grid.output_root` starts a new version without overwriting
+models. The default selected policy is 256×2; selecting another is explicit:
+
+```bash
+python ocean/kaggriculture/run.py train --hidden 512 --layers 3
+python ocean/kaggriculture/run.py eval --hidden 512 --layers 3
+```
+
+Evaluation starts fresh with no reset bank or opponent noise. Native eval and
+match are supported. The old CPU/web/Kaggle macro exporters cannot load ABI 6;
+the build rejects those paths rather than silently exporting the wrong policy.
+
+### Deliberate adaptations and remaining gaps
+
+This is not a byte-for-byte reproduction of Final B. Puffer's Muon optimizer
+and clipped squared value loss remain. The critic uses compact same-state
+summaries rather than a Transformer global token. Recurrent memory replaces
+their explicit inferred-inventory token; there is no explicit opponent
+inventory tracker. Forced sales are selected before market sampling, with
+singleton masks, rather than repairing sampled orders afterward.
+
+Fresh actor BC currently uses masked CE, not the public final-stage BC
+entropy/reference-KL objective. `run.py critic` offers frozen-actor regression
+on replay WLD returns; it is **not** the reference solution's fresh-self-play
+critic fitting and is not silently run by `bc-grid`. The BC/PPO loop can be
+repeated with newly prepared demonstrations, but public-replay downloading,
+heuristic refinement, fresh-self-play critic selection and CPU submission
+export are separate work. No final-day search controller is used.
+
+Teacher KL currently requires one live policy and one chronological pass
+per rollout (`num_policies=1`, `replay_ratio=1`); the trainer checks this.
+Joint old log probabilities are FP32 so BF16 rounding does not create
+spurious PPO ratios. Full optimizer/reference-state resume is not added:
+loading a checkpoint starts a fresh run as in the existing Puffer trainer.
+
+### Verification
+
+```bash
+make -C ocean/kaggriculture_direct test replay-bridge
+uv run --no-project --with numpy --with pytest python -m pytest -q ocean/kaggriculture_direct/tests
+bash ocean/kaggriculture_direct/build_tests.sh
+# Explicit opt-in on an idle GPU:
+./build/test_kaggriculture_direct_kernels 0
+./build/test_kaggriculture_direct_kernels 1
+```
+
+The CUDA test checks CPU/GPU prefix parity, exact unchanged-policy ratio 1,
+zero forced-action gradients, masked teacher-KL gradients against an independent
+double-precision oracle and graph-enabled sampling. CPU tests cover catalogs,
+private-observation isolation, spending/seeds, full games, real replay
+conversion, held-out separation and the six-model launcher.
+
+## Historical ABI-5 tooling (not the active configuration)
+
+Everything below describes archived macro/entity experiments. Their commands,
+profiles, dataset formats and checkpoint shapes are not compatible with the
+active direct-action setup without an explicit legacy build.
 
 ## Frozen replay ridge potential (opt-in experiment)
 

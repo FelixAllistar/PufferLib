@@ -203,11 +203,22 @@ def validate_dataset(path, config, mode):
 
 
 def main():
+    settings = configparser.ConfigParser(interpolation=None)
+    settings.read(ROOT / "config/kaggriculture.ini")
+    if settings.getint("policy", "action_version", fallback=5) == 6:
+        # One active config and entry point. Legacy experiment overlays must
+        # never silently change the new action/reward/BC contract.
+        import importlib.util
+        path = ROOT / "ocean/kaggriculture_direct/run.py"
+        spec = importlib.util.spec_from_file_location("kag_direct_run", path)
+        direct = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(direct)
+        return direct.main()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["train", "eval", "match", "sweep", "league-add",
         "league-eval", "league-sample", "build-bc", "bc", "critic", "bc-critic"])
-    parser.add_argument("--profile", choices=["terminal", "shaped", "ridge"], default="terminal")
-    parser.add_argument("--binary", type=Path, default=ROOT / "puffer")
+    parser.add_argument("--profile", choices=["terminal", "shaped", "ridge", "wld", "wld_global", "wld_paired"])
+    parser.add_argument("--binary", type=Path)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--league", type=Path, default=ROOT / "saved/kaggriculture/league.json")
     parser.add_argument("--checkpoint", type=Path)
@@ -222,6 +233,10 @@ def main():
     parser.add_argument("--arch", default=os.environ.get("NVCC_ARCH", "native"))
     parser.add_argument("--precision", choices=["fp32", "bf16"], default="bf16")
     args, overrides = parser.parse_known_args()
+    if args.profile is None:
+        args.profile = "wld_paired" if args.mode in ("train", "eval", "match") else "terminal"
+    if args.binary is None:
+        args.binary = ROOT / ("puffer_wld" if args.profile.startswith("wld") else "puffer")
     if args.mode.startswith("league-"):
         assert not overrides and not args.dry_run, "league commands take explicit arguments"
         return league_command(args)
@@ -246,6 +261,9 @@ def main():
         args.bc_binary.parent.mkdir(parents=True, exist_ok=True)
         return subprocess.run(command, cwd=ROOT).returncode
     config = configparser.ConfigParser(interpolation=None)
+    if args.profile.startswith("wld"):
+        assert args.mode in ("train", "eval", "match"), "WLD profiles are controlled PPO experiments, not sweeps or offline cash-return fitting"
+        config.read(Path(__file__).with_name("profiles") / "wld.ini")
     with Path(__file__).with_name("profiles").joinpath(f"{args.profile}.ini").open() as stream:
         config.read_file(stream)
     command = [str(args.binary.resolve()), args.mode]
@@ -259,6 +277,27 @@ def main():
         command.append("--selfplay.enabled=0")
         command.append("--vec.num_policies=1")
     command += overrides
+    experiment_environment = {}
+    if args.profile.startswith("wld"):
+        new_keys = {"--policy.critic_mode=": "KAG_CRITIC_MODE",
+            "--env.reward_win_loss_draw=": "KAG_REWARD_WIN_LOSS_DRAW",
+            "--env.opponent_noise_initial=": "KAG_OPPONENT_NOISE_INITIAL",
+            "--env.opponent_noise_final=": "KAG_OPPONENT_NOISE_FINAL",
+            "--env.opponent_noise_decay_steps=": "KAG_OPPONENT_NOISE_DECAY_STEPS"}
+        native_command = command[:2]
+        for option in command[2:]:
+            for prefix, variable in new_keys.items():
+                if option.startswith(prefix):
+                    experiment_environment[variable] = option[len(prefix):]
+                    break
+            else:
+                native_command.append(option)
+        assert experiment_environment["KAG_CRITIC_MODE"] in ("0", "1", "2")
+        assert experiment_environment["KAG_REWARD_WIN_LOSS_DRAW"] == "1"
+        if args.mode in ("eval", "match"):
+            experiment_environment["KAG_OPPONENT_NOISE_INITIAL"] = "0"
+            experiment_environment["KAG_OPPONENT_NOISE_FINAL"] = "0"
+        command = native_command
     if args.profile == "ridge":
         assert args.mode not in ("bc", "critic", "bc-critic"), "Ridge is not BC/critic fitting"
         if args.mode == "sweep":
@@ -304,9 +343,11 @@ def main():
                     "command": command, "offline_optimizer": "Adam"})
                 output.with_suffix(".json").write_text(json.dumps(provenance, indent=2) + "\n")
             return result.returncode
-    print(shlex.join(command), flush=True)
+    print(shlex.join([f"{key}={value}" for key, value in experiment_environment.items()]
+        + command), flush=True)
     if not args.dry_run:
-        return subprocess.run(command, cwd=ROOT).returncode
+        return subprocess.run(command, cwd=ROOT,
+            env=dict(os.environ, **experiment_environment)).returncode
     return 0
 
 

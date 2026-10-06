@@ -1,0 +1,322 @@
+# Default: paired WLD, live + historical self-play, game-length PPO windows.
+# Reward-only QD is launched with ocean/kaggriculture/qd.py, not Protein sweep.
+[base]
+seed = 73
+env_name = kaggriculture
+#load_model_path = saved/kaggriculture/sweep_league_20260929/pool/finetune_1790729345074_a23be291dcf8.bin
+#load_model_path = checkpoints/kaggriculture/1790651669679/0000000099876864.bin
+#load_model_path = None
+load_model_path = saved/kaggriculture/initial_bc.bin
+# Save every 4 updates (~2.95M steps at 1024 agents/H720), plus the final checkpoint.
+checkpoint_interval = 4
+# External reset-free eval/PSRO uses run.py, not inherited training resets.
+eval_episodes = 0
+eval_agents = 128
+run_id = None
+async = 1
+# CUDA graphs remain enabled; not a sweep dimension.
+cudagraphs = 1
+
+
+
+[vec]
+# Horizon 720 needs longer rollout buffers; sized for the 16GB GPU.
+total_agents = 1024
+num_buffers = 4
+num_threads = 8
+# One trainable live learner plus six frozen opponent slots.
+num_policies = 7
+hist_policy_hidden_size = 256
+hist_policy_num_layers = 2
+# Fraction of games, not rows: half live/live, half live/history.
+hist_policy_percent = 0.5
+
+[selfplay]
+enabled = 1
+max_size = 100
+seed = 42
+# Bootstrap from the learner initializer; retain up to 100 historical snapshots.
+initial_opponents = None
+# Resample each frozen slot from retained history every 10M global agent steps.
+opp_timeout_steps = 10000000
+eval_pool_size = 0
+eval_games = 0
+eval_bot_games = 0
+eval_bots = 0
+eval_bot_envs = 8192
+eval_bot_threads = 0
+
+[env]
+potential_beta = 0
+potential_path = saved/kaggriculture/potential.bin
+dr = 0
+num_agents = 2
+num_bots = 0
+learner_seat = 0
+bot_policy = 1
+market_slots = 10
+max_hands = 16
+land_buy_min_days = 0
+reward_money = 1
+reward_win_loss_draw = 1
+# Optional additive experiments; zero keeps terminal-only WLD.
+# Nonzero bonuses change return scale; the paired critic stays bounded [-1, 1].
+reward_growth_land = 0
+reward_growth_crop = 0
+reward_growth_animal = 0
+reward_alive_daily = 0
+reward_quality_scale = 0
+reward_quality_idle_cost = 0
+reward_target_plots = 3
+reward_target_crops = 50
+reward_target_animals = 15
+# Editable here: WLD profiles inherit this instead of forcing replay resets.
+# 0 = fresh games only; 1 = replay-bank games only; intermediate = mixture.
+reset_state_prob = 0
+reset_state_bank = data/kaggriculture/reset.kgb
+# Frozen opponents only: random legal macros decay linearly over the next run.
+opponent_noise_initial = 1
+opponent_noise_final = 0
+opponent_noise_decay_steps = 500000000
+
+[policy]
+hidden_size = 256
+num_layers = 2
+critic_mode = 2
+
+[train]
+gpus = 1
+total_timesteps = 500000000
+learning_rate = 0.0002585168378
+replay_ratio = 2.66335821
+anneal_lr = 0
+min_lr_ratio = 0.197230622
+gamma = 1
+gae_lambda = 0.99888742
+
+clip_coef = 0.346144944
+vf_coef = 2.68876171
+vf_clip_coef = 0.578577161
+reward_clip = 0
+max_grad_norm = 5.99999857
+ent_coef = 0
+anneal_ent_coef = 0
+min_ent_coef_ratio = 0
+momentum = 0.5
+# 16 recurrent sequences per minibatch; 720 is divisible by the BF16 GAE width.
+# Games have 719 action steps; this allows a game-length window plus bootstrap.
+minibatch_size = 11520
+horizon = 720
+vtrace = 0
+vtrace_rho_clip = 1.0
+vtrace_c_clip = 1.0
+verb_eps = 0.0
+verb_eps_anneal_start = 0.4
+verb_eps_anneal_end = 1.0
+
+[bc]
+# Standalone offline application. These settings never alter PPO.
+mode = actor
+data = data/kaggriculture/terminal.bc
+output = saved/kaggriculture/offline.bin
+epochs = 20
+batch = 1
+learning_rate = 0.00005
+value_coef = 1
+# Qualification limiter; 0 uses every training and held-out episode.
+max_batches = 0
+
+# Broad Protein learner ranges; native training budget fixed at 500M.
+# QD snapshots the fixed settings above and uses profiles/qd.ini reward ranges.
+# Trial 0 is terminal-only; other trials test modest auxiliary rewards.
+# Fixed bounds override inherited sweep dimensions from default.ini.
+# root_money compares fresh-start cash, not reset-bank starting wealth or rewards.
+# This is a training metric, not a held-out leaderboard evaluation.
+[sweep]
+metric = root_money
+metric_distribution = linear
+goal = maximize
+max_runs = 500
+# One independent trial per visible GPU (train.gpus = 1).
+gpus = 2
+# Final-score observations also enable Protein's success/failure classifier.
+downsample = 1
+max_suggestion_cost = 14400
+prune_pareto = 1
+early_stop_quantile = 0.3
+
+[sweep.vec.total_agents]
+distribution = uniform_pow2
+min = 1024
+max = 1024
+scale = auto
+
+[sweep.train.horizon]
+distribution = uniform
+min = 720
+max = 720
+scale = auto
+
+[sweep.train.minibatch_size]
+distribution = uniform
+min = 11520
+max = 11520
+scale = auto
+
+[sweep.train.learning_rate]
+distribution = log_normal
+min = 0.00001
+max = 0.01
+scale = auto
+
+[sweep.train.ent_coef]
+distribution = uniform
+min = 0
+max = 0.1
+scale = auto
+
+[sweep.train.gamma]
+distribution = logit_normal
+min = 0.99
+max = 0.99999
+scale = auto
+
+[sweep.train.gae_lambda]
+distribution = logit_normal
+min = 0.2
+max = 0.9997
+scale = auto
+
+[sweep.train.replay_ratio]
+distribution = uniform
+min = 0.5
+max = 4
+scale = auto
+
+[sweep.train.clip_coef]
+distribution = log_normal
+min = 0.01
+max = 0.9
+scale = auto
+
+[sweep.train.vf_clip_coef]
+distribution = log_normal
+min = 0.001
+max = 5
+scale = auto
+
+[sweep.train.vf_coef]
+distribution = log_normal
+min = 0.1
+max = 6
+scale = auto
+
+[sweep.train.max_grad_norm]
+distribution = log_normal
+min = 0.05
+max = 6
+scale = auto
+
+[sweep.train.momentum]
+distribution = logit_normal
+min = 0.5
+max = 0.999
+scale = auto
+
+[sweep.train.reward_clip]
+distribution = int_uniform
+min = 0
+max = 0
+scale = auto
+
+[sweep.env.potential_beta]
+distribution = uniform
+min = 0
+max = 0
+scale = auto
+
+[sweep.env.reward_money]
+distribution = uniform
+min = 1
+max = 1
+scale = auto
+
+[sweep.env.reward_growth_land]
+distribution = uniform
+min = 0
+max = 0
+scale = auto
+
+[sweep.env.reward_growth_crop]
+distribution = uniform
+min = 0
+max = 0.2
+scale = auto
+
+[sweep.env.reward_growth_animal]
+distribution = uniform
+min = 0
+max = 0.5
+scale = auto
+
+[sweep.env.reward_alive_daily]
+distribution = uniform
+min = 0
+max = 0.2
+scale = auto
+
+[sweep.env.reward_quality_scale]
+distribution = uniform
+min = 0
+max = 2
+scale = auto
+
+[sweep.env.reward_quality_idle_cost]
+distribution = uniform
+min = 0
+max = 1
+scale = auto
+
+[sweep.env.reward_target_plots]
+distribution = int_uniform
+min = 3
+max = 3
+scale = auto
+
+[sweep.env.reward_target_crops]
+distribution = int_uniform
+min = 50
+max = 50
+scale = auto
+
+[sweep.env.reward_target_animals]
+distribution = int_uniform
+min = 15
+max = 15
+scale = auto
+
+[sweep.env.reset_state_prob]
+distribution = uniform
+min = 0
+max = 0.9
+scale = auto
+
+[sweep.train.total_timesteps]
+distribution = log_normal
+min = 300000000
+max = 300000000
+scale = auto
+
+[sweep.policy.hidden_size]
+min = 256
+max = 256
+
+[sweep.policy.num_layers]
+min = 2
+max = 2
+
+[sweep.train.min_lr_ratio]
+distribution = uniform
+min = 0
+max = 0.5
+scale = auto

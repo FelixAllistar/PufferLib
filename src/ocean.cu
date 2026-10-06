@@ -51,7 +51,9 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #ifdef PUFFER_CRAFTAX
 #include "../ocean/craftax/craftax.cu"
 #endif
-#ifdef PUFFER_KAGGRICULTURE
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+#include "../ocean/kaggriculture_direct/network.cu"
+#elif defined(PUFFER_KAGGRICULTURE)
 #include "../ocean/kaggriculture/network.cu"
 #endif
 #ifdef PUFFER_RETRO

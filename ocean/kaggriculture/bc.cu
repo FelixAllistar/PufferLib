@@ -77,17 +77,19 @@ __global__ void kag_bc_loss(Prec output, float* expert, unsigned char* masks, fl
 
 // Standalone offline Adam. PPO continues to use the untouched upstream Muon.
 __global__ void kag_bc_update(Prec parameters, Float master, Prec gradient, Float first,
-    Float second, float lr, int update, int begin, int end, int critic_only, int actor_only) {
+    Float second, float lr, int update, int begin, int end, int critic_only, int actor_only,
+    const float* grad_norm2, float max_grad_norm, float adam_epsilon) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     bool critic = i >= begin && i < end;
     if (i >= master.shape[0] || (critic_only && !critic) || (actor_only && critic)) {
         return;
     }
     float g = to_float(gradient.data[i]);
+    if (grad_norm2) g *= fminf(1.0f,max_grad_norm/(sqrtf(*grad_norm2)+1e-8f));
     assert(isfinite(g));
     float m = first.data[i] = 0.9f * first.data[i] + 0.1f * g;
     float v = second.data[i] = 0.999f * second.data[i] + 0.001f * g * g;
-    float delta = (m / (1 - powf(0.9f, update))) / (sqrtf(v / (1 - powf(0.999f, update))) + 1e-8f);
+    float delta = (m / (1 - powf(0.9f, update))) / (sqrtf(v / (1 - powf(0.999f, update))) + adam_epsilon);
     master.data[i] -= lr * delta;
     assert(isfinite(master.data[i]));
     parameters.data[i] = from_float(master.data[i]);
@@ -95,7 +97,12 @@ __global__ void kag_bc_update(Prec parameters, Float master, Prec gradient, Floa
 
 int main(int argc, char** argv) {
     Ini ini = {};
+#ifdef KAG_DIRECT_POLICY
     puf_ini_load_env(&ini, "kaggriculture", argc - 1, argv + 1);
+    kag_configure_potential(&ini,"bc");
+#else
+    puf_ini_load_env(&ini, "kaggriculture", argc - 1, argv + 1);
+#endif
     const char* data_path = puf_ini_get_str(&ini, "bc", "data");
     const char* output_path = puf_ini_get_str(&ini, "bc", "output");
     const char* mode = puf_ini_get_str(&ini, "bc", "mode");
@@ -111,8 +118,13 @@ int main(int argc, char** argv) {
     assert(h.magic == 0x4b414742u && h.version == 3 && h.obs_bytes == sizeof(float));
     assert(h.row_obs == OBS_SIZE && h.row_expert == NUM_ATNS &&
            h.row_mask == (KAG_ALL_LOGITS + 7) / 8);
+#ifdef KAG_DIRECT_POLICY
+    assert(h.observation_version == 4 && h.policy_version == 6 && h.macro_mode == 0 &&
+           h.executor == 0 && h.interval == 1 && h.score_features == 0);
+#else
     assert(h.observation_version == 3 && h.policy_version == 5 && h.macro_mode == 2 &&
            h.executor == 2 && h.interval == 1 && h.score_features == 0);
+#endif
     assert(h.steps == 720 && h.count == h.games * h.steps);
     assert(h.validation_games > 0 && h.validation_games < h.games);
     assert(actor_only || fabs(h.gamma - puf_ini_get(&ini, "train", "gamma")) < 1e-8);
@@ -141,6 +153,12 @@ int main(int argc, char** argv) {
     int max_batches = puf_ini_get(&ini, "bc", "max_batches");
     float lr = puf_ini_get(&ini, "bc", "learning_rate");
     float value_coef = actor_only ? 0 : puf_ini_get(&ini, "bc", "value_coef");
+    float max_grad_norm = 0, adam_epsilon = 1e-8f;
+#ifdef KAG_DIRECT_POLICY
+    max_grad_norm = puf_ini_get(&ini,"bc","max_grad_norm");
+    adam_epsilon = puf_ini_get(&ini,"bc","adam_epsilon");
+    assert(max_grad_norm > 0 && adam_epsilon > 0);
+#endif
     assert(batch > 0 && epochs >= 0 && max_batches >= 0 && lr >= 0 && value_coef >= 0);
     assert(access(output_path, F_OK) != 0 && "refusing to overwrite an offline checkpoint");
     printf("BC data: %d train / %u held-out games; %s; gamma=%.9g mean=%.6g variance=%.6g\n",
@@ -199,6 +217,17 @@ int main(int argc, char** argv) {
         order[i] = i;
     }
     int updates = 0;
+    float* clip_scratch = NULL;
+#ifdef KAG_DIRECT_POLICY
+    assert(cudaMalloc(&clip_scratch,257*sizeof(float)) == cudaSuccess);
+#endif
+#ifdef KAG_DIRECT_POLICY
+    // Fresh BC is selected by held-out loss, never by the last training epoch.
+    float best_score = INFINITY;
+    int best_epoch = -1;
+    float* best_weights = (float*)malloc(params.total_elems * sizeof(float));
+    assert(best_weights);
+#endif
     for (int epoch = 0; epoch <= epochs; epoch++) {
         if (epoch) {
             for (int i = train_games - 1; i > 0; i--) {
@@ -252,6 +281,7 @@ int main(int argc, char** argv) {
                 Prec recurrent = arch.network.forward_train(weights.network,
                     *puf_unsqueeze(&encoded, 0, batch, h.steps), state, terminals,
                     activation.network, 0, stream);
+                if (arch.decoder.bind_observation) arch.decoder.bind_observation(activation.decoder,flat);
                 Prec decoded = arch.decoder.forward(
                     weights.decoder, activation.decoder, *puf_squeeze(&recurrent, 0), stream);
                 kag_bc_loss<<<grid_size(rows), BLOCK_SIZE, 0, stream>>>(decoded, labels.data,
@@ -267,9 +297,21 @@ int main(int argc, char** argv) {
                         arch_backward(
                             &arch, weights, activation, actor_grad, {}, value_grad, stream);
                     }
+#ifdef KAG_DIRECT_POLICY
+                    // Frozen parameters have no contribution to the gradient norm.
+                    if (critic_only) {
+                        cudaMemsetAsync(gradient.data,0,begin*sizeof(precision_t),stream);
+                        cudaMemsetAsync(gradient.data+end,0,(params.total_elems-end)*sizeof(precision_t),stream);
+                    } else if (actor_only) {
+                        cudaMemsetAsync(gradient.data+begin,0,(end-begin)*sizeof(precision_t),stream);
+                    }
+                    muon_sum_sq_partials<<<256,256,0,stream>>>(clip_scratch,gradient.data,params.total_elems);
+                    muon_sum_sq_reduce<<<1,256,0,stream>>>(clip_scratch+256,clip_scratch,256);
+#endif
                     kag_bc_update<<<grid_size(params.total_elems), BLOCK_SIZE, 0, stream>>>(
                         parameters, master, gradient, first, second, lr, ++updates, begin, end,
-                        critic_only, actor_only);
+                        critic_only, actor_only,clip_scratch ? clip_scratch+256 : NULL,
+                        max_grad_norm,adam_epsilon);
                 }
                 assert(cudaStreamSynchronize(stream) == cudaSuccess);
                 float chunk[5];
@@ -284,10 +326,26 @@ int main(int argc, char** argv) {
                 split ? "holdout" : "train", batches, total[0] / fmaxf(1, total[1]),
                 total[2] / fmaxf(1, total[1]), sqrtf(total[3] / fmaxf(1, total[4])));
             fflush(stdout);
+#ifdef KAG_DIRECT_POLICY
+            if (split) {
+                float score = critic_only ? total[3]/fmaxf(1,total[4]) : total[0]/fmaxf(1,total[1]);
+                if (score < best_score) {
+                    best_score = score; best_epoch = epoch;
+                    assert(cudaMemcpy(best_weights,master.data,params.total_elems*sizeof(float),
+                        cudaMemcpyDeviceToHost) == cudaSuccess);
+                }
+            }
+#endif
         }
     }
+#ifdef KAG_DIRECT_POLICY
+    assert(best_epoch >= 0);
+    float* result = best_weights;
+    printf("BC selected_epoch=%d heldout_loss=%.9g\n",best_epoch,best_score);
+#else
     float* result = (float*)malloc(params.total_elems * sizeof(float));
     cudaMemcpy(result, master.data, params.total_elems * sizeof(float), cudaMemcpyDeviceToHost);
+#endif
     FILE* out = fopen(output_path, "wbx");
     assert(out && fwrite(result, sizeof(float), params.total_elems, out) == params.total_elems);
     assert(fclose(out) == 0);

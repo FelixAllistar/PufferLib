@@ -253,6 +253,17 @@ fi
 
 # src/ocean.cu compiles only this env's custom net (PUFFER_NETHACK, PUFFER_NMMO3, …).
 EXTRA_CFLAGS+=(-DPUFFER_${ENV^^})
+if [ "$ENV" = "kaggriculture_direct" ]; then
+    echo "Use ./build.sh kaggriculture; there is one active Kaggriculture config." >&2
+    exit 1
+fi
+if [ "$ENV" = "kaggriculture" ]; then
+    EXTRA_CFLAGS+=(-DPUFFER_KAGGRICULTURE_DIRECT -DKAG_DIRECT_POLICY)
+    case "${MODE:-native}" in
+        native|profile) EXTRA_CFLAGS+=(-DKAG_WITH_PAIRED_CRITIC) ;;
+        *) echo "Use native train/eval for direct ABI 6; legacy CPU/web exporters are incompatible." >&2; exit 1 ;;
+    esac
+fi
 
 case "$ENV" in
     osrs_*)
@@ -502,6 +513,9 @@ if [ "$USE_GPU_ENV" = "1" ]; then
     fi
 else
     ENV_HEADER="$SRC_DIR/$ENV.h"
+fi
+if [ "$ENV" = "kaggriculture" ]; then
+    ENV_HEADER="ocean/kaggriculture_direct/kaggriculture_direct.h"
 fi
 mkdir -p build
 if ! grep -q 'typedef[[:space:]].*obs_t' "$ENV_HEADER" 2>/dev/null; then

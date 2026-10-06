@@ -7,7 +7,7 @@ REPLAY_HASH := $(shell sha256sum $(REPLAY_SOURCES) | sha256sum | cut -c1-16)
 INCLUDES := -I../../src -I../../raylib-5.5_linux_amd64/include
 RENDER_LIBS := ../../raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl
 
-.PHONY: replay-bridge replay-test submission-bridge render-test render-gpu-test
+.PHONY: replay-bridge replay-test submission-bridge render-test render-gpu-test opponent-noise-test opponent-noise-gpu-test
 replay-bridge: $(BUILD)/kag_bc_replay.so
 
 submission-bridge: $(BUILD)/entity_bridge.so
@@ -42,3 +42,18 @@ render-gpu-test: | $(BUILD)
 		-o $(BUILD)/test_render_gpu.o
 	$(NVCC) $(BUILD)/test_render_gpu.o $(RENDER_LIBS) -lm -o $(BUILD)/test_render_gpu
 	$(BUILD)/test_render_gpu $(BUILD)/render_gpu.png
+
+opponent-noise-test: | $(BUILD)
+	$(CC) -std=c11 -O2 $(INCLUDES) -DKAG_WITH_PAIRED_CRITIC \
+		tests/test_opponent_noise.c $(RENDER_LIBS) -lm -o $(BUILD)/test_opponent_noise
+	cd ../.. && $(abspath $(BUILD)/test_opponent_noise)
+
+# Explicit GPU qualification, never run implicitly on a local training GPU.
+opponent-noise-gpu-test: | $(BUILD)
+	$(NVCC) -x cu -c -O2 --threads 2 -arch=$(CUDA_ARCH) -std=c++17 $(INCLUDES) \
+		-DKAG_WITH_PAIRED_CRITIC -Xcompiler=-Wno-narrowing --diag-suppress=2361 \
+		--diag-suppress=111 --diag-suppress=128 tests/test_opponent_noise.c \
+		-o $(BUILD)/test_opponent_noise_gpu.o
+	$(NVCC) $(BUILD)/test_opponent_noise_gpu.o $(RENDER_LIBS) -lm \
+		-o $(BUILD)/test_opponent_noise_gpu
+	cd ../.. && $(abspath $(BUILD)/test_opponent_noise_gpu)
