@@ -30,6 +30,7 @@ saved/
 /seethestars
 /shenaniguns
 /shenaniguns3d
+/swat
 /test_retro_encoder
 /tui_viewer
 /ocean/puffer_survivors/tests/bench_cuda_capacity_profile
@@ -196,6 +197,8 @@ experiments/
 wandb/
 .neptune/
 raylib*/
+# Dependency links in isolated checkouts are symlinks rather than directories.
+/raylib-5.5_*
 box2d*/
 
 # Temp Impulse Wars files

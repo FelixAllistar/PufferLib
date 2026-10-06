@@ -1,0 +1,40 @@
+// Private symbol prefix: Raylib also exports its own cgltf implementation.
+#define cgltf_accessor_index swat_cgltf_accessor_index
+#define cgltf_accessor_read_float swat_cgltf_accessor_read_float
+#define cgltf_accessor_read_index swat_cgltf_accessor_read_index
+#define cgltf_accessor_read_uint swat_cgltf_accessor_read_uint
+#define cgltf_accessor_unpack_floats swat_cgltf_accessor_unpack_floats
+#define cgltf_accessor_unpack_indices swat_cgltf_accessor_unpack_indices
+#define cgltf_animation_channel_index swat_cgltf_animation_channel_index
+#define cgltf_animation_index swat_cgltf_animation_index
+#define cgltf_animation_sampler_index swat_cgltf_animation_sampler_index
+#define cgltf_buffer_index swat_cgltf_buffer_index
+#define cgltf_buffer_view_data swat_cgltf_buffer_view_data
+#define cgltf_buffer_view_index swat_cgltf_buffer_view_index
+#define cgltf_calc_size swat_cgltf_calc_size
+#define cgltf_camera_index swat_cgltf_camera_index
+#define cgltf_component_size swat_cgltf_component_size
+#define cgltf_copy_extras_json swat_cgltf_copy_extras_json
+#define cgltf_decode_string swat_cgltf_decode_string
+#define cgltf_decode_uri swat_cgltf_decode_uri
+#define cgltf_find_accessor swat_cgltf_find_accessor
+#define cgltf_free swat_cgltf_free
+#define cgltf_image_index swat_cgltf_image_index
+#define cgltf_light_index swat_cgltf_light_index
+#define cgltf_load_buffer_base64 swat_cgltf_load_buffer_base64
+#define cgltf_load_buffers swat_cgltf_load_buffers
+#define cgltf_material_index swat_cgltf_material_index
+#define cgltf_mesh_index swat_cgltf_mesh_index
+#define cgltf_node_index swat_cgltf_node_index
+#define cgltf_node_transform_local swat_cgltf_node_transform_local
+#define cgltf_node_transform_world swat_cgltf_node_transform_world
+#define cgltf_num_components swat_cgltf_num_components
+#define cgltf_parse swat_cgltf_parse
+#define cgltf_parse_file swat_cgltf_parse_file
+#define cgltf_sampler_index swat_cgltf_sampler_index
+#define cgltf_scene_index swat_cgltf_scene_index
+#define cgltf_skin_index swat_cgltf_skin_index
+#define cgltf_texture_index swat_cgltf_texture_index
+#define cgltf_validate swat_cgltf_validate
+#define CGLTF_IMPLEMENTATION
+#include "cgltf.h"

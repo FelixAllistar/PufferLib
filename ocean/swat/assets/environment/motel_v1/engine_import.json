@@ -1,0 +1,7 @@
+{
+  "source_archive_sha256": "92896091ee009a131cf76e73e0e3c6f94e543bb9e50debda797f89568c213fb3",
+  "assets": 40,
+  "instances": 146,
+  "collision": "Original static GLB triangle surfaces, independent instance identities. Door leaves use functional canonical hinged boxes.",
+  "units": "Metres; source (x,y,z) -> engine (x,z,-y) exactly once."
+}

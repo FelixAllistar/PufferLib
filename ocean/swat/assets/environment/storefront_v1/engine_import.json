@@ -1,0 +1,8 @@
+{
+  "assets": 40,
+  "instances": 152,
+  "source_archive_sha256": "deb1caf7a7b8785d39e1faad64ea342c69d72aa304cd71669105431df4392b1f",
+  "collision": "Original static triangles; five functional hinged leaves; site retains all original eight meshes.",
+  "site_source_sha256": "b57bdbc34bbbeda827f7011110db1fb4fa9027d24c4227d8cad5f5abbf339b5a",
+  "site_glb_sha256": "6cb61bbb265bbef7faf3d4244ef8aed321a385af1148e5feb9c9a58bed20d950"
+}

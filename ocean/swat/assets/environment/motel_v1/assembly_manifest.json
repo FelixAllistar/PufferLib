@@ -1,0 +1,2495 @@
+{
+  "schema": "motor_court_assembly_v1",
+  "source_basis": "metres, Z-up",
+  "instances": [
+    {
+      "object": "REUSE__frosted_dome_light__000",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -10,
+        2.25,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_floor_4x6m__001",
+      "asset_id": "mc15_room_floor_4x6m",
+      "position_source_m": [
+        -10,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__flat_roof_4x6m__002",
+      "asset_id": "mc15_flat_roof_4x6m",
+      "position_source_m": [
+        -10,
+        3,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__gallery_walkway_4m__003",
+      "asset_id": "mc15_gallery_walkway_4m",
+      "position_source_m": [
+        -10,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__gallery_canopy_4m__004",
+      "asset_id": "mc15_gallery_canopy_4m",
+      "position_source_m": [
+        -10,
+        0,
+        2.44
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__lobby_glazed_facade__005",
+      "asset_id": "mc15_lobby_glazed_facade",
+      "position_source_m": [
+        -10,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__service_doorway_4m__006",
+      "asset_id": "mc15_service_doorway_4m",
+      "position_source_m": [
+        -10,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__007",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -6,
+        2.25,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_floor_4x6m__008",
+      "asset_id": "mc15_room_floor_4x6m",
+      "position_source_m": [
+        -6,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__flat_roof_4x6m__009",
+      "asset_id": "mc15_flat_roof_4x6m",
+      "position_source_m": [
+        -6,
+        3,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__gallery_walkway_4m__010",
+      "asset_id": "mc15_gallery_walkway_4m",
+      "position_source_m": [
+        -6,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__gallery_canopy_4m__011",
+      "asset_id": "mc15_gallery_canopy_4m",
+      "position_source_m": [
+        -6,
+        0,
+        2.44
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_facade_4m__012",
+      "asset_id": "mc15_room_facade_4m",
+      "position_source_m": [
+        -6,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__solid_wall_4m__013",
+      "asset_id": "mc15_solid_wall_4m",
+      "position_source_m": [
+        -6,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__014",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -6,
+        5.05,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_door_leaf__015",
+      "asset_id": "mc15_room_door_leaf",
+      "position_source_m": [
+        -7.74,
+        0,
+        0
+      ],
+      "yaw_source_deg": 100.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_window_insert__016",
+      "asset_id": "mc15_room_window_insert",
+      "position_source_m": [
+        -5.2,
+        -0.018,
+        0.88
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__through_wall_ac__017",
+      "asset_id": "mc15_through_wall_ac",
+      "position_source_m": [
+        -5.2,
+        -0.16,
+        0.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_number_plaque__018",
+      "asset_id": "mc15_room_number_plaque",
+      "position_source_m": [
+        -6.4,
+        -0.11,
+        1.92
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS",
+      "number_variant": 101
+    },
+    {
+      "object": "INSTANCE__bathroom_partition_4m__019",
+      "asset_id": "mc15_bathroom_partition_4m",
+      "position_source_m": [
+        -6,
+        4,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__ribbed_glass_wall_sconce__020",
+      "asset_id": "ribbed_glass_wall_sconce",
+      "position_source_m": [
+        -6.41,
+        -0.12,
+        2.34
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bedframe_single_institutional__021",
+      "asset_id": "bedframe_single_institutional",
+      "position_source_m": [
+        -5.17,
+        2.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__mattress_dirty__022",
+      "asset_id": "mattress_dirty",
+      "position_source_m": [
+        -5.17,
+        2.52,
+        0.389
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        0.6800000071525574,
+        0.9800000190734863,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__desk__023",
+      "asset_id": "desk",
+      "position_source_m": [
+        -7.49,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__chair_metal_folding__024",
+      "asset_id": "chair_metal_folding",
+      "position_source_m": [
+        -6.91,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__tv_crt__025",
+      "asset_id": "tv_crt",
+      "position_source_m": [
+        -7.51,
+        2.68,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.699999988079071,
+        0.699999988079071,
+        0.699999988079071
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__twin_bell_alarm_clock__026",
+      "asset_id": "twin_bell_alarm_clock",
+      "position_source_m": [
+        -7.42,
+        1.94,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__folded_bedsheet_stack__027",
+      "asset_id": "lb11_folded_bedsheet_stack",
+      "position_source_m": [
+        -5.17,
+        2.5,
+        0.658
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__basin_pedestal__028",
+      "asset_id": "basin_pedestal",
+      "position_source_m": [
+        -6.95,
+        5.57,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__toilet_old__029",
+      "asset_id": "toilet_old",
+      "position_source_m": [
+        -5.88,
+        5.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bathtub_old__030",
+      "asset_id": "bathtub_old",
+      "position_source_m": [
+        -4.82,
+        5.0,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.8999999761581421,
+        0.8999999761581421,
+        0.8999999761581421
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__031",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -2,
+        2.25,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_floor_4x6m__032",
+      "asset_id": "mc15_room_floor_4x6m",
+      "position_source_m": [
+        -2,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__flat_roof_4x6m__033",
+      "asset_id": "mc15_flat_roof_4x6m",
+      "position_source_m": [
+        -2,
+        3,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__gallery_walkway_4m__034",
+      "asset_id": "mc15_gallery_walkway_4m",
+      "position_source_m": [
+        -2,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__gallery_canopy_4m__035",
+      "asset_id": "mc15_gallery_canopy_4m",
+      "position_source_m": [
+        -2,
+        0,
+        2.44
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_facade_4m__036",
+      "asset_id": "mc15_room_facade_4m",
+      "position_source_m": [
+        -2,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__solid_wall_4m__037",
+      "asset_id": "mc15_solid_wall_4m",
+      "position_source_m": [
+        -2,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__038",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -2,
+        5.05,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_door_leaf__039",
+      "asset_id": "mc15_room_door_leaf",
+      "position_source_m": [
+        -3.74,
+        0,
+        0
+      ],
+      "yaw_source_deg": 100.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_window_insert__040",
+      "asset_id": "mc15_room_window_insert",
+      "position_source_m": [
+        -1.2,
+        -0.018,
+        0.88
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__through_wall_ac__041",
+      "asset_id": "mc15_through_wall_ac",
+      "position_source_m": [
+        -1.2,
+        -0.16,
+        0.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_number_plaque__042",
+      "asset_id": "mc15_room_number_plaque",
+      "position_source_m": [
+        -2.4,
+        -0.11,
+        1.92
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS",
+      "number_variant": 102
+    },
+    {
+      "object": "INSTANCE__bathroom_partition_4m__043",
+      "asset_id": "mc15_bathroom_partition_4m",
+      "position_source_m": [
+        -2,
+        4,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__ribbed_glass_wall_sconce__044",
+      "asset_id": "ribbed_glass_wall_sconce",
+      "position_source_m": [
+        -2.41,
+        -0.12,
+        2.34
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bedframe_single_institutional__045",
+      "asset_id": "bedframe_single_institutional",
+      "position_source_m": [
+        -1.17,
+        2.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__mattress_dirty__046",
+      "asset_id": "mattress_dirty",
+      "position_source_m": [
+        -1.17,
+        2.52,
+        0.389
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        0.6800000071525574,
+        0.9800000190734863,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__desk__047",
+      "asset_id": "desk",
+      "position_source_m": [
+        -3.49,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__chair_metal_folding__048",
+      "asset_id": "chair_metal_folding",
+      "position_source_m": [
+        -2.91,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__tv_crt__049",
+      "asset_id": "tv_crt",
+      "position_source_m": [
+        -3.51,
+        2.68,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.699999988079071,
+        0.699999988079071,
+        0.699999988079071
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__twin_bell_alarm_clock__050",
+      "asset_id": "twin_bell_alarm_clock",
+      "position_source_m": [
+        -3.42,
+        1.94,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__folded_bedsheet_stack__051",
+      "asset_id": "lb11_folded_bedsheet_stack",
+      "position_source_m": [
+        -1.17,
+        2.5,
+        0.658
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__basin_pedestal__052",
+      "asset_id": "basin_pedestal",
+      "position_source_m": [
+        -2.95,
+        5.57,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__toilet_old__053",
+      "asset_id": "toilet_old",
+      "position_source_m": [
+        -1.88,
+        5.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bathtub_old__054",
+      "asset_id": "bathtub_old",
+      "position_source_m": [
+        -0.8200000000000001,
+        5.0,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.8999999761581421,
+        0.8999999761581421,
+        0.8999999761581421
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__055",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        2,
+        2.25,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_floor_4x6m__056",
+      "asset_id": "mc15_room_floor_4x6m",
+      "position_source_m": [
+        2,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__flat_roof_4x6m__057",
+      "asset_id": "mc15_flat_roof_4x6m",
+      "position_source_m": [
+        2,
+        3,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__gallery_walkway_4m__058",
+      "asset_id": "mc15_gallery_walkway_4m",
+      "position_source_m": [
+        2,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__gallery_canopy_4m__059",
+      "asset_id": "mc15_gallery_canopy_4m",
+      "position_source_m": [
+        2,
+        0,
+        2.44
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_facade_4m__060",
+      "asset_id": "mc15_room_facade_4m",
+      "position_source_m": [
+        2,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__solid_wall_4m__061",
+      "asset_id": "mc15_solid_wall_4m",
+      "position_source_m": [
+        2,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__062",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        2,
+        5.05,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_door_leaf__063",
+      "asset_id": "mc15_room_door_leaf",
+      "position_source_m": [
+        0.26,
+        0,
+        0
+      ],
+      "yaw_source_deg": 100.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_window_insert__064",
+      "asset_id": "mc15_room_window_insert",
+      "position_source_m": [
+        2.8,
+        -0.018,
+        0.88
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__through_wall_ac__065",
+      "asset_id": "mc15_through_wall_ac",
+      "position_source_m": [
+        2.8,
+        -0.16,
+        0.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_number_plaque__066",
+      "asset_id": "mc15_room_number_plaque",
+      "position_source_m": [
+        1.6,
+        -0.11,
+        1.92
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS",
+      "number_variant": 103
+    },
+    {
+      "object": "INSTANCE__bathroom_partition_4m__067",
+      "asset_id": "mc15_bathroom_partition_4m",
+      "position_source_m": [
+        2,
+        4,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__ribbed_glass_wall_sconce__068",
+      "asset_id": "ribbed_glass_wall_sconce",
+      "position_source_m": [
+        1.59,
+        -0.12,
+        2.34
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bedframe_single_institutional__069",
+      "asset_id": "bedframe_single_institutional",
+      "position_source_m": [
+        2.83,
+        2.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__mattress_dirty__070",
+      "asset_id": "mattress_dirty",
+      "position_source_m": [
+        2.83,
+        2.52,
+        0.389
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        0.6800000071525574,
+        0.9800000190734863,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__desk__071",
+      "asset_id": "desk",
+      "position_source_m": [
+        0.51,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__chair_metal_folding__072",
+      "asset_id": "chair_metal_folding",
+      "position_source_m": [
+        1.0899999999999999,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__tv_crt__073",
+      "asset_id": "tv_crt",
+      "position_source_m": [
+        0.49,
+        2.68,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.699999988079071,
+        0.699999988079071,
+        0.699999988079071
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__twin_bell_alarm_clock__074",
+      "asset_id": "twin_bell_alarm_clock",
+      "position_source_m": [
+        0.5800000000000001,
+        1.94,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__folded_bedsheet_stack__075",
+      "asset_id": "lb11_folded_bedsheet_stack",
+      "position_source_m": [
+        2.83,
+        2.5,
+        0.658
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__basin_pedestal__076",
+      "asset_id": "basin_pedestal",
+      "position_source_m": [
+        1.05,
+        5.57,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__toilet_old__077",
+      "asset_id": "toilet_old",
+      "position_source_m": [
+        2.12,
+        5.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bathtub_old__078",
+      "asset_id": "bathtub_old",
+      "position_source_m": [
+        3.1799999999999997,
+        5.0,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.8999999761581421,
+        0.8999999761581421,
+        0.8999999761581421
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__079",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        6,
+        2.25,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_floor_4x6m__080",
+      "asset_id": "mc15_room_floor_4x6m",
+      "position_source_m": [
+        6,
+        3,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__flat_roof_4x6m__081",
+      "asset_id": "mc15_flat_roof_4x6m",
+      "position_source_m": [
+        6,
+        3,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__gallery_walkway_4m__082",
+      "asset_id": "mc15_gallery_walkway_4m",
+      "position_source_m": [
+        6,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__gallery_canopy_4m__083",
+      "asset_id": "mc15_gallery_canopy_4m",
+      "position_source_m": [
+        6,
+        0,
+        2.44
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_facade_4m__084",
+      "asset_id": "mc15_room_facade_4m",
+      "position_source_m": [
+        6,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE",
+      "material_overrides": {
+        "MC15_stucco": "MC15_repair"
+      }
+    },
+    {
+      "object": "INSTANCE__solid_wall_4m__085",
+      "asset_id": "mc15_solid_wall_4m",
+      "position_source_m": [
+        6,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__086",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        6,
+        5.05,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__room_door_leaf__087",
+      "asset_id": "mc15_room_door_leaf",
+      "position_source_m": [
+        4.26,
+        0,
+        0
+      ],
+      "yaw_source_deg": 100.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_window_insert__088",
+      "asset_id": "mc15_room_window_insert",
+      "position_source_m": [
+        6.8,
+        -0.018,
+        0.88
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__through_wall_ac__089",
+      "asset_id": "mc15_through_wall_ac",
+      "position_source_m": [
+        6.8,
+        -0.16,
+        0.2
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_number_plaque__090",
+      "asset_id": "mc15_room_number_plaque",
+      "position_source_m": [
+        5.6,
+        -0.11,
+        1.92
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS",
+      "number_variant": 104
+    },
+    {
+      "object": "INSTANCE__bathroom_partition_4m__091",
+      "asset_id": "mc15_bathroom_partition_4m",
+      "position_source_m": [
+        6,
+        4,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__ribbed_glass_wall_sconce__092",
+      "asset_id": "ribbed_glass_wall_sconce",
+      "position_source_m": [
+        5.59,
+        -0.12,
+        2.34
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bedframe_single_institutional__093",
+      "asset_id": "bedframe_single_institutional",
+      "position_source_m": [
+        6.83,
+        2.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__mattress_dirty__094",
+      "asset_id": "mattress_dirty",
+      "position_source_m": [
+        6.83,
+        2.52,
+        0.389
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        0.6800000071525574,
+        0.9800000190734863,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__desk__095",
+      "asset_id": "desk",
+      "position_source_m": [
+        4.51,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__chair_metal_folding__096",
+      "asset_id": "chair_metal_folding",
+      "position_source_m": [
+        5.09,
+        2.45,
+        0.008
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__tv_crt__097",
+      "asset_id": "tv_crt",
+      "position_source_m": [
+        4.49,
+        2.68,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.699999988079071,
+        0.699999988079071,
+        0.699999988079071
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__twin_bell_alarm_clock__098",
+      "asset_id": "twin_bell_alarm_clock",
+      "position_source_m": [
+        4.58,
+        1.94,
+        0.7643000240325928
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__folded_bedsheet_stack__099",
+      "asset_id": "lb11_folded_bedsheet_stack",
+      "position_source_m": [
+        6.83,
+        2.5,
+        0.658
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__basin_pedestal__100",
+      "asset_id": "basin_pedestal",
+      "position_source_m": [
+        5.05,
+        5.57,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__toilet_old__101",
+      "asset_id": "toilet_old",
+      "position_source_m": [
+        6.12,
+        5.52,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__bathtub_old__102",
+      "asset_id": "bathtub_old",
+      "position_source_m": [
+        7.18,
+        5.0,
+        0.008
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        0.8999999761581421,
+        0.8999999761581421,
+        0.8999999761581421
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__end_wall_6m__103",
+      "asset_id": "mc15_end_wall_6m",
+      "position_source_m": [
+        -12,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__end_wall_6m__104",
+      "asset_id": "mc15_end_wall_6m",
+      "position_source_m": [
+        -8,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__end_wall_6m__105",
+      "asset_id": "mc15_end_wall_6m",
+      "position_source_m": [
+        -4,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__end_wall_6m__106",
+      "asset_id": "mc15_end_wall_6m",
+      "position_source_m": [
+        0,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__end_wall_6m__107",
+      "asset_id": "mc15_end_wall_6m",
+      "position_source_m": [
+        4,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__end_wall_6m__108",
+      "asset_id": "mc15_end_wall_6m",
+      "position_source_m": [
+        8,
+        3,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__corner_pier__109",
+      "asset_id": "mc15_corner_pier",
+      "position_source_m": [
+        -12,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__corner_pier__110",
+      "asset_id": "mc15_corner_pier",
+      "position_source_m": [
+        -12,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__corner_pier__111",
+      "asset_id": "mc15_corner_pier",
+      "position_source_m": [
+        8,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__corner_pier__112",
+      "asset_id": "mc15_corner_pier",
+      "position_source_m": [
+        8,
+        6,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__canopy_post__113",
+      "asset_id": "mc15_canopy_post",
+      "position_source_m": [
+        -12,
+        -1.77,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__canopy_post__114",
+      "asset_id": "mc15_canopy_post",
+      "position_source_m": [
+        -8,
+        -1.77,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__canopy_post__115",
+      "asset_id": "mc15_canopy_post",
+      "position_source_m": [
+        -4,
+        -1.77,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__canopy_post__116",
+      "asset_id": "mc15_canopy_post",
+      "position_source_m": [
+        0,
+        -1.77,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__canopy_post__117",
+      "asset_id": "mc15_canopy_post",
+      "position_source_m": [
+        4,
+        -1.77,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__canopy_post__118",
+      "asset_id": "mc15_canopy_post",
+      "position_source_m": [
+        8,
+        -1.77,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__room_door_leaf__119",
+      "asset_id": "mc15_room_door_leaf",
+      "position_source_m": [
+        -11.9,
+        0,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__reception_counter__120",
+      "asset_id": "mc15_reception_counter",
+      "position_source_m": [
+        -9.4,
+        3.63,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__121",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -10,
+        4.9,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__reception_key_cubbies__122",
+      "asset_id": "mc15_reception_key_cubbies",
+      "position_source_m": [
+        -11.23,
+        5.895,
+        1.25
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__rotary_telephone__123",
+      "asset_id": "rotary_telephone",
+      "position_source_m": [
+        -10,
+        3.5,
+        1.093
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__chipped_coffee_mug__124",
+      "asset_id": "chipped_coffee_mug",
+      "position_source_m": [
+        -8.78,
+        3.5,
+        1.093
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__chair_metal_folding__125",
+      "asset_id": "chair_metal_folding",
+      "position_source_m": [
+        -9.2,
+        4.67,
+        0.008
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_floor_4x6m__126",
+      "asset_id": "mc15_room_floor_4x6m",
+      "position_source_m": [
+        -10,
+        8,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        0.6666666865348816,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__flat_roof_4x6m__127",
+      "asset_id": "mc15_flat_roof_4x6m",
+      "position_source_m": [
+        -10,
+        8,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        0.6666666865348816,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "INSTANCE__solid_wall_4m__128",
+      "asset_id": "mc15_solid_wall_4m",
+      "position_source_m": [
+        -10,
+        10,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__solid_wall_4m__129",
+      "asset_id": "mc15_solid_wall_4m",
+      "position_source_m": [
+        -12,
+        8,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__service_doorway_4m__130",
+      "asset_id": "mc15_service_doorway_4m",
+      "position_source_m": [
+        -8,
+        8,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "REUSE__frosted_dome_light__131",
+      "asset_id": "frosted_dome_light",
+      "position_source_m": [
+        -10,
+        8,
+        2.8
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02b_ROOFS_toggle_cutaway"
+    },
+    {
+      "object": "REUSE__front_load_washer__132",
+      "asset_id": "lb11_front_load_washer",
+      "position_source_m": [
+        -11.35,
+        9.41,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__vented_tumble_dryer__133",
+      "asset_id": "lb11_vented_tumble_dryer",
+      "position_source_m": [
+        -10.55,
+        9.41,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__desk__134",
+      "asset_id": "desk",
+      "position_source_m": [
+        -11.48,
+        7.65,
+        0
+      ],
+      "yaw_source_deg": 90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "REUSE__folded_bedsheet_stack__135",
+      "asset_id": "lb11_folded_bedsheet_stack",
+      "position_source_m": [
+        -11.4,
+        7.8,
+        0.77
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__ice_machine__136",
+      "asset_id": "mc15_ice_machine",
+      "position_source_m": [
+        -13.0,
+        2,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__vending_machine__137",
+      "asset_id": "mc15_vending_machine",
+      "position_source_m": [
+        -13.0,
+        3.25,
+        0
+      ],
+      "yaw_source_deg": -90.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__gallery_railing_2m__138",
+      "asset_id": "mc15_gallery_railing_2m",
+      "position_source_m": [
+        -13.6,
+        4.5,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__roadside_sign__139",
+      "asset_id": "mc15_roadside_sign",
+      "position_source_m": [
+        9.7,
+        -8.0,
+        -0.08
+      ],
+      "yaw_source_deg": -7.448451,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__parking_wheel_stop__140",
+      "asset_id": "mc15_parking_wheel_stop",
+      "position_source_m": [
+        -10,
+        -4.3,
+        -0.08
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__parking_wheel_stop__141",
+      "asset_id": "mc15_parking_wheel_stop",
+      "position_source_m": [
+        -6,
+        -4.3,
+        -0.08
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__parking_wheel_stop__142",
+      "asset_id": "mc15_parking_wheel_stop",
+      "position_source_m": [
+        -2,
+        -4.3,
+        -0.08
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__parking_wheel_stop__143",
+      "asset_id": "mc15_parking_wheel_stop",
+      "position_source_m": [
+        2,
+        -4.3,
+        -0.08
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__parking_wheel_stop__144",
+      "asset_id": "mc15_parking_wheel_stop",
+      "position_source_m": [
+        6,
+        -4.3,
+        -0.08
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__gallery_access_ramp__145",
+      "asset_id": "mc15_gallery_access_ramp",
+      "position_source_m": [
+        -10.9,
+        -1.83,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    }
+  ]
+}

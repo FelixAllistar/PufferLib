@@ -10,6 +10,7 @@ set -e
 #   ./build.sh breakout --cpu        # Play/eval binary (optimized) -> ./ENV
 #   ./build.sh osrs_inferno --cpu     # OSRS visual policy viewer -> ./osrs_inferno
 #   ./build.sh nethack --cpu          # NetHack TTY demo (ocean/nethack/nethack.c)
+#   ./build.sh swat --cpu             # SWAT: Gold Element player/policy viewer
 #   ./build.sh breakout myplay --cpu # Play -> ./myplay
 #   ./build.sh breakout --debug      # Debug (-O0 -g; sanitizers on --cpu)
 #   ./build.sh breakout --web        # Emscripten web build
@@ -215,6 +216,18 @@ elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library panel
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
+elif [ "$ENV" = "swat" ] || [ "$ENV" = "swat_movement" ]; then
+    SRC_DIR="ocean/$ENV"
+    SWAT_SOURCE_DIR="ocean/swat"
+    BOX3D_DIR=${BOX3D_DIR:-../box3d}
+    INCLUDES+=(-I"$BOX3D_DIR/include" -Ivendor/enet/include)
+    cmake -S vendor/enet -B build/swat/enet -DCMAKE_BUILD_TYPE=Release >/dev/null
+    cmake --build build/swat/enet --parallel 2 >/dev/null
+    EXTRA_SRC=""
+    for source in body controller pose devices encounter locomotion weapons materials world motel storefront mission equipment tactical overwatch generation building acoustics audio_dsp spatial_audio sim protocol net replay character_runtime character_view character_asset render lighting weapon_art environment_art settings feedback frontend sound_view; do
+        EXTRA_SRC+=" $SWAT_SOURCE_DIR/$source.c"
+    done
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a" "build/swat/enet/libenet.a")
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
@@ -269,7 +282,7 @@ if [ -n "$OUT" ]; then
     OUTPUT_NAME=$OUT
 fi
 # Header-only envs compile src/puffercpu.c. SRC_FILE is the custom standalone
-# for osrs_* (visual sim) and nethack (TTY demo); see --cpu / web.sh.
+# for envs with their own player/viewer, including SWAT; see --cpu / web.sh.
 SRC_FILE=${SRC_FILE:-$SRC_DIR/$ENV.c}
 
 if [ "$(uname -m)" = "x86_64" ]; then
@@ -324,10 +337,16 @@ if [ "$STANDALONE" = "1" ]; then
     exit 0
 fi
 if [ "$MODE" = "cpu" ]; then
+    if [ "$ENV" = "swat" ] && [ -z "$OUT" ]; then
+        # ./swat dispatches to native Win32 on WSL for reliable mouse capture.
+        # Keep the Linux player available for headless evaluation/development.
+        mkdir -p build/swat
+        OUTPUT_NAME=build/swat/swat
+    fi
     STANDALONE_SOURCE="src/puffercpu.c"
     STANDALONE_DEFINES=()
     case "$ENV" in
-        osrs_*|nethack|pokemon)
+        osrs_*|nethack|pokemon|swat)
             STANDALONE_SOURCE="$SRC_FILE"
             ;;
         *)
@@ -356,6 +375,11 @@ if [ "$MODE" = "cpu" ]; then
     )
     echo "Compiling $ENV..."
     ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}"
+    if [ "$ENV" = "swat" ] && [ -z "$OUT" ]; then
+        cp ocean/swat/play.sh swat.launcher.tmp
+        chmod +x swat.launcher.tmp
+        mv swat.launcher.tmp swat
+    fi
     echo "Built: ./$OUTPUT_NAME"
     exit 0
 elif [ "$MODE" = "web" ]; then
@@ -479,10 +503,14 @@ for dir in /usr/lib/x86_64-linux-gnu /usr/local/cuda/lib64; do
     if [ -f "$dir/libnccl.so" ] || [ -f "$dir/libnccl.so.2" ]; then NCCL_LFLAG="-L$dir"; break; fi
 done
 if [ -z "$NCCL_IFLAG" ]; then
-    NCCL_IFLAG=$(python -c "import nvidia.nccl, os; print('-I' + os.path.join(nvidia.nccl.__path__[0], 'include'))" 2>/dev/null || echo "")
+    for dir in "${VIRTUAL_ENV:-}/lib/"python*/site-packages/nvidia/nccl/include "$HOME/.local/lib/"python*/site-packages/nvidia/nccl/include /usr/local/lib/python*/site-packages/nvidia/nccl/include; do
+        if [ -f "$dir/nccl.h" ]; then NCCL_IFLAG="-I$dir"; break; fi
+    done
 fi
 if [ -z "$NCCL_LFLAG" ]; then
-    NCCL_LFLAG=$(python -c "import nvidia.nccl, os; print('-L' + os.path.join(nvidia.nccl.__path__[0], 'lib'))" 2>/dev/null || echo "")
+    for dir in "${VIRTUAL_ENV:-}/lib/"python*/site-packages/nvidia/nccl/lib "$HOME/.local/lib/"python*/site-packages/nvidia/nccl/lib /usr/local/lib/python*/site-packages/nvidia/nccl/lib; do
+        if [ -f "$dir/libnccl.so.2" ]; then NCCL_LFLAG="-L$dir"; break; fi
+    done
 fi
 
 export CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"

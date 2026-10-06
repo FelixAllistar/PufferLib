@@ -1,0 +1,2 @@
+# Keep the pinned upstream header byte-for-byte, including upstream whitespace.
+cgltf.h -whitespace
