@@ -1,0 +1,6 @@
+#ifndef PG9_LAYOUT_H
+#define PG9_LAYOUT_H
+#define PG9_WORD_COUNT 524288u
+#define PG9_MUTABLE_WORDS 16384u
+#define PG9_ARRAY_BITS 19
+#endif

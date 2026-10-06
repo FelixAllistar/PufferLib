@@ -1,0 +1,8 @@
+{
+  "name": "pokemon-gen9-batch-compiler",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "typescript": "5.9.3"
+  }
+}

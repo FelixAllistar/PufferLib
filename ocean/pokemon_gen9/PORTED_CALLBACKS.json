@@ -1,0 +1,359 @@
+{
+  "reference": "9fb3a5b99f1a0bea17f495c5cc1bfe04fdd19c3e",
+  "contract": "Bodies below are executable. Other function bodies return explicit unsupported error 4. Raw bool/number/string constants use EventValue; metadata is not executable. Prefixed ability/item conditions resolve their original body. This inventory does not claim completed effect lifecycles or full battles.",
+  "bodies": [
+    {
+      "family": "abilities",
+      "id": "hugepower",
+      "callback": "onModifyAtk",
+      "source": "data/abilities.ts:1888",
+      "operation": "chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "purepower",
+      "callback": "onModifyAtk",
+      "source": "data/abilities.ts:3610",
+      "operation": "chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "furcoat",
+      "callback": "onModifyDef",
+      "source": "data/abilities.ts:1580",
+      "operation": "chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "hustle",
+      "callback": "onModifyAtk",
+      "source": "data/abilities.ts:1911",
+      "operation": "modify",
+      "q12": 6144
+    },
+    {
+      "family": "items",
+      "id": "assaultvest",
+      "callback": "onModifySpD",
+      "source": "data/items.ts:320",
+      "operation": "chain",
+      "q12": 6144
+    },
+    {
+      "family": "conditions",
+      "id": "tailwind",
+      "callback": "onModifySpe",
+      "source": "data/moves.ts:18901",
+      "operation": "chain",
+      "q12": 8192
+    },
+    {
+      "family": "conditions",
+      "id": "par",
+      "callback": "onModifySpe",
+      "source": "data/conditions.ts:31",
+      "operation": "paralysis_speed"
+    },
+    {
+      "family": "abilities",
+      "id": "defeatist",
+      "callback": "onModifyAtk",
+      "source": "data/abilities.ts:885",
+      "operation": "conditional_chain",
+      "predicate": "half_hp",
+      "q12": 2048
+    },
+    {
+      "family": "abilities",
+      "id": "defeatist",
+      "callback": "onModifySpA",
+      "source": "data/abilities.ts:891",
+      "operation": "conditional_chain",
+      "predicate": "half_hp",
+      "q12": 2048
+    },
+    {
+      "family": "abilities",
+      "id": "guts",
+      "callback": "onModifyAtk",
+      "source": "data/abilities.ts:1772",
+      "operation": "conditional_chain",
+      "predicate": "has_status",
+      "q12": 6144
+    },
+    {
+      "family": "abilities",
+      "id": "marvelscale",
+      "callback": "onModifyDef",
+      "source": "data/abilities.ts:2536",
+      "operation": "conditional_chain",
+      "predicate": "has_status",
+      "q12": 6144
+    },
+    {
+      "family": "abilities",
+      "id": "quickfeet",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:3749",
+      "operation": "conditional_chain",
+      "predicate": "has_status",
+      "q12": 6144
+    },
+    {
+      "family": "items",
+      "id": "choiceband",
+      "callback": "onModifyAtk",
+      "source": "data/items.ts:975",
+      "operation": "conditional_chain",
+      "predicate": "no_dynamax",
+      "q12": 6144
+    },
+    {
+      "family": "items",
+      "id": "choicescarf",
+      "callback": "onModifySpe",
+      "source": "data/items.ts:998",
+      "operation": "conditional_chain",
+      "predicate": "no_dynamax",
+      "q12": 6144
+    },
+    {
+      "family": "items",
+      "id": "choicespecs",
+      "callback": "onModifySpA",
+      "source": "data/items.ts:1022",
+      "operation": "conditional_chain",
+      "predicate": "no_dynamax",
+      "q12": 6144
+    },
+    {
+      "family": "items",
+      "id": "eviolite",
+      "callback": "onModifyDef",
+      "source": "data/items.ts:1875",
+      "operation": "conditional_chain",
+      "predicate": "base_nfe",
+      "q12": 6144
+    },
+    {
+      "family": "items",
+      "id": "eviolite",
+      "callback": "onModifySpD",
+      "source": "data/items.ts:1881",
+      "operation": "conditional_chain",
+      "predicate": "base_nfe",
+      "q12": 6144
+    },
+    {
+      "family": "items",
+      "id": "lightball",
+      "callback": "onModifyAtk",
+      "source": "data/items.ts:3429",
+      "operation": "conditional_chain",
+      "predicate": "base_pikachu",
+      "q12": 8192
+    },
+    {
+      "family": "items",
+      "id": "lightball",
+      "callback": "onModifySpA",
+      "source": "data/items.ts:3435",
+      "operation": "conditional_chain",
+      "predicate": "base_pikachu",
+      "q12": 8192
+    },
+    {
+      "family": "items",
+      "id": "ironball",
+      "callback": "onModifySpe",
+      "source": "data/items.ts:3062",
+      "operation": "chain",
+      "q12": 2048
+    },
+    {
+      "family": "abilities",
+      "id": "slowstart",
+      "callback": "onModifyAtk",
+      "source": "data/abilities.ts:4328",
+      "operation": "effect_counter_chain",
+      "q12": 2048
+    },
+    {
+      "family": "abilities",
+      "id": "slowstart",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:4333",
+      "operation": "effect_counter_chain",
+      "q12": 2048
+    },
+    {
+      "family": "abilities",
+      "id": "unaware",
+      "callback": "onAnyModifyBoost",
+      "source": "data/abilities.ts:5216",
+      "operation": "boost_mutation"
+    },
+    {
+      "family": "conditions",
+      "id": "foresight",
+      "callback": "onModifyBoost",
+      "source": "data/moves.ts:6114",
+      "operation": "boost_mutation"
+    },
+    {
+      "family": "conditions",
+      "id": "miracleeye",
+      "callback": "onModifyBoost",
+      "source": "data/moves.ts:11972",
+      "operation": "boost_mutation"
+    },
+    {
+      "family": "abilities",
+      "id": "heavymetal",
+      "callback": "onModifyWeight",
+      "source": "data/abilities.ts:1860",
+      "operation": "weight_double"
+    },
+    {
+      "family": "abilities",
+      "id": "lightmetal",
+      "callback": "onModifyWeight",
+      "source": "data/abilities.ts:2335",
+      "operation": "weight_half"
+    },
+    {
+      "family": "items",
+      "id": "floatstone",
+      "callback": "onModifyWeight",
+      "source": "data/items.ts:2183",
+      "operation": "weight_half"
+    },
+    {
+      "family": "abilities",
+      "id": "chlorophyll",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:513",
+      "operation": "weather_chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "swiftswim",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:4810",
+      "operation": "weather_chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "sandrush",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:3975",
+      "operation": "weather_chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "slushrush",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:4348",
+      "operation": "weather_chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "solarpower",
+      "callback": "onModifySpA",
+      "source": "data/abilities.ts:4398",
+      "operation": "weather_chain",
+      "q12": 6144
+    },
+    {
+      "family": "abilities",
+      "id": "orichalcumpulse",
+      "callback": "onModifyAtk",
+      "source": "data/abilities.ts:3097",
+      "operation": "weather_chain",
+      "q12": 5461
+    },
+    {
+      "family": "conditions",
+      "id": "unburden",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:5248",
+      "operation": "conditional_chain",
+      "predicate": "no_item_and_effective_ability",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "surgesurfer",
+      "callback": "onModifySpe",
+      "source": "data/abilities.ts:4757",
+      "operation": "terrain_chain",
+      "q12": 8192
+    },
+    {
+      "family": "abilities",
+      "id": "hadronengine",
+      "callback": "onModifySpA",
+      "source": "data/abilities.ts:1789",
+      "operation": "terrain_chain",
+      "q12": 5461
+    },
+    {
+      "family": "abilities",
+      "id": "grasspelt",
+      "callback": "onModifyDef",
+      "source": "data/abilities.ts:1699",
+      "operation": "terrain_chain",
+      "q12": 6144
+    },
+    {
+      "family": "conditions",
+      "id": "roost",
+      "callback": "onType",
+      "source": "data/moves.ts:15454",
+      "operation": "type_array"
+    },
+    {
+      "family": "conditions",
+      "id": "arceus",
+      "callback": "onType",
+      "source": "data/conditions.ts:855",
+      "operation": "type_array",
+      "resolved_species_forms": true
+    },
+    {
+      "family": "conditions",
+      "id": "silvally",
+      "callback": "onType",
+      "source": "data/conditions.ts:870",
+      "operation": "type_array",
+      "resolved_species_forms": true
+    },
+    {
+      "family": "conditions",
+      "id": "sandstorm",
+      "callback": "onModifySpD",
+      "source": "data/conditions.ts:641",
+      "operation": "type_weather_direct",
+      "type": "Rock",
+      "weather": "sandstorm",
+      "q12": 6144
+    },
+    {
+      "family": "conditions",
+      "id": "snowscape",
+      "callback": "onModifyDef",
+      "source": "data/conditions.ts:707",
+      "operation": "type_weather_direct",
+      "type": "Ice",
+      "weather": "snowscape",
+      "q12": 6144
+    }
+  ]
+}
