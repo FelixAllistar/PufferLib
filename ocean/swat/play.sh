@@ -22,7 +22,7 @@ swat_needs_build() {
                   ocean/swat/assets/environment/storefront_v1/*.glb \
                   build/swat/assets/characters/*.glb build/swat/assets/characters/upper_gear_f/*.glb \
                   build/swat/assets/weapons/*.glb \
-                  ocean/swat/assets/audio/* ocean/swat/assets/policies/*/* \
+                  ocean/swat/assets/audio/* config/swat_movement.ini \
                   config/swat.ini config/default.ini vendor/raygui.h \
                   vendor/enet/*.c vendor/enet/include/enet/*.h; do
         [ "$source" -nt "$binary" ] && return 0

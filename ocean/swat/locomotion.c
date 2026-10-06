@@ -3,9 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define PARAMETERS ((SWAT_LOCOMOTION_OBS+1)*SWAT_LOCOMOTION_HIDDEN+(SWAT_LOCOMOTION_HIDDEN+1)*SWAT_LOCOMOTION_LOGITS)
-static float policy[PARAMETERS];
-static bool loaded;
+static SwatMovementPolicy movement_policy;
+static void* movement_context;
+void swat_locomotion_set_policy(SwatMovementPolicy policy,void* context) {
+    movement_policy=policy; movement_context=context;
+}
 void swat_locomotion_observe(const SwatSim* s,int actor,b3Pos goal,float out[SWAT_LOCOMOTION_OBS]) {
     memset(out,0,SWAT_LOCOMOTION_OBS*sizeof(float));
     const SwatActor* a=&s->actors[actor]; const SwatController* c=&a->controller;
@@ -33,41 +35,22 @@ SwatInput swat_locomotion_decode(const float a[SWAT_LOCOMOTION_HEADS]) {
     in.yaw_delta=yaw[action_value(a[0],4)]*SWAT_RAD; in.forward=action_value(a[1],2)-1; in.strafe=action_value(a[2],2)-1;
     in.crouch=action_value(a[3],1); in.jump=action_value(a[4],1); in.gait=(SwatGait)action_value(a[5],2); return in;
 }
-bool swat_locomotion_load(const char* path) {
-    FILE* f=fopen(path,"r"); if(!f) return false; char magic[32],extra; int version,obs,hidden,logits;
-    bool ok=fscanf(f,"%31s %d %d %d %d",magic,&version,&obs,&hidden,&logits)==5 && !strcmp(magic,"SWAT_LOCOMOTION") && version==SWAT_LOCOMOTION_VERSION && obs==SWAT_LOCOMOTION_OBS && hidden==SWAT_LOCOMOTION_HIDDEN && logits==SWAT_LOCOMOTION_LOGITS;
-    float weights[PARAMETERS];
-    for(int i=0;ok && i<PARAMETERS;i++) ok=fscanf(f,"%f",&weights[i])==1 && isfinite(weights[i]) && fabsf(weights[i])<100;
-    if(ok && fscanf(f," %c",&extra)==1) ok=false;
-    fclose(f);
-    if(ok) { memcpy(policy,weights,sizeof(policy)); loaded=true; } return ok;
-}
-bool swat_locomotion_logits(const float obs[SWAT_LOCOMOTION_OBS],float logits[SWAT_LOCOMOTION_LOGITS]) {
-    if(!loaded || !obs || !logits) return false;
-    for(int i=0;i<SWAT_LOCOMOTION_OBS;i++) if(!isfinite(obs[i])) return false;
-    float hidden[SWAT_LOCOMOTION_HIDDEN]; int cursor=0;
-    for(int h=0;h<SWAT_LOCOMOTION_HIDDEN;h++) { hidden[h]=0; for(int i=0;i<SWAT_LOCOMOTION_OBS;i++) hidden[h]+=policy[cursor++]*obs[i]; }
-    for(int h=0;h<SWAT_LOCOMOTION_HIDDEN;h++) hidden[h]=tanhf(hidden[h]+policy[cursor++]);
-    for(int o=0;o<SWAT_LOCOMOTION_LOGITS;o++) { logits[o]=0; for(int h=0;h<SWAT_LOCOMOTION_HIDDEN;h++) logits[o]+=policy[cursor++]*hidden[h]; }
-    for(int o=0;o<SWAT_LOCOMOTION_LOGITS;o++) logits[o]+=policy[cursor++];
-    return true;
-}
 bool swat_locomotion_input(const SwatSim* s,int actor,b3Pos goal,SwatInput* input) {
-    if(!loaded || !input || actor<0 || actor>=s->actor_count || !s->actors[actor].present) return false;
-    float obs[SWAT_LOCOMOTION_OBS],logits[SWAT_LOCOMOTION_LOGITS];
+    if(!movement_policy || !input || actor<0 || actor>=s->actor_count || !s->actors[actor].present) return false;
+    float obs[SWAT_LOCOMOTION_OBS],action[SWAT_LOCOMOTION_HEADS];
     swat_locomotion_observe(s,actor,goal,obs);
-    if(!swat_locomotion_logits(obs,logits)) return false;
-    const int sizes[6]={5,3,3,2,2,3}; float action[6]; int offset=0;
-    for(int head=0;head<6;head++) { int best=0; for(int i=1;i<sizes[head];i++) if(logits[offset+i]>logits[offset+best]) best=i; action[head]=(float)best; offset+=sizes[head]; }
+    if(s->actors[actor].role!=SWAT_OFFICER && s->actors[actor].role!=SWAT_SUSPECT) return false;
+    if(!movement_policy(movement_context,s,actor,obs,action)) return false;
     SwatInput movement=swat_locomotion_decode(action);
     input->yaw_delta=movement.yaw_delta; input->forward=movement.forward; input->strafe=movement.strafe;
     input->crouch=movement.crouch; input->jump=movement.jump; input->gait=movement.gait; return true;
 }
 
-typedef struct Training { SwatSim sim; b3Pos goal; int actor,steps; float distance; bool done; } Training;
+typedef struct Training { SwatSim sim; b3Pos goal; int actor,steps,limit; float distance,progress_reward,step_cost,success_reward,fall_penalty; bool done; } Training;
 void swat_training_reset(void* pointer,uint32_t seed,int role,int stage) {
     Training* env=pointer; if(!env || role<0 || role>1 || stage<0 || stage>4) return; swat_sim_close(&env->sim); memset(env,0,sizeof(*env));
-    SwatSim* s=&env->sim; s->config=swat_default_config(); s->config.mission=SWAT_RANGE; s->config.hostile_fire=false; s->config.max_ticks=1200; s->rng=seed ? seed : 1;
+    SwatSim* s=&env->sim; s->config=swat_default_config(); s->config.mission=SWAT_RANGE; s->config.hostile_fire=false; env->limit=300; s->config.max_ticks=1200; s->rng=seed ? seed : 1;
+    env->progress_reward=.15f; env->step_cost=.002f; env->success_reward=env->fall_penalty=2;
     swat_world_init(&s->world); swat_world_box(&s->world,(b3Pos){0,-.5f,0},swat_v(10,.5f,8),SWAT_CONCRETE,0);
     float offset=(swat_rand01(&s->rng)-.5f)*.6f; b3Pos start={-4,0,offset}; env->goal=(b3Pos){4,0,offset};
     if(stage==1) {
@@ -112,9 +95,20 @@ int swat_training_step(void* pointer,const float* action,float* observation,floa
         swat_sim_step_inputs(&env->sim,inputs);
     }
     env->steps++; b3Pos feet=swat_body_feet_position(&env->sim.actors[env->actor].controller.body); float distance=b3Distance(feet,env->goal);
-    *reward=.15f*(env->distance-distance)-.002f; env->distance=distance;
-    int terminal=distance<.5f && fabs(feet.y-env->goal.y)<.3f ? 1 : env->steps>=300 || env->sim.end!=SWAT_RUNNING ? 2 : feet.y< -2 ? 3 : 0;
-    if(terminal==1) *reward+=2; else if(terminal==3) *reward-=2;
+    *reward=env->progress_reward*(env->distance-distance)-env->step_cost; env->distance=distance;
+    int terminal=distance<.5f && fabs(feet.y-env->goal.y)<.3f ? 1 : env->steps>=env->limit || env->sim.end!=SWAT_RUNNING ? 2 : feet.y< -2 ? 3 : 0;
+    if(terminal==1) *reward+=env->success_reward; else if(terminal==3) *reward-=env->fall_penalty;
     env->done=terminal!=0; swat_training_observe(env,observation); return terminal;
 }
 void swat_training_close(void* pointer) { Training* env=pointer; if(env) { swat_sim_close(&env->sim); free(env); } }
+SwatSim* swat_training_sim(void* pointer) { Training* env=pointer; return env ? &env->sim : NULL; }
+int swat_training_actor(void* pointer) { Training* env=pointer; return env ? env->actor : -1; }
+void swat_training_limit(void* pointer,int steps) {
+    Training* env=pointer; if(env && steps>=1 && steps<=10000) { env->limit=steps; env->sim.config.max_ticks=4*steps; }
+}
+void swat_training_rewards(void* pointer,float progress,float step_cost,float success,float fall_penalty) {
+    Training* env=pointer;
+    if(!env || !isfinite(progress) || !isfinite(step_cost) || !isfinite(success) || !isfinite(fall_penalty) ||
+       progress<0 || step_cost<0 || success<0 || fall_penalty<0) return;
+    env->progress_reward=progress; env->step_cost=step_cost; env->success_reward=success; env->fall_penalty=fall_penalty;
+}

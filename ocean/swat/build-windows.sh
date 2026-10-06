@@ -228,7 +228,7 @@ done
 fi
 
 mkdir -p "$SWAT_BUILD/config"
-cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_BUILD/config/"
+cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_ROOT/config/swat_movement.ini" "$SWAT_BUILD/config/"
 mkdir -p "$SWAT_BUILD/assets/ui"
 cp "$SWAT_ROOT/resources/shared/Roboto-Regular.ttf" "$SWAT_BUILD/assets/ui/"
 mkdir -p "$SWAT_BUILD/assets/environment"
@@ -261,5 +261,3 @@ printf 'Built native Windows target: %s (%s)\n' "$SWAT_TARGET" "$SWAT_BUILD"
 
 mkdir -p "$SWAT_BUILD/assets/audio"
 cp "$SWAT_ROOT/ocean/swat/assets/audio/"* "$SWAT_BUILD/assets/audio/"
-
-cp -R "$SWAT_ROOT/ocean/swat/assets/policies" "$SWAT_BUILD/assets/"

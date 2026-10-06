@@ -216,13 +216,17 @@ elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library panel
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
-elif [ "$ENV" = "swat" ]; then
+elif [ "$ENV" = "swat" ] || [ "$ENV" = "swat_movement" ]; then
     SRC_DIR="ocean/$ENV"
+    SWAT_SOURCE_DIR="ocean/swat"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
     INCLUDES+=(-I"$BOX3D_DIR/include" -Ivendor/enet/include)
     cmake -S vendor/enet -B build/swat/enet -DCMAKE_BUILD_TYPE=Release >/dev/null
     cmake --build build/swat/enet --parallel 2 >/dev/null
-    EXTRA_SRC="$SRC_DIR/body.c $SRC_DIR/controller.c $SRC_DIR/pose.c $SRC_DIR/devices.c $SRC_DIR/encounter.c $SRC_DIR/weapons.c $SRC_DIR/materials.c $SRC_DIR/world.c $SRC_DIR/mission.c $SRC_DIR/equipment.c $SRC_DIR/tactical.c $SRC_DIR/overwatch.c $SRC_DIR/generation.c $SRC_DIR/acoustics.c $SRC_DIR/audio_dsp.c $SRC_DIR/spatial_audio.c $SRC_DIR/sim.c $SRC_DIR/protocol.c $SRC_DIR/net.c $SRC_DIR/replay.c $SRC_DIR/render.c $SRC_DIR/lighting.c $SRC_DIR/weapon_art.c $SRC_DIR/environment_art.c $SRC_DIR/settings.c $SRC_DIR/feedback.c $SRC_DIR/frontend.c $SRC_DIR/sound_view.c"
+    EXTRA_SRC=""
+    for source in body controller pose devices encounter locomotion weapons materials world motel storefront mission equipment tactical overwatch generation building acoustics audio_dsp spatial_audio sim protocol net replay character_runtime character_view character_asset render lighting weapon_art environment_art settings feedback frontend sound_view; do
+        EXTRA_SRC+=" $SWAT_SOURCE_DIR/$source.c"
+    done
     LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a" "build/swat/enet/libenet.a")
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
@@ -499,10 +503,14 @@ for dir in /usr/lib/x86_64-linux-gnu /usr/local/cuda/lib64; do
     if [ -f "$dir/libnccl.so" ] || [ -f "$dir/libnccl.so.2" ]; then NCCL_LFLAG="-L$dir"; break; fi
 done
 if [ -z "$NCCL_IFLAG" ]; then
-    NCCL_IFLAG=$(python -c "import nvidia.nccl, os; print('-I' + os.path.join(nvidia.nccl.__path__[0], 'include'))" 2>/dev/null || echo "")
+    for dir in "${VIRTUAL_ENV:-}/lib/"python*/site-packages/nvidia/nccl/include "$HOME/.local/lib/"python*/site-packages/nvidia/nccl/include /usr/local/lib/python*/site-packages/nvidia/nccl/include; do
+        if [ -f "$dir/nccl.h" ]; then NCCL_IFLAG="-I$dir"; break; fi
+    done
 fi
 if [ -z "$NCCL_LFLAG" ]; then
-    NCCL_LFLAG=$(python -c "import nvidia.nccl, os; print('-L' + os.path.join(nvidia.nccl.__path__[0], 'lib'))" 2>/dev/null || echo "")
+    for dir in "${VIRTUAL_ENV:-}/lib/"python*/site-packages/nvidia/nccl/lib "$HOME/.local/lib/"python*/site-packages/nvidia/nccl/lib /usr/local/lib/python*/site-packages/nvidia/nccl/lib; do
+        if [ -f "$dir/libnccl.so.2" ]; then NCCL_LFLAG="-L$dir"; break; fi
+    done
 fi
 
 export CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"

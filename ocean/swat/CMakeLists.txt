@@ -75,7 +75,6 @@ if(SWAT_BUILD_PLAYER)
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_CURRENT_LIST_DIR}/assets/environment" "$<TARGET_FILE_DIR:swat_player>/assets/environment"
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/assets/audio" "$<TARGET_FILE_DIR:swat_player>/assets/audio"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/assets/policies" "$<TARGET_FILE_DIR:swat_player>/assets/policies"
         COMMENT "Copying Gold Element font and environment art" VERBATIM)
     add_dependencies(swat_player swat_ui_assets)
     # Local licensed assets are optional and never stored in the public source.

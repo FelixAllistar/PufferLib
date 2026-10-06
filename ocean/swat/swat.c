@@ -7,6 +7,7 @@
 #include "sound_view.h"
 #include "locomotion.h"
 #include "../../src/puffercpu.c"
+#include "locomotion_policy.h"
 
 static void usage(const char* path) {
     printf("SWAT: Gold Element\n"
@@ -22,7 +23,7 @@ static void usage(const char* path) {
         "  --mission house|annex|generated|building|range|motel|storefront  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --layout-model FILE          Optional trained house policy\n"
-        "  --locomotion-policy FILE     Experimental local movement policy\n"
+        "  --locomotion-policy FILE     Native swat_movement FP32 checkpoint (.bin)\n"
         "  --capture-screen SCREEN      game, main, pause, settings, weapon, plan, or overwatch\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
         path,path,path,path,path,path);
@@ -150,10 +151,20 @@ int main(int argc, char** argv) {
     }
     Ini ini={0};
     puf_ini_load_env(&ini,"swat",override_count,overrides);
+    SwatNativeMovement movement_policy={0};
+    if(locomotion_model) {
+        Ini movement_ini={0}; puf_ini_load_env(&movement_ini,"swat_movement",override_count,overrides);
+        int movement_hidden=(int)puf_ini_get(&movement_ini,"policy","hidden_size");
+        int movement_layers=(int)puf_ini_get(&movement_ini,"policy","num_layers");
+        puf_ini_free(&movement_ini);
+        if(!swat_native_movement_load(&movement_policy,locomotion_model,movement_hidden,movement_layers)) {
+            fprintf(stderr,"Invalid swat_movement checkpoint: use native FP32 .bin weights and matching config/swat_movement.ini architecture\n");
+            free(overrides); puf_ini_free(&ini); return 1;
+        }
+    }
     free(overrides);
     int hidden=(int)puf_ini_get(&ini,"policy","hidden_size");
     int layers=(int)puf_ini_get(&ini,"policy","num_layers");
-    if(locomotion_model && !swat_locomotion_load(locomotion_model)) { fprintf(stderr,"Invalid locomotion policy contract or weights\n"); return 1; }
     unsigned int seed=(unsigned int)puf_ini_get(&ini,"base","seed");
     Env env={0}; env.rng=seed;
     puf_init(&env,puf_ini_section(&ini,"env",0));
@@ -192,7 +203,7 @@ int main(int argc, char** argv) {
         printf("SWAT eval episodes=%.0f success=%.4f return=%.6f length=%.2f shots=%.2f civilian_damage=%.2f\n",
             env.log.n,env.log.perf/env.log.n,env.log.episode_return/env.log.n,
             env.log.episode_length/env.log.n,env.log.shots/env.log.n,env.log.civilian_damage/env.log.n);
-        puf_close(&env); free_puffernet(policy); free(weights);
+        puf_close(&env); free_puffernet(policy); free(weights); swat_native_movement_free(&movement_policy);
         return 0; // Inference health. Mission success is reported explicitly.
     }
 
@@ -378,6 +389,7 @@ int main(int argc, char** argv) {
             swat_sound_view_close(&sound); swat_frontend_close(&app); swat_view_close(&view); puf_close(&env);
             if(policy) free_puffernet(policy);
             free(weights);
+            swat_native_movement_free(&movement_policy);
             return saved ? 0 : 1;
         }
     }
@@ -386,5 +398,6 @@ int main(int argc, char** argv) {
     swat_frontend_close(&app); swat_view_close(&view); puf_close(&env);
     if(policy) free_puffernet(policy);
     free(weights);
+    swat_native_movement_free(&movement_policy);
     return 0;
 }

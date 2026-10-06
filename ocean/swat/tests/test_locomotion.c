@@ -27,25 +27,8 @@ static void curriculum(void) {
         swat_training_close(env);
     }
 }
-static void weights(const char* path) {
-    float obs[32]={0},out[18]; assert(!swat_locomotion_logits(obs,out));
-    FILE* file=fopen(path,"w"); assert(file); fputs("SWAT_LOCOMOTION 1 32 64 18\n",file);
-    for(int i=0;i<64*32;i++) fprintf(file,"%f\n",i==0 ? .5 : 0.0);
-    for(int i=0;i<64;i++) fprintf(file,"%f\n",i==0 ? .25 : 0.0);
-    for(int i=0;i<18*64;i++) fprintf(file,"%f\n",i%64==0 ? 2.0 : 0.0);
-    for(int i=0;i<18;i++) fprintf(file,"%f\n",i*.01);
-    fclose(file); assert(swat_locomotion_load(path)); obs[0]=.5f;
-    assert(swat_locomotion_logits(obs,out));
-    for(int i=0;i<18;i++) assert(fabsf(out[i]-(2*tanhf(.5f)+i*.01f))<1e-6f);
-    file=fopen(path,"w"); assert(file); fputs("SWAT_LOCOMOTION 1 32 64 18\nnan\n",file); fclose(file);
-    assert(!swat_locomotion_load(path) && swat_locomotion_logits(obs,out));
-    assert(fabsf(out[0]-2*tanhf(.5f))<1e-6f); obs[0]=NAN; assert(!swat_locomotion_logits(obs,out));
-    remove(path);
-    float bad[6]={NAN,INFINITY,-3,99,-99,99}; SwatInput in=swat_locomotion_decode(bad);
-    assert(isfinite(in.yaw_delta) && in.forward==-1 && in.strafe==-1 && in.crouch && !in.jump && in.gait==SWAT_SPRINT);
-}
 int main(int argc,char** argv) {
-    curriculum(); weights(argc>1 ? argv[1] : "locomotion-test.weights");
-    puts("PASS locomotion: authoritative stairs/crouch/door/breach traversal for both roles, deterministic resets, terminal reward once, strict atomic weight loading and numerical inference");
+    curriculum();
+    puts("PASS locomotion: authoritative stairs/crouch/door/breach traversal for both roles, deterministic resets, terminal reward once");
     return 0;
 }

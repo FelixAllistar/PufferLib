@@ -778,27 +778,59 @@ converter that opens no audio device or window.
 ### Experimental movement learning
 
 ```sh
-make -C ocean/swat locomotion-library
-python ocean/swat/train_locomotion.py --demo-seeds 4 --epochs 60 --updates 8
-./swat --mission building --locomotion-policy build/swat/training/locomotion-v1/policy.txt
+bash ocean/swat/movement.sh build
+bash ocean/swat/movement.sh train
+# Native checkpoints are saved under build/swat/checkpoints/swat_movement/movement/.
+checkpoint=$(ls -1 build/swat/checkpoints/swat_movement/movement/*.bin | sort | tail -n 1)
+bash ocean/swat/movement.sh eval "$checkpoint" --env.seed=2000003
+bash ocean/swat/movement.sh watch "$checkpoint"
+bash ocean/swat/movement.sh play "$checkpoint" --mission building
 ```
 
-The Python runner requires NumPy and CPU PyTorch. It trains through a small C ABI
-that steps the same Box3D/controller simulation as the player: goal approach,
-stairs, low clearance, doors and pre-existing wall breaches, for both officer and
-suspect bodies. A supervised warm-start is followed by bounded PPO. The versioned
-32-value observation includes goal-relative movement, body state and local physical
-probes; it does not expose hidden enemy positions. The six action heads control
-movement only. Orders, equipment, weapon handling and rules of engagement stay
-with the game systems.
+Edit **`config/swat_movement.ini`** to select courses, roles, episode length,
+reward coefficients, vectorization, architecture and training hyperparameters.
+The wrapper calls the repository's native Puffer trainer, with CUDA policy training
+and CPU Box3D simulation; it runs no Python. Ordinary `--section.key=value`
+overrides also work. `stage=-1` mixes goal approach, stairs, crouch clearance,
+doors and already-breached walls; stages 0–4 select them individually. `role=-1`
+mixes officers and suspects, or choose 0/1. `env.seed` changes physical episode
+seeds; `base.seed` controls trainer initialization. Use separate evaluation seeds.
 
-`evaluation.json` reports untrained, scripted and learned baselines, validation
-seeds used for checkpoint selection, and a separate untouched test seed set.
-A copy of the tested policy and evaluation is bundled under
-`assets/policies/locomotion-v1` for opt-in use without retraining.
-The small curriculum demonstrates controller integration; it does not qualify
-squad tactics, enemy combat or general navigation in arbitrary buildings. Learned
-movement remains opt-in. Default NPC movement uses the height-aware navigation.
-The loader checks dimensions, finite bounded weights and exact file completion,
-and retains the previous valid model after a rejected load. Training uses two CPU
-threads and does not take over the GPU.
+For example, start with goal approach, then continue the same architecture on stairs:
+
+```sh
+bash ocean/swat/movement.sh train --env.stage=0 --base.run_id=goal --train.total_timesteps=250000
+goal_checkpoint=$(ls -1 build/swat/checkpoints/swat_movement/goal/*.bin | sort | tail -n 1)
+bash ocean/swat/movement.sh train --env.stage=1 --base.run_id=stairs \
+  --base.load_model_path="$goal_checkpoint"
+```
+
+Weights use the native FP32 **`.bin`** PufferNet format: a linear encoder and
+recurrent MinGRU, configured width/layers, and six movement action heads. Keep the
+matching config alongside a checkpoint; the native trainer writes the effective
+config to its run log directory. The player reads movement architecture from
+`config/swat_movement.ini`, independently of the annex policy in `config/swat.ini`.
+The movement contract is **v2**; the previous Python MLP `.txt` format and bundled
+policy have been removed. The former 40/40 result does not evaluate this new policy.
+
+The 32 observations contain relative waypoint direction, velocity, stance,
+officer/suspect role and local collision/floor probes, without hidden enemy positions.
+Actions choose turn, forward/backward motion, strafe, crouch, jump and gait.
+Each decision runs for four actual physics ticks in training and in the player.
+Runtime inference has separate recurrent state for every actor and resets it between
+scenarios. Navigation supplies waypoints; orders, doors, weapons and rules of
+engagement remain game systems. Civilians retain their scripted movement.
+
+Learned movement remains opt-in via `--locomotion-policy CHECKPOINT.bin`; default
+NPC movement uses the height-aware navigation. A smoke checkpoint verifies native
+training, resume and playback, not capable squad tactics or general movement quality.
+The runtime loader checks exact weight count, byte length and finite values before
+replacing a loaded policy. `make -C ocean/swat movement-native-test` checks the Ocean
+adapter, exact native inference, recurrent isolation and four-tick decision cadence.
+
+Validation: a native 4,096-transition run saved 27,840-parameter FP32 checkpoints;
+loading one into another 2,048-transition native run passed. CPU and CUDA evaluation
+loaded it successfully, and the native Windows player rendered a building with it
+enabled. The tiny smoke run scored zero course successes; it is not a qualified
+movement model. The original annex trainer also
+still builds through `build.sh swat ... --float`.

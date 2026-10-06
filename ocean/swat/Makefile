@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-trainer movement-evaluator movement-native-test
 character-probe: | $(BUILD)
 	$(CC) $(CFLAGS) -I. tests/character_probe.c character_asset.c -lm -o $(BUILD)/character_probe
 character-test: character-probe
@@ -47,7 +47,6 @@ ui-assets: | $(BUILD)
 	cp -R $(ROOT)/ocean/swat/assets/environment/materials_v1 $(BUILD)/assets/environment/
 	mkdir -p $(BUILD)/assets/audio
 	cp $(ROOT)/ocean/swat/assets/audio/* $(BUILD)/assets/audio/
-	cp -R $(ROOT)/ocean/swat/assets/policies $(BUILD)/assets/
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/include/enet/*.h)
@@ -84,8 +83,13 @@ environment-binding-test: | $(BUILD)
 environment-props-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_props.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_environment_props
 	$(BUILD)/test_environment_props
-locomotion-library: | $(BUILD)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -shared -fPIC locomotion.c $(filter-out locomotion.c,$(CORE)) $(PHYSICS_LIBS) -o $(BUILD)/libswat_training.so
+movement-trainer: | $(BUILD)
+	cd $(ROOT) && bash ocean/swat/movement.sh build-trainer
+movement-evaluator: | $(BUILD)
+	cd $(ROOT) && bash ocean/swat/movement.sh build-evaluator
+movement-native-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_movement_native.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_movement_native
+	$(BUILD)/test_movement_native $(BUILD)/movement-native-test.bin
 locomotion-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_locomotion.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_locomotion
 	$(BUILD)/test_locomotion $(BUILD)/locomotion-test.weights
