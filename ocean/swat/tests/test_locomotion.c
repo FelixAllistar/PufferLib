@@ -1,4 +1,5 @@
 #include "locomotion.h"
+#include "sim.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -27,8 +28,33 @@ static void curriculum(void) {
         swat_training_close(env);
     }
 }
+static void clearance_filter(void) {
+    uint32_t random=73;
+    for(int stage=0;stage<5;stage++) {
+        void* env=swat_training_create(73,0,stage); assert(env);
+        SwatSim* sim=swat_training_sim(env); SwatBody* body=&sim->actors[0].controller.body;
+        b3Pos feet=swat_body_feet_position(body);
+        swat_sim_spawn_actor(sim,1,SWAT_OFFICER,b3OffsetPos(feet,swat_v(1.5f,0,0)),0); sim->actor_count=2;
+        uint64_t filtered=body->queryMask;
+        assert(filtered!=UINT64_MAX && filtered!=sim->actors[1].controller.body.queryMask);
+        for(int i=0;i<200;i++) {
+            b3Pos from=b3OffsetPos(feet,swat_v(0,swat_rand01(&random)*.25f,0));
+            b3Pos to=b3OffsetPos(from,swat_v((swat_rand01(&random)-.5f)*6,(swat_rand01(&random)-.5f)*2,(swat_rand01(&random)-.5f)*6));
+            float radius=.7f+.3f*swat_rand01(&random),height=.5f+.5f*swat_rand01(&random);
+            SwatTraceResult fast=swat_body_trace_body(body,from,to,radius,height);
+            body->queryMask=UINT64_MAX;
+            SwatTraceResult reference=swat_body_trace_body(body,from,to,radius,height);
+            body->queryMask=filtered;
+            assert(!memcmp(&fast,&reference,sizeof(fast)));
+        }
+        SwatTraceResult other=swat_body_trace_body(body,feet,b3OffsetPos(feet,swat_v(2,0,0)),1,1);
+        assert(other.hit && B3_ID_EQUALS(b3Shape_GetBody(other.shapeId),sim->actors[1].controller.body.body));
+        swat_training_close(env);
+    }
+    puts("PASS 1000 character sweeps: broad-phase self exclusion matches callback filtering exactly and still hits other actors");
+}
 int main(int argc,char** argv) {
-    curriculum();
+    clearance_filter(); curriculum();
     puts("PASS locomotion: authoritative stairs/crouch/door/breach traversal for both roles, deterministic resets, terminal reward once");
     return 0;
 }

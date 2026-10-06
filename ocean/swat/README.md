@@ -840,3 +840,76 @@ runtime checks exact byte/weight count and finite values before replacing a
 loaded policy. `make -C ocean/swat movement-native-test` checks native inference,
 actor recurrent isolation, episode reset and four-tick cadence. Native smoke runs
 verify training, loading and Windows playback, not capable movement policy quality.
+
+### Simulation performance and physics comparison
+
+Character clearance casts exclude the querying actor in the broad phase, while
+physical collision masks continue to include walls, other actors and projectiles.
+Movement training skips automatic door targeting when there is no closed door in
+reach. It retains the original cursor cone and occlusion checks when a door can be
+reached. Physics timestep, solver substeps, grenade handling and observation format
+are unchanged. A 7,500-decision before/after trace matched exact observations,
+rewards, terminal results and serialized game snapshots; another 1,000 clearance
+sweeps matched the previous callback filter exactly, including other actors.
+
+On this four-core WSL workstation, two adjacent full movement-simulation benchmark
+runs averaged **24,939 decisions/s before and 33,551 after** (35% higher throughput).
+These measurements include sensors and episode resets, but exclude the neural
+policy, rollout transfers and PPO updates. They are not complete training SPS.
+Your normal `bash build.sh swat --float` / `./puffer train` uses these optimizations.
+No config change or alternative trainer is needed.
+
+The native simulation benchmark is optional:
+
+```sh
+make -C ocean/swat training-benchmark
+./build/swat/training_benchmark --envs 32 --threads 4 --steps 1500
+# Single-worker trace for testing behavior across code changes:
+./build/swat/training_benchmark --envs 1 --threads 1 --steps 1500 --trace build/swat/movement.trace
+```
+
+An optional C++ benchmark copies the five actual curriculum geometries into
+Box3D and PhysX, with a driven character proxy, a CCD grenade sphere, 18 sensor
+rays per decision and two clearance sweeps per physics tick. It does not implement
+the SWAT controller in PhysX and does not select a different gameplay backend.
+With 256 scenario copies and four workers, two repeated runs averaged **15,065
+decisions/s for Box3D and 11,967 for PhysX CPU**. PhysX used its normal TGS solver
+with four position iterations (internal temporal substeps), one velocity iteration
+and one simulation call per 60Hz tick. Box3D used its existing four solver substeps.
+The earlier four-explicit-call PhysX measurement performed additional TGS substeps
+and is excluded from this comparison.
+
+This collision workload provides no CPU throughput reason to port the game.
+The untuned PhysX grenade traces also differ from Box3D; shared coefficient values
+alone do not establish matching rolling resistance, contacts or controller behavior.
+The raw repeated measurements and limitations are recorded in
+[the CPU comparison](benchmarks/cpu-comparison-2026-10-06.json).
+
+PhysX 5.7.0's CUDA context source requires SM 7.0, despite the GPU guide describing
+Pascal compatibility. This workstation's GTX 1060 is SM 6.1. GPU comparison was
+set aside; the game and trainer retain Box3D.
+
+To rebuild the optional CPU comparison without Python or changing the normal
+Puffer config, fetch the pinned SDK into the ignored build directory:
+
+```sh
+git clone --depth 1 --branch 109.0-omni-and-physx-5.7.0 https://github.com/NVIDIA-Omniverse/PhysX.git build/swat/physx-sdk
+cmake -S build/swat/physx-sdk/physx/compiler/public -B build/swat/physx-build -G Ninja \
+  -DPHYSX_ROOT_DIR="$PWD/build/swat/physx-sdk/physx" -DTARGET_BUILD_PLATFORM=linux \
+  -DCMAKE_BUILD_TYPE=release -DPX_GENERATE_STATIC_LIBRARIES=ON \
+  -DPX_GENERATE_GPU_PROJECTS=OFF -DPX_BUILDSNIPPETS=OFF -DPX_BUILDPVDRUNTIME=OFF \
+  -DPX_OUTPUT_LIB_DIR="$PWD/build/swat/physx-lib" -DPX_OUTPUT_BIN_DIR="$PWD/build/swat/physx-bin"
+cmake --build build/swat/physx-build --target PhysX PhysXExtensions PhysXCooking --parallel 2
+cmake -S ocean/swat -B build/swat/physics-comparison -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release -DSWAT_BUILD_PLAYER=OFF -DSWAT_BUILD_TESTS=OFF \
+  -DSWAT_BUILD_PHYSX_BENCHMARK=ON -DCMAKE_C_FLAGS=-DB3_MAX_WORLDS=8192 \
+  -DSWAT_PHYSX_DIR="$PWD/build/swat/physx-sdk/physx" \
+  -DSWAT_PHYSX_LIB_DIR="$PWD/build/swat/physx-lib/bin/linux.x86_64/release"
+cmake --build build/swat/physics-comparison --target swat_physics_benchmark --parallel 2
+./build/swat/physics-comparison/swat_physics_benchmark --backend box3d --envs 256 --steps 150
+./build/swat/physics-comparison/swat_physics_benchmark --backend physx --envs 256 --steps 150
+```
+
+Add `--trace FILE.csv --envs 1 --threads 1 --steps 30` to inspect a two-second
+grenade trajectory. `--physx-substeps 4` requests four explicit calls per tick in
+addition to TGS's internal substeps; use it only as a separately labeled experiment.

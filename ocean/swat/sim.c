@@ -21,7 +21,10 @@ void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, floa
     a->mind.resolve=.2f+.75f*((s->reset_seed^s->config.layout_seed^(index*2654435761u))%1000)/1000.0f;
     a->target_actor = -1; a->last_foot_position = feet;
     swat_equipment_init(&a->gear);
-    swat_controller_init(&a->controller,s->world.id,feet,yaw);
+    // Each actor has its own category so its clearance sweeps can reject its
+    // own two shapes in the broad phase. Physical masks still accept all
+    // categories; walls, projectiles and other actors keep colliding normally.
+    swat_controller_init_category(&a->controller,s->world.id,feet,yaw,UINT64_C(1)<<(48+index));
     b3Body_SetUserData(a->controller.body.body,&a->tag);
     swat_weapons_init(&a->arsenal,s->rng ^ ((uint32_t)(index+1)*0x85ebca6bu));
 }

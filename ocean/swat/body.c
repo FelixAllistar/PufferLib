@@ -134,6 +134,7 @@ SwatTraceResult swat_body_trace_body( const SwatBody* c, b3Pos from, b3Pos to,
 	ctx.closestFraction = 1.0f;
 
 	b3QueryFilter filter = b3DefaultQueryFilter();
+	filter.maskBits = c->queryMask;
 	b3World_CastShape( c->world, from, &proxy, translation, filter, CastResultFcn, &ctx );
 
 	result.startedSolid = ctx.startedSolid;
@@ -585,7 +586,7 @@ b3Vec3 swat_body_lean( SwatBody* c, b3Vec3 desiredOffset )
 	ctx.ignoreCount = c->ownShapeCount;
 	for ( int i = 0; i < c->ownShapeCount; i++ ) ctx.ignoreShapes[i] = c->ownShapes[i];
 	b3World_CastShape( c->world, b3Body_GetPosition( c->body ), &proxy, delta,
-		b3DefaultQueryFilter(), CastResultFcn, &ctx );
+		(b3QueryFilter){ .categoryBits=UINT64_MAX, .maskBits=c->queryMask }, CastResultFcn, &ctx );
 	float fraction = ctx.startedSolid ? 0.0f : ctx.closestFraction;
 	if ( ctx.hit ) fraction = fmaxf( 0.0f, fraction - 0.005f / distance );
 	c->upperOffset = v_add( c->upperOffset, v_scale( delta, fraction ) );
@@ -638,7 +639,7 @@ void swat_body_set_crouch( SwatBody* c, bool wantCrouch )
 	ctx.ignoreCount = c->ownShapeCount;
 	for ( int i = 0; i < c->ownShapeCount; i++ ) ctx.ignoreShapes[i] = c->ownShapes[i];
 	b3World_CastShape( c->world, b3Body_GetPosition( c->body ), &proxy,
-		v3( 0, delta + 0.005f, 0 ), b3DefaultQueryFilter(), CastResultFcn, &ctx );
+		v3( 0, delta + 0.005f, 0 ), (b3QueryFilter){ .categoryBits=UINT64_MAX, .maskBits=c->queryMask }, CastResultFcn, &ctx );
 	if ( ctx.startedSolid || ctx.hit ) return;
 
 	c->totalHeight = c->standHeight;
@@ -720,7 +721,13 @@ void swat_body_jump( SwatBody* c )
 
 void swat_body_init( SwatBody* c, b3WorldId worldId, b3Pos position )
 {
+	swat_body_init_category( c, worldId, position, UINT64_MAX );
+}
+
+void swat_body_init_category( SwatBody* c, b3WorldId worldId, b3Pos position, uint64_t category )
+{
 	memset( c, 0, sizeof( *c ) );
+	c->queryMask = category == UINT64_MAX ? UINT64_MAX : ~category;
 
 	c->world = worldId;
 
@@ -773,6 +780,7 @@ void swat_body_init( SwatBody* c, b3WorldId worldId, b3Pos position )
 
 	// Placeholder shapes; swat_body_apply_stance sizes them + sets densities
 	b3ShapeDef shapeDef = b3DefaultShapeDef();
+	shapeDef.filter.categoryBits = category;
 	shapeDef.baseMaterial.friction = 0.0f;
 	shapeDef.baseMaterial.restitution = 0.0f;
 

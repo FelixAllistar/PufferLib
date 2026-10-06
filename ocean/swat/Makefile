@@ -13,7 +13,9 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark
+training-benchmark: | $(BUILD)
+	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 character-probe: | $(BUILD)
 	$(CC) $(CFLAGS) -I. tests/character_probe.c character_asset.c -lm -o $(BUILD)/character_probe
 character-test: character-probe

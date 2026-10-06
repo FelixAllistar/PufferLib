@@ -8,8 +8,11 @@ SwatInput swat_neutral_input(void) {
 }
 
 void swat_controller_init(SwatController* c, b3WorldId world, b3Pos feet, float yaw) {
+    swat_controller_init_category(c,world,feet,yaw,UINT64_MAX);
+}
+void swat_controller_init_category(SwatController* c, b3WorldId world, b3Pos feet, float yaw, uint64_t category) {
     memset(c, 0, sizeof(*c));
-    swat_body_init(&c->body, world, b3OffsetPos(feet, swat_v(0,0.9144f+0.02f,0)));
+    swat_body_init_category(&c->body, world, b3OffsetPos(feet, swat_v(0,0.9144f+0.02f,0)),category);
     c->body.walkSpeed = 2.8f;
     c->body.runSpeed = 4.6f;
     c->body.crouchSpeed = 1.25f;

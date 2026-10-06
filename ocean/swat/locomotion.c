@@ -18,9 +18,11 @@ void swat_locomotion_observe(const SwatSim* s,int actor,b3Pos goal,float out[SWA
     out[7]=c->body.onGround; out[8]=c->body.crouched; out[9]=c->stamina; out[10]=a->role==SWAT_OFFICER;
     out[11]=distance>.45f; out[12]=d.x*d.x+d.z*d.z>1e-8f ? b3Dot(swat_normalize(swat_v(d.x,0,d.z)),forward) : 1;
     out[13]=d.x*d.x+d.z*d.z>1e-8f ? b3Dot(swat_normalize(swat_v(d.x,0,d.z)),right) : 0;
+    b3Vec3 directions[5];
+    for(int col=0;col<5;col++) directions[col]=swat_direction(c->yaw+(col-2)*30*SWAT_RAD,0);
     for(int row=0;row<3;row++) for(int col=0;col<5;col++) {
         float height=fminf(.30f+row*.65f,c->body.totalHeight-.10f);
-        SwatHit hit=swat_world_ray(&s->world,b3OffsetPos(feet,swat_v(0,height,0)),swat_direction(c->yaw+(col-2)*30*SWAT_RAD,0),3,c->body.body);
+        SwatHit hit=swat_world_ray(&s->world,b3OffsetPos(feet,swat_v(0,height,0)),directions[col],3,c->body.body);
         out[14+row*5+col]=hit.hit ? hit.distance/3 : 1;
     }
     for(int i=0;i<3;i++) {
@@ -46,7 +48,29 @@ bool swat_locomotion_input(const SwatSim* s,int actor,b3Pos goal,SwatInput* inpu
     input->crouch=movement.crouch; input->jump=movement.jump; input->gait=movement.gait; return true;
 }
 
-typedef struct Training { SwatSim sim; b3Pos goal; int actor,steps,limit; float distance,progress_reward,step_cost,success_reward,fall_penalty; bool done; } Training;
+typedef struct Training {
+    SwatSim sim; b3Pos goal; int actor,steps,limit;
+    float distance,progress_reward,step_cost,success_reward,fall_penalty; bool done;
+    int doors[SWAT_MAX_OBJECTS],door_count,object_count,generation;
+} Training;
+static bool training_door_nearby(Training* env) {
+    const SwatWorld* w=&env->sim.world;
+    if(env->object_count!=w->count || env->generation!=w->generation) {
+        env->door_count=0; env->object_count=w->count; env->generation=w->generation;
+        for(int i=0;i<w->count;i++) if(w->objects[i].door) env->doors[env->door_count++]=i;
+    }
+    if(!env->door_count || env->sim.actors[env->actor].last_interact) return false;
+    b3Pos eye=swat_controller_eye(&env->sim.actors[env->actor].controller);
+    for(int i=0;i<env->door_count;i++) {
+        const SwatObject* door=&w->objects[env->doors[i]];
+        if(!door->active || door->door_open) continue;
+        // A conservative sphere contains the door at every rotation. Outside
+        // it no sample of the original 1.7m interaction cone can hit the door.
+        b3Vec3 delta=b3SubPos(eye,door->center); float reach=1.701f+b3Length(door->half);
+        if(b3Dot(delta,delta)<=reach*reach) return true;
+    }
+    return false;
+}
 void swat_training_reset(void* pointer,uint32_t seed,int role,int stage) {
     Training* env=pointer; if(!env || role<0 || role>1 || stage<0 || stage>4) return; swat_sim_close(&env->sim); memset(env,0,sizeof(*env));
     SwatSim* s=&env->sim; s->config=swat_default_config(); s->config.mission=SWAT_RANGE; s->config.hostile_fire=false; env->limit=300; s->config.max_ticks=1200; s->rng=seed ? seed : 1;
@@ -95,8 +119,11 @@ int swat_training_step(void* pointer,const float* action,float* observation,floa
     inputs[env->actor]=swat_locomotion_decode(action);
     for(int frame=0;frame<4;frame++) {
         SwatActor* actor=&env->sim.actors[env->actor];
-        SwatHit hit=swat_context_hit(&env->sim,env->actor,1.7f);
-        inputs[env->actor].interact=hit.kind==SWAT_HIT_WORLD && env->sim.world.objects[hit.index].door && !env->sim.world.objects[hit.index].door_open && !actor->last_interact;
+        inputs[env->actor].interact=false;
+        if(training_door_nearby(env)) {
+            SwatHit hit=swat_context_hit(&env->sim,env->actor,1.7f);
+            inputs[env->actor].interact=hit.kind==SWAT_HIT_WORLD && env->sim.world.objects[hit.index].door && !env->sim.world.objects[hit.index].door_open && !actor->last_interact;
+        }
         swat_sim_step_inputs(&env->sim,inputs);
     }
     env->steps++; b3Pos feet=swat_body_feet_position(&env->sim.actors[env->actor].controller.body); float distance=b3Distance(feet,env->goal);

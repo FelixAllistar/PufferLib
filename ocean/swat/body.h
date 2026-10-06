@@ -44,6 +44,7 @@ typedef struct SwatBody
 	b3ShapeId capsuleId;
 	b3ShapeId ownShapes[4];
 	int ownShapeCount;
+	uint64_t queryMask; // exclude this actor before expensive narrow-phase casts
 
 	// dimensions (meters) — s&box defaults: radius 16u, height 72u, 1u = 0.0254m
 	float bodyRadius;
@@ -85,6 +86,7 @@ typedef struct SwatBody
 // Create body + shapes inside `world`. All tuning fields get s&box defaults;
 // caller may override them AFTER init but BEFORE first pre_step (speeds etc).
 void swat_body_init( SwatBody* c, b3WorldId worldId, b3Pos position );
+void swat_body_init_category( SwatBody* c, b3WorldId worldId, b3Pos position, uint64_t category );
 
 // Request stance change. Crouch applies immediately; standing only succeeds
 // if there is head clearance (checked with a trace), otherwise the request

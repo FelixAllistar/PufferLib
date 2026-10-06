@@ -48,6 +48,7 @@ typedef struct SwatController {
 
 SwatInput swat_neutral_input(void);
 void swat_controller_init(SwatController* c, b3WorldId world, b3Pos feet, float yaw);
+void swat_controller_init_category(SwatController* c, b3WorldId world, b3Pos feet, float yaw, uint64_t category);
 void swat_controller_pre_step(SwatController* c, const SwatInput* input, bool weapon_busy);
 void swat_controller_post_step(SwatController* c, const SwatInput* input);
 b3Pos swat_controller_eye(const SwatController* c);

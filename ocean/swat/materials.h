@@ -1,6 +1,9 @@
 #ifndef SWAT_MATERIALS_H
 #define SWAT_MATERIALS_H
 #include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef enum SwatMaterial {
     SWAT_CONCRETE, SWAT_DRYWALL, SWAT_WOOD, SWAT_GLASS, SWAT_STEEL,
     SWAT_BRICK, SWAT_PLASTER, SWAT_INSULATION, SWAT_TILE, SWAT_CARPET,
@@ -17,4 +20,7 @@ typedef struct SwatMaterialDef {
     float impact_pitch, impact_decay, footstep_gain;
 } SwatMaterialDef;
 const SwatMaterialDef* swat_material(SwatMaterial material);
+#ifdef __cplusplus
+}
+#endif
 #endif
