@@ -1,0 +1,245 @@
+{
+  "checked_at_utc": "2026-10-07T16:42:13.807596+00:00",
+  "method": "Read and SHA-256/byte-compare actual final candidate and existing portable rebuild outputs and their supplied input files; audit did not launch another rebuild.",
+  "all_eight_glbs_byte_identical": true,
+  "input_scripts_and_pinned_source_identical": true,
+  "all_supplied_texture_files_identical": true,
+  "candidate_qa_hashes_verified_against_files": true,
+  "files": [
+    {
+      "file": "basin_pedestal_028_v4.glb",
+      "candidate_sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+      "portable_sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+      "bytes": 160796,
+      "byte_equal": true
+    },
+    {
+      "file": "bathroom_partition_4m_019_v4.glb",
+      "candidate_sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+      "portable_sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+      "bytes": 4111440,
+      "byte_equal": true
+    },
+    {
+      "file": "bedframe_single_institutional_021_v4.glb",
+      "candidate_sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+      "portable_sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+      "bytes": 362288,
+      "byte_equal": true
+    },
+    {
+      "file": "folded_bedsheet_stack_027_v4.glb",
+      "candidate_sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+      "portable_sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+      "bytes": 4302156,
+      "byte_equal": true
+    },
+    {
+      "file": "mattress_dirty_022_v4.glb",
+      "candidate_sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+      "portable_sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+      "bytes": 5568388,
+      "byte_equal": true
+    },
+    {
+      "file": "room_floor_4x6m_008_v4.glb",
+      "candidate_sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+      "portable_sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+      "bytes": 4728908,
+      "byte_equal": true
+    },
+    {
+      "file": "room_window_insert_016_v4.glb",
+      "candidate_sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+      "portable_sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+      "bytes": 4755968,
+      "byte_equal": true
+    },
+    {
+      "file": "solid_wall_4m_013_v4.glb",
+      "candidate_sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+      "portable_sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+      "bytes": 4192532,
+      "byte_equal": true
+    }
+  ],
+  "inputs": [
+    {
+      "file": "build_candidate.py",
+      "candidate_sha256": "b00873f5758a4ecc4b1393bf81d3d9701b9c8558994214636220d97828993f3d",
+      "portable_sha256": "b00873f5758a4ecc4b1393bf81d3d9701b9c8558994214636220d97828993f3d",
+      "byte_equal": true
+    },
+    {
+      "file": "bedding_pass.py",
+      "candidate_sha256": "cdd84b6f7315ba60015074bfb930f11ef77098636feebca038b1cac2c1348bcd",
+      "portable_sha256": "cdd84b6f7315ba60015074bfb930f11ef77098636feebca038b1cac2c1348bcd",
+      "byte_equal": true
+    },
+    {
+      "file": "bedframe_pass.py",
+      "candidate_sha256": "a09246cb258f2a9db2e337a4ca6cc2487d7660f78bcb7ea09dc1a4a9f467c86c",
+      "portable_sha256": "a09246cb258f2a9db2e337a4ca6cc2487d7660f78bcb7ea09dc1a4a9f467c86c",
+      "byte_equal": true
+    },
+    {
+      "file": "bathroom_pass.py",
+      "candidate_sha256": "20d9c8780f56ede62593ea8e11161733a60ccde06627308f4db6d555cc132254",
+      "portable_sha256": "20d9c8780f56ede62593ea8e11161733a60ccde06627308f4db6d555cc132254",
+      "byte_equal": true
+    },
+    {
+      "file": "curtain_pass.py",
+      "candidate_sha256": "5842e593b1310c5415fc6be518fe9c4127a46ed10e04902eef188d21af021ecc",
+      "portable_sha256": "5842e593b1310c5415fc6be518fe9c4127a46ed10e04902eef188d21af021ecc",
+      "byte_equal": true
+    },
+    {
+      "file": "source/room101_v3_pinned.blend",
+      "candidate_sha256": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb",
+      "portable_sha256": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb",
+      "byte_equal": true
+    }
+  ],
+  "textures": [
+    {
+      "file": "blanket_basecolor.png",
+      "candidate_sha256": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72",
+      "portable_sha256": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72",
+      "byte_equal": true
+    },
+    {
+      "file": "brushed_concrete_restrained_basecolor.png",
+      "candidate_sha256": "0f7d6afaee930a4f9d5712fa5c316b6ac835ff8d7790347ee76c18b7921d9c73",
+      "portable_sha256": "0f7d6afaee930a4f9d5712fa5c316b6ac835ff8d7790347ee76c18b7921d9c73",
+      "byte_equal": true
+    },
+    {
+      "file": "brushed_concrete_restrained_roughness.png",
+      "candidate_sha256": "ad0f330b13cdcd039d7cb501f9593d87181b62a629937664dfa8a2182d9d2639",
+      "portable_sha256": "ad0f330b13cdcd039d7cb501f9593d87181b62a629937664dfa8a2182d9d2639",
+      "byte_equal": true
+    },
+    {
+      "file": "brushed_concrete_runtime_normal.png",
+      "candidate_sha256": "dfb457fbde940ce7a060276c4dff36b8f29a76085fb9966c39fbd46ba23afb6e",
+      "portable_sha256": "dfb457fbde940ce7a060276c4dff36b8f29a76085fb9966c39fbd46ba23afb6e",
+      "byte_equal": true
+    },
+    {
+      "file": "carpet_ao.png",
+      "candidate_sha256": "cd9f474adc8ade4892a8a8387ad6680fb0c637df597d60838e0a34057cd6d1de",
+      "portable_sha256": "cd9f474adc8ade4892a8a8387ad6680fb0c637df597d60838e0a34057cd6d1de",
+      "byte_equal": true
+    },
+    {
+      "file": "carpet_basecolor.png",
+      "candidate_sha256": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3",
+      "portable_sha256": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3",
+      "byte_equal": true
+    },
+    {
+      "file": "carpet_normal_gl.png",
+      "candidate_sha256": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30",
+      "portable_sha256": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30",
+      "byte_equal": true
+    },
+    {
+      "file": "carpet_roughness.png",
+      "candidate_sha256": "8413b881d06c5a96f293e1eee54f564660ffb4fe4c719915f46e9a86766424cc",
+      "portable_sha256": "8413b881d06c5a96f293e1eee54f564660ffb4fe4c719915f46e9a86766424cc",
+      "byte_equal": true
+    },
+    {
+      "file": "curtain_basecolor.png",
+      "candidate_sha256": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f",
+      "portable_sha256": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f",
+      "byte_equal": true
+    },
+    {
+      "file": "door_paint_basecolor.png",
+      "candidate_sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9",
+      "portable_sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9",
+      "byte_equal": true
+    },
+    {
+      "file": "door_paint_normal.png",
+      "candidate_sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28",
+      "portable_sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28",
+      "byte_equal": true
+    },
+    {
+      "file": "door_paint_roughness.png",
+      "candidate_sha256": "69dc722ad7b88b1a832f4f7019c7d556b44722b34c37999f61dfe933247c542a",
+      "portable_sha256": "69dc722ad7b88b1a832f4f7019c7d556b44722b34c37999f61dfe933247c542a",
+      "byte_equal": true
+    },
+    {
+      "file": "linen_basecolor.png",
+      "candidate_sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+      "portable_sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+      "byte_equal": true
+    },
+    {
+      "file": "linen_normal_gl.png",
+      "candidate_sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+      "portable_sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+      "byte_equal": true
+    },
+    {
+      "file": "linen_roughness.png",
+      "candidate_sha256": "ef38eb40c0cc4d2e0c0e10183cc1cfb8bcd0e3d5c352a8b09708c395f73a7c5b",
+      "portable_sha256": "ef38eb40c0cc4d2e0c0e10183cc1cfb8bcd0e3d5c352a8b09708c395f73a7c5b",
+      "byte_equal": true
+    },
+    {
+      "file": "plaque101_basecolor.png",
+      "candidate_sha256": "8b008dea1ac38eb62569f43200bc223a7b48094b31a20e19d80b51a288cc734c",
+      "portable_sha256": "8b008dea1ac38eb62569f43200bc223a7b48094b31a20e19d80b51a288cc734c",
+      "byte_equal": true
+    },
+    {
+      "file": "plaque101_normal_gl.png",
+      "candidate_sha256": "9dcb14168b63e12f144389aaf94a50cf9aa498031d0694847ecccdf5461ddf7e",
+      "portable_sha256": "9dcb14168b63e12f144389aaf94a50cf9aa498031d0694847ecccdf5461ddf7e",
+      "byte_equal": true
+    },
+    {
+      "file": "plaque101_roughness.png",
+      "candidate_sha256": "a4cf03546456d6772b3987db7ad13d52ec71003d39a4b410b0e10685efca9327",
+      "portable_sha256": "a4cf03546456d6772b3987db7ad13d52ec71003d39a4b410b0e10685efca9327",
+      "byte_equal": true
+    },
+    {
+      "file": "white_plaster_02_restrained_basecolor.png",
+      "candidate_sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+      "portable_sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+      "byte_equal": true
+    },
+    {
+      "file": "white_plaster_02_restrained_roughness.png",
+      "candidate_sha256": "54ac875abbc21081f0126adc56cdab7042106d77c233598ad8382106c39b6c76",
+      "portable_sha256": "54ac875abbc21081f0126adc56cdab7042106d77c233598ad8382106c39b6c76",
+      "byte_equal": true
+    },
+    {
+      "file": "white_plaster_02_runtime_normal.png",
+      "candidate_sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+      "portable_sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+      "byte_equal": true
+    }
+  ],
+  "supporting_build_log": {
+    "path": "/workspace/scratch/eac4961518d4/environment_realism_review/portable_v4_test/rebuild_final.log",
+    "sha256": "2e3b180c63b2269cea9457b46b21a129f56dd4e4daf3e733f592cbce73ef071b"
+  },
+  "ordering_equivalence_report": {
+    "path": "/workspace/scratch/eac4961518d4/environment_realism_review/briar_court_101_candidate_v4/qa/ORDERING_FIX_GEOMETRY_EQUIVALENCE.json",
+    "sha256": "16315f8c200b3157fa87bc3376e811bd8ecd2064bf932c862815b70a75fdfa2b",
+    "scope": "Producer evidence of old/new exact attribute and oriented-triangle equivalence; fresh final GLB geometry audit independently rerun."
+  },
+  "notes": [
+    "Build log warns about unavailable optional Draco; no Draco extension is used by outputs.",
+    "Build log warns empty sheet-stack root has no UV/tangents; root intentionally has no exported mesh and its three textured child meshes pass audit."
+  ]
+}

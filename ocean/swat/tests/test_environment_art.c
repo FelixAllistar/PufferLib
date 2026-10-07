@@ -231,7 +231,22 @@ static void room101_graphics(SwatView* view,const char* directory) {
     SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.hostile_fire=false;
     swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
     assert(art->room101_ready);
-    assert(art->room101_v3_ready);
+    assert(art->room101_v3_ready && art->room101_v4_ready);
+    const int v4_originals[]={25,36,24,29,1,22,4,10},v4_owners[]={23,28,22,29,14,20,9,17};
+    before=sim.world;
+    for(int i=0;i<SWAT_ROOM101_V4_ASSETS;i++) {
+        Model model=art->room101_v4[i];assert(model.meshCount);
+        BoundingBox a=GetModelBoundingBox(model),b=GetModelBoundingBox(art->motel[v4_originals[i]]);
+        assert(a.min.x>=b.min.x-.001f && a.min.y>=b.min.y-.001f && a.min.z>=b.min.z-.001f);
+        assert(a.max.x<=b.max.x+.001f && a.max.y<=b.max.y+.001f && a.max.z<=b.max.z+.001f);
+        SwatObject* o=&sim.world.objects[v4_owners[i]];
+        assert(room101_owner_pixels(art,o,false)>50);
+        o->active=false;assert(!room101_owner_pixels(art,o,false));o->active=true;
+        for(int m=1;m<model.materialCount;m++)assert(model.materials[m].maps[MATERIAL_MAP_ALBEDO].color.a==255);
+    }
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
+    puts("PASS v4: eight bounded replacements, original ownership/removal, opaque surfaces and immutable authority");
+    art->room101_v4_ready=false;
     for(int i=0;i<SWAT_ROOM101_V3_ASSETS;i++)assert(art->room101_v3[i].meshCount);
     const int original_assets[10]={10,18,17,4,2,2,22,5,25,36};
     for(int i=0;i<10;i++) {
@@ -303,6 +318,22 @@ static void room101_graphics(SwatView* view,const char* directory) {
     Camera3D window={{-6.35f,1.55f,-2.6f},{-5.45f,1.45f,0},{0,1,0},45.781f,CAMERA_PERSPECTIVE};
     room=room101_capture(view,bed,true);snprintf(path,sizeof(path),"%s/room101-v3-bed.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     room=room101_capture(view,window,true);snprintf(path,sizeof(path),"%s/room101-v3-window.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    art->room101_v4_ready=true;
+    Camera3D v4_cameras[]={camera,inside,bed,window,row};
+    const char* names[]={"entrance","bathroom","bed","window","row"};
+    before=sim.world;
+    for(int i=0;i<5;i++) {
+        room=room101_capture(view,v4_cameras[i],true);
+        snprintf(path,sizeof(path),"%s/room101-v4-%s.png",directory,names[i]);assert(ExportImage(room,path));UnloadImage(room);
+    }
+    view->lighting.lamp_shadows=false;
+    room=room101_capture(view,window,true);snprintf(path,sizeof(path),"%s/room101-v4-window-no-lamp-shadow.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    view->lighting.lamp_shadows=true;
+    float scales[SWAT_ROOM101_MATERIALS];memcpy(scales,art->room101_v4_normal_scale[7],sizeof(scales));
+    memset(art->room101_v4_normal_scale[7],0,sizeof(scales));
+    room=room101_capture(view,window,true);snprintf(path,sizeof(path),"%s/room101-v4-window-no-normal.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    memcpy(art->room101_v4_normal_scale[7],scales,sizeof(scales));
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
     // The entire moving overlay follows the door and vanishes with its parent.
     for(int i=1;i<sim.world.count;i++) sim.world.objects[i].active=i==16;
     double centroid[3]={0}; const float angles[]={0,45,100};
@@ -346,6 +377,7 @@ int main(int argc,char** argv) {
     location.motel=false;location.storefront=true;swat_environment_art_prepare_location(&view.environment,&location);
     assert(!view.environment.motel[0].meshCount && view.environment.location==2);
     assert(!view.environment.room101_ready && !view.environment.room101[0].meshCount);
+    assert(!view.environment.room101_v4_ready && !view.environment.room101_v4[0].meshCount);
     for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) {
         const SwatMotelAsset* source=swat_storefront_asset(i);Model model=view.environment.storefront[i];
         assert(model.meshCount>0 && model.materialCount==source->material_count+1);

@@ -1,0 +1,24 @@
+{
+  "R101V3_continuous_curtain_-1": {
+    "v3_polygon_count": 1392,
+    "v4_polygon_count": 1392,
+    "uv_changed_polygons": 112,
+    "v3_zero_uv_polygons": 112,
+    "changed_uv_exactly_old_zero_uv_faces": true,
+    "v4_zero_uv_polygons": 0,
+    "smoothing_changed_polygons": 112,
+    "smoothing_changes_only_old_zero_uv_rims": true,
+    "main_surface_uv_exact_equal": true
+  },
+  "R101V3_continuous_curtain_1": {
+    "v3_polygon_count": 1392,
+    "v4_polygon_count": 1392,
+    "uv_changed_polygons": 112,
+    "v3_zero_uv_polygons": 112,
+    "changed_uv_exactly_old_zero_uv_faces": true,
+    "v4_zero_uv_polygons": 0,
+    "smoothing_changed_polygons": 112,
+    "smoothing_changes_only_old_zero_uv_rims": true,
+    "main_surface_uv_exact_equal": true
+  }
+}

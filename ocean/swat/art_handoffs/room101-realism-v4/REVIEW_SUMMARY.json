@@ -1,0 +1,13 @@
+{
+  "revision": "room101_v4",
+  "stage": "bounded_art_candidate",
+  "native_engine_v4_status": "not_run",
+  "baseline": "native engine-integrated v3, supplied Oct7 15:57 UTC",
+  "runtime_assets": 8,
+  "runtime_triangles": 27648,
+  "runtime_bytes": 28182476,
+  "preserved": ["original per-instance placement and pivots", "original authority envelopes/IDs/compiled collision remain engine-owned", "opaque single-owner window contract", "all sealed v3 files", "other rooms and all untargeted meshes"],
+  "checks": ["independent GLB/source audit", "bounds and TRS", "finite normalized attributes and nondegenerate textured UVs", "embedded textures at most 1K", "glTF PBR factors and channels", "portable byte-identical rebuild"],
+  "capture_contract": "Matched source-light Blender pairs and isolated neutral pair. Exact native camera vectors/FOV; no native engine lighting or output equivalence claim.",
+  "remaining_limits": ["desk, folding chair, toilet and contextual fixtures remain stylized", "bedframe institutional design retained", "curtains remain regularly pleated", "cloth authored geometrically, not simulated", "new scalar porcelain/enamel/steel finishes are estimates, not calibrated scans", "native v4 appearance/gameplay/performance pending", "broad curtain shadow bands require engine diagnosis", "folded linen visual AABB is lower within unchanged authority bounds"]
+}

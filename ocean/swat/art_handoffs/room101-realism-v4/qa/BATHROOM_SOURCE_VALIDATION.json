@@ -1,0 +1,430 @@
+{
+  "targets": [
+    "REUSE__basin_pedestal__028",
+    "INSTANCE__solid_wall_4m__013",
+    "INSTANCE__bathroom_partition_4m__019",
+    "INSTANCE__room_floor_4x6m__008"
+  ],
+  "changes": [
+    {
+      "owner": "REUSE__basin_pedestal__028",
+      "action": "replace_render_sink_with_continuous_concave_basin_curved_apron_oval_pedestal_swept_faucet",
+      "footprint_m": [
+        0.61,
+        0.45
+      ],
+      "rim_z_local_m": 0.865,
+      "pedestal_base_z_local_m": 0.005,
+      "unchanged": "original owner, transform, outer bounds, compiled collision/damage/material enum; no new authority",
+      "material": "scalar opaque glazed porcelain and chrome; no texture camouflage or baked AO"
+    },
+    {
+      "owner": "INSTANCE__solid_wall_4m__013",
+      "action": "1m_plaster_on_rear_inward_face_and_inward_bevels_remove_cosmetic_repair_overlay",
+      "changed_faces": [
+        0,
+        5,
+        6,
+        9,
+        10,
+        14,
+        22,
+        23,
+        24
+      ],
+      "exterior_faces": "unchanged",
+      "shadow_note": "engine horizontal dark/light band is lighting, not an authored two-tone material"
+    },
+    {
+      "owner": "INSTANCE__bathroom_partition_4m__019",
+      "action": "bathroom_plaster_reveals_cream_enamel_casing_existing_ceramic_wainscot",
+      "geometry": "unchanged; bedroom plaster already installed remains unchanged",
+      "plaster_repeat_m": [
+        1,
+        1
+      ]
+    },
+    {
+      "owner": "INSTANCE__room_floor_4x6m__008",
+      "action": "replace_bath_panel_and_raised_grout_with_40_matte_ceramic_tiles",
+      "bath_local_xy_bounds_m": [
+        [
+          -1.91,
+          1.17
+        ],
+        [
+          1.91,
+          2.9099998474121094
+        ]
+      ],
+      "grid_pitch_m": 0.5,
+      "grid_centres_x_m": [
+        -1.5,
+        -1,
+        -0.5,
+        0,
+        0.5,
+        1,
+        1.5
+      ],
+      "grid_centres_y_m": [
+        1.3,
+        1.8,
+        2.3,
+        2.8
+      ],
+      "grout_width_m": 0.004,
+      "tile_top_z_m": 0.006500000134110451,
+      "grout_recess_m": 0.0008,
+      "edge_lip_bevel_m": 0.00045,
+      "slab_carpet": "positions, materials and loop UVs retained; no compiled collision update"
+    }
+  ],
+  "material_metadata": {
+    "R101V4_bathroom_fine_plaster": {
+      "source_existing": "R101_SCAN_fine_plaster",
+      "source_url": "https://polyhaven.com/a/white_plaster_02",
+      "license": "CC0-1.0",
+      "license_url": "https://polyhaven.com/license",
+      "tile_UV_m": [
+        1,
+        1
+      ],
+      "basecolor": "white_plaster_02_restrained_basecolor.png",
+      "normal_OpenGL": "white_plaster_02_runtime_normal.png",
+      "roughness_linear": "white_plaster_02_restrained_roughness.png",
+      "normal_strength": 0.35,
+      "runtime_size": [
+        1024,
+        1024
+      ],
+      "new_downloads": false,
+      "highres_source": "source/V2_SOURCE_MANIFEST.json; existing unmodified 2K maps retained in pinned v3 package"
+    },
+    "R101V4_glazed_porcelain": {
+      "basecolor": null,
+      "normal_OpenGL": null,
+      "roughness_linear": null,
+      "color_linear_fallback": [
+        0.7200000286102295,
+        0.7350000143051147,
+        0.7099999785423279
+      ],
+      "scalar_roughness_fallback": 0.2199999988079071,
+      "metallic": 0.0,
+      "alpha_mode": "OPAQUE",
+      "authorship": "authored scalar manufactured finish, no scan/calibrated BRDF claim"
+    },
+    "R101V4_polished_chrome": {
+      "basecolor": null,
+      "normal_OpenGL": null,
+      "roughness_linear": null,
+      "color_linear_fallback": [
+        0.5799999833106995,
+        0.6000000238418579,
+        0.5899999737739563
+      ],
+      "scalar_roughness_fallback": 0.18000000715255737,
+      "metallic": 1.0,
+      "alpha_mode": "OPAQUE",
+      "authorship": "authored scalar manufactured finish, no scan/calibrated BRDF claim"
+    },
+    "R101V4_drain_interior": {
+      "basecolor": null,
+      "normal_OpenGL": null,
+      "roughness_linear": null,
+      "color_linear_fallback": [
+        0.02199999988079071,
+        0.024000000208616257,
+        0.02199999988079071
+      ],
+      "scalar_roughness_fallback": 0.6499999761581421,
+      "metallic": 0.0,
+      "alpha_mode": "OPAQUE",
+      "authorship": "authored scalar manufactured finish, no scan/calibrated BRDF claim"
+    },
+    "R101V4_matte_bath_tile": {
+      "basecolor": null,
+      "normal_OpenGL": null,
+      "roughness_linear": null,
+      "color_linear_fallback": [
+        0.41999998688697815,
+        0.4300000071525574,
+        0.4050000011920929
+      ],
+      "scalar_roughness_fallback": 0.47999998927116394,
+      "metallic": 0.0,
+      "alpha_mode": "OPAQUE",
+      "authorship": "authored scalar manufactured finish, no scan/calibrated BRDF claim"
+    },
+    "R101V4_bath_grout": {
+      "basecolor": null,
+      "normal_OpenGL": null,
+      "roughness_linear": null,
+      "color_linear_fallback": [
+        0.2800000011920929,
+        0.29499998688697815,
+        0.2750000059604645
+      ],
+      "scalar_roughness_fallback": 0.8799999952316284,
+      "metallic": 0.0,
+      "alpha_mode": "OPAQUE",
+      "authorship": "authored scalar manufactured finish, no scan/calibrated BRDF claim"
+    },
+    "R101V4_bathroom_wall_ceramic": {
+      "basecolor": null,
+      "normal_OpenGL": null,
+      "roughness_linear": null,
+      "color_linear_fallback": [
+        0.6200000047683716,
+        0.6399999856948853,
+        0.6000000238418579
+      ],
+      "scalar_roughness_fallback": 0.3199999928474426,
+      "metallic": 0.0,
+      "alpha_mode": "OPAQUE",
+      "authorship": "authored scalar manufactured finish, no scan/calibrated BRDF claim"
+    },
+    "R101V4_bathroom_cream_trim": {
+      "basecolor": null,
+      "normal_OpenGL": null,
+      "roughness_linear": null,
+      "color_linear_fallback": [
+        0.5699999928474426,
+        0.550000011920929,
+        0.47999998927116394
+      ],
+      "scalar_roughness_fallback": 0.36000001430511475,
+      "metallic": 0.0,
+      "alpha_mode": "OPAQUE",
+      "authorship": "authored scalar manufactured finish, no scan/calibrated BRDF claim"
+    }
+  },
+  "validation": {
+    "REUSE__basin_pedestal__028": {
+      "before": {
+        "local_bounds": [
+          [
+            -0.3050000071525574,
+            -0.22499999403953552,
+            0.004999995231628418
+          ],
+          [
+            0.3050000071525574,
+            0.22499999403953552,
+            1.033314824104309
+          ]
+        ],
+        "location": [
+          -6.949999809265137,
+          5.570000171661377,
+          0.00800000037997961
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 768,
+        "polygons": 446,
+        "mesh_users_before": 5
+      },
+      "after_bounds": [
+        [
+          -0.3050000071525574,
+          -0.22499999403953552,
+          0.004999999888241291
+        ],
+        [
+          0.3050000071525574,
+          0.22499999403953552,
+          1.033314824104309
+        ]
+      ],
+      "max_outer_bounds_delta_m": 4.6566128730773926e-09,
+      "max_outside_m": 0,
+      "vertices_after": 1728,
+      "polygons_after": 1540,
+      "vertex_delta": 960,
+      "polygon_delta": 1094,
+      "TRS_unchanged": true
+    },
+    "INSTANCE__solid_wall_4m__013": {
+      "before": {
+        "local_bounds": [
+          [
+            -2.0,
+            -0.11300000548362732,
+            0.0
+          ],
+          [
+            2.0,
+            0.09000000357627869,
+            2.799999952316284
+          ]
+        ],
+        "location": [
+          -6.0,
+          6.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 56,
+        "polygons": 59,
+        "mesh_users_before": 7
+      },
+      "after_bounds": [
+        [
+          -2.0,
+          -0.11300000548362732,
+          0.0
+        ],
+        [
+          2.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "max_outer_bounds_delta_m": 0.0,
+      "max_outside_m": 0,
+      "vertices_after": 48,
+      "polygons_after": 52,
+      "vertex_delta": -8,
+      "polygon_delta": -7,
+      "TRS_unchanged": true
+    },
+    "INSTANCE__bathroom_partition_4m__019": {
+      "before": {
+        "local_bounds": [
+          [
+            -2.0,
+            -0.08500000089406967,
+            0.0
+          ],
+          [
+            2.0,
+            0.08500000089406967,
+            2.799999952316284
+          ]
+        ],
+        "location": [
+          -6.0,
+          4.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 144,
+        "polygons": 156,
+        "mesh_users_before": 1
+      },
+      "after_bounds": [
+        [
+          -2.0,
+          -0.08500000089406967,
+          0.0
+        ],
+        [
+          2.0,
+          0.08500000089406967,
+          2.799999952316284
+        ]
+      ],
+      "max_outer_bounds_delta_m": 0.0,
+      "max_outside_m": 0,
+      "vertices_after": 144,
+      "polygons_after": 156,
+      "vertex_delta": 0,
+      "polygon_delta": 0,
+      "TRS_unchanged": true
+    },
+    "INSTANCE__room_floor_4x6m__008": {
+      "before": {
+        "local_bounds": [
+          [
+            -2.0,
+            -3.0,
+            -0.10000000149011612
+          ],
+          [
+            2.0,
+            3.0,
+            0.006500000134110451
+          ]
+        ],
+        "location": [
+          -6.0,
+          3.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 128,
+        "polygons": 104,
+        "mesh_users_before": 1
+      },
+      "after_bounds": [
+        [
+          -2.0,
+          -3.0,
+          -0.10000000149011612
+        ],
+        [
+          2.0,
+          3.0,
+          0.006500000134110451
+        ]
+      ],
+      "max_outer_bounds_delta_m": 0.0,
+      "max_outside_m": 0,
+      "vertices_after": 520,
+      "polygons_after": 438,
+      "vertex_delta": 392,
+      "polygon_delta": 334,
+      "TRS_unchanged": true
+    }
+  },
+  "other_meshes_unchanged": 288,
+  "new_texture_files": [],
+  "independent_slab_carpet_exact_check": true,
+  "independent_floor_z": {
+    "R101V4_bath_grout": [
+      0.0005000000237487257,
+      0.00570000009611249
+    ],
+    "R101V4_matte_bath_tile": [
+      0.005200000014156103,
+      0.006500000134110451
+    ]
+  }
+}

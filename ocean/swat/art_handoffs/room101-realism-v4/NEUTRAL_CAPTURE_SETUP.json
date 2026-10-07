@@ -1,0 +1,54 @@
+{
+  "purpose": "Isolated neutral material/form inspection, identical bed camera and lights for baseline/candidate. Original room architecture hidden for this diagnostic only; no asset scene saved. Not engine lighting parity.",
+  "owners": [
+    "REUSE__mattress_dirty__022",
+    "REUSE__folded_bedsheet_stack__027",
+    "REUSE__bedframe_single_institutional__021"
+  ],
+  "eye_engine_Yup_m": [
+    -7.15,
+    1.62,
+    -0.67
+  ],
+  "target_engine_Yup_m": [
+    -5.74,
+    1.05,
+    -2.93
+  ],
+  "vertical_fov_deg": 59.863,
+  "resolution": [
+    960,
+    800
+  ],
+  "lights": [
+    {
+      "position_Zup": [
+        -7.7,
+        0.2,
+        4.3
+      ],
+      "power_W": 420,
+      "size_m": 3
+    },
+    {
+      "position_Zup": [
+        -3.3,
+        4.1,
+        3.4
+      ],
+      "power_W": 160,
+      "size_m": 2.3
+    }
+  ],
+  "world_rgb_linear": [
+    0.3,
+    0.3,
+    0.3
+  ],
+  "world_strength": 0.65,
+  "samples_max": 192,
+  "adaptive_threshold": 0.01,
+  "denoising": false,
+  "exposure_EV": 0,
+  "color_management": "AgX Medium High Contrast"
+}

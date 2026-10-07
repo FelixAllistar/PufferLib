@@ -1,0 +1,2747 @@
+{
+  "object_counts": [
+    315,
+    317
+  ],
+  "added_objects": [
+    "R101V4_blanket_turned_hem",
+    "R101V4_continuous_folded_blanket",
+    "R101V4_folded_sheet_leaf",
+    "R101V4_folded_sheet_leaf.001",
+    "R101V4_folded_sheet_leaf.002"
+  ],
+  "removed_objects": [
+    "R101V3_folded_blanket_layer",
+    "R101V3_folded_blanket_layer.001",
+    "R101V3_folded_blanket_layer.002"
+  ],
+  "changed_objects": [
+    {
+      "object": "INSTANCE__bathroom_partition_4m__019",
+      "fields": {
+        "uv_layers": {
+          "v3": {
+            "UVMap": "bed437bb146954233e4d6cd735e41edfa7d7f834d25ce2c504dd56f30d4b0890"
+          },
+          "v4": {
+            "UVMap": "8eee429544e46c403709cb79e88bd9eb2e2c10d9a75d8695029cdd7591af07f3"
+          }
+        },
+        "material_names": {
+          "v3": [
+            "MC15_cream",
+            "MC15_tile",
+            "MC15_wood",
+            "R101_SCAN_fine_plaster"
+          ],
+          "v4": [
+            "R101V4_bathroom_fine_plaster",
+            "R101V4_bathroom_wall_ceramic",
+            "R101V4_bathroom_cream_trim",
+            "R101_SCAN_fine_plaster"
+          ]
+        },
+        "mesh_name": {
+          "v3": "bathroom_partition_4m_mesh.001",
+          "v4": "bathroom_partition_4m_mesh.002"
+        },
+        "custom_properties": {
+          "v3": {
+            "asset_id": "mc15_bathroom_partition_4m",
+            "title": "Off-centre bathroom partition",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "roof",
+                "position_source_m": [
+                  0.0,
+                  0.0,
+                  2.8
+                ],
+                "outward_source": [
+                  0,
+                  0,
+                  1
+                ],
+                "position_gltf_m": [
+                  0.0,
+                  2.8,
+                  0.0
+                ],
+                "outward_gltf": [
+                  0,
+                  1,
+                  0
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v3",
+            "source_instance": "INSTANCE__bathroom_partition_4m__019"
+          },
+          "v4": {
+            "asset_id": "mc15_bathroom_partition_4m",
+            "title": "Off-centre bathroom partition",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "roof",
+                "position_source_m": [
+                  0.0,
+                  0.0,
+                  2.8
+                ],
+                "outward_source": [
+                  0,
+                  0,
+                  1
+                ],
+                "position_gltf_m": [
+                  0.0,
+                  2.8,
+                  0.0
+                ],
+                "outward_gltf": [
+                  0,
+                  1,
+                  0
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__bathroom_partition_4m__019",
+            "authority_owner": "INSTANCE__bathroom_partition_4m__019"
+          }
+        }
+      }
+    },
+    {
+      "object": "INSTANCE__room_floor_4x6m__008",
+      "fields": {
+        "positions_sha256": {
+          "v3": "94baef899195abaa108b27682f050383b6de7972bb1525b4a84c63d4db1e5189",
+          "v4": "e1c7bdaa31290d814f71c0ae3ac47e59ba240c026d8c514a5ff8bfaf71e0a13a"
+        },
+        "smoothing_sha256": {
+          "v3": "19808171fffe29a0d0b7b412ff5086a50926ddb755e00baa8a8c82fea184e1d7",
+          "v4": "7cb56807282a04ec73070030faea639a0110c626b0a9fbc90dc6f38b560bd08f"
+        },
+        "face_materials_sha256": {
+          "v3": "77f745018a914fc1020fb812838afc17d16ffc4e435260583be6ceca67161194",
+          "v4": "1d93ad6ba9a8fec900d88b37a5fae11f08e9aa229949b2ec287110265f5f66bb"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "fc7622bad5e21cba4041dd059989baa385777a50b5854bb46d01a966e21efca9"
+          },
+          "v4": {
+            "UVMap": "8cc7f4c8e28d2500dee4a71d8ba9f455483b75b9d83cee0ae315484cbba7fe24"
+          }
+        },
+        "vertex_normals_sha256": {
+          "v3": "15774d30c134b810a74dfca0048c4320313158ca8cba078f362ffbb96cbab427",
+          "v4": "100ca3cbcfeed14b809ac2864c5bac8491f19ce4679d2e493890c595e1ff8e80"
+        },
+        "faces_sha256": {
+          "v3": "34169078cfffd316c626b8f6d555756dd5513e33b0b2031a4333fe06c71e4e9b",
+          "v4": "cd8fe999af8f3ad6cff95b53a4fc450e08cac35a2380ada5ea4332398cd4fb5b"
+        },
+        "edge_sharp_sha256": {
+          "v3": "570f9137ee5c94755533ec599435e5db9b9742c174af6f5bc903b20879f761d4",
+          "v4": "305dd79c2cdd12d8f7a9f629d80c22c9d370eaf886e19686c8b28037eadb15c2"
+        },
+        "material_names": {
+          "v3": [
+            "MC15_concrete",
+            "MC15_carpet",
+            "MC15_tile",
+            "R101V3_carpet"
+          ],
+          "v4": [
+            "MC15_concrete",
+            "MC15_carpet",
+            "MC15_tile",
+            "R101V3_carpet",
+            "R101V4_matte_bath_tile",
+            "R101V4_bath_grout"
+          ]
+        },
+        "mesh_name": {
+          "v3": "room_floor_4x6m_mesh.001",
+          "v4": "INSTANCE__room_floor_4x6m__008_v4_bathroom"
+        },
+        "counts": {
+          "v3": {
+            "vertices": 128,
+            "faces": 104,
+            "triangles": 200
+          },
+          "v4": {
+            "vertices": 520,
+            "faces": 438,
+            "triangles": 868
+          }
+        },
+        "custom_properties": {
+          "v3": {
+            "asset_id": "mc15_room_floor_4x6m",
+            "title": "Carpet and tile room floor",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "front",
+                "position_source_m": [
+                  0,
+                  -3,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  -1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  3
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "name": "back",
+                "position_source_m": [
+                  0,
+                  3,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  -3
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  -1
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v3",
+            "source_instance": "INSTANCE__room_floor_4x6m__008"
+          },
+          "v4": {
+            "asset_id": "mc15_room_floor_4x6m",
+            "title": "Carpet and tile room floor",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "front",
+                "position_source_m": [
+                  0,
+                  -3,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  -1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  3
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "name": "back",
+                "position_source_m": [
+                  0,
+                  3,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  -3
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  -1
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__room_floor_4x6m__008",
+            "authority_owner": "INSTANCE__room_floor_4x6m__008"
+          }
+        }
+      }
+    },
+    {
+      "object": "INSTANCE__room_window_insert__016",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "asset_id": "mc15_room_window_insert",
+            "title": "Divided window with curtain folds",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "opening_origin",
+                "position_source_m": [
+                  0,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  -1
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v3",
+            "source_instance": "INSTANCE__room_window_insert__016"
+          },
+          "v4": {
+            "asset_id": "mc15_room_window_insert",
+            "title": "Divided window with curtain folds",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "opening_origin",
+                "position_source_m": [
+                  0,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  -1
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__room_window_insert__016"
+          }
+        }
+      }
+    },
+    {
+      "object": "INSTANCE__solid_wall_4m__013",
+      "fields": {
+        "positions_sha256": {
+          "v3": "9f9591cce9de0aca1737424da8bc23e0fc13b97d027a24a368700207d830d256",
+          "v4": "47fae10f0c1ff6642d080a5c0740a3bc645ea1b72e598a970f2b4d18def85c1b"
+        },
+        "smoothing_sha256": {
+          "v3": "acf8b9c34d560f6b3d45a346ff69ade0120b89b45bbf41a4970d48d53a14d073",
+          "v4": "833e05b92b9359c6a07928acd22c07a5eef97229faa748ded1a7b16e12687dfc"
+        },
+        "face_materials_sha256": {
+          "v3": "14abcd812351c1fc3fe61dcb6014af386bf80d1113f2e668629f1f83c134cac0",
+          "v4": "a284a22bddbd16595fb54ad90c29ea43f5da26d8e90965bdeaf1259770ffa1f8"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "51106189e65a1614a0ded886eec7658cdb08a00249d616d80e49801776a02583"
+          },
+          "v4": {
+            "UVMap": "7259ea8bdf09c70afea2079d9cdb44ea026fdc8f88744f88d27e715f5d63a661"
+          }
+        },
+        "vertex_normals_sha256": {
+          "v3": "e57bf0bfbb12ae8455a233a9d068ca68cab06916146178c9a7b0a3d80e5be7ba",
+          "v4": "db5d90ef706aba9d0276204a8f22a71fe71daacd717f44f2cfee92e1dadfd9fb"
+        },
+        "faces_sha256": {
+          "v3": "7a1e60fb69d6d443447035f4378f245e05f4be48b540ca6cbef46b3c1414032c",
+          "v4": "972e8a386ac99ce47074c058ba7b5a5f10fb6840f4ba18ec2b6248ed873b7ab0"
+        },
+        "edge_sharp_sha256": {
+          "v3": "3a4f36419cf7d18f40c45d75a00c603b3325df323d82ab240abfe19d191bc540",
+          "v4": "e461a2ce7dc02518a7c3b29509b4e7e1e3a3aeaceee426da2b5fb0e3e3d33ab6"
+        },
+        "material_names": {
+          "v3": [
+            "MC15_stucco",
+            "MC15_concrete_dark",
+            "MC15_repair"
+          ],
+          "v4": [
+            "MC15_stucco",
+            "MC15_concrete_dark",
+            "MC15_repair",
+            "R101V4_bathroom_fine_plaster"
+          ]
+        },
+        "mesh_name": {
+          "v3": "solid_wall_4m_mesh",
+          "v4": "INSTANCE__solid_wall_4m__013_v4_bathroom"
+        },
+        "counts": {
+          "v3": {
+            "vertices": 56,
+            "faces": 59,
+            "triangles": 95
+          },
+          "v4": {
+            "vertices": 48,
+            "faces": 52,
+            "triangles": 88
+          }
+        },
+        "custom_properties": {
+          "v3": {
+            "asset_id": "mc15_solid_wall_4m",
+            "title": "Four metre rear wall",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "roof",
+                "position_source_m": [
+                  0.0,
+                  0.0,
+                  2.8
+                ],
+                "outward_source": [
+                  0,
+                  0,
+                  1
+                ],
+                "position_gltf_m": [
+                  0.0,
+                  2.8,
+                  0.0
+                ],
+                "outward_gltf": [
+                  0,
+                  1,
+                  0
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true
+          },
+          "v4": {
+            "asset_id": "mc15_solid_wall_4m",
+            "title": "Four metre rear wall",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "roof",
+                "position_source_m": [
+                  0.0,
+                  0.0,
+                  2.8
+                ],
+                "outward_source": [
+                  0,
+                  0,
+                  1
+                ],
+                "position_gltf_m": [
+                  0.0,
+                  2.8,
+                  0.0
+                ],
+                "outward_gltf": [
+                  0,
+                  1,
+                  0
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__solid_wall_4m__013",
+            "authority_owner": "INSTANCE__solid_wall_4m__013"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_continuous_curtain_-1",
+      "fields": {
+        "smoothing_sha256": {
+          "v3": "10a485ce657d25f912c6df3751edd7c8bf0830e6ae1c958adec5a4686d1de29f",
+          "v4": "971f0f80daaa15b8725de999d8a8629ee35467c1d6ef0b598ed212a0610d3324"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "a85b28fe51277a804de2d9f5e917bea6bcaac0021f84790ddd53d8a380c7223d"
+          },
+          "v4": {
+            "UVMap": "3357dadc39e6fafb9c2b48ab36999573a0f1914a4e58078846c0804a01d5d0e2"
+          }
+        },
+        "edge_sharp_sha256": {
+          "v3": "a439029351bd9ac38bdd8be26161cafbb0c7d56ff97d386698ac68c7724eb32e",
+          "v4": "638e1efece1fd6a4f926a3a2938b481881761f703c137bd74d5fee12390046f7"
+        },
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "curtain_rim_cleanup": "split-rim-normals_metric-perimeter-UV_v1"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_continuous_curtain_1",
+      "fields": {
+        "smoothing_sha256": {
+          "v3": "10a485ce657d25f912c6df3751edd7c8bf0830e6ae1c958adec5a4686d1de29f",
+          "v4": "971f0f80daaa15b8725de999d8a8629ee35467c1d6ef0b598ed212a0610d3324"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "18e9e12d97e2d47e71adb9c1216256c4d38481021a153863b9a9d83803d7afe7"
+          },
+          "v4": {
+            "UVMap": "08cfc5e8ee65155b833d992be67e18a2f618ab6bec1b757db02e72768ba9afec"
+          }
+        },
+        "edge_sharp_sha256": {
+          "v3": "a439029351bd9ac38bdd8be26161cafbb0c7d56ff97d386698ac68c7724eb32e",
+          "v4": "638e1efece1fd6a4f926a3a2938b481881761f703c137bd74d5fee12390046f7"
+        },
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "curtain_rim_cleanup": "split-rim-normals_metric-perimeter-UV_v1"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.001",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.002",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.003",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.004",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.005",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.006",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.007",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.008",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.009",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.010",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_hook.011",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_curtain_rail",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_glazing_gasket",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_glazing_gasket.001",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_opaque_pane_left",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3",
+            "part_role": "opaque_glazing",
+            "authority_owner": "INSTANCE__room_window_insert__016"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "part_role": "opaque_glazing",
+            "authority_owner": "INSTANCE__room_window_insert__016"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_opaque_pane_right",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3",
+            "part_role": "opaque_glazing",
+            "authority_owner": "INSTANCE__room_window_insert__016"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "part_role": "opaque_glazing",
+            "authority_owner": "INSTANCE__room_window_insert__016"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_sash_track",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_sash_track.001",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_slider_latch",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_slider_meeting_profile",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_slider_meeting_profile.001",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "R101V3_soft_pillow",
+      "fields": {
+        "custom_properties": {
+          "v3": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__mattress_dirty__022",
+            "candidate_version": "room101_v3"
+          },
+          "v4": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__mattress_dirty__022",
+            "candidate_version": "room101_v4"
+          }
+        }
+      }
+    },
+    {
+      "object": "REUSE__basin_pedestal__028",
+      "fields": {
+        "positions_sha256": {
+          "v3": "df33abe28fe87b5901cc0e14c8477e7bb46eeb6387a4a15f2b0a8c1653141f94",
+          "v4": "e661972bf8d52808966d9ecdbd7ae53c3a689afee44a8eb269d7bfe43005e3f5"
+        },
+        "smoothing_sha256": {
+          "v3": "872347e14a08c9884ad6c06254ebb71ed1a73a7fd64a969bad12d49752c15848",
+          "v4": "29c2c3809c28b509c0ab4d34a3970df53102db8c1af9d1ada69fccbd65e386b6"
+        },
+        "face_materials_sha256": {
+          "v3": "93cbef322c7f26b1cf48affd7d6f85905413c1f9b904870f561ad226d90822bd",
+          "v4": "35b7cb9b7a77c8684f8755229f8612c9034ad888c129cb524f7a87ce338638ee"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "f4d8fd442e1bbd5b8e4be652709e3b47b5f397fc99735418bb6f506249e2540d"
+          },
+          "v4": {
+            "UVMap": "67f11d3daba22b9c4128fa97feafc40d85a467d920f1deb9763b9c42134c0985"
+          }
+        },
+        "own_bounds": {
+          "v3": [
+            [
+              -0.3050000071525574,
+              -0.22499999403953552,
+              0.004999995231628418
+            ],
+            [
+              0.3050000071525574,
+              0.22499999403953552,
+              1.033314824104309
+            ]
+          ],
+          "v4": [
+            [
+              -0.3050000071525574,
+              -0.22499999403953552,
+              0.004999999888241291
+            ],
+            [
+              0.3050000071525574,
+              0.22499999403953552,
+              1.033314824104309
+            ]
+          ]
+        },
+        "vertex_normals_sha256": {
+          "v3": "e71097c991cb0c3c1e73771dde038de82bc0d8e1bb8a6a7b16907df1706f4feb",
+          "v4": "56466ab69953fe6dc28394e5bc36cc773e320b3b2edb57f346a755447b25b32a"
+        },
+        "faces_sha256": {
+          "v3": "26e62491d8adc41ce9fc7a3fda7bafa4168627135acf83aa48e34383464bc65b",
+          "v4": "3ae27224151e196c1186197aa9a9d6b28fb72735b7bf03a700ab8f79eb8cba75"
+        },
+        "edge_sharp_sha256": {
+          "v3": "b3dd2c39796018fef8c81175af7e7d9d906e44c02bf99f00bb95a1b33f8f52b6",
+          "v4": "c6baa1c8588accc031f98c0a0284dda43a188a9bbe6e1babddd0cb9a51f15f4f"
+        },
+        "material_names": {
+          "v3": [
+            "HP_enamel",
+            "HP_ceramic",
+            "HP_steel.001",
+            "HP_iron.002"
+          ],
+          "v4": [
+            "R101V4_glazed_porcelain",
+            "R101V4_polished_chrome",
+            "R101V4_drain_interior"
+          ]
+        },
+        "mesh_name": {
+          "v3": "HP_Mesh_basin_pedestal",
+          "v4": "REUSE__basin_pedestal__028_v4_bathroom"
+        },
+        "counts": {
+          "v3": {
+            "vertices": 768,
+            "faces": 446,
+            "triangles": 446
+          },
+          "v4": {
+            "vertices": 1728,
+            "faces": 1540,
+            "triangles": 3416
+          }
+        },
+        "custom_properties": {
+          "v3": {
+            "asset_id": "basin_pedestal",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "visual_clutter": false,
+            "collision_footprint_xy": [
+              -0.305,
+              -0.225,
+              0.305,
+              0.225
+            ],
+            "collision_recommendation": "simple_box_optional",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true
+          },
+          "v4": {
+            "asset_id": "basin_pedestal",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "visual_clutter": false,
+            "collision_footprint_xy": [
+              -0.305,
+              -0.225,
+              0.305,
+              0.225
+            ],
+            "collision_recommendation": "simple_box_optional",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__basin_pedestal__028",
+            "authority_owner": "REUSE__basin_pedestal__028"
+          }
+        }
+      }
+    },
+    {
+      "object": "REUSE__bedframe_single_institutional__021",
+      "fields": {
+        "positions_sha256": {
+          "v3": "f31393cdc187f6f291496e8c97138680eaa6f6d3dc80c33792d731c4331cf56e",
+          "v4": "03e24ae3a1127a375798e7b782965ca32683b8ce46b60352acee49c9435d4b8d"
+        },
+        "smoothing_sha256": {
+          "v3": "fd749c4f399e46b17799b987b7856a9570131ceb51669ebfa7c416681003663d",
+          "v4": "df269fdd46d9cab0630634e23b2ce2c086c84434b3b35f595d4ed4bcd8160e1d"
+        },
+        "face_materials_sha256": {
+          "v3": "6f163536304f0b7955d591fdafd1756e39fe7e97a96d325d1689be48f90c3fe0",
+          "v4": "f03a396778fc71ac1883a8e7255af780b2106869622ae67da8647b91efc26110"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "d88ab3f7d0cf415cde747611b309bb694b8971924d48e180d35f3d37e9e360b1"
+          },
+          "v4": {
+            "UVMap": "2bb5c359d9cae4b07fa000f7700faf35574c4dfa00b2114d83edccddf5728725"
+          }
+        },
+        "vertex_normals_sha256": {
+          "v3": "17352ad390ecc9e79957ab93f17faaf96b369b2c85ea287e3327d3e771db8c0a",
+          "v4": "e6887aadfaf962816129a7ece8cc5f4f1fe393e7066b8e21d6366e7b02dca49b"
+        },
+        "faces_sha256": {
+          "v3": "8928fd2caee26ef26b74a16fd12a9b61ead1c67950a1d8daa1c27f8280a5c446",
+          "v4": "ce8503b61142e1c0d29ae78950dba42270aa2f017f4913238e117f2f199fa491"
+        },
+        "edge_sharp_sha256": {
+          "v3": "1e6ca50550848d1b344b067653e2fcf6e4ff7a8f88ee6ffef0554327749484c6",
+          "v4": "0329c54528a151b541f4ee7999016b6da114d0342a21f77823d3f4842248d46a"
+        },
+        "material_names": {
+          "v3": [
+            "F04_metal_cream",
+            "F04_rubber",
+            "F04_steel",
+            "F04_iron",
+            "F04_rust"
+          ],
+          "v4": [
+            "R101V4_bedframe_warm_cream_enamel",
+            "R101V4_bedframe_caster_rubber",
+            "R101V4_bedframe_exposed_steel",
+            "R101V4_bedframe_dark_rail_enamel",
+            "R101V4_bedframe_attachment_enamel"
+          ]
+        },
+        "mesh_name": {
+          "v3": "F04_MESH_bedframe_single_institutional",
+          "v4": "R101V4_bedframe_welded_tubes_and_retained_deck"
+        },
+        "counts": {
+          "v3": {
+            "vertices": 4968,
+            "faces": 2524,
+            "triangles": 2524
+          },
+          "v4": {
+            "vertices": 3060,
+            "faces": 3224,
+            "triangles": 5940
+          }
+        },
+        "custom_properties": {
+          "v3": {
+            "asset_id": "bedframe_single_institutional",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "canonical_front": "-Y (Blender); +Z (glTF)",
+            "collision_footprint_xy": [
+              -0.526,
+              -1.068,
+              0.526,
+              1.068
+            ],
+            "collision_recommendation": "simple_box_optional; render_only_by_default",
+            "runtime_binding": "not_implemented",
+            "pivot_policy": "authored body-reference XY, lowest vertex Z=0; not full-AABB centred",
+            "source_batch": "04_furniture_variants",
+            "design_notes": "Bare cream steel frame with welded uprights, spring-wire deck and static casters.",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true
+          },
+          "v4": {
+            "asset_id": "bedframe_single_institutional",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "canonical_front": "-Y (Blender); +Z (glTF)",
+            "collision_footprint_xy": [
+              -0.526,
+              -1.068,
+              0.526,
+              1.068
+            ],
+            "collision_recommendation": "simple_box_optional; render_only_by_default",
+            "runtime_binding": "not_implemented",
+            "pivot_policy": "authored body-reference XY, lowest vertex Z=0; not full-AABB centred",
+            "source_batch": "04_furniture_variants",
+            "design_notes": "Bare cream steel frame with welded uprights, spring-wire deck and static casters.",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__bedframe_single_institutional__021"
+          }
+        }
+      }
+    },
+    {
+      "object": "REUSE__folded_bedsheet_stack__027",
+      "fields": {
+        "positions_sha256": {
+          "v3": "f7ed3441bd02a5ba688ef8a34c470e6a2b7eff95c43218048dc72ecec030c0f6",
+          "v4": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "smoothing_sha256": {
+          "v3": "917afb82054858dbe88a615ad237c2529c5cd846cfcc1ed888ad8fe1f3f0fb6f",
+          "v4": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "face_materials_sha256": {
+          "v3": "9e0706c5494a654796de8c99fcd94fd427ff3b0cb37af7776a1628a7f269bae4",
+          "v4": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "0113eb973dde7909f0f2230bbb3721b4ea7437f0866d8c3a072c7af6cd8da9d3"
+          },
+          "v4": {
+            "UVMap": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          }
+        },
+        "own_bounds": {
+          "v3": [
+            [
+              -0.23742148280143738,
+              -0.17382186651229858,
+              0.0
+            ],
+            [
+              0.23742148280143738,
+              0.17382186651229858,
+              0.15042652189731598
+            ]
+          ],
+          "v4": null
+        },
+        "vertex_normals_sha256": {
+          "v3": "7c38ed9a097bdba216c3ef6ee0c186ac981f4aa5b90f86bd3c3595fc06e600e6",
+          "v4": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "faces_sha256": {
+          "v3": "ac46cb606cefc5000dc3f52a69179c5144662aa525c99a11753fe4aa8e57c1d2",
+          "v4": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "edge_sharp_sha256": {
+          "v3": "4cfb7431e48a0374852e5451d027a56bf9682ab010bc43f5d5f206b7409b2121",
+          "v4": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "material_names": {
+          "v3": [
+            "R101V3_bed_linen",
+            "R101V3_bed_linen",
+            "R101V3_bed_linen"
+          ],
+          "v4": [
+            "R101V3_bed_linen"
+          ]
+        },
+        "mesh_name": {
+          "v3": "LB11_folded_bedsheet_stack_mesh.001",
+          "v4": "REUSE__folded_bedsheet_stack__027_v4_empty"
+        },
+        "counts": {
+          "v3": {
+            "vertices": 790,
+            "faces": 388,
+            "triangles": 388
+          },
+          "v4": {
+            "vertices": 0,
+            "faces": 0,
+            "triangles": 0
+          }
+        },
+        "custom_properties": {
+          "v3": {
+            "asset_id": "lb11_folded_bedsheet_stack",
+            "title": "Folded bedsheet stack",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "source_front": "-Y",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "modeling_to_asset_shift": [
+              0.0,
+              -0.0004180893301963806,
+              0.001999998465180397
+            ],
+            "mounting": "surface",
+            "engine_binding": "Not integrated. Art only; no collision/physics/animation.",
+            "pivot": "XY AABB-centred, lowest surface source Z=0",
+            "reused_existing_design": true,
+            "assembly_instance": true,
+            "candidate_version": "room101_v3",
+            "source_instance": "REUSE__folded_bedsheet_stack__027"
+          },
+          "v4": {
+            "asset_id": "lb11_folded_bedsheet_stack",
+            "title": "Folded bedsheet stack",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "source_front": "-Y",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "modeling_to_asset_shift": [
+              0.0,
+              -0.0004180893301963806,
+              0.001999998465180397
+            ],
+            "mounting": "surface",
+            "engine_binding": "Not integrated. Art only; no collision/physics/animation.",
+            "pivot": "XY AABB-centred, lowest surface source Z=0",
+            "reused_existing_design": true,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__folded_bedsheet_stack__027"
+          }
+        }
+      }
+    },
+    {
+      "object": "REUSE__mattress_dirty__022",
+      "fields": {
+        "positions_sha256": {
+          "v3": "6f1fee18c6b9226f57acd2013cb8bdfdb06fcbe3474ee74ca9a228314f253114",
+          "v4": "20af1cd45f189730e0a879bfd3a850d5b0aa08ee5012c6f74c493c4b59adcb0d"
+        },
+        "smoothing_sha256": {
+          "v3": "73ebce051f8b8184eb235bb1c84108fb4ec0719f19cc1ed7be031665acdb8ac1",
+          "v4": "1872c63c8f6e94649fe7c6258b6c51e2d19f6828d7e1bb5f89adb3290234c1a6"
+        },
+        "face_materials_sha256": {
+          "v3": "8188969a5a81df7d885702101816bc3b82fbe2b31dae6bd9818f54793cb1d97a",
+          "v4": "9a18cdefc9ab356296e8e8b43c3643c71990c092bc5b0160cbaf9cef2fb91b17"
+        },
+        "uv_layers": {
+          "v3": {
+            "UVMap": "41d02d5628b56d89dc41dc6c59726b839251080d571b75d13836db85b3bf683d"
+          },
+          "v4": {
+            "UVMap": "cbf1d98cb484ccf47048a1889e42a0b0162487c44821ea6678f1002809cfca0f"
+          }
+        },
+        "own_bounds": {
+          "v3": [
+            [
+              -0.6790000200271606,
+              -0.9790000319480896,
+              0.014812052249908447
+            ],
+            [
+              0.6790000200271606,
+              0.9790000319480896,
+              0.4221677780151367
+            ]
+          ],
+          "v4": [
+            [
+              -0.6789999008178711,
+              -0.9789827466011047,
+              0.014829999767243862
+            ],
+            [
+              0.6790000200271606,
+              0.978999137878418,
+              0.2784903049468994
+            ]
+          ]
+        },
+        "vertex_normals_sha256": {
+          "v3": "e114d2975418cfd5dcb5276025327f283fde4602859cfde452fb111c29a397d5",
+          "v4": "3fef74141f6bf3c5166f4f8a1a8b73e10c9209467a3688574507174c6aac3c71"
+        },
+        "faces_sha256": {
+          "v3": "e81278fdd094cbd048007b146927e571faa241a5521755357be3570221891f20",
+          "v4": "343849d027b42a0037354791328922c06ddffa27355aa221cb06da0046341250"
+        },
+        "edge_sharp_sha256": {
+          "v3": "a08790620a9a6645ab3e6a8bbf3f0d235631b1920bf08644b8f5a1b8e279b549",
+          "v4": "a80e245192930df179012d905a5c8fe6d493a7e3a0bd716c42808ffd71a36b46"
+        },
+        "material_names": {
+          "v3": [
+            "R101V3_folded_blanket",
+            "R101V3_bed_linen",
+            "R101V3_bed_linen",
+            "R101V3_bed_linen",
+            "R101V3_folded_blanket",
+            "R101V3_bed_linen",
+            "R101V3_bed_linen"
+          ],
+          "v4": [
+            "R101V3_bed_linen"
+          ]
+        },
+        "mesh_name": {
+          "v3": "HP_Mesh_mattress_dirty.001_v3",
+          "v4": "REUSE__mattress_dirty__022_v4"
+        },
+        "counts": {
+          "v3": {
+            "vertices": 2632,
+            "faces": 868,
+            "triangles": 868
+          },
+          "v4": {
+            "vertices": 768,
+            "faces": 706,
+            "triangles": 1532
+          }
+        },
+        "custom_properties": {
+          "v3": {
+            "asset_id": "mattress_dirty",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "visual_clutter": false,
+            "collision_footprint_xy": [
+              -0.679,
+              -0.979,
+              0.679,
+              0.979
+            ],
+            "collision_recommendation": "simple_box_optional",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true,
+            "candidate_version": "room101_v3",
+            "source_instance": "REUSE__mattress_dirty__022"
+          },
+          "v4": {
+            "asset_id": "mattress_dirty",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "visual_clutter": false,
+            "collision_footprint_xy": [
+              -0.679,
+              -0.979,
+              0.679,
+              0.979
+            ],
+            "collision_recommendation": "simple_box_optional",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__mattress_dirty__022"
+          }
+        }
+      }
+    }
+  ],
+  "changed_existing_materials": {},
+  "added_materials": [
+    "R101V4_bath_grout",
+    "R101V4_bathroom_cream_trim",
+    "R101V4_bathroom_fine_plaster",
+    "R101V4_bathroom_wall_ceramic",
+    "R101V4_bedframe_attachment_enamel",
+    "R101V4_bedframe_caster_rubber",
+    "R101V4_bedframe_dark_rail_enamel",
+    "R101V4_bedframe_exposed_steel",
+    "R101V4_bedframe_warm_cream_enamel",
+    "R101V4_drain_interior",
+    "R101V4_glazed_porcelain",
+    "R101V4_matte_bath_tile",
+    "R101V4_polished_chrome"
+  ],
+  "render_settings_equal": true,
+  "render_settings_v3": {
+    "engine": "CYCLES",
+    "resolution_x": 1080,
+    "resolution_y": 760,
+    "resolution_percentage": 100,
+    "film_transparent": false,
+    "world": {
+      "name": "Quiet overcast",
+      "color": [
+        0.05000000074505806,
+        0.05000000074505806,
+        0.05000000074505806
+      ],
+      "nodes": [
+        {
+          "name": "Background",
+          "type": "BACKGROUND",
+          "inputs": [
+            [
+              "Color",
+              [
+                0.4399999976158142,
+                0.49000000953674316,
+                0.5199999809265137,
+                1.0
+              ]
+            ],
+            [
+              "Strength",
+              0.6499999761581421
+            ],
+            [
+              "Weight",
+              0.0
+            ]
+          ]
+        },
+        {
+          "name": "World Output",
+          "type": "OUTPUT_WORLD",
+          "inputs": []
+        }
+      ]
+    },
+    "view_settings": {
+      "view_transform": "AgX",
+      "look": "AgX - Medium High Contrast",
+      "exposure": 0.699999988079071,
+      "gamma": 1.0
+    },
+    "cycles": {
+      "samples": 96,
+      "use_denoising": false,
+      "device": "CPU"
+    }
+  },
+  "render_settings_v4": {
+    "engine": "CYCLES",
+    "resolution_x": 1080,
+    "resolution_y": 760,
+    "resolution_percentage": 100,
+    "film_transparent": false,
+    "world": {
+      "name": "Quiet overcast",
+      "color": [
+        0.05000000074505806,
+        0.05000000074505806,
+        0.05000000074505806
+      ],
+      "nodes": [
+        {
+          "name": "Background",
+          "type": "BACKGROUND",
+          "inputs": [
+            [
+              "Color",
+              [
+                0.4399999976158142,
+                0.49000000953674316,
+                0.5199999809265137,
+                1.0
+              ]
+            ],
+            [
+              "Strength",
+              0.6499999761581421
+            ],
+            [
+              "Weight",
+              0.0
+            ]
+          ]
+        },
+        {
+          "name": "World Output",
+          "type": "OUTPUT_WORLD",
+          "inputs": []
+        }
+      ]
+    },
+    "view_settings": {
+      "view_transform": "AgX",
+      "look": "AgX - Medium High Contrast",
+      "exposure": 0.699999988079071,
+      "gamma": 1.0
+    },
+    "cycles": {
+      "samples": 96,
+      "use_denoising": false,
+      "device": "CPU"
+    }
+  },
+  "v3_owner_bounds": {
+    "REUSE__mattress_dirty__022": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.6789995431900024,
+          -0.9790000319480896,
+          0.014812052249908447
+        ],
+        [
+          0.6790004968643188,
+          0.9790000319480896,
+          0.4221677780151367
+        ]
+      ],
+      "descendants": [
+        "R101V3_folded_blanket_layer",
+        "R101V3_folded_blanket_layer.001",
+        "R101V3_folded_blanket_layer.002",
+        "R101V3_soft_pillow",
+        "REUSE__mattress_dirty__022"
+      ],
+      "matrix_world": [
+        [
+          0.6800000071525574,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          0.0,
+          2.5199999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.3889999985694885
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "REUSE__folded_bedsheet_stack__027": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.23742148280143738,
+          -0.17382186651229858,
+          0.0
+        ],
+        [
+          0.23742148280143738,
+          0.17382186651229858,
+          0.15042652189731598
+        ]
+      ],
+      "descendants": [
+        "REUSE__folded_bedsheet_stack__027"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.6579999923706055
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "REUSE__bedframe_single_institutional__021": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ],
+      "descendants": [
+        "REUSE__bedframe_single_institutional__021"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.5199999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.00800000037997961
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "REUSE__basin_pedestal__028": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.3050000071525574,
+          -0.22499999403953552,
+          0.004999995231628418
+        ],
+        [
+          0.3050000071525574,
+          0.22499999403953552,
+          1.033314824104309
+        ]
+      ],
+      "descendants": [
+        "REUSE__basin_pedestal__028"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.949999809265137
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.570000171661377
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.00800000037997961
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__solid_wall_4m__013": {
+      "aggregate_bounds_blender_m": [
+        [
+          -2.0,
+          -0.11300000548362732,
+          0.0
+        ],
+        [
+          2.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__solid_wall_4m__013"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__bathroom_partition_4m__019": {
+      "aggregate_bounds_blender_m": [
+        [
+          -2.0,
+          -0.08500000089406967,
+          0.0
+        ],
+        [
+          2.0,
+          0.08500000089406967,
+          2.799999952316284
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__bathroom_partition_4m__019"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          4.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__room_floor_4x6m__008": {
+      "aggregate_bounds_blender_m": [
+        [
+          -2.0,
+          -3.0,
+          -0.10000000149011612
+        ],
+        [
+          2.0,
+          3.0,
+          0.006500000134110451
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__room_floor_4x6m__008"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__room_window_insert__016": {
+      "aggregate_bounds_blender_m": [
+        [
+          -1.034999966621399,
+          -0.1850000023841858,
+          -0.008499999530613422
+        ],
+        [
+          1.034999966621399,
+          0.06499999761581421,
+          1.2999999523162842
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__room_window_insert__016",
+        "R101V3_continuous_curtain_-1",
+        "R101V3_continuous_curtain_1",
+        "R101V3_curtain_hook",
+        "R101V3_curtain_hook.001",
+        "R101V3_curtain_hook.002",
+        "R101V3_curtain_hook.003",
+        "R101V3_curtain_hook.004",
+        "R101V3_curtain_hook.005",
+        "R101V3_curtain_hook.006",
+        "R101V3_curtain_hook.007",
+        "R101V3_curtain_hook.008",
+        "R101V3_curtain_hook.009",
+        "R101V3_curtain_hook.010",
+        "R101V3_curtain_hook.011",
+        "R101V3_curtain_rail",
+        "R101V3_glazing_gasket",
+        "R101V3_glazing_gasket.001",
+        "R101V3_opaque_pane_left",
+        "R101V3_opaque_pane_right",
+        "R101V3_sash_track",
+        "R101V3_sash_track.001",
+        "R101V3_slider_latch",
+        "R101V3_slider_meeting_profile",
+        "R101V3_slider_meeting_profile.001"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.199999809265137
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.017999999225139618
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.8799999952316284
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  },
+  "v4_owner_bounds": {
+    "REUSE__mattress_dirty__022": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.6789994239807129,
+          -0.9789827466011047,
+          0.014829999767243862
+        ],
+        [
+          0.6790004968643188,
+          0.978999137878418,
+          0.42214998602867126
+        ]
+      ],
+      "descendants": [
+        "R101V3_soft_pillow",
+        "R101V4_blanket_turned_hem",
+        "R101V4_continuous_folded_blanket",
+        "REUSE__mattress_dirty__022"
+      ],
+      "matrix_world": [
+        [
+          0.6800000071525574,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          0.0,
+          2.5199999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.3889999985694885
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "REUSE__folded_bedsheet_stack__027": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.23499999940395355,
+          -0.16899999976158142,
+          0.010099999606609344
+        ],
+        [
+          0.23499999940395355,
+          0.16899999976158142,
+          0.07449900358915329
+        ]
+      ],
+      "descendants": [
+        "R101V4_folded_sheet_leaf",
+        "R101V4_folded_sheet_leaf.001",
+        "R101V4_folded_sheet_leaf.002",
+        "REUSE__folded_bedsheet_stack__027"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.6579999923706055
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "REUSE__bedframe_single_institutional__021": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ],
+      "descendants": [
+        "REUSE__bedframe_single_institutional__021"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.5199999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.00800000037997961
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "REUSE__basin_pedestal__028": {
+      "aggregate_bounds_blender_m": [
+        [
+          -0.3050000071525574,
+          -0.22499999403953552,
+          0.004999999888241291
+        ],
+        [
+          0.3050000071525574,
+          0.22499999403953552,
+          1.033314824104309
+        ]
+      ],
+      "descendants": [
+        "REUSE__basin_pedestal__028"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.949999809265137
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          5.570000171661377
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.00800000037997961
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__solid_wall_4m__013": {
+      "aggregate_bounds_blender_m": [
+        [
+          -2.0,
+          -0.11300000548362732,
+          0.0
+        ],
+        [
+          2.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__solid_wall_4m__013"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__bathroom_partition_4m__019": {
+      "aggregate_bounds_blender_m": [
+        [
+          -2.0,
+          -0.08500000089406967,
+          0.0
+        ],
+        [
+          2.0,
+          0.08500000089406967,
+          2.799999952316284
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__bathroom_partition_4m__019"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          4.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__room_floor_4x6m__008": {
+      "aggregate_bounds_blender_m": [
+        [
+          -2.0,
+          -3.0,
+          -0.10000000149011612
+        ],
+        [
+          2.0,
+          3.0,
+          0.006500000134110451
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__room_floor_4x6m__008"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -6.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          3.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "INSTANCE__room_window_insert__016": {
+      "aggregate_bounds_blender_m": [
+        [
+          -1.034999966621399,
+          -0.1850000023841858,
+          -0.008499999530613422
+        ],
+        [
+          1.034999966621399,
+          0.06499999761581421,
+          1.2999999523162842
+        ]
+      ],
+      "descendants": [
+        "INSTANCE__room_window_insert__016",
+        "R101V3_continuous_curtain_-1",
+        "R101V3_continuous_curtain_1",
+        "R101V3_curtain_hook",
+        "R101V3_curtain_hook.001",
+        "R101V3_curtain_hook.002",
+        "R101V3_curtain_hook.003",
+        "R101V3_curtain_hook.004",
+        "R101V3_curtain_hook.005",
+        "R101V3_curtain_hook.006",
+        "R101V3_curtain_hook.007",
+        "R101V3_curtain_hook.008",
+        "R101V3_curtain_hook.009",
+        "R101V3_curtain_hook.010",
+        "R101V3_curtain_hook.011",
+        "R101V3_curtain_rail",
+        "R101V3_glazing_gasket",
+        "R101V3_glazing_gasket.001",
+        "R101V3_opaque_pane_left",
+        "R101V3_opaque_pane_right",
+        "R101V3_sash_track",
+        "R101V3_sash_track.001",
+        "R101V3_slider_latch",
+        "R101V3_slider_meeting_profile",
+        "R101V3_slider_meeting_profile.001"
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.199999809265137
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.017999999225139618
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.8799999952316284
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  }
+}

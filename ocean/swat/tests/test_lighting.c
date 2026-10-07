@@ -2,6 +2,7 @@
 // rotated/scaled model and immediate-mode equivalence, immutable authority.
 #include "lighting.h"
 #include "rlgl.h"
+#include "raymath.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +20,7 @@ static void environment(const char* key,const char* value) {
 static void scene(const SwatSim* s,bool cutaway) {
     (void)cutaway;
     for(int i=0;i<s->world.count;i++) {
-        const SwatObject* o=&s->world.objects[i]; if(!o->active) continue;
+        const SwatObject* o=&s->world.objects[i]; if(!o->active || o->part==SWAT_PART_LIGHT) continue;
         rlPushMatrix(); rlTranslatef(o->center.x,o->center.y,o->center.z);
         rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
         DrawCubeV((Vector3){0},(Vector3){2*o->half.x,2*o->half.y,2*o->half.z},i ? GRAY : WHITE);
@@ -75,6 +76,36 @@ static Image capture(SwatLighting* light,SwatEnvironmentArt* art,Camera3D camera
     Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image);
     UnloadRenderTexture(target); return image;
 }
+static void lamp_coverage_checks(SwatLighting* light,SwatEnvironmentArt* art,const char* directory) {
+    // A marker positions a point light at the origin; it has no rendered mesh.
+    // Receivers above and beside it must be shadowed, including a cube seam.
+    const Vector3 directions[]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,0,1}};
+    light->sun_energy=(Vector3){0};
+    for(int face=0;face<7;face++) {
+        Vector3 d=directions[face],center=Vector3Scale(d,3),half={1.1f,1.1f,1.1f};
+        if(face==6)half.z=.05f;else {if(d.x)half.x=.05f;if(d.y)half.y=.05f;if(d.z)half.z=.05f;}
+        sim.world=(SwatWorld){0};sim.world.room_count=1;sim.world.count=3;sim.tick+=4;
+        sim.world.rooms[0]=(SwatRoom){{0,0,0},{4,4,4},SWAT_DRYWALL,SWAT_CONCRETE};
+        sim.world.objects[0]=(SwatObject){.active=true,.center={center.x,center.y,center.z},.half={half.x,half.y,half.z},.material=SWAT_CONCRETE};
+        sim.world.objects[1]=(SwatObject){.active=true,.center={d.x*1.5f,d.y*1.5f,d.z*1.5f},.half={.65f,.65f,.65f},.material=SWAT_WOOD};
+        sim.world.objects[2]=(SwatObject){.active=true,.part=SWAT_PART_LIGHT,.center={0,.06f,0},.half={.01f,.05f,.01f}};
+        Camera3D camera={Vector3Scale(d,2.5f),center,d.y?(Vector3){0,0,1}:(Vector3){0,1,0},45,CAMERA_PERSPECTIVE};
+        if(face==6)camera.position=(Vector3){3,0,2.5f};
+        light->prepared=false;swat_lighting_prepare(light,&sim,camera.position,false,scene);
+        Image blocked=capture(light,art,camera,NULL);Color* a=LoadImageColors(blocked);
+        sim.world.objects[1].active=false;
+        swat_lighting_prepare(light,&sim,camera.position,false,scene);
+        Image open=capture(light,art,camera,NULL);Color* b=LoadImageColors(open);int shadowed=0;
+        for(int y=224;y<288;y++)for(int x=208;x<304;x++) {
+            int p=y*512+x;shadowed+=b[p].r+b[p].g+b[p].b>a[p].r+a[p].g+a[p].b+30;
+        }
+        printf("lamp direction %d shadowed receiver samples=%d / 6144\n",face,shadowed);fflush(stdout);
+        char path[4096];snprintf(path,sizeof(path),"%s/lamp-direction-%d.png",directory,face);assert(ExportImage(blocked,path));
+        assert(shadowed>6000);
+        UnloadImageColors(a);UnloadImageColors(b);UnloadImage(blocked);UnloadImage(open);
+    }
+    puts("PASS lamp coverage: all six directions and face seam retain occlusion without material normal maps");
+}
 static int static_calls;
 static bool fake_actor;
 static void counted_geometry(void* context,const SwatSim* s,bool cutaway) {
@@ -94,7 +125,7 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     Camera3D camera={{0,16,7},{0,0,0},{0,1,0},17,CAMERA_ORTHOGRAPHIC};
     light->prepared=false;static_calls=0;fake_actor=false;light->sun_energy=(Vector3){0};
     swat_lighting_prepare_split(light,&sim,(Vector3){-5,1.6f,5},false,counted_geometry,test_actors,NULL);
-    assert(static_calls==4);int updates=light->room_updates;
+    assert(static_calls==1+3*SWAT_LAMP_FACES);int updates=light->room_updates;
     Image original=capture(light,art,camera,NULL);Color* a=LoadImageColors(original);
     char path[4096];snprintf(path,sizeof(path),"%s/all-room-shadows.png",directory);assert(ExportImage(original,path));
     // Walk along and back from a row of visible rooms. The fixed inspection
@@ -125,7 +156,7 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     // Removing one blocker updates exactly that room immediately.
     sim.world.objects[3].active=false;static_calls=0;
     swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
-    assert(static_calls==2 && light->room_updates==updates+1);
+    assert(static_calls==1+SWAT_LAMP_FACES && light->room_updates==updates+1);
     Image removed=capture(light,art,camera,NULL);Color* b=LoadImageColors(removed);int changed=0;
     for(int i=0;i<512*512;i++)changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>12;
     assert(changed>50);
@@ -329,6 +360,7 @@ int main(int argc,char** argv) {
     swat_lighting_prepare(&light,&sim,(Vector3){1.1f,3,1.1f},false,scene);
     source_finish(&light,&art); // Original spec/gloss still works with the HDR environment.
     multi_room_checks(&light,&art,directory);
+    lamp_coverage_checks(&light,&art,directory);
     swat_lighting_close(&light);assert(!light.environment_atlas.id && !light.environment_sky.id);
     environment("SWAT_LIGHTING","0"); swat_lighting_init(&light); assert(!light.enabled && !light.sun.id);
     swat_lighting_close(&light); environment("SWAT_LIGHTING",NULL);

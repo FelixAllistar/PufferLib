@@ -1,0 +1,242 @@
+[
+  {
+    "owner": "REUSE__basin_pedestal__028",
+    "source_v3_bounds_blender": [
+      [
+        -0.3050000071525574,
+        -0.22499999403953552,
+        0.004999995231628418
+      ],
+      [
+        0.3050000071525574,
+        0.22499999403953552,
+        1.033314824104309
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -0.3050000071525574,
+        -0.22499999403953552,
+        0.004999999888241291
+      ],
+      [
+        0.3050000071525574,
+        0.22499999403953552,
+        1.033314824104309
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 0.0,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  },
+  {
+    "owner": "INSTANCE__bathroom_partition_4m__019",
+    "source_v3_bounds_blender": [
+      [
+        -2.0,
+        -0.08500000089406967,
+        0.0
+      ],
+      [
+        2.0,
+        0.08500000089406967,
+        2.799999952316284
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -2.0,
+        -0.08500000089406967,
+        0.0
+      ],
+      [
+        2.0,
+        0.08500000089406967,
+        2.799999952316284
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 0.0,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  },
+  {
+    "owner": "REUSE__bedframe_single_institutional__021",
+    "source_v3_bounds_blender": [
+      [
+        -0.5260000228881836,
+        -1.0679999589920044,
+        0.0
+      ],
+      [
+        0.5260000228881836,
+        1.0679999589920044,
+        1.0950000286102295
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -0.5260000228881836,
+        -1.0679999589920044,
+        0.0
+      ],
+      [
+        0.5260000228881836,
+        1.0679999589920044,
+        1.0950000286102295
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 0.0,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  },
+  {
+    "owner": "REUSE__folded_bedsheet_stack__027",
+    "source_v3_bounds_blender": [
+      [
+        -0.23742148280143738,
+        -0.17382186651229858,
+        0.0
+      ],
+      [
+        0.23742148280143738,
+        0.17382186651229858,
+        0.15042652189731598
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -0.23499999940395355,
+        -0.16899999976158142,
+        0.010099999606609344
+      ],
+      [
+        0.23499999940395355,
+        0.16899999976158142,
+        0.07449900358915329
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 0.0,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  },
+  {
+    "owner": "REUSE__mattress_dirty__022",
+    "source_v3_bounds_blender": [
+      [
+        -0.6789995431900024,
+        -0.9790000319480896,
+        0.014812052249908447
+      ],
+      [
+        0.6790004968643188,
+        0.9790000319480896,
+        0.4221677780151367
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -0.6789994239807129,
+        -0.9789827466011047,
+        0.014829999767243862
+      ],
+      [
+        0.6790004968643188,
+        0.978999137878418,
+        0.42214998602867126
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 4.76837158203125e-07,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  },
+  {
+    "owner": "INSTANCE__room_floor_4x6m__008",
+    "source_v3_bounds_blender": [
+      [
+        -2.0,
+        -3.0,
+        -0.10000000149011612
+      ],
+      [
+        2.0,
+        3.0,
+        0.006500000134110451
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -2.0,
+        -3.0,
+        -0.10000000149011612
+      ],
+      [
+        2.0,
+        3.0,
+        0.006500000134110451
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 0.0,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  },
+  {
+    "owner": "INSTANCE__room_window_insert__016",
+    "source_v3_bounds_blender": [
+      [
+        -1.034999966621399,
+        -0.1850000023841858,
+        -0.008499999530613422
+      ],
+      [
+        1.034999966621399,
+        0.06499999761581421,
+        1.2999999523162842
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -1.034999966621399,
+        -0.1850000023841858,
+        -0.008499999530613422
+      ],
+      [
+        1.034999966621399,
+        0.06499999761581421,
+        1.2999999523162842
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 0.0,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  },
+  {
+    "owner": "INSTANCE__solid_wall_4m__013",
+    "source_v3_bounds_blender": [
+      [
+        -2.0,
+        -0.11300000548362732,
+        0.0
+      ],
+      [
+        2.0,
+        0.09000000357627869,
+        2.799999952316284
+      ]
+    ],
+    "source_v4_bounds_blender": [
+      [
+        -2.0,
+        -0.11300000548362732,
+        0.0
+      ],
+      [
+        2.0,
+        0.09000000357627869,
+        2.799999952316284
+      ]
+    ],
+    "glb_source_max_bound_difference_m": 0.0,
+    "max_expansion_outside_v3_m": 0.0,
+    "TRS_exact_unchanged": true
+  }
+]

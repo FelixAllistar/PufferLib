@@ -52,6 +52,8 @@ static void room101_close(SwatEnvironmentArt* art) {
     art->room101_ready=false;
     for(int i=0;i<SWAT_ROOM101_V3_ASSETS;i++) {swat_art_model_close(art->room101_v3[i]);art->room101_v3[i]=(Model){0};}
     art->room101_v3_ready=false;
+    for(int i=0;i<SWAT_ROOM101_V4_ASSETS;i++) {swat_art_model_close(art->room101_v4[i]);art->room101_v4[i]=(Model){0};}
+    art->room101_v4_ready=false;
 }
 static bool room101_model_load(Model* model,float* scales,const char* file) {
     char path[4096];if(!asset_path(path,sizeof(path),file))return false;
@@ -102,6 +104,19 @@ static void room101_load(SwatEnvironmentArt* art) {
         }
     }
     art->room101_v3_ready=true;
+    if(enabled && !strcmp(enabled,"3"))return;
+    static const char* v4[SWAT_ROOM101_V4_ASSETS]={
+        "mattress_dirty_022_v4.glb","folded_bedsheet_stack_027_v4.glb","bedframe_single_institutional_021_v4.glb",
+        "basin_pedestal_028_v4.glb","solid_wall_4m_013_v4.glb","bathroom_partition_4m_019_v4.glb",
+        "room_floor_4x6m_008_v4.glb","room_window_insert_016_v4.glb"};
+    for(int i=0;i<SWAT_ROOM101_V4_ASSETS;i++) {
+        char file[256];snprintf(file,sizeof(file),"motel_room101_v4/%s",v4[i]);
+        if(!room101_model_load(&art->room101_v4[i],art->room101_v4_normal_scale[i],file)) {
+            for(int j=0;j<SWAT_ROOM101_V4_ASSETS;j++) {swat_art_model_close(art->room101_v4[j]);art->room101_v4[j]=(Model){0};}
+            return; // Atomic v4 fallback retains the complete v3 room.
+        }
+    }
+    art->room101_v4_ready=true;
 }
 
 void swat_environment_art_init(SwatEnvironmentArt* art) {
@@ -411,6 +426,7 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
             float normal_scale=1;
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(model==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(model==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
+            for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(model==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
             swat_lighting_material_scaled(art->lighting,material,true,normal_scale);
         }
         DrawMesh(model->meshes[i],material,transform);
@@ -422,6 +438,10 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     if(!world->motel || o->tag.index<1 || o->tag.index>SWAT_MOTEL_INSTANCES) return false;
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
     if(art->room101_ready) {
+        if(art->room101_v4_ready) {
+            static const int tags[SWAT_ROOM101_V4_ASSETS]={23,28,22,29,14,20,9,17};
+            for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++)if(o->tag.index==tags[r])return location_draw(art,o,p,&art->room101_v4[r],shadow,cutaway,false);
+        }
         if(art->room101_v3_ready) {
             static const int tags[10]={17,18,19,9,105,106,20,10,23,28};
             for(int r=0;r<10;r++)if(o->tag.index==tags[r])return location_draw(art,o,p,&art->room101_v3[r],shadow,cutaway,false);

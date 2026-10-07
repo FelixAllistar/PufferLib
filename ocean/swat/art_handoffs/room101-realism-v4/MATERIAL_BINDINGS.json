@@ -1,0 +1,499 @@
+{
+  "channel_contract": {
+    "basecolor": "sRGB texture multiplied by linear glTF baseColorFactor after decode; preserve alpha1",
+    "normal": "OpenGL +Y linear, tangent-space; preserve glTF normalTexture.scale",
+    "metallic_roughness": "linear image G=roughness, B=metallic, multiplied by respective scalar factors",
+    "occlusion": "separate linear R; only retained carpet uses strength .30; no AO baked into color",
+    "scalar_finishes": "Clean glazed/matte porcelain, enamel, metal and rubber use authored glTF scalar color/roughness/metallic factors; not scanned or calibrated",
+    "geometry": "All new GLBs include optional finite tangents. Engine may continue validated signed UV-derivative basis; a tangent-path change is not requested."
+  },
+  "materials": [
+    {
+      "name": "R101V3_bed_linen",
+      "occurrences": [
+        {
+          "file": "mattress_dirty_022_v4.glb",
+          "name": "R101V3_bed_linen",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0,
+            "scale": 0.1599999964237213
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "file": "folded_bedsheet_stack_027_v4.glb",
+          "name": "R101V3_bed_linen",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0,
+            "scale": 0.1599999964237213
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V3_folded_blanket",
+      "occurrences": [
+        {
+          "file": "mattress_dirty_022_v4.glb",
+          "name": "R101V3_folded_blanket",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.23999999463558197
+          },
+          "metallicRoughnessTexture": {
+            "index": 5
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bedframe_warm_cream_enamel",
+      "occurrences": [
+        {
+          "file": "bedframe_single_institutional_021_v4.glb",
+          "name": "R101V4_bedframe_warm_cream_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.4000000059604645,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bedframe_caster_rubber",
+      "occurrences": [
+        {
+          "file": "bedframe_single_institutional_021_v4.glb",
+          "name": "R101V4_bedframe_caster_rubber",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.7599999904632568,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bedframe_exposed_steel",
+      "occurrences": [
+        {
+          "file": "bedframe_single_institutional_021_v4.glb",
+          "name": "R101V4_bedframe_exposed_steel",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.41999998688697815,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bedframe_dark_rail_enamel",
+      "occurrences": [
+        {
+          "file": "bedframe_single_institutional_021_v4.glb",
+          "name": "R101V4_bedframe_dark_rail_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.46000000834465027,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bedframe_attachment_enamel",
+      "occurrences": [
+        {
+          "file": "bedframe_single_institutional_021_v4.glb",
+          "name": "R101V4_bedframe_attachment_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.4399999976158142,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_glazed_porcelain",
+      "occurrences": [
+        {
+          "file": "basin_pedestal_028_v4.glb",
+          "name": "R101V4_glazed_porcelain",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.2199999988079071,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_polished_chrome",
+      "occurrences": [
+        {
+          "file": "basin_pedestal_028_v4.glb",
+          "name": "R101V4_polished_chrome",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.18000000715255737,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_drain_interior",
+      "occurrences": [
+        {
+          "file": "basin_pedestal_028_v4.glb",
+          "name": "R101V4_drain_interior",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.6499999761581421,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "MC15_stucco",
+      "occurrences": [
+        {
+          "file": "solid_wall_4m_013_v4.glb",
+          "name": "MC15_stucco",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9599999785423279,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 0
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "MC15_concrete_dark",
+      "occurrences": [
+        {
+          "file": "solid_wall_4m_013_v4.glb",
+          "name": "MC15_concrete_dark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9700000286102295,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bathroom_fine_plaster",
+      "occurrences": [
+        {
+          "file": "solid_wall_4m_013_v4.glb",
+          "name": "R101V4_bathroom_fine_plaster",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 2,
+            "scale": 0.3499999940395355
+          },
+          "metallicRoughnessTexture": {
+            "index": 4
+          },
+          "baseColorTexture": {
+            "index": 3
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "file": "bathroom_partition_4m_019_v4.glb",
+          "name": "R101V4_bathroom_fine_plaster",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0,
+            "scale": 0.3499999940395355
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bathroom_wall_ceramic",
+      "occurrences": [
+        {
+          "file": "bathroom_partition_4m_019_v4.glb",
+          "name": "R101V4_bathroom_wall_ceramic",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.3199999928474426,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bathroom_cream_trim",
+      "occurrences": [
+        {
+          "file": "bathroom_partition_4m_019_v4.glb",
+          "name": "R101V4_bathroom_cream_trim",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.36000001430511475,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101_SCAN_fine_plaster",
+      "occurrences": [
+        {
+          "file": "bathroom_partition_4m_019_v4.glb",
+          "name": "R101_SCAN_fine_plaster",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.3499999940395355
+          },
+          "metallicRoughnessTexture": {
+            "index": 5
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "MC15_concrete",
+      "occurrences": [
+        {
+          "file": "room_floor_4x6m_008_v4.glb",
+          "name": "MC15_concrete",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9399999976158142,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 0
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V3_carpet",
+      "occurrences": [
+        {
+          "file": "room_floor_4x6m_008_v4.glb",
+          "name": "R101V3_carpet",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 1,
+            "scale": 0.18000000715255737
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 3
+          },
+          "occlusionTexture": {
+            "index": 2,
+            "strength": 0.30000001192092896
+          },
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_matte_bath_tile",
+      "occurrences": [
+        {
+          "file": "room_floor_4x6m_008_v4.glb",
+          "name": "R101V4_matte_bath_tile",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.47999998927116394,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V4_bath_grout",
+      "occurrences": [
+        {
+          "file": "room_floor_4x6m_008_v4.glb",
+          "name": "R101V4_bath_grout",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8799999952316284,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V3_curtain_linen",
+      "occurrences": [
+        {
+          "file": "room_window_insert_016_v4.glb",
+          "name": "R101V3_curtain_linen",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0,
+            "scale": 0.20000000298023224
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V3_satin_aluminum",
+      "occurrences": [
+        {
+          "file": "room_window_insert_016_v4.glb",
+          "name": "R101V3_satin_aluminum",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.3700000047683716,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V3_black_gasket",
+      "occurrences": [
+        {
+          "file": "room_window_insert_016_v4.glb",
+          "name": "R101V3_black_gasket",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.800000011920929,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101V3_opaque_glazing_compatibility",
+      "occurrences": [
+        {
+          "file": "room_window_insert_016_v4.glb",
+          "name": "R101V3_opaque_glazing_compatibility",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.17000000178813934,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "name": "R101_cream_enamel",
+      "occurrences": [
+        {
+          "file": "room_window_insert_016_v4.glb",
+          "name": "R101_cream_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.36000001430511475,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    }
+  ]
+}

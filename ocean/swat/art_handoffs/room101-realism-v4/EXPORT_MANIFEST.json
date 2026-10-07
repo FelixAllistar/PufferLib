@@ -1,0 +1,107 @@
+[
+  {
+    "file": "mattress_dirty_022_v4.glb",
+    "source_instance": "REUSE__mattress_dirty__022",
+    "sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+    "bytes": 5568388,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": [
+      "R101V3_soft_pillow",
+      "R101V4_blanket_turned_hem",
+      "R101V4_continuous_folded_blanket"
+    ]
+  },
+  {
+    "file": "folded_bedsheet_stack_027_v4.glb",
+    "source_instance": "REUSE__folded_bedsheet_stack__027",
+    "sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+    "bytes": 4302156,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": [
+      "R101V4_folded_sheet_leaf",
+      "R101V4_folded_sheet_leaf.001",
+      "R101V4_folded_sheet_leaf.002"
+    ]
+  },
+  {
+    "file": "bedframe_single_institutional_021_v4.glb",
+    "source_instance": "REUSE__bedframe_single_institutional__021",
+    "sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+    "bytes": 362288,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": []
+  },
+  {
+    "file": "basin_pedestal_028_v4.glb",
+    "source_instance": "REUSE__basin_pedestal__028",
+    "sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+    "bytes": 160796,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": []
+  },
+  {
+    "file": "solid_wall_4m_013_v4.glb",
+    "source_instance": "INSTANCE__solid_wall_4m__013",
+    "sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+    "bytes": 4192532,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": []
+  },
+  {
+    "file": "bathroom_partition_4m_019_v4.glb",
+    "source_instance": "INSTANCE__bathroom_partition_4m__019",
+    "sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+    "bytes": 4111440,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": []
+  },
+  {
+    "file": "room_floor_4x6m_008_v4.glb",
+    "source_instance": "INSTANCE__room_floor_4x6m__008",
+    "sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+    "bytes": 4728908,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": []
+  },
+  {
+    "file": "room_window_insert_016_v4.glb",
+    "source_instance": "INSTANCE__room_window_insert__016",
+    "sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+    "bytes": 4755968,
+    "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+    "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+    "selected_children": [
+      "R101V3_continuous_curtain_-1",
+      "R101V3_continuous_curtain_1",
+      "R101V3_curtain_hook",
+      "R101V3_curtain_hook.001",
+      "R101V3_curtain_hook.002",
+      "R101V3_curtain_hook.003",
+      "R101V3_curtain_hook.004",
+      "R101V3_curtain_hook.005",
+      "R101V3_curtain_hook.006",
+      "R101V3_curtain_hook.007",
+      "R101V3_curtain_hook.008",
+      "R101V3_curtain_hook.009",
+      "R101V3_curtain_hook.010",
+      "R101V3_curtain_hook.011",
+      "R101V3_curtain_rail",
+      "R101V3_glazing_gasket",
+      "R101V3_glazing_gasket.001",
+      "R101V3_opaque_pane_left",
+      "R101V3_opaque_pane_right",
+      "R101V3_sash_track",
+      "R101V3_sash_track.001",
+      "R101V3_slider_latch",
+      "R101V3_slider_meeting_profile",
+      "R101V3_slider_meeting_profile.001"
+    ]
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "R101V3_continuous_curtain_-1": {
+    "exported_vertices_before": 1394,
+    "exported_vertices_after": 1842,
+    "triangles_before": 2784,
+    "triangles_after": 2784,
+    "exact_unique_local_positions_equal": true,
+    "uv_degenerate_triangles_after": 0,
+    "uv_triangle_area_min_after": 5.4394968174165115e-05,
+    "finite_attributes": true,
+    "tangents_exported": true,
+    "max_abs_tangent_dot_normal": 0.00010676868259906769,
+    "normal_scale": 0.20000000298023224,
+    "doubleSided": true,
+    "metallicFactor": 0
+  },
+  "R101V3_continuous_curtain_1": {
+    "exported_vertices_before": 1394,
+    "exported_vertices_after": 1842,
+    "triangles_before": 2784,
+    "triangles_after": 2784,
+    "exact_unique_local_positions_equal": true,
+    "uv_degenerate_triangles_after": 0,
+    "uv_triangle_area_min_after": 5.4394968174165115e-05,
+    "finite_attributes": true,
+    "tangents_exported": true,
+    "max_abs_tangent_dot_normal": 0.00010676868259906769,
+    "normal_scale": 0.20000000298023224,
+    "doubleSided": true,
+    "metallicFactor": 0
+  },
+  "unchanged_embedded_texture_hashes": {
+    "linen_normal_gl": true,
+    "curtain_basecolor": true,
+    "linen_roughness": true
+  }
+}

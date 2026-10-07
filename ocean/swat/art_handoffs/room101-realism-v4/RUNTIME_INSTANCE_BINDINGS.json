@@ -1,0 +1,304 @@
+{
+  "baseline": "Engine integrated v3, Slack1791388637.415749, exact prior commit not supplied in that review",
+  "basis": "source metres Z-up; runtime metres Y-up",
+  "tag_rule": "source assembly index + 1, confirmed by provided original engine recipe",
+  "records": [
+    {
+      "file": "mattress_dirty_022_v4.glb",
+      "source_instance": "REUSE__mattress_dirty__022",
+      "sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+      "bytes": 5568388,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [
+        "R101V3_soft_pillow",
+        "R101V4_blanket_turned_hem",
+        "R101V4_continuous_folded_blanket"
+      ],
+      "source_assembly_index": 22,
+      "engine_tag_index": 23,
+      "original_asset_index": 25,
+      "original_assembly": {
+        "object": "REUSE__mattress_dirty__022",
+        "asset_id": "mattress_dirty",
+        "position_source_m": [
+          -5.17,
+          2.52,
+          0.389
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          0.6800000071525574,
+          0.9800000190734863,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{25,{-5.17f,0.389f,-2.52f},{0.68000001f,1.0f,0.98000002f},0.0f,SWAT_WOOD,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": "mattress_dirty_022_v3.glb",
+      "prior_default": "pinned v3 override"
+    },
+    {
+      "file": "folded_bedsheet_stack_027_v4.glb",
+      "source_instance": "REUSE__folded_bedsheet_stack__027",
+      "sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+      "bytes": 4302156,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [
+        "R101V4_folded_sheet_leaf",
+        "R101V4_folded_sheet_leaf.001",
+        "R101V4_folded_sheet_leaf.002"
+      ],
+      "source_assembly_index": 27,
+      "engine_tag_index": 28,
+      "original_asset_index": 36,
+      "original_assembly": {
+        "object": "REUSE__folded_bedsheet_stack__027",
+        "asset_id": "lb11_folded_bedsheet_stack",
+        "position_source_m": [
+          -5.17,
+          2.5,
+          0.658
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{36,{-5.17f,0.658f,-2.5f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": "folded_bedsheet_stack_027_v3.glb",
+      "prior_default": "pinned v3 override"
+    },
+    {
+      "file": "bedframe_single_institutional_021_v4.glb",
+      "source_instance": "REUSE__bedframe_single_institutional__021",
+      "sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+      "bytes": 362288,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [],
+      "source_assembly_index": 21,
+      "engine_tag_index": 22,
+      "original_asset_index": 24,
+      "original_assembly": {
+        "object": "REUSE__bedframe_single_institutional__021",
+        "asset_id": "bedframe_single_institutional",
+        "position_source_m": [
+          -5.17,
+          2.52,
+          0.008
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{24,{-5.17f,0.008f,-2.52f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": null,
+      "prior_default": "original asset bank for Room101 instance only"
+    },
+    {
+      "file": "basin_pedestal_028_v4.glb",
+      "source_instance": "REUSE__basin_pedestal__028",
+      "sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+      "bytes": 160796,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [],
+      "source_assembly_index": 28,
+      "engine_tag_index": 29,
+      "original_asset_index": 29,
+      "original_assembly": {
+        "object": "REUSE__basin_pedestal__028",
+        "asset_id": "basin_pedestal",
+        "position_source_m": [
+          -6.95,
+          5.57,
+          0.008
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{29,{-6.95f,0.008f,-5.57f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": null,
+      "prior_default": "original asset bank for Room101 instance only"
+    },
+    {
+      "file": "solid_wall_4m_013_v4.glb",
+      "source_instance": "INSTANCE__solid_wall_4m__013",
+      "sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+      "bytes": 4192532,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [],
+      "source_assembly_index": 13,
+      "engine_tag_index": 14,
+      "original_asset_index": 1,
+      "original_assembly": {
+        "object": "INSTANCE__solid_wall_4m__013",
+        "asset_id": "mc15_solid_wall_4m",
+        "position_source_m": [
+          -6,
+          6,
+          0
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{1,{-6.0f,0.0f,-6.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_PLASTER,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": null,
+      "prior_default": "original asset bank for Room101 instance only"
+    },
+    {
+      "file": "bathroom_partition_4m_019_v4.glb",
+      "source_instance": "INSTANCE__bathroom_partition_4m__019",
+      "sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+      "bytes": 4111440,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [],
+      "source_assembly_index": 19,
+      "engine_tag_index": 20,
+      "original_asset_index": 22,
+      "original_assembly": {
+        "object": "INSTANCE__bathroom_partition_4m__019",
+        "asset_id": "mc15_bathroom_partition_4m",
+        "position_source_m": [
+          -6,
+          4,
+          0
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{22,{-6.0f,0.0f,-4.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_PLASTER,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": "bathroom_partition_4m_019_v3.glb",
+      "prior_default": "pinned v3 override"
+    },
+    {
+      "file": "room_floor_4x6m_008_v4.glb",
+      "source_instance": "INSTANCE__room_floor_4x6m__008",
+      "sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+      "bytes": 4728908,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [],
+      "source_assembly_index": 8,
+      "engine_tag_index": 9,
+      "original_asset_index": 4,
+      "original_assembly": {
+        "object": "INSTANCE__room_floor_4x6m__008",
+        "asset_id": "mc15_room_floor_4x6m",
+        "position_source_m": [
+          -6,
+          3,
+          0
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{4,{-6.0f,0.0f,-3.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_CONCRETE,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": "room_floor_4x6m_008_v3.glb",
+      "prior_default": "pinned v3 override"
+    },
+    {
+      "file": "room_window_insert_016_v4.glb",
+      "source_instance": "INSTANCE__room_window_insert__016",
+      "sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+      "bytes": 4755968,
+      "root_datum": "original identity local datum; existing instance TRS applied exactly once",
+      "collider": "none exported; retain original compiled collision/AI/damage ID and parent ownership",
+      "selected_children": [
+        "R101V3_continuous_curtain_-1",
+        "R101V3_continuous_curtain_1",
+        "R101V3_curtain_hook",
+        "R101V3_curtain_hook.001",
+        "R101V3_curtain_hook.002",
+        "R101V3_curtain_hook.003",
+        "R101V3_curtain_hook.004",
+        "R101V3_curtain_hook.005",
+        "R101V3_curtain_hook.006",
+        "R101V3_curtain_hook.007",
+        "R101V3_curtain_hook.008",
+        "R101V3_curtain_hook.009",
+        "R101V3_curtain_hook.010",
+        "R101V3_curtain_hook.011",
+        "R101V3_curtain_rail",
+        "R101V3_glazing_gasket",
+        "R101V3_glazing_gasket.001",
+        "R101V3_opaque_pane_left",
+        "R101V3_opaque_pane_right",
+        "R101V3_sash_track",
+        "R101V3_sash_track.001",
+        "R101V3_slider_latch",
+        "R101V3_slider_meeting_profile",
+        "R101V3_slider_meeting_profile.001"
+      ],
+      "source_assembly_index": 16,
+      "engine_tag_index": 17,
+      "original_asset_index": 10,
+      "original_assembly": {
+        "object": "INSTANCE__room_window_insert__016",
+        "asset_id": "mc15_room_window_insert",
+        "position_source_m": [
+          -5.2,
+          -0.018,
+          0.88
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{10,{-5.2f,0.88f,0.018f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,false},",
+      "replacement_rule": "replace all render geometry under this existing instance, including its prior authored child details; never draw both versions",
+      "prior_v3_runtime_file": "room_window_insert_016_v3.glb",
+      "prior_default": "pinned v3 override"
+    }
+  ]
+}

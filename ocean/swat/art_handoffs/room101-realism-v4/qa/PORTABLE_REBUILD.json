@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "method": "Fresh independent directory, pinned packed v3 blend plus four module scripts; no repo or original working directory dependence",
+  "blender": "4.3.2",
+  "runtime_texture_derivation": "No v4 pixel changes; carried unchanged v2/v3 derived PNGs and original highres sources",
+  "fixed_before_seal": "Unstable BMFace set iteration sorted by stable source face index; only index ordering changed, exact triangle/winding multisets and all attributes unchanged",
+  "files": [
+    {
+      "file": "basin_pedestal_028_v4.glb",
+      "candidate_sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+      "portable_rebuild_sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+      "identical": true
+    },
+    {
+      "file": "bathroom_partition_4m_019_v4.glb",
+      "candidate_sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+      "portable_rebuild_sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+      "identical": true
+    },
+    {
+      "file": "bedframe_single_institutional_021_v4.glb",
+      "candidate_sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+      "portable_rebuild_sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+      "identical": true
+    },
+    {
+      "file": "folded_bedsheet_stack_027_v4.glb",
+      "candidate_sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+      "portable_rebuild_sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+      "identical": true
+    },
+    {
+      "file": "mattress_dirty_022_v4.glb",
+      "candidate_sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+      "portable_rebuild_sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+      "identical": true
+    },
+    {
+      "file": "room_floor_4x6m_008_v4.glb",
+      "candidate_sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+      "portable_rebuild_sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+      "identical": true
+    },
+    {
+      "file": "room_window_insert_016_v4.glb",
+      "candidate_sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+      "portable_rebuild_sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+      "identical": true
+    },
+    {
+      "file": "solid_wall_4m_013_v4.glb",
+      "candidate_sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+      "portable_rebuild_sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+      "identical": true
+    }
+  ]
+}

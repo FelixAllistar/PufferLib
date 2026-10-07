@@ -1,0 +1,142 @@
+[
+  {
+    "view": "entrance",
+    "eye_engine_Yup_m": [
+      -6.7,
+      1.64,
+      4.2
+    ],
+    "target_engine_Yup_m": [
+      -6.95,
+      1.26,
+      0
+    ],
+    "up_engine": [
+      0,
+      1,
+      0
+    ],
+    "vertical_fov_deg": 45,
+    "resolution": [
+      960,
+      800
+    ],
+    "eye_source_Zup_m": [
+      -6.699999809265137,
+      -4.199999809265137,
+      1.6399999856948853
+    ],
+    "target_source_Zup_m": [
+      -6.949999809265137,
+      0.0,
+      1.2599999904632568
+    ],
+    "door_pose_deg": 0,
+    "source_light_note": "Identical pinned v3 Blender world/lamps, AgX Medium High Contrast +0.7EV for baseline and candidate. Not current native HDR engine light parity. Engine bed/window pose100; bathroom native door pose unspecified."
+  },
+  {
+    "view": "bathroom",
+    "eye_engine_Yup_m": [
+      -7.2,
+      1.62,
+      -2.1
+    ],
+    "target_engine_Yup_m": [
+      -6.45,
+      1.22,
+      -5.2
+    ],
+    "up_engine": [
+      0,
+      1,
+      0
+    ],
+    "vertical_fov_deg": 64,
+    "resolution": [
+      960,
+      800
+    ],
+    "eye_source_Zup_m": [
+      -7.199999809265137,
+      2.0999999046325684,
+      1.6200000047683716
+    ],
+    "target_source_Zup_m": [
+      -6.449999809265137,
+      5.199999809265137,
+      1.2200000286102295
+    ],
+    "door_pose_deg": 100,
+    "source_light_note": "Identical pinned v3 Blender world/lamps, AgX Medium High Contrast +0.7EV for baseline and candidate. Not current native HDR engine light parity. Engine bed/window pose100; bathroom native door pose unspecified."
+  },
+  {
+    "view": "bed",
+    "eye_engine_Yup_m": [
+      -7.15,
+      1.62,
+      -0.67
+    ],
+    "target_engine_Yup_m": [
+      -5.74,
+      1.05,
+      -2.93
+    ],
+    "up_engine": [
+      0,
+      1,
+      0
+    ],
+    "vertical_fov_deg": 59.863,
+    "resolution": [
+      960,
+      800
+    ],
+    "eye_source_Zup_m": [
+      -7.150000095367432,
+      0.6700000166893005,
+      1.6200000047683716
+    ],
+    "target_source_Zup_m": [
+      -5.739999771118164,
+      2.930000066757202,
+      1.0499999523162842
+    ],
+    "door_pose_deg": 100,
+    "source_light_note": "Identical pinned v3 Blender world/lamps, AgX Medium High Contrast +0.7EV for baseline and candidate. Not current native HDR engine light parity. Engine bed/window pose100; bathroom native door pose unspecified."
+  },
+  {
+    "view": "window",
+    "eye_engine_Yup_m": [
+      -6.35,
+      1.55,
+      -2.6
+    ],
+    "target_engine_Yup_m": [
+      -5.45,
+      1.45,
+      0
+    ],
+    "up_engine": [
+      0,
+      1,
+      0
+    ],
+    "vertical_fov_deg": 45.781,
+    "resolution": [
+      960,
+      800
+    ],
+    "eye_source_Zup_m": [
+      -6.349999904632568,
+      2.5999999046325684,
+      1.5499999523162842
+    ],
+    "target_source_Zup_m": [
+      -5.449999809265137,
+      0.0,
+      1.4500000476837158
+    ],
+    "door_pose_deg": 100,
+    "source_light_note": "Identical pinned v3 Blender world/lamps, AgX Medium High Contrast +0.7EV for baseline and candidate. Not current native HDR engine light parity. Engine bed/window pose100; bathroom native door pose unspecified."
+  }
+]

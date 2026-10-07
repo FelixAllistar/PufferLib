@@ -22,6 +22,7 @@ swat_needs_build() {
                   ocean/swat/assets/environment/motel_v1/*.glb \
                   ocean/swat/assets/environment/motel_room101_v2/*.glb \
                   ocean/swat/assets/environment/motel_room101_v3/*.glb \
+                  ocean/swat/assets/environment/motel_room101_v4/*.glb \
                   ocean/swat/assets/environment/storefront_v1/*.glb \
                   ocean/swat/assets/characters/*.glb ocean/swat/assets/characters/upper_gear_f/*.glb \
                   ocean/swat/assets/characters/textures/*.png \

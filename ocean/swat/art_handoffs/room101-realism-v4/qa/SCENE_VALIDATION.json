@@ -1,0 +1,1295 @@
+{
+  "status": "passed",
+  "scope": "source visual envelope/TRS/untargeted art only; native engine tests pending",
+  "targets": [
+    {
+      "owner": "REUSE__mattress_dirty__022",
+      "bounds_before": [
+        [
+          -0.6790000200271606,
+          -0.9790000319480896,
+          0.014812052249908447
+        ],
+        [
+          0.6790000200271606,
+          0.9790000319480896,
+          0.4221677780151367
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -0.6789994239807129,
+          -0.9789827466011047,
+          0.014829999767243862
+        ],
+        [
+          0.6790004968643188,
+          0.978999137878418,
+          0.42214998602867126
+        ]
+      ],
+      "max_envelope_violation_m": 4.76837158203125e-07,
+      "max_TRS_difference": 0.0,
+      "child_count": 3,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    },
+    {
+      "owner": "REUSE__folded_bedsheet_stack__027",
+      "bounds_before": [
+        [
+          -0.23742148280143738,
+          -0.17382186651229858,
+          0.0
+        ],
+        [
+          0.23742148280143738,
+          0.17382186651229858,
+          0.15042652189731598
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -0.23499999940395355,
+          -0.16899999976158142,
+          0.010099999606609344
+        ],
+        [
+          0.23499999940395355,
+          0.16899999976158142,
+          0.07449900358915329
+        ]
+      ],
+      "max_envelope_violation_m": 0,
+      "max_TRS_difference": 0.0,
+      "child_count": 3,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    },
+    {
+      "owner": "REUSE__bedframe_single_institutional__021",
+      "bounds_before": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ],
+      "max_envelope_violation_m": 0.0,
+      "max_TRS_difference": 0.0,
+      "child_count": 0,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    },
+    {
+      "owner": "REUSE__basin_pedestal__028",
+      "bounds_before": [
+        [
+          -0.3050000071525574,
+          -0.22499999403953552,
+          0.004999995231628418
+        ],
+        [
+          0.3050000071525574,
+          0.22499999403953552,
+          1.033314824104309
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -0.3050000071525574,
+          -0.22499999403953552,
+          0.004999999888241291
+        ],
+        [
+          0.3050000071525574,
+          0.22499999403953552,
+          1.033314824104309
+        ]
+      ],
+      "max_envelope_violation_m": 0.0,
+      "max_TRS_difference": 0.0,
+      "child_count": 0,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    },
+    {
+      "owner": "INSTANCE__solid_wall_4m__013",
+      "bounds_before": [
+        [
+          -2.0,
+          -0.11300000548362732,
+          0.0
+        ],
+        [
+          2.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -2.0,
+          -0.11300000548362732,
+          0.0
+        ],
+        [
+          2.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "max_envelope_violation_m": 0.0,
+      "max_TRS_difference": 0.0,
+      "child_count": 0,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    },
+    {
+      "owner": "INSTANCE__bathroom_partition_4m__019",
+      "bounds_before": [
+        [
+          -2.0,
+          -0.08500000089406967,
+          0.0
+        ],
+        [
+          2.0,
+          0.08500000089406967,
+          2.799999952316284
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -2.0,
+          -0.08500000089406967,
+          0.0
+        ],
+        [
+          2.0,
+          0.08500000089406967,
+          2.799999952316284
+        ]
+      ],
+      "max_envelope_violation_m": 0.0,
+      "max_TRS_difference": 0.0,
+      "child_count": 0,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    },
+    {
+      "owner": "INSTANCE__room_floor_4x6m__008",
+      "bounds_before": [
+        [
+          -2.0,
+          -3.0,
+          -0.10000000149011612
+        ],
+        [
+          2.0,
+          3.0,
+          0.006500000134110451
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -2.0,
+          -3.0,
+          -0.10000000149011612
+        ],
+        [
+          2.0,
+          3.0,
+          0.006500000134110451
+        ]
+      ],
+      "max_envelope_violation_m": 0.0,
+      "max_TRS_difference": 0.0,
+      "child_count": 0,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    },
+    {
+      "owner": "INSTANCE__room_window_insert__016",
+      "bounds_before": [
+        [
+          -1.034999966621399,
+          -0.1850000023841858,
+          -0.008499999530613422
+        ],
+        [
+          1.034999966621399,
+          0.06499999761581421,
+          1.2999999523162842
+        ]
+      ],
+      "used_aggregate_bounds_after": [
+        [
+          -1.034999966621399,
+          -0.1850000023841858,
+          -0.008499999530613422
+        ],
+        [
+          1.034999966621399,
+          0.06499999761581421,
+          1.2999999523162842
+        ]
+      ],
+      "max_envelope_violation_m": 0.0,
+      "max_TRS_difference": 0.0,
+      "child_count": 24,
+      "geometry_may_change": "documented in CHANGES.json, engine authority must remain pinned"
+    }
+  ],
+  "untargeted_mesh_count": 256,
+  "untargeted_meshes": [
+    {
+      "name": "bathroom_partition_4m",
+      "unchanged": true
+    },
+    {
+      "name": "canopy_post",
+      "unchanged": true
+    },
+    {
+      "name": "corner_pier",
+      "unchanged": true
+    },
+    {
+      "name": "end_wall_6m",
+      "unchanged": true
+    },
+    {
+      "name": "flat_roof_4x6m",
+      "unchanged": true
+    },
+    {
+      "name": "gallery_access_ramp",
+      "unchanged": true
+    },
+    {
+      "name": "gallery_canopy_4m",
+      "unchanged": true
+    },
+    {
+      "name": "gallery_railing_2m",
+      "unchanged": true
+    },
+    {
+      "name": "gallery_walkway_4m",
+      "unchanged": true
+    },
+    {
+      "name": "ice_machine",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__bathroom_partition_4m__043",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__bathroom_partition_4m__067",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__bathroom_partition_4m__091",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__canopy_post__113",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__canopy_post__114",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__canopy_post__115",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__canopy_post__116",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__canopy_post__117",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__canopy_post__118",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__corner_pier__109",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__corner_pier__110",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__corner_pier__111",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__corner_pier__112",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__end_wall_6m__103",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__end_wall_6m__104",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__end_wall_6m__105",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__end_wall_6m__106",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__end_wall_6m__107",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__end_wall_6m__108",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__flat_roof_4x6m__002",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__flat_roof_4x6m__009",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__flat_roof_4x6m__033",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__flat_roof_4x6m__057",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__flat_roof_4x6m__081",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__flat_roof_4x6m__127",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_access_ramp__145",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_canopy_4m__004",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_canopy_4m__011",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_canopy_4m__035",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_canopy_4m__059",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_canopy_4m__083",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_railing_2m__138",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_walkway_4m__003",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_walkway_4m__010",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_walkway_4m__034",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_walkway_4m__058",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__gallery_walkway_4m__082",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__ice_machine__136",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__lobby_glazed_facade__005",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__parking_wheel_stop__140",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__parking_wheel_stop__141",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__parking_wheel_stop__142",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__parking_wheel_stop__143",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__parking_wheel_stop__144",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__reception_counter__120",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__reception_key_cubbies__122",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__roadside_sign__139",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_door_leaf__015",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_door_leaf__039",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_door_leaf__063",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_door_leaf__087",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_door_leaf__119",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_facade_4m__012",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_facade_4m__036",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_facade_4m__060",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_facade_4m__084",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_floor_4x6m__001",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_floor_4x6m__032",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_floor_4x6m__056",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_floor_4x6m__080",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_floor_4x6m__126",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_number_plaque__018",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_number_plaque__042",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_number_plaque__066",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_number_plaque__090",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_window_insert__040",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_window_insert__064",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__room_window_insert__088",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__service_doorway_4m__006",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__service_doorway_4m__130",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__solid_wall_4m__037",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__solid_wall_4m__061",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__solid_wall_4m__085",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__solid_wall_4m__128",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__solid_wall_4m__129",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__through_wall_ac__017",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__through_wall_ac__041",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__through_wall_ac__065",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__through_wall_ac__089",
+      "unchanged": true
+    },
+    {
+      "name": "INSTANCE__vending_machine__137",
+      "unchanged": true
+    },
+    {
+      "name": "lobby_glazed_facade",
+      "unchanged": true
+    },
+    {
+      "name": "parking_wheel_stop",
+      "unchanged": true
+    },
+    {
+      "name": "R101_casing_fixing",
+      "unchanged": true
+    },
+    {
+      "name": "R101_casing_fixing.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101_casing_fixing.002",
+      "unchanged": true
+    },
+    {
+      "name": "R101_casing_fixing.003",
+      "unchanged": true
+    },
+    {
+      "name": "R101_casing_fixing.004",
+      "unchanged": true
+    },
+    {
+      "name": "R101_casing_fixing.005",
+      "unchanged": true
+    },
+    {
+      "name": "R101_flush_threshold_plate",
+      "unchanged": true
+    },
+    {
+      "name": "R101_head_casing",
+      "unchanged": true
+    },
+    {
+      "name": "R101_hinge_casing",
+      "unchanged": true
+    },
+    {
+      "name": "R101_hinge_outer_caulk",
+      "unchanged": true
+    },
+    {
+      "name": "R101_kickplate_fixing",
+      "unchanged": true
+    },
+    {
+      "name": "R101_kickplate_fixing.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101_kickplate_fixing.002",
+      "unchanged": true
+    },
+    {
+      "name": "R101_kickplate_fixing.003",
+      "unchanged": true
+    },
+    {
+      "name": "R101_latch_casing",
+      "unchanged": true
+    },
+    {
+      "name": "R101_latch_fixing",
+      "unchanged": true
+    },
+    {
+      "name": "R101_latch_fixing.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101_latch_outer_caulk",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge.002",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge.003",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge.004",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge.005",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge.006",
+      "unchanged": true
+    },
+    {
+      "name": "R101_panel_edge.007",
+      "unchanged": true
+    },
+    {
+      "name": "R101_plaque_fixing",
+      "unchanged": true
+    },
+    {
+      "name": "R101_plaque_fixing.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_captive_fastener",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_captive_fastener.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_captive_fastener.002",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_captive_fastener.003",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_drain_slot_visual",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_drain_slot_visual.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.002",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.003",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.004",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.005",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.006",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.007",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.008",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.009",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.010",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.011",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.012",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.013",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.014",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.015",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.016",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.017",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.018",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.019",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.020",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.021",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.022",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_folded_louvre.023",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_grille_frame",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_grille_frame.001",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_grille_frame.002",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_grille_frame.003",
+      "unchanged": true
+    },
+    {
+      "name": "R101V3_AC_vent_recess",
+      "unchanged": true
+    },
+    {
+      "name": "reception_counter",
+      "unchanged": true
+    },
+    {
+      "name": "reception_key_cubbies",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__basin_pedestal__052",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__basin_pedestal__076",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__basin_pedestal__100",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__bathtub_old__030",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__bathtub_old__054",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__bathtub_old__078",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__bathtub_old__102",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__bedframe_single_institutional__045",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__bedframe_single_institutional__069",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__bedframe_single_institutional__093",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__chair_metal_folding__024",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__chair_metal_folding__048",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__chair_metal_folding__072",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__chair_metal_folding__096",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__chair_metal_folding__125",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__chipped_coffee_mug__124",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__desk__023",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__desk__047",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__desk__071",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__desk__095",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__desk__134",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__folded_bedsheet_stack__051",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__folded_bedsheet_stack__075",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__folded_bedsheet_stack__099",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__folded_bedsheet_stack__135",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__front_load_washer__132",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__000",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__007",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__014",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__031",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__038",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__055",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__062",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__079",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__086",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__121",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__frosted_dome_light__131",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__mattress_dirty__046",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__mattress_dirty__070",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__mattress_dirty__094",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__ribbed_glass_wall_sconce__020",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__ribbed_glass_wall_sconce__044",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__ribbed_glass_wall_sconce__068",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__ribbed_glass_wall_sconce__092",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__rotary_telephone__123",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__toilet_old__029",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__toilet_old__053",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__toilet_old__077",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__toilet_old__101",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__tv_crt__025",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__tv_crt__049",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__tv_crt__073",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__tv_crt__097",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__twin_bell_alarm_clock__026",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__twin_bell_alarm_clock__050",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__twin_bell_alarm_clock__074",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__twin_bell_alarm_clock__098",
+      "unchanged": true
+    },
+    {
+      "name": "REUSE__vented_tumble_dryer__133",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_basin_pedestal",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_bathtub_old",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_bedframe_single_institutional",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_chair_metal_folding",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_chipped_coffee_mug",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_desk",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_folded_bedsheet_stack",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_front_load_washer",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_frosted_dome_light",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_mattress_dirty",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_ribbed_glass_wall_sconce",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_rotary_telephone",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_toilet_old",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_tv_crt",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_twin_bell_alarm_clock",
+      "unchanged": true
+    },
+    {
+      "name": "REUSED_vented_tumble_dryer",
+      "unchanged": true
+    },
+    {
+      "name": "roadside_sign",
+      "unchanged": true
+    },
+    {
+      "name": "room_door_leaf",
+      "unchanged": true
+    },
+    {
+      "name": "room_facade_4m",
+      "unchanged": true
+    },
+    {
+      "name": "room_floor_4x6m",
+      "unchanged": true
+    },
+    {
+      "name": "room_number_plaque",
+      "unchanged": true
+    },
+    {
+      "name": "room_window_insert",
+      "unchanged": true
+    },
+    {
+      "name": "service_doorway_4m",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_asphalt_court",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_parking_stripe",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_parking_stripe.001",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_parking_stripe.002",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_parking_stripe.003",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_parking_stripe.004",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_parking_stripe.005",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_roof_drain",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_roof_drain.001",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_roof_drain.002",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_roof_drain.003",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_roof_drain.004",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_roof_drain.005",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_roof_drain.006",
+      "unchanged": true
+    },
+    {
+      "name": "SITE_utility_pad",
+      "unchanged": true
+    },
+    {
+      "name": "solid_wall_4m",
+      "unchanged": true
+    },
+    {
+      "name": "through_wall_ac",
+      "unchanged": true
+    },
+    {
+      "name": "vending_machine",
+      "unchanged": true
+    }
+  ],
+  "opaque_panes": [
+    {
+      "node": "R101V3_opaque_pane_left",
+      "alpha": 1.0,
+      "transmission": 0.0,
+      "parent": "INSTANCE__room_window_insert__016"
+    },
+    {
+      "node": "R101V3_opaque_pane_right",
+      "alpha": 1.0,
+      "transmission": 0.0,
+      "parent": "INSTANCE__room_window_insert__016"
+    }
+  ]
+}

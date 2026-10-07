@@ -1,0 +1,97 @@
+{
+  "owners": [
+    "INSTANCE__room_window_insert__016"
+  ],
+  "changes": [
+    {
+      "owner": "INSTANCE__room_window_insert__016",
+      "objects": [
+        "R101V3_continuous_curtain_-1",
+        "R101V3_continuous_curtain_1"
+      ],
+      "action": "Split cloth/rim shading boundaries, flat-shade existing 1 mm rims, and unwrap rims to metric perimeter strips",
+      "scope": "No position, topology, cloth-face UV, transform, map, strength, opacity, collision, damage or ownership changes",
+      "visual_limit": "Corrects confirmed rim shading/UV defects only; does not claim to fix engine room-shadow bands"
+    }
+  ],
+  "materials": [],
+  "diagnostics": {
+    "R101V3_continuous_curtain_-1": {
+      "before": {
+        "zero_uv_area_faces": 112,
+        "zero_uv_area_rim_faces": 112,
+        "main_front_vertical_row_normal_delta_max_degrees": 53.78971313945837,
+        "main_front_vertical_row_normal_delta_mean_degrees": 6.0379605636166795,
+        "top_bottom_main_corner_abs_normal_z_max": 0.8065610527992249
+      },
+      "after": {
+        "zero_uv_area_faces": 0,
+        "zero_uv_area_rim_faces": 0,
+        "rim_uv_area_min": 0.00010879145780329225,
+        "main_front_vertical_row_normal_delta_max_degrees": 1.161360691932614,
+        "main_front_vertical_row_normal_delta_mean_degrees": 0.39097778022801905,
+        "top_bottom_main_corner_abs_normal_z_max": 0.002503219759091735,
+        "nonfinite_mikk_tangent_components": 0,
+        "mikk_tangent_length_min": 0.9999998658897835,
+        "mikk_tangent_length_max": 1.0000001410710044
+      },
+      "sharp_cloth_rim_edges": 224,
+      "rim_reference_perimeter_m": 3.231687852880615,
+      "rim_thickness_m_min": 0.00099998121181119,
+      "rim_thickness_m_max": 0.0010000217482142705,
+      "rim_uv_tile_m": [
+        0.2994152046783626,
+        0.3
+      ],
+      "positions_sha256_before": "e034ff1e366f03e285c305bf295b8a5ffb9022241862f44ba44516c212e6eab4",
+      "positions_sha256_after": "e034ff1e366f03e285c305bf295b8a5ffb9022241862f44ba44516c212e6eab4",
+      "topology_sha256_before": "5012cc1519d167830b540976161a2e9c9e12368018395fe0b48eeab95c13f366",
+      "topology_sha256_after": "5012cc1519d167830b540976161a2e9c9e12368018395fe0b48eeab95c13f366",
+      "cloth_face_uv_sha256_before": "a7df8bab106b5ec084155b8d65a335d3e29907d0869ad92b83d451f756e130d3",
+      "cloth_face_uv_sha256_after": "a7df8bab106b5ec084155b8d65a335d3e29907d0869ad92b83d451f756e130d3",
+      "vertex_count_unchanged": 1394,
+      "polygon_count_unchanged": 1392,
+      "transforms_material_assignments_unchanged": true
+    },
+    "R101V3_continuous_curtain_1": {
+      "before": {
+        "zero_uv_area_faces": 112,
+        "zero_uv_area_rim_faces": 112,
+        "main_front_vertical_row_normal_delta_max_degrees": 53.78978387227418,
+        "main_front_vertical_row_normal_delta_mean_degrees": 6.0380971116310205,
+        "top_bottom_main_corner_abs_normal_z_max": 0.8065608143806458
+      },
+      "after": {
+        "zero_uv_area_faces": 0,
+        "zero_uv_area_rim_faces": 0,
+        "rim_uv_area_min": 0.00010879145780329225,
+        "main_front_vertical_row_normal_delta_max_degrees": 1.1613976383111675,
+        "main_front_vertical_row_normal_delta_mean_degrees": 0.3910312251474158,
+        "top_bottom_main_corner_abs_normal_z_max": 0.00250323791988194,
+        "nonfinite_mikk_tangent_components": 0,
+        "mikk_tangent_length_min": 0.9999998658896213,
+        "mikk_tangent_length_max": 1.0000001490271078
+      },
+      "sharp_cloth_rim_edges": 224,
+      "rim_reference_perimeter_m": 3.2316878528806168,
+      "rim_thickness_m_min": 0.0009999791538887648,
+      "rim_thickness_m_max": 0.0010000217482142705,
+      "rim_uv_tile_m": [
+        0.2994152046783626,
+        0.3
+      ],
+      "positions_sha256_before": "385098cca1b2de7c7e65c5dc00d07ead78486a0c8427d1a0fa7770f0a2c6719c",
+      "positions_sha256_after": "385098cca1b2de7c7e65c5dc00d07ead78486a0c8427d1a0fa7770f0a2c6719c",
+      "topology_sha256_before": "5012cc1519d167830b540976161a2e9c9e12368018395fe0b48eeab95c13f366",
+      "topology_sha256_after": "5012cc1519d167830b540976161a2e9c9e12368018395fe0b48eeab95c13f366",
+      "cloth_face_uv_sha256_before": "06cb570208c923ddbdc667f610b81a7864bb2a9560bd0081e2738c7451a059b2",
+      "cloth_face_uv_sha256_after": "06cb570208c923ddbdc667f610b81a7864bb2a9560bd0081e2738c7451a059b2",
+      "vertex_count_unchanged": 1394,
+      "polygon_count_unchanged": 1392,
+      "transforms_material_assignments_unchanged": true
+    }
+  },
+  "idempotent": true,
+  "pinned_source_sha256_before": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb",
+  "pinned_source_sha256_after": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb"
+}

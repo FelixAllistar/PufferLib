@@ -1,0 +1,62 @@
+{
+  "assessment": "No blocking defect found in the audited art asset contract; visual and engine acceptance remain separate.",
+  "checked_at_utc": "2026-10-07T16:42:51.018195+00:00",
+  "all_current_asset_hashes_still_match": {
+    "basin_pedestal_028_v4.glb": true,
+    "bathroom_partition_4m_019_v4.glb": true,
+    "bedframe_single_institutional_021_v4.glb": true,
+    "folded_bedsheet_stack_027_v4.glb": true,
+    "mattress_dirty_022_v4.glb": true,
+    "room_floor_4x6m_008_v4.glb": true,
+    "room_window_insert_016_v4.glb": true,
+    "solid_wall_4m_013_v4.glb": true
+  },
+  "all_v4_glb_errors": {
+    "basin_pedestal_028_v4.glb": [],
+    "bathroom_partition_4m_019_v4.glb": [],
+    "bedframe_single_institutional_021_v4.glb": [],
+    "folded_bedsheet_stack_027_v4.glb": [],
+    "mattress_dirty_022_v4.glb": [],
+    "room_floor_4x6m_008_v4.glb": [],
+    "room_window_insert_016_v4.glb": [],
+    "solid_wall_4m_013_v4.glb": []
+  },
+  "v3_seal_checked_files": 90,
+  "v3_seal_failures": [],
+  "total_triangles": 27648,
+  "total_bytes": 28182476,
+  "critical_existing_custom_property_changes": [],
+  "source_render_settings_unchanged": true,
+  "source_existing_materials_unchanged": true,
+  "max_tangent_abs_normal_dot": 0.00014039874076843262,
+  "scope_caveats": [
+    "No target-engine test or renderer/collision/AI/damage validation; GLB extras are metadata only.",
+    "Existing isolated portable rebuild independently verified byte-for-byte for all eight outputs and input files; this audit did not launch another rebuild.",
+    "No same-light image/art-quality acceptance in this audit; parent handles the pending renders.",
+    "Sheet-stack render bounds shrink and its lowest visible point is 10.1 mm above unchanged datum; engine bounds must not be derived from replacement render AABB.",
+    "Blanket main shell is closed; separate turned hem is intentionally an open strip, not collision geometry.",
+    "Window hooks and rail have different exported cap triangulation despite unchanged source topology and identical exported position sets; full GLB index-buffer equality is not claimed.",
+    "Scalar porcelain/enamel/chrome/steel/tile are authored factors, not texture-backed scans; retained MC15 exterior/slab finishes remain base-color-only with roughness factors.",
+    "Tangent precision residual max 0.0001404 (approximately 0.008 degrees from exact orthogonality) is recorded as non-blocking numeric rounding, not hidden."
+  ],
+  "current_asset_sha256": {
+    "basin_pedestal_028_v4.glb": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+    "bathroom_partition_4m_019_v4.glb": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+    "bedframe_single_institutional_021_v4.glb": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+    "folded_bedsheet_stack_027_v4.glb": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+    "mattress_dirty_022_v4.glb": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+    "room_floor_4x6m_008_v4.glb": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+    "room_window_insert_016_v4.glb": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+    "solid_wall_4m_013_v4.glb": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855"
+  },
+  "current_source_blend_sha256": "acfef364aefd9b0850ef5274225120c7fecc5972193bac50783b94f7bd9246cc",
+  "current_build_input_sha256": {
+    "build_candidate.py": "b00873f5758a4ecc4b1393bf81d3d9701b9c8558994214636220d97828993f3d",
+    "bedding_pass.py": "cdd84b6f7315ba60015074bfb930f11ef77098636feebca038b1cac2c1348bcd",
+    "bedframe_pass.py": "a09246cb258f2a9db2e337a4ca6cc2487d7660f78bcb7ea09dc1a4a9f467c86c",
+    "bathroom_pass.py": "20d9c8780f56ede62593ea8e11161733a60ccde06627308f4db6d555cc132254",
+    "curtain_pass.py": "5842e593b1310c5415fc6be518fe9c4127a46ed10e04902eef188d21af021ecc",
+    "source/room101_v3_pinned.blend": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb"
+  },
+  "portable_rebuild_verified": true
+}

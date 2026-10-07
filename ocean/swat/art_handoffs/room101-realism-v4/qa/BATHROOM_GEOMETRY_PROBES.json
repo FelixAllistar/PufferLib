@@ -1,0 +1,116 @@
+{
+  "REUSE__basin_pedestal__028": {
+    "triangles_before": 446,
+    "triangles_after": 3416,
+    "triangle_delta": 2970,
+    "boundary_edges": 0,
+    "zero_area_faces": 0,
+    "semantic_groups": [
+      "glazed_ceramic",
+      "chrome_fittings",
+      "drain_interior"
+    ]
+  },
+  "INSTANCE__solid_wall_4m__013": {
+    "triangles_before": 95,
+    "triangles_after": 88,
+    "triangle_delta": -7,
+    "boundary_edges": 0,
+    "zero_area_faces": 0,
+    "semantic_groups": [
+      "masonry",
+      "skirt"
+    ]
+  },
+  "INSTANCE__bathroom_partition_4m__019": {
+    "triangles_before": 264,
+    "triangles_after": 264,
+    "triangle_delta": 0,
+    "boundary_edges": 0,
+    "zero_area_faces": 0,
+    "semantic_groups": [
+      "painted_partition",
+      "tile_wainscot"
+    ]
+  },
+  "INSTANCE__room_floor_4x6m__008": {
+    "triangles_before": 200,
+    "triangles_after": 868,
+    "triangle_delta": 668,
+    "boundary_edges": 0,
+    "zero_area_faces": 0,
+    "semantic_groups": [
+      "concrete_slab",
+      "bedroom_carpet",
+      "bath_grout",
+      "bath_tile"
+    ]
+  },
+  "probes": {
+    "basin_rim": {
+      "local_hit": [
+        0.27000001072883606,
+        0.0,
+        0.8650000095367432
+      ],
+      "normal": [
+        -0.0,
+        0.0,
+        1.0
+      ],
+      "face_index": 335
+    },
+    "basin_dish": {
+      "local_hit": [
+        -0.10000000149011612,
+        -0.029999999329447746,
+        0.7495863437652588
+      ],
+      "normal": [
+        0.23530304431915283,
+        0.1762424111366272,
+        0.9558091163635254
+      ],
+      "face_index": 555
+    },
+    "basin_drain": {
+      "local_hit": [
+        0.0,
+        0.0,
+        0.7562999725341797
+      ],
+      "normal": [
+        -0.0,
+        0.0,
+        1.0
+      ],
+      "face_index": 999
+    },
+    "tile_centre": {
+      "local_hit": [
+        0.20000000298023224,
+        1.5,
+        0.006499886512756348
+      ],
+      "normal": [
+        -0.0,
+        0.0,
+        1.0
+      ],
+      "face_index": 167
+    },
+    "recessed_grout": {
+      "local_hit": [
+        0.0,
+        1.5,
+        0.005699872970581055
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "face_index": 33
+    }
+  }
+}

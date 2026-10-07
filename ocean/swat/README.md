@@ -136,7 +136,9 @@ Original character specular/gloss maps now separate cloth, gloves and hard gear
 instead of assigning the entire body one rough finish; see [CHARACTER_ART.md](CHARACTER_ART.md).
 Frame limits are applied on change, eliminating the per-frame timer-log spam.
 
-Every room has a stable shadow-atlas tile. Architecture depths are cached per
+Every room has six stable 384 px shadow views covering every direction around
+its lamp. Two guard texels and face-local receiver gradients keep filtering
+continuous across view boundaries. Architecture depths are cached per
 room and refreshed when nearby doors or geometry change; moving silhouettes are
 composited over those depths every four ticks. Walking between rooms or backing
 away no longer switches neighboring room shadows off. Room bounds still limit
@@ -172,8 +174,17 @@ appropriate. Source wood/plaster tiling now follows the supplied metre scales.
 [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md) records role bindings,
 channel conventions, resource ownership and validation limits.
 `test_lighting` is an explicit graphics check requiring a display; it verifies
-occlusion, geometry invalidation, rotated/scaled mesh equivalence, world
+all six lamp directions and a face seam, room cache invalidation, moving
+silhouettes, rotated/scaled mesh equivalence, world
 immutability, exposure, opt-out and GPU resource lifecycle.
+
+Room 101 uses eight v4 render replacements over the v3 room: bed, folded linen,
+bedframe, sink, back wall, bathroom partition, carpet and window/curtains.
+Original instance transforms, collision and removal ownership are preserved.
+`SWAT_MOTEL_ROOM101=3 ./swat play --mission motel` compares the v3 art under
+the same corrected lighting; `2` selects v2 and `0` the original bank.
+Missing or invalid v4 assets fall back to the complete v3 set.
+See the [native review](art_handoffs/room101-realism-v4/engine/README.md).
 
 At Cedar House, enter through doors or create openings, secure two suspects,
 order the three civilians to comply, cuff them, and bring all surviving officers

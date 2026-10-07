@@ -17,6 +17,7 @@ typedef struct SwatSurfaceMaps {
 struct SwatLighting;
 #define SWAT_ROOM101_ASSETS 8
 #define SWAT_ROOM101_V3_ASSETS 12
+#define SWAT_ROOM101_V4_ASSETS 8
 #define SWAT_ROOM101_MATERIALS 8
 
 typedef struct SwatEnvironmentArt {
@@ -36,6 +37,9 @@ typedef struct SwatEnvironmentArt {
     Model room101_v3[SWAT_ROOM101_V3_ASSETS];
     float room101_v3_normal_scale[SWAT_ROOM101_V3_ASSETS][SWAT_ROOM101_MATERIALS];
     bool room101_v3_ready;
+    Model room101_v4[SWAT_ROOM101_V4_ASSETS];
+    float room101_v4_normal_scale[SWAT_ROOM101_V4_ASSETS][SWAT_ROOM101_MATERIALS];
+    bool room101_v4_ready;
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;

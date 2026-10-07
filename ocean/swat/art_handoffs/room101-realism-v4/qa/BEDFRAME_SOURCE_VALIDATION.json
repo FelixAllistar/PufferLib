@@ -1,0 +1,295 @@
+{
+  "owners": [
+    "REUSE__bedframe_single_institutional__021"
+  ],
+  "changes": [
+    {
+      "owner": "REUSE__bedframe_single_institutional__021",
+      "action": "smooth_welded_original_tubes_and_quiet_material_separation",
+      "geometry": "Two manifold tubular end panels with minimal junction bevels; rounded original casters; retained deck, rails, housings and brackets",
+      "appearance": "No synthetic patina, painted-in shadow, grunge or new style/layout",
+      "source_mesh_users_before": 5,
+      "preserved": "Owner identity, transforms, pivot, bounds, collision/damage properties, other four shared source instances"
+    }
+  ],
+  "materials": {
+    "R101V4_bedframe_warm_cream_enamel": {
+      "source_material": "F04_metal_cream",
+      "base_color_linear": [
+        0.49,
+        0.475,
+        0.39
+      ],
+      "roughness_factor": 0.4,
+      "metallic_factor": 0.0,
+      "texture_images": [],
+      "shader": "glTF-compatible Principled scalar metallic/roughness",
+      "rationale": "Opaque enamel coating is dielectric, even though its substrate is steel",
+      "added_wear_or_baked_lighting": false
+    },
+    "R101V4_bedframe_caster_rubber": {
+      "source_material": "F04_rubber",
+      "base_color_linear": [
+        0.012,
+        0.014,
+        0.012
+      ],
+      "roughness_factor": 0.76,
+      "metallic_factor": 0.0,
+      "texture_images": [],
+      "shader": "glTF-compatible Principled scalar metallic/roughness",
+      "rationale": "Black caster rubber uses a broad matte reflection",
+      "added_wear_or_baked_lighting": false
+    },
+    "R101V4_bedframe_exposed_steel": {
+      "source_material": "F04_steel",
+      "base_color_linear": [
+        0.44,
+        0.46,
+        0.47
+      ],
+      "roughness_factor": 0.42,
+      "metallic_factor": 1.0,
+      "texture_images": [],
+      "shader": "glTF-compatible Principled scalar metallic/roughness",
+      "rationale": "Unpainted deck and caster metal uses the metallic endpoint, modest roughness",
+      "added_wear_or_baked_lighting": false
+    },
+    "R101V4_bedframe_dark_rail_enamel": {
+      "source_material": "F04_iron",
+      "base_color_linear": [
+        0.044,
+        0.051,
+        0.047
+      ],
+      "roughness_factor": 0.46,
+      "metallic_factor": 0.0,
+      "texture_images": [],
+      "shader": "glTF-compatible Principled scalar metallic/roughness",
+      "rationale": "Dark painted load rails are coated dielectric steel",
+      "added_wear_or_baked_lighting": false
+    },
+    "R101V4_bedframe_attachment_enamel": {
+      "source_material": "F04_rust",
+      "base_color_linear": [
+        0.405,
+        0.397,
+        0.333
+      ],
+      "roughness_factor": 0.44,
+      "metallic_factor": 0.0,
+      "texture_images": [],
+      "shader": "glTF-compatible Principled scalar metallic/roughness",
+      "rationale": "Existing block joints read as quiet enamel brackets, without fake rust",
+      "added_wear_or_baked_lighting": false
+    }
+  },
+  "diagnostics": {
+    "before": {
+      "mesh": "F04_MESH_bedframe_single_institutional",
+      "vertices": 4968,
+      "faces": 2524,
+      "triangles": 2524,
+      "smooth_faces": 41,
+      "positions_sha256": "ffa0ec3a4b0553ee180790a96e3cabbf8573736bae4897eb0891d908fe4c53cd",
+      "local_bounds": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.5199999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.00800000037997961
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "location": [
+        -5.170000076293945,
+        2.5199999809265137,
+        0.00800000037997961
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "custom_properties": {
+        "asset_id": "bedframe_single_institutional",
+        "license": "CC0-1.0",
+        "units": "metres",
+        "canonical_front": "-Y (Blender); +Z (glTF)",
+        "collision_footprint_xy": [
+          -0.526,
+          -1.068,
+          0.526,
+          1.068
+        ],
+        "collision_recommendation": "simple_box_optional; render_only_by_default",
+        "runtime_binding": "not_implemented",
+        "pivot_policy": "authored body-reference XY, lowest vertex Z=0; not full-AABB centred",
+        "source_batch": "04_furniture_variants",
+        "design_notes": "Bare cream steel frame with welded uprights, spring-wire deck and static casters.",
+        "reused_existing_design": true,
+        "render_only": true,
+        "collider_enabled": false,
+        "colliders_supplied": false,
+        "assembly_instance": true
+      }
+    },
+    "after": {
+      "mesh": "R101V4_bedframe_welded_tubes_and_retained_deck",
+      "vertices": 3060,
+      "faces": 3224,
+      "triangles": 5940,
+      "smooth_faces": 2376,
+      "positions_sha256": "a9db7c840d3c5e7cb37f70d6ccf812200ce74b80f0a6315adeb41253be8bef99",
+      "local_bounds": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ],
+      "matrix_world": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -5.170000076293945
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.5199999809265137
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.00800000037997961
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "location": [
+        -5.170000076293945,
+        2.5199999809265137,
+        0.00800000037997961
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "custom_properties": {
+        "asset_id": "bedframe_single_institutional",
+        "license": "CC0-1.0",
+        "units": "metres",
+        "canonical_front": "-Y (Blender); +Z (glTF)",
+        "collision_footprint_xy": [
+          -0.526,
+          -1.068,
+          0.526,
+          1.068
+        ],
+        "collision_recommendation": "simple_box_optional; render_only_by_default",
+        "runtime_binding": "not_implemented",
+        "pivot_policy": "authored body-reference XY, lowest vertex Z=0; not full-AABB centred",
+        "source_batch": "04_furniture_variants",
+        "design_notes": "Bare cream steel frame with welded uprights, spring-wire deck and static casters.",
+        "reused_existing_design": true,
+        "render_only": true,
+        "collider_enabled": false,
+        "colliders_supplied": false,
+        "assembly_instance": true
+      }
+    },
+    "original_welded_physical_components": 77,
+    "welded_end_panels": [
+      {
+        "y": -1.02,
+        "vertices": 950,
+        "faces": 790,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "y": 1.02,
+        "vertices": 950,
+        "faces": 790,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      }
+    ],
+    "tube_segments": 24,
+    "rung_segments": 12,
+    "tyre_segments": 24,
+    "weld_fillet_m": 0.0008,
+    "isolated_mesh_copy": true,
+    "isolated_material_copies": true,
+    "unchanged_source_positions_sha256": "ffa0ec3a4b0553ee180790a96e3cabbf8573736bae4897eb0891d908fe4c53cd",
+    "source_map_note": "Loaded v3 embedded paint image was 256x256, not a newly sourced PBR scan",
+    "art_basis": "Existing source dimensions/design; original geometric refinement and scalar physically based finish factors",
+    "pbr_reference": "https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#metallic-roughness-material",
+    "pbr_reference_note": "glTF scalar factors are supported directly; finish colors and roughness are authored estimates, not measured scans"
+  },
+  "independent_test": {
+    "renderer_lights_camera_world_unchanged": true,
+    "original_material_values_unchanged": true,
+    "v3_source_file_sha256": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb",
+    "changed_existing_objects": [
+      "REUSE__bedframe_single_institutional__021"
+    ],
+    "added_persistent_objects": [],
+    "removed_objects": [],
+    "all_original_material_node_trees_same_identity": true,
+    "final_pass_script_sha256": "f84ad29b3c03814f46368c015b84a6f95ad34395aa485297e38b3970e35be011"
+  }
+}

@@ -1,0 +1,695 @@
+{
+  "source_texture_channel_matches": [
+    {
+      "asset": "bathroom_partition_4m_019_v4.glb",
+      "material": "R101V4_bathroom_fine_plaster",
+      "channel": "baseColorTexture",
+      "source": "white_plaster_02_restrained_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "bathroom_partition_4m_019_v4.glb",
+      "material": "R101V4_bathroom_fine_plaster",
+      "channel": "metallicRoughnessTexture",
+      "source": "white_plaster_02_restrained_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "bathroom_partition_4m_019_v4.glb",
+      "material": "R101V4_bathroom_fine_plaster",
+      "channel": "normalTexture",
+      "source": "white_plaster_02_runtime_normal.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "bathroom_partition_4m_019_v4.glb",
+      "material": "R101_SCAN_fine_plaster",
+      "channel": "baseColorTexture",
+      "source": "white_plaster_02_restrained_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "bathroom_partition_4m_019_v4.glb",
+      "material": "R101_SCAN_fine_plaster",
+      "channel": "metallicRoughnessTexture",
+      "source": "white_plaster_02_restrained_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "bathroom_partition_4m_019_v4.glb",
+      "material": "R101_SCAN_fine_plaster",
+      "channel": "normalTexture",
+      "source": "white_plaster_02_runtime_normal.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "folded_bedsheet_stack_027_v4.glb",
+      "material": "R101V3_bed_linen",
+      "channel": "baseColorTexture",
+      "source": "linen_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "folded_bedsheet_stack_027_v4.glb",
+      "material": "R101V3_bed_linen",
+      "channel": "metallicRoughnessTexture",
+      "source": "linen_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "folded_bedsheet_stack_027_v4.glb",
+      "material": "R101V3_bed_linen",
+      "channel": "normalTexture",
+      "source": "linen_normal_gl.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "mattress_dirty_022_v4.glb",
+      "material": "R101V3_bed_linen",
+      "channel": "baseColorTexture",
+      "source": "linen_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "mattress_dirty_022_v4.glb",
+      "material": "R101V3_bed_linen",
+      "channel": "metallicRoughnessTexture",
+      "source": "linen_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "mattress_dirty_022_v4.glb",
+      "material": "R101V3_bed_linen",
+      "channel": "normalTexture",
+      "source": "linen_normal_gl.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "mattress_dirty_022_v4.glb",
+      "material": "R101V3_folded_blanket",
+      "channel": "baseColorTexture",
+      "source": "blanket_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "mattress_dirty_022_v4.glb",
+      "material": "R101V3_folded_blanket",
+      "channel": "metallicRoughnessTexture",
+      "source": "linen_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "mattress_dirty_022_v4.glb",
+      "material": "R101V3_folded_blanket",
+      "channel": "normalTexture",
+      "source": "linen_normal_gl.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "room_floor_4x6m_008_v4.glb",
+      "material": "R101V3_carpet",
+      "channel": "baseColorTexture",
+      "source": "carpet_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "room_floor_4x6m_008_v4.glb",
+      "material": "R101V3_carpet",
+      "channel": "metallicRoughnessTexture",
+      "source": "carpet_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "room_floor_4x6m_008_v4.glb",
+      "material": "R101V3_carpet",
+      "channel": "normalTexture",
+      "source": "carpet_normal_gl.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "room_floor_4x6m_008_v4.glb",
+      "material": "R101V3_carpet",
+      "channel": "occlusionTexture",
+      "source": "carpet_ao.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "room_window_insert_016_v4.glb",
+      "material": "R101V3_curtain_linen",
+      "channel": "baseColorTexture",
+      "source": "curtain_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "room_window_insert_016_v4.glb",
+      "material": "R101V3_curtain_linen",
+      "channel": "metallicRoughnessTexture",
+      "source": "linen_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "room_window_insert_016_v4.glb",
+      "material": "R101V3_curtain_linen",
+      "channel": "normalTexture",
+      "source": "linen_normal_gl.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "solid_wall_4m_013_v4.glb",
+      "material": "R101V4_bathroom_fine_plaster",
+      "channel": "baseColorTexture",
+      "source": "white_plaster_02_restrained_basecolor.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "solid_wall_4m_013_v4.glb",
+      "material": "R101V4_bathroom_fine_plaster",
+      "channel": "metallicRoughnessTexture",
+      "source": "white_plaster_02_restrained_roughness.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    },
+    {
+      "asset": "solid_wall_4m_013_v4.glb",
+      "material": "R101V4_bathroom_fine_plaster",
+      "channel": "normalTexture",
+      "source": "white_plaster_02_runtime_normal.png",
+      "pixels_exact_equal": true,
+      "max_byte_difference": 0
+    }
+  ],
+  "component_checks": {
+    "folded_bedsheet_stack_027_v4.glb": [
+      {
+        "node": "R101V4_folded_sheet_leaf",
+        "material": "R101V3_bed_linen",
+        "position_welded_vertices": 256,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          256
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V4_folded_sheet_leaf.001",
+        "material": "R101V3_bed_linen",
+        "position_welded_vertices": 256,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          256
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V4_folded_sheet_leaf.002",
+        "material": "R101V3_bed_linen",
+        "position_welded_vertices": 256,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          256
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      }
+    ],
+    "mattress_dirty_022_v4.glb": [
+      {
+        "node": "REUSE__mattress_dirty__022",
+        "material": "R101V3_bed_linen",
+        "position_welded_vertices": 768,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          768
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_soft_pillow",
+        "material": "R101V3_bed_linen",
+        "position_welded_vertices": 448,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          448
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V4_blanket_turned_hem",
+        "material": "R101V3_folded_blanket",
+        "position_welded_vertices": 99,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          99
+        ],
+        "boundary_edges": 68,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V4_continuous_folded_blanket",
+        "material": "R101V3_folded_blanket",
+        "position_welded_vertices": 2706,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          2706
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      }
+    ],
+    "room_window_insert_016_v4.glb": [
+      {
+        "node": "INSTANCE__room_window_insert__016",
+        "material": "R101_cream_enamel",
+        "position_welded_vertices": 120,
+        "connected_components": 5,
+        "component_vertex_counts": [
+          24,
+          24,
+          24,
+          24,
+          24
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_continuous_curtain_-1",
+        "material": "R101V3_curtain_linen",
+        "position_welded_vertices": 1394,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          1394
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_continuous_curtain_1",
+        "material": "R101V3_curtain_linen",
+        "position_welded_vertices": 1394,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          1394
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.001",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.002",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.003",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.004",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.005",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.006",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.007",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.008",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.009",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.010",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_hook.011",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 16,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          16
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_curtain_rail",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 32,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          32
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_glazing_gasket",
+        "material": "R101V3_black_gasket",
+        "position_welded_vertices": 96,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          96
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_glazing_gasket.001",
+        "material": "R101V3_black_gasket",
+        "position_welded_vertices": 96,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          96
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_opaque_pane_left",
+        "material": "R101V3_opaque_glazing_compatibility",
+        "position_welded_vertices": 24,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          24
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_opaque_pane_right",
+        "material": "R101V3_opaque_glazing_compatibility",
+        "position_welded_vertices": 24,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          24
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_sash_track",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 96,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          96
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_sash_track.001",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 96,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          96
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_slider_latch",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 96,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          96
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_slider_meeting_profile",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 96,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          96
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      },
+      {
+        "node": "R101V3_slider_meeting_profile.001",
+        "material": "R101V3_satin_aluminum",
+        "position_welded_vertices": 96,
+        "connected_components": 1,
+        "component_vertex_counts": [
+          96
+        ],
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0
+      }
+    ]
+  },
+  "window_comparison": {
+    "R101V3_continuous_curtain_-1": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_continuous_curtain_1": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_curtain_hook": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.001": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.002": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.003": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.004": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.005": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.006": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.007": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.008": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.009": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.010": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_hook.011": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_curtain_rail": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": false
+    },
+    "R101V3_glazing_gasket": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_glazing_gasket.001": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_opaque_pane_left": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_opaque_pane_right": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_sash_track": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_sash_track.001": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_slider_latch": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_slider_meeting_profile": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "R101V3_slider_meeting_profile.001": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    },
+    "INSTANCE__room_window_insert__016": {
+      "same_position_set_1um": true,
+      "same_local_transform": true,
+      "same_triangle_position_signature_1um": true
+    }
+  }
+}

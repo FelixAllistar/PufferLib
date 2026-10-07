@@ -239,6 +239,7 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
         if(!o->active || o->material==SWAT_GLASS) continue;
         if(view->lighting.shadow_room>=0 && !swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],
             (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+        if(!swat_lighting_face_intersects(&view->lighting,(Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
         if(swat_environment_motel_draw(&view->environment,&sim->world,o,true,cutaway)) continue;
         if(swat_environment_storefront_draw(&view->environment,&sim->world,o,true,cutaway)) continue;
         if(cutaway && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
@@ -257,6 +258,7 @@ static void swat_draw_shadow_actors(void* context,const SwatSim* sim,bool cutawa
             b3Pos p=swat_body_feet_position(&sim->actors[i].controller.body);
             if(!swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],
                 (Vector3){p.x,p.y+1,p.z},(Vector3){.5f,1,.5f}))continue;
+            if(!swat_lighting_face_intersects(&view->lighting,(Vector3){p.x,p.y+1,p.z},(Vector3){.5f,1,.5f}))continue;
         }
         swat_draw_actor(view,sim,i,true);
     }

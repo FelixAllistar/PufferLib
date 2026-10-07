@@ -47,20 +47,22 @@ static const char* fragment_source=
     "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen,normalScale;\n"
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
-    "uniform mat4 sunMatrix,lampMatrix[8]; uniform vec3 camera;\n"
+    "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
     "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
     "uniform float occlusionStrength;uniform vec3 sunDirection,sunEnergy;uniform mat4 contactMatrix;\n"
-    "uniform int rooms; uniform vec3 centers[8],halves[8],origins[8]; uniform float exposure;\n"
-    "float visible(sampler2D map,mat4 matrix,vec3 n,vec3 l,int tile){"
-    "vec4 clip=matrix*vec4(position,1.0); if(clip.w<=0.0)return 1.0;"
+    "uniform int lampShadows;uniform int rooms; uniform vec3 centers[8],halves[8],origins[8]; uniform float exposure;\n"
+    "float visible(sampler2D map,mat4 matrix,vec3 point,vec3 n,vec3 l,int tile){"
+    "vec4 clip=matrix*vec4(point,1.0); if(clip.w<=0.0)return 1.0;"
     "vec3 p=clip.xyz/clip.w*0.5+0.5;"
     // Compare at the sampled texel's plane depth. A fixed bias alone produces
     // acne on large/sloping surfaces as the orthographic map covers more area.
-    "vec2 dx=dFdx(p.xy),dy=dFdy(p.xy); float det=dx.x*dy.y-dx.y*dy.x;"
-    "vec2 gradient=abs(det)>1e-12?vec2(dy.y*dFdx(p.z)-dx.y*dFdy(p.z),dx.x*dFdy(p.z)-dy.x*dFdx(p.z))/det:vec2(0.0);"
+    "vec4 cx=matrix*vec4(dFdx(point),0.0),cy=matrix*vec4(dFdy(point),0.0);"
+    "vec3 px=(cx.xyz-clip.xyz/clip.w*cx.w)/clip.w*0.5,py=(cy.xyz-clip.xyz/clip.w*cy.w)/clip.w*0.5;"
+    "vec2 dx=px.xy,dy=py.xy;float det=dx.x*dy.y-dx.y*dy.x;"
+    "vec2 gradient=abs(det)>1e-12?vec2(dy.y*px.z-dx.y*py.z,dx.x*py.z-dy.x*px.z)/det:vec2(0.0);"
     "if(any(lessThan(p,vec3(0.0)))||any(greaterThan(p,vec3(1.0))))return 1.0;"
     "vec2 lower=vec2(0.0),upper=vec2(1.0);"
-    "if(tile>=0){vec2 scale=vec2(0.25,0.5);lower=vec2(tile%4,tile/4)*scale;upper=lower+scale;"
+    "if(tile>=0){vec2 scale=vec2(1.0/6.0,1.0/8.0);lower=vec2(tile%6,tile/6)*scale;upper=lower+scale;"
     "p.xy=lower+p.xy*scale;gradient/=scale;}"
     "float bias=max(0.000025,0.00005*(1.0-max(dot(n,l),0.0)));"
     // Continuous tent weights avoid the blocky jumps of equal-weight snapped
@@ -105,7 +107,7 @@ static const char* fragment_source=
     "else {t=normalize(tangent.xyz-n*dot(n,tangent.xyz));b=cross(n,t)*tangent.w;}"
     "if(dot(t,t)>1e-12){vec3 mapped=texture(normalMap,uv).xyz*2.0-1.0;mapped.xy*=normalScale;mapped.y*=normalGreen;n=normalize(mat3(t,b,n)*mapped);} } }"
     "vec3 sun=sunDirection;"
-    "float sunVisibility=visible(sunMap,sunMatrix,n,sun,-1); float direct=max(dot(n,sun),0.0)*sunVisibility;"
+    "float sunVisibility=visible(sunMap,sunMatrix,position,n,sun,-1); float direct=max(dot(n,sun),0.0)*sunVisibility;"
     "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
     "vec3 reflectedDirection=reflect(-v,n),environment=skyRadiance(reflectedDirection,roughness);"
     "float contact=1.0;bool insideRoom=false;"
@@ -124,7 +126,8 @@ static const char* fragment_source=
     "environment=mix(vec3(0.075,0.068,0.055),vec3(0.32,0.30,0.26),reflectedDirection.y*0.5+0.5);"
     "vec3 origin=origins[i]; vec3 toLight=origin-position;"
     "float d2=dot(toLight,toLight); vec3 l=normalize(toLight);"
-    "float visibility=visible(lampMap,lampMatrix[i],n,l,i);"
+    "vec3 q=-toLight,a=abs(q);int face=a.x>=a.y&&a.x>=a.z?(q.x>=0.0?0:1):(a.y>=a.z?(q.y>=0.0?2:3):(q.z>=0.0?4:5));"
+    "float visibility=lampShadows!=0?visible(lampMap,lampMatrix[face],q,n,l,i*6+face):1.0;"
     "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*1.8/(1.0+0.18*d2);"
     "punctual+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
     "if(useIbl!=0&&!insideRoom){illumination=atlas(envUV(n),6.0);environment=filteredSky(reflectedDirection,roughness);}"
@@ -169,7 +172,8 @@ static SwatLightingProgram program(void) {
     p.environment_tile=GetShaderLocation(p.shader,"environmentTile");
     p.camera=GetShaderLocation(p.shader,"camera");
     p.sun_matrix=GetShaderLocation(p.shader,"sunMatrix");
-    for(int i=0;i<SWAT_MAX_ROOMS;i++) {char name[32];snprintf(name,sizeof(name),"lampMatrix[%d]",i);p.lamp_matrix[i]=GetShaderLocation(p.shader,name);}
+    for(int i=0;i<SWAT_LAMP_FACES;i++) {char name[32];snprintf(name,sizeof(name),"lampMatrix[%d]",i);p.lamp_matrix[i]=GetShaderLocation(p.shader,name);}
+    p.lamp_shadows=GetShaderLocation(p.shader,"lampShadows");
     p.sun_map=GetShaderLocation(p.shader,"sunMap"); p.lamp_map=GetShaderLocation(p.shader,"lampMap");
     p.rooms=GetShaderLocation(p.shader,"rooms"); p.centers=GetShaderLocation(p.shader,"centers[0]");
     p.halves=GetShaderLocation(p.shader,"halves[0]"); p.origins=GetShaderLocation(p.shader,"origins[0]");
@@ -333,8 +337,9 @@ void swat_lighting_init(SwatLighting* light) {
     light->sky_exposure=GetShaderLocation(light->sky,"exposure");
     light->sky_map=GetShaderLocation(light->sky,"skyMap");light->sky_ibl=GetShaderLocation(light->sky,"useIbl");
     light->sky_map_scale=GetShaderLocation(light->sky,"skyMapScale");
+    light->lamp_shadows=true;
     light->sun=depth_target(1536);
-    light->lamp=depth_target_size(768*4,768*2);light->lamp_static=depth_target_size(768*4,768*2);
+    light->lamp=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);light->lamp_static=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);
     const char* contact=getenv("SWAT_CONTACT_SHADOWS");
     // Keep the extra geometry pass opt-in until its cost is lower on the 1060.
     if(contact && strcmp(contact,"0")) {
@@ -448,11 +453,23 @@ static uint32_t geometry_hash(const SwatWorld* world) {
     return hash_bytes(hash,world->rooms,(size_t)world->room_count*sizeof(*world->rooms));
 }
 
+// Two guard texels on each edge keep the PCF footprint inside each face.
+static const Vector3 lamp_dir[6]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+static const Vector3 lamp_up[6]={{0,-1,0},{0,-1,0},{0,0,1},{0,0,-1},{0,-1,0},{0,-1,0}};
+static float lamp_tan(void){return 1+4.0f/SWAT_LAMP_SIZE;}
+bool swat_lighting_face_intersects(const SwatLighting* light,Vector3 center,Vector3 half) {
+    if(light->shadow_room<0)return true;
+    int face=light->shadow_face;Vector3 d=Vector3Subtract(center,light->shadow_origin);
+    float radius=Vector3Length(half)+.5f,z=Vector3DotProduct(d,lamp_dir[face]),t=lamp_tan();
+    float edge=z*t+radius*sqrtf(1+t*t);
+    return z+radius>=.05f && fabsf(Vector3DotProduct(d,lamp_up[face]))<=edge &&
+        fabsf(Vector3DotProduct(d,Vector3CrossProduct(lamp_dir[face],lamp_up[face])))<=edge;
+}
 static Matrix shadow(RenderTexture2D target,Camera3D camera,const SwatSim* sim,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context,int tile,bool clear) {
     double near=rlGetCullDistanceNear(),far=rlGetCullDistanceFar(); rlSetClipPlanes(.05,120);
-    if(tile>=0)target.texture.width=target.texture.height=768; // Square per-room projection.
+    if(tile>=0)target.texture.width=target.texture.height=SWAT_LAMP_SIZE; // Square per-room projection.
     BeginTextureMode(target);
-    if(tile>=0) {rlViewport(tile%4*768,tile/4*768,768,768);rlEnableScissorTest();rlScissor(tile%4*768,tile/4*768,768,768);}
+    if(tile>=0) {rlViewport(tile%SWAT_LAMP_FACES*SWAT_LAMP_SIZE,tile/SWAT_LAMP_FACES*SWAT_LAMP_SIZE,SWAT_LAMP_SIZE,SWAT_LAMP_SIZE);rlEnableScissorTest();rlScissor(tile%SWAT_LAMP_FACES*SWAT_LAMP_SIZE,tile/SWAT_LAMP_FACES*SWAT_LAMP_SIZE,SWAT_LAMP_SIZE,SWAT_LAMP_SIZE);}
     if(clear)ClearBackground(WHITE);
     BeginMode3D(camera);
     Matrix matrix=MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
@@ -517,22 +534,30 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
         Vector3 origin=room_light_origin(world,room);local=hash_bytes(local,&origin,sizeof(origin));
         bool dirty=reset || !light->room_ready[room] || local!=light->room_geometry[room] ||
             (!actors && sim->actor_count && refresh); // Legacy combined callbacks may include actors.
-        Camera3D lamp={origin,{origin.x,origin.y-1,origin.z},{0,0,-1},150,CAMERA_PERSPECTIVE};
-        light->shadow_room=room;
+        light->shadow_room=room;light->shadow_origin=origin;
+        float fov=2*atanf(lamp_tan());
         if(dirty) {
-            light->lamp_matrix[room]=shadow(light->lamp_static,lamp,sim,cutaway,draw,contextual,NULL,context,room,true);
+            for(int face=0;face<SWAT_LAMP_FACES;face++) {
+                light->shadow_face=face;
+                Camera3D lamp={origin,Vector3Add(origin,lamp_dir[face]),lamp_up[face],fov/SWAT_RAD,CAMERA_PERSPECTIVE};
+                shadow(light->lamp_static,lamp,sim,cutaway,draw,contextual,NULL,context,room*SWAT_LAMP_FACES+face,true);
+                light->lamp_matrix[face]=MatrixMultiply(MatrixLookAt((Vector3){0},lamp_dir[face],lamp_up[face]),MatrixPerspective(fov,1,.05,120));
+            }
             light->room_geometry[room]=local;light->room_ready[room]=true;light->room_updates++;
         }
         if(dirty || refresh) {
-            // Copy cached geometry depth, then add current silhouettes. Moving
-            // people cannot erase architecture shadows in neighboring rooms.
-            int x=room%4*768,y=room/4*768;
+            // Restore the entire room's cached depth before adding moving actors.
+            int y=room*SWAT_LAMP_SIZE,w=SWAT_LAMP_SIZE*SWAT_LAMP_FACES;
             rlDrawRenderBatchActive();
             rlBindFramebuffer(RL_READ_FRAMEBUFFER,light->lamp_static.id);
             rlBindFramebuffer(RL_DRAW_FRAMEBUFFER,light->lamp.id);
-            rlBlitFramebuffer(x,y,x+768,y+768,x,y,x+768,y+768,0x00000100); // GL_DEPTH_BUFFER_BIT
+            rlBlitFramebuffer(0,y,w,y+SWAT_LAMP_SIZE,0,y,w,y+SWAT_LAMP_SIZE,0x00000100);
             rlDisableFramebuffer();
-            if(actors)shadow(light->lamp,lamp,sim,cutaway,NULL,NULL,actors,context,room,false);
+            if(actors)for(int face=0;face<SWAT_LAMP_FACES;face++) {
+                light->shadow_face=face;
+                Camera3D lamp={origin,Vector3Add(origin,lamp_dir[face]),lamp_up[face],fov/SWAT_RAD,CAMERA_PERSPECTIVE};
+                shadow(light->lamp,lamp,sim,cutaway,NULL,NULL,actors,context,room*SWAT_LAMP_FACES+face,false);
+            }
         }
     }
     for(int i=world->room_count;i<SWAT_MAX_ROOMS;i++)light->room_ready[i]=false;
@@ -568,7 +593,8 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
     SwatLightingProgram* programs[]={&light->batch,&light->mesh};
     for(int i=0;i<2;i++) {
         SwatLightingProgram* p=programs[i]; Shader s=p->shader; int sun=14,lamp=15;
-        int zero=0; Vector2 tile={0};
+        int zero=0,lamp_shadows=light->lamp_shadows; Vector2 tile={0};
+        SetShaderValue(s,p->lamp_shadows,&lamp_shadows,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->pbr,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->spec_gloss,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->skinning,&zero,SHADER_UNIFORM_INT);
@@ -584,7 +610,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValueMatrix(s,p->contact_matrix,light->contact_matrix);
         SetShaderValue(s,p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
         SetShaderValueMatrix(s,p->sun_matrix,light->sun_matrix);
-        for(int room=0;room<world->room_count;room++)SetShaderValueMatrix(s,p->lamp_matrix[room],light->lamp_matrix[room]);
+        for(int room=0;room<SWAT_LAMP_FACES;room++)SetShaderValueMatrix(s,p->lamp_matrix[room],light->lamp_matrix[room]);
         SetShaderValue(s,p->camera,&camera,SHADER_UNIFORM_VEC3);
         SetShaderValue(s,p->sun_map,&sun,SHADER_UNIFORM_INT); SetShaderValue(s,p->lamp_map,&lamp,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->rooms,&world->room_count,SHADER_UNIFORM_INT);

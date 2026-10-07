@@ -1,0 +1,173 @@
+{
+  "files": [
+    "/workspace/scratch/eac4961518d4/environment_realism_review/briar_court_101_candidate_v4/assets/bedframe_single_institutional_021_v4.glb",
+    "/workspace/scratch/eac4961518d4/environment_realism_review/room101_v4_diagnostics/bedframe/determinism_run_1.glb"
+  ],
+  "sha256": [
+    "7e6b8fd86e02dd8ae1660d1ab76487e5f2bc18ad07d70159a49b711951c9b513",
+    "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006"
+  ],
+  "json_equal": true,
+  "primitives": [
+    {
+      "material": "R101V4_bedframe_warm_cream_enamel",
+      "indices_identical": true,
+      "exact_index_triangle_multiset": true,
+      "attribute_checks": {
+        "POSITION": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "NORMAL": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TEXCOORD_0": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TANGENT": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        }
+      },
+      "position_triangle_multiset_exact": true
+    },
+    {
+      "material": "R101V4_bedframe_caster_rubber",
+      "indices_identical": true,
+      "exact_index_triangle_multiset": true,
+      "attribute_checks": {
+        "POSITION": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "NORMAL": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TEXCOORD_0": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TANGENT": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        }
+      },
+      "position_triangle_multiset_exact": true
+    },
+    {
+      "material": "R101V4_bedframe_exposed_steel",
+      "indices_identical": false,
+      "exact_index_triangle_multiset": true,
+      "attribute_checks": {
+        "POSITION": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "NORMAL": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TEXCOORD_0": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TANGENT": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        }
+      },
+      "position_triangle_multiset_exact": true
+    },
+    {
+      "material": "R101V4_bedframe_dark_rail_enamel",
+      "indices_identical": false,
+      "exact_index_triangle_multiset": true,
+      "attribute_checks": {
+        "POSITION": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "NORMAL": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TEXCOORD_0": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TANGENT": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        }
+      },
+      "position_triangle_multiset_exact": true
+    },
+    {
+      "material": "R101V4_bedframe_attachment_enamel",
+      "indices_identical": false,
+      "exact_index_triangle_multiset": true,
+      "attribute_checks": {
+        "POSITION": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "NORMAL": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TEXCOORD_0": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        },
+        "TANGENT": {
+          "ordered_equal": true,
+          "sorted_rows_equal": true,
+          "canonical_triangles_equal": true,
+          "rounded_6dp_triangles_equal": true
+        }
+      },
+      "position_triangle_multiset_exact": true
+    }
+  ]
+}

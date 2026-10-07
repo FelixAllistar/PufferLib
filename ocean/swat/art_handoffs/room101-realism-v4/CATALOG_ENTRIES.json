@@ -1,0 +1,225 @@
+{
+  "catalog_action": "add eight versioned revision records, preserve original 315-design baseline count and all v2/v3 records",
+  "existing_designs_revised": 8,
+  "core_instance_overrides": 8,
+  "decorative_overlay_revisions": 0,
+  "new_location_kits": 0,
+  "records": [
+    {
+      "revision_id": "room101_v4_mattress_dirty_022_v4",
+      "source_design_id": "mattress_dirty",
+      "source_instance": "REUSE__mattress_dirty__022",
+      "runtime_file": "assets/mattress_dirty_022_v4.glb",
+      "sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+      "bytes": 5568388,
+      "triangles": 7960,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    },
+    {
+      "revision_id": "room101_v4_folded_bedsheet_stack_027_v4",
+      "source_design_id": "lb11_folded_bedsheet_stack",
+      "source_instance": "REUSE__folded_bedsheet_stack__027",
+      "runtime_file": "assets/folded_bedsheet_stack_027_v4.glb",
+      "sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+      "bytes": 4302156,
+      "triangles": 1524,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    },
+    {
+      "revision_id": "room101_v4_bedframe_single_institutional_021_v4",
+      "source_design_id": "bedframe_single_institutional",
+      "source_instance": "REUSE__bedframe_single_institutional__021",
+      "runtime_file": "assets/bedframe_single_institutional_021_v4.glb",
+      "sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+      "bytes": 362288,
+      "triangles": 5940,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    },
+    {
+      "revision_id": "room101_v4_basin_pedestal_028_v4",
+      "source_design_id": "basin_pedestal",
+      "source_instance": "REUSE__basin_pedestal__028",
+      "runtime_file": "assets/basin_pedestal_028_v4.glb",
+      "sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+      "bytes": 160796,
+      "triangles": 3416,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    },
+    {
+      "revision_id": "room101_v4_solid_wall_4m_013_v4",
+      "source_design_id": "mc15_solid_wall_4m",
+      "source_instance": "INSTANCE__solid_wall_4m__013",
+      "runtime_file": "assets/solid_wall_4m_013_v4.glb",
+      "sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+      "bytes": 4192532,
+      "triangles": 88,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    },
+    {
+      "revision_id": "room101_v4_bathroom_partition_4m_019_v4",
+      "source_design_id": "mc15_bathroom_partition_4m",
+      "source_instance": "INSTANCE__bathroom_partition_4m__019",
+      "runtime_file": "assets/bathroom_partition_4m_019_v4.glb",
+      "sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+      "bytes": 4111440,
+      "triangles": 264,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    },
+    {
+      "revision_id": "room101_v4_room_floor_4x6m_008_v4",
+      "source_design_id": "mc15_room_floor_4x6m",
+      "source_instance": "INSTANCE__room_floor_4x6m__008",
+      "runtime_file": "assets/room_floor_4x6m_008_v4.glb",
+      "sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+      "bytes": 4728908,
+      "triangles": 868,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    },
+    {
+      "revision_id": "room101_v4_room_window_insert_016_v4",
+      "source_design_id": "mc15_room_window_insert",
+      "source_instance": "INSTANCE__room_window_insert__016",
+      "runtime_file": "assets/room_window_insert_016_v4.glb",
+      "sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+      "bytes": 4755968,
+      "triangles": 7588,
+      "stage": "art_candidate_v4",
+      "integration_status": "awaiting_engine_review",
+      "count_as_new_design": false,
+      "scope": "Room101 only",
+      "kind": "existing_design_instance_revision",
+      "requires": [
+        "complete_v3_baseline",
+        "original_compiled_collision"
+      ],
+      "tags": [
+        "motel",
+        "briar_court",
+        "room101",
+        "realism_candidate",
+        "1k_runtime",
+        "opaque_visibility",
+        "preserved_authority"
+      ]
+    }
+  ]
+}

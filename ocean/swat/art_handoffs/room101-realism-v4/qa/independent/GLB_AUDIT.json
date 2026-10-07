@@ -1,0 +1,6986 @@
+{
+  "method": "Independent raw GLB parsing; actual binary accessor/triangle/PNG data. No candidate QA imported. Float tolerance: geometry area <=1e-15 m\u00b2, UV area <=1e-14, tangent frame error 1e-3, rounding warning 1e-4.",
+  "v4": [
+    {
+      "file": "basin_pedestal_028_v4.glb",
+      "sha256": "13115257bdfe791162546b9f952c8eb10dda9c134d8c3e1d25caa229b025e46e",
+      "bytes": 160796,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "REUSE__basin_pedestal__028"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -0.3050000071525574,
+          0.004999999888241291,
+          -0.22499999403953552
+        ],
+        [
+          0.3050000071525574,
+          1.033314824104309,
+          0.22499999403953552
+        ]
+      ],
+      "triangle_count": 3416,
+      "node_count": 1,
+      "materials": [
+        {
+          "index": 0,
+          "name": "R101V4_glazed_porcelain",
+          "baseColorFactor": [
+            0.7200000286102295,
+            0.7350000143051147,
+            0.7099999785423279,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.2199999988079071,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 1,
+          "name": "R101V4_polished_chrome",
+          "baseColorFactor": [
+            0.5799999833106995,
+            0.6000000238418579,
+            0.5899999737739563,
+            1
+          ],
+          "metallicFactor": 1,
+          "roughnessFactor": 0.18000000715255737,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 2,
+          "name": "R101V4_drain_interior",
+          "baseColorFactor": [
+            0.02199999988079071,
+            0.024000000208616257,
+            0.02199999988079071,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.6499999761581421,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        }
+      ],
+      "images": [],
+      "nodes": [
+        {
+          "index": 0,
+          "name": "REUSE__basin_pedestal__028",
+          "parent_index": null,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "basin_pedestal",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "visual_clutter": false,
+            "collision_footprint_xy": [
+              -0.305,
+              -0.225,
+              0.305,
+              0.225
+            ],
+            "collision_recommendation": "simple_box_optional",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__basin_pedestal__028",
+            "authority_owner": "REUSE__basin_pedestal__028"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 0,
+          "node": "REUSE__basin_pedestal__028",
+          "primitive": 0,
+          "material": "R101V4_glazed_porcelain",
+          "vertices": 1640,
+          "triangles": 2128,
+          "geometry_area_min_m2": 5.907176148182286e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 5.906497335672611e-07,
+              "range": [
+                [
+                  -0.30399999022483826,
+                  0.08700001239776611
+                ],
+                [
+                  0.30399999022483826,
+                  1.2232314348220825
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999397993087769,
+              1.0000667572021484
+            ],
+            "orthogonality_abs_max": 0.00011339783668518066,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "REUSE__basin_pedestal__028",
+          "primitive": 1,
+          "material": "R101V4_polished_chrome",
+          "vertices": 1120,
+          "triangles": 1228,
+          "geometry_area_min_m2": 5.164304564250766e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 5.137954758538399e-06,
+              "range": [
+                [
+                  -0.20200000703334808,
+                  -0.03331482410430908
+                ],
+                [
+                  0.20200000703334808,
+                  1.0230000019073486
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999328255653381,
+              1.0000677108764648
+            ],
+            "orthogonality_abs_max": 0.00011768937110900879,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "REUSE__basin_pedestal__028",
+          "primitive": 2,
+          "material": "R101V4_drain_interior",
+          "vertices": 72,
+          "triangles": 60,
+          "geometry_area_min_m2": 5.071678319814761e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 4.216946933865984e-07,
+              "range": [
+                [
+                  -0.013000000268220901,
+                  0.2437000274658203
+                ],
+                [
+                  0.013000000268220901,
+                  1.0130000114440918
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999869465827942,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "small tangent rounding residual: REUSE__basin_pedestal__028 max |N\u00b7T|=0.00011339783668518066",
+        "small tangent rounding residual: REUSE__basin_pedestal__028 max |N\u00b7T|=0.00011768937110900879"
+      ]
+    },
+    {
+      "file": "bathroom_partition_4m_019_v4.glb",
+      "sha256": "1e3b796f87a60e269287b2b0c40088a2d6fc5352cdacb671ee976cde6933ae9e",
+      "bytes": 4111440,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "INSTANCE__bathroom_partition_4m__019"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -2.0,
+          0.0,
+          -0.08500000089406967
+        ],
+        [
+          2.0,
+          2.799999952316284,
+          0.08500000089406967
+        ]
+      ],
+      "triangle_count": 264,
+      "node_count": 1,
+      "materials": [
+        {
+          "index": 0,
+          "name": "R101V4_bathroom_fine_plaster",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.3499999940395355,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 1,
+              "image": 1,
+              "name": "white_plaster_02_restrained_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+              "pixels_sha256": "d840395952f2b9273fb405fc2eaa98240fd2ecc730d0421b3c8cdeb8b17d81fa",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 2,
+              "image": 2,
+              "name": "white_plaster_02_restrained_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c",
+              "pixels_sha256": "2a30a6ee2b9845b16de446e2da4d2666d251d9fd24027657c5c59c7428903d02",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 0,
+              "image": 0,
+              "name": "white_plaster_02_runtime_normal",
+              "texcoord": 0,
+              "bytes_sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+              "pixels_sha256": "76dedaca7482aa2b08876f8ca8b7e3befe7ee720beb634db1b46e361035290c2",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        },
+        {
+          "index": 1,
+          "name": "R101V4_bathroom_wall_ceramic",
+          "baseColorFactor": [
+            0.6200000047683716,
+            0.6399999856948853,
+            0.6000000238418579,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.3199999928474426,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 2,
+          "name": "R101V4_bathroom_cream_trim",
+          "baseColorFactor": [
+            0.5699999928474426,
+            0.550000011920929,
+            0.47999998927116394,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.36000001430511475,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 3,
+          "name": "R101_SCAN_fine_plaster",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.3499999940395355,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 4,
+              "image": 1,
+              "name": "white_plaster_02_restrained_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+              "pixels_sha256": "d840395952f2b9273fb405fc2eaa98240fd2ecc730d0421b3c8cdeb8b17d81fa",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 5,
+              "image": 2,
+              "name": "white_plaster_02_restrained_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c",
+              "pixels_sha256": "2a30a6ee2b9845b16de446e2da4d2666d251d9fd24027657c5c59c7428903d02",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 3,
+              "image": 0,
+              "name": "white_plaster_02_runtime_normal",
+              "texcoord": 0,
+              "bytes_sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+              "pixels_sha256": "76dedaca7482aa2b08876f8ca8b7e3befe7ee720beb634db1b46e361035290c2",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "index": 0,
+          "name": "white_plaster_02_runtime_normal",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+          "rgb_range": [
+            [
+              36,
+              215
+            ],
+            [
+              35,
+              206
+            ],
+            [
+              201,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "name": "white_plaster_02_restrained_basecolor",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+          "rgb_range": [
+            [
+              176,
+              231
+            ],
+            [
+              173,
+              225
+            ],
+            [
+              167,
+              212
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "name": "white_plaster_02_restrained_roughness",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c",
+          "rgb_range": [
+            [
+              255,
+              255
+            ],
+            [
+              186,
+              221
+            ],
+            [
+              255,
+              255
+            ]
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "index": 0,
+          "name": "INSTANCE__bathroom_partition_4m__019",
+          "parent_index": null,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "mc15_bathroom_partition_4m",
+            "title": "Off-centre bathroom partition",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "roof",
+                "position_source_m": [
+                  0.0,
+                  0.0,
+                  2.8
+                ],
+                "outward_source": [
+                  0,
+                  0,
+                  1
+                ],
+                "position_gltf_m": [
+                  0.0,
+                  2.8,
+                  0.0
+                ],
+                "outward_gltf": [
+                  0,
+                  1,
+                  0
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__bathroom_partition_4m__019",
+            "authority_owner": "INSTANCE__bathroom_partition_4m__019"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 0,
+          "node": "INSTANCE__bathroom_partition_4m__019",
+          "primitive": 0,
+          "material": "R101V4_bathroom_fine_plaster",
+          "vertices": 276,
+          "triangles": 126,
+          "geometry_area_min_m2": 7.794298939482482e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 4.499705482885474e-06,
+              "range": [
+                [
+                  -8.0,
+                  -3.057000160217285
+                ],
+                [
+                  4.057000160217285,
+                  1.0
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.00006103515625
+            ],
+            "orthogonality_abs_max": 7.078051567077637e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__bathroom_partition_4m__019",
+          "primitive": 1,
+          "material": "R101V4_bathroom_wall_ceramic",
+          "vertices": 96,
+          "triangles": 44,
+          "geometry_area_min_m2": 3.4639005787241346e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.9999708911200287e-06,
+              "range": [
+                [
+                  -0.6380000710487366,
+                  -0.059999942779541016
+                ],
+                [
+                  1.998000144958496,
+                  1.0
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 7.072091102600098e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__bathroom_partition_4m__019",
+          "primitive": 2,
+          "material": "R101V4_bathroom_cream_trim",
+          "vertices": 192,
+          "triangles": 88,
+          "geometry_area_min_m2": 3.4639005787241346e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.9999486084998352e-06,
+              "range": [
+                [
+                  -1.7825000286102295,
+                  -1.2280001640319824
+                ],
+                [
+                  0.08500000089406967,
+                  1.0850000381469727
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.00006103515625
+            ],
+            "orthogonality_abs_max": 7.078051567077637e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__bathroom_partition_4m__019",
+          "primitive": 3,
+          "material": "R101_SCAN_fine_plaster",
+          "vertices": 12,
+          "triangles": 6,
+          "geometry_area_min_m2": 0.29895797175598204,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 0.2989579737186432,
+              "range": [
+                [
+                  -1.996999979019165,
+                  -1.7969999313354492
+                ],
+                [
+                  1.996999979019165,
+                  0.996999979019165
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            1.0,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0
+            ],
+            "orthogonality_abs_max": 0.0,
+            "handedness": [
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "file": "bedframe_single_institutional_021_v4.glb",
+      "sha256": "70d1aec713051fad89c25dffba07f4e1e5e95a993e5d76e1a15e834365f0c006",
+      "bytes": 362288,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "REUSE__bedframe_single_institutional__021"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -0.5260000228881836,
+          0.0,
+          -1.0679999589920044
+        ],
+        [
+          0.5260000228881836,
+          1.0950000286102295,
+          1.0679999589920044
+        ]
+      ],
+      "triangle_count": 5940,
+      "node_count": 1,
+      "materials": [
+        {
+          "index": 0,
+          "name": "R101V4_bedframe_warm_cream_enamel",
+          "baseColorFactor": [
+            0.49000000953674316,
+            0.4749999940395355,
+            0.38999998569488525,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.4000000059604645,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 1,
+          "name": "R101V4_bedframe_caster_rubber",
+          "baseColorFactor": [
+            0.012000000104308128,
+            0.014000000432133675,
+            0.012000000104308128,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.7599999904632568,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 2,
+          "name": "R101V4_bedframe_exposed_steel",
+          "baseColorFactor": [
+            0.4399999976158142,
+            0.46000000834465027,
+            0.4699999988079071,
+            1
+          ],
+          "metallicFactor": 1,
+          "roughnessFactor": 0.41999998688697815,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 3,
+          "name": "R101V4_bedframe_dark_rail_enamel",
+          "baseColorFactor": [
+            0.04399999976158142,
+            0.050999999046325684,
+            0.04699999839067459,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.46000000834465027,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 4,
+          "name": "R101V4_bedframe_attachment_enamel",
+          "baseColorFactor": [
+            0.4050000011920929,
+            0.3970000147819519,
+            0.3330000042915344,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.4399999976158142,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        }
+      ],
+      "images": [],
+      "nodes": [
+        {
+          "index": 0,
+          "name": "REUSE__bedframe_single_institutional__021",
+          "parent_index": null,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "bedframe_single_institutional",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "canonical_front": "-Y (Blender); +Z (glTF)",
+            "collision_footprint_xy": [
+              -0.526,
+              -1.068,
+              0.526,
+              1.068
+            ],
+            "collision_recommendation": "simple_box_optional; render_only_by_default",
+            "runtime_binding": "not_implemented",
+            "pivot_policy": "authored body-reference XY, lowest vertex Z=0; not full-AABB centred",
+            "source_batch": "04_furniture_variants",
+            "design_notes": "Bare cream steel frame with welded uprights, spring-wire deck and static casters.",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__bedframe_single_institutional__021"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 0,
+          "node": "REUSE__bedframe_single_institutional__021",
+          "primitive": 0,
+          "material": "R101V4_bedframe_warm_cream_enamel",
+          "vertices": 3084,
+          "triangles": 3840,
+          "geometry_area_min_m2": 1.8733181293196974e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.2780088809449808e-07,
+              "range": [
+                [
+                  -1.0395023822784424,
+                  -0.08650612831115723
+                ],
+                [
+                  1.0395023822784424,
+                  2.0460000038146973
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999299645423889,
+              1.000067114830017
+            ],
+            "orthogonality_abs_max": 0.00014039874076843262,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "REUSE__bedframe_single_institutional__021",
+          "primitive": 1,
+          "material": "R101V4_bedframe_caster_rubber",
+          "vertices": 840,
+          "triangles": 752,
+          "geometry_area_min_m2": 1.825717716474884e-05,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.4720095350639895e-05,
+              "range": [
+                [
+                  -1.0663644075393677,
+                  -0.05394113063812256
+                ],
+                [
+                  1.0663644075393677,
+                  2.053941249847412
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999531507492065,
+              1.000056266784668
+            ],
+            "orthogonality_abs_max": 7.268786430358887e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "REUSE__bedframe_single_institutional__021",
+          "primitive": 2,
+          "material": "R101V4_bedframe_exposed_steel",
+          "vertices": 2144,
+          "triangles": 1084,
+          "geometry_area_min_m2": 7.596739737714131e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 4.500031991483411e-06,
+              "range": [
+                [
+                  -1.0544999837875366,
+                  -0.05449998378753662
+                ],
+                [
+                  1.0544999837875366,
+                  2.054500102996826
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999605417251587,
+              1.0000336170196533
+            ],
+            "orthogonality_abs_max": 7.072091102600098e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "REUSE__bedframe_single_institutional__021",
+          "primitive": 3,
+          "material": "R101V4_bedframe_dark_rail_enamel",
+          "vertices": 192,
+          "triangles": 88,
+          "geometry_area_min_m2": 2.165059379932141e-05,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.2499976037361193e-05,
+              "range": [
+                [
+                  -1.0199999809265137,
+                  -0.014999985694885254
+                ],
+                [
+                  1.0199999809265137,
+                  2.0149998664855957
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 0.0,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "REUSE__bedframe_single_institutional__021",
+          "primitive": 4,
+          "material": "R101V4_bedframe_attachment_enamel",
+          "vertices": 384,
+          "triangles": 176,
+          "geometry_area_min_m2": 1.3856393796659077e-05,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 7.999913577805273e-06,
+              "range": [
+                [
+                  -1.0494999885559082,
+                  -0.015500068664550781
+                ],
+                [
+                  1.0155000686645508,
+                  2.049499988555908
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 7.078051567077637e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "small tangent rounding residual: REUSE__bedframe_single_institutional__021 max |N\u00b7T|=0.00014039874076843262"
+      ]
+    },
+    {
+      "file": "folded_bedsheet_stack_027_v4.glb",
+      "sha256": "88628e8b313e556a53dc0611f7d78655fe887f638d3d957cc366dd56997e8830",
+      "bytes": 4302156,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "REUSE__folded_bedsheet_stack__027"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -0.23499999940395355,
+          0.010099999606609344,
+          -0.16899999976158142
+        ],
+        [
+          0.23499999940395355,
+          0.07449900358915329,
+          0.16899999976158142
+        ]
+      ],
+      "triangle_count": 1524,
+      "node_count": 4,
+      "materials": [
+        {
+          "index": 0,
+          "name": "R101V3_bed_linen",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.1599999964237213,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 1,
+              "image": 1,
+              "name": "linen_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+              "pixels_sha256": "3d505cde0cf43056b0c28cad6f9a3ff3e3d151b8660e0c776fccc81b036efbe2",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 2,
+              "image": 2,
+              "name": "linen_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985",
+              "pixels_sha256": "8048942ccbc74545cc3f560af7d7d07a348246e7bb40abf864e5615ad2389bf3",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 0,
+              "image": 0,
+              "name": "linen_normal_gl",
+              "texcoord": 0,
+              "bytes_sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+              "pixels_sha256": "e2a9c946354e04f47e9e76b6bfcc1fa83f50e5f7b4724f8dc6d0469fa5149f9b",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "index": 0,
+          "name": "linen_normal_gl",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+          "rgb_range": [
+            [
+              86,
+              178
+            ],
+            [
+              79,
+              174
+            ],
+            [
+              244,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "name": "linen_basecolor",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+          "rgb_range": [
+            [
+              199,
+              224
+            ],
+            [
+              195,
+              220
+            ],
+            [
+              187,
+              211
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "name": "linen_roughness",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985",
+          "rgb_range": [
+            [
+              255,
+              255
+            ],
+            [
+              189,
+              242
+            ],
+            [
+              255,
+              255
+            ]
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "index": 3,
+          "name": "REUSE__folded_bedsheet_stack__027",
+          "parent_index": null,
+          "mesh": null,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "lb11_folded_bedsheet_stack",
+            "title": "Folded bedsheet stack",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "source_front": "-Y",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "modeling_to_asset_shift": [
+              0.0,
+              -0.0004180893301963806,
+              0.001999998465180397
+            ],
+            "mounting": "surface",
+            "engine_binding": "Not integrated. Art only; no collision/physics/animation.",
+            "pivot": "XY AABB-centred, lowest surface source Z=0",
+            "reused_existing_design": true,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__folded_bedsheet_stack__027"
+          }
+        },
+        {
+          "index": 0,
+          "name": "R101V4_folded_sheet_leaf",
+          "parent_index": 3,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__folded_bedsheet_stack__027",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 1,
+          "name": "R101V4_folded_sheet_leaf.001",
+          "parent_index": 3,
+          "mesh": 1,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__folded_bedsheet_stack__027",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 2,
+          "name": "R101V4_folded_sheet_leaf.002",
+          "parent_index": 3,
+          "mesh": 2,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__folded_bedsheet_stack__027",
+            "candidate_version": "room101_v4"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 0,
+          "node": "R101V4_folded_sheet_leaf",
+          "primitive": 0,
+          "material": "R101V3_bed_linen",
+          "vertices": 392,
+          "triangles": 508,
+          "geometry_area_min_m2": 9.482967417215162e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.0296462278347462e-06,
+              "range": [
+                [
+                  -0.784863293170929,
+                  0.45666664838790894
+                ],
+                [
+                  0.7581444978713989,
+                  1.56333327293396
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999356865882874,
+              1.0000667572021484
+            ],
+            "orthogonality_abs_max": 0.00010024011135101318,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 1,
+          "node": "R101V4_folded_sheet_leaf.001",
+          "primitive": 0,
+          "material": "R101V3_bed_linen",
+          "vertices": 392,
+          "triangles": 508,
+          "geometry_area_min_m2": 9.459128006152462e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.0295843821950257e-06,
+              "range": [
+                [
+                  -0.7715039253234863,
+                  0.4466667175292969
+                ],
+                [
+                  0.7715039253234863,
+                  1.5533332824707031
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999441504478455,
+              1.000059962272644
+            ],
+            "orthogonality_abs_max": 0.00011231005191802979,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 2,
+          "node": "R101V4_folded_sheet_leaf.002",
+          "primitive": 0,
+          "material": "R101V3_bed_linen",
+          "vertices": 392,
+          "triangles": 508,
+          "geometry_area_min_m2": 9.460350717751372e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.0296462278347462e-06,
+              "range": [
+                [
+                  -0.7581444978713989,
+                  0.43666666746139526
+                ],
+                [
+                  0.784863293170929,
+                  1.5433332920074463
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999376535415649,
+              1.000051736831665
+            ],
+            "orthogonality_abs_max": 0.0001068413257598877,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "small tangent rounding residual: R101V4_folded_sheet_leaf max |N\u00b7T|=0.00010024011135101318",
+        "small tangent rounding residual: R101V4_folded_sheet_leaf.001 max |N\u00b7T|=0.00011231005191802979",
+        "small tangent rounding residual: R101V4_folded_sheet_leaf.002 max |N\u00b7T|=0.0001068413257598877"
+      ]
+    },
+    {
+      "file": "mattress_dirty_022_v4.glb",
+      "sha256": "cab3d2dbd301f3bc6ddb6f7e6355d6f1635621b3febd0a82a9d6aa9938d208a9",
+      "bytes": 5568388,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "REUSE__mattress_dirty__022"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -0.6789999008178711,
+          0.014829999767243862,
+          -0.978999137878418
+        ],
+        [
+          0.6790000200271606,
+          0.42214998602867126,
+          0.9789827466011047
+        ]
+      ],
+      "triangle_count": 7960,
+      "node_count": 4,
+      "materials": [
+        {
+          "index": 0,
+          "name": "R101V3_bed_linen",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.1599999964237213,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 1,
+              "image": 1,
+              "name": "linen_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+              "pixels_sha256": "3d505cde0cf43056b0c28cad6f9a3ff3e3d151b8660e0c776fccc81b036efbe2",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 2,
+              "image": 2,
+              "name": "linen_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985",
+              "pixels_sha256": "8048942ccbc74545cc3f560af7d7d07a348246e7bb40abf864e5615ad2389bf3",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 0,
+              "image": 0,
+              "name": "linen_normal_gl",
+              "texcoord": 0,
+              "bytes_sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+              "pixels_sha256": "e2a9c946354e04f47e9e76b6bfcc1fa83f50e5f7b4724f8dc6d0469fa5149f9b",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        },
+        {
+          "index": 1,
+          "name": "R101V3_folded_blanket",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.23999999463558197,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 4,
+              "image": 3,
+              "name": "blanket_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72",
+              "pixels_sha256": "08f6a5c95a59494488d5518a4f34f4409f7dab3ab8b15e7fbea04ec3fd0a8844",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 5,
+              "image": 2,
+              "name": "linen_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985",
+              "pixels_sha256": "8048942ccbc74545cc3f560af7d7d07a348246e7bb40abf864e5615ad2389bf3",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 3,
+              "image": 0,
+              "name": "linen_normal_gl",
+              "texcoord": 0,
+              "bytes_sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+              "pixels_sha256": "e2a9c946354e04f47e9e76b6bfcc1fa83f50e5f7b4724f8dc6d0469fa5149f9b",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "index": 0,
+          "name": "linen_normal_gl",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+          "rgb_range": [
+            [
+              86,
+              178
+            ],
+            [
+              79,
+              174
+            ],
+            [
+              244,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "name": "linen_basecolor",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+          "rgb_range": [
+            [
+              199,
+              224
+            ],
+            [
+              195,
+              220
+            ],
+            [
+              187,
+              211
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "name": "linen_roughness",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985",
+          "rgb_range": [
+            [
+              255,
+              255
+            ],
+            [
+              189,
+              242
+            ],
+            [
+              255,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "name": "blanket_basecolor",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72",
+          "rgb_range": [
+            [
+              83,
+              98
+            ],
+            [
+              106,
+              124
+            ],
+            [
+              99,
+              116
+            ]
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "index": 3,
+          "name": "REUSE__mattress_dirty__022",
+          "parent_index": null,
+          "mesh": 3,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "mattress_dirty",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "visual_clutter": false,
+            "collision_footprint_xy": [
+              -0.679,
+              -0.979,
+              0.679,
+              0.979
+            ],
+            "collision_recommendation": "simple_box_optional",
+            "reused_existing_design": true,
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "REUSE__mattress_dirty__022"
+          }
+        },
+        {
+          "index": 0,
+          "name": "R101V3_soft_pillow",
+          "parent_index": 3,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__mattress_dirty__022",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 1,
+          "name": "R101V4_blanket_turned_hem",
+          "parent_index": 3,
+          "mesh": 1,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__mattress_dirty__022",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 2,
+          "name": "R101V4_continuous_folded_blanket",
+          "parent_index": 3,
+          "mesh": 2,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "REUSE__mattress_dirty__022",
+            "candidate_version": "room101_v4"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 3,
+          "node": "REUSE__mattress_dirty__022",
+          "primitive": 0,
+          "material": "R101V3_bed_linen",
+          "vertices": 941,
+          "triangles": 1532,
+          "geometry_area_min_m2": 1.2463279021312694e-09,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 9.212349993958924e-09,
+              "range": [
+                [
+                  -3.1560213565826416,
+                  -2.175856828689575
+                ],
+                [
+                  3.1560187339782715,
+                  4.174744606018066
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999998807907104,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.999936044216156,
+              1.0000643730163574
+            ],
+            "orthogonality_abs_max": 0.00010031857527792454,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "R101V3_soft_pillow",
+          "primitive": 0,
+          "material": "R101V3_bed_linen",
+          "vertices": 592,
+          "triangles": 892,
+          "geometry_area_min_m2": 3.81130401683194e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 2.4240171114797704e-07,
+              "range": [
+                [
+                  -0.965782642364502,
+                  -1.995302438735962
+                ],
+                [
+                  2.8678276538848877,
+                  0.030200064182281494
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999406337738037,
+              1.000058650970459
+            ],
+            "orthogonality_abs_max": 9.073317050933838e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 1,
+          "node": "R101V4_blanket_turned_hem",
+          "primitive": 0,
+          "material": "R101V3_folded_blanket",
+          "vertices": 99,
+          "triangles": 128,
+          "geometry_area_min_m2": 0.00011332231832188362,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 0.00083486846415326,
+              "range": [
+                [
+                  -1.3790366649627686,
+                  0.9607999920845032
+                ],
+                [
+                  1.3721927404403687,
+                  1.0
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999508857727051,
+              1.0000507831573486
+            ],
+            "orthogonality_abs_max": 9.451946243643761e-05,
+            "handedness": [
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 2,
+          "node": "R101V4_continuous_folded_blanket",
+          "primitive": 0,
+          "material": "R101V3_folded_blanket",
+          "vertices": 3282,
+          "triangles": 5408,
+          "geometry_area_min_m2": 1.1404227246286426e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.1200094377272762e-05,
+              "range": [
+                [
+                  -1.3791680335998535,
+                  -2.8995137214660645
+                ],
+                [
+                  1.3802070617675781,
+                  1.0
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999496936798096,
+              1.0000585317611694
+            ],
+            "orthogonality_abs_max": 9.999657049775124e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "small tangent rounding residual: REUSE__mattress_dirty__022 max |N\u00b7T|=0.00010031857527792454"
+      ]
+    },
+    {
+      "file": "room_floor_4x6m_008_v4.glb",
+      "sha256": "47e0d779b908e2f493dcfa5cb29c9e4136363253961c203d39376cc827016620",
+      "bytes": 4728908,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "INSTANCE__room_floor_4x6m__008"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -2.0,
+          -0.10000000149011612,
+          -3.0
+        ],
+        [
+          2.0,
+          0.006500000134110451,
+          3.0
+        ]
+      ],
+      "triangle_count": 868,
+      "node_count": 1,
+      "materials": [
+        {
+          "index": 0,
+          "name": "MC15_concrete",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9399999976158142,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 0,
+              "image": 0,
+              "name": "concrete",
+              "texcoord": 0,
+              "bytes_sha256": "d88360ca693bb62cd787ebf7ee91d073a2d377d56c3665d2800565b41dac7f49",
+              "pixels_sha256": "e46f5de166f1eef33f2167cb06b338e1260a88c4092ec3d41d2432a9f8b7e126",
+              "size": [
+                192,
+                192
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        },
+        {
+          "index": 1,
+          "name": "R101V3_carpet",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.18000000715255737,
+          "occlusionStrength": 0.30000001192092896,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 3,
+              "image": 3,
+              "name": "carpet_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3",
+              "pixels_sha256": "6f090f4b40618fb92392d6068efa4a6f9054f17d8d7099eed0e3b68e8b851f99",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 2,
+              "image": 2,
+              "name": "carpet_ao-carpet_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "018900da1891572d3e2a3ad2192ec87bf0eea3565b46e23779f8e3bcfe1c8305",
+              "pixels_sha256": "8cc9a55310707e14c485fe0b5b7e72fd6cfad87c3d0c79eddc46109478ccbe2f",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 1,
+              "image": 1,
+              "name": "carpet_normal_gl",
+              "texcoord": 0,
+              "bytes_sha256": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30",
+              "pixels_sha256": "58de01d369de3823ef76ef80bffceac0245d78b48539ab4d58815cdb1883e4b2",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "occlusion_R_linear": {
+              "texture": 2,
+              "image": 2,
+              "name": "carpet_ao-carpet_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "018900da1891572d3e2a3ad2192ec87bf0eea3565b46e23779f8e3bcfe1c8305",
+              "pixels_sha256": "8cc9a55310707e14c485fe0b5b7e72fd6cfad87c3d0c79eddc46109478ccbe2f",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        },
+        {
+          "index": 2,
+          "name": "R101V4_matte_bath_tile",
+          "baseColorFactor": [
+            0.41999998688697815,
+            0.4300000071525574,
+            0.4050000011920929,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.47999998927116394,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 3,
+          "name": "R101V4_bath_grout",
+          "baseColorFactor": [
+            0.2800000011920929,
+            0.29499998688697815,
+            0.2750000059604645,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8799999952316284,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        }
+      ],
+      "images": [
+        {
+          "index": 0,
+          "name": "concrete",
+          "format": "PNG",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "d88360ca693bb62cd787ebf7ee91d073a2d377d56c3665d2800565b41dac7f49",
+          "rgb_range": [
+            [
+              80,
+              124
+            ],
+            [
+              84,
+              130
+            ],
+            [
+              80,
+              124
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "name": "carpet_normal_gl",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30",
+          "rgb_range": [
+            [
+              28,
+              227
+            ],
+            [
+              29,
+              221
+            ],
+            [
+              205,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "name": "carpet_ao-carpet_roughness",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "018900da1891572d3e2a3ad2192ec87bf0eea3565b46e23779f8e3bcfe1c8305",
+          "rgb_range": [
+            [
+              135,
+              255
+            ],
+            [
+              212,
+              234
+            ],
+            [
+              255,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "name": "carpet_basecolor",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3",
+          "rgb_range": [
+            [
+              98,
+              119
+            ],
+            [
+              103,
+              126
+            ],
+            [
+              100,
+              122
+            ]
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "index": 0,
+          "name": "INSTANCE__room_floor_4x6m__008",
+          "parent_index": null,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "mc15_room_floor_4x6m",
+            "title": "Carpet and tile room floor",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "front",
+                "position_source_m": [
+                  0,
+                  -3,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  -1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  3
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "name": "back",
+                "position_source_m": [
+                  0,
+                  3,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  -3
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  -1
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__room_floor_4x6m__008",
+            "authority_owner": "INSTANCE__room_floor_4x6m__008"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 0,
+          "node": "INSTANCE__room_floor_4x6m__008",
+          "primitive": 0,
+          "material": "MC15_concrete",
+          "vertices": 96,
+          "triangles": 44,
+          "geometry_area_min_m2": 8.660074060056823e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 6.050040610716678e-07,
+              "range": [
+                [
+                  -3.2989001274108887,
+                  -2.2989001274108887
+                ],
+                [
+                  3.2989001274108887,
+                  4.298900127410889
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            1.0,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.00006103515625
+            ],
+            "orthogonality_abs_max": 2.6017427444458008e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__room_floor_4x6m__008",
+          "primitive": 1,
+          "material": "R101V3_carpet",
+          "vertices": 24,
+          "triangles": 12,
+          "geometry_area_min_m2": 0.007600000504031784,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 0.0026297708973288536,
+              "range": [
+                [
+                  -1.7058824300765991,
+                  0.4705882668495178
+                ],
+                [
+                  1.1235294342041016,
+                  2.7058825492858887
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            1.0,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0
+            ],
+            "orthogonality_abs_max": 0.0,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__room_floor_4x6m__008",
+          "primitive": 2,
+          "material": "R101V4_matte_bath_tile",
+          "vertices": 1600,
+          "triangles": 800,
+          "geometry_area_min_m2": 3.407846287792418e-05,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 2.4098308131215163e-05,
+              "range": [
+                [
+                  -1.909999966621399,
+                  -1.9099998474121094
+                ],
+                [
+                  2.9099998474121094,
+                  0.9947999715805054
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 0.0,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__room_floor_4x6m__008",
+          "primitive": 3,
+          "material": "R101V4_bath_grout",
+          "vertices": 24,
+          "triangles": 12,
+          "geometry_area_min_m2": 0.00452399977780785,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 0.004523972515016794,
+              "range": [
+                [
+                  -1.909999966621399,
+                  -1.9099998474121094
+                ],
+                [
+                  2.9099998474121094,
+                  0.9994999766349792
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            1.0,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0
+            ],
+            "orthogonality_abs_max": 0.0,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "file": "room_window_insert_016_v4.glb",
+      "sha256": "d8e384a885327754f3d203043df573fe4396b669e67296a4a7d7616301ddb962",
+      "bytes": 4755968,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "INSTANCE__room_window_insert__016"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -1.034999966621399,
+          -0.008499999530613422,
+          -0.06499999761581421
+        ],
+        [
+          1.034999966621399,
+          1.2999999523162842,
+          0.1850000023841858
+        ]
+      ],
+      "triangle_count": 7588,
+      "node_count": 25,
+      "materials": [
+        {
+          "index": 0,
+          "name": "R101V3_curtain_linen",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.20000000298023224,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 1,
+              "image": 1,
+              "name": "curtain_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f",
+              "pixels_sha256": "13584d4142f92ae63b2fdb29603cad00d9a2176737569de5a2e94c8f42f0281b",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 2,
+              "image": 2,
+              "name": "linen_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985",
+              "pixels_sha256": "8048942ccbc74545cc3f560af7d7d07a348246e7bb40abf864e5615ad2389bf3",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 0,
+              "image": 0,
+              "name": "linen_normal_gl",
+              "texcoord": 0,
+              "bytes_sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+              "pixels_sha256": "e2a9c946354e04f47e9e76b6bfcc1fa83f50e5f7b4724f8dc6d0469fa5149f9b",
+              "size": [
+                1022,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        },
+        {
+          "index": 1,
+          "name": "R101V3_satin_aluminum",
+          "baseColorFactor": [
+            0.550000011920929,
+            0.5699999928474426,
+            0.5600000023841858,
+            1
+          ],
+          "metallicFactor": 1,
+          "roughnessFactor": 0.3700000047683716,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 2,
+          "name": "R101V3_black_gasket",
+          "baseColorFactor": [
+            0.012000000104308128,
+            0.014000000432133675,
+            0.012000000104308128,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.800000011920929,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 3,
+          "name": "R101V3_opaque_glazing_compatibility",
+          "baseColorFactor": [
+            0.06499999761581421,
+            0.09000000357627869,
+            0.0949999988079071,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.17000000178813934,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        },
+        {
+          "index": 4,
+          "name": "R101_cream_enamel",
+          "baseColorFactor": [
+            0.5699999928474426,
+            0.550000011920929,
+            0.47999998927116394,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.36000001430511475,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {}
+        }
+      ],
+      "images": [
+        {
+          "index": 0,
+          "name": "linen_normal_gl",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+          "rgb_range": [
+            [
+              86,
+              178
+            ],
+            [
+              79,
+              174
+            ],
+            [
+              244,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "name": "curtain_basecolor",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f",
+          "rgb_range": [
+            [
+              158,
+              189
+            ],
+            [
+              156,
+              186
+            ],
+            [
+              148,
+              177
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "name": "linen_roughness",
+          "format": "PNG",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985",
+          "rgb_range": [
+            [
+              255,
+              255
+            ],
+            [
+              189,
+              242
+            ],
+            [
+              255,
+              255
+            ]
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "index": 24,
+          "name": "INSTANCE__room_window_insert__016",
+          "parent_index": null,
+          "mesh": 24,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "mc15_room_window_insert",
+            "title": "Divided window with curtain folds",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "opening_origin",
+                "position_source_m": [
+                  0,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  0,
+                  1,
+                  0
+                ],
+                "position_gltf_m": [
+                  0,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  0,
+                  0,
+                  -1
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__room_window_insert__016"
+          }
+        },
+        {
+          "index": 0,
+          "name": "R101V3_continuous_curtain_-1",
+          "parent_index": 24,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "curtain_rim_cleanup": "split-rim-normals_metric-perimeter-UV_v1"
+          }
+        },
+        {
+          "index": 1,
+          "name": "R101V3_continuous_curtain_1",
+          "parent_index": 24,
+          "mesh": 1,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "curtain_rim_cleanup": "split-rim-normals_metric-perimeter-UV_v1"
+          }
+        },
+        {
+          "index": 2,
+          "name": "R101V3_curtain_hook",
+          "parent_index": 24,
+          "mesh": 2,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 3,
+          "name": "R101V3_curtain_hook.001",
+          "parent_index": 24,
+          "mesh": 3,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 4,
+          "name": "R101V3_curtain_hook.002",
+          "parent_index": 24,
+          "mesh": 4,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 5,
+          "name": "R101V3_curtain_hook.003",
+          "parent_index": 24,
+          "mesh": 5,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 6,
+          "name": "R101V3_curtain_hook.004",
+          "parent_index": 24,
+          "mesh": 6,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 7,
+          "name": "R101V3_curtain_hook.005",
+          "parent_index": 24,
+          "mesh": 7,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 8,
+          "name": "R101V3_curtain_hook.006",
+          "parent_index": 24,
+          "mesh": 8,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 9,
+          "name": "R101V3_curtain_hook.007",
+          "parent_index": 24,
+          "mesh": 9,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 10,
+          "name": "R101V3_curtain_hook.008",
+          "parent_index": 24,
+          "mesh": 10,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 11,
+          "name": "R101V3_curtain_hook.009",
+          "parent_index": 24,
+          "mesh": 11,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 12,
+          "name": "R101V3_curtain_hook.010",
+          "parent_index": 24,
+          "mesh": 12,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 13,
+          "name": "R101V3_curtain_hook.011",
+          "parent_index": 24,
+          "mesh": 13,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 14,
+          "name": "R101V3_curtain_rail",
+          "parent_index": 24,
+          "mesh": 14,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 15,
+          "name": "R101V3_glazing_gasket",
+          "parent_index": 24,
+          "mesh": 15,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -0.9580000042915344
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.6499999761581421
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0020000000949949026
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 16,
+          "name": "R101V3_glazing_gasket.001",
+          "parent_index": 24,
+          "mesh": 16,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.9580000042915344
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.6499999761581421
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0020000000949949026
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 17,
+          "name": "R101V3_opaque_pane_left",
+          "parent_index": 24,
+          "mesh": 17,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "part_role": "opaque_glazing",
+            "authority_owner": "INSTANCE__room_window_insert__016"
+          }
+        },
+        {
+          "index": 18,
+          "name": "R101V3_opaque_pane_right",
+          "parent_index": 24,
+          "mesh": 18,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4",
+            "part_role": "opaque_glazing",
+            "authority_owner": "INSTANCE__room_window_insert__016"
+          }
+        },
+        {
+          "index": 19,
+          "name": "R101V3_sash_track",
+          "parent_index": 24,
+          "mesh": 19,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.050999999046325684
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              -0.04500000178813934
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 20,
+          "name": "R101V3_sash_track.001",
+          "parent_index": 24,
+          "mesh": 20,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              1.2510000467300415
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              -0.04500000178813934
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 21,
+          "name": "R101V3_slider_latch",
+          "parent_index": 24,
+          "mesh": 21,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.04600000008940697
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.6549999713897705
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              -0.04899999871850014
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 22,
+          "name": "R101V3_slider_meeting_profile",
+          "parent_index": 24,
+          "mesh": 22,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -0.023000000044703484
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.6499999761581421
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.006000000052154064
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        },
+        {
+          "index": 23,
+          "name": "R101V3_slider_meeting_profile.001",
+          "parent_index": 24,
+          "mesh": 23,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.023000000044703484
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.6499999761581421
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.006000000052154064
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "render_only": true,
+            "collider_enabled": false,
+            "source_owner": "INSTANCE__room_window_insert__016",
+            "candidate_version": "room101_v4"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 24,
+          "node": "INSTANCE__room_window_insert__016",
+          "primitive": 0,
+          "material": "R101_cream_enamel",
+          "vertices": 480,
+          "triangles": 220,
+          "geometry_area_min_m2": 7.794195701085612e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 4.499884198594373e-06,
+              "range": [
+                [
+                  -1.034999966621399,
+                  -0.2999999523162842
+                ],
+                [
+                  1.034999966621399,
+                  1.184999942779541
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 7.078051567077637e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "R101V3_continuous_curtain_-1",
+          "primitive": 0,
+          "material": "R101V3_curtain_linen",
+          "vertices": 1842,
+          "triangles": 2784,
+          "geometry_area_min_m2": 4.175427701950795e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 5.4394968174165115e-05,
+              "range": [
+                [
+                  -2.972460985183716,
+                  -3.0999999046325684
+                ],
+                [
+                  10.79333209991455,
+                  1.0
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999998807907104,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999310970306396,
+              1.0000625848770142
+            ],
+            "orthogonality_abs_max": 0.00010676868259906769,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 1,
+          "node": "R101V3_continuous_curtain_1",
+          "primitive": 0,
+          "material": "R101V3_curtain_linen",
+          "vertices": 1842,
+          "triangles": 2784,
+          "geometry_area_min_m2": 4.175427701950795e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 5.4394968174165115e-05,
+              "range": [
+                [
+                  0.0,
+                  -3.0999999046325684
+                ],
+                [
+                  10.79333209991455,
+                  1.0
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999998807907104,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999310970306396,
+              1.0000625848770142
+            ],
+            "orthogonality_abs_max": 0.00010676868259906769,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 2,
+          "node": "R101V3_curtain_hook",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  -0.8619999885559082,
+                  -0.27300000190734863
+                ],
+                [
+                  0.045414213091135025,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 3,
+          "node": "R101V3_curtain_hook.001",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  -0.8019999861717224,
+                  -0.27300000190734863
+                ],
+                [
+                  0.045414213091135025,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 4,
+          "node": "R101V3_curtain_hook.002",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  -0.7419999837875366,
+                  -0.27300000190734863
+                ],
+                [
+                  0.045414213091135025,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 5,
+          "node": "R101V3_curtain_hook.003",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  -0.6819999814033508,
+                  -0.27300000190734863
+                ],
+                [
+                  0.045414213091135025,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999869465827942,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 6,
+          "node": "R101V3_curtain_hook.004",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  -0.621999979019165,
+                  -0.27300000190734863
+                ],
+                [
+                  0.045414213091135025,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 7,
+          "node": "R101V3_curtain_hook.005",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  -0.5619999766349792,
+                  -0.27300000190734863
+                ],
+                [
+                  0.045414213091135025,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999869465827942,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 8,
+          "node": "R101V3_curtain_hook.006",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  0.04258578643202782,
+                  -0.27300000190734863
+                ],
+                [
+                  0.5619999766349792,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999869465827942,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 9,
+          "node": "R101V3_curtain_hook.007",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  0.04258578643202782,
+                  -0.27300000190734863
+                ],
+                [
+                  0.621999979019165,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 10,
+          "node": "R101V3_curtain_hook.008",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  0.04258578643202782,
+                  -0.27300000190734863
+                ],
+                [
+                  0.6819999814033508,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999869465827942,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 11,
+          "node": "R101V3_curtain_hook.009",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  0.04258578643202782,
+                  -0.27300000190734863
+                ],
+                [
+                  0.7419999837875366,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 12,
+          "node": "R101V3_curtain_hook.010",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  0.04258578643202782,
+                  -0.27300000190734863
+                ],
+                [
+                  0.8019999861717224,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 13,
+          "node": "R101V3_curtain_hook.011",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 54,
+          "triangles": 28,
+          "geometry_area_min_m2": 8.28443056821726e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.284342811748502e-07,
+              "range": [
+                [
+                  0.04258578643202782,
+                  -0.27300000190734863
+                ],
+                [
+                  0.8619999885559082,
+                  0.9580000042915344
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0000252723693848
+            ],
+            "orthogonality_abs_max": 2.9802322387695312e-08,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 14,
+          "node": "R101V3_curtain_rail",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 104,
+          "triangles": 60,
+          "geometry_area_min_m2": 1.0486705630530224e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.0486704695722437e-06,
+              "range": [
+                [
+                  -0.925000011920929,
+                  -0.28000032901763916
+                ],
+                [
+                  0.9249996542930603,
+                  0.960242748260498
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              1.0,
+              1.0
+            ],
+            "orthogonality_abs_max": 0.0,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 15,
+          "node": "R101V3_glazing_gasket",
+          "primitive": 0,
+          "material": "R101V3_black_gasket",
+          "vertices": 384,
+          "triangles": 188,
+          "geometry_area_min_m2": 1.4459527349170435e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.348477464892312e-09,
+              "range": [
+                [
+                  -0.002933201612904668,
+                  0.4000667929649353
+                ],
+                [
+                  0.002933201612904668,
+                  1.59993314743042
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999549388885498,
+              1.000042200088501
+            ],
+            "orthogonality_abs_max": 9.156763553619385e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 16,
+          "node": "R101V3_glazing_gasket.001",
+          "primitive": 0,
+          "material": "R101V3_black_gasket",
+          "vertices": 384,
+          "triangles": 188,
+          "geometry_area_min_m2": 1.4459527349170435e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 8.348477464892312e-09,
+              "range": [
+                [
+                  -0.002933201612904668,
+                  0.4000667929649353
+                ],
+                [
+                  0.002933201612904668,
+                  1.59993314743042
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999549388885498,
+              1.000042200088501
+            ],
+            "orthogonality_abs_max": 9.156763553619385e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 17,
+          "node": "R101V3_opaque_pane_left",
+          "primitive": 0,
+          "material": "R101V3_opaque_glazing_compatibility",
+          "vertices": 96,
+          "triangles": 44,
+          "geometry_area_min_m2": 8.659762200488407e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 4.999871521249588e-07,
+              "range": [
+                [
+                  -0.9600000381469727,
+                  -0.24900007247924805
+                ],
+                [
+                  0.024000000208616257,
+                  0.9940000176429749
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 7.072091102600098e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 18,
+          "node": "R101V3_opaque_pane_right",
+          "primitive": 0,
+          "material": "R101V3_opaque_glazing_compatibility",
+          "vertices": 96,
+          "triangles": 44,
+          "geometry_area_min_m2": 8.659762200488407e-07,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 4.999871521249588e-07,
+              "range": [
+                [
+                  0.006000000052154064,
+                  -0.24900007247924805
+                ],
+                [
+                  0.9600000381469727,
+                  0.9940000176429749
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 7.072091102600098e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 19,
+          "node": "R101V3_sash_track",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 384,
+          "triangles": 188,
+          "geometry_area_min_m2": 2.833942856103194e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.6357031284996992e-08,
+              "range": [
+                [
+                  -0.9599063992500305,
+                  0.99259352684021
+                ],
+                [
+                  0.9599063992500305,
+                  1.00740647315979
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999468922615051,
+              1.0000426769256592
+            ],
+            "orthogonality_abs_max": 7.072091102600098e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 20,
+          "node": "R101V3_sash_track.001",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 384,
+          "triangles": 188,
+          "geometry_area_min_m2": 2.833942856103194e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 1.6357031284996992e-08,
+              "range": [
+                [
+                  -0.9599063992500305,
+                  0.99259352684021
+                ],
+                [
+                  0.9599063992500305,
+                  1.00740647315979
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999468922615051,
+              1.0000426769256592
+            ],
+            "orthogonality_abs_max": 7.072091102600098e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 21,
+          "node": "R101V3_slider_latch",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 384,
+          "triangles": 188,
+          "geometry_area_min_m2": 4.6845917205672005e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 2.7046322514934218e-08,
+              "range": [
+                [
+                  -0.027262967079877853,
+                  0.9906202554702759
+                ],
+                [
+                  0.027262967079877853,
+                  1.0093797445297241
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999468922615051,
+              1.0000009536743164
+            ],
+            "orthogonality_abs_max": 7.072091102600098e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 22,
+          "node": "R101V3_slider_meeting_profile",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 384,
+          "triangles": 188,
+          "geometry_area_min_m2": 3.701047622926514e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 2.1367174696251823e-08,
+              "range": [
+                [
+                  -0.036599475890398026,
+                  0.3751068711280823
+                ],
+                [
+                  0.036599475890398026,
+                  1.6248931884765625
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999549388885498,
+              1.00006103515625
+            ],
+            "orthogonality_abs_max": 8.831918239593506e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 23,
+          "node": "R101V3_slider_meeting_profile.001",
+          "primitive": 0,
+          "material": "R101V3_satin_aluminum",
+          "vertices": 384,
+          "triangles": 188,
+          "geometry_area_min_m2": 3.701047622926514e-08,
+          "degenerate_geometry_triangles": 0,
+          "textured": false,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 2.1367174696251823e-08,
+              "range": [
+                [
+                  -0.036599475890398026,
+                  0.3751068711280823
+                ],
+                [
+                  0.036599475890398026,
+                  1.6248931884765625
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0000001192092896
+          ],
+          "tangent": {
+            "length": [
+              0.9999549388885498,
+              1.00006103515625
+            ],
+            "orthogonality_abs_max": 8.831918239593506e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "small tangent rounding residual: R101V3_continuous_curtain_-1 max |N\u00b7T|=0.00010676868259906769",
+        "small tangent rounding residual: R101V3_continuous_curtain_1 max |N\u00b7T|=0.00010676868259906769"
+      ]
+    },
+    {
+      "file": "solid_wall_4m_013_v4.glb",
+      "sha256": "544a32e56c8c4b251eb71284e69511cf31a3bc2a33c008f60218a92f560e4855",
+      "bytes": 4192532,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "root_names": [
+        "INSTANCE__solid_wall_4m__013"
+      ],
+      "aggregate_bounds_gltf_m": [
+        [
+          -2.0,
+          0.0,
+          -0.09000000357627869
+        ],
+        [
+          2.0,
+          2.799999952316284,
+          0.11300000548362732
+        ]
+      ],
+      "triangle_count": 88,
+      "node_count": 1,
+      "materials": [
+        {
+          "index": 0,
+          "name": "MC15_stucco",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9599999785423279,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 0,
+              "image": 0,
+              "name": "stucco",
+              "texcoord": 0,
+              "bytes_sha256": "afe86e66dea745088a231e25525f658665af27ac0d4d1dc7a67e93e7df5bbedf",
+              "pixels_sha256": "07a45f57fb278bd1ffb1625b17d66dbf8fccfba694f97517039c6472dacaa71a",
+              "size": [
+                192,
+                192
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        },
+        {
+          "index": 1,
+          "name": "MC15_concrete_dark",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9700000286102295,
+          "normalScale": 1,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 1,
+              "image": 1,
+              "name": "concrete_dark",
+              "texcoord": 0,
+              "bytes_sha256": "67cd557c42b7779064b9c91928f88b8b2672e5f49914191a3a39c0deec32fcc7",
+              "pixels_sha256": "e022b45d762e5d986aaf8c5a76990efaa8df4557896e607df87084dde7f45159",
+              "size": [
+                192,
+                192
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        },
+        {
+          "index": 2,
+          "name": "R101V4_bathroom_fine_plaster",
+          "baseColorFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalScale": 0.3499999940395355,
+          "occlusionStrength": 1,
+          "alphaMode": "OPAQUE",
+          "doubleSided": true,
+          "textures": {
+            "baseColor_sRGB": {
+              "texture": 3,
+              "image": 3,
+              "name": "white_plaster_02_restrained_basecolor",
+              "texcoord": 0,
+              "bytes_sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+              "pixels_sha256": "d840395952f2b9273fb405fc2eaa98240fd2ecc730d0421b3c8cdeb8b17d81fa",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "roughness_G_metallic_B_linear": {
+              "texture": 4,
+              "image": 4,
+              "name": "white_plaster_02_restrained_roughness",
+              "texcoord": 0,
+              "bytes_sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c",
+              "pixels_sha256": "2a30a6ee2b9845b16de446e2da4d2666d251d9fd24027657c5c59c7428903d02",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            },
+            "normal_linear": {
+              "texture": 2,
+              "image": 2,
+              "name": "white_plaster_02_runtime_normal",
+              "texcoord": 0,
+              "bytes_sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+              "pixels_sha256": "76dedaca7482aa2b08876f8ca8b7e3befe7ee720beb634db1b46e361035290c2",
+              "size": [
+                1024,
+                1024
+              ],
+              "sampler": {
+                "magFilter": 9729,
+                "minFilter": 9987
+              },
+              "transform": null
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "index": 0,
+          "name": "stucco",
+          "format": "PNG",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "afe86e66dea745088a231e25525f658665af27ac0d4d1dc7a67e93e7df5bbedf",
+          "rgb_range": [
+            [
+              128,
+              198
+            ],
+            [
+              118,
+              182
+            ],
+            [
+              90,
+              139
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "name": "concrete_dark",
+          "format": "PNG",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "67cd557c42b7779064b9c91928f88b8b2672e5f49914191a3a39c0deec32fcc7",
+          "rgb_range": [
+            [
+              47,
+              69
+            ],
+            [
+              53,
+              78
+            ],
+            [
+              53,
+              78
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "name": "white_plaster_02_runtime_normal",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+          "rgb_range": [
+            [
+              36,
+              215
+            ],
+            [
+              35,
+              206
+            ],
+            [
+              201,
+              255
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "name": "white_plaster_02_restrained_basecolor",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+          "rgb_range": [
+            [
+              176,
+              231
+            ],
+            [
+              173,
+              225
+            ],
+            [
+              167,
+              212
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "name": "white_plaster_02_restrained_roughness",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c",
+          "rgb_range": [
+            [
+              255,
+              255
+            ],
+            [
+              186,
+              221
+            ],
+            [
+              255,
+              255
+            ]
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "index": 0,
+          "name": "INSTANCE__solid_wall_4m__013",
+          "parent_index": null,
+          "mesh": 0,
+          "matrix_local": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "extras": {
+            "asset_id": "mc15_solid_wall_4m",
+            "title": "Four metre rear wall",
+            "license": "CC0-1.0",
+            "units": "metres",
+            "render_only": true,
+            "collider_enabled": false,
+            "colliders_supplied": false,
+            "rigid_body_enabled": false,
+            "source_front": "-Y",
+            "connections": [
+              {
+                "name": "left",
+                "position_source_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  -1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  -2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  -1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "right",
+                "position_source_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_source": [
+                  1,
+                  0,
+                  0
+                ],
+                "position_gltf_m": [
+                  2,
+                  0,
+                  0
+                ],
+                "outward_gltf": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "name": "roof",
+                "position_source_m": [
+                  0.0,
+                  0.0,
+                  2.8
+                ],
+                "outward_source": [
+                  0,
+                  0,
+                  1
+                ],
+                "position_gltf_m": [
+                  0.0,
+                  2.8,
+                  0.0
+                ],
+                "outward_gltf": [
+                  0,
+                  1,
+                  0
+                ]
+              }
+            ],
+            "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+            "assembly_instance": true,
+            "candidate_version": "room101_v4",
+            "source_instance": "INSTANCE__solid_wall_4m__013",
+            "authority_owner": "INSTANCE__solid_wall_4m__013"
+          }
+        }
+      ],
+      "primitives": [
+        {
+          "node_index": 0,
+          "node": "INSTANCE__solid_wall_4m__013",
+          "primitive": 0,
+          "material": "MC15_stucco",
+          "vertices": 64,
+          "triangles": 30,
+          "geometry_area_min_m2": 7.794298939482482e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 5.4448400987894274e-06,
+              "range": [
+                [
+                  -2.200000047683716,
+                  -2.0799999237060547
+                ],
+                [
+                  2.200000047683716,
+                  1.0957000255584717
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.00006103515625
+            ],
+            "orthogonality_abs_max": 7.078051567077637e-05,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__solid_wall_4m__013",
+          "primitive": 1,
+          "material": "MC15_concrete_dark",
+          "vertices": 96,
+          "triangles": 44,
+          "geometry_area_min_m2": 3.4640554333708327e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 2.4199916879297234e-06,
+              "range": [
+                [
+                  -2.1977999210357666,
+                  0.8349999785423279
+                ],
+                [
+                  2.1977999210357666,
+                  1.1243000030517578
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.0
+            ],
+            "orthogonality_abs_max": 0.0,
+            "handedness": [
+              -1.0,
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        },
+        {
+          "node_index": 0,
+          "node": "INSTANCE__solid_wall_4m__013",
+          "primitive": 2,
+          "material": "R101V4_bathroom_fine_plaster",
+          "vertices": 32,
+          "triangles": 14,
+          "geometry_area_min_m2": 7.794298939482482e-06,
+          "degenerate_geometry_triangles": 0,
+          "textured": true,
+          "uv": {
+            "TEXCOORD_0": {
+              "zero_area_triangles": 0,
+              "zero_uv_with_valid_geometry": 0,
+              "minimum_area": 4.500420800468419e-06,
+              "range": [
+                [
+                  -8.0,
+                  -1.7999999523162842
+                ],
+                [
+                  -4.0,
+                  1.0
+                ]
+              ]
+            }
+          },
+          "normal_length": [
+            0.9999999403953552,
+            1.0
+          ],
+          "tangent": {
+            "length": [
+              0.9999903440475464,
+              1.00006103515625
+            ],
+            "orthogonality_abs_max": 7.078051567077637e-05,
+            "handedness": [
+              1.0
+            ]
+          },
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TANGENT"
+          ]
+        }
+      ],
+      "errors": [],
+      "warnings": []
+    }
+  ],
+  "v3_comparisons": [
+    {
+      "asset": "bathroom_partition_4m_019_v4.glb",
+      "v3_bounds": [
+        [
+          -2.0,
+          0.0,
+          -0.08500000089406967
+        ],
+        [
+          2.0,
+          2.799999952316284,
+          0.08500000089406967
+        ]
+      ],
+      "v4_bounds": [
+        [
+          -2.0,
+          0.0,
+          -0.08500000089406967
+        ],
+        [
+          2.0,
+          2.799999952316284,
+          0.08500000089406967
+        ]
+      ],
+      "bounds_delta": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "v3_errors": [],
+      "v4_errors": [],
+      "v3_triangles": 264,
+      "v4_triangles": 264
+    },
+    {
+      "asset": "folded_bedsheet_stack_027_v4.glb",
+      "v3_bounds": [
+        [
+          -0.23742148280143738,
+          0.0,
+          -0.17382186651229858
+        ],
+        [
+          0.23742148280143738,
+          0.15042652189731598,
+          0.17382186651229858
+        ]
+      ],
+      "v4_bounds": [
+        [
+          -0.23499999940395355,
+          0.010099999606609344,
+          -0.16899999976158142
+        ],
+        [
+          0.23499999940395355,
+          0.07449900358915329,
+          0.16899999976158142
+        ]
+      ],
+      "bounds_delta": [
+        [
+          0.0024214833974838257,
+          0.010099999606609344,
+          0.004821866750717163
+        ],
+        [
+          -0.0024214833974838257,
+          -0.07592751830816269,
+          -0.004821866750717163
+        ]
+      ],
+      "v3_errors": [],
+      "v4_errors": [],
+      "v3_triangles": 388,
+      "v4_triangles": 1524
+    },
+    {
+      "asset": "mattress_dirty_022_v4.glb",
+      "v3_bounds": [
+        [
+          -0.6790000200271606,
+          0.014812052249908447,
+          -0.9790000319480896
+        ],
+        [
+          0.6790000200271606,
+          0.42214998602867126,
+          0.9790000319480896
+        ]
+      ],
+      "v4_bounds": [
+        [
+          -0.6789999008178711,
+          0.014829999767243862,
+          -0.978999137878418
+        ],
+        [
+          0.6790000200271606,
+          0.42214998602867126,
+          0.9789827466011047
+        ]
+      ],
+      "bounds_delta": [
+        [
+          1.1920928955078125e-07,
+          1.7947517335414886e-05,
+          8.940696716308594e-07
+        ],
+        [
+          0.0,
+          0.0,
+          -1.728534698486328e-05
+        ]
+      ],
+      "v3_errors": [
+        "degenerate geometry: REUSE__mattress_dirty__022/1: 192"
+      ],
+      "v4_errors": [],
+      "v3_triangles": 3284,
+      "v4_triangles": 7960
+    },
+    {
+      "asset": "room_floor_4x6m_008_v4.glb",
+      "v3_bounds": [
+        [
+          -2.0,
+          -0.10000000149011612,
+          -3.0
+        ],
+        [
+          2.0,
+          0.006500000134110451,
+          3.0
+        ]
+      ],
+      "v4_bounds": [
+        [
+          -2.0,
+          -0.10000000149011612,
+          -3.0
+        ],
+        [
+          2.0,
+          0.006500000134110451,
+          3.0
+        ]
+      ],
+      "bounds_delta": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "v3_errors": [],
+      "v4_errors": [],
+      "v3_triangles": 200,
+      "v4_triangles": 868
+    },
+    {
+      "asset": "room_window_insert_016_v4.glb",
+      "v3_bounds": [
+        [
+          -1.034999966621399,
+          -0.008499999530613422,
+          -0.06499999761581421
+        ],
+        [
+          1.034999966621399,
+          1.2999999523162842,
+          0.1850000023841858
+        ]
+      ],
+      "v4_bounds": [
+        [
+          -1.034999966621399,
+          -0.008499999530613422,
+          -0.06499999761581421
+        ],
+        [
+          1.034999966621399,
+          1.2999999523162842,
+          0.1850000023841858
+        ]
+      ],
+      "bounds_delta": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "v3_errors": [
+        "degenerate textured UV: R101V3_continuous_curtain_-1/0/baseColor_sRGB: 224",
+        "degenerate textured UV: R101V3_continuous_curtain_-1/0/roughness_G_metallic_B_linear: 224",
+        "degenerate textured UV: R101V3_continuous_curtain_-1/0/normal_linear: 224",
+        "degenerate textured UV: R101V3_continuous_curtain_1/0/baseColor_sRGB: 224",
+        "degenerate textured UV: R101V3_continuous_curtain_1/0/roughness_G_metallic_B_linear: 224",
+        "degenerate textured UV: R101V3_continuous_curtain_1/0/normal_linear: 224"
+      ],
+      "v4_errors": [],
+      "v3_triangles": 7588,
+      "v4_triangles": 7588,
+      "geometry_signature_unchanged_by_node": {
+        "R101V3_continuous_curtain_-1": true,
+        "R101V3_continuous_curtain_1": true,
+        "R101V3_curtain_hook": false,
+        "R101V3_curtain_hook.001": false,
+        "R101V3_curtain_hook.002": false,
+        "R101V3_curtain_hook.003": false,
+        "R101V3_curtain_hook.004": false,
+        "R101V3_curtain_hook.005": false,
+        "R101V3_curtain_hook.006": false,
+        "R101V3_curtain_hook.007": false,
+        "R101V3_curtain_hook.008": false,
+        "R101V3_curtain_hook.009": false,
+        "R101V3_curtain_hook.010": false,
+        "R101V3_curtain_hook.011": false,
+        "R101V3_curtain_rail": false,
+        "R101V3_glazing_gasket": true,
+        "R101V3_glazing_gasket.001": true,
+        "R101V3_opaque_pane_left": true,
+        "R101V3_opaque_pane_right": true,
+        "R101V3_sash_track": true,
+        "R101V3_sash_track.001": true,
+        "R101V3_slider_latch": true,
+        "R101V3_slider_meeting_profile": true,
+        "R101V3_slider_meeting_profile.001": true,
+        "INSTANCE__room_window_insert__016": true
+      },
+      "material_json_exact_unchanged": true,
+      "image_hashes_unchanged": true
+    }
+  ],
+  "v3_seal": {
+    "checked": 90,
+    "failures": [],
+    "files": [
+      {
+        "file": "AO_CHANNELS.json",
+        "expected": "bebd0c15436a49bb436716bfc0ea85b984b52ea2c9754cc387d8f73ab4ddb03a",
+        "actual": "bebd0c15436a49bb436716bfc0ea85b984b52ea2c9754cc387d8f73ab4ddb03a"
+      },
+      {
+        "file": "CAMERA_MATCH.json",
+        "expected": "2443d195d27480806d23589c4c34e9e04a199db98c0aa46ee609d3d88b09b1a2",
+        "actual": "2443d195d27480806d23589c4c34e9e04a199db98c0aa46ee609d3d88b09b1a2"
+      },
+      {
+        "file": "CATALOG_ENTRIES.json",
+        "expected": "a7bbe96f8eff6ebcbfc110b3c24e5881d3395b04de1ceea7e3298e8e4c928a47",
+        "actual": "a7bbe96f8eff6ebcbfc110b3c24e5881d3395b04de1ceea7e3298e8e4c928a47"
+      },
+      {
+        "file": "CHANGES.json",
+        "expected": "7599434c48c21e88ade2882d5047cf9848899a6a41858ffb39e815b29f19ad4a",
+        "actual": "7599434c48c21e88ade2882d5047cf9848899a6a41858ffb39e815b29f19ad4a"
+      },
+      {
+        "file": "CURRENT_ENGINE_BASELINE.json",
+        "expected": "7d36f06aee3679e87dfdae96e959cd982440ac37f727213e2d1fc13c5b9990c6",
+        "actual": "7d36f06aee3679e87dfdae96e959cd982440ac37f727213e2d1fc13c5b9990c6"
+      },
+      {
+        "file": "DETAIL_CAMERAS.json",
+        "expected": "33f6655ac56974b500a5ab6d2d3789582f4a2381fbb7dd3da8db06e1a2897bc7",
+        "actual": "33f6655ac56974b500a5ab6d2d3789582f4a2381fbb7dd3da8db06e1a2897bc7"
+      },
+      {
+        "file": "ENGINE_CAMERA_MATCH.json",
+        "expected": "c83244390cb50bdd5acf9925dd222782da1f6380b62520c08cf209de32d74647",
+        "actual": "c83244390cb50bdd5acf9925dd222782da1f6380b62520c08cf209de32d74647"
+      },
+      {
+        "file": "EXPORT_MANIFEST.json",
+        "expected": "7f86f81326e0b2bf87f6509d764ffb73ea45910e0b304c730ce728c6f15dc56a",
+        "actual": "7f86f81326e0b2bf87f6509d764ffb73ea45910e0b304c730ce728c6f15dc56a"
+      },
+      {
+        "file": "MATERIAL_BINDINGS.json",
+        "expected": "c8b33e5c9a32967b15a84d933f9b96d6017c67d5da499dd525af38ab9100c89d",
+        "actual": "c8b33e5c9a32967b15a84d933f9b96d6017c67d5da499dd525af38ab9100c89d"
+      },
+      {
+        "file": "MATERIAL_PREPARATION.json",
+        "expected": "48f32f9e22e1e755dae9da23489ec86270ebe43bb0fbdda5c62a52b9025f046a",
+        "actual": "48f32f9e22e1e755dae9da23489ec86270ebe43bb0fbdda5c62a52b9025f046a"
+      },
+      {
+        "file": "README.md",
+        "expected": "a236c9cc2f8f216459b012517f35b0310ba2fe946c5b07d9ac8620ca85972072",
+        "actual": "a236c9cc2f8f216459b012517f35b0310ba2fe946c5b07d9ac8620ca85972072"
+      },
+      {
+        "file": "REFERENCES.md",
+        "expected": "3d120be345ba1cdca35cfb9cd88b3fae98e893e95b01a3a1519acb7431f6e25c",
+        "actual": "3d120be345ba1cdca35cfb9cd88b3fae98e893e95b01a3a1519acb7431f6e25c"
+      },
+      {
+        "file": "REVIEW_SUMMARY.json",
+        "expected": "6b45a92045418afa8a5091a4aa0c48ce66fa0ebcb10871abe6d26a5538e5671a",
+        "actual": "6b45a92045418afa8a5091a4aa0c48ce66fa0ebcb10871abe6d26a5538e5671a"
+      },
+      {
+        "file": "RUNTIME_HANDOFF.md",
+        "expected": "3e345743c70ad18415a5189526730c7037521ed954796a2dc977a65f115b5fc4",
+        "actual": "3e345743c70ad18415a5189526730c7037521ed954796a2dc977a65f115b5fc4"
+      },
+      {
+        "file": "RUNTIME_INSTANCE_BINDINGS.json",
+        "expected": "8fd8debe1cdc3bef807fc40b48a4a7f268d9d6cb18045c58797d26fd5c9f0b9c",
+        "actual": "8fd8debe1cdc3bef807fc40b48a4a7f268d9d6cb18045c58797d26fd5c9f0b9c"
+      },
+      {
+        "file": "SOURCE_OBJECTS.json",
+        "expected": "7a5cd6315c7be11f4b4b9e85b6cf267a711aa4b449bf1f5df2dba67b68c226ad",
+        "actual": "7a5cd6315c7be11f4b4b9e85b6cf267a711aa4b449bf1f5df2dba67b68c226ad"
+      },
+      {
+        "file": "SOURCE_PROVENANCE.json",
+        "expected": "81ee28e8d2eeac74feb6e08a6ee46d301578a9949d15c02c1bf5e3734fe76edd",
+        "actual": "81ee28e8d2eeac74feb6e08a6ee46d301578a9949d15c02c1bf5e3734fe76edd"
+      },
+      {
+        "file": "TRIM_REVISIONS.json",
+        "expected": "35d9548c139860ce1fd254b8c21ca62f7d507ad15ea368178aa583709a572c38",
+        "actual": "35d9548c139860ce1fd254b8c21ca62f7d507ad15ea368178aa583709a572c38"
+      },
+      {
+        "file": "assets/bathroom_partition_4m_019_v3.glb",
+        "expected": "b3f9bf6aa362a1d28e893b3bc67ba18fc1f63e0f80d0b8745e65886a76e1f327",
+        "actual": "b3f9bf6aa362a1d28e893b3bc67ba18fc1f63e0f80d0b8745e65886a76e1f327"
+      },
+      {
+        "file": "assets/door_optional_detail_overlay_v3.glb",
+        "expected": "63a1daeb6bb5a3c9fe2cc960af63dbf91b01794a5017247303e54b138693fd3b",
+        "actual": "63a1daeb6bb5a3c9fe2cc960af63dbf91b01794a5017247303e54b138693fd3b"
+      },
+      {
+        "file": "assets/end_wall_6m_104_v3.glb",
+        "expected": "227c8ffd45d6acf8743c68ec3376e6aa816d6c9d2e3a532aa43e17078c5da2cd",
+        "actual": "227c8ffd45d6acf8743c68ec3376e6aa816d6c9d2e3a532aa43e17078c5da2cd"
+      },
+      {
+        "file": "assets/end_wall_6m_105_v3.glb",
+        "expected": "a541bb7e013575856514a45ee35bf577ee61525190c731b5c3b4f8cf42eac8b5",
+        "actual": "a541bb7e013575856514a45ee35bf577ee61525190c731b5c3b4f8cf42eac8b5"
+      },
+      {
+        "file": "assets/facade_optional_detail_overlay_v3.glb",
+        "expected": "2c7e14054a7fdf22c52720cfdb94f723f256d104e035c8b85d2b86bb6f5db937",
+        "actual": "2c7e14054a7fdf22c52720cfdb94f723f256d104e035c8b85d2b86bb6f5db937"
+      },
+      {
+        "file": "assets/flat_roof_4x6m_009_v3.glb",
+        "expected": "06c3a25d1573871a4eb36d86f0e01373773fe01ac1c8cf1bdde2154553fe7b6f",
+        "actual": "06c3a25d1573871a4eb36d86f0e01373773fe01ac1c8cf1bdde2154553fe7b6f"
+      },
+      {
+        "file": "assets/folded_bedsheet_stack_027_v3.glb",
+        "expected": "3c1fddeae26cec0f5ba388c43e587e43bc2aff2334b483cfb599de9b6a50e07d",
+        "actual": "3c1fddeae26cec0f5ba388c43e587e43bc2aff2334b483cfb599de9b6a50e07d"
+      },
+      {
+        "file": "assets/mattress_dirty_022_v3.glb",
+        "expected": "a6aa41be9758e0c99f93e9b396f0f38de81bf606f61c7fb2abf5aa0f58b7ed9b",
+        "actual": "a6aa41be9758e0c99f93e9b396f0f38de81bf606f61c7fb2abf5aa0f58b7ed9b"
+      },
+      {
+        "file": "assets/room_floor_4x6m_008_v3.glb",
+        "expected": "817a8820e746f99f698a0f4ffe302a6c190390119fd3dbd258a4192f8f41e9e0",
+        "actual": "817a8820e746f99f698a0f4ffe302a6c190390119fd3dbd258a4192f8f41e9e0"
+      },
+      {
+        "file": "assets/room_number_plaque_018_v3.glb",
+        "expected": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+        "actual": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c"
+      },
+      {
+        "file": "assets/room_window_insert_016_v3.glb",
+        "expected": "7ce9e66a972b20c0d58e35053708ee5384e9a8e9284537424f16467f82422d09",
+        "actual": "7ce9e66a972b20c0d58e35053708ee5384e9a8e9284537424f16467f82422d09"
+      },
+      {
+        "file": "assets/through_wall_ac_017_v3.glb",
+        "expected": "ce85308a71de992660505da75e3a4c374200083200e858049e850c72bb118e0f",
+        "actual": "ce85308a71de992660505da75e3a4c374200083200e858049e850c72bb118e0f"
+      },
+      {
+        "file": "build_candidate.py",
+        "expected": "2b82c0ccf6b4043ee6cba87a173bf0dba86d9933593d773c031c37787a84ce68",
+        "actual": "2b82c0ccf6b4043ee6cba87a173bf0dba86d9933593d773c031c37787a84ce68"
+      },
+      {
+        "file": "fonts/DejaVu-LICENSE-debian.txt",
+        "expected": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+        "actual": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9"
+      },
+      {
+        "file": "fonts/DejaVuSansCondensed-Bold.ttf",
+        "expected": "21f02ebcea75529d3ed9d26e089cd1b9c59a4b784119ba3a96e9bc83cf755ec7",
+        "actual": "21f02ebcea75529d3ed9d26e089cd1b9c59a4b784119ba3a96e9bc83cf755ec7"
+      },
+      {
+        "file": "licenses/MATERIALS_V1_CC0.txt",
+        "expected": "7bde52c8517ac3f7e2e4b78387fc13e7a3fdb1b48349312fc2d09f9cae78267f",
+        "actual": "7bde52c8517ac3f7e2e4b78387fc13e7a3fdb1b48349312fc2d09f9cae78267f"
+      },
+      {
+        "file": "licenses/MATERIALS_V1_SOURCE_MANIFEST.json",
+        "expected": "fbeb3805de4ed2df93c2d4e4c055d6596a9fd38ed59c55ac37c381e92a1c504e",
+        "actual": "fbeb3805de4ed2df93c2d4e4c055d6596a9fd38ed59c55ac37c381e92a1c504e"
+      },
+      {
+        "file": "licenses/MOTEL_SOURCE_CC0.txt",
+        "expected": "e602cf7a4281a07cdba920a7214d3a01f8bc8beac89d5014d5eb4554ad6d703b",
+        "actual": "e602cf7a4281a07cdba920a7214d3a01f8bc8beac89d5014d5eb4554ad6d703b"
+      },
+      {
+        "file": "licenses/NEW_DETAILS_CC0.txt",
+        "expected": "7bba790e0dbfbfdaad94803eb80753813da566e262c47b1e5e3ecc5f28a63b17",
+        "actual": "7bba790e0dbfbfdaad94803eb80753813da566e262c47b1e5e3ecc5f28a63b17"
+      },
+      {
+        "file": "licenses/NEW_V3_DERIVATIVES_CC0.txt",
+        "expected": "621dbd727fb290e50701795097aef5b2eb1d4bd5512eab0ab19aef3e6be8334c",
+        "actual": "621dbd727fb290e50701795097aef5b2eb1d4bd5512eab0ab19aef3e6be8334c"
+      },
+      {
+        "file": "licenses/POLY_HAVEN_CC0.txt",
+        "expected": "9838fbdcad5899b34a8a4edb622942d167cc7ba5c8747d829dce31378e04d532",
+        "actual": "9838fbdcad5899b34a8a4edb622942d167cc7ba5c8747d829dce31378e04d532"
+      },
+      {
+        "file": "prepare_maps.py",
+        "expected": "340dc5c4ff5d1ee4fe8f165242d9b4b220dffd5304f2798189d586691d63e717",
+        "actual": "340dc5c4ff5d1ee4fe8f165242d9b4b220dffd5304f2798189d586691d63e717"
+      },
+      {
+        "file": "qa/EXPORT_VALIDATION.json",
+        "expected": "64da9a192353ff6206d22a368a00c15167c2c37e52e8d8101946fd419cf8e34e",
+        "actual": "64da9a192353ff6206d22a368a00c15167c2c37e52e8d8101946fd419cf8e34e"
+      },
+      {
+        "file": "qa/PORTABLE_REBUILD.json",
+        "expected": "520373da0cae5f3d42b04a3c946d0b6f349fb2ceae3e61f41145ac534d235315",
+        "actual": "520373da0cae5f3d42b04a3c946d0b6f349fb2ceae3e61f41145ac534d235315"
+      },
+      {
+        "file": "qa/SCENE_VALIDATION.json",
+        "expected": "7c33f972a8205febb254de00b698218fd1d2a169971f512be7d186c90db20264",
+        "actual": "7c33f972a8205febb254de00b698218fd1d2a169971f512be7d186c90db20264"
+      },
+      {
+        "file": "qa/TRIM_GEOMETRY_VALIDATION.json",
+        "expected": "802204b26af66cb8c31b13cd31dd4d435eeef7d4763343f7206a1f68f2f45d9a",
+        "actual": "802204b26af66cb8c31b13cd31dd4d435eeef7d4763343f7206a1f68f2f45d9a"
+      },
+      {
+        "file": "qa/baseline_v2_doorway.png",
+        "expected": "b639406217d0645e8bdb4c59aab9ea5251e57848eeab50e4b8deef73b19c51ac",
+        "actual": "b639406217d0645e8bdb4c59aab9ea5251e57848eeab50e4b8deef73b19c51ac"
+      },
+      {
+        "file": "qa/baseline_v2_engine_entrance_source_lighting.png",
+        "expected": "0f50e57cc2668b290faff533038480b9bf78f63893ed487e81f1382ae84b53b4",
+        "actual": "0f50e57cc2668b290faff533038480b9bf78f63893ed487e81f1382ae84b53b4"
+      },
+      {
+        "file": "qa/baseline_v2_engine_interior_source_lighting.png",
+        "expected": "e7fea35597c50b0c565157b709cbf23936abbb270801451de333964e63bced72",
+        "actual": "e7fea35597c50b0c565157b709cbf23936abbb270801451de333964e63bced72"
+      },
+      {
+        "file": "qa/baseline_v2_fabric_detail_384.png",
+        "expected": "c0840e8c517384f61b758aa952bc8adffdbb7f37f08c188d877088b0713c86b6",
+        "actual": "c0840e8c517384f61b758aa952bc8adffdbb7f37f08c188d877088b0713c86b6"
+      },
+      {
+        "file": "qa/baseline_v2_interior_bed.png",
+        "expected": "d0b1b7c2941a2768f47de2ea891dd8fe9e244b7ab17037823a469914cef76935",
+        "actual": "d0b1b7c2941a2768f47de2ea891dd8fe9e244b7ab17037823a469914cef76935"
+      },
+      {
+        "file": "qa/baseline_v2_interior_window.png",
+        "expected": "a038da7ee4899a0c6a688ac8b3ca298caafbba6b8e591e4765f3caffabf0c996",
+        "actual": "a038da7ee4899a0c6a688ac8b3ca298caafbba6b8e591e4765f3caffabf0c996"
+      },
+      {
+        "file": "qa/baseline_v2_trim_detail_384.png",
+        "expected": "d7162b408ff45f218dd41e787dad3b7df9b366f840a21dab0278ed4b7359684a",
+        "actual": "d7162b408ff45f218dd41e787dad3b7df9b366f840a21dab0278ed4b7359684a"
+      },
+      {
+        "file": "qa/candidate_v3_doorway.png",
+        "expected": "40d33159e3d758a9e34d8f5390756e82938ca224cdd35cc298965ca0f85cc0bd",
+        "actual": "40d33159e3d758a9e34d8f5390756e82938ca224cdd35cc298965ca0f85cc0bd"
+      },
+      {
+        "file": "qa/candidate_v3_engine_entrance_source_lighting.png",
+        "expected": "96e6b9d8e63b7637e7042cd81f058bdd60a8eddb3e608f4142ee7cec9f8fbb3a",
+        "actual": "96e6b9d8e63b7637e7042cd81f058bdd60a8eddb3e608f4142ee7cec9f8fbb3a"
+      },
+      {
+        "file": "qa/candidate_v3_engine_interior_source_lighting.png",
+        "expected": "2a82a1388dbec96fd6c0e8075d72613111d04b32aff879f5d14cafc65d26319f",
+        "actual": "2a82a1388dbec96fd6c0e8075d72613111d04b32aff879f5d14cafc65d26319f"
+      },
+      {
+        "file": "qa/candidate_v3_fabric_detail_384.png",
+        "expected": "3a15ee10aa5e0248562e5b37122a4e8eb6ed7065de85c4bd08fde03d9a719475",
+        "actual": "3a15ee10aa5e0248562e5b37122a4e8eb6ed7065de85c4bd08fde03d9a719475"
+      },
+      {
+        "file": "qa/candidate_v3_interior_bed.png",
+        "expected": "5990d597d30d9a289616d7ca88c278b6439a0852c2749ae201b13b0411588ac5",
+        "actual": "5990d597d30d9a289616d7ca88c278b6439a0852c2749ae201b13b0411588ac5"
+      },
+      {
+        "file": "qa/candidate_v3_interior_window.png",
+        "expected": "168b1831468f9ba922a301999b19a0e324c958afba0b6e1f6139852af26fd2e5",
+        "actual": "168b1831468f9ba922a301999b19a0e324c958afba0b6e1f6139852af26fd2e5"
+      },
+      {
+        "file": "qa/candidate_v3_trim_detail_384.png",
+        "expected": "f5bd3456cacf1e9fc8bee574ed2a698762e6378a9119753f972ad5471e32fc6a",
+        "actual": "f5bd3456cacf1e9fc8bee574ed2a698762e6378a9119753f972ad5471e32fc6a"
+      },
+      {
+        "file": "qa/engine_default_v2/README.md",
+        "expected": "fda2e899f6b4b64e983aa5b3e6335c283832d3bc200310089cb652224028c3e1",
+        "actual": "fda2e899f6b4b64e983aa5b3e6335c283832d3bc200310089cb652224028c3e1"
+      },
+      {
+        "file": "qa/engine_default_v2/entrance.png",
+        "expected": "9ef0b7ea25f68aff36e8b58b606636514a5364498300075a9b22d8774bdad62b",
+        "actual": "9ef0b7ea25f68aff36e8b58b606636514a5364498300075a9b22d8774bdad62b"
+      },
+      {
+        "file": "qa/engine_default_v2/interior.png",
+        "expected": "06da3964e248859e7b80a4f052927c88dd2ff5764fdd1ea4810968f5d7801cd8",
+        "actual": "06da3964e248859e7b80a4f052927c88dd2ff5764fdd1ea4810968f5d7801cd8"
+      },
+      {
+        "file": "qa/validate_exports.py",
+        "expected": "db092d3ffd33a28a6a5fbda0264db1b66c0c90cab85456933e0976be04c8263c",
+        "actual": "db092d3ffd33a28a6a5fbda0264db1b66c0c90cab85456933e0976be04c8263c"
+      },
+      {
+        "file": "qa/validate_scene.py",
+        "expected": "5bd6a358ff69ca7ca995a397efe8cf1bde5491498c156b14a9f5b6937c7e15ec",
+        "actual": "5bd6a358ff69ca7ca995a397efe8cf1bde5491498c156b14a9f5b6937c7e15ec"
+      },
+      {
+        "file": "render_detail_pairs.py",
+        "expected": "a3b71d875be3e9da1af66e1ad64d2f72786023e86aea580501821f895b667478",
+        "actual": "a3b71d875be3e9da1af66e1ad64d2f72786023e86aea580501821f895b667478"
+      },
+      {
+        "file": "render_engine_camera_pairs.py",
+        "expected": "8bb5cd7f05f200ac4fcaddf676c90e511feff2a2e7bd1dd8be991a42da281ff5",
+        "actual": "8bb5cd7f05f200ac4fcaddf676c90e511feff2a2e7bd1dd8be991a42da281ff5"
+      },
+      {
+        "file": "requirements.txt",
+        "expected": "4cc965cfebca4d5c6f29e4d81bad99327ba6853719fafc8235e9fbc864ac7c20",
+        "actual": "4cc965cfebca4d5c6f29e4d81bad99327ba6853719fafc8235e9fbc864ac7c20"
+      },
+      {
+        "file": "room101_v3_source.blend",
+        "expected": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb",
+        "actual": "8ca71a373955f91f0091d49e4085368fa2085b19df3f8ab3a9245d85c327e3fb"
+      },
+      {
+        "file": "source/V2_MATERIAL_BINDINGS.json",
+        "expected": "9331c455ca40e06c5635cc7484a8f8138b3bdafaca6e70c15663d8866f838d13",
+        "actual": "9331c455ca40e06c5635cc7484a8f8138b3bdafaca6e70c15663d8866f838d13"
+      },
+      {
+        "file": "source/V2_REFINEMENT_PARAMETERS.json",
+        "expected": "fc7bf3de1a25aea03cf98d51c807cc357fd429687ed105403ffb8abb637c78da",
+        "actual": "fc7bf3de1a25aea03cf98d51c807cc357fd429687ed105403ffb8abb637c78da"
+      },
+      {
+        "file": "source/V2_SOURCE_MANIFEST.json",
+        "expected": "8f24eb5bc163f60b8a4020e310df93ca660b8df0063c598326e0c78f7b6770ad",
+        "actual": "8f24eb5bc163f60b8a4020e310df93ca660b8df0063c598326e0c78f7b6770ad"
+      },
+      {
+        "file": "source/room101_v2_pinned.blend",
+        "expected": "0699b165d2b12517a534189dadb03718786a82c3bfe06ffe5a6a3599a92f2921",
+        "actual": "0699b165d2b12517a534189dadb03718786a82c3bfe06ffe5a6a3599a92f2921"
+      },
+      {
+        "file": "source_materials/carpet016_2k/Carpet016_2K-PNG_AmbientOcclusion.png",
+        "expected": "b7ddf9b5dbc81395be5fe085536730ea70d63b12a4fb23878ba6a353b5871b41",
+        "actual": "b7ddf9b5dbc81395be5fe085536730ea70d63b12a4fb23878ba6a353b5871b41"
+      },
+      {
+        "file": "source_materials/carpet016_2k/Carpet016_2K-PNG_Color.png",
+        "expected": "c026a25b26e4ab6b64949bbbec2688eaac2bd7faba401b84c51d3040d5a63604",
+        "actual": "c026a25b26e4ab6b64949bbbec2688eaac2bd7faba401b84c51d3040d5a63604"
+      },
+      {
+        "file": "source_materials/carpet016_2k/Carpet016_2K-PNG_NormalGL.png",
+        "expected": "1f096e357c7e55f6671d840ab0380762856b744f70cf3ad60d9cf2653e155e17",
+        "actual": "1f096e357c7e55f6671d840ab0380762856b744f70cf3ad60d9cf2653e155e17"
+      },
+      {
+        "file": "source_materials/carpet016_2k/Carpet016_2K-PNG_Roughness.png",
+        "expected": "7b0a932c9b8104fca4962aad9f3d2428d93f25097de8e3448802e049c7a8c9ff",
+        "actual": "7b0a932c9b8104fca4962aad9f3d2428d93f25097de8e3448802e049c7a8c9ff"
+      },
+      {
+        "file": "source_materials/rough_linen_2k/rough_linen_diff_2k.png",
+        "expected": "92a274c46f24af3d7761c6722e54fec8188e3b7ef6b92dc2c874bfc0ed3d4069",
+        "actual": "92a274c46f24af3d7761c6722e54fec8188e3b7ef6b92dc2c874bfc0ed3d4069"
+      },
+      {
+        "file": "source_materials/rough_linen_2k/rough_linen_nor_gl_2k.png",
+        "expected": "1de2d1e782a54340b9a047a78382c1a0218cc1933bdffb331d6ed5fa2164e932",
+        "actual": "1de2d1e782a54340b9a047a78382c1a0218cc1933bdffb331d6ed5fa2164e932"
+      },
+      {
+        "file": "source_materials/rough_linen_2k/rough_linen_rough_2k.png",
+        "expected": "2f6e4b19ab8c26bca1ad88748185ea5e72e1fde292f3b5eccd956bb9aecabc1f",
+        "actual": "2f6e4b19ab8c26bca1ad88748185ea5e72e1fde292f3b5eccd956bb9aecabc1f"
+      },
+      {
+        "file": "textures/blanket_basecolor.png",
+        "expected": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72",
+        "actual": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72"
+      },
+      {
+        "file": "textures/carpet_ao.png",
+        "expected": "cd9f474adc8ade4892a8a8387ad6680fb0c637df597d60838e0a34057cd6d1de",
+        "actual": "cd9f474adc8ade4892a8a8387ad6680fb0c637df597d60838e0a34057cd6d1de"
+      },
+      {
+        "file": "textures/carpet_basecolor.png",
+        "expected": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3",
+        "actual": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3"
+      },
+      {
+        "file": "textures/carpet_normal_gl.png",
+        "expected": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30",
+        "actual": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30"
+      },
+      {
+        "file": "textures/carpet_roughness.png",
+        "expected": "8413b881d06c5a96f293e1eee54f564660ffb4fe4c719915f46e9a86766424cc",
+        "actual": "8413b881d06c5a96f293e1eee54f564660ffb4fe4c719915f46e9a86766424cc"
+      },
+      {
+        "file": "textures/curtain_basecolor.png",
+        "expected": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f",
+        "actual": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f"
+      },
+      {
+        "file": "textures/linen_basecolor.png",
+        "expected": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+        "actual": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb"
+      },
+      {
+        "file": "textures/linen_normal_gl.png",
+        "expected": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+        "actual": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9"
+      },
+      {
+        "file": "textures/linen_roughness.png",
+        "expected": "ef38eb40c0cc4d2e0c0e10183cc1cfb8bcd0e3d5c352a8b09708c395f73a7c5b",
+        "actual": "ef38eb40c0cc4d2e0c0e10183cc1cfb8bcd0e3d5c352a8b09708c395f73a7c5b"
+      },
+      {
+        "file": "textures/plaque101_basecolor.png",
+        "expected": "8b008dea1ac38eb62569f43200bc223a7b48094b31a20e19d80b51a288cc734c",
+        "actual": "8b008dea1ac38eb62569f43200bc223a7b48094b31a20e19d80b51a288cc734c"
+      },
+      {
+        "file": "textures/plaque101_normal_gl.png",
+        "expected": "9dcb14168b63e12f144389aaf94a50cf9aa498031d0694847ecccdf5461ddf7e",
+        "actual": "9dcb14168b63e12f144389aaf94a50cf9aa498031d0694847ecccdf5461ddf7e"
+      },
+      {
+        "file": "textures/plaque101_roughness.png",
+        "expected": "a4cf03546456d6772b3987db7ad13d52ec71003d39a4b410b0e10685efca9327",
+        "actual": "a4cf03546456d6772b3987db7ad13d52ec71003d39a4b410b0e10685efca9327"
+      }
+    ]
+  },
+  "pinned_source_matches_sealed_v3": true,
+  "v4_export_manifest_matches": {
+    "mattress_dirty_022_v4.glb": true,
+    "folded_bedsheet_stack_027_v4.glb": true,
+    "bedframe_single_institutional_021_v4.glb": true,
+    "basin_pedestal_028_v4.glb": true,
+    "solid_wall_4m_013_v4.glb": true,
+    "bathroom_partition_4m_019_v4.glb": true,
+    "room_floor_4x6m_008_v4.glb": true,
+    "room_window_insert_016_v4.glb": true
+  },
+  "v4_texture_files_vs_v3": {
+    "brushed_concrete_restrained_roughness.png": {
+      "sha256": "ad0f330b13cdcd039d7cb501f9593d87181b62a629937664dfa8a2182d9d2639",
+      "same_v3_file": null,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "plaque101_basecolor.png": {
+      "sha256": "8b008dea1ac38eb62569f43200bc223a7b48094b31a20e19d80b51a288cc734c",
+      "same_v3_file": true,
+      "size": [
+        1024,
+        544
+      ]
+    },
+    "brushed_concrete_runtime_normal.png": {
+      "sha256": "dfb457fbde940ce7a060276c4dff36b8f29a76085fb9966c39fbd46ba23afb6e",
+      "same_v3_file": null,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "door_paint_roughness.png": {
+      "sha256": "69dc722ad7b88b1a832f4f7019c7d556b44722b34c37999f61dfe933247c542a",
+      "same_v3_file": null,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "linen_normal_gl.png": {
+      "sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9",
+      "same_v3_file": true,
+      "size": [
+        1022,
+        1024
+      ]
+    },
+    "carpet_basecolor.png": {
+      "sha256": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3",
+      "same_v3_file": true,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "plaque101_normal_gl.png": {
+      "sha256": "9dcb14168b63e12f144389aaf94a50cf9aa498031d0694847ecccdf5461ddf7e",
+      "same_v3_file": true,
+      "size": [
+        1024,
+        544
+      ]
+    },
+    "curtain_basecolor.png": {
+      "sha256": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f",
+      "same_v3_file": true,
+      "size": [
+        1022,
+        1024
+      ]
+    },
+    "white_plaster_02_restrained_basecolor.png": {
+      "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+      "same_v3_file": null,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "linen_roughness.png": {
+      "sha256": "ef38eb40c0cc4d2e0c0e10183cc1cfb8bcd0e3d5c352a8b09708c395f73a7c5b",
+      "same_v3_file": true,
+      "size": [
+        1022,
+        1024
+      ]
+    },
+    "brushed_concrete_restrained_basecolor.png": {
+      "sha256": "0f7d6afaee930a4f9d5712fa5c316b6ac835ff8d7790347ee76c18b7921d9c73",
+      "same_v3_file": null,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "door_paint_normal.png": {
+      "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28",
+      "same_v3_file": null,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "carpet_normal_gl.png": {
+      "sha256": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30",
+      "same_v3_file": true,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "carpet_roughness.png": {
+      "sha256": "8413b881d06c5a96f293e1eee54f564660ffb4fe4c719915f46e9a86766424cc",
+      "same_v3_file": true,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "white_plaster_02_restrained_roughness.png": {
+      "sha256": "54ac875abbc21081f0126adc56cdab7042106d77c233598ad8382106c39b6c76",
+      "same_v3_file": null,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "blanket_basecolor.png": {
+      "sha256": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72",
+      "same_v3_file": true,
+      "size": [
+        1022,
+        1024
+      ]
+    },
+    "door_paint_basecolor.png": {
+      "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9",
+      "same_v3_file": null,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "plaque101_roughness.png": {
+      "sha256": "a4cf03546456d6772b3987db7ad13d52ec71003d39a4b410b0e10685efca9327",
+      "same_v3_file": true,
+      "size": [
+        1024,
+        544
+      ]
+    },
+    "white_plaster_02_runtime_normal.png": {
+      "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+      "same_v3_file": null,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "linen_basecolor.png": {
+      "sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb",
+      "same_v3_file": true,
+      "size": [
+        1022,
+        1024
+      ]
+    },
+    "carpet_ao.png": {
+      "sha256": "cd9f474adc8ade4892a8a8387ad6680fb0c637df597d60838e0a34057cd6d1de",
+      "same_v3_file": true,
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  }
+}
