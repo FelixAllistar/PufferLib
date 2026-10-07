@@ -7,7 +7,9 @@ import pytest
 
 torch = pytest.importorskip("torch")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from transformer import CompactTransformer, ModelConfig, game_seeds, loss_statistics, rotate_spatial, selective_attention
+from transformer import (CompactTransformer, ModelConfig, game_seeds, loss_statistics,
+                         restore_training_state, rotate_spatial, save_training_checkpoint,
+                         selective_attention)
 from compact_contract import HEADS, LOGITS, SIZES
 
 
@@ -112,3 +114,45 @@ def test_map_seed_cohorts_match_native_reset_and_remain_separate():
     assert game_seeds(0, 3, "native-index") == [1013904223, 1015568748, 1017233273]
     assert game_seeds(73, 3, "explicit") == [73, 74, 75]
     assert not set(game_seeds(0, 16, "native-index")).intersection(game_seeds(2026100700, 64, "explicit"))
+
+
+def test_checkpoint_continues_adam_and_random_streams(tmp_path):
+    model = CompactTransformer(configuration())
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, eps=1e-5)
+    rng = np.random.default_rng(73)
+    for _ in range(2):
+        rng.permutation(5)
+
+    def update(net, opt):
+        opt.zero_grad(set_to_none=True)
+        sum(p.square().mean() for p in net.parameters()).backward()
+        opt.step()
+
+    update(model, optimizer)
+    path = tmp_path / "epoch_2.pt"
+    save_training_checkpoint(path, model, optimizer, 2, rng, (0., -.5), None, "test-data")
+    expected_order, expected_random = rng.permutation(5), torch.rand(4)
+    update(model, optimizer)
+    saved = torch.load(path, weights_only=True)
+    restored = CompactTransformer(configuration())
+    restored.load_state_dict(saved["model"])
+    restored_opt = torch.optim.Adam(restored.parameters(), lr=.01)
+    restored_rng = np.random.default_rng(999)
+    assert restore_training_state(saved, restored_opt, restored_rng, 5) == "full optimizer/RNG resume"
+    np.testing.assert_array_equal(restored_rng.permutation(5), expected_order)
+    assert torch.equal(torch.rand(4), expected_random)
+    update(restored, restored_opt)
+    for actual, expected in zip(restored.parameters(), model.parameters()):
+        assert torch.equal(actual, expected)
+
+
+def test_legacy_resume_labels_optimizer_reset_and_advances_game_order():
+    model = torch.nn.Linear(2, 2)
+    optimizer = torch.optim.Adam(model.parameters())
+    rng, expected = np.random.default_rng(73), np.random.default_rng(73)
+    for _ in range(7):
+        expected.permutation(442)
+    kind = restore_training_state({"epoch": 7}, optimizer, rng, 442)
+    assert "Adam moments reset" in kind
+    np.testing.assert_array_equal(rng.permutation(442), expected.permutation(442))
+    assert not optimizer.state

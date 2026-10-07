@@ -174,7 +174,8 @@ make -C ocean/kaggriculture_direct replay-bridge
 python3 ocean/kaggriculture_direct/transformer.py check \
     --output saved/kaggriculture/transformer_v2/new_check --microbatch 128
 python3 ocean/kaggriculture_direct/transformer.py bc \
-    --output saved/kaggriculture/transformer_v2/new_bc --microbatch 128 --epochs 30
+    --output saved/kaggriculture/transformer_v2/new_bc --microbatch 240 --epochs 30 \
+    --compile --fused-adam
 ```
 
 The sidecar reads the dataset and Adam settings from the **same** INI. It
@@ -194,6 +195,42 @@ explicitly architecture-tagged and are **not** native `.bin` files. There is no
 native Transformer PPO or export path yet; this is an architecture screening
 experiment, not an advertised winning policy. No critic is fitted during actor BC.
 
+`--compile` compiles the actor and masked loss together, retaining eager BF16
+rounding boundaries (`emulate_precision_casts=True`). Default compiler fusion
+changed gradients by about 4% on the trained checkpoint, so it is not used.
+The optimized path keeps the loss layout on the GPU and avoids padding the
+attention values from 32 to 96 channels. Full-game gradient accumulation and
+the Adam update frequency are unchanged. Compilation needs a complete Triton
+installation matching the installed Torch distribution; the first batch compiles.
+The eager path remains available by omitting `--compile`.
+
+On the RTX 5060 Ti, synchronized update benchmarks measured about 850 frames/s
+originally and 1,250 frames/s with precision-preserving compilation and 240-frame
+microbatches, including optimizer work (approximately 1.5x). A faster compiler
+setting failed the gradient tolerance and was rejected. Reproduce the benchmark
+on real teacher data, optionally checking against the original implementation:
+
+```bash
+python3 ocean/kaggriculture_direct/benchmark_transformer.py --compile --objective \
+    --fused-adam --microbatch 240 --games 10 \
+    --checkpoint saved/kaggriculture/transformer_v2/new_bc/epoch_7.pt \
+    --verify-reference 1d4f127f1
+```
+
+New epoch checkpoints atomically save Adam and random-generator states as well
+as weights. `--resume PATH --epochs 30` continues to **30 total epochs**, writing
+to a new output directory and preserving the prior cash-selected checkpoint.
+The original bootstrap snapshots contain weights only: continuing from them
+explicitly resets Adam moments while preserving the epoch/data-order schedule.
+The run receipt records that distinction; it is not an exact optimizer resume.
+
+```bash
+python3 ocean/kaggriculture_direct/transformer.py bc \
+    --resume saved/kaggriculture/transformer_v2/new_bc/epoch_7.pt \
+    --output saved/kaggriculture/transformer_v2/continued_bc --epochs 30 \
+    --compile --fused-adam --microbatch 240
+```
+
 The default 16 games per seat use exactly the first native map cohort with
 16 environment rows. For the matched native baseline use `evaluate_bc.py
 --games 16`. Separate explicit seeds can validate a selected checkpoint:
@@ -207,8 +244,9 @@ python3 ocean/kaggriculture_direct/transformer.py eval \
 
 Independent tests check selective attention against a dense forward/backward
 oracle, compact-head CE, missing-unit masks, the private-feature barrier, and
-CPU prefix sampling. CUDA checks qualified 128-frame microbatches at about
-3.27GB peak allocated tensor memory on the current 8GB GPU; context/allocator
+CPU prefix sampling and optimizer/RNG checkpoint continuation. CUDA checks
+qualified compiled 240-frame microbatches at about 5.35GB peak tensor memory
+on the current 8GB GPU; context/allocator
 overhead is additional. Do not run it alongside another GPU trainer.
 
 ### BC-start PROTEIN sweep

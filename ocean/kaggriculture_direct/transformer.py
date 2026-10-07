@@ -15,6 +15,7 @@ import argparse
 import configparser
 import ctypes as C
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 import hashlib
 import json
 import math
@@ -31,6 +32,7 @@ from compact_contract import OBS, HEADS, LOGITS, PACKED, SIZES, STEPS
 
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT = "kag_compact_v7_transformer_v2"
+COMPILE_OPTIONS = {"emulate_precision_casts": True}
 
 
 @dataclass(frozen=True)
@@ -78,10 +80,9 @@ def selective_attention(q, k, v, coords, groups, valid, config):
         qs += [qr[..., :config.rope_dim] * mask, q[..., :config.rope_dim] * mask]
         ks += [kr[..., :config.rope_dim] * mask, -k[..., :config.rope_dim] * mask]
     qa, ka = torch.cat(qs, -1), torch.cat(ks, -1)
-    padded_v = F.pad(v, (0, qa.shape[-1] - v.shape[-1]))
-    result = F.scaled_dot_product_attention(qa, ka, padded_v,
+    result = F.scaled_dot_product_attention(qa, ka, v,
         attn_mask=valid[:, None, None, :], dropout_p=0.0, scale=1 / math.sqrt(q.shape[-1]))
-    return result[..., :v.shape[-1]]
+    return result
 
 
 class Block(nn.Module):
@@ -208,25 +209,89 @@ class Dataset:
         return obs, labels, masks
 
 
+class CompactLoss(nn.Module):
+    """Sum masked head CE with a device-resident, immutable head layout."""
+    def __init__(self):
+        super().__init__()
+        sizes = torch.tensor(SIZES)
+        offsets = sizes.cumsum(0) - sizes
+        columns = torch.arange(max(SIZES))
+        self.register_buffer("index", (offsets[:, None] + columns).clamp_max(LOGITS - 1), persistent=False)
+        self.register_buffer("width_mask", columns[None, :] < sizes[:, None], persistent=False)
+
+    def forward(self, logits, labels, mask):
+        padded = logits[:, self.index].masked_fill(~(mask[:, self.index] & self.width_mask), -1e9)
+        valid = labels >= 0
+        safe = labels.clamp_min(0)
+        # All-invalid terminal rows get finite sentinel logits and zero loss.
+        loss = F.cross_entropy(padded.flatten(0, 1), safe.flatten(), reduction="none").reshape_as(labels)
+        return (loss * valid).sum(), valid.sum(), ((padded.argmax(-1) == labels) & valid).sum()
+
+
+@lru_cache(maxsize=8)
+def _loss_for_device(device):
+    return CompactLoss().to(device)
+
+
 def loss_statistics(logits, labels, mask):
     """Sum CE over valid heads; forced/filtered/terminal labels stay excluded."""
-    # Vectorized padded 100-way heads avoid 60 separate CUDA CE launches.
-    off = np.r_[0, np.cumsum(SIZES)[:-1]]
-    index = torch.as_tensor(off, device=logits.device)[:, None] + torch.arange(100, device=logits.device)
-    width_mask = torch.arange(100, device=logits.device)[None, :] < torch.tensor(SIZES, device=logits.device)[:, None]
-    index = index.clamp_max(LOGITS - 1)
-    padded = logits[:, index].masked_fill(~(mask[:, index] & width_mask), -1e9)
-    valid = labels >= 0
-    safe = labels.clamp_min(0)
-    # All-invalid terminal rows get finite sentinel logits and zero loss.
-    loss = F.cross_entropy(padded.flatten(0, 1), safe.flatten(), reduction="none").reshape_as(labels)
-    return (loss * valid).sum(), valid.sum(), ((padded.argmax(-1) == labels) & valid).sum()
+    return _loss_for_device(logits.device)(logits, labels, mask)
+
+
+class BCObjective(nn.Module):
+    """Compile actor and masked loss together, including their backward graph."""
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+        self.loss = CompactLoss().to(next(model.parameters()).device)
+
+    def forward(self, obs, labels, masks):
+        with torch.autocast(device_type=obs.device.type, dtype=torch.bfloat16,
+                            enabled=obs.device.type == "cuda"):
+            logits = self.model(obs)
+        return self.loss(logits, labels, masks)
 
 
 def game_seeds(first, count, mode):
     assert first >= 0 and count > 0 and first + count <= 2**64
     return [((1664525 * i + 1013904223) & 0xffffffff) if mode == "native-index" else i
             for i in range(first, first + count)]
+
+
+def configure_attention(backend):
+    if backend != "auto":
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_math_sdp(False)
+        torch.backends.cuda.enable_mem_efficient_sdp(backend == "efficient")
+        torch.backends.cuda.enable_cudnn_sdp(backend == "cudnn")
+
+
+def restore_training_state(saved, optimizer, rng, train_games):
+    """Restore epoch-boundary state; explicitly identify legacy weights-only resumes."""
+    if "optimizer" in saved:
+        optimizer.load_state_dict(saved["optimizer"])
+        rng.bit_generator.state = saved["numpy_rng_state"]
+        torch.set_rng_state(saved["torch_rng_state"].cpu())
+        if torch.cuda.is_available() and "cuda_rng_state" in saved:
+            torch.cuda.set_rng_state_all([s.cpu() for s in saved["cuda_rng_state"]])
+        return "full optimizer/RNG resume"
+    # Original snapshots omitted Adam moments. Preserve the epoch schedule and
+    # data permutation, but never claim this is an exact training continuation.
+    for _ in range(saved["epoch"]):
+        rng.permutation(train_games)
+    return "legacy weights-only continuation; Adam moments reset"
+
+
+def save_training_checkpoint(path, model, optimizer, epoch, rng, best, selected, dataset_sha256):
+    payload = dict(format=f"kag_compact_v7_transformer_v{model.config.adapter_version}",
+        config=asdict(model.config), model=model.state_dict(), optimizer=optimizer.state_dict(),
+        epoch=epoch, numpy_rng_state=rng.bit_generator.state, torch_rng_state=torch.get_rng_state(),
+        best=best, selected=selected, dataset_sha256=dataset_sha256)
+    if next(model.parameters()).is_cuda:
+        payload["cuda_rng_state"] = torch.cuda.get_rng_state_all()
+    temporary = path.with_suffix(".pt.tmp")
+    torch.save(payload, temporary)
+    temporary.replace(path)
 
 
 def evaluate(model, args, output, device):
@@ -291,7 +356,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("check", "bc", "eval"))
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--checkpoint", type=Path)
+    checkpoints = parser.add_mutually_exclusive_group()
+    checkpoints.add_argument("--checkpoint", type=Path)
+    checkpoints.add_argument("--resume", type=Path, help="continue BC to --epochs TOTAL epochs")
+    parser.add_argument("--compile", action="store_true", help="compile actor and masked BC loss")
+    parser.add_argument("--sdpa", choices=("auto", "efficient", "cudnn"), default="auto")
+    parser.add_argument("--fused-adam", action="store_true")
     parser.add_argument("--epochs", type=int, default=ini.getint("bc", "epochs"))
     parser.add_argument("--microbatch", type=int, default=16)
     parser.add_argument("--max-train-games", type=int, default=0)
@@ -306,6 +376,8 @@ def main():
     args = parser.parse_args()
     assert args.epochs > 0 and args.microbatch > 0 and args.eval_games > 0 and args.validation_games > 0
     assert args.max_train_games >= 0
+    if args.resume and args.mode != "bc":
+        parser.error("--resume requires bc mode")
     screening_seeds = set(game_seeds(args.eval_seed, args.eval_games, args.map_seed_mode))
     validation_seeds = game_seeds(args.validation_seed, args.validation_games, "explicit")
     if args.mode == "bc":
@@ -314,9 +386,11 @@ def main():
     device = torch.device(args.device)
     torch.set_num_threads(4)
     torch.manual_seed(73)
+    configure_attention(args.sdpa)
     saved = None
-    if args.checkpoint:
-        saved = torch.load(args.checkpoint, map_location=device, weights_only=True)
+    checkpoint = args.resume or args.checkpoint
+    if checkpoint:
+        saved = torch.load(checkpoint, map_location=device, weights_only=True)
         assert saved["format"] in ("kag_compact_v7_transformer_v1", FORMAT)
         saved_config = dict(saved["config"], adapter_version=saved["config"].get("adapter_version", 1))
         if args.adapter_version is None:
@@ -335,7 +409,39 @@ def main():
     with data.path.open("rb") as stream:
         assert hashlib.file_digest(stream, "sha256").hexdigest() == data.metadata["sha256"], "dataset checksum mismatch"
     opt = torch.optim.Adam(model.parameters(), lr=ini.getfloat("bc", "learning_rate"),
-                           eps=ini.getfloat("bc", "adam_epsilon"))
+                           eps=ini.getfloat("bc", "adam_epsilon"), fused=args.fused_adam)
+    objective = BCObjective(model)
+    if args.compile:
+        # Preserve BF16 rounding at eager operator boundaries. Default fusion
+        # removes those casts and changed the trained actor's gradients by ~4%.
+        objective = torch.compile(objective, fullgraph=True, dynamic=False, options=COMPILE_OPTIONS)
+    rng = np.random.default_rng(73)
+    first_epoch, best, selected = 1, (-math.inf, -math.inf), None
+    resume_kind = None
+    if args.resume:
+        source_receipt = json.loads(args.resume.parent.joinpath("config.json").read_text())
+        assert source_receipt["dataset_sha256"] == data.metadata["sha256"], "resume dataset mismatch"
+        for name in ("eval_games_per_seat", "eval_seed", "map_seed_mode"):
+            current = args.eval_games if name == "eval_games_per_seat" else getattr(args, name)
+            assert source_receipt[name] == current, "resume screening cohort mismatch"
+        assert source_receipt["max_train_games"] == args.max_train_games, "resume training exposure mismatch"
+        first_epoch = saved["epoch"] + 1
+        assert first_epoch <= args.epochs, "--epochs is the total target, not additional epochs"
+        resume_kind = restore_training_state(saved, opt, rng, data.train_games)
+        # Preserve the requested runtime optimizer implementation after loading.
+        for group in opt.param_groups:
+            group["fused"] = args.fused_adam
+        selected = saved.get("selected")
+        if selected is None:
+            selection_file = args.resume.parent / "selected.json"
+            if selection_file.exists():
+                selected = json.loads(selection_file.read_text())
+                assert selected["epoch"] <= saved["epoch"], "selection is newer than the resumed checkpoint"
+        if selected:
+            selected["checkpoint"] = str((ROOT / selected["checkpoint"]).resolve())
+            assert Path(selected["checkpoint"]).is_file(), "selected checkpoint is missing"
+            best = (selected["cash"], -selected["heldout_loss"])
+        print(f"TRANSFORMER_RESUME epoch={first_epoch} {resume_kind}", flush=True)
     # BC actor only: no expert-return fit or untrained critic promoted to PPO.
     checkpoint_format = f"kag_compact_v7_transformer_v{config.adapter_version}"
     receipt = dict(format=checkpoint_format, config=asdict(config), parameters=sum(p.numel() for p in model.parameters()),
@@ -343,7 +449,10 @@ def main():
                    heldout_games=data.games-data.train_games, microbatch=args.microbatch,
                    optimizer="Adam", lr=ini.getfloat("bc", "learning_rate"), epochs=args.epochs,
                    max_train_games=args.max_train_games, torch=torch.__version__, actor_observation=3000,
-                   action_version=7, private_critic_input=False)
+                   action_version=7, private_critic_input=False, compiled=args.compile,
+                   compile_options=COMPILE_OPTIONS if args.compile else None,
+                   sdpa=args.sdpa, fused_adam=args.fused_adam, first_epoch=first_epoch,
+                   resume_checkpoint=str(args.resume.resolve()) if args.resume else None, resume_kind=resume_kind)
     receipt.update(source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                    shared_config=(ROOT / "config/kaggriculture.ini").read_text(),
                    eval_games_per_seat=args.eval_games, eval_seed=args.eval_seed,
@@ -354,9 +463,10 @@ def main():
     print("TRANSFORMER_CONFIG " + json.dumps({k: v for k, v in receipt.items()
                                               if k != "shared_config"}), flush=True)
     started = time.monotonic()
-    rng = np.random.default_rng(73)
-    best, selected = (-math.inf, -math.inf), None
-    for epoch in range(1, args.epochs + 1):
+    if selected:
+        with (args.output / "selected.json").open("w") as stream:
+            json.dump(selected, stream, indent=2)
+    for epoch in range(first_epoch, args.epochs + 1):
         for split in ("train", "heldout"):
             model.train(split == "train")
             games = rng.permutation(data.train_games) if split == "train" else range(data.train_games, data.games)
@@ -371,9 +481,7 @@ def main():
                 for first in range(0, STEPS, args.microbatch):
                     last = first + args.microbatch
                     with torch.set_grad_enabled(split == "train"):
-                        with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"):
-                            logits = model(obs[first:last])
-                        loss, count, correct = loss_statistics(logits, labels[first:last], masks[first:last])
+                        loss, count, correct = objective(obs[first:last], labels[first:last], masks[first:last])
                         if split == "train":
                             (loss / frames).backward()
                     stats += torch.stack((loss.detach(), count, correct))
@@ -393,15 +501,15 @@ def main():
             with (args.output / "metrics.jsonl").open("a") as stream:
                 stream.write(json.dumps(metrics) + "\n")
         path = args.output / f"epoch_{epoch}.pt"
-        torch.save(dict(format=checkpoint_format, config=asdict(config), model=model.state_dict(), epoch=epoch), path)
         fresh = evaluate(model, args, args.output / f"fresh_eval_epoch_{epoch}.json", device)
         ranking = (fresh["cash"], -metrics["loss"])
         if ranking > best:
             best = ranking
-            selected = dict(epoch=epoch, checkpoint=str(path), cash=fresh["cash"],
+            selected = dict(epoch=epoch, checkpoint=str(path.resolve()), cash=fresh["cash"],
                             heldout_loss=metrics["loss"], criterion="fresh mean cash; held-out CE only breaks ties")
-            with (args.output / "selected.json").open("w") as stream:
-                json.dump(selected, stream, indent=2)
+        save_training_checkpoint(path, model, opt, epoch, rng, best, selected, data.metadata["sha256"])
+        with (args.output / "selected.json").open("w") as stream:
+            json.dump(selected, stream, indent=2)
     # Final validation is not used to select an epoch. Never call the matched
     # screening win rate a strength estimate against an expert opponent.
     validation = argparse.Namespace(**vars(args))
