@@ -7,7 +7,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from transformer import CompactTransformer, ModelConfig, loss_statistics, rotate_spatial, selective_attention
+from transformer import CompactTransformer, ModelConfig, game_seeds, loss_statistics, rotate_spatial, selective_attention
 from compact_contract import HEADS, LOGITS, SIZES
 
 
@@ -84,3 +84,31 @@ def test_packed_head_order_loss_forced_exclusion_and_oracle():
 def test_invalid_backbone_rejected():
     with pytest.raises(AssertionError):
         CompactTransformer(ModelConfig(width=32, heads=3))
+
+
+def test_worker_identity_preserved_and_occupancy_uses_only_live_units():
+    x = observations()
+    # Two hands at the same position with the same inventory need distinct
+    # identities, even though a permutation-equivariant trunk has shared heads.
+    x[:, 2616:2632] = x[:, 2600:2616]
+    x[:, 2632:2648] = x[:, 2600:2616]
+    model = CompactTransformer(configuration())
+    tokens, _, _, _ = model.tokenize(x)
+    assert not torch.equal(tokens[:, 201], tokens[:, 202])
+    old = CompactTransformer(ModelConfig(width=32, layers=1, heads=2, ffn=64, rope_dim=16, adapter_version=1))
+    old_tokens, _, _, _ = old.tokenize(x)
+    assert torch.equal(old_tokens[:, 201], old_tokens[:, 202])
+    captured = {}
+    hook = model.cell.register_forward_pre_hook(lambda _, inputs: captured.update(cell=inputs[0]))
+    model.tokenize(x)
+    hook.remove()
+    cell = captured["cell"]
+    assert cell[:, 44, -2].tolist() == [1., 1.]
+    assert cell[:, 44, -1].tolist() == pytest.approx([.1, .1])
+    assert cell[:, 100, -2:].sum() == 0  # Absent zero-position units add no occupancy.
+
+
+def test_map_seed_cohorts_match_native_reset_and_remain_separate():
+    assert game_seeds(0, 3, "native-index") == [1013904223, 1015568748, 1017233273]
+    assert game_seeds(73, 3, "explicit") == [73, 74, 75]
+    assert not set(game_seeds(0, 16, "native-index")).intersection(game_seeds(2026100700, 64, "explicit"))

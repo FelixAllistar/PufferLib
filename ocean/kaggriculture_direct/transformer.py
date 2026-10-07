@@ -30,7 +30,7 @@ import torch.nn.functional as F
 from compact_contract import OBS, HEADS, LOGITS, PACKED, SIZES, STEPS
 
 ROOT = Path(__file__).resolve().parents[2]
-FORMAT = "kag_compact_v7_transformer_v1"
+FORMAT = "kag_compact_v7_transformer_v2"
 
 
 @dataclass(frozen=True)
@@ -41,12 +41,14 @@ class ModelConfig:
     ffn: int = 1024
     rope_dim: int = 16
     rope_base: float = 100.0
+    adapter_version: int = 2
 
     def validate(self):
         assert self.width > 0 and self.layers > 0 and self.heads > 0
         assert self.width % self.heads == 0
         assert self.rope_dim % 4 == 0 and 0 < self.rope_dim <= self.width // self.heads
         assert self.rope_base > 1 and self.ffn > 0
+        assert self.adapter_version in (1, 2)
 
 
 def rotate_spatial(x, coords, rotary, base):
@@ -105,7 +107,9 @@ class CompactTransformer(nn.Module):
         self.config = config
         w = config.width
         self.cell, self.unit, self.global_state, self.commodity = (
-            nn.Linear(16, w), nn.Linear(18, w), nn.Linear(128, w), nn.Linear(8, w))
+            nn.Linear(18 if config.adapter_version == 2 else 16, w),
+            nn.Linear(23 if config.adapter_version == 2 else 18, w),
+            nn.Linear(128, w), nn.Linear(8, w))
         self.kind, self.species = nn.Embedding(9, w), nn.Embedding(9, w)
         self.commodity_id, self.market_slot = nn.Embedding(12, w), nn.Embedding(10, w)
         self.input_norm, self.final_norm = nn.LayerNorm(w), nn.LayerNorm(w)
@@ -116,6 +120,9 @@ class CompactTransformer(nn.Module):
         self.register_buffer("cell_side", torch.tensor([[1., 0.]] * 100 + [[0., 1.]] * 100))
         self.register_buffer("unit_side", torch.tensor([[1., 0.]] * 20 + [[0., 1.]] * 20))
         self.register_buffer("rope_groups", torch.tensor([1] * 100 + [2] * 100 + [1] * 20 + [2] * 20 + [0] * 23))
+        if config.adapter_version == 2:
+            self.register_buffer("unit_index", torch.arange(20).repeat(2).float() / 19)
+            self.register_buffer("unit_role", torch.tensor(([[1., 0.]] + [[0., 1.]] * 19) * 2))
 
     def tokenize(self, observation):
         # An explicit slice provides a hard information barrier for the actor.
@@ -127,10 +134,29 @@ class CompactTransformer(nn.Module):
         units = torch.cat((own, other), 1)
         cell_features = torch.cat((cells, self.cell_side.expand(b, -1, -1),
                                    (self.cell_xy / 9).expand(b, -1, -1)), -1)
+        unit_features = torch.cat((units, self.unit_side.expand(b, -1, -1)), -1)
+        if self.config.adapter_version == 2:
+            # Fixed slots already carry this public identity in the original
+            # flat observation; shared heads must not erase it during tokenization.
+            unit_features = torch.cat((unit_features, self.unit_role.expand(b, -1, -1),
+                self.unit_index[None, :, None].expand(b, -1, -1),
+                self.unit_side[None, :, :1].expand(b, -1, -1),
+                units[..., 4:].sum(-1, keepdim=True)), -1)
+            tile = (units[..., 1:3] * 9).round().long().clamp(0, 9)
+            address = tile[..., 0] + 10 * tile[..., 1]
+            address[:, 20:] += 100
+            live = (units[..., 0] > .5).to(actor.dtype)
+            farmer = live * self.unit_role[:, 0]
+            hands = live * self.unit_role[:, 1]
+            farmer_count, hand_count = actor.new_zeros(b, 200), actor.new_zeros(b, 200)
+            farmer_count.scatter_add_(1, address, farmer)
+            hand_count.scatter_add_(1, address, hands)
+            cell_features = torch.cat((cell_features, farmer_count.clamp_max(1).unsqueeze(-1),
+                                        (hand_count / 20).unsqueeze(-1)), -1)
         cell_tokens = self.cell(cell_features)
         cell_tokens = cell_tokens + self.kind((cells[..., 0] * 8).round().long().clamp(0, 8))
         cell_tokens = cell_tokens + self.species((cells[..., 1] * 8).round().long().clamp(0, 8))
-        unit_tokens = self.unit(torch.cat((units, self.unit_side.expand(b, -1, -1)), -1))
+        unit_tokens = self.unit(unit_features)
         products = actor[:, 128:200].reshape(b, 9, 8)
         animals = actor.new_zeros(b, 3, 8)
         animals[:, :, 2] = actor[:, 54:57]  # Public OWN shed only; no opponent inventory.
@@ -158,7 +184,8 @@ class CompactTransformer(nn.Module):
 class Dataset:
     def __init__(self, path):
         self.path = Path(path)
-        header = struct.unpack("<16IQQd", self.path.open("rb").read(88))
+        with self.path.open("rb") as stream:
+            header = struct.unpack("<16IQQd", stream.read(88))
         assert header[:2] == (0x4b414742, 3) and header[3:6] == (OBS, HEADS, PACKED)
         assert header[8:15] == (4, 5, 7, 0, 0, 1, 0) and header[7] == STEPS
         assert header[2] == header[6] * STEPS and 0 < header[15] < header[6]
@@ -196,6 +223,12 @@ def loss_statistics(logits, labels, mask):
     return (loss * valid).sum(), valid.sum(), ((padded.argmax(-1) == labels) & valid).sum()
 
 
+def game_seeds(first, count, mode):
+    assert first >= 0 and count > 0 and first + count <= 2**64
+    return [((1664525 * i + 1013904223) & 0xffffffff) if mode == "native-index" else i
+            for i in range(first, first + count)]
+
+
 def evaluate(model, args, output, device):
     from build_bc_dataset import load_bridge
     import replay_native as native
@@ -206,9 +239,7 @@ def evaluate(model, args, output, device):
     # default 16-game cohort therefore exactly matches native eval with 16 rows.
     # Explicit seed mode is available for a separate fresh validation cohort.
     contexts, seats, states, random = [], [], [], []
-    map_seeds = [((1664525 * i + 1013904223) & 0xffffffff)
-                 if args.map_seed_mode == "native-index" else i
-                 for i in range(args.eval_seed, args.eval_seed + args.eval_games)]
+    map_seeds = game_seeds(args.eval_seed, args.eval_games, args.map_seed_mode)
     for seed in map_seeds:
         for seat in (0, 1):
             config = native.CConfig()
@@ -261,25 +292,39 @@ def main():
     parser.add_argument("mode", choices=("check", "bc", "eval"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path)
-    parser.add_argument("--epochs", type=int, default=2)
+    parser.add_argument("--epochs", type=int, default=ini.getint("bc", "epochs"))
     parser.add_argument("--microbatch", type=int, default=16)
     parser.add_argument("--max-train-games", type=int, default=0)
     parser.add_argument("--eval-games", type=int, default=16, help="games per seat")
     parser.add_argument("--eval-seed", type=int, default=0)
     parser.add_argument("--map-seed-mode", choices=("native-index", "explicit"), default="native-index")
+    parser.add_argument("--validation-games", type=int, default=64, help="final separate-cohort games per seat")
+    parser.add_argument("--validation-seed", type=int, default=2026100700)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--layers", type=int, default=6)
+    parser.add_argument("--adapter-version", type=int, choices=(1, 2))
     args = parser.parse_args()
-    assert args.epochs > 0 and args.microbatch > 0 and args.eval_games > 0
+    assert args.epochs > 0 and args.microbatch > 0 and args.eval_games > 0 and args.validation_games > 0
+    assert args.max_train_games >= 0
+    screening_seeds = set(game_seeds(args.eval_seed, args.eval_games, args.map_seed_mode))
+    validation_seeds = game_seeds(args.validation_seed, args.validation_games, "explicit")
+    if args.mode == "bc":
+        assert not screening_seeds.intersection(validation_seeds), "screening/validation seed overlap"
     args.output.mkdir(parents=True, exist_ok=False)
     device = torch.device(args.device)
     torch.set_num_threads(4)
     torch.manual_seed(73)
-    config = ModelConfig(layers=args.layers)
-    model = CompactTransformer(config).to(device)
+    saved = None
     if args.checkpoint:
         saved = torch.load(args.checkpoint, map_location=device, weights_only=True)
-        assert saved["format"] == FORMAT and saved["config"] == asdict(config)
+        assert saved["format"] in ("kag_compact_v7_transformer_v1", FORMAT)
+        saved_config = dict(saved["config"], adapter_version=saved["config"].get("adapter_version", 1))
+        if args.adapter_version is None:
+            args.adapter_version = saved_config["adapter_version"]
+    config = ModelConfig(layers=args.layers, adapter_version=args.adapter_version or 2)
+    model = CompactTransformer(config).to(device)
+    if saved:
+        assert saved_config == asdict(config), "checkpoint adapter/backbone mismatch; new adapters require fresh BC"
         model.load_state_dict(saved["model"])
     elif args.mode == "eval":
         parser.error("eval requires --checkpoint")
@@ -292,7 +337,8 @@ def main():
     opt = torch.optim.Adam(model.parameters(), lr=ini.getfloat("bc", "learning_rate"),
                            eps=ini.getfloat("bc", "adam_epsilon"))
     # BC actor only: no expert-return fit or untrained critic promoted to PPO.
-    receipt = dict(format=FORMAT, config=asdict(config), parameters=sum(p.numel() for p in model.parameters()),
+    checkpoint_format = f"kag_compact_v7_transformer_v{config.adapter_version}"
+    receipt = dict(format=checkpoint_format, config=asdict(config), parameters=sum(p.numel() for p in model.parameters()),
                    dataset_sha256=data.metadata["sha256"], train_games=data.train_games,
                    heldout_games=data.games-data.train_games, microbatch=args.microbatch,
                    optimizer="Adam", lr=ini.getfloat("bc", "learning_rate"), epochs=args.epochs,
@@ -301,12 +347,15 @@ def main():
     receipt.update(source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                    shared_config=(ROOT / "config/kaggriculture.ini").read_text(),
                    eval_games_per_seat=args.eval_games, eval_seed=args.eval_seed,
-                   map_seed_mode=args.map_seed_mode)
+                   map_seed_mode=args.map_seed_mode, validation_games_per_seat=args.validation_games,
+                   validation_seed=args.validation_seed)
     with (args.output / "config.json").open("x") as stream:
         json.dump(receipt, stream, indent=2)
-    print("TRANSFORMER_CONFIG " + json.dumps(receipt), flush=True)
+    print("TRANSFORMER_CONFIG " + json.dumps({k: v for k, v in receipt.items()
+                                              if k != "shared_config"}), flush=True)
     started = time.monotonic()
     rng = np.random.default_rng(73)
+    best, selected = (-math.inf, -math.inf), None
     for epoch in range(1, args.epochs + 1):
         for split in ("train", "heldout"):
             model.train(split == "train")
@@ -344,8 +393,23 @@ def main():
             with (args.output / "metrics.jsonl").open("a") as stream:
                 stream.write(json.dumps(metrics) + "\n")
         path = args.output / f"epoch_{epoch}.pt"
-        torch.save(dict(format=FORMAT, config=asdict(config), model=model.state_dict(), epoch=epoch), path)
-        evaluate(model, args, args.output / f"fresh_eval_epoch_{epoch}.json", device)
+        torch.save(dict(format=checkpoint_format, config=asdict(config), model=model.state_dict(), epoch=epoch), path)
+        fresh = evaluate(model, args, args.output / f"fresh_eval_epoch_{epoch}.json", device)
+        ranking = (fresh["cash"], -metrics["loss"])
+        if ranking > best:
+            best = ranking
+            selected = dict(epoch=epoch, checkpoint=str(path), cash=fresh["cash"],
+                            heldout_loss=metrics["loss"], criterion="fresh mean cash; held-out CE only breaks ties")
+            with (args.output / "selected.json").open("w") as stream:
+                json.dump(selected, stream, indent=2)
+    # Final validation is not used to select an epoch. Never call the matched
+    # screening win rate a strength estimate against an expert opponent.
+    validation = argparse.Namespace(**vars(args))
+    validation.eval_games, validation.eval_seed = args.validation_games, args.validation_seed
+    validation.map_seed_mode = "explicit"
+    saved = torch.load(selected["checkpoint"], map_location=device, weights_only=True)
+    model.load_state_dict(saved["model"])
+    evaluate(model, validation, args.output / "selected_fresh_validation.json", device)
     print(f"TRANSFORMER_COMPLETE seconds={time.monotonic()-started:.1f}", flush=True)
 
 

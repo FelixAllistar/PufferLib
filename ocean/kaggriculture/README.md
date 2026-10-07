@@ -158,6 +158,13 @@ Token adapters and shared unit/market heads replace the flat input projection
 and recurrent trunk. It emits our 44/20 unit and 22/100 market heads, not the
 winner's huge flat catalog. No macro executor, route planner, automatic seed
 purchase, private actor features, or inferred-inventory memory is added.
+Adapter version 2 preserves explicit farmer/hand roles and worker indices,
+inventory visibility/totals, and cell occupancy derived from public unit
+positions. This is essential for shared heads: adapter version 1 erased worker
+identity, making co-located identical workers indistinguishable. Its initial
+two-epoch pilot is retained separately and is not a valid final architecture
+comparison. New adapters always start fresh; old `.pt` snapshots load with their
+original adapter, never with silently expanded inputs.
 
 Torch is optional; the normal native build does not import it. Use a CUDA build
 supporting the GPU (the RTX 5060 Ti requires CUDA 12.8 or newer).
@@ -165,17 +172,24 @@ supporting the GPU (the RTX 5060 Ti requires CUDA 12.8 or newer).
 ```bash
 make -C ocean/kaggriculture_direct replay-bridge
 python3 ocean/kaggriculture_direct/transformer.py check \
-    --output saved/kaggriculture/transformer_v1/new_check --microbatch 128
+    --output saved/kaggriculture/transformer_v2/new_check --microbatch 128
 python3 ocean/kaggriculture_direct/transformer.py bc \
-    --output saved/kaggriculture/transformer_v1/new_bc --microbatch 128 --epochs 2
+    --output saved/kaggriculture/transformer_v2/new_bc --microbatch 128 --epochs 30
 ```
 
 The sidecar reads the dataset and Adam settings from the **same** INI. It
+defaults to that config's 30 BC epochs, matching the recurrent BC exposure;
+`--epochs 2` is only a short screening pilot, not the winner's final fine-tuning
+recipe transplanted onto random weights. It
 accumulates a complete game's policy gradient using bounded frame microbatches,
 matching native BC's frame normalization; terminal/forced/filtered targets stay
 excluded. Held-out CE and accuracy are reported each epoch, but every epoch
 also gets greedy fresh-game cash evaluation on both seats. Epoch snapshots are
-retained separately, with data/config/source provenance. `.pt` checkpoints are
+retained separately, with data/config/source provenance. Selection uses fresh
+mean cash, with held-out CE only breaking ties. After BC finishes, the selected
+epoch is checked on a separate explicit-seed cohort (64 games per seat); this
+final cohort does not select the epoch. See `selected.json` and
+`selected_fresh_validation.json` in the run directory. `.pt` checkpoints are
 explicitly architecture-tagged and are **not** native `.bin` files. There is no
 native Transformer PPO or export path yet; this is an architecture screening
 experiment, not an advertised winning policy. No critic is fitted during actor BC.
@@ -186,8 +200,8 @@ The default 16 games per seat use exactly the first native map cohort with
 
 ```bash
 python3 ocean/kaggriculture_direct/transformer.py eval \
-    --checkpoint saved/kaggriculture/transformer_v1/new_bc/epoch_2.pt \
-    --output saved/kaggriculture/transformer_v1/new_validation --microbatch 128 \
+    --checkpoint saved/kaggriculture/transformer_v2/new_bc/epoch_30.pt \
+    --output saved/kaggriculture/transformer_v2/new_validation --microbatch 128 \
     --map-seed-mode explicit --eval-seed 2026100700 --eval-games 64
 ```
 
