@@ -54,6 +54,7 @@ const char* swat_character_node_name(const SwatCharacterAsset* asset,int node);
 float swat_art_normal_scale(const char* path);
 typedef struct SwatArtMaterialFactors {
     float base_color[4],roughness,metalness,normal_scale,occlusion_strength;
+    int occlusion_texcoord;
 } SwatArtMaterialFactors;
 // glTF material order, excluding Raylib's fallback slot. Returns -1 on error.
 int swat_art_material_factors(const char* path,SwatArtMaterialFactors* out,int capacity);

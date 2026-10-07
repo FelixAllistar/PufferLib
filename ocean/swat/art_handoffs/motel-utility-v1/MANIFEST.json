@@ -1,0 +1,226 @@
+{
+  "package": "motel_utility_props_v1",
+  "created_utc": "2026-10-07",
+  "files": [
+    {
+      "path": "AO_QA.json",
+      "bytes": 256,
+      "sha256": "0f9a2b6fbd4b1d7f73afd3980c602c9afafb689f4a7acefa5dc384289ed3603b"
+    },
+    {
+      "path": "CATALOG_CANDIDATES.json",
+      "bytes": 3006,
+      "sha256": "70df057109cc9e57a76fd95c4a44c4e416776065066e331158fb53b313b6ff40"
+    },
+    {
+      "path": "COLLISION_PROPOSAL.json",
+      "bytes": 7286,
+      "sha256": "4348256c65cb8c7e29b28cc6e750d47604124c30015b00feb7467b46e6a7e897"
+    },
+    {
+      "path": "ENGINE_IMPORT.md",
+      "bytes": 4740,
+      "sha256": "608c6159b28a2a39fe64c3928af4de3672ec8e0452433cc1a2a76e8b7ae10ae2"
+    },
+    {
+      "path": "GLB_QA.json",
+      "bytes": 13899,
+      "sha256": "2522438ece09217e55422d2afd77e326af09b509cd46be3f9fdc4f9f2a779611"
+    },
+    {
+      "path": "LICENSE.txt",
+      "bytes": 470,
+      "sha256": "9f337a76a91bfc3b020ff383d02bf3527b972fdd9df36e172be114d19ee4f8e0"
+    },
+    {
+      "path": "REBUILD_QA.json",
+      "bytes": 1526,
+      "sha256": "063227e481a174c36460968d6516dfc3b07039bd22347c4548c2c8f5e18159bc"
+    },
+    {
+      "path": "REFERENCES.json",
+      "bytes": 2558,
+      "sha256": "fc3298212e0fadd10ae52537ef531793fe297211723be05a5541558354b34714"
+    },
+    {
+      "path": "SOURCE_QA.json",
+      "bytes": 6428,
+      "sha256": "d7387ac1fe7bd3ace84becd9a1f012d99b55072dcbca5ae880238387914070fc"
+    },
+    {
+      "path": "VISUAL_REVIEW.json",
+      "bytes": 975,
+      "sha256": "3f9d3aadc2bc3ae883cbd349c209a50816d70ec39d005153f18688d3b89a4592"
+    },
+    {
+      "path": "build_final.log",
+      "bytes": 64228,
+      "sha256": "2a73067e0f8ed6b89d143fe8971f3a27b07764d7dffa0743428c6ce133e45abf"
+    },
+    {
+      "path": "build_props.py",
+      "bytes": 14604,
+      "sha256": "92a90b81360d9f791bd15421ba74b18a5908b90183ba5b5ba305d66a40917720"
+    },
+    {
+      "path": "exports/mu01_luggage_rack_lod0.glb",
+      "bytes": 2236636,
+      "sha256": "239dfea9a6d423407086a5668aa066a2f1daf1e37afa5b2d1c43b4320ac3f34d"
+    },
+    {
+      "path": "exports/mu01_luggage_rack_lod1.glb",
+      "bytes": 2102024,
+      "sha256": "4e6185d239ddd3df867297e5170933b64e198f64c6b2394a6ae1a5014aa16866"
+    },
+    {
+      "path": "exports/mu01_wastebasket_small_lod0.glb",
+      "bytes": 724364,
+      "sha256": "60caf73736b58943b01a042fccae2c71d21753a2d3dc397859e8625ab74c923f"
+    },
+    {
+      "path": "exports/mu01_wastebasket_small_lod1.glb",
+      "bytes": 639920,
+      "sha256": "39a5122f58da4ce66ed2bf126cde796b01b0b16e39eb2204dd265159a186c25c"
+    },
+    {
+      "path": "make_textures.py",
+      "bytes": 1727,
+      "sha256": "d3dd5d3f98dce01e9b63c330528ab1f5b4fcf900a2337627650931b18d2319f0"
+    },
+    {
+      "path": "motel_utility_props_v1.blend",
+      "bytes": 1151281,
+      "sha256": "f985941a4723304de63ba722b996dff5319c93794fbc7a7e1bf20c0c05a8bbd0"
+    },
+    {
+      "path": "previews/final_glb_reimport.png",
+      "bytes": 1430414,
+      "sha256": "18af5bd3effab4313680a9d1f9ae6b176f96dca370ec87c59a10154bbfaf09d0"
+    },
+    {
+      "path": "previews/motel_entry_layout.png",
+      "bytes": 1380085,
+      "sha256": "301728bf5088492f9b76420f0c7731b6634f1c9d7fc857845b13cdf229b667a4"
+    },
+    {
+      "path": "previews/rack_neutral.png",
+      "bytes": 1345377,
+      "sha256": "6f77c5dc1419c62853697cee395d352583a15b8607bbcfa825f8fbb6e1215a49"
+    },
+    {
+      "path": "previews/wastebasket_neutral.png",
+      "bytes": 1211979,
+      "sha256": "3c38cb9021dc171ffb45b81d70c9a466cc88398bbc3372344733f5ebd1045473"
+    },
+    {
+      "path": "rebuild.log",
+      "bytes": 63171,
+      "sha256": "ffcf781102acfc0d538f44bf16a2d650109a7e071a8439d3a267efbf2904ac80"
+    },
+    {
+      "path": "reimport.log",
+      "bytes": 12802,
+      "sha256": "c5f6aac13841f0899acfb8f0734c2eae83496b808cae096820836709d561d113"
+    },
+    {
+      "path": "render_exports.py",
+      "bytes": 1497,
+      "sha256": "ef03683f2b629e169fbb38e9cf2cef4a73c16be51e59e14f54a36835a68be957"
+    },
+    {
+      "path": "seal_glb.py",
+      "bytes": 2171,
+      "sha256": "688388dca57256e7b56701e583285851e61a55764505d883333ee69ae52cf80e"
+    },
+    {
+      "path": "textures/aged_walnut_basecolor.png",
+      "bytes": 107008,
+      "sha256": "54f298f65c0fea9f6f37c20c70f37b0a1619b8bd5c5fb0519135fb0a5dda12df"
+    },
+    {
+      "path": "textures/aged_walnut_normal_gl.png",
+      "bytes": 175182,
+      "sha256": "485a28c417f6971e82289686df4306f750e57d4bf93ec34bde0946114e9624ef"
+    },
+    {
+      "path": "textures/aged_walnut_roughmetal.png",
+      "bytes": 197680,
+      "sha256": "c82e61c732d90dc58deee2af06c18bcab3f1f37506ed6776fb53644009f21d35"
+    },
+    {
+      "path": "textures/cream_resin_basecolor.png",
+      "bytes": 124077,
+      "sha256": "614149b6cbaf89ed77f47793fa835e1fe5c51ea039b5ede17c8abe608b31d926"
+    },
+    {
+      "path": "textures/cream_resin_normal_gl.png",
+      "bytes": 198142,
+      "sha256": "3ed6256493d919b30679e554a94da417ecc6703def12ed4d3defd5e79af3060a"
+    },
+    {
+      "path": "textures/cream_resin_roughmetal.png",
+      "bytes": 197498,
+      "sha256": "ebb04de65e39d9a7bb1fbe8e427284c79f49bcdddc84e46024805be80684a134"
+    },
+    {
+      "path": "textures/green_webbing_basecolor.png",
+      "bytes": 133288,
+      "sha256": "14be2c1ab0779ecb63b5852a1430e140da5b87b33dc3e21afff779245a5139a1"
+    },
+    {
+      "path": "textures/green_webbing_normal_gl.png",
+      "bytes": 2684,
+      "sha256": "919cd048a67f61fa65dc9cdb8cce892b9c197fab4901e995573f74d8b4dcb8f7"
+    },
+    {
+      "path": "textures/green_webbing_roughmetal.png",
+      "bytes": 196656,
+      "sha256": "433f04dfc763f7e0d75d1268b84dc0a935f4c6826a09445f8b601539b9ce3bb0"
+    },
+    {
+      "path": "textures/mu01_luggage_rack_ao.png",
+      "bytes": 212695,
+      "sha256": "763c7b7f6671ce4dc20777ffd89ea204c6fceef3660664039ebb79f953948c99"
+    },
+    {
+      "path": "textures/mu01_wastebasket_small_ao.png",
+      "bytes": 97087,
+      "sha256": "5a1e6cf54ee57fcb6731e4cf5b85d4ec467a14ae9af8f99cfbcaf3931c8508b3"
+    },
+    {
+      "path": "textures/rubber_feet_basecolor.png",
+      "bytes": 123923,
+      "sha256": "e48c5b08f63c5238407e958798d8480d48ae1fb8a977cf0df134ff334637000f"
+    },
+    {
+      "path": "textures/rubber_feet_normal_gl.png",
+      "bytes": 198142,
+      "sha256": "3ed6256493d919b30679e554a94da417ecc6703def12ed4d3defd5e79af3060a"
+    },
+    {
+      "path": "textures/rubber_feet_roughmetal.png",
+      "bytes": 196799,
+      "sha256": "1a8aa1a8b6530db288246efb93b428f0001a323259cc9b20d9ed3583b70ff045"
+    },
+    {
+      "path": "textures/zinc_hardware_basecolor.png",
+      "bytes": 124074,
+      "sha256": "364ea102821cd6b212e6ea6532ca31196d9f93fe15f8060fdaddc0806a3f7db3"
+    },
+    {
+      "path": "textures/zinc_hardware_normal_gl.png",
+      "bytes": 64561,
+      "sha256": "8c99b4c9ac00c210fff0d3b68385658c83064f57df4719efddce23ff68eab8e0"
+    },
+    {
+      "path": "textures/zinc_hardware_roughmetal.png",
+      "bytes": 197421,
+      "sha256": "195722f7634329a577a54775d593ed450c2dfb2b1d9686409d9215429a356060"
+    },
+    {
+      "path": "validate_glb.py",
+      "bytes": 4878,
+      "sha256": "d0129146c543ca7445fa13303c4552b5c5cdc5e49dab344f9b64b11128eff07d"
+    }
+  ]
+}

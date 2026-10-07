@@ -319,6 +319,25 @@ static void room101_graphics(SwatView* view,const char* directory) {
     room=room101_capture(view,bed,true);snprintf(path,sizeof(path),"%s/room101-v3-bed.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     room=room101_capture(view,window,true);snprintf(path,sizeof(path),"%s/room101-v3-window.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     art->room101_v4_ready=true;
+    for(int i=SWAT_MOTEL_BASE_ASSETS;i<SWAT_MOTEL_ASSETS;i++) {
+        Model model=art->motel[i];assert(model.meshCount);
+        for(int m=0;m<model.meshCount;m++)assert(model.meshes[m].texcoords2 && model.meshes[m].vboId[5]);
+        for(int m=1;m<model.materialCount;m++)assert(art->motel_occlusion_uv[i][m]==1);
+    }
+    for(int i=SWAT_MOTEL_BASE_INSTANCES+1;i<sim.world.count;i++) {
+        SwatObject* o=&sim.world.objects[i];assert(room101_owner_pixels(art,o,false)>50);
+        o->active=false;assert(!room101_owner_pixels(art,o,false));o->active=true;
+    }
+    Camera3D utility_views[]={
+        {{-5.55f,.9f,-1.40f},{-4.55f,.25f,-.65f},{0,1,0},45,CAMERA_PERSPECTIVE},
+        {{-6.8f,.85f,-3.45f},{-7.70f,.15f,-3.3f},{0,1,0},38,CAMERA_PERSPECTIVE},
+        {{-6.25f,1.62f,-3.65f},{-6,.5f,-.6f},{0,1,0},65,CAMERA_PERSPECTIVE}};
+    const char* utility_names[]={"rack","basket","room"};
+    for(int i=0;i<3;i++) {
+        room=room101_capture(view,utility_views[i],true);
+        snprintf(path,sizeof(path),"%s/utility-%s.png",directory,utility_names[i]);assert(ExportImage(room,path));UnloadImage(room);
+    }
+    puts("PASS utility props: original metre-scale meshes, second UV buffers/material binding and per-instance removal");
     Camera3D v4_cameras[]={camera,inside,bed,window,row};
     const char* names[]={"entrance","bathroom","bed","window","row"};
     before=sim.world;

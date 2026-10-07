@@ -358,7 +358,7 @@ int swat_art_material_factors(const char* path,SwatArtMaterialFactors* out,int c
             out[i].roughness=p->roughness_factor; out[i].metalness=p->metallic_factor;
         }
         if(m->normal_texture.texture) out[i].normal_scale=m->normal_texture.scale;
-        if(m->occlusion_texture.texture) out[i].occlusion_strength=m->occlusion_texture.scale;
+        if(m->occlusion_texture.texture) {out[i].occlusion_strength=m->occlusion_texture.scale;out[i].occlusion_texcoord=m->occlusion_texture.texcoord;}
     }
     cgltf_free(source); return count;
 }

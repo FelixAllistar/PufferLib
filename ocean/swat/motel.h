@@ -1,8 +1,10 @@
 #ifndef SWAT_MOTEL_H
 #define SWAT_MOTEL_H
 #include "world.h"
-#define SWAT_MOTEL_ASSETS 40
-#define SWAT_MOTEL_INSTANCES 146
+#define SWAT_MOTEL_BASE_ASSETS 40
+#define SWAT_MOTEL_BASE_INSTANCES 146
+#define SWAT_MOTEL_ASSETS SWAT_MOTEL_MESH_CAPACITY
+#define SWAT_MOTEL_INSTANCES 154
 typedef struct SwatMotelMaterial { float roughness,metalness; } SwatMotelMaterial;
 typedef struct SwatMotelAsset {
     const char* file; b3Vec3 center,half;

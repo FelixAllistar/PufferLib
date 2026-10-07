@@ -186,6 +186,12 @@ the same corrected lighting; `2` selects v2 and `0` the original bank.
 Missing or invalid v4 assets fall back to the complete v3 set.
 See the [native review](art_handoffs/room101-realism-v4/engine/README.md).
 
+All four motel guest rooms now include a luggage rack and wastebasket at their
+authored metre scale, with open mesh collision and replicated ownership. Their
+separate AO UV set is supported by the material shader. Existing door/walking
+routes and original motel instance IDs are preserved; these props are static
+furniture for now. See the [integration and captures](art_handoffs/motel-utility-v1/engine/README.md).
+
 At Cedar House, enter through doors or create openings, secure two suspects,
 order the three civilians to comply, cuff them, and bring all surviving officers
 back to staging. Any civilian harm fails the mission. Human play defaults to

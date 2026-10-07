@@ -9,11 +9,11 @@
 // Mesh vertices do not: separate programs prevent a second transform on batches.
 static const char* vertex_source=
     "#version 330\n"
-    "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec3 vertexNormal; in vec4 vertexColor,vertexTangent;\n"
+    "in vec3 vertexPosition; in vec2 vertexTexCoord,vertexTexCoord2; in vec3 vertexNormal; in vec4 vertexColor,vertexTangent;\n"
     "uniform mat4 mvp,matModel,matNormal;\n"
     "uniform int useSkinning,skinSets; uniform sampler2D skinPalette,skinInfluences;\n"
     "uniform vec3 environmentSize; uniform vec2 environmentTile;\n"
-    "out vec3 position,normal; out vec2 uv; out vec4 tint,tangent;\n"
+    "out vec3 position,normal; out vec2 uv,uv2; out vec4 tint,tangent;\n"
     "vec4 item(sampler2D map,int i){int w=textureSize(map,0).x; return texelFetch(map,ivec2(i%w,i/w),0);}\n"
     "mat4 bone(int i){i*=4;return mat4(item(skinPalette,i),item(skinPalette,i+1),item(skinPalette,i+2),item(skinPalette,i+3));}\n"
     "void main(){ vec3 p0=vertexPosition,n0=vertexNormal,t0=vertexTangent.xyz;"
@@ -24,7 +24,7 @@ static const char* vertex_source=
     "p0=(blend*vec4(p0,1.0)).xyz;mat3 b=mat3(blend);"
     "n0=abs(determinant(b))>1e-14?normalize(transpose(inverse(b))*n0):vec3(0.0); t0=b*t0; }"
     "position=(matModel*vec4(p0,1.0)).xyz;"
-    "normal=normalize((matNormal*vec4(n0,0.0)).xyz); uv=vertexTexCoord; tint=vertexColor;"
+    "normal=normalize((matNormal*vec4(n0,0.0)).xyz); uv=vertexTexCoord; uv2=vertexTexCoord2; tint=vertexColor;"
     "if(environmentTile.x>0.0){ vec3 p=vertexPosition*environmentSize;"
     "vec3 a=abs(vertexNormal); uv=(a.y>max(a.x,a.z)?vec2(p.x,p.z):vec2(a.x>=a.z?p.z:p.x,p.y))/environmentTile; }"
     "tangent=vec4((matModel*vec4(t0,0.0)).xyz,vertexTangent.w);"
@@ -42,14 +42,14 @@ static const char* vertex_source=
     "\n"
 static const char* fragment_source=
     "#version 330\n"
-    "in vec3 position,normal; in vec2 uv; in vec4 tint,tangent; out vec4 finalColor;\n"
+    "in vec3 position,normal; in vec2 uv,uv2; in vec4 tint,tangent; out vec4 finalColor;\n"
     "uniform sampler2D texture0,sunMap,lampMap; uniform vec4 colDiffuse;\n"
     "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen,normalScale;\n"
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
     "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
-    "uniform float occlusionStrength;uniform vec3 sunDirection,sunEnergy;uniform mat4 contactMatrix;\n"
+    "uniform int occlusionUV;uniform float occlusionStrength;uniform vec3 sunDirection,sunEnergy;uniform mat4 contactMatrix;\n"
     "uniform int lampShadows;uniform int rooms; uniform vec3 centers[8],halves[8],origins[8]; uniform float exposure;\n"
     "float visible(sampler2D map,mat4 matrix,vec3 point,vec3 n,vec3 l,int tile){"
     "vec4 clip=matrix*vec4(point,1.0); if(clip.w<=0.0)return 1.0;"
@@ -136,7 +136,7 @@ static const char* fragment_source=
     "float nv=max(dot(n,v),0.0); vec3 fresnel=f0+(max(vec3(1.0-roughness),f0)-f0)*pow(1.0-nv,5.0);"
     "vec3 indirect=(usePbr!=0||useEnvironment!=0)?environment*fresnel:vec3(0.0);"
     "if(useIbl!=0&&(usePbr!=0||useEnvironment!=0)){vec2 brdf=atlas(vec2(clamp(nv,0.001953125,0.998046875),roughness),7.0).rg;indirect=environment*(f0*brdf.x+brdf.y);}"
-    "if(useOcclusion!=0)contact*=mix(1.0,texture(occlusionMap,uv).r,occlusionStrength);"
+    "if(useOcclusion!=0)contact*=mix(1.0,texture(occlusionMap,occlusionUV==1?uv2:uv).r,occlusionStrength);"
     "if(useContact!=0){vec4 p=contactMatrix*vec4(position,1.0);vec3 q=p.xyz/p.w*0.5+0.5;"
     "if(p.w>0.0&&all(greaterThanEqual(q.xy,vec2(0.0)))&&all(lessThanEqual(q.xy,vec2(1.0)))){"
     "float tolerance=max(0.00003,2.0*(abs(dFdx(q.z))+abs(dFdy(q.z))));"
@@ -151,6 +151,8 @@ static SwatLightingProgram program(void) {
     if(p.shader.id==rlGetShaderIdDefault()) return p;
     p.shader.locs[SHADER_LOC_MATRIX_MODEL]=GetShaderLocation(p.shader,"matModel");
     p.shader.locs[SHADER_LOC_MATRIX_NORMAL]=GetShaderLocation(p.shader,"matNormal");
+    p.occlusion_uv=GetShaderLocation(p.shader,"occlusionUV");
+    p.shader.locs[SHADER_LOC_VERTEX_TEXCOORD02]=GetShaderLocationAttrib(p.shader,"vertexTexCoord2");
     p.shader.locs[SHADER_LOC_VERTEX_TANGENT]=GetShaderLocationAttrib(p.shader,"vertexTangent");
     p.shader.locs[SHADER_LOC_MAP_SPECULAR]=GetShaderLocation(p.shader,"specularMap");
     p.spec_gloss=GetShaderLocation(p.shader,"useSpecGloss");
@@ -187,7 +189,7 @@ static SwatLightingProgram program(void) {
 }
 
 Shader swat_lighting_skin_shader(void) {
-    const char* fragment="#version 330\n in vec2 uv; in vec4 tint; uniform sampler2D texture0; uniform vec4 colDiffuse; out vec4 finalColor; void main(){finalColor=texture(texture0,uv)*tint*colDiffuse;}";
+    const char* fragment="#version 330\n in vec2 uv,uv2; in vec4 tint; uniform sampler2D texture0; uniform vec4 colDiffuse; out vec4 finalColor; void main(){finalColor=texture(texture0,uv)*tint*colDiffuse;}";
     Shader shader=LoadShaderFromMemory(vertex_source,fragment);
     shader.locs[SHADER_LOC_MATRIX_MODEL]=GetShaderLocation(shader,"matModel");
     shader.locs[SHADER_LOC_MATRIX_NORMAL]=GetShaderLocation(shader,"matNormal");
@@ -363,7 +365,7 @@ void swat_lighting_init(SwatLighting* light) {
     TraceLog(light->enabled ? LOG_INFO : LOG_WARNING,"SWAT: %s; exposure %.2f",light->enabled ? "linear lighting + cached sun/room shadows" : "lighting unavailable, using unlit fallback",light->exposure);
 }
 
-void swat_lighting_material_scaled(SwatLighting* light,Material material,bool enabled,float normal_scale) {
+void swat_lighting_material_uv(SwatLighting* light,Material material,bool enabled,float normal_scale,int occlusion_uv) {
     if(!light || !light->enabled || !light->prepared) return;
     SwatLightingProgram* p=&light->mesh;
     int zero=0; Vector2 tile={0};
@@ -388,6 +390,7 @@ void swat_lighting_material_scaled(SwatLighting* light,Material material,bool en
     float strength=occlusion?material.maps[MATERIAL_MAP_OCCLUSION].value:1;
     SetShaderValue(p->shader,p->occlusion,&occlusion,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->occlusion_strength,&strength,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(p->shader,p->occlusion_uv,&occlusion_uv,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->skinning,&zero,SHADER_UNIFORM_INT);
     if(pbr) {
         SetShaderValue(p->shader,p->roughness,&material.maps[MATERIAL_MAP_ROUGHNESS].value,SHADER_UNIFORM_FLOAT);
@@ -395,6 +398,9 @@ void swat_lighting_material_scaled(SwatLighting* light,Material material,bool en
     }
 }
 
+void swat_lighting_material_scaled(SwatLighting* light,Material material,bool enabled,float normal_scale) {
+    swat_lighting_material_uv(light,material,enabled,normal_scale,0);
+}
 void swat_lighting_material(SwatLighting* light,Material material,bool enabled) {
     swat_lighting_material_scaled(light,material,enabled,1);
 }

@@ -1,0 +1,4 @@
+CC0 1.0 Universal
+All original models, authored textures, Blender source, generator scripts, metadata and rendered previews in this package are dedicated to the public domain under CC0 1.0.
+https://creativecommons.org/publicdomain/zero/1.0/
+No vendor photograph, logo, CAD mesh or proprietary texture is incorporated or redistributed. Vendor references are used for everyday object dimensions and visual observation only. References are not licensed by this dedication.

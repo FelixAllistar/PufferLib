@@ -1,0 +1,78 @@
+[
+  {
+    "id": "env:17_motel_utility/mu01_luggage_rack",
+    "name": "Wooden folding-design luggage rack, static open pose, green webbing",
+    "record_kind": "unique_design",
+    "category": "environment",
+    "subtype": "furniture",
+    "batch": "17_motel_utility",
+    "location_tags": [
+      "motel",
+      "guest_room",
+      "entrance"
+    ],
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.5587999820709229,
+      0.5080000162124634,
+      0.3529999926686287
+    ],
+    "triangles": 2160,
+    "license": "CC0-1.0",
+    "license_provenance": "Original meshes and deterministic procedural PBR maps; REFERENCES.json; LICENSE.txt",
+    "source_path": "motel_utility_props_v1.blend",
+    "export_path": "exports/mu01_luggage_rack_lod0.glb",
+    "sha256": "239dfea9a6d423407086a5668aa066a2f1daf1e37afa5b2d1c43b4320ac3f34d",
+    "preview_path": "previews/final_glb_reimport.png",
+    "preview_scope": "sealed GLB reimport set render",
+    "qa_status": "source topology, independent binary GLB audit, byte-identical clean rebuild PASS",
+    "art_approval": "pending",
+    "integration_state": "standalone candidate; no engine import or pinned Room101 changes",
+    "collision_support": "PROPOSAL ONLY in COLLISION_PROPOSAL.json; engine authority pending",
+    "destruction_support": "none; no damage pieces",
+    "lod": {
+      "lod0": "mu01_luggage_rack_lod0.glb",
+      "lod1": "mu01_luggage_rack_lod1.glb",
+      "lod1_triangles": 860,
+      "automatic_switching": false
+    }
+  },
+  {
+    "id": "env:17_motel_utility/mu01_wastebasket_small",
+    "name": "Small open cream molded-plastic guest-room wastebasket",
+    "record_kind": "unique_design",
+    "category": "environment",
+    "subtype": "utility",
+    "batch": "17_motel_utility",
+    "location_tags": [
+      "motel",
+      "guest_room",
+      "entrance"
+    ],
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.29840001463890076,
+      0.31119999289512634,
+      0.20960000157356262
+    ],
+    "triangles": 1156,
+    "license": "CC0-1.0",
+    "license_provenance": "Original meshes and deterministic procedural PBR maps; REFERENCES.json; LICENSE.txt",
+    "source_path": "motel_utility_props_v1.blend",
+    "export_path": "exports/mu01_wastebasket_small_lod0.glb",
+    "sha256": "60caf73736b58943b01a042fccae2c71d21753a2d3dc397859e8625ab74c923f",
+    "preview_path": "previews/final_glb_reimport.png",
+    "preview_scope": "sealed GLB reimport set render",
+    "qa_status": "source topology, independent binary GLB audit, byte-identical clean rebuild PASS",
+    "art_approval": "pending",
+    "integration_state": "standalone candidate; no engine import or pinned Room101 changes",
+    "collision_support": "PROPOSAL ONLY in COLLISION_PROPOSAL.json; engine authority pending",
+    "destruction_support": "none; no damage pieces",
+    "lod": {
+      "lod0": "mu01_wastebasket_small_lod0.glb",
+      "lod1": "mu01_wastebasket_small_lod1.glb",
+      "lod1_triangles": 324,
+      "automatic_switching": false
+    }
+  }
+]

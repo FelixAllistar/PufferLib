@@ -1,0 +1,576 @@
+[
+  {
+    "file": "mu01_luggage_rack_lod0.glb",
+    "sha256": "239dfea9a6d423407086a5668aa066a2f1daf1e37afa5b2d1c43b4320ac3f34d",
+    "bytes": 2236636,
+    "triangles": 2160,
+    "export_vertices": 4846,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.2793999910354614,
+        0.0,
+        -0.17649999633431435
+      ],
+      [
+        0.2793999910354614,
+        0.5080000162124634,
+        0.17649999633431435
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.5587999820709229,
+      0.5080000162124634,
+      0.3529999926686287
+    ],
+    "images": [
+      {
+        "name": "rubber_feet_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "rubber_feet_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "rubber_feet_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "aged_walnut_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "aged_walnut_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "aged_walnut_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "zinc_hardware_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "zinc_hardware_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "zinc_hardware_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "green_webbing_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "green_webbing_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "green_webbing_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mu01_luggage_rack_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "rack_bolt_slot_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "rack_bolt_slot_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "rack_cross_leg_-1_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_cross_leg_-1_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_cross_leg_1_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_cross_leg_1_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_foot_glide_-1_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "rack_foot_glide_-1_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "rack_foot_glide_1_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "rack_foot_glide_1_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "rack_lower_stretcher_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_lower_stretcher_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_pivot_bolt_-1",
+        "triangles": 124,
+        "normal_tangent_orthogonality_max": 6.079673767089844e-05
+      },
+      {
+        "name": "rack_pivot_bolt_1",
+        "triangles": 124,
+        "normal_tangent_orthogonality_max": 6.079673767089844e-05
+      },
+      {
+        "name": "rack_top_rail_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_top_rail_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.4849853515625e-05
+      },
+      {
+        "name": "rack_woven_strap_1",
+        "triangles": 100,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "rack_woven_strap_2",
+        "triangles": 100,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "rack_woven_strap_3",
+        "triangles": 100,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "rack_woven_strap_4",
+        "triangles": 100,
+        "normal_tangent_orthogonality_max": 0.0
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  },
+  {
+    "file": "mu01_luggage_rack_lod1.glb",
+    "sha256": "4e6185d239ddd3df867297e5170933b64e198f64c6b2394a6ae1a5014aa16866",
+    "bytes": 2102024,
+    "triangles": 860,
+    "export_vertices": 2540,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.2791355848312378,
+        0.0,
+        -0.17649999633431435
+      ],
+      [
+        0.2793999910354614,
+        0.5080000162124634,
+        0.17649999633431435
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.5585355758666992,
+      0.5080000162124634,
+      0.3529999926686287
+    ],
+    "images": [
+      {
+        "name": "aged_walnut_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "aged_walnut_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "aged_walnut_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "rubber_feet_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "rubber_feet_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "rubber_feet_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "zinc_hardware_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "zinc_hardware_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "zinc_hardware_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "green_webbing_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "green_webbing_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "green_webbing_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mu01_luggage_rack_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "rack_cross_leg_-1_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.755316957831383e-05
+      },
+      {
+        "name": "rack_cross_leg_-1_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.755316957831383e-05
+      },
+      {
+        "name": "rack_cross_leg_1_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.755316957831383e-05
+      },
+      {
+        "name": "rack_cross_leg_1_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.755316957831383e-05
+      },
+      {
+        "name": "rack_foot_glide_-1_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.818142279982567e-05
+      },
+      {
+        "name": "rack_foot_glide_-1_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.818142279982567e-05
+      },
+      {
+        "name": "rack_foot_glide_1_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.818142279982567e-05
+      },
+      {
+        "name": "rack_foot_glide_1_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.818142279982567e-05
+      },
+      {
+        "name": "rack_lower_stretcher_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.648392395116389e-05
+      },
+      {
+        "name": "rack_lower_stretcher_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.648392395116389e-05
+      },
+      {
+        "name": "rack_pivot_bolt_-1_LOD1",
+        "triangles": 54,
+        "normal_tangent_orthogonality_max": 8.55475664138794e-05
+      },
+      {
+        "name": "rack_pivot_bolt_1_LOD1",
+        "triangles": 54,
+        "normal_tangent_orthogonality_max": 8.55475664138794e-05
+      },
+      {
+        "name": "rack_top_rail_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.648392395116389e-05
+      },
+      {
+        "name": "rack_top_rail_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.648392395116389e-05
+      },
+      {
+        "name": "rack_woven_strap_1_LOD1",
+        "triangles": 44,
+        "normal_tangent_orthogonality_max": 7.273070514202118e-05
+      },
+      {
+        "name": "rack_woven_strap_2_LOD1",
+        "triangles": 44,
+        "normal_tangent_orthogonality_max": 7.273070514202118e-05
+      },
+      {
+        "name": "rack_woven_strap_3_LOD1",
+        "triangles": 44,
+        "normal_tangent_orthogonality_max": 7.273070514202118e-05
+      },
+      {
+        "name": "rack_woven_strap_4_LOD1",
+        "triangles": 44,
+        "normal_tangent_orthogonality_max": 7.273070514202118e-05
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  },
+  {
+    "file": "mu01_wastebasket_small_lod0.glb",
+    "sha256": "60caf73736b58943b01a042fccae2c71d21753a2d3dc397859e8625ab74c923f",
+    "bytes": 724364,
+    "triangles": 1156,
+    "export_vertices": 1687,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.14920000731945038,
+        0.0,
+        -0.10480000078678131
+      ],
+      [
+        0.14920000731945038,
+        0.31119999289512634,
+        0.10480000078678131
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.29840001463890076,
+      0.31119999289512634,
+      0.20960000157356262
+    ],
+    "images": [
+      {
+        "name": "cream_resin_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cream_resin_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cream_resin_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mu01_wastebasket_small_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "bin_continuous_shell_rolled_rim",
+        "triangles": 724,
+        "normal_tangent_orthogonality_max": 9.36463475227356e-05
+      },
+      {
+        "name": "bin_rim_reinforcement_-1_-0.095",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "bin_rim_reinforcement_-1_0.095",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "bin_rim_reinforcement_1_-0.095",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "bin_rim_reinforcement_1_0.095",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  },
+  {
+    "file": "mu01_wastebasket_small_lod1.glb",
+    "sha256": "39a5122f58da4ce66ed2bf126cde796b01b0b16e39eb2204dd265159a186c25c",
+    "bytes": 639920,
+    "triangles": 324,
+    "export_vertices": 321,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.14879357814788818,
+        -6.324221885734005e-06,
+        -0.10439281165599823
+      ],
+      [
+        0.14879357814788818,
+        0.3112385869026184,
+        0.10439281165599823
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.29758715629577637,
+      0.31124491112450414,
+      0.20878562331199646
+    ],
+    "images": [
+      {
+        "name": "cream_resin_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cream_resin_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cream_resin_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mu01_wastebasket_small_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "bin_continuous_shell_rolled_rim_LOD1",
+        "triangles": 324,
+        "normal_tangent_orthogonality_max": 0.00010507553815841675
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  }
+]

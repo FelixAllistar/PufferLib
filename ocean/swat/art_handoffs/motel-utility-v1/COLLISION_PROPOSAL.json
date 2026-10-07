@@ -1,0 +1,302 @@
+{
+  "status": "PROPOSAL ONLY; not authoritatively assigned until engine review",
+  "units": "metres",
+  "axes": "glTF +Y up",
+  "no_runtime_collision_meshes": true,
+  "assets": [
+    {
+      "asset": "mu01_luggage_rack",
+      "suggestion": "Compound named member OBBs; straps and bolts excluded; engine must choose collision classes and static/dynamic body behavior.",
+      "shapes": [
+        {
+          "part_name": "rack_cross_leg_-1_-1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.010999999940395355,
+            0.27929240465164185,
+            0.016499999910593033
+          ],
+          "node_transform": {
+            "translation": [
+              -0.22200000286102295,
+              0.2459999918937683,
+              -0.004500001668930054
+            ],
+            "rotation": [
+              0.290971964597702,
+              0,
+              0,
+              0.9567315578460693
+            ]
+          }
+        },
+        {
+          "part_name": "rack_cross_leg_-1_1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.010999999940395355,
+            0.27929240465164185,
+            0.016499999910593033
+          ],
+          "node_transform": {
+            "translation": [
+              -0.24799999594688416,
+              0.2459999918937683,
+              0.004500001668930054
+            ],
+            "rotation": [
+              0,
+              -0.9567315578460693,
+              0.290971964597702,
+              7.931259204951857e-08
+            ]
+          }
+        },
+        {
+          "part_name": "rack_cross_leg_1_-1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.010999999940395355,
+            0.27929240465164185,
+            0.016499999910593033
+          ],
+          "node_transform": {
+            "translation": [
+              0.22200000286102295,
+              0.2459999918937683,
+              -0.004500001668930054
+            ],
+            "rotation": [
+              0.290971964597702,
+              0,
+              0,
+              0.9567315578460693
+            ]
+          }
+        },
+        {
+          "part_name": "rack_cross_leg_1_1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.010999999940395355,
+            0.27929240465164185,
+            0.016499999910593033
+          ],
+          "node_transform": {
+            "translation": [
+              0.24799999594688416,
+              0.2459999918937683,
+              0.004500001668930054
+            ],
+            "rotation": [
+              0,
+              -0.9567315578460693,
+              0.290971964597702,
+              7.931259204951857e-08
+            ]
+          }
+        },
+        {
+          "part_name": "rack_lower_stretcher_-1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.011500000022351742,
+            0.22200000286102295,
+            0.013000000268220901
+          ],
+          "node_transform": {
+            "translation": [
+              0,
+              0.13500000536441803,
+              0.09799999743700027
+            ],
+            "rotation": [
+              0.5,
+              0.5,
+              -0.5,
+              0.5
+            ]
+          }
+        },
+        {
+          "part_name": "rack_lower_stretcher_1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.011500000022351742,
+            0.22200000286102295,
+            0.013000000268220901
+          ],
+          "node_transform": {
+            "translation": [
+              0,
+              0.13500000536441803,
+              -0.09799999743700027
+            ],
+            "rotation": [
+              0.5,
+              0.5,
+              -0.5,
+              0.5
+            ]
+          }
+        },
+        {
+          "part_name": "rack_top_rail_-1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.014999999664723873,
+            0.2793999910354614,
+            0.013000000268220901
+          ],
+          "node_transform": {
+            "translation": [
+              0,
+              0.4909999966621399,
+              0.15379999577999115
+            ],
+            "rotation": [
+              0.5,
+              0.5,
+              -0.5,
+              0.5
+            ]
+          }
+        },
+        {
+          "part_name": "rack_top_rail_1",
+          "shape_proposal": "oriented_box",
+          "center_mesh_local": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "half_extents_mesh_local": [
+            0.014999999664723873,
+            0.2793999910354614,
+            0.013000000268220901
+          ],
+          "node_transform": {
+            "translation": [
+              0,
+              0.4909999966621399,
+              -0.15379999577999115
+            ],
+            "rotation": [
+              0.5,
+              0.5,
+              -0.5,
+              0.5
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "asset": "mu01_wastebasket_small",
+      "suggestion": "Simple five-box shell retaining open top. Approximates tapered walls; engine must refine hit behavior. Do not blindly use an aggregate convex hull if cavity interaction matters.",
+      "shapes": [
+        {
+          "name": "base",
+          "center": [
+            0,
+            0.006,
+            0
+          ],
+          "half_extents": [
+            0.115,
+            0.006,
+            0.077
+          ]
+        },
+        {
+          "name": "wall_left",
+          "center": [
+            -0.13,
+            0.155,
+            0
+          ],
+          "half_extents": [
+            0.008,
+            0.15,
+            0.096
+          ]
+        },
+        {
+          "name": "wall_right",
+          "center": [
+            0.13,
+            0.155,
+            0
+          ],
+          "half_extents": [
+            0.008,
+            0.15,
+            0.096
+          ]
+        },
+        {
+          "name": "wall_front",
+          "center": [
+            0,
+            0.155,
+            -0.088
+          ],
+          "half_extents": [
+            0.14,
+            0.15,
+            0.008
+          ]
+        },
+        {
+          "name": "wall_rear",
+          "center": [
+            0,
+            0.155,
+            0.088
+          ],
+          "half_extents": [
+            0.14,
+            0.15,
+            0.008
+          ]
+        }
+      ]
+    }
+  ],
+  "destruction": "unsupported; no damage pieces"
+}

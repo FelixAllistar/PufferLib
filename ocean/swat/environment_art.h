@@ -31,6 +31,7 @@ typedef struct SwatEnvironmentArt {
     struct SwatLighting* lighting;
     Model door;
     Model motel[SWAT_MOTEL_ASSETS];
+    int motel_occlusion_uv[SWAT_MOTEL_ASSETS][SWAT_ROOM101_MATERIALS];
     Model room101[SWAT_ROOM101_ASSETS];
     float room101_normal_scale[SWAT_ROOM101_ASSETS][SWAT_ROOM101_MATERIALS];
     bool room101_ready;

@@ -198,6 +198,41 @@ static Image surface_capture(SwatLighting* light,SwatEnvironmentArt* art,Texture
 static Texture2D solid_texture(Color color) {
     Image image=GenImageColor(2,2,color); Texture2D result=LoadTextureFromImage(image); UnloadImage(image); return result;
 }
+static void second_uv_ao(SwatLighting* light,SwatEnvironmentArt* art) {
+    Mesh mesh={.vertexCount=6,.triangleCount=2};
+    mesh.vertices=MemAlloc(18*sizeof(float));mesh.normals=MemAlloc(18*sizeof(float));
+    mesh.texcoords=MemAlloc(12*sizeof(float));mesh.texcoords2=MemAlloc(12*sizeof(float));
+    const float positions[]={-1,-1,0,1,-1,0,1,1,0,-1,-1,0,1,1,0,-1,1,0};
+    memcpy(mesh.vertices,positions,sizeof(positions));
+    for(int i=0;i<6;i++) {
+        mesh.normals[3*i]=mesh.normals[3*i+1]=0;mesh.normals[3*i+2]=1;
+        mesh.texcoords[2*i]=.25f;mesh.texcoords2[2*i]=.75f;
+        mesh.texcoords[2*i+1]=mesh.texcoords2[2*i+1]=.5f;
+    }
+    UploadMesh(&mesh,false);Model model=LoadModelFromMesh(mesh);
+    Image map=GenImageColor(2,1,BLACK);ImageDrawPixel(&map,1,0,WHITE);
+    Texture2D ao=LoadTextureFromImage(map);UnloadImage(map);SetTextureFilter(ao,TEXTURE_FILTER_POINT);
+    Material* m=&model.materials[0];m->maps[MATERIAL_MAP_OCCLUSION].texture=ao;
+    m->maps[MATERIAL_MAP_OCCLUSION].value=1;m->shader=light->mesh.shader;
+    Camera3D camera={{0,0,3},{0,0,0},{0,1,0},3,CAMERA_ORTHOGRAPHIC};
+    Vector3 sun=light->sun_energy;light->sun_energy=(Vector3){0};sim.world.room_count=0;
+    Color samples[3];RenderTexture2D target=LoadRenderTexture(128,128);
+    for(int i=0;i<3;i++) {
+        BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
+        swat_lighting_begin(light,art,&sim.world,camera.position);
+        if(i==2)swat_lighting_material(light,*m,true); // Default call must restore UV0.
+        else swat_lighting_material_uv(light,*m,true,1,i);
+        DrawModel(model,(Vector3){0},1,WHITE);swat_lighting_material(light,(Material){0},false);
+        swat_lighting_end(light,art);EndMode3D();EndTextureMode();
+        Image frame=LoadImageFromTexture(target.texture);samples[i]=GetImageColor(frame,64,64);UnloadImage(frame);
+    }
+    assert(samples[1].r>samples[0].r+30 && samples[1].g>samples[0].g+30);
+    assert(!memcmp(&samples[0],&samples[2],sizeof(Color)));
+    m->maps[MATERIAL_MAP_OCCLUSION].texture=(Texture2D){0};
+    m->shader=(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};UnloadModel(model);
+    UnloadTexture(ao);UnloadRenderTexture(target);light->sun_energy=sun;
+    puts("PASS second-UV AO: independent UV1 sampling and default UV0 restoration");
+}
 static void sky_check(SwatLighting* light,const char* directory) {
     RenderTexture2D target=LoadRenderTexture(320,180);
     Camera3D camera={{0,0,0},{0,1,.1f},{0,0,-1},60,CAMERA_PERSPECTIVE};
@@ -350,6 +385,7 @@ int main(int argc,char** argv) {
     printf("ground brightness range=%d..%d\n",darkest,brightest); assert(brightest-darkest<8 && darkest>500);
     UnloadImageColors(a); UnloadImage(ground);
     environment_basis(&light,&art);
+    second_uv_ao(&light,&art);
     source_finish(&light,&art);
     contact_checks(&light,directory);
     swat_lighting_close(&light); assert(!light.sun.id && !light.batch.shader.id && !light.contact_depth.id);

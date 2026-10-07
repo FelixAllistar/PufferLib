@@ -177,10 +177,12 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     int missing=0;
     for(int i=0;i<(location ? SWAT_STOREFRONT_ASSETS : SWAT_MOTEL_ASSETS);i++) {
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
-        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : "motel_v1",a->file);
+        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":"motel_utility_v1",a->file);
         Model* model=location ? &art->storefront[i] : &art->motel[i];
         if(asset_path(path,sizeof(path),file)) *model=LoadModel(path);
         if(!model->meshCount || model->materialCount!=a->material_count+1) { swat_art_model_close(*model); *model=(Model){0}; missing++; continue; }
+        SwatArtMaterialFactors factors[SWAT_ROOM101_MATERIALS-1];
+        int factors_count=swat_art_material_factors(path,factors,SWAT_ROOM101_MATERIALS-1);
         // Raylib 5.5 reads scalar glTF PBR factors only when an ORM texture
         // exists. Restore the catalogued original factors for scalar materials.
         for(int m=0;m<a->material_count;m++) {
@@ -188,7 +190,8 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             material->maps[MATERIAL_MAP_ROUGHNESS].value=a->materials[m].roughness;
             material->maps[MATERIAL_MAP_METALNESS].value=a->materials[m].metalness;
             material->maps[MATERIAL_MAP_NORMAL].value=2; // Signed UV derivatives.
-            material->maps[MATERIAL_MAP_OCCLUSION].value=1;
+            material->maps[MATERIAL_MAP_OCCLUSION].value=m<factors_count?factors[m].occlusion_strength:1;
+            if(!location)art->motel_occlusion_uv[i][m+1]=m<factors_count?factors[m].occlusion_texcoord:0;
             for(int k=0;k<=MATERIAL_MAP_BRDF;k++) {
                 Texture2D* t=&material->maps[k].texture;
                 if(t->id && t->id!=rlGetTextureIdDefault()) { GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR); }
@@ -427,7 +430,9 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(model==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(model==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(model==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
-            swat_lighting_material_scaled(art->lighting,material,true,normal_scale);
+            int ao_uv=0;
+            for(int r=0;r<SWAT_MOTEL_ASSETS;r++)if(model==&art->motel[r])ao_uv=art->motel_occlusion_uv[r][model->meshMaterial[i]];
+            swat_lighting_material_uv(art->lighting,material,true,normal_scale,ao_uv);
         }
         DrawMesh(model->meshes[i],material,transform);
     }
