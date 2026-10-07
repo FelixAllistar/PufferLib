@@ -86,5 +86,40 @@ int main(void) {
     unsigned int rng=17;
     assert(kag_direct_sample_step(&replay,0,logits,1,&rng,sampled,rewards));
     assert(!memcmp(expected,sampled,sizeof(expected)) && rng==17 && replay.env.game.step==1);
+
+    // Self-play uses BOTH neural policies on the same pre-step game, and
+    // preserves their sampled prefix masks for likelihood/KL calculations.
+    reset();
+    replay.env.num_agents = 2;
+    replay.env.critic_features = 1;
+    replay.env.reward_win_loss_draw = 1;
+    for (int p=0;p<2;p++) {
+        replay.env.agents[p].observations = replay.obs[p];
+        replay.env.agents[p].rewards = replay.rewards+p;
+        replay.env.agents[p].terminals = replay.terminals+p;
+    }
+    static float views[2][OBS_SIZE], both_logits[2][KAG_ALL_LOGITS];
+    float both_heads[2][KAG_ACTION_HEADS], reference_heads[2][KAG_ACTION_HEADS];
+    unsigned char both_masks[2][KAG_ALL_LOGITS], reference_masks[2][KAG_ALL_LOGITS];
+    unsigned int randoms[2]={17,93}, reference_randoms[2]={17,93};
+    assert(kag_direct_selfplay_observe(&replay,views[0]));
+    assert(!memcmp(views[0]+3000,views[0],128*sizeof(float)));
+    assert(!memcmp(views[0]+3128,views[1],128*sizeof(float)));
+    assert(!memcmp(views[1]+3128,views[0],128*sizeof(float)));
+    KGAction pair[2];
+    KGState reference_game=replay.env.game;
+    for (int p=0;p<2;p++) {
+        for (int i=0;i<KAG_ALL_LOGITS;i++) both_logits[p][i]=((i*(13+2*p))%43-21)/8.0f;
+        kag_sample_cpu_logits(&replay.env.policy,&reference_game,p,both_logits[p],0,
+            reference_randoms+p,reference_heads[p],reference_masks[p]);
+        kag_decode_multi_action(pair+p,reference_heads[p],&reference_game,p,&replay.env.policy);
+    }
+    assert(kag_direct_selfplay_step(&replay,both_logits[0],randoms,both_heads[0],both_masks[0],rewards));
+    kg_step(&reference_game,pair);
+    assert(!memcmp(&reference_game,&replay.env.game,sizeof(reference_game)));
+    assert(!memcmp(randoms,reference_randoms,sizeof(randoms)));
+    assert(!memcmp(both_heads,reference_heads,sizeof(both_heads)));
+    assert(!memcmp(both_masks,reference_masks,sizeof(both_masks)));
+    assert(rewards[0]==0 && rewards[1]==0);
     puts("compact BC: quantities, filtered commands, forced targets and prefix parity PASS");
 }

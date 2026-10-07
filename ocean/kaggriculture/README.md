@@ -1,6 +1,6 @@
 # Kaggriculture on PufferLib 5.0
 
-## Active setup: direct PufferNet, Final-B-inspired rules
+## Native baseline and selected Transformer
 
 There is one active config: `config/kaggriculture.ini`. Build with
 `bash build.sh kaggriculture`; `./puffer train` reads that config directly.
@@ -15,10 +15,77 @@ market slots chooses one of 22 commands (including NOOP) and a quantity from
 1–100. The 60 small heads produce 2,500 scores total, down from ABI 6's 29,030.
 The encoder is one stock PufferNet linear
 projection followed by upstream MinGRU. Separate nonlinear unit/market heads
-and the compact same-state paired critic remain; there is **no Transformer**.
-An opt-in structured Transformer BC comparison is described below; it does not
-replace this native trainer or make its `.pt` files compatible with MinGRU.
+and the compact same-state paired critic remain in the native binary.
+The selected Transformer has a separate Torch BC/PPO runner, described below.
+Its `.pt` files are not compatible with the native MinGRU `.bin` loader.
 The actor never receives the appended opponent-private critic features.
+
+### PPO from the selected epoch-19 Transformer
+
+`[transformer]` pins the cash-selected BC checkpoint and its SHA-256 in the
+same `config/kaggriculture.ini`; `[transformer_ppo]` holds its PPO recipe.
+This is the epoch-19 actor that averaged $5,520 on 128 separate validation
+games, not the final epoch-30 actor. Use the Torch entry point:
+
+```bash
+# Inspect the resolved recipe without allocating a GPU or creating a run.
+python ocean/kaggriculture/run.py transformer-ppo --dry-run
+# Two complete self-play rollouts exercise critic warmup, PPO, and saving.
+python ocean/kaggriculture/run.py transformer-ppo-smoke
+# Launch the bounded initial fine-tune (new timestamped output by default).
+python ocean/kaggriculture/run.py transformer-ppo
+# Evaluate the configured epoch-19 actor on 64 maps, both seats.
+python ocean/kaggriculture/run.py transformer-eval
+```
+
+The initial budget is 1M agent steps, rounded up to complete rollouts: 16 fresh
+games per rollout, both seats sampled from the current actor, 719 turns each.
+The actor starts from epoch 19; a separate, zero-initialized paired critic warms
+up for two rollouts on actual self-play WLD returns. Its shared 128-feature
+seat scorer produces `tanh((own_score-other_score)/2)`. Only the critic receives
+the appended 256 private features. No expert-return critic fit is performed.
+
+PPO uses Adam at actor LR `3e-6` / critic LR `1e-3`, gamma 1, GAE lambda .97,
+clip .1, value clip .2, two update epochs, 960-frame optimizer minibatches,
+and 240-frame gradient microbatches. The native sampler returns each sampled
+conditional head mask. Those exact masks define the joint action likelihood,
+entropy, and teacher-to-policy KL; forced singleton heads contribute zero.
+The frozen epoch-19 anchor has KL coefficient .1. Approximate behavior-policy
+KL above .03 stops the update early. Optimizer state is separate from BC.
+Rollout and update use the same compiled, grad-enabled actor graph; rollout
+activations are discarded without backpropagation. Inference-only compilation
+introduced a BF16 likelihood mismatch, so it is not used for the acting policy.
+The trainer checks near-zero KL and zero clipping before its first update on
+each rollout. A readiness run at `1e-5` hit the KL limit after one minibatch;
+the lower initial actor rate is deliberate.
+
+Training uses current-policy self-play and fresh starts. The native MinGRU's
+historical league, replay-reset rate, Muon learning rate, and 5B-step budget do
+not apply to this Torch runner. The rule bot is used only for evaluation.
+Greedy screening runs every four rollouts, and promotion requires higher cash
+than the initial BC baseline. Final validation uses separate maps and does not
+select a checkpoint. Self-play win rate alone is not a strength metric.
+
+Each output directory contains `config.json`, `metrics.jsonl`, `latest.pt`,
+`selected.json`, evaluations, and `best.pt` if PPO beats the BC screening cash.
+`latest.pt` atomically retains actor, critic, both optimizers, counters, and RNG
+states. It resumes at a full-game boundary; bounded latest/best storage avoids
+accumulating large per-update snapshots. Original BC snapshots remain intact.
+
+```bash
+python ocean/kaggriculture/run.py transformer-ppo \
+    --resume saved/kaggriculture/transformer_v2/YOUR_RUN/latest.pt \
+    --output saved/kaggriculture/transformer_v2/YOUR_CONTINUATION \
+    --total-timesteps 2000000
+python ocean/kaggriculture/run.py transformer-eval \
+    --checkpoint saved/kaggriculture/transformer_v2/YOUR_RUN/best.pt
+```
+
+Resume preserves the recipe; only the total terminal budget may increase.
+`--games`, `--total-timesteps`, `--device`, and `--no-compile` support explicit
+small diagnostics. Smoke runs use smaller cohorts and are plumbing checks,
+not evidence that PPO improves gameplay. `./puffer train` still launches the
+native MinGRU baseline; it cannot consume a Transformer checkpoint.
 
 The rule-aware design is inspired by
 [M & M & P & Q's Final B](https://github.com/msdsm/kaggriculture-solution).
@@ -191,9 +258,9 @@ mean cash, with held-out CE only breaking ties. After BC finishes, the selected
 epoch is checked on a separate explicit-seed cohort (64 games per seat); this
 final cohort does not select the epoch. See `selected.json` and
 `selected_fresh_validation.json` in the run directory. `.pt` checkpoints are
-explicitly architecture-tagged and are **not** native `.bin` files. There is no
-native Transformer PPO or export path yet; this is an architecture screening
-experiment, not an advertised winning policy. No critic is fitted during actor BC.
+explicitly architecture-tagged and are **not** native `.bin` files. The Torch
+PPO integration above consumes the selected actor; there is no native CUDA
+Transformer network or export path. No critic is fitted during actor BC.
 
 `--compile` compiles the actor and masked loss together, retaining eager BF16
 rounding boundaries (`emulate_precision_casts=True`). Default compiler fusion

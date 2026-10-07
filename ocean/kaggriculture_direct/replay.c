@@ -1,6 +1,33 @@
 #include "kaggriculture_direct.h"
 #include "../kaggriculture/kag_bc_replay.c"
 
+// PPO records both same-state views and samples both neural seats BEFORE the
+// simultaneous simulator step. Returned masks are the exact sampled prefixes.
+int kag_direct_selfplay_observe(KagBCReplay* r, float* observations) {
+    if (!r || !observations || kg_done(&r->env.game)) return 0;
+    kag_observe(&r->env, false);
+    memcpy(observations, r->obs, sizeof(r->obs));
+    return 1;
+}
+
+int kag_direct_selfplay_step(KagBCReplay* r, const float* logits,
+        unsigned int* rng, float* heads, unsigned char* masks, float* rewards) {
+    if (!r || !logits || !rng || !heads || !masks || !rewards
+            || kg_done(&r->env.game)) return 0;
+    for (int i = 0; i < 2*KAG_ALL_LOGITS; i++) if (!isfinite(logits[i])) return 0;
+    KGAction pair[2] = {0};
+    for (int p = 0; p < 2; p++) {
+        kag_sample_cpu_logits(&r->env.policy, &r->env.game, p,
+            logits + p*KAG_ALL_LOGITS, 0, rng+p, heads+p*KAG_ACTION_HEADS,
+            masks+p*KAG_ALL_LOGITS);
+        kag_decode_multi_action(pair+p, heads+p*KAG_ACTION_HEADS,
+            &r->env.game, p, &r->env.policy);
+    }
+    kag_apply_actions(&r->env, pair);
+    memcpy(rewards, r->rewards, sizeof(r->rewards));
+    return 1;
+}
+
 // Architecture-independent diagnostic rollout bridge. Uses exactly the native
 // ABI-7 prefix support/decoder, with no route planner or strategic executor.
 int kag_direct_sample_step(KagBCReplay* r, int seat, const float* logits,

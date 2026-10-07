@@ -355,25 +355,39 @@ def main():
     ini.read(ROOT / "config/kaggriculture.ini")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("check", "bc", "eval"))
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--dry-run", action="store_true")
     checkpoints = parser.add_mutually_exclusive_group()
     checkpoints.add_argument("--checkpoint", type=Path)
     checkpoints.add_argument("--resume", type=Path, help="continue BC to --epochs TOTAL epochs")
-    parser.add_argument("--compile", action="store_true", help="compile actor and masked BC loss")
+    parser.add_argument("--compile", action=argparse.BooleanOptionalAction,
+                        default=ini.getboolean("transformer", "compile", fallback=False), help="compile actor and masked BC loss")
     parser.add_argument("--sdpa", choices=("auto", "efficient", "cudnn"), default="auto")
-    parser.add_argument("--fused-adam", action="store_true")
+    parser.add_argument("--fused-adam", action=argparse.BooleanOptionalAction,
+                        default=ini.getboolean("transformer", "fused_adam", fallback=False))
     parser.add_argument("--epochs", type=int, default=ini.getint("bc", "epochs"))
-    parser.add_argument("--microbatch", type=int, default=16)
+    parser.add_argument("--microbatch", type=int, default=ini.getint("transformer", "microbatch", fallback=16))
     parser.add_argument("--max-train-games", type=int, default=0)
-    parser.add_argument("--eval-games", type=int, default=16, help="games per seat")
-    parser.add_argument("--eval-seed", type=int, default=0)
-    parser.add_argument("--map-seed-mode", choices=("native-index", "explicit"), default="native-index")
-    parser.add_argument("--validation-games", type=int, default=64, help="final separate-cohort games per seat")
-    parser.add_argument("--validation-seed", type=int, default=2026100700)
+    parser.add_argument("--eval-games", type=int, help="games per seat")
+    parser.add_argument("--eval-seed", type=int)
+    parser.add_argument("--map-seed-mode", choices=("native-index", "explicit"))
+    parser.add_argument("--validation-games", type=int, default=ini.getint("transformer", "validation_games", fallback=64), help="final separate-cohort games per seat")
+    parser.add_argument("--validation-seed", type=int, default=ini.getint("transformer", "validation_seed", fallback=2026100700))
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--layers", type=int, default=6)
     parser.add_argument("--adapter-version", type=int, choices=(1, 2))
     args = parser.parse_args()
+    if args.eval_games is None:
+        args.eval_games = args.validation_games if args.mode == "eval" else ini.getint("transformer", "eval_games", fallback=16)
+    if args.eval_seed is None:
+        args.eval_seed = args.validation_seed if args.mode == "eval" else ini.getint("transformer", "eval_seed", fallback=0)
+    if args.map_seed_mode is None:
+        args.map_seed_mode = "explicit" if args.mode == "eval" else ini.get("transformer", "eval_map_seed_mode", fallback="native-index")
+    if args.output is None:
+        args.output = ROOT / ini.get("transformer", "output_root", fallback="saved/kaggriculture/transformer_v2") / f"{args.mode}_{time.time_ns()}"
+    configured_checkpoint = ROOT / ini.get("transformer", "checkpoint", fallback="None")
+    if args.mode == "eval" and args.checkpoint is None and not args.resume:
+        args.checkpoint = configured_checkpoint
     assert args.epochs > 0 and args.microbatch > 0 and args.eval_games > 0 and args.validation_games > 0
     assert args.max_train_games >= 0
     if args.resume and args.mode != "bc":
@@ -382,6 +396,12 @@ def main():
     validation_seeds = game_seeds(args.validation_seed, args.validation_games, "explicit")
     if args.mode == "bc":
         assert not screening_seeds.intersection(validation_seeds), "screening/validation seed overlap"
+    if args.dry_run:
+        print(json.dumps(vars(args), default=str, indent=2))
+        return
+    if args.checkpoint and args.checkpoint.resolve() == configured_checkpoint.resolve():
+        with args.checkpoint.open("rb") as stream:
+            assert hashlib.file_digest(stream, "sha256").hexdigest() == ini["transformer"]["checkpoint_sha256"], "configured checkpoint checksum mismatch"
     args.output.mkdir(parents=True, exist_ok=False)
     device = torch.device(args.device)
     torch.set_num_threads(4)
@@ -391,7 +411,9 @@ def main():
     checkpoint = args.resume or args.checkpoint
     if checkpoint:
         saved = torch.load(checkpoint, map_location=device, weights_only=True)
-        assert saved["format"] in ("kag_compact_v7_transformer_v1", FORMAT)
+        assert saved["format"] in ("kag_compact_v7_transformer_v1", FORMAT, "kag_compact_v7_transformer_ppo_v1")
+        if args.resume and saved["format"] == "kag_compact_v7_transformer_ppo_v1":
+            parser.error("PPO checkpoints resume through transformer_ppo.py train --resume")
         saved_config = dict(saved["config"], adapter_version=saved["config"].get("adapter_version", 1))
         if args.adapter_version is None:
             args.adapter_version = saved_config["adapter_version"]

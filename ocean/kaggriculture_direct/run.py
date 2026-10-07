@@ -154,6 +154,13 @@ def sweep_results(ini):
 
 
 def main():
+    transformer_modes = {"transformer-ppo": ("transformer_ppo.py", "train"),
+                         "transformer-ppo-smoke": ("transformer_ppo.py", "smoke"),
+                         "transformer-eval": ("transformer.py", "eval")}
+    if len(os.sys.argv) > 1 and os.sys.argv[1] in transformer_modes:
+        script, mode = transformer_modes[os.sys.argv[1]]
+        return subprocess.run([os.sys.executable, str(ROOT/"ocean/kaggriculture_direct"/script),
+                               mode, *os.sys.argv[2:]], cwd=ROOT).returncode
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode",choices=("train","eval","match","sweep","sweep-results","build-bc","prepare-bc","bc","bc-grid","critic"))
     parser.add_argument("--hidden",type=int,choices=(256,512,1024))
