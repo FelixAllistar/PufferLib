@@ -25,6 +25,7 @@ def test_one_config():
     assert c.getfloat("train","gamma") == 1
     assert c.getfloat("train","gae_lambda") == .97
     assert c.getint("train","replay_ratio") == 1
+    assert c.getint("base","eval_greedy") == 1
     assert c.getint("selfplay","enabled") == 1
     assert c.getint("vec","num_policies") == 7
     assert c.getint("selfplay","max_size") == 6

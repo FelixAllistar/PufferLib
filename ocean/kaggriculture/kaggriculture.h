@@ -73,8 +73,55 @@ KagPotential kag_frozen_potential;
 int kag_qd_metrics;
 // 0: existing recurrent scalar; 1: same-state global scalar; 2: paired global.
 int kag_critic_mode;
+// Opt-in, single fresh CPU-eval game. Never open/replace an existing trace.
+FILE* kag_trace_file;
+
+void kag_trace_step(const Env* env, const KGAction* commands, const int* before) {
+    FILE* out = kag_trace_file;
+    if (!out) return;
+    const KGState* g = &env->game;
+    fprintf(out, "{\"step\":%d,\"day\":%d,\"players\":[", g->step, g->day);
+    for (int p=0;p<2;p++) {
+        const KGPlayer* f = &g->players[p];
+        fprintf(out, "%s{\"cash_before\":%d,\"cash\":%d,\"production\":%u,"
+            "\"plants\":%u,\"animals\":%u,\"deaths\":%u,\"shed\":[",
+            p ? "," : "", before[p], f->money, g->production_units[p],
+            g->planted_crops[p], g->placed_animals[p], g->neglect_deaths[p]);
+        for (int i=0;i<12;i++) fprintf(out,"%s%d",i?",":"",f->shed[i]);
+        fprintf(out,"],\"units\":[");
+        for (int u=0;u<f->unit_count;u++) {
+            KGUnitAction a = u ? (u <= commands[p].hand_count ? commands[p].hands[u-1]
+                : (KGUnitAction){KG_OP_PASS,-1,1}) : commands[p].farmer;
+            fprintf(out,"%s{\"x\":%d,\"y\":%d,\"op\":%d,\"arg\":%d,\"n\":%d,\"held\":[",
+                u?",":"",f->units[u].x,f->units[u].y,a.op,a.arg,a.n);
+            for (int i=0;i<12;i++) fprintf(out,"%s%d",i?",":"",f->units[u].inventory[i]);
+            fprintf(out,"]}");
+        }
+        fprintf(out,"],\"market\":[");
+        for (int i=0;i<commands[p].market_count;i++) {
+            KGMarketOrder a = commands[p].market[i];
+            fprintf(out,"%s[%d,%d,%d]",i?",":"",a.op,a.item,a.n);
+        }
+        fprintf(out,"]}");
+    }
+    fprintf(out,"]}\n");
+    if (g->done) { fclose(out); kag_trace_file = NULL; }
+}
 
 void kag_configure_potential(Ini* ini, const char* mode) {
+    const char* trace = getenv("KAG_EVAL_TRACE");
+    if (trace && *trace && !kag_trace_file) {
+        assert(PUF_BACKEND == PUF_CPU && "KAG_EVAL_TRACE requires the CPU environment backend");
+        assert(!strcmp(mode,"eval") && "KAG_EVAL_TRACE is evaluation-only");
+        assert(puf_ini_get(ini,"vec","total_agents") == 1
+            && puf_ini_get(ini,"vec","num_buffers") == 1
+            && puf_ini_get(ini,"env","num_agents") == 1
+            && puf_ini_get(ini,"base","eval_agents") == 1
+            && puf_ini_get(ini,"env","reset_state_prob") == 0
+            && "trace requires one fresh CPU evaluation environment");
+        kag_trace_file = fopen(trace,"wx");
+        assert(kag_trace_file && "cannot create trace (existing files are preserved)");
+    }
 #ifdef KAG_DIRECT_POLICY
     assert(puf_ini_get(ini,"policy","action_version") == KAG_POLICY_VERSION
         && "config action_version does not match this compact-policy binary; rebuild kaggriculture");
@@ -535,7 +582,13 @@ KG_HD void kag_step(Env* env) {
     if (env->num_agents == 1 && env->bot_policy == 1) {
         kg_rule_action(game, 1 - env->learner_seat, &commands[1 - env->learner_seat]);
     }
+#ifndef __CUDA_ARCH__
+    int before[] = {game->players[0].money,game->players[1].money};
+#endif
     kag_apply_actions(env, commands);
+#ifndef __CUDA_ARCH__
+    if (kag_trace_file) kag_trace_step(env,commands,before);
+#endif
     env->opponent_noise.ticks++;
     if (game->done) {
         kag_reset_episode(env);

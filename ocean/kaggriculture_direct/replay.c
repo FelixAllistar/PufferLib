@@ -1,6 +1,23 @@
 #include "kaggriculture_direct.h"
 #include "../kaggriculture/kag_bc_replay.c"
 
+// Architecture-independent diagnostic rollout bridge. Uses exactly the native
+// ABI-7 prefix support/decoder, with no route planner or strategic executor.
+int kag_direct_sample_step(KagBCReplay* r, int seat, const float* logits,
+        int greedy, unsigned int* rng, float* heads, float* rewards) {
+    if (!r || (unsigned)seat >= 2 || !logits || !rng || !heads || !rewards
+            || kg_done(&r->env.game)) return 0;
+    unsigned char mask[KAG_ALL_LOGITS];
+    for (int i=0;i<KAG_ALL_LOGITS;i++) if (!isfinite(logits[i])) return 0;
+    kag_sample_cpu_logits(&r->env.policy,&r->env.game,seat,logits,greedy,rng,heads,mask);
+    KGAction pair[2] = {0};
+    kag_decode_multi_action(&pair[seat],heads,&r->env.game,seat,&r->env.policy);
+    kg_rule_action(&r->env.game,1-seat,&pair[1-seat]);
+    kag_apply_actions(&r->env,pair);
+    memcpy(rewards,r->rewards,sizeof(r->rewards));
+    return 1;
+}
+
 // Exact representable primitive labels. Unsupported/blocked/forced components
 // are ignored, never relabelled as strategic requests. Original replay actions
 // still advance the simulator, preserving verified replay states.

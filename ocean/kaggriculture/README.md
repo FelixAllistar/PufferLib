@@ -16,6 +16,8 @@ market slots chooses one of 22 commands (including NOOP) and a quantity from
 The encoder is one stock PufferNet linear
 projection followed by upstream MinGRU. Separate nonlinear unit/market heads
 and the compact same-state paired critic remain; there is **no Transformer**.
+An opt-in structured Transformer BC comparison is described below; it does not
+replace this native trainer or make its `.pt` files compatible with MinGRU.
 The actor never receives the appended opponent-private critic features.
 
 The rule-aware design is inspired by
@@ -110,8 +112,90 @@ python ocean/kaggriculture/run.py eval --hidden 512 --layers 3
 ```
 
 Evaluation starts fresh with no reset bank or opponent noise. Native eval and
-match are supported. The old CPU/web/Kaggle macro exporters cannot load ABI 7;
+match are supported. The shared config now uses masked argmax during evaluation
+(`base.eval_greedy=1`); use `--base.eval_greedy=0` for a sampling comparison.
+Training always samples, regardless of this evaluation setting.
+The old CPU/web/Kaggle macro exporters cannot load ABI 7;
 the build rejects those paths rather than silently exporting the wrong policy.
+
+### Greedy BC diagnostics and structured Transformer comparison
+
+Held-out BC loss measures agreement with recorded teacher actions in excluded
+episodes. It is not money, production, or win rate. On the current compact
+dataset, the 30-epoch 1024x2 BC has lower loss than the 256x2 BC but worse
+closed-loop play. On 128 fresh games per seat against the built-in rule bot:
+
+| BC policy | Sampling mean terminal cash | Greedy mean terminal cash |
+| --- | ---: | ---: |
+| 1024x2 | $0 | $0 |
+| 256x2 | $292.37 | $1,155.05 |
+
+Every game starts at $3,000. Neither result establishes a productive policy.
+The rule bot also goes bankrupt: its draw/win rate is a weak strength measure.
+Native map sequences are repeatable environment-index seeds, not held-out seeds.
+One-game traces show the 1024 policy spending early on animals and hires,
+producing nothing, and later stalling on ineffective work.
+
+Reproduce the comparison without training or overwriting models:
+
+```bash
+python3 ocean/kaggriculture_direct/evaluate_bc.py --binary ./puffer \
+    --output saved/kaggriculture/diagnostics/new_comparison --games 128
+# --trace uses one environment and preserves the first game's decoded actions,
+# cash, production, inventory and positions in exclusive-created JSONL files.
+python3 ocean/kaggriculture_direct/evaluate_bc.py --binary ./puffer \
+    --output saved/kaggriculture/diagnostics/new_trace --games 1 --widths 1024 --trace
+```
+
+The experimental Torch sidecar uses the same replay split, compact labels,
+conditional support, simulator and rule bot, with a fresh independently trained
+actor. The backbone follows the winner's bootstrap dimensions: 6 pre-LN blocks,
+width 256, 8 heads, FFN 1024, no dropout, within-farm selective 2D RoPE with
+16 rotary dimensions and base 100. It adapts **our current observation**, not
+the winner's richer feature schema: 200 cell tokens, 40 unit tokens, one global
+token, 12 commodity/animal tokens and 10 market slots (263 total).
+Token adapters and shared unit/market heads replace the flat input projection
+and recurrent trunk. It emits our 44/20 unit and 22/100 market heads, not the
+winner's huge flat catalog. No macro executor, route planner, automatic seed
+purchase, private actor features, or inferred-inventory memory is added.
+
+Torch is optional; the normal native build does not import it. Use a CUDA build
+supporting the GPU (the RTX 5060 Ti requires CUDA 12.8 or newer).
+
+```bash
+make -C ocean/kaggriculture_direct replay-bridge
+python3 ocean/kaggriculture_direct/transformer.py check \
+    --output saved/kaggriculture/transformer_v1/new_check --microbatch 128
+python3 ocean/kaggriculture_direct/transformer.py bc \
+    --output saved/kaggriculture/transformer_v1/new_bc --microbatch 128 --epochs 2
+```
+
+The sidecar reads the dataset and Adam settings from the **same** INI. It
+accumulates a complete game's policy gradient using bounded frame microbatches,
+matching native BC's frame normalization; terminal/forced/filtered targets stay
+excluded. Held-out CE and accuracy are reported each epoch, but every epoch
+also gets greedy fresh-game cash evaluation on both seats. Epoch snapshots are
+retained separately, with data/config/source provenance. `.pt` checkpoints are
+explicitly architecture-tagged and are **not** native `.bin` files. There is no
+native Transformer PPO or export path yet; this is an architecture screening
+experiment, not an advertised winning policy. No critic is fitted during actor BC.
+
+The default 16 games per seat use exactly the first native map cohort with
+16 environment rows. For the matched native baseline use `evaluate_bc.py
+--games 16`. Separate explicit seeds can validate a selected checkpoint:
+
+```bash
+python3 ocean/kaggriculture_direct/transformer.py eval \
+    --checkpoint saved/kaggriculture/transformer_v1/new_bc/epoch_2.pt \
+    --output saved/kaggriculture/transformer_v1/new_validation --microbatch 128 \
+    --map-seed-mode explicit --eval-seed 2026100700 --eval-games 64
+```
+
+Independent tests check selective attention against a dense forward/backward
+oracle, compact-head CE, missing-unit masks, the private-feature barrier, and
+CPU prefix sampling. CUDA checks qualified 128-frame microbatches at about
+3.27GB peak allocated tensor memory on the current 8GB GPU; context/allocator
+overhead is additional. Do not run it alongside another GPU trainer.
 
 ### BC-start PROTEIN sweep
 

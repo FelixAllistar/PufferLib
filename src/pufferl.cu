@@ -340,6 +340,7 @@ typedef struct {
     bool reset_every_horizon;
     bool cudagraphs;
     bool profile;
+    bool eval_greedy;  // Enabled only by eval_make, never during training.
     int rank;
     int world_size;
     int gpu_id;
@@ -642,7 +643,7 @@ __global__ void sample_logits(
         precision_t* value_out,    // (B,)
         curandStatePhilox4_32_10_t* rng_states,
         precision_t* action_mask,  // (B, A_total); always allocated
-        int mask_stride, Env* sampling_envs, int row_start) {
+        int mask_stride, Env* sampling_envs, int row_start, bool greedy = false) {
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
     int num_atns = NUM_ATNS;
@@ -665,7 +666,7 @@ __global__ void sample_logits(
             float log_std = safe_continuous_logstd(logstd_data, h);
             float std = expf(log_std);
             float action = finite_or_clamp(
-                mean + std * curand_normal(&state), -1.0e6f, 1.0e6f);
+                greedy ? mean : mean + std * curand_normal(&state), -1.0e6f, 1.0e6f);
             // Preserve reduced-precision continuous semantics for logprob.
             precision_t stored_p = from_float(action);
             float stored = to_float(stored_p);
@@ -734,10 +735,20 @@ __global__ void sample_logits(
             float eps = h == 0 ? nethack_verb_eps_load(
                 action_mask + mask_base + logits_offset, A, &inv_K) : 0.0f;
 #endif
-            float rand_val = curand_uniform(&state);
+            float rand_val = greedy ? 0.0f : curand_uniform(&state);
             float cumsum = 0.0f;
             int sampled = A - 1;
-            for (int a = 0; a < A; a++) {
+            if (greedy) {
+                float best = -INFINITY;
+                for (int a = 0; a < A; a++) {
+                    if (to_float(action_mask[mask_base + logits_offset + a]) != 0.0f
+                            && cache[a] > best) {
+                        best = cache[a];
+                        sampled = a;
+                    }
+                }
+            }
+            for (int a = 0; !greedy && a < A; a++) {
 #ifdef PUFFER_NETHACK
                 if (eps > 0.0f) {
                     cumsum += nethack_verb_eps_mix(expf(cache[a] - logsumexp),
@@ -1000,7 +1011,7 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             act_b.data, env->actions.data + (long)sub * act_cols,
             lp_b.data, val_b.data,
             pufferl->rng_states[buf] + off,
-            mask_b.data, mask_stride, sampling_envs, sub);
+            mask_b.data, mask_stride, sampling_envs, sub, hypers->eval_greedy);
     }
     if (batch_sampling) {
         int cols = pufferl->sampling_logits.shape[1];
@@ -1012,7 +1023,8 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
         sample_logits<<<grid_size(block_size), BLOCK_SIZE, 0, stream>>>(
             dec, {}, pufferl->act_sizes, actions.data,
             env->actions.data + (long)start * act_cols, logprobs.data, values.data,
-            pufferl->rng_states[buf], mask_slice.data, mask_stride, sampling_envs, start);
+            pufferl->rng_states[buf], mask_slice.data, mask_stride, sampling_envs, start,
+            hypers->eval_greedy);
     }
 #if PUF_PACKED_MASK
     int packed = rollouts.action_mask.shape[2];
@@ -2026,6 +2038,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .reset_every_horizon = puf_ini_get(ini, "base", "reset_every_horizon") != 0,
         .cudagraphs = puf_ini_get(ini, "base", "cudagraphs") >= 0,
         .profile = puf_ini_get(ini, "base", "profile") != 0,
+        .eval_greedy = false,
         .rank = ctx->rank,
         .world_size = ctx->world_size,
         .gpu_id = ctx->gpu_id,
@@ -3215,6 +3228,8 @@ static PuffeRL* eval_make(Ini* ini, TrainContext* ctx, int mode, int render) {
         puf_ini_put(ini, "train.horizon", "1");
     }
     PuffeRL* p = create_pufferl(ini, ctx);
+    p->hypers.eval_greedy = puf_ini_get(ini, "base", "eval_greedy") > 0;
+    if (p->hypers.eval_greedy) printf("Evaluation actions: greedy (masked argmax)\n");
     if (match) {
         char a_buf[4096], b_buf[4096];
         const char* a = puf_checkpoint_path_key(ini, "load_model_path", a_buf, sizeof(a_buf));

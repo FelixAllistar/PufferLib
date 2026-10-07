@@ -69,5 +69,22 @@ int main(void) {
     project(&action);
     assert(labels[0] == -1 && labels[1] == -1 && history[0] == KAG_DIRECT_DROP);
     for (int h = 40; h < KAG_ACTION_HEADS; h++) assert(labels[h] == -1);
+
+    // Architecture-independent rollout sampling uses the same prefix argmax.
+    reset();
+    float logits[KAG_ALL_LOGITS], expected[KAG_ACTION_HEADS], sampled[KAG_ACTION_HEADS], rewards[2];
+    for (int i=0;i<KAG_ALL_LOGITS;i++) logits[i] = ((i*13)%43-21)/8.0f;
+    KagActionMaskState prefix;
+    kag_action_mask_begin(&prefix,&replay.env.game,&replay.env.policy,0);
+    for (int h=0;h<KAG_ACTION_HEADS;h++) {
+        kag_action_mask_before(&prefix,h,mask);
+        int off=kag_direct_offset(h), width=kag_direct_width(h), best=-1;
+        for (int i=0;i<width;i++) if(mask[off+i] && (best<0 || logits[off+i]>logits[off+best])) best=i;
+        assert(best>=0); expected[h]=best;
+        kag_action_mask_commit(&prefix,h,best);
+    }
+    unsigned int rng=17;
+    assert(kag_direct_sample_step(&replay,0,logits,1,&rng,sampled,rewards));
+    assert(!memcmp(expected,sampled,sizeof(expected)) && rng==17 && replay.env.game.step==1);
     puts("compact BC: quantities, filtered commands, forced targets and prefix parity PASS");
 }

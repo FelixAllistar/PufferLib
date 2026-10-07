@@ -17,6 +17,7 @@ void close_test(double a, double b, double tolerance=3e-5) {
 
 int main(int argc, char** argv) {
     int graphs = argc > 1 ? atoi(argv[1]) : 0;
+    int greedy = argc > 2 ? atoi(argv[2]) : 0;
     static_assert(sizeof(logprob_t)==4,"direct PPO old logprobs must retain FP32");
     // Exercise full warps and varied unit counts, not just four active lanes.
     const int rows=64, A=KAG_ALL_LOGITS, C=A+1;
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
     cudaStream_t stream; assert(cudaStreamCreate(&stream)==cudaSuccess);
     if(graphs) assert(cudaStreamBeginCapture(stream,cudaStreamCaptureModeGlobal)==cudaSuccess);
     sample_logits<<<1,256,0,stream>>>({.data=logits,.shape={rows,C}}, {}, sizes,
-        actions,dispatch,oldlp,values,rng,mask,A,env,0);
+        actions,dispatch,oldlp,values,rng,mask,A,env,0,greedy);
     if(graphs) {
         cudaGraph_t graph; cudaGraphExec_t exec;
         assert(cudaStreamEndCapture(stream,&graph)==cudaSuccess);
@@ -82,6 +83,12 @@ int main(int argc, char** argv) {
                 if(cpu[start+j]) { sum+=exp(to_float(logits[r*C+start+j])); count++; }
             }
             assert(cpu[start+action]); forced+=count==1;
+            if (greedy) {
+                int best = -1;
+                for (int j=0;j<n;j++) if (cpu[start+j] && (best<0 ||
+                        to_float(logits[r*C+start+j])>to_float(logits[r*C+start+best]))) best=j;
+                assert(action==best);
+            }
             lp+=to_float(logits[r*C+start+action])-log(sum);
             kag_action_mask_commit(&prefix,h,action);
         }
@@ -131,5 +138,5 @@ int main(int argc, char** argv) {
     kag_teacher_kl<<<rows*KAG_ACTION_HEADS,256>>>(logits,logits,mask,kl_grad,metrics,NULL,.2f,rows); sync_test();
     for(int i=0;i<rows*A;i++) assert(kl_grad[i]==0);
     assert(metrics[0]==0);
-    printf("direct CUDA graphs=%d: CPU/GPU prefix parity, unchanged PPO ratio=1, zero forced gradients, teacher KL oracle PASS\n",graphs);
+    printf("direct CUDA graphs=%d greedy=%d: CPU/GPU prefix parity, unchanged PPO ratio=1, zero forced gradients, teacher KL oracle PASS\n",graphs,greedy);
 }
