@@ -1,0 +1,507 @@
+[
+  {
+    "name": "omit_localized_plinth_repair",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "faces_removed": 13,
+    "reason": "cosmetic polygon overlay or block glyphs; underlying solid surface unchanged",
+    "physics": "keep original compiled collision; visual candidate only"
+  },
+  {
+    "name": "omit_handle_wear",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "faces_removed": 7,
+    "reason": "cosmetic polygon overlay or block glyphs; underlying solid surface unchanged",
+    "physics": "keep original compiled collision; visual candidate only"
+  },
+  {
+    "name": "omit_numerals",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "faces_removed": 182,
+    "reason": "cosmetic polygon overlay or block glyphs; underlying solid surface unchanged",
+    "physics": "keep original compiled collision; visual candidate only"
+  },
+  {
+    "name": "R101_hinge_casing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -1.82,
+      -0.12,
+      1.121
+    ],
+    "dimensions_m": [
+      0.066,
+      0.035,
+      2.242
+    ],
+    "bevel_m": 0.002,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_hinge_outer_caulk",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -1.854,
+      -0.108,
+      1.121
+    ],
+    "dimensions_m": [
+      0.003,
+      0.004,
+      2.242
+    ],
+    "bevel_m": 0.0005,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_latch_casing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -0.58,
+      -0.12,
+      1.121
+    ],
+    "dimensions_m": [
+      0.066,
+      0.035,
+      2.242
+    ],
+    "bevel_m": 0.002,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_latch_outer_caulk",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -0.5459999999999999,
+      -0.108,
+      1.121
+    ],
+    "dimensions_m": [
+      0.003,
+      0.004,
+      2.242
+    ],
+    "bevel_m": 0.0005,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_head_casing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -1.2,
+      -0.12,
+      2.281
+    ],
+    "dimensions_m": [
+      1.306,
+      0.035,
+      0.066
+    ],
+    "bevel_m": 0.002,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_flush_threshold_plate",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -1.2,
+      -0.05,
+      -0.0021
+    ],
+    "dimensions_m": [
+      1.104,
+      0.2,
+      0.005
+    ],
+    "bevel_m": 0.001,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_casing_fixing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -1.82,
+      -0.1385,
+      0.15
+    ],
+    "radius_m": 0.0038,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_casing_fixing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -1.82,
+      -0.1385,
+      1.08
+    ],
+    "radius_m": 0.0038,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_casing_fixing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -1.82,
+      -0.1385,
+      2.09
+    ],
+    "radius_m": 0.0038,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_casing_fixing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -0.58,
+      -0.1385,
+      0.15
+    ],
+    "radius_m": 0.0038,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_casing_fixing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -0.58,
+      -0.1385,
+      1.08
+    ],
+    "radius_m": 0.0038,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_casing_fixing",
+    "owner": "INSTANCE__room_facade_4m__012",
+    "local_center_m": [
+      -0.58,
+      -0.1385,
+      2.09
+    ],
+    "radius_m": 0.0038,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_kickplate_fixing",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.083,
+      -0.0355,
+      0.07
+    ],
+    "radius_m": 0.003,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_kickplate_fixing",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.083,
+      -0.0355,
+      0.17
+    ],
+    "radius_m": 0.003,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_kickplate_fixing",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.997,
+      -0.0355,
+      0.07
+    ],
+    "radius_m": 0.003,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_kickplate_fixing",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.997,
+      -0.0355,
+      0.17
+    ],
+    "radius_m": 0.003,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_latch_fixing",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.96,
+      -0.0528,
+      0.989
+    ],
+    "radius_m": 0.003,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_latch_fixing",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.96,
+      -0.0528,
+      1.094
+    ],
+    "radius_m": 0.003,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.157,
+      -0.0339,
+      0.57
+    ],
+    "dimensions_m": [
+      0.018,
+      0.005,
+      0.644
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.923,
+      -0.0339,
+      0.57
+    ],
+    "dimensions_m": [
+      0.018,
+      0.005,
+      0.644
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.54,
+      -0.0339,
+      0.24799999999999994
+    ],
+    "dimensions_m": [
+      0.768,
+      0.005,
+      0.018
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.54,
+      -0.0339,
+      0.8919999999999999
+    ],
+    "dimensions_m": [
+      0.768,
+      0.005,
+      0.018
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.157,
+      -0.0339,
+      1.5
+    ],
+    "dimensions_m": [
+      0.018,
+      0.005,
+      0.734
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.923,
+      -0.0339,
+      1.5
+    ],
+    "dimensions_m": [
+      0.018,
+      0.005,
+      0.734
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.54,
+      -0.0339,
+      1.133
+    ],
+    "dimensions_m": [
+      0.768,
+      0.005,
+      0.018
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_panel_edge",
+    "owner": "INSTANCE__room_door_leaf__015",
+    "local_center_m": [
+      0.54,
+      -0.0339,
+      1.867
+    ],
+    "dimensions_m": [
+      0.768,
+      0.005,
+      0.018
+    ],
+    "bevel_m": 0.0015,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_numeral_one_stem",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      -0.058,
+      -0.03,
+      0
+    ],
+    "dimensions_m": [
+      0.009,
+      0.004,
+      0.09
+    ],
+    "bevel_m": 0.0007,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_numeral_one_base",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      -0.058,
+      -0.03,
+      -0.041
+    ],
+    "dimensions_m": [
+      0.025,
+      0.004,
+      0.008
+    ],
+    "bevel_m": 0.0007,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_numeral_one_flag",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      -0.065,
+      -0.03,
+      0.036
+    ],
+    "dimensions_m": [
+      0.019,
+      0.004,
+      0.008
+    ],
+    "bevel_m": 0.0007,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_numeral_one_stem",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      0.058,
+      -0.03,
+      0
+    ],
+    "dimensions_m": [
+      0.009,
+      0.004,
+      0.09
+    ],
+    "bevel_m": 0.0007,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_numeral_one_base",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      0.058,
+      -0.03,
+      -0.041
+    ],
+    "dimensions_m": [
+      0.025,
+      0.004,
+      0.008
+    ],
+    "bevel_m": 0.0007,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_numeral_one_flag",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      0.051000000000000004,
+      -0.03,
+      0.036
+    ],
+    "dimensions_m": [
+      0.019,
+      0.004,
+      0.008
+    ],
+    "bevel_m": 0.0007,
+    "physics": "optional visual detail only; no new collider or gameplay ID"
+  },
+  {
+    "name": "R101_numeral_zero",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "dimensions_m": [
+      0.046,
+      0.004,
+      0.09
+    ],
+    "physics": "render-only original lettering"
+  },
+  {
+    "name": "R101_plaque_fixing",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      -0.137,
+      -0.031,
+      0
+    ],
+    "radius_m": 0.004,
+    "physics": "render-only"
+  },
+  {
+    "name": "R101_plaque_fixing",
+    "owner": "INSTANCE__room_number_plaque__018",
+    "local_center_m": [
+      0.137,
+      -0.031,
+      0
+    ],
+    "radius_m": 0.004,
+    "physics": "render-only"
+  }
+]

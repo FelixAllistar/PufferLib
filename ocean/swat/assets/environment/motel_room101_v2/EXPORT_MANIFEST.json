@@ -1,0 +1,50 @@
+[
+  {
+    "file": "room_facade_4m_candidate.glb",
+    "source_instance": "INSTANCE__room_facade_4m__012",
+    "original_mesh_positions_preserved": true,
+    "sha256": "20585f411836bbc0cdb4b9edcd769f44c1003bfb41b1ad67d041d4df093baa6c"
+  },
+  {
+    "file": "room_door_leaf_candidate.glb",
+    "source_instance": "INSTANCE__room_door_leaf__015",
+    "original_mesh_positions_preserved": true,
+    "sha256": "cf2cd3c1e521d53cd9e799b1035737f7247badf6d1d8b1cc32286934f7f89afc"
+  },
+  {
+    "file": "gallery_walkway_4m_candidate.glb",
+    "source_instance": "INSTANCE__gallery_walkway_4m__010",
+    "original_mesh_positions_preserved": true,
+    "sha256": "c95501873ca1d47f7f643a7e1c30492dc469bd3cfaeef3896e4f600cee69c274"
+  },
+  {
+    "file": "room_number_plaque_candidate.glb",
+    "source_instance": "INSTANCE__room_number_plaque__018",
+    "original_mesh_positions_preserved": true,
+    "sha256": "a0d579ea21d2db58c5cf47710cf7d77f7b2786068b46598db99d1eb6a1b9bdf1"
+  },
+  {
+    "file": "ribbed_glass_wall_sconce_candidate.glb",
+    "source_instance": "REUSE__ribbed_glass_wall_sconce__020",
+    "original_mesh_positions_preserved": true,
+    "sha256": "9e4951636626790638cbc7a019de55a27aeb5d02b5bbf183ae34fd13d75f9600"
+  },
+  {
+    "file": "facade_optional_detail_overlay.glb",
+    "source_owner": "INSTANCE__room_facade_4m__012",
+    "sha256": "083f53813220b7fcba4c0f61e5b98480042051f805e97625784aa86fc7ad3201",
+    "render_only": true
+  },
+  {
+    "file": "door_optional_detail_overlay.glb",
+    "source_owner": "INSTANCE__room_door_leaf__015",
+    "sha256": "7168cc6f3db1b19c715274570799bd123dbcb6d6fada1c71d7b52407db7dc03e",
+    "render_only": true
+  },
+  {
+    "file": "plaque_optional_detail_overlay.glb",
+    "source_owner": "INSTANCE__room_number_plaque__018",
+    "sha256": "b27c5a3b9623bc064ed2b5908ce89ac796c3712a01fa4dc40a8e260686a952d6",
+    "render_only": true
+  }
+]

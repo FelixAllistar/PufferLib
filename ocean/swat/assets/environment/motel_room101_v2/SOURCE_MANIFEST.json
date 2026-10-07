@@ -1,0 +1,120 @@
+{
+  "retrieved_date": "2026-10-06",
+  "license": "CC0-1.0",
+  "license_url": "https://polyhaven.com/license",
+  "method": "Official asset-page 2K JPG links downloaded in our cloud browser; originals copied without re-encoding. No account or purchase.",
+  "assets": {
+    "white_plaster_02": {
+      "title": "White Plaster 02",
+      "page": "https://polyhaven.com/a/white_plaster_02",
+      "authors": [
+        {
+          "name": "Rob Tuytel",
+          "role": "Author"
+        }
+      ],
+      "repeat_width_m": 1
+    },
+    "brushed_concrete": {
+      "title": "Brushed Concrete",
+      "page": "https://polyhaven.com/a/brushed_concrete",
+      "authors": [
+        {
+          "name": "Dimitrios Savva",
+          "role": "Photography"
+        },
+        {
+          "name": "Dario Barresi",
+          "role": "Processing"
+        }
+      ],
+      "repeat_width_m": 2.5
+    }
+  },
+  "files": [
+    {
+      "file": "white_plaster_02_diff_2k.jpg",
+      "asset": "white_plaster_02",
+      "map": "diffuse",
+      "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_plaster_02/white_plaster_02_diff_2k.jpg",
+      "sha256": "0ca5245ba70777d3e41ff4566c9f8d363855461891802c55cb7dc0f6f85f084e",
+      "bytes": 2568315,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "image_mode": "RGB",
+      "package_path": "textures/white_plaster_02_diff_2k.jpg"
+    },
+    {
+      "file": "white_plaster_02_nor_gl_2k.jpg",
+      "asset": "white_plaster_02",
+      "map": "OpenGL normal",
+      "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_plaster_02/white_plaster_02_nor_gl_2k.jpg",
+      "sha256": "083579b03a8f31ec1886512e5972f3b893610bf26a2098f97910e0f46745cdc9",
+      "bytes": 3379814,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "image_mode": "RGB",
+      "package_path": "textures/white_plaster_02_nor_gl_2k.jpg"
+    },
+    {
+      "file": "white_plaster_02_rough_2k.jpg",
+      "asset": "white_plaster_02",
+      "map": "roughness",
+      "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_plaster_02/white_plaster_02_rough_2k.jpg",
+      "sha256": "a3dc1911f6e25d88fdb0031fe0cfb602eec5496084c508774c60691bed087417",
+      "bytes": 1604444,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "image_mode": "L",
+      "package_path": "textures/white_plaster_02_rough_2k.jpg"
+    },
+    {
+      "file": "brushed_concrete_diff_2k.jpg",
+      "asset": "brushed_concrete",
+      "map": "diffuse",
+      "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brushed_concrete/brushed_concrete_diff_2k.jpg",
+      "sha256": "5af96604b20e29862b449d86981b196b18ba5cbcb8659c451dd8976411a36130",
+      "bytes": 3590812,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "image_mode": "RGB",
+      "package_path": "textures/brushed_concrete_diff_2k.jpg"
+    },
+    {
+      "file": "brushed_concrete_nor_gl_2k.jpg",
+      "asset": "brushed_concrete",
+      "map": "OpenGL normal",
+      "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brushed_concrete/brushed_concrete_nor_gl_2k.jpg",
+      "sha256": "3d1f1c7a5f20a5f7a15f3bc5c5f58c0fdcaf49e71e65a5f17e086b551895c00c",
+      "bytes": 3524683,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "image_mode": "RGB",
+      "package_path": "textures/brushed_concrete_nor_gl_2k.jpg"
+    },
+    {
+      "file": "brushed_concrete_rough_2k.jpg",
+      "asset": "brushed_concrete",
+      "map": "roughness",
+      "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brushed_concrete/brushed_concrete_rough_2k.jpg",
+      "sha256": "1100fc9e5c363144aff1b0872d7ed426ca143b63b90a4cbf15e2ab89a14ca905",
+      "bytes": 3219426,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "image_mode": "RGB",
+      "package_path": "textures/brushed_concrete_rough_2k.jpg"
+    }
+  ]
+}

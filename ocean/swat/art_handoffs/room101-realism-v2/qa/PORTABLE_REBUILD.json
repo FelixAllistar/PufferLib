@@ -1,0 +1,38 @@
+{
+  "method": "Rebuilt from copied script in a separate parent with no sibling source folders; used bundled pinned_input and textures fallbacks; render skipped; compared final GLB SHA256",
+  "status": "passed",
+  "files": [
+    {
+      "file": "door_optional_detail_overlay.glb",
+      "matches_portable_rebuild": true
+    },
+    {
+      "file": "facade_optional_detail_overlay.glb",
+      "matches_portable_rebuild": true
+    },
+    {
+      "file": "gallery_walkway_4m_candidate.glb",
+      "matches_portable_rebuild": true
+    },
+    {
+      "file": "plaque_optional_detail_overlay.glb",
+      "matches_portable_rebuild": true
+    },
+    {
+      "file": "ribbed_glass_wall_sconce_candidate.glb",
+      "matches_portable_rebuild": true
+    },
+    {
+      "file": "room_door_leaf_candidate.glb",
+      "matches_portable_rebuild": true
+    },
+    {
+      "file": "room_facade_4m_candidate.glb",
+      "matches_portable_rebuild": true
+    },
+    {
+      "file": "room_number_plaque_candidate.glb",
+      "matches_portable_rebuild": true
+    }
+  ]
+}

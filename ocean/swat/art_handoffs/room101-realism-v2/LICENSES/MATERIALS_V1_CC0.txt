@@ -1,0 +1,30 @@
+SPDX-License-Identifier: CC0-1.0
+
+SWAT environment material family v1
+
+To the extent copyright and related rights exist in the original procedural
+materials, source scripts and original QA scene authored for this package,
+they are dedicated to the public domain under CC0 1.0 Universal.
+https://creativecommons.org/publicdomain/zero/1.0/
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+The floor_pine source and derivative maps use Poly Haven's Wood Floor Worn
+by Dimitrios Savva, independently licensed CC0 1.0 Universal.
+Asset: https://polyhaven.com/a/wood_floor_worn
+License: https://polyhaven.com/license
+The official asset and asset-license pages were read on 2026-10-04. They
+identify the asset as a 2 m wide worn pine floor and confirm CC0 applies to
+assets including redistribution. Source photographs are supplied unchanged
+under source/cc0/ with SHA256 in material_manifest.json. No website imagery,
+branding or preview renders are copied.
+
+QA comparison images also show the repository's pre-existing source-CC0
+plaster/wood and provisional painted_plaster_basecolor_v1.png. That provisional
+image was generated separately with imagegen and is NOT covered by this CC0
+dedication. Comparison images containing it are evaluation evidence only.
+Its original separate provenance remains at ../painted_plaster_v1.json.
+Neither its pixels nor any derivation of them is in the new runtime maps.
+
+This dedication gives no trademark, patent, publicity or endorsement rights.
+The work is provided without warranties. Existing repository/source licenses
+continue to apply to files outside this package and third-party dependencies.

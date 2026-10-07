@@ -1,0 +1,107 @@
+{
+  "INSTANCE__room_facade_4m__012": {
+    "vertex_count": 304,
+    "vertices_sha256": "8611ac6c21ac627d17b680c783fa5999f2a3e30002ad3855b8d83aaff170c479",
+    "polygon_count": 325,
+    "position": [
+      -6.0,
+      0.0,
+      0.0
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "cosmetic_faces_removed": 13
+  },
+  "INSTANCE__room_door_leaf__015": {
+    "vertex_count": 260,
+    "vertices_sha256": "9a8a2e44ac3a0e0ff3cd5450e71fc732956d3c10506676733ecc915867ffebe3",
+    "polygon_count": 215,
+    "position": [
+      -7.739999771118164,
+      0.0,
+      0.0
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.7453292608261108
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "cosmetic_faces_removed": 7
+  },
+  "INSTANCE__gallery_walkway_4m__010": {
+    "vertex_count": 64,
+    "vertices_sha256": "3f41e3341da41631fc181c1d84733e1ad58e96d855aaa7509178be7ca2280cc1",
+    "polygon_count": 64,
+    "position": [
+      -6.0,
+      0.0,
+      0.0
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "cosmetic_faces_removed": 0
+  },
+  "INSTANCE__room_number_plaque__018": {
+    "vertex_count": 272,
+    "vertices_sha256": "3079e35bff89aa422026c0c401e766e52e2edbe58006a887587c6b6ea49b21c4",
+    "polygon_count": 208,
+    "position": [
+      -6.400000095367432,
+      -0.10999999940395355,
+      1.9199999570846558
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "cosmetic_faces_removed": 182
+  },
+  "REUSE__ribbed_glass_wall_sconce__020": {
+    "vertex_count": 1996,
+    "vertices_sha256": "322b41736c898870d8e53eae6680ce18c203ac482ae39b6aeb6486a4f0146abd",
+    "polygon_count": 1138,
+    "position": [
+      -6.409999847412109,
+      -0.11999999731779099,
+      2.3399999141693115
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "cosmetic_faces_removed": 0
+  }
+}

@@ -344,6 +344,23 @@ float swat_art_normal_scale(const char* path) {
     }
     return scale;
 }
+int swat_art_material_factors(const char* path,SwatArtMaterialFactors* out,int capacity) {
+    cgltf_options options={0}; cgltf_data* source=NULL;
+    if(!path || !out || capacity<0 || cgltf_parse_file(&options,path,&source)!=cgltf_result_success) return -1;
+    if(source->materials_count>(cgltf_size)capacity) { cgltf_free(source); return -1; }
+    int count=(int)source->materials_count;
+    for(int i=0;i<count;i++) {
+        const cgltf_material* m=&source->materials[i];
+        const cgltf_pbr_metallic_roughness* p=&m->pbr_metallic_roughness;
+        out[i]=(SwatArtMaterialFactors){.base_color={1,1,1,1},.roughness=1,.metalness=1,.normal_scale=1};
+        if(m->has_pbr_metallic_roughness) {
+            memcpy(out[i].base_color,p->base_color_factor,sizeof(out[i].base_color));
+            out[i].roughness=p->roughness_factor; out[i].metalness=p->metallic_factor;
+        }
+        if(m->normal_texture.texture) out[i].normal_scale=m->normal_texture.scale;
+    }
+    cgltf_free(source); return count;
+}
 bool swat_character_sample_pose(SwatCharacterAsset* asset,const char* clip_name,double time) {
     if(!asset || !isfinite(time)) return false;
     cgltf_animation* clip=NULL;

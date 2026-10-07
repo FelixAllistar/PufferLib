@@ -1,0 +1,491 @@
+{
+  "status": "passed",
+  "binary_index_uv_normal_images_material_channels": "passed",
+  "new_casing_outside_original_opening": "passed",
+  "file_count": 8,
+  "files": [
+    {
+      "file": "door_optional_detail_overlay.glb",
+      "bytes": 262384,
+      "sha256": "7168cc6f3db1b19c715274570799bd123dbcb6d6fada1c71d7b52407db7dc03e",
+      "triangles": 1768,
+      "meshes": 14,
+      "bounds_local_gltf_m": [
+        [
+          -0.3840000033378601,
+          -0.367000013589859,
+          -0.003000000026077032
+        ],
+        [
+          0.3840000033378601,
+          0.367000013589859,
+          0.003000000026077032
+        ]
+      ],
+      "images": [
+        {
+          "name": "door_paint_normal",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28"
+        },
+        {
+          "name": "door_paint_basecolor",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9"
+        },
+        {
+          "name": "door_paint_roughness",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "c12bff6b000dc42f87bbcd592113bc2c8e354ed95d0fba6b461864c1bf530c4c"
+        }
+      ],
+      "materials": [
+        {
+          "material": "R101_satin_metal",
+          "normal": null,
+          "metallic_factor": 1,
+          "roughness_factor": 0.30000001192092896,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_sage_enamel",
+          "normal": {
+            "index": 0
+          },
+          "metallic_factor": 0,
+          "roughness_factor": 1,
+          "metallic_roughness_texture": {
+            "index": 2
+          }
+        }
+      ]
+    },
+    {
+      "file": "facade_optional_detail_overlay.glb",
+      "bytes": 101280,
+      "sha256": "083f53813220b7fcba4c0f61e5b98480042051f805e97625784aa86fc7ad3201",
+      "triangles": 1392,
+      "meshes": 12,
+      "bounds_local_gltf_m": [
+        [
+          -0.652999997138977,
+          -1.121000051498413,
+          -0.10000000149011612
+        ],
+        [
+          0.652999997138977,
+          1.121000051498413,
+          0.10000000149011612
+        ]
+      ],
+      "images": [],
+      "materials": [
+        {
+          "material": "R101_satin_metal",
+          "normal": null,
+          "metallic_factor": 1,
+          "roughness_factor": 0.30000001192092896,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_cream_enamel",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.36000001430511475,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_rubber_seal",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.8199999928474426,
+          "metallic_roughness_texture": null
+        }
+      ]
+    },
+    {
+      "file": "gallery_walkway_4m_candidate.glb",
+      "bytes": 3595904,
+      "sha256": "c95501873ca1d47f7f643a7e1c30492dc469bd3cfaeef3896e4f600cee69c274",
+      "triangles": 112,
+      "meshes": 1,
+      "bounds_local_gltf_m": [
+        [
+          -2.0,
+          -0.17000000178813934,
+          -0.0
+        ],
+        [
+          2.0,
+          0.0020000000949949026,
+          1.8299999237060547
+        ]
+      ],
+      "images": [
+        {
+          "name": "brushed_concrete_runtime_normal",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "dfb457fbde940ce7a060276c4dff36b8f29a76085fb9966c39fbd46ba23afb6e"
+        },
+        {
+          "name": "brushed_concrete_restrained_basecolor",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "0f7d6afaee930a4f9d5712fa5c316b6ac835ff8d7790347ee76c18b7921d9c73"
+        },
+        {
+          "name": "brushed_concrete_restrained_roughness",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "fe8aa42d08552cb22200c3754f671323585b09986d378c720cf1ada147ced73d"
+        }
+      ],
+      "materials": [
+        {
+          "material": "R101_SCAN_brushed_concrete",
+          "normal": {
+            "index": 0,
+            "scale": 0.25
+          },
+          "metallic_factor": 0,
+          "roughness_factor": 1,
+          "metallic_roughness_texture": {
+            "index": 2
+          }
+        },
+        {
+          "material": "R101_cream_enamel",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.36000001430511475,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_dark_plinth",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.8299999833106995,
+          "metallic_roughness_texture": null
+        }
+      ]
+    },
+    {
+      "file": "plaque_optional_detail_overlay.glb",
+      "bytes": 99840,
+      "sha256": "b27c5a3b9623bc064ed2b5908ce89ac796c3712a01fa4dc40a8e260686a952d6",
+      "triangles": 1472,
+      "meshes": 9,
+      "bounds_local_gltf_m": [
+        [
+          -0.023000000044703484,
+          -0.04500000178813934,
+          -0.004000000189989805
+        ],
+        [
+          0.023000000044703484,
+          0.04500000178813934,
+          0.03200000151991844
+        ]
+      ],
+      "images": [],
+      "materials": [
+        {
+          "material": "R101_letter_enamel",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.3799999952316284,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_satin_metal",
+          "normal": null,
+          "metallic_factor": 1,
+          "roughness_factor": 0.30000001192092896,
+          "metallic_roughness_texture": null
+        }
+      ]
+    },
+    {
+      "file": "ribbed_glass_wall_sconce_candidate.glb",
+      "bytes": 77336,
+      "sha256": "9e4951636626790638cbc7a019de55a27aeb5d02b5bbf183ae34fd13d75f9600",
+      "triangles": 1138,
+      "meshes": 1,
+      "bounds_local_gltf_m": [
+        [
+          -0.07138402760028839,
+          -0.10450000315904617,
+          -0.0
+        ],
+        [
+          0.07138402760028839,
+          0.10450000315904617,
+          0.19438402354717255
+        ]
+      ],
+      "images": [],
+      "materials": [
+        {
+          "material": "R101_satin_metal",
+          "normal": null,
+          "metallic_factor": 1,
+          "roughness_factor": 0.30000001192092896,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_rubber_seal",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.8199999928474426,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_sconce_frosted_glass_opaque",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.25,
+          "metallic_roughness_texture": null
+        }
+      ]
+    },
+    {
+      "file": "room_door_leaf_candidate.glb",
+      "bytes": 171288,
+      "sha256": "cf2cd3c1e521d53cd9e799b1035737f7247badf6d1d8b1cc32286934f7f89afc",
+      "triangles": 460,
+      "meshes": 1,
+      "bounds_local_gltf_m": [
+        [
+          0.0,
+          0.0,
+          -0.02250000089406967
+        ],
+        [
+          1.0800000429153442,
+          2.190000057220459,
+          0.11500000208616257
+        ]
+      ],
+      "images": [
+        {
+          "name": "door_paint_normal",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28"
+        },
+        {
+          "name": "door_paint_basecolor",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9"
+        },
+        {
+          "name": "door_paint_roughness",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "c12bff6b000dc42f87bbcd592113bc2c8e354ed95d0fba6b461864c1bf530c4c"
+        }
+      ],
+      "materials": [
+        {
+          "material": "R101_sage_enamel",
+          "normal": {
+            "index": 0
+          },
+          "metallic_factor": 0,
+          "roughness_factor": 1,
+          "metallic_roughness_texture": {
+            "index": 2
+          }
+        },
+        {
+          "material": "R101_satin_metal",
+          "normal": null,
+          "metallic_factor": 1,
+          "roughness_factor": 0.30000001192092896,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_rubber_seal",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.8199999928474426,
+          "metallic_roughness_texture": null
+        }
+      ]
+    },
+    {
+      "file": "room_facade_4m_candidate.glb",
+      "bytes": 4120824,
+      "sha256": "20585f411836bbc0cdb4b9edcd769f44c1003bfb41b1ad67d041d4df093baa6c",
+      "triangles": 528,
+      "meshes": 1,
+      "bounds_local_gltf_m": [
+        [
+          -2.0,
+          0.0,
+          -0.10000000149011612
+        ],
+        [
+          2.0,
+          2.799999952316284,
+          0.14000000059604645
+        ]
+      ],
+      "images": [
+        {
+          "name": "white_plaster_02_runtime_normal",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a"
+        },
+        {
+          "name": "white_plaster_02_restrained_basecolor",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167"
+        },
+        {
+          "name": "white_plaster_02_restrained_roughness",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c"
+        }
+      ],
+      "materials": [
+        {
+          "material": "R101_SCAN_fine_plaster",
+          "normal": {
+            "index": 0,
+            "scale": 0.3499999940395355
+          },
+          "metallic_factor": 0,
+          "roughness_factor": 1,
+          "metallic_roughness_texture": {
+            "index": 2
+          }
+        },
+        {
+          "material": "R101_dark_plinth",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.8299999833106995,
+          "metallic_roughness_texture": null
+        },
+        {
+          "material": "R101_cream_enamel",
+          "normal": null,
+          "metallic_factor": 0,
+          "roughness_factor": 0.36000001430511475,
+          "metallic_roughness_texture": null
+        }
+      ]
+    },
+    {
+      "file": "room_number_plaque_candidate.glb",
+      "bytes": 140420,
+      "sha256": "a0d579ea21d2db58c5cf47710cf7d77f7b2786068b46598db99d1eb6a1b9bdf1",
+      "triangles": 44,
+      "meshes": 1,
+      "bounds_local_gltf_m": [
+        [
+          -0.1599999964237213,
+          -0.08500000089406967,
+          -0.0
+        ],
+        [
+          0.1599999964237213,
+          0.08500000089406967,
+          0.02800000086426735
+        ]
+      ],
+      "images": [
+        {
+          "name": "door_paint_normal",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28"
+        },
+        {
+          "name": "door_paint_basecolor",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9"
+        },
+        {
+          "name": "door_paint_roughness",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "c12bff6b000dc42f87bbcd592113bc2c8e354ed95d0fba6b461864c1bf530c4c"
+        }
+      ],
+      "materials": [
+        {
+          "material": "R101_sage_enamel",
+          "normal": {
+            "index": 0
+          },
+          "metallic_factor": 0,
+          "roughness_factor": 1,
+          "metallic_roughness_texture": {
+            "index": 2
+          }
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Offline GLB validation only; no engine import, performance or collision test",
+    "Original collision ownership remains with engine; never rebuild gameplay collision from these candidate visuals",
+    "Threshold top +0.4mm remains a documented cosmetic review item"
+  ]
+}

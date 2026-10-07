@@ -1,0 +1,403 @@
+{
+  "source_archive_sha256": "92896091ee009a131cf76e73e0e3c6f94e543bb9e50debda797f89568c213fb3",
+  "source_pinned_files": [
+    {
+      "path": "assets/room_facade_4m.glb",
+      "sha256": "22e084bc315a5b6f524f382f98d425580834c84597c49e4245ac3edac5c522d0",
+      "materials": [
+        {
+          "name": "MC15_stucco",
+          "metallic": 0,
+          "roughness": 0.9599999785423279,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_concrete_dark",
+          "metallic": 0,
+          "roughness": 0.9700000286102295,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_cream",
+          "metallic": 0,
+          "roughness": 0.8199999928474426,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_repair",
+          "metallic": 0,
+          "roughness": 0.9399999976158142,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_concrete",
+          "metallic": 0,
+          "roughness": 0.9399999976158142,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        }
+      ]
+    },
+    {
+      "path": "assets/room_door_leaf.glb",
+      "sha256": "1f0c6633b60dc0c5e6b1b8333d2f4045f9da15e0f94cd985f37fcd2cda6b0fc4",
+      "materials": [
+        {
+          "name": "MC15_teal",
+          "metallic": 0.11999999731779099,
+          "roughness": 0.8100000023841858,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_faded_teal",
+          "metallic": 0.05999999865889549,
+          "roughness": 0.8799999952316284,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_galvanized",
+          "metallic": 0.6499999761581421,
+          "roughness": 0.5699999928474426,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_steel",
+          "metallic": 0.5799999833106995,
+          "roughness": 0.6200000047683716,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_iron",
+          "metallic": 0.3499999940395355,
+          "roughness": 0.7599999904632568,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_cream",
+          "metallic": 0,
+          "roughness": 0.8199999928474426,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        }
+      ]
+    },
+    {
+      "path": "assets/gallery_walkway_4m.glb",
+      "sha256": "576d29b5059343a2f57037e61e1a7199ce2cdadee6bec04592d3c4884365e874",
+      "materials": [
+        {
+          "name": "MC15_concrete",
+          "metallic": 0,
+          "roughness": 0.9399999976158142,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_cream",
+          "metallic": 0,
+          "roughness": 0.8199999928474426,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_concrete_dark",
+          "metallic": 0,
+          "roughness": 0.9700000286102295,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        }
+      ]
+    },
+    {
+      "path": "assets/room_number_plaque.glb",
+      "sha256": "028dc1310568185b544d783574a81492d9be9f97ba07f17287eb15a137b00121",
+      "materials": [
+        {
+          "name": "MC15_teal",
+          "metallic": 0.11999999731779099,
+          "roughness": 0.8100000023841858,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_cream",
+          "metallic": 0,
+          "roughness": 0.8199999928474426,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "MC15_galvanized",
+          "metallic": 0.6499999761581421,
+          "roughness": 0.5699999928474426,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        }
+      ]
+    },
+    {
+      "path": "reused_assets/ribbed_glass_wall_sconce.glb",
+      "sha256": "e38fb4f491ba38a29d533f18b724d5e0762ad695e6c6312f4b734fcf91195cad",
+      "materials": [
+        {
+          "name": "IF05_brass",
+          "metallic": 0.6299999952316284,
+          "roughness": 0.550000011920929,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "IF05_steel",
+          "metallic": 0.75,
+          "roughness": 0.47999998927116394,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "IF05_black",
+          "metallic": 0,
+          "roughness": 0.8500000238418579,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "IF05_frosted",
+          "metallic": 0,
+          "roughness": 0.5299999713897705,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        },
+        {
+          "name": "IF05_tube_glass",
+          "metallic": 0,
+          "roughness": 0.3199999928474426,
+          "basecolor_map": true,
+          "normal_map": false,
+          "roughness_metallic_map": false
+        }
+      ]
+    }
+  ],
+  "candidate_instance_ids": [
+    "INSTANCE__room_facade_4m__012",
+    "INSTANCE__room_door_leaf__015",
+    "INSTANCE__gallery_walkway_4m__010",
+    "INSTANCE__room_number_plaque__018",
+    "REUSE__ribbed_glass_wall_sconce__020"
+  ],
+  "instances": [
+    {
+      "object": "INSTANCE__gallery_walkway_4m__010",
+      "asset_id": "mc15_gallery_walkway_4m",
+      "position_source_m": [
+        -6,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__room_facade_4m__012",
+      "asset_id": "mc15_room_facade_4m",
+      "position_source_m": [
+        -6,
+        0,
+        0
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02a_STRUCTURE"
+    },
+    {
+      "object": "INSTANCE__room_door_leaf__015",
+      "asset_id": "mc15_room_door_leaf",
+      "position_source_m": [
+        -7.74,
+        0,
+        0
+      ],
+      "yaw_source_deg": 100.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    },
+    {
+      "object": "INSTANCE__room_number_plaque__018",
+      "asset_id": "mc15_room_number_plaque",
+      "position_source_m": [
+        -6.4,
+        -0.11,
+        1.92
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": false,
+      "collection": "02c_FIXTURES_FURNISHINGS",
+      "number_variant": 101
+    },
+    {
+      "object": "REUSE__ribbed_glass_wall_sconce__020",
+      "asset_id": "ribbed_glass_wall_sconce",
+      "position_source_m": [
+        -6.41,
+        -0.12,
+        2.34
+      ],
+      "yaw_source_deg": 0.0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "reused_existing_design": true,
+      "collection": "02c_FIXTURES_FURNISHINGS"
+    }
+  ],
+  "source_texture_sizes": {
+    "tile.png": [
+      192,
+      192
+    ],
+    "asphalt.png": [
+      192,
+      192
+    ],
+    "faded_teal.png": [
+      192,
+      192
+    ],
+    "repair.png": [
+      192,
+      192
+    ],
+    "red.png": [
+      192,
+      192
+    ],
+    "teal.png": [
+      192,
+      192
+    ],
+    "paper.png": [
+      192,
+      192
+    ],
+    "rubber.png": [
+      192,
+      192
+    ],
+    "wood.png": [
+      192,
+      192
+    ],
+    "carpet.png": [
+      192,
+      192
+    ],
+    "lamp.png": [
+      192,
+      192
+    ],
+    "ochre.png": [
+      192,
+      192
+    ],
+    "rust.png": [
+      192,
+      192
+    ],
+    "cloth.png": [
+      192,
+      192
+    ],
+    "concrete_dark.png": [
+      192,
+      192
+    ],
+    "glass.png": [
+      192,
+      192
+    ],
+    "stucco.png": [
+      192,
+      192
+    ],
+    "steel.png": [
+      192,
+      192
+    ],
+    "galvanized.png": [
+      192,
+      192
+    ],
+    "iron.png": [
+      192,
+      192
+    ],
+    "cream.png": [
+      192,
+      192
+    ],
+    "concrete.png": [
+      192,
+      192
+    ]
+  },
+  "diagnosis": [
+    "Original candidate meshes use basecolor textures and scalar roughness/metallic only; no normal or roughness maps.",
+    "Source generator has actual one-segment 2-5mm bevels, 180mm wall thickness, 45mm door slab; geometry is not entirely sharp/zero-thickness.",
+    "Planar UV scale is 1.1 cycles/m for all source material roles, not a documented material-specific repeat size.",
+    "Source Blender presentation uses two 14m area lights, bright world and exposure +0.7, so flat source appearance is not solely an engine problem.",
+    "No current matched engine capture has been examined; do not assign a percentage cause to lighting."
+  ]
+}

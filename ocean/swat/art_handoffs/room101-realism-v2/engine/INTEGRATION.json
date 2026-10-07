@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-07",
+  "branch": "5.0",
+  "source_archive_sha256": "f673f7f4e47aa2343fe69cd82955a3f892dd0596bcd0079c8df6c300ec8cef37",
+  "scope": "Eight original GLBs on five Room 101 instances; three overlays follow parents. Other motel instances unchanged.",
+  "checks": [
+    "All 40 delivered SHA-256 entries verified",
+    "Windows NVIDIA GTX 1060 and WSL D3D12 environment graphics checks passed",
+    "Material factors, packed ORM and normal strength verified",
+    "Door poses 0/45/100 degrees and parent removal verified",
+    "World state unchanged by rendering",
+    "Native Windows lighting and shadow lifecycle checks passed"
+  ],
+  "limits": [
+    "Final user art approval pending",
+    "Fine trim/shadow edge aliasing still visible in engine capture",
+    "Original catalog integration inventory remains a historical pinned snapshot; this local overlay updates only Room 101",
+    "No source Blender file reconstructed or changed"
+  ],
+  "captures": [
+    "room101-before.png",
+    "room101-after.png"
+  ],
+  "runtime_directory": "ocean/swat/assets/environment/motel_room101_v2",
+  "performance": {
+    "command": "swat_performance_tool.exe --motel --draw-only --hidden --frames 300",
+    "renderer": "NVIDIA GeForce GTX 1060 3GB/PCIe/SSE2",
+    "frames": 300,
+    "results": {
+      "original": {
+        "mean_ms": 19.769,
+        "p50_ms": 19.094,
+        "p95_ms": 24.906,
+        "max_ms": 69.889
+      },
+      "room101": {
+        "mean_ms": 17.849,
+        "p50_ms": 16.568,
+        "p95_ms": 25.785,
+        "max_ms": 109.663
+      }
+    },
+    "limits": "Short native Windows renderer smoke check at motel spawn, including present and background variability. Not an isolated GPU cost or broad play-performance comparison."
+  }
+}

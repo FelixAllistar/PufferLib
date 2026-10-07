@@ -1,0 +1,35 @@
+{
+  "camera_source_Z_up_m": [
+    -6.7,
+    -4.2,
+    1.64
+  ],
+  "look_at": [
+    -6.95,
+    0,
+    1.26
+  ],
+  "lens_mm": 40,
+  "resolution": [
+    1200,
+    1000
+  ],
+  "door_test_angle_deg": 0,
+  "authored_angle_deg": 100,
+  "courtyard_lights": "Unchanged pinned source world and lights, AgX Medium High Contrast +0.7EV",
+  "neutral_lights": "Two neutral area lights, 500W key/180W fill, world .18@.35, AgX +0EV",
+  "engine_matched_capture": "Pending engine owner; current images are Blender only",
+  "high_sample_crops": {
+    "samples_max": 384,
+    "adaptive_threshold": 0.01,
+    "denoiser": false,
+    "border": [
+      0.25,
+      0.92,
+      0,
+      0.82
+    ],
+    "original_file": "qa/00_original_highsample_crop_neutral.png",
+    "candidate_file": "qa/04_candidate_highsample_crop_neutral.png"
+  }
+}

@@ -1,5 +1,6 @@
 #include "environment_art.h"
 #include "lighting.h"
+#include "character_asset.h"
 #include "rlgl.h"
 #include "raymath.h"
 #include <stdio.h>
@@ -44,6 +45,47 @@ static Texture2D load_surface(const char* name,bool metric) {
         SetTextureWrap(texture,TEXTURE_WRAP_REPEAT);
     }
     return texture;
+}
+
+static void room101_close(SwatEnvironmentArt* art) {
+    for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
+    art->room101_ready=false;
+}
+static void room101_load(SwatEnvironmentArt* art) {
+    const char* enabled=getenv("SWAT_MOTEL_ROOM101"); if(enabled && !strcmp(enabled,"0")) return;
+    static const char* files[SWAT_ROOM101_ASSETS]={
+        "room_facade_4m_candidate.glb","room_door_leaf_candidate.glb","gallery_walkway_4m_candidate.glb",
+        "room_number_plaque_candidate.glb","ribbed_glass_wall_sconce_candidate.glb",
+        "facade_optional_detail_overlay.glb","door_optional_detail_overlay.glb","plaque_optional_detail_overlay.glb"};
+    for(int i=0;i<SWAT_ROOM101_ASSETS;i++) {
+        char path[4096],file[256]; snprintf(file,sizeof(file),"motel_room101_v2/%s",files[i]);
+        if(!asset_path(path,sizeof(path),file)) { room101_close(art); return; }
+        Model* model=&art->room101[i]; *model=LoadModel(path);
+        SwatArtMaterialFactors factors[SWAT_ROOM101_MATERIALS-1];
+        int count=swat_art_material_factors(path,factors,SWAT_ROOM101_MATERIALS-1);
+        if(!model->meshCount || count<1 || model->materialCount!=count+1) { room101_close(art); return; }
+        for(int m=0;m<count;m++) {
+            Material* material=&model->materials[m+1]; const SwatArtMaterialFactors* f=&factors[m];
+            material->maps[MATERIAL_MAP_ROUGHNESS].value=f->roughness;
+            material->maps[MATERIAL_MAP_METALNESS].value=f->metalness;
+            material->maps[MATERIAL_MAP_NORMAL].value=2; // Signed derivative basis, including mirrored UVs.
+            art->room101_normal_scale[i][m+1]=f->normal_scale;
+            // The lighting shader decodes texture * tint with gamma 2.2.
+            // Encode glTF's linear factor into that basis once before multiplying.
+            material->maps[MATERIAL_MAP_ALBEDO].color=(Color){
+                (unsigned char)lroundf(255*powf(swat_clamp(f->base_color[0],0,1),1/2.2f)),
+                (unsigned char)lroundf(255*powf(swat_clamp(f->base_color[1],0,1),1/2.2f)),
+                (unsigned char)lroundf(255*powf(swat_clamp(f->base_color[2],0,1),1/2.2f)),
+                (unsigned char)lroundf(255*swat_clamp(f->base_color[3],0,1))};
+            for(int k=0;k<=MATERIAL_MAP_BRDF;k++) {
+                Texture2D* t=&material->maps[k].texture;
+                if(t->id && t->id!=rlGetTextureIdDefault()) {
+                    GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR); SetTextureWrap(*t,TEXTURE_WRAP_REPEAT);
+                }
+            }
+        }
+    }
+    art->room101_ready=true;
 }
 
 void swat_environment_art_init(SwatEnvironmentArt* art) {
@@ -94,6 +136,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     if(!art->initialized || (enabled && !strcmp(enabled,"0"))) return;
     int selected=world->storefront ? 2 : world->motel ? 1 : 0;
     if(art->location==selected) return;
+    room101_close(art);
     for(int i=0;i<SWAT_MOTEL_ASSETS;i++) { swat_art_model_close(art->motel[i]); art->motel[i]=(Model){0}; }
     for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) { swat_art_model_close(art->storefront[i]); art->storefront[i]=(Model){0}; }
     art->location=selected;
@@ -121,6 +164,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         }
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
+    if(selected==1) room101_load(art);
 }
 
 void swat_art_model_close(Model model) {
@@ -141,6 +185,7 @@ void swat_art_model_close(Model model) {
 }
 
 void swat_environment_art_close(SwatEnvironmentArt* art) {
+    room101_close(art);
     if(art->plaster.id) UnloadTexture(art->plaster);
     if(art->wood.id) UnloadTexture(art->wood);
     for(int i=0;i<SWAT_SURFACE_COUNT;i++) {
@@ -259,6 +304,7 @@ static bool material_door(const SwatEnvironmentArt* art,const SwatObject* o) {
 }
 
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
+    if(!o->active) return false;
     SwatEnvironmentSurface surface=swat_environment_surface(o);
     if(surface==SWAT_ENV_DOOR && material_door(art,o)) return true;
     if(surface==SWAT_ENV_DOOR && art->door.meshCount) {
@@ -336,7 +382,11 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
         bool blend=material.maps[MATERIAL_MAP_ALBEDO].color.a<255;
         if(blend!=transparent || (shadow && blend)) continue;
         material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
-        if(lit) swat_lighting_material(art->lighting,material,true);
+        if(lit) {
+            float normal_scale=1;
+            for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(model==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
+            swat_lighting_material_scaled(art->lighting,material,true,normal_scale);
+        }
         DrawMesh(model->meshes[i],material,transform);
     }
     if(lit) swat_lighting_material(art->lighting,(Material){0},false);
@@ -345,6 +395,15 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel || o->tag.index<1 || o->tag.index>SWAT_MOTEL_INSTANCES) return false;
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
+    if(art->room101_ready) {
+        // Source assembly indices; replace only these five Room 101 instances.
+        static const int instances[5]={12,15,10,18,20},overlays[5]={5,6,-1,7,-1};
+        for(int r=0;r<5;r++) if(o->tag.index==instances[r]+1) {
+            bool drawn=location_draw(art,o,p,&art->room101[r],shadow,cutaway,false);
+            if(overlays[r]>=0) location_draw(art,o,p,&art->room101[overlays[r]],shadow,cutaway,false);
+            return drawn;
+        }
+    }
     return location_draw(art,o,p,&art->motel[p->asset],shadow,cutaway,false);
 }
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {

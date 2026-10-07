@@ -191,14 +191,83 @@ static void glass_graphics(SwatEnvironmentArt* art,const char* directory) {
     }
     UnloadRenderTexture(target);swat_world_close(&world);
 }
+static void room101_shadow(void* context,const SwatSim* s,bool cutaway) {
+    SwatEnvironmentArt* art=context;
+    for(int i=1;i<s->world.count;i++) swat_environment_motel_draw(art,&s->world,&s->world.objects[i],true,cutaway);
+}
+static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {
+    SwatEnvironmentArt* art=&view->environment; SwatLighting* light=&view->lighting;
+    light->prepared=false;
+    if(lit) swat_lighting_prepare_context(light,&sim,camera.position,false,room101_shadow,art);
+    RenderTexture2D target=LoadRenderTexture(960,800); assert(target.id);
+    BeginTextureMode(target); ClearBackground(MAGENTA); BeginMode3D(camera);
+    if(lit) swat_lighting_begin(light,art,&sim.world,camera.position);
+    for(int i=1;i<sim.world.count;i++) assert(swat_environment_motel_draw(art,&sim.world,&sim.world.objects[i],false,false));
+    swat_environment_art_transparent(art,&sim.world,camera.position,false);
+    if(lit) swat_lighting_end(light,art);
+    EndMode3D(); EndTextureMode();
+    Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image); UnloadRenderTexture(target);
+    return image;
+}
+static void room101_graphics(SwatView* view,const char* directory) {
+    SwatEnvironmentArt* art=&view->environment;
+    SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.hostile_fire=false;
+    swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
+    assert(art->room101_ready);
+    for(int i=0;i<SWAT_ROOM101_ASSETS;i++) assert(art->room101[i].meshCount);
+    assert(fabsf(art->room101_normal_scale[0][1]-.35f)<1e-6f);
+    assert(art->room101_normal_scale[2][1]==.25f);
+    Material paint=art->room101[1].materials[1],metal=art->room101[1].materials[2];
+    assert(paint.maps[MATERIAL_MAP_NORMAL].texture.id && paint.maps[MATERIAL_MAP_ROUGHNESS].texture.id);
+    assert(paint.maps[MATERIAL_MAP_METALNESS].value==0 && metal.maps[MATERIAL_MAP_METALNESS].value==1);
+    assert(fabsf(metal.maps[MATERIAL_MAP_ROUGHNESS].value-.30f)<1e-6f);
+    assert(fabsf(powf(metal.maps[MATERIAL_MAP_ALBEDO].color.r/255.0f,2.2f)-.5f)<.006f);
+    BoundingBox trim=GetModelBoundingBox(art->room101[5]);
+    assert(trim.min.x< -1.7f && trim.max.x>-.6f && trim.max.y>2.2f); // Node transforms were baked exactly once.
+    // Match the source camera after Z-up -> Y-up conversion; close the authored
+    // 100-degree door only for this before/after inspection.
+    SwatObject* door=&sim.world.objects[16]; door->yaw=SWAT_PI*.5f;
+    Camera3D camera={{-6.7f,1.64f,4.2f},{-6.95f,1.26f,0},{0,1,0},45,CAMERA_PERSPECTIVE};
+    before=sim.world; Image captures[2]; char path[4096];
+    for(int candidate=0;candidate<2;candidate++) {
+        art->room101_ready=candidate;
+        captures[candidate]=room101_capture(view,camera,true);
+        snprintf(path,sizeof(path),"%s/room101-%s.png",directory,candidate ? "after" : "before");
+        assert(ExportImage(captures[candidate],path));
+        assert(!memcmp(&before,&sim.world,sizeof(before)));
+    }
+    Color* a=LoadImageColors(captures[0]),*b=LoadImageColors(captures[1]); int changed=0;
+    for(int i=0;i<960*800;i++) changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>12;
+    assert(changed>5000);
+    UnloadImageColors(a); UnloadImageColors(b); UnloadImage(captures[0]); UnloadImage(captures[1]);
+    // The entire moving overlay follows the door and vanishes with its parent.
+    for(int i=1;i<sim.world.count;i++) sim.world.objects[i].active=i==16;
+    double centroid[3]={0}; const float angles[]={0,45,100};
+    for(int pose=0;pose<4;pose++) {
+        if(pose==3) door->active=false; else door->yaw=SWAT_PI*.5f+angles[pose]*SWAT_RAD;
+        Image image=room101_capture(view,camera,false); Color* pixels=LoadImageColors(image); int visible=0;
+        for(int y=0;y<800;y++) for(int x=0;x<960;x++) {
+            Color p=pixels[y*960+x];
+            if(p.r!=MAGENTA.r || p.g!=MAGENTA.g || p.b!=MAGENTA.b) { visible++; if(pose<3) centroid[pose]+=x; }
+        }
+        if(pose==3) assert(!visible); else { assert(visible>1000); centroid[pose]/=visible; }
+        snprintf(path,sizeof(path),"%s/room101-door-%d.png",directory,pose); assert(ExportImage(image,path));
+        UnloadImageColors(pixels); UnloadImage(image);
+    }
+    assert(fabs(centroid[0]-centroid[2])>25);
+    swat_sim_close(&sim);
+    printf("PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (%d changed pixels), three door poses and removal\n",changed);
+}
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
     environment("SWAT_ENVIRONMENT_ART",NULL); environment("SWAT_ENVIRONMENT_ASSETS",NULL); environment("SWAT_PLASTER_STYLE",NULL);
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
+    environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
     assert(view.environment.location==0 && !view.environment.motel[0].meshCount && !view.environment.storefront[0].meshCount);
+    room101_graphics(&view,directory);
     static SwatWorld location;location.motel=true;
     swat_environment_art_prepare_location(&view.environment,&location);
     for(int i=0;i<SWAT_MOTEL_ASSETS;i++) {
@@ -213,6 +282,7 @@ int main(int argc,char** argv) {
     swat_environment_art_prepare_location(&view.environment,&location);assert(view.environment.motel[0].meshes[0].vaoId==mesh);
     location.motel=false;location.storefront=true;swat_environment_art_prepare_location(&view.environment,&location);
     assert(!view.environment.motel[0].meshCount && view.environment.location==2);
+    assert(!view.environment.room101_ready && !view.environment.room101[0].meshCount);
     for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) {
         const SwatMotelAsset* source=swat_storefront_asset(i);Model model=view.environment.storefront[i];
         assert(model.meshCount>0 && model.materialCount==source->material_count+1);

@@ -15,6 +15,8 @@ typedef struct SwatSurfaceMaps {
     Vector2 tile;
 } SwatSurfaceMaps;
 struct SwatLighting;
+#define SWAT_ROOM101_ASSETS 8
+#define SWAT_ROOM101_MATERIALS 8
 
 typedef struct SwatEnvironmentArt {
     bool initialized;
@@ -27,6 +29,9 @@ typedef struct SwatEnvironmentArt {
     struct SwatLighting* lighting;
     Model door;
     Model motel[SWAT_MOTEL_ASSETS];
+    Model room101[SWAT_ROOM101_ASSETS];
+    float room101_normal_scale[SWAT_ROOM101_ASSETS][SWAT_ROOM101_MATERIALS];
+    bool room101_ready;
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;

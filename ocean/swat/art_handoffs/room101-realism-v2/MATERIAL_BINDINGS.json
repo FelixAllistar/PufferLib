@@ -1,0 +1,155 @@
+{
+  "R101_SCAN_fine_plaster": {
+    "tile_UV_m": [
+      1,
+      1
+    ],
+    "basecolor": "white_plaster_02_restrained_basecolor.png",
+    "normal_OpenGL": "white_plaster_02_runtime_normal.png",
+    "roughness_linear": "white_plaster_02_restrained_roughness.png",
+    "scalar_roughness_fallback": 0.87,
+    "metallic": 0,
+    "normal_strength": 0.35,
+    "color_linear_fallback": [
+      0.43,
+      0.4,
+      0.34
+    ]
+  },
+  "R101_SCAN_brushed_concrete": {
+    "tile_UV_m": [
+      2.5,
+      2.5
+    ],
+    "basecolor": "brushed_concrete_restrained_basecolor.png",
+    "normal_OpenGL": "brushed_concrete_runtime_normal.png",
+    "roughness_linear": "brushed_concrete_restrained_roughness.png",
+    "scalar_roughness_fallback": 0.8,
+    "metallic": 0,
+    "normal_strength": 0.25,
+    "color_linear_fallback": [
+      0.26,
+      0.25,
+      0.22
+    ]
+  },
+  "R101_sage_enamel": {
+    "tile_UV_m": [
+      0.6,
+      2
+    ],
+    "basecolor": "door_paint_basecolor.png",
+    "normal_OpenGL": "door_paint_normal.png",
+    "roughness_linear": "door_paint_roughness.png",
+    "scalar_roughness_fallback": 0.65,
+    "metallic": 0,
+    "normal_strength": 1,
+    "color_linear_fallback": [
+      0.15,
+      0.21,
+      0.15
+    ]
+  },
+  "R101_cream_enamel": {
+    "tile_UV_m": [
+      0.6,
+      2
+    ],
+    "basecolor": null,
+    "normal_OpenGL": null,
+    "roughness_linear": null,
+    "scalar_roughness_fallback": 0.36,
+    "metallic": 0,
+    "normal_strength": 1,
+    "color_linear_fallback": [
+      0.57,
+      0.55,
+      0.48
+    ]
+  },
+  "R101_satin_metal": {
+    "tile_UV_m": [
+      1,
+      1
+    ],
+    "basecolor": null,
+    "normal_OpenGL": null,
+    "roughness_linear": null,
+    "scalar_roughness_fallback": 0.3,
+    "metallic": 1,
+    "normal_strength": 1,
+    "color_linear_fallback": [
+      0.5,
+      0.52,
+      0.51
+    ]
+  },
+  "R101_dark_plinth": {
+    "tile_UV_m": [
+      1,
+      1
+    ],
+    "basecolor": null,
+    "normal_OpenGL": null,
+    "roughness_linear": null,
+    "scalar_roughness_fallback": 0.83,
+    "metallic": 0,
+    "normal_strength": 1,
+    "color_linear_fallback": [
+      0.048,
+      0.06,
+      0.054
+    ]
+  },
+  "R101_rubber_seal": {
+    "tile_UV_m": [
+      1,
+      1
+    ],
+    "basecolor": null,
+    "normal_OpenGL": null,
+    "roughness_linear": null,
+    "scalar_roughness_fallback": 0.82,
+    "metallic": 0,
+    "normal_strength": 1,
+    "color_linear_fallback": [
+      0.012,
+      0.014,
+      0.012
+    ]
+  },
+  "R101_sconce_frosted_glass_opaque": {
+    "tile_UV_m": [
+      1,
+      1
+    ],
+    "basecolor": null,
+    "normal_OpenGL": null,
+    "roughness_linear": null,
+    "scalar_roughness_fallback": 0.25,
+    "metallic": 0,
+    "normal_strength": 1,
+    "color_linear_fallback": [
+      0.53,
+      0.56,
+      0.53
+    ]
+  },
+  "R101_letter_enamel": {
+    "tile_UV_m": [
+      1,
+      1
+    ],
+    "basecolor": null,
+    "normal_OpenGL": null,
+    "roughness_linear": null,
+    "scalar_roughness_fallback": 0.38,
+    "metallic": 0,
+    "normal_strength": 1,
+    "color_linear_fallback": [
+      0.72,
+      0.7,
+      0.62
+    ]
+  }
+}

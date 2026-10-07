@@ -52,6 +52,11 @@ const char* swat_character_node_name(const SwatCharacterAsset* asset,int node);
 // Authored normalTexture.scale on the first rigid mesh's material. Raylib's
 // model loader does not retain this glTF field. Missing/invalid data defaults to 1.
 float swat_art_normal_scale(const char* path);
+typedef struct SwatArtMaterialFactors {
+    float base_color[4],roughness,metalness,normal_scale;
+} SwatArtMaterialFactors;
+// glTF material order, excluding Raylib's fallback slot. Returns -1 on error.
+int swat_art_material_factors(const char* path,SwatArtMaterialFactors* out,int capacity);
 #ifdef __cplusplus
 }
 #endif

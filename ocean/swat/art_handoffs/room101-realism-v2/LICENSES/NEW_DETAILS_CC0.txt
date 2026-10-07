@@ -1,0 +1,3 @@
+The new optional Room 101 casing, panel beads, flush threshold wear plate and fastener geometry, and candidate assembly script, are dedicated under Creative Commons CC0 1.0 Universal.
+https://creativecommons.org/publicdomain/zero/1.0/
+The underlying source motel and reused material files retain their own included CC0 source licenses.

@@ -1,0 +1,34 @@
+{
+  "candidate": "Briar Court Room 101 v2",
+  "status": "offline art candidate, not engine-approved",
+  "source_baseline": "motor-court-motel-batch-15",
+  "selected_instances": 5,
+  "glb_files": 8,
+  "total_glb_bytes": 8569276,
+  "triangles_across_all_exports": 6914,
+  "checks_passed": [
+    "Source file hashes unchanged",
+    "Native original vertex position fingerprints preserved",
+    "Cosmetic face removals exactly documented",
+    "8 GLBs valid indices, UVs, normals, image payloads and material channels",
+    "Casing outside original doorway envelope",
+    "8 of 8 GLBs byte-identical portable export-only rebuild",
+    "Original/candidate matched neutral/courtyard views",
+    "Original/candidate 384-sample matched crop visual review"
+  ],
+  "not_tested": [
+    "Current engine material channels and lighting parity",
+    "In-game door/collision/damage integration",
+    "Target GPU residency/performance",
+    "Ready or Not equivalence"
+  ],
+  "runtime_handoff": "RUNTIME_HANDOFF.md",
+  "best_before": "qa/00_original_highsample_crop_neutral.png",
+  "best_after": "qa/04_candidate_highsample_crop_neutral.png",
+  "known_limits": [
+    "Context window/curtain/AC remain stylized original source",
+    "Opaque sconce glazing approximation",
+    "Flush threshold cosmetic +0.4mm visual offset",
+    "Art-directed diffuse/roughness; no measured albedo/height calibration"
+  ]
+}
