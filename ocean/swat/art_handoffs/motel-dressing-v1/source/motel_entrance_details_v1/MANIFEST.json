@@ -1,0 +1,502 @@
+{
+  "package": "motel_entrance_details_v1",
+  "batch": "21_motel_entrance_details",
+  "design_count": 2,
+  "lod_variant_count": 2,
+  "units": "metres",
+  "axis": "glTF +Y up, +Z outward; Blender +Z up, -Y outward",
+  "pivot": "center of rear mounting contact plane",
+  "license": "CC0-1.0 original assets",
+  "art_approval": "pending user art review",
+  "runtime_integration": "none; visual-only proposals",
+  "recommended_default_variant": "LOD1 budget candidate for small screen coverage; visible macro highlight limitation; LOD0 for close inspection",
+  "source": "motel_entrance_details_v1.blend",
+  "blender_version": "4.3.2",
+  "exports": [
+    {
+      "file": "me01_concave_wall_bumper_lod0.glb",
+      "sha256": "b4822206f3aab0590cbf858aed422cd3d21f95ce406372694d70b42cd8bcc960",
+      "bytes": 1521636,
+      "triangles": 2044,
+      "export_vertices": 2081,
+      "bounds_gltf_xyz_m": [
+        [
+          -0.03175000101327896,
+          -0.03175000101327896,
+          0.0
+        ],
+        [
+          0.03175000101327896,
+          0.03175000101327896,
+          0.02539999969303608
+        ]
+      ],
+      "dimensions_gltf_xyz_m": [
+        0.06350000202655792,
+        0.06350000202655792,
+        0.02539999969303608
+      ],
+      "images": [
+        {
+          "name": "satin_steel_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "rubber_grey_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "rubber_grey_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "rubber_grey_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "me01_concave_wall_bumper_AO_separate",
+          "size": [
+            512,
+            512
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "bumper_cast_flange",
+          "triangles": 576,
+          "normal_tangent_orthogonality_max": 8.83638858795166e-05
+        },
+        {
+          "name": "bumper_concave_rubber",
+          "triangles": 704,
+          "normal_tangent_orthogonality_max": 9.267032146453857e-05
+        },
+        {
+          "name": "bumper_recess_center",
+          "triangles": 124,
+          "normal_tangent_orthogonality_max": 2.9802322387695312e-08
+        },
+        {
+          "name": "bumper_retainer_ring",
+          "triangles": 384,
+          "normal_tangent_orthogonality_max": 0.00010013580322265625
+        },
+        {
+          "name": "bumper_wall_gasket",
+          "triangles": 256,
+          "normal_tangent_orthogonality_max": 7.420778274536133e-05
+        }
+      ],
+      "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+    },
+    {
+      "file": "me01_concave_wall_bumper_lod1.glb",
+      "sha256": "d5b08e1c7eca28609eaa870d68fb8786008aee1622b007ee6024f1a15603e7f4",
+      "bytes": 1461968,
+      "triangles": 914,
+      "export_vertices": 1136,
+      "bounds_gltf_xyz_m": [
+        [
+          -0.031694721430540085,
+          -0.03177110105752945,
+          0.0
+        ],
+        [
+          0.031694721430540085,
+          0.03177110105752945,
+          0.025406233966350555
+        ]
+      ],
+      "dimensions_gltf_xyz_m": [
+        0.06338944286108017,
+        0.0635422021150589,
+        0.025406233966350555
+      ],
+      "images": [
+        {
+          "name": "satin_steel_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "rubber_grey_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "rubber_grey_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "rubber_grey_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "me01_concave_wall_bumper_AO_separate",
+          "size": [
+            512,
+            512
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "bumper_cast_flange_LOD1",
+          "triangles": 258,
+          "normal_tangent_orthogonality_max": 9.566545486450195e-05
+        },
+        {
+          "name": "bumper_concave_rubber_LOD1",
+          "triangles": 316,
+          "normal_tangent_orthogonality_max": 9.313225746154785e-05
+        },
+        {
+          "name": "bumper_recess_center_LOD1",
+          "triangles": 54,
+          "normal_tangent_orthogonality_max": 9.999999747378752e-05
+        },
+        {
+          "name": "bumper_retainer_ring_LOD1",
+          "triangles": 172,
+          "normal_tangent_orthogonality_max": 9.885430335998535e-05
+        },
+        {
+          "name": "bumper_wall_gasket_LOD1",
+          "triangles": 114,
+          "normal_tangent_orthogonality_max": 9.992718696594238e-05
+        }
+      ],
+      "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+    },
+    {
+      "file": "me01_door_viewer_face_lod0.glb",
+      "sha256": "a1a5f72caeb4384e339f7f883cc9e48328a66877f8e6accf6cad8bbc48c520fa",
+      "bytes": 1407116,
+      "triangles": 976,
+      "export_vertices": 922,
+      "bounds_gltf_xyz_m": [
+        [
+          -0.01269999984651804,
+          -0.01269999984651804,
+          0.0
+        ],
+        [
+          0.01269999984651804,
+          0.01269999984651804,
+          0.00634999992325902
+        ]
+      ],
+      "dimensions_gltf_xyz_m": [
+        0.02539999969303608,
+        0.02539999969303608,
+        0.00634999992325902
+      ],
+      "images": [
+        {
+          "name": "dark_gasket_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "lens_dark_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "lens_dark_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "lens_dark_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "me01_door_viewer_face_AO_separate",
+          "size": [
+            512,
+            512
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "viewer_lens_retainer",
+          "triangles": 240,
+          "normal_tangent_orthogonality_max": 8.04513692855835e-05
+        },
+        {
+          "name": "viewer_opaque_glass_lens",
+          "triangles": 224,
+          "normal_tangent_orthogonality_max": 7.05718994140625e-05
+        },
+        {
+          "name": "viewer_satin_bezel",
+          "triangles": 512,
+          "normal_tangent_orthogonality_max": 0.00010001659393310547
+        }
+      ],
+      "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+    },
+    {
+      "file": "me01_door_viewer_face_lod1.glb",
+      "sha256": "d5dae7a9629c41f26fb69ac74e7aa2b7467f132853ec18345c4e8a454739b864",
+      "bytes": 1385384,
+      "triangles": 562,
+      "export_vertices": 577,
+      "bounds_gltf_xyz_m": [
+        [
+          -0.012708728201687336,
+          -0.012708728201687336,
+          -2.107999080180889e-06
+        ],
+        [
+          0.012708728201687336,
+          0.012708728201687336,
+          0.006351397838443518
+        ]
+      ],
+      "dimensions_gltf_xyz_m": [
+        0.025417456403374672,
+        0.025417456403374672,
+        0.006353505837523699
+      ],
+      "images": [
+        {
+          "name": "dark_gasket_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "dark_gasket_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "lens_dark_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "lens_dark_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "lens_dark_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_normal_gl",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_roughmetal",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "satin_steel_basecolor",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "me01_door_viewer_face_AO_separate",
+          "size": [
+            512,
+            512
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "viewer_lens_retainer_LOD1",
+          "triangles": 108,
+          "normal_tangent_orthogonality_max": 9.68404347077012e-05
+        },
+        {
+          "name": "viewer_opaque_glass_lens_LOD1",
+          "triangles": 224,
+          "normal_tangent_orthogonality_max": 7.05718994140625e-05
+        },
+        {
+          "name": "viewer_satin_bezel_LOD1",
+          "triangles": 230,
+          "normal_tangent_orthogonality_max": 0.00010675191879272461
+        }
+      ],
+      "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+    }
+  ],
+  "qa_reports": [
+    "SOURCE_QA.json",
+    "GLB_QA.json",
+    "EXTENDED_QA.json",
+    "REBUILD_QA.json",
+    "SOURCE_REOPEN_QA.json",
+    "TEXTURE_REBUILD_QA.json",
+    "VISUAL_REVIEW.json"
+  ]
+}

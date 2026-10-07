@@ -1,0 +1,29 @@
+{
+  "checked_date": "2026-10-07",
+  "method": "Vendor reference catalog PDFs downloaded and page photographs visually inspected locally. No reference pixels redistributed. Original modeling, no downloaded mesh.",
+  "references": [
+    {
+      "asset": "me01_door_viewer_face",
+      "manufacturer_reference": "Ives 698/U698",
+      "url": "https://www.iveshinges.com/catalogcuts/ives-u696_698_u698_698p.pdf",
+      "page": 224,
+      "used_dimensions_m": {
+        "diameter": 0.0254,
+        "projection": 0.00635
+      },
+      "adaptation": "Unbranded outward surface bezel only; opaque lens, hidden barrel omitted; no certification or optical function implied."
+    },
+    {
+      "asset": "me01_concave_wall_bumper",
+      "manufacturer_reference": "Ives WS401/WS402CCV",
+      "url": "https://www.iveshinges.com/catalogcuts/ives-ws401-402cvx_ws401-402ccv_ws404cvx.pdf",
+      "page": 202,
+      "used_dimensions_m": {
+        "diameter": 0.0635,
+        "projection": 0.0254,
+        "flange_reference_depth": 0.009525
+      },
+      "adaptation": "Original lathed metal flange with genuine concave rubber cup; concealed fasteners omitted."
+    }
+  ]
+}

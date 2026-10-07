@@ -78,6 +78,29 @@ static int adjacent(int cell,int direction) {
 static unsigned char navigation_object_state(const SwatObject* o) {
     return (unsigned char)(o->active ? 1+(o->door && o->wedge_owner>=0) : 0);
 }
+static bool navigation_sample(const SwatWorld* world,SwatNavigation* nav,int cell,b3Pos p) {
+    NavFloors floors={0};p.y=nav->top;
+    b3World_CastRay(world->id,p,swat_v(0,nav->bottom-nav->top,0),b3DefaultQueryFilter(),floor_hit,&floors);
+    for(int i=0;i<floors.count;i++)for(int j=i+1;j<floors.count;j++)if(floors.y[j]<floors.y[i]) {
+        float swap=floors.y[i];floors.y[i]=floors.y[j];floors.y[j]=swap;
+    }
+    bool complete=floors.count>0;
+    for(int layer=0;layer<floors.count;layer++) {
+        p.y=floors.y[layer]+.015f;unsigned char walk=0;
+        if(nav_clear(world,p,1.016f))walk=1;
+        if(walk && nav_clear(world,p,1.8288f))walk=3;
+        if(!walk) {complete=false;continue;}
+        int slot=-1;bool existing=false;
+        for(int l=0;l<SWAT_NAV_LAYERS;l++) {
+            int at=l*SWAT_NAV_CELLS+cell;
+            if(nav->walkable[at] && fabsf(nav->height[at]-floors.y[layer])<.05f)existing=true;
+            if(!nav->walkable[at] && slot<0)slot=at;
+        }
+        if(existing || slot<0)continue;
+        nav->height[slot]=floors.y[layer];nav->x[slot]=(float)p.x;nav->z[slot]=(float)p.z;nav->walkable[slot]=walk;
+    }
+    return complete;
+}
 static void navigation_build(SwatSim* s) {
     SwatNavigation* nav=s->navigation;
     bool full=!nav->built || nav->count!=s->world.count;
@@ -117,14 +140,14 @@ static void navigation_build(SwatSim* s) {
             float lateral=b3Dot(d,t);
             if(fabsf(lateral)<.31f && fabsf(b3Dot(d,n))<.7f) p=b3OffsetPos(p,swat_mul(t,-lateral));
         }
-        NavFloors floors={0}; p.y=nav->top;
-        b3World_CastRay(s->world.id,p,swat_v(0,nav->bottom-nav->top,0),b3DefaultQueryFilter(),floor_hit,&floors);
-        for(int i=0;i<floors.count;i++) for(int j=i+1;j<floors.count;j++) if(floors.y[j]<floors.y[i]) { float swap=floors.y[i]; floors.y[i]=floors.y[j]; floors.y[j]=swap; }
-        for(int layer=0;layer<floors.count;layer++) {
-            int at=layer*SWAT_NAV_CELLS+cell; p.y=floors.y[layer]+.015f;
-            nav->height[at]=floors.y[layer]; nav->x[at]=(float)p.x; nav->z[at]=(float)p.z;
-            if(nav_clear(&s->world,p,1.016f)) nav->walkable[at]=1;
-            if(nav->walkable[at] && nav_clear(&s->world,p,1.8288f)) nav->walkable[at]=3;
+        if(!navigation_sample(&s->world,nav,cell,p)) {
+            // A cell centre can land on furniture beside a perfectly usable
+            // aperture. Try bounded points inside the same 60 cm cell; every
+            // candidate resamples its floor and every link still casts a body.
+            static const float offsets[8][2]={{0,-.28f},{0,.28f},{-.28f,0},{.28f,0},
+                {-.28f,-.28f},{.28f,-.28f},{-.28f,.28f},{.28f,.28f}};
+            for(int sample=0;sample<8;sample++)
+                if(navigation_sample(&s->world,nav,cell,b3OffsetPos(p,swat_v(offsets[sample][0],0,offsets[sample][1]))))break;
         }
     }
     for(int at=0;at<SWAT_NAV_NODES;at++) if(edges[at%SWAT_NAV_CELLS]) {

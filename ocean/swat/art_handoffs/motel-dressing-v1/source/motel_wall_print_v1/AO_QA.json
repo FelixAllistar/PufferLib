@@ -1,0 +1,15 @@
+{
+  "resolution": [
+    512,
+    512
+  ],
+  "min": 0,
+  "max": 255,
+  "mean": 232.27570724487305,
+  "bake": "Cycles AO, 16 samples, margin 8 px. Each of seven named parts has a disjoint UV1 cell; internal islands smart-projected.",
+  "separate_from_basecolor": true,
+  "separate_from_roughmetal": true,
+  "runtime_texcoord": 1,
+  "source_texture_byte_exact_rebuild": true,
+  "overlap_qa": "UV1_QA.json: zero interior-overlap pixels at 2048 resolution"
+}

@@ -1,0 +1,15 @@
+{
+  "reviewed_utc": "2026-10-07",
+  "method": "Final exported GLBs reimported into clean Blender scene. All images contain real runtime geometry/materials, not generated concept art. Cycles CPU 64 samples, no denoising available.",
+  "neutral_review": "PASS: roll/core/spindle, wall flanges and twin hook silhouette readable; no visible missing faces, mirrored normals, transparent patches or severe shading discontinuities. Low-poly facets visible in extreme closeup intentionally retained for era-scale budget.",
+  "wall_layout_review": "PASS: both final GLBs sit against original 101 mm tile-grid wall with plausible relative scale and outward projection; no visible wall-gap or flipped culling. This is only an illustrative layout, not an existing room edit.",
+  "bounds_and_mounts": "GLB dimensions holder 185 x 135 x 148 mm including hanging tail; hook 105 x 50.5 x 60 mm. Roots at wall-contact center.",
+  "limitations": [
+    "Blender neutral previews, not target-engine validation",
+    "No art acceptance claimed",
+    "No destruction authored",
+    "Collision suggestions not integrated",
+    "AO has 16 bake samples; preview-only noise is not in basecolor textures"
+  ],
+  "source_portability": "Verified saved .blend image file paths all relative //textures/...; originals retained with scripts and metadata."
+}

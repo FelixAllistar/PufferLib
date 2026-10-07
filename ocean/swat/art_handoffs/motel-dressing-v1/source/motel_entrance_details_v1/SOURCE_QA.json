@@ -1,0 +1,130 @@
+[
+  {
+    "asset": "me01_door_viewer_face",
+    "triangles_lod0": 976,
+    "bounds_blender_xyz_m": [
+      [
+        -0.01269999984651804,
+        -0.00634999992325902,
+        -0.01269999984651804
+      ],
+      [
+        0.01269999984651804,
+        0.0,
+        0.01269999984651804
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.02539999969303608,
+      0.02539999969303608,
+      0.00634999992325902
+    ],
+    "parts": [
+      {
+        "name": "viewer_lens_retainer",
+        "vertices": 120,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "viewer_opaque_glass_lens",
+        "vertices": 114,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "viewer_satin_bezel",
+        "vertices": 256,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ],
+    "triangles_lod1": 562
+  },
+  {
+    "asset": "me01_concave_wall_bumper",
+    "triangles_lod0": 2044,
+    "bounds_blender_xyz_m": [
+      [
+        -0.03175000101327896,
+        -0.02539999969303608,
+        -0.03175000101327896
+      ],
+      [
+        0.03175000101327896,
+        0.0,
+        0.03175000101327896
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.06350000202655792,
+      0.06350000202655792,
+      0.02539999969303608
+    ],
+    "parts": [
+      {
+        "name": "bumper_cast_flange",
+        "vertices": 288,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bumper_concave_rubber",
+        "vertices": 352,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bumper_recess_center",
+        "vertices": 64,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bumper_retainer_ring",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bumper_wall_gasket",
+        "vertices": 128,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ],
+    "triangles_lod1": 914
+  }
+]

@@ -1,0 +1,160 @@
+[
+  {
+    "id": "env:21_motel_entrance_details/me01_concave_wall_bumper",
+    "name": "Satin-metal wall bumper with concave grey rubber cup",
+    "record_kind": "unique_design",
+    "category": "environment",
+    "subtype": "entrance fixture",
+    "batch": "21_motel_entrance_details",
+    "location_tags": [
+      "motel",
+      "guest_room",
+      "entrance",
+      "wall_mount"
+    ],
+    "material_tags": [
+      "metal",
+      "rubber"
+    ],
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.06350000202655792,
+      0.06350000202655792,
+      0.02539999969303608
+    ],
+    "triangles": 2044,
+    "license": "CC0-1.0",
+    "source_path": "motel_entrance_details_v1.blend",
+    "export_path": "exports/me01_concave_wall_bumper_lod0.glb",
+    "sha256": "b4822206f3aab0590cbf858aed422cd3d21f95ce406372694d70b42cd8bcc960",
+    "preview_scope": "Neutral GLB reimport and separate illustrative mounting vignettes; no game integration",
+    "qa_status": "PASS binary/source/UV/PBR/ownership/rebuild; art review pending",
+    "art_approval": "pending",
+    "integration_state": "not integrated",
+    "collision_support": "none; visual-only",
+    "destruction_support": "none",
+    "lod": 0,
+    "recommended_usage": "inspection / very-close-shot alternative",
+    "lod_metadata_interpretation": "count and bounds measured from this exact GLB variant",
+    "notes": "Fixed wall only"
+  },
+  {
+    "id": "env:21_motel_entrance_details/me01_concave_wall_bumper/LOD1",
+    "name": "Satin-metal wall bumper with concave grey rubber cup / LOD1",
+    "record_kind": "lod_variant",
+    "category": "environment",
+    "subtype": "entrance fixture",
+    "batch": "21_motel_entrance_details",
+    "location_tags": [
+      "motel",
+      "guest_room",
+      "entrance",
+      "wall_mount"
+    ],
+    "material_tags": [
+      "metal",
+      "rubber"
+    ],
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.06338944286108017,
+      0.0635422021150589,
+      0.025406233966350555
+    ],
+    "triangles": 914,
+    "license": "CC0-1.0",
+    "source_path": "motel_entrance_details_v1.blend",
+    "export_path": "exports/me01_concave_wall_bumper_lod1.glb",
+    "sha256": "d5b08e1c7eca28609eaa870d68fb8786008aee1622b007ee6024f1a15603e7f4",
+    "preview_scope": "Neutral GLB reimport and separate illustrative mounting vignettes; no game integration",
+    "qa_status": "PASS binary/source/UV/PBR/ownership/rebuild; art review pending",
+    "art_approval": "pending",
+    "integration_state": "not integrated",
+    "collision_support": "none; visual-only",
+    "destruction_support": "none",
+    "lod": 1,
+    "recommended_usage": "room-distance budget candidate; macro highlight limitation",
+    "lod_metadata_interpretation": "count and bounds measured from this exact GLB variant",
+    "notes": "Fixed wall only"
+  },
+  {
+    "id": "env:21_motel_entrance_details/me01_door_viewer_face",
+    "name": "Satin-metal door viewer face with opaque dark lens",
+    "record_kind": "unique_design",
+    "category": "environment",
+    "subtype": "entrance fixture",
+    "batch": "21_motel_entrance_details",
+    "location_tags": [
+      "motel",
+      "guest_room",
+      "entrance",
+      "door_mount"
+    ],
+    "material_tags": [
+      "metal",
+      "opaque_lens",
+      "gasket"
+    ],
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.02539999969303608,
+      0.02539999969303608,
+      0.00634999992325902
+    ],
+    "triangles": 976,
+    "license": "CC0-1.0",
+    "source_path": "motel_entrance_details_v1.blend",
+    "export_path": "exports/me01_door_viewer_face_lod0.glb",
+    "sha256": "a1a5f72caeb4384e339f7f883cc9e48328a66877f8e6accf6cad8bbc48c520fa",
+    "preview_scope": "Neutral GLB reimport and separate illustrative mounting vignettes; no game integration",
+    "qa_status": "PASS binary/source/UV/PBR/ownership/rebuild; art review pending",
+    "art_approval": "pending",
+    "integration_state": "not integrated",
+    "collision_support": "none; visual-only",
+    "destruction_support": "none",
+    "lod": 0,
+    "recommended_usage": "inspection / very-close-shot alternative",
+    "lod_metadata_interpretation": "count and bounds measured from this exact GLB variant",
+    "notes": "Door leaf only"
+  },
+  {
+    "id": "env:21_motel_entrance_details/me01_door_viewer_face/LOD1",
+    "name": "Satin-metal door viewer face with opaque dark lens / LOD1",
+    "record_kind": "lod_variant",
+    "category": "environment",
+    "subtype": "entrance fixture",
+    "batch": "21_motel_entrance_details",
+    "location_tags": [
+      "motel",
+      "guest_room",
+      "entrance",
+      "door_mount"
+    ],
+    "material_tags": [
+      "metal",
+      "opaque_lens",
+      "gasket"
+    ],
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.025417456403374672,
+      0.025417456403374672,
+      0.006353505837523699
+    ],
+    "triangles": 562,
+    "license": "CC0-1.0",
+    "source_path": "motel_entrance_details_v1.blend",
+    "export_path": "exports/me01_door_viewer_face_lod1.glb",
+    "sha256": "d5dae7a9629c41f26fb69ac74e7aa2b7467f132853ec18345c4e8a454739b864",
+    "preview_scope": "Neutral GLB reimport and separate illustrative mounting vignettes; no game integration",
+    "qa_status": "PASS binary/source/UV/PBR/ownership/rebuild; art review pending",
+    "art_approval": "pending",
+    "integration_state": "not integrated",
+    "collision_support": "none; visual-only",
+    "destruction_support": "none",
+    "lod": 1,
+    "recommended_usage": "room-distance budget candidate; macro highlight limitation",
+    "lod_metadata_interpretation": "count and bounds measured from this exact GLB variant",
+    "notes": "Door leaf only"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "scope": "Neutral Blender reimport of final runtime GLB, not engine capture or Room101 placement",
+  "artwork": "Reviewed original generated pixels: subdued woodland, low mountain ridges and lake; no text, branding or signatures",
+  "front": "Thin economical mitered brown foil frame, printed art fills opening, no clipping or missing texture, modest intentionally plain silhouette",
+  "back": "Plain fibreboard rear, recessed hanging tab, shallow frame; no visible gaps",
+  "status": "PASS candidate visual review; final engine lighting/integration remains untested",
+  "previews": [
+    "previews/neutral_glb_reimport.png",
+    "previews/front_glb_reimport.png",
+    "previews/back_glb_reimport.png"
+  ]
+}

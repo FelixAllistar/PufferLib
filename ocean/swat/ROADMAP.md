@@ -12,6 +12,9 @@ is deliberately a general engine improvement.
 
 ## Landed: playable foundation
 
+- Motel: seven supported detail props in each guest room; three inter-room
+  walls use physical drywall/stud assemblies, with replicated charge openings
+  and navigation samples that find narrow passages beside furniture.
 - Independent build/config, fixed-step game, standalone player and policy viewer.
 - Tactical movement, physical lean, crouch/stand clearance, ADS, stamina and jump.
 - Two weapons with chamber/ammunition/reload/equip/selector/recoil/spread state.

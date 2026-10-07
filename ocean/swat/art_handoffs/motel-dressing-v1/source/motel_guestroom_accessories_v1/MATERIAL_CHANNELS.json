@@ -1,0 +1,225 @@
+{
+  "contract": "Basecolor UV0 sRGB; roughmetal UV0 linear G roughness/B metalness; OpenGL normals UV0 linear strength=1; AO UV1 linear strength=1. Basecolor has no AO or lighting baked into it. Engine must bind TEXCOORD_1 for AO; do not substitute UV0 or multiply AO into basecolor offline.",
+  "verified_exports": [
+    {
+      "GLB": "mg01_hospitality_service_tray_lod0.glb",
+      "materials": [
+        {
+          "material": "mg01_hospitality_service_tray__vinyl_brown",
+          "textures": {
+            "basecolor": {
+              "image": "vinyl_brown_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "vinyl_brown_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "vinyl_brown_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_hospitality_service_tray_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        },
+        {
+          "material": "mg01_hospitality_service_tray__tray_charcoal",
+          "textures": {
+            "basecolor": {
+              "image": "tray_charcoal_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "tray_charcoal_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "tray_charcoal_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_hospitality_service_tray_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "GLB": "mg01_hospitality_service_tray_lod1.glb",
+      "materials": [
+        {
+          "material": "mg01_hospitality_service_tray__vinyl_brown",
+          "textures": {
+            "basecolor": {
+              "image": "vinyl_brown_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "vinyl_brown_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "vinyl_brown_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_hospitality_service_tray_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        },
+        {
+          "material": "mg01_hospitality_service_tray__tray_charcoal",
+          "textures": {
+            "basecolor": {
+              "image": "tray_charcoal_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "tray_charcoal_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "tray_charcoal_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_hospitality_service_tray_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "GLB": "mg01_lidded_ice_bucket_lod0.glb",
+      "materials": [
+        {
+          "material": "mg01_lidded_ice_bucket__vinyl_brown",
+          "textures": {
+            "basecolor": {
+              "image": "vinyl_brown_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "vinyl_brown_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "vinyl_brown_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_lidded_ice_bucket_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        },
+        {
+          "material": "mg01_lidded_ice_bucket__satin_steel",
+          "textures": {
+            "basecolor": {
+              "image": "satin_steel_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "satin_steel_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "satin_steel_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_lidded_ice_bucket_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "GLB": "mg01_lidded_ice_bucket_lod1.glb",
+      "materials": [
+        {
+          "material": "mg01_lidded_ice_bucket__vinyl_brown",
+          "textures": {
+            "basecolor": {
+              "image": "vinyl_brown_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "vinyl_brown_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "vinyl_brown_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_lidded_ice_bucket_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        },
+        {
+          "material": "mg01_lidded_ice_bucket__satin_steel",
+          "textures": {
+            "basecolor": {
+              "image": "satin_steel_basecolor",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "roughmetal": {
+              "image": "satin_steel_roughmetal",
+              "UV_set": 0,
+              "strength_or_scale": 1
+            },
+            "normal_gl": {
+              "image": "satin_steel_normal_gl",
+              "UV_set": 0,
+              "strength_or_scale": 1.0
+            },
+            "AO": {
+              "image": "mg01_lidded_ice_bucket_AO_separate",
+              "UV_set": 1,
+              "strength_or_scale": 1.0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

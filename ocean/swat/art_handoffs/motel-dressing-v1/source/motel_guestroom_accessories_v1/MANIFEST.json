@@ -1,0 +1,434 @@
+{
+  "package": "motel_guestroom_accessories_v1",
+  "created_utc": "2026-10-07",
+  "license": "CC0-1.0",
+  "software": "Blender 4.3.2",
+  "assets": [
+    {
+      "id": "mg01_lidded_ice_bucket",
+      "dimensions_gltf_xyz_m": [
+        0.20319999754428864,
+        0.20319999754428864,
+        0.20319999754428864
+      ],
+      "triangle_count_lod0": 3096,
+      "triangle_count_lod1": 1614,
+      "source": "motel_guestroom_accessories_v1.blend",
+      "exports": [
+        {
+          "file": "mg01_lidded_ice_bucket_lod0.glb",
+          "sha256": "edd7904622542158bdda82c23ba8759e547585ba5ebc5f95de390306c3d1f493",
+          "bytes": 1152988,
+          "triangles": 3096,
+          "export_vertices": 3878,
+          "bounds_gltf_xyz_m": [
+            [
+              -0.10159999877214432,
+              0.0,
+              -0.10159999877214432
+            ],
+            [
+              0.10159999877214432,
+              0.20319999754428864,
+              0.10159999877214432
+            ]
+          ],
+          "dimensions_gltf_xyz_m": [
+            0.20319999754428864,
+            0.20319999754428864,
+            0.20319999754428864
+          ],
+          "images": [
+            {
+              "name": "vinyl_brown_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "satin_steel_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "satin_steel_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "satin_steel_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "mg01_lidded_ice_bucket_AO_separate",
+              "size": [
+                512,
+                512
+              ]
+            }
+          ],
+          "parts": [
+            {
+              "name": "bucket_insulated_body",
+              "triangles": 764,
+              "normal_tangent_orthogonality_max": 9.02414321899414e-05
+            },
+            {
+              "name": "bucket_lid_edge",
+              "triangles": 380,
+              "normal_tangent_orthogonality_max": 7.987022399902344e-05
+            },
+            {
+              "name": "bucket_lid_knob",
+              "triangles": 380,
+              "normal_tangent_orthogonality_max": 8.469820022583008e-05
+            },
+            {
+              "name": "bucket_lower_trim",
+              "triangles": 380,
+              "normal_tangent_orthogonality_max": 8.268654346466064e-05
+            },
+            {
+              "name": "bucket_padded_lid",
+              "triangles": 380,
+              "normal_tangent_orthogonality_max": 9.262561798095703e-05
+            },
+            {
+              "name": "bucket_seam_stitches",
+              "triangles": 432,
+              "normal_tangent_orthogonality_max": 0.0
+            },
+            {
+              "name": "bucket_upper_trim",
+              "triangles": 380,
+              "normal_tangent_orthogonality_max": 7.68899917602539e-05
+            }
+          ],
+          "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+        },
+        {
+          "file": "mg01_lidded_ice_bucket_lod1.glb",
+          "sha256": "57b72f5b51db562f0b7ad411d1b7b8776e1096d1c5bd600131d5a64cfe286653",
+          "bytes": 1046104,
+          "triangles": 1614,
+          "export_vertices": 2151,
+          "bounds_gltf_xyz_m": [
+            [
+              -0.10159999877214432,
+              0.0,
+              -0.10159999877214432
+            ],
+            [
+              0.10159999877214432,
+              0.20320412516593933,
+              0.10159999877214432
+            ]
+          ],
+          "dimensions_gltf_xyz_m": [
+            0.20319999754428864,
+            0.20320412516593933,
+            0.20319999754428864
+          ],
+          "images": [
+            {
+              "name": "vinyl_brown_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "satin_steel_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "satin_steel_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "satin_steel_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "mg01_lidded_ice_bucket_AO_separate",
+              "size": [
+                512,
+                512
+              ]
+            }
+          ],
+          "parts": [
+            {
+              "name": "bucket_insulated_body_LOD1",
+              "triangles": 764,
+              "normal_tangent_orthogonality_max": 9.02414321899414e-05
+            },
+            {
+              "name": "bucket_lid_edge_LOD1",
+              "triangles": 170,
+              "normal_tangent_orthogonality_max": 9.627640247344971e-05
+            },
+            {
+              "name": "bucket_lid_knob_LOD1",
+              "triangles": 170,
+              "normal_tangent_orthogonality_max": 0.00010332465171813965
+            },
+            {
+              "name": "bucket_lower_trim_LOD1",
+              "triangles": 170,
+              "normal_tangent_orthogonality_max": 0.00010683387517929077
+            },
+            {
+              "name": "bucket_padded_lid_LOD1",
+              "triangles": 170,
+              "normal_tangent_orthogonality_max": 9.28342342376709e-05
+            },
+            {
+              "name": "bucket_upper_trim_LOD1",
+              "triangles": 170,
+              "normal_tangent_orthogonality_max": 0.00010566599667072296
+            }
+          ],
+          "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+        }
+      ]
+    },
+    {
+      "id": "mg01_hospitality_service_tray",
+      "dimensions_gltf_xyz_m": [
+        0.3805066645145416,
+        0.05079999938607216,
+        0.3043103814125061
+      ],
+      "triangle_count_lod0": 1360,
+      "triangle_count_lod1": 610,
+      "source": "motel_guestroom_accessories_v1.blend",
+      "exports": [
+        {
+          "file": "mg01_hospitality_service_tray_lod0.glb",
+          "sha256": "02d20574d82641410c735c0c682243966557f50b74eab5d5ff19c94574be416b",
+          "bytes": 1336304,
+          "triangles": 1360,
+          "export_vertices": 3298,
+          "bounds_gltf_xyz_m": [
+            [
+              -0.1902533322572708,
+              0.0,
+              -0.15215519070625305
+            ],
+            [
+              0.1902533322572708,
+              0.05079999938607216,
+              0.15215519070625305
+            ]
+          ],
+          "dimensions_gltf_xyz_m": [
+            0.3805066645145416,
+            0.05079999938607216,
+            0.3043103814125061
+          ],
+          "images": [
+            {
+              "name": "vinyl_brown_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "tray_charcoal_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "tray_charcoal_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "tray_charcoal_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "mg01_hospitality_service_tray_AO_separate",
+              "size": [
+                512,
+                512
+              ]
+            }
+          ],
+          "parts": [
+            {
+              "name": "tray_inset_non_slip_mat",
+              "triangles": 108,
+              "normal_tangent_orthogonality_max": 9.986758232116699e-05
+            },
+            {
+              "name": "tray_molded_basin",
+              "triangles": 1252,
+              "normal_tangent_orthogonality_max": 0.00010120868682861328
+            }
+          ],
+          "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+        },
+        {
+          "file": "mg01_hospitality_service_tray_lod1.glb",
+          "sha256": "a06809d2a0af2920063e7599052d3918adf9acdacea56e8fa31a5bede17d519a",
+          "bytes": 1249524,
+          "triangles": 610,
+          "export_vertices": 1828,
+          "bounds_gltf_xyz_m": [
+            [
+              -0.19032709300518036,
+              -6.529078291350743e-06,
+              -0.15216057002544403
+            ],
+            [
+              0.19032709300518036,
+              0.050801314413547516,
+              0.15216057002544403
+            ]
+          ],
+          "dimensions_gltf_xyz_m": [
+            0.3806541860103607,
+            0.05080784349183887,
+            0.30432114005088806
+          ],
+          "images": [
+            {
+              "name": "vinyl_brown_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "vinyl_brown_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "tray_charcoal_normal_gl",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "tray_charcoal_roughmetal",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "tray_charcoal_basecolor",
+              "size": [
+                512,
+                512
+              ]
+            },
+            {
+              "name": "mg01_hospitality_service_tray_AO_separate",
+              "size": [
+                512,
+                512
+              ]
+            }
+          ],
+          "parts": [
+            {
+              "name": "tray_inset_non_slip_mat_LOD1",
+              "triangles": 48,
+              "normal_tangent_orthogonality_max": 6.33790623396635e-05
+            },
+            {
+              "name": "tray_molded_basin_LOD1",
+              "triangles": 562,
+              "normal_tangent_orthogonality_max": 9.827129542827606e-05
+            }
+          ],
+          "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+        }
+      ]
+    }
+  ],
+  "status": "Candidate art; no engine integration or user approval claimed",
+  "textures": "512px original seeded basecolor sRGB + OpenGL normal linear + roughmetal linear; separate baked AO UV1",
+  "excluded_changes": "No Room101 v4 files, public repository, engine or existing catalog edited"
+}

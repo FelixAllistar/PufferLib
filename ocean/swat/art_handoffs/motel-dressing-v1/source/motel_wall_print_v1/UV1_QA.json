@@ -1,0 +1,8 @@
+{
+  "method": "2048-square UV1 raster triangle-interior overlap check, excluding triangle boundaries; not exact geometric proof",
+  "triangles": 468,
+  "min_uv_triangle_area": 1.4968900785561345e-08,
+  "interior_overlap_pixels": 0,
+  "max_coverage": 1,
+  "status": "PASS"
+}

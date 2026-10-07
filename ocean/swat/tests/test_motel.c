@@ -34,8 +34,20 @@ static void route(b3Pos* source,int count) {
     }
 }
 int main(void) {
-    swat_world_init(&world); swat_motel_build(&world); assert(world.motel && world.count==SWAT_MOTEL_INSTANCES+1 && world.room_count==6);
+    swat_world_init(&world); swat_motel_build(&world); assert(world.motel && world.count>SWAT_MOTEL_INSTANCES+1 && world.room_count==6);
     utility_hits(&world);
+    for(int i=0;i<SWAT_MOTEL_DRESSING_INSTANCES;i++) {
+        SwatMotelInstance mount;int owner=swat_motel_dressing(&world,i,&mount);assert(owner>0);
+        world.objects[owner].active=false;assert(swat_motel_dressing(&world,i,&mount)==-1);world.objects[owner].active=true;
+    }
+    SwatMotelInstance closed_viewer,open_viewer;
+    assert(swat_motel_dressing(&world,5,&closed_viewer)==16);
+    world.objects[16].yaw+=SWAT_PI*.5f;
+    assert(swat_motel_dressing(&world,5,&open_viewer)==16);
+    assert(fabsf(open_viewer.origin.x-world.objects[16].hinge.x-.0345f)<1e-5f);
+    assert(fabsf(open_viewer.origin.z-world.objects[16].hinge.z+.54f)<1e-5f);
+    world.objects[16].yaw-=SWAT_PI*.5f;
+
     int doors=0,first=-1;
     for(int i=0;i<world.count;i++) if(world.objects[i].door) { doors++;if(first<0)first=i;world.objects[i].door_open=true; }
     assert(doors==5);
@@ -61,16 +73,41 @@ int main(void) {
     swat_capture_map(&server,1,&map);size_t length=swat_encode_map(bytes,sizeof(bytes),&map);assert(length && swat_decode_map(&decoded,bytes,length));
     swat_apply_map(&replica,&decoded);assert(replica.world.motel && replica.world.count==server.world.count);
     utility_hits(&replica.world);
-    for(int i=1;i<server.world.count;i++) if(!server.world.objects[i].door) assert(b3Shape_GetType(replica.world.objects[i].shape)==b3_meshShape);
+    for(int i=1;i<=SWAT_MOTEL_INSTANCES;i++) if(server.world.objects[i].active && !server.world.objects[i].door) assert(b3Shape_GetType(replica.world.objects[i].shape)==b3_meshShape);
     for(int i=0;i<4;i++) {
         b3Pos p={-7.2f+4*i,1,1};SwatHit a=swat_world_ray(&server.world,p,swat_v(0,0,-1),2,b3_nullBodyId),b=swat_world_ray(&replica.world,p,swat_v(0,0,-1),2,b3_nullBodyId);
         assert(a.hit && b.hit && a.index==b.index && fabsf(a.distance-b.distance)<1e-5f);
     }
     swat_sim_close(&replica);
+    // An actual guest-room wall opens once, with the same physics/nav and wire state.
+    b3Pos entry={-4.5f,.06f,-1.17f},exit={-3.5f,.06f,-1.17f},next;
+    b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
+    SwatHit wall=swat_world_ray(&server.world,b3OffsetPos(entry,swat_v(0,1,0)),swat_v(1,0,0),1,b3_nullBodyId);
+    assert(wall.hit && swat_world_breachable(&server.world.objects[wall.index]));
+    assert(b3World_CastMover(server.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),NULL,NULL)<.9f);
+    for(int i=0;i<server.world.count;i++)if(server.world.objects[i].door)server.world.objects[i].wedge_owner=0;
+    server.world.generation++;
+    assert(!swat_navigation_next(&server,entry,exit,&next));
+    int old_generation=server.world.generation;
+    assert(swat_world_breach(&server.world,wall.index,wall.point)>4);
+    assert(server.world.generation>old_generation);
+    assert(!swat_world_ray(&server.world,b3OffsetPos(entry,swat_v(0,1,0)),swat_v(1,0,0),1,b3_nullBodyId).hit);
+    assert(b3World_CastMover(server.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),NULL,NULL)>.999f);
+    assert(swat_navigation_next(&server,entry,exit,&next));
+    assert(server.navigation->generation==server.world.generation && server.navigation->updated_cells<SWAT_NAV_CELLS);
+    static SwatSnapshot snapshot;
+    swat_capture_map(&server,1,&map);swat_capture_snapshot(&server,1,&snapshot);
+    swat_apply_map(&replica,&map);assert(swat_apply_snapshot(&replica,&snapshot));
+    assert(b3World_CastMover(replica.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),NULL,NULL)>.999f);
+    swat_sim_close(&replica);
+    for(int i=0;i<server.world.count;i++)server.world.objects[i].wedge_owner=-1;
     // Original 147-object motel maps keep their original mesh collision.
     SwatMap legacy=decoded;legacy.count=SWAT_MOTEL_BASE_INSTANCES+1;
     swat_apply_map(&replica,&legacy);assert(replica.world.motel && replica.world.count==147);
     swat_sim_close(&replica);
+    legacy.count=SWAT_MOTEL_INSTANCES+1;
+    swat_apply_map(&replica,&legacy);assert(replica.world.motel && replica.world.objects[106].active);
+    utility_hits(&replica.world);swat_sim_close(&replica);
     for(int i=1;i<server.world.count;i++) if(server.world.objects[i].door) server.world.objects[i].door_open=true;
     for(int i=0;i<60;i++) swat_world_step_doors(&server.world);
     swat_capture_map(&server,2,&map); length=swat_encode_map(bytes,sizeof(bytes),&map);
@@ -82,5 +119,5 @@ int main(void) {
     for(int i=0;i<SWAT_MOTEL_ASSETS;i++) assert(!replica.world.motel_meshes[i]);
     assert(b3Shape_GetType(replica.world.objects[2].shape)==b3_hullShape);
     swat_sim_close(&replica);swat_sim_reset(&server);assert(server.world.motel);swat_sim_close(&server);
-    puts("PASS motel: nine capsule routes, five functional hinged/breachable doors, original mesh openings, exact network collision reconstruction, reset and mesh ownership");return 0;
+    puts("PASS motel: nine capsule routes, five functional hinged/breachable doors, original mesh openings, exact network collision reconstruction, reset, attached dressing, breach capsule/LOS/nav and replicated destruction");return 0;
 }

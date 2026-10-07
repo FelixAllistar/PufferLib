@@ -1,0 +1,114 @@
+{
+  "all_byte_exact": true,
+  "scope": "Runtime GLBs and all procedural/baked textures; .blend timestamps excluded",
+  "files": [
+    {
+      "path": "exports/mg01_hospitality_service_tray_lod0.glb",
+      "source_sha256": "02d20574d82641410c735c0c682243966557f50b74eab5d5ff19c94574be416b",
+      "rebuild_sha256": "02d20574d82641410c735c0c682243966557f50b74eab5d5ff19c94574be416b",
+      "byte_exact": true
+    },
+    {
+      "path": "exports/mg01_hospitality_service_tray_lod1.glb",
+      "source_sha256": "a06809d2a0af2920063e7599052d3918adf9acdacea56e8fa31a5bede17d519a",
+      "rebuild_sha256": "a06809d2a0af2920063e7599052d3918adf9acdacea56e8fa31a5bede17d519a",
+      "byte_exact": true
+    },
+    {
+      "path": "exports/mg01_lidded_ice_bucket_lod0.glb",
+      "source_sha256": "edd7904622542158bdda82c23ba8759e547585ba5ebc5f95de390306c3d1f493",
+      "rebuild_sha256": "edd7904622542158bdda82c23ba8759e547585ba5ebc5f95de390306c3d1f493",
+      "byte_exact": true
+    },
+    {
+      "path": "exports/mg01_lidded_ice_bucket_lod1.glb",
+      "source_sha256": "57b72f5b51db562f0b7ad411d1b7b8776e1096d1c5bd600131d5a64cfe286653",
+      "rebuild_sha256": "57b72f5b51db562f0b7ad411d1b7b8776e1096d1c5bd600131d5a64cfe286653",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/liner_cream_basecolor.png",
+      "source_sha256": "e9d704b55c6ecbb302f76fe9c86df824908823e060c064995a9b74a70ab2672b",
+      "rebuild_sha256": "e9d704b55c6ecbb302f76fe9c86df824908823e060c064995a9b74a70ab2672b",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/liner_cream_normal_gl.png",
+      "source_sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "rebuild_sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/liner_cream_roughmetal.png",
+      "source_sha256": "6b8306bf4abbc8033736e60f36b75fcb65845f4b2d1c6b72d92769a2fa61ce0a",
+      "rebuild_sha256": "6b8306bf4abbc8033736e60f36b75fcb65845f4b2d1c6b72d92769a2fa61ce0a",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/mg01_hospitality_service_tray_ao.png",
+      "source_sha256": "c1af8e4c404b6f805dbca8cc45ab53f17691f385d5f742d9c40d2280cee53765",
+      "rebuild_sha256": "c1af8e4c404b6f805dbca8cc45ab53f17691f385d5f742d9c40d2280cee53765",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/mg01_lidded_ice_bucket_ao.png",
+      "source_sha256": "0854477d91fa72e75c97a39dfeaa100830caf7b1db80301088abc4b9a5029c3f",
+      "rebuild_sha256": "0854477d91fa72e75c97a39dfeaa100830caf7b1db80301088abc4b9a5029c3f",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/satin_steel_basecolor.png",
+      "source_sha256": "f0d948740a02dcbf52482a10da2ff53d67c00fcbb686b1b99f74b611b49d8182",
+      "rebuild_sha256": "f0d948740a02dcbf52482a10da2ff53d67c00fcbb686b1b99f74b611b49d8182",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/satin_steel_normal_gl.png",
+      "source_sha256": "f5401941592911f4458f6915ac813d3c2c34625806e340525c6e9cb25043dfdb",
+      "rebuild_sha256": "f5401941592911f4458f6915ac813d3c2c34625806e340525c6e9cb25043dfdb",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/satin_steel_roughmetal.png",
+      "source_sha256": "df736a32398cc92bd89bce8f59e0747e3e8f1c81d07990bf6805ae8c42c34d24",
+      "rebuild_sha256": "df736a32398cc92bd89bce8f59e0747e3e8f1c81d07990bf6805ae8c42c34d24",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/tray_charcoal_basecolor.png",
+      "source_sha256": "54347e6203ab64b160736b053d9e653079bf27a2390bb1d205b11772c4a896fe",
+      "rebuild_sha256": "54347e6203ab64b160736b053d9e653079bf27a2390bb1d205b11772c4a896fe",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/tray_charcoal_normal_gl.png",
+      "source_sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "rebuild_sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/tray_charcoal_roughmetal.png",
+      "source_sha256": "af9cb0bba23ed8dc3d226aff657f9a1adad12530c96002151eef8b5fe89d0717",
+      "rebuild_sha256": "af9cb0bba23ed8dc3d226aff657f9a1adad12530c96002151eef8b5fe89d0717",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/vinyl_brown_basecolor.png",
+      "source_sha256": "4b6c846d0d3ef60254ddba88da71933357d4c91b034244a5e8c89279fdd186b5",
+      "rebuild_sha256": "4b6c846d0d3ef60254ddba88da71933357d4c91b034244a5e8c89279fdd186b5",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/vinyl_brown_normal_gl.png",
+      "source_sha256": "0c245ac8875ecf0ca8cc23a6333af2ccdf6ce82923b01a522856b1714e2bbefe",
+      "rebuild_sha256": "0c245ac8875ecf0ca8cc23a6333af2ccdf6ce82923b01a522856b1714e2bbefe",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/vinyl_brown_roughmetal.png",
+      "source_sha256": "8d7a4945069c1362d2b8818c32b7eec803bb00ddb252415e2e8aa770865ebf65",
+      "rebuild_sha256": "8d7a4945069c1362d2b8818c32b7eec803bb00ddb252415e2e8aa770865ebf65",
+      "byte_exact": true
+    }
+  ]
+}

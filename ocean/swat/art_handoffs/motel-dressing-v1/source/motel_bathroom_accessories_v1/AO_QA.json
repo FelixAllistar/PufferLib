@@ -1,0 +1,31 @@
+{
+  "separate_from_basecolor_and_roughmetal": true,
+  "uv_set": 1,
+  "samples": 16,
+  "maps": [
+    {
+      "file": "mb01_double_robe_hook_ao.png",
+      "range": [
+        0,
+        255
+      ],
+      "unique_values": 256,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "file": "mb01_wall_toilet_roll_holder_ao.png",
+      "range": [
+        0,
+        255
+      ],
+      "unique_values": 256,
+      "size": [
+        512,
+        512
+      ]
+    }
+  ]
+}

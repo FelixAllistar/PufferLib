@@ -1,0 +1,22 @@
+{
+  "catalog": "r006_guestroom_wall_art",
+  "sha256": "05bd211480fe057419cdaa001ec4e2e322abeebb4d1137f04c680512731bbcb2",
+  "unique_designs": 322,
+  "lod_variants": 30,
+  "existing_skipped": [
+    "env:05_interior_fixtures/round_dial_thermostat",
+    "env:05_interior_fixtures/vented_smoke_alarm",
+    "env:05_interior_fixtures/toggle_light_switch"
+  ],
+  "absent_terms_checked": [
+    "door viewer",
+    "peephole",
+    "wall bumper",
+    "door stop"
+  ],
+  "chosen_designs": [
+    "me01_door_viewer_face",
+    "me01_concave_wall_bumper"
+  ],
+  "mutated_existing_assets": false
+}

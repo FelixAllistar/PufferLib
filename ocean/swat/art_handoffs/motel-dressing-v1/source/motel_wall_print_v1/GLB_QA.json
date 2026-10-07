@@ -1,0 +1,157 @@
+[
+  {
+    "file": "mw01_framed_woodland_print_lod0.glb",
+    "sha256": "94adb307e33e146b52803a672c54251aa9e6d767b9e8de8e763d0dbc74775cad",
+    "bytes": 1462676,
+    "triangles": 468,
+    "export_vertices": 1212,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.26499998569488525,
+        -0.2150000035762787,
+        0.0
+      ],
+      [
+        0.26499998569488525,
+        0.2150000035762787,
+        0.009999999776482582
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.5299999713897705,
+      0.4300000071525574,
+      0.009999999776482582
+    ],
+    "images": [
+      {
+        "name": "backing_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "backing_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "backing_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "frame_foil_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "frame_foil_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "frame_foil_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "print_protected_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "print_protected_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "print_protected_basecolor",
+        "size": [
+          1024,
+          819
+        ]
+      },
+      {
+        "name": "hanger_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "hanger_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "hanger_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mw01_framed_woodland_print_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "fibreboard_backing",
+        "triangles": 12,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "frame_rail_0",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 8.508563041687012e-05
+      },
+      {
+        "name": "frame_rail_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 7.876753807067871e-05
+      },
+      {
+        "name": "frame_rail_2",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 8.019059896469116e-05
+      },
+      {
+        "name": "frame_rail_3",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 7.876753807067871e-05
+      },
+      {
+        "name": "print_with_polystyrene_protection",
+        "triangles": 12,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "recessed_hanging_tab",
+        "triangles": 12,
+        "normal_tangent_orthogonality_max": 0.0
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  }
+]

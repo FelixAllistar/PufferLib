@@ -1,0 +1,11 @@
+{
+  "uv0": "UV_Material: planar projected 0.25 m repeat except print front/back normalized artwork fit",
+  "uv1": "UV_AO: unique packed islands across all seven pieces, 512px AO, no AO in basecolor",
+  "basecolor": "sRGB; runtime print 1024x819, other maps 512 square",
+  "normal": "linear OpenGL tangent-space, flat (128,128,255), scale 1",
+  "roughmetal": "linear, R=255 unused, G=roughness, B=metallic; all dielectric except metal hanger",
+  "ao": "Separate PNG glTF occlusionTexture texCoord 1, strength 1; never shared with basecolor or RM",
+  "protected_print": "Opaque combined print and polystyrene front approximation, roughness 125/255. No transparency sorting, transmission, or second overlapping clear pane.",
+  "texture_limit": 1024,
+  "source": "All runtime maps embedded; sidecars supplied for inspection/rebuild"
+}

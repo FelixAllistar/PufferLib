@@ -1,0 +1,24 @@
+{
+  "status": "PASS_WITH_LOD_LIMITATION",
+  "review_date": "2026-10-07",
+  "method": "Human-readable visual inspection of neutral final GLB reimport renders, individual LOD0 detail renders and separate mount-ownership vignettes",
+  "lod0": "PASS: coherent metal/rubber/lens material separation, recessed bumper cup, contact-plane mounting and no missing faces or missing textures. Close views show deliberate modest-poly curvature.",
+  "lod1": "TECHNICAL PASS; VISUAL LIMITATION: reduced geometry has visible uneven specular highlights and polygonal ring curvature at macro inspection distance, despite source-normal transfer. Suitable only for small on-screen presentation; it is not close-up-equivalent to LOD0.",
+  "recommendation": "Use LOD1 as ordinary room-distance budget candidate, preferably only while the fixture diameter is <=32 screen pixels; retain LOD0 for larger close-inspection presentation. The 32-pixel guide is a proposed heuristic, not an engine-tested threshold or automatic switch. User art approval remains pending.",
+  "placement_scope": "Two independent surface vignettes, green door surface owns viewer; tan fixed wall surface owns bumper. Not an actual room layout or game capture.",
+  "functional_claims": "none",
+  "previews": {
+    "neutral_glb_reimport_lod0.png": "6ec6bfe8aac97814151b24214b297495e18d28070f6cc5e0bb599c0a21c7c931",
+    "mount_ownership_proposal.png": "7b7c6819f94a2273a711a281c0a241aebf515f447b7be0038af823734f19a5ae",
+    "viewer_detail.png": "9d7392a6955552a4f43bff0796343540de155f21d5170c6d0b52e9b72cc13600",
+    "neutral_glb_reimport_lod1.png": "9a3bbccaf520581ec34db357cc8495e139c962aed7b5dcfa4104d1f519198ccc",
+    "bumper_detail.png": "517ea621fcb2631a5603fbb2f88dc996b1cf0fb2f282ee5e22519d8d1eb0c234"
+  },
+  "source_glbs": {
+    "me01_concave_wall_bumper_lod1.glb": "d5b08e1c7eca28609eaa870d68fb8786008aee1622b007ee6024f1a15603e7f4",
+    "me01_door_viewer_face_lod0.glb": "a1a5f72caeb4384e339f7f883cc9e48328a66877f8e6accf6cad8bbc48c520fa",
+    "me01_door_viewer_face_lod1.glb": "d5dae7a9629c41f26fb69ac74e7aa2b7467f132853ec18345c4e8a454739b864",
+    "me01_concave_wall_bumper_lod0.glb": "b4822206f3aab0590cbf858aed422cd3d21f95ce406372694d70b42cd8bcc960"
+  },
+  "preview_provenance": "LOD0 neutral/detail/mount images rendered from the final unchanged LOD0 geometry before the LOD1-only normal-transfer adjustment. LOD1 image rerendered after that adjustment."
+}

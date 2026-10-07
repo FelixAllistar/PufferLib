@@ -48,6 +48,7 @@ static Texture2D load_surface(const char* name,bool metric) {
 }
 
 static void room101_close(SwatEnvironmentArt* art) {
+    for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
     art->room101_ready=false;
     for(int i=0;i<SWAT_ROOM101_V3_ASSETS;i++) {swat_art_model_close(art->room101_v3[i]);art->room101_v3[i]=(Model){0};}
@@ -117,6 +118,30 @@ static void room101_load(SwatEnvironmentArt* art) {
         }
     }
     art->room101_v4_ready=true;
+}
+
+static void motel_dressing_load(SwatEnvironmentArt* art) {
+    static const char* files[SWAT_MOTEL_DRESSING_ASSETS]={
+        "mb01_wall_toilet_roll_holder_lod0.glb","mb01_double_robe_hook_lod0.glb",
+        "mg01_lidded_ice_bucket_lod0.glb","mg01_hospitality_service_tray_lod0.glb",
+        "mw01_framed_woodland_print_lod0.glb","me01_door_viewer_face_lod0.glb",
+        "me01_concave_wall_bumper_lod0.glb"};
+    for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {
+        char file[256],path[4096];snprintf(file,sizeof(file),"motel_dressing_v1/%s",files[i]);
+        Model* model=&art->motel_dressing[i];
+        if(!room101_model_load(model,art->motel_dressing_normal_scale[i],file)) {
+            swat_art_model_close(*model);*model=(Model){0};continue;
+        }
+        SwatArtMaterialFactors factors[SWAT_ROOM101_MATERIALS-1];
+        if(!asset_path(path,sizeof(path),file))continue;
+        int count=swat_art_material_factors(path,factors,SWAT_ROOM101_MATERIALS-1);
+        for(int m=0;m<count;m++) {
+            art->motel_dressing_occlusion_uv[i][m+1]=factors[m].occlusion_texcoord;
+            // Separate AO atlas has no tiling, unlike the UV0 surface maps.
+            Texture2D ao=model->materials[m+1].maps[MATERIAL_MAP_OCCLUSION].texture;
+            if(ao.id)SetTextureWrap(ao,TEXTURE_WRAP_CLAMP);
+        }
+    }
 }
 
 void swat_environment_art_init(SwatEnvironmentArt* art) {
@@ -199,7 +224,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         }
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
-    if(selected==1) room101_load(art);
+    if(selected==1) {room101_load(art);motel_dressing_load(art);}
 }
 
 void swat_art_model_close(Model model) {
@@ -413,6 +438,10 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
     bool lit=!shadow && art->lighting && art->lighting->enabled && art->lighting->prepared;
     rlDrawRenderBatchActive();
     for(int i=0;i<model->meshCount;i++) {
+        if(p->door && art->motel_dressing[5].meshCount) {
+            BoundingBox box=GetMeshBoundingBox(model->meshes[i]);
+            if(box.min.x>.50f && box.max.x<.58f && box.min.y>1.58f && box.max.y<1.62f)continue;
+        }
         Material material=model->materials[model->meshMaterial[i]];
         bool blend=material.maps[MATERIAL_MAP_ALBEDO].color.a<255;
         if(blend!=transparent || (shadow && blend)) continue;
@@ -432,6 +461,10 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
             for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(model==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
             int ao_uv=0;
             for(int r=0;r<SWAT_MOTEL_ASSETS;r++)if(model==&art->motel[r])ao_uv=art->motel_occlusion_uv[r][model->meshMaterial[i]];
+            for(int r=0;r<SWAT_MOTEL_DRESSING_ASSETS;r++)if(model==&art->motel_dressing[r]) {
+                ao_uv=art->motel_dressing_occlusion_uv[r][model->meshMaterial[i]];
+                normal_scale=art->motel_dressing_normal_scale[r][model->meshMaterial[i]];
+            }
             swat_lighting_material_uv(art->lighting,material,true,normal_scale,ao_uv);
         }
         DrawMesh(model->meshes[i],material,transform);
@@ -440,7 +473,17 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
     return true;
 }
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
-    if(!world->motel || o->tag.index<1 || o->tag.index>SWAT_MOTEL_INSTANCES) return false;
+    if(!world->motel || o->tag.index<1)return false;
+    if(o->active)for(int i=0;i<SWAT_MOTEL_DRESSING_INSTANCES;i++) {
+        int parent=swat_motel_dressing_parent(i);
+        if(parent!=o->tag.index && (o->tag.index<=SWAT_MOTEL_INSTANCES ||
+            i%SWAT_MOTEL_DRESSING_ASSETS!=6 || o->part!=SWAT_PART_SKIN ||
+            o->wall_group!=world->objects[parent].wall_group))continue;
+        SwatMotelInstance mount;
+        if(swat_motel_dressing(world,i,&mount)==o->tag.index)
+            location_draw(art,o,&mount,&art->motel_dressing[mount.asset],shadow,cutaway,false);
+    }
+    if(o->tag.index>SWAT_MOTEL_INSTANCES)return false;
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
     if(art->room101_ready) {
         if(art->room101_v4_ready) {

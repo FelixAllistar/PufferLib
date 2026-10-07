@@ -1,0 +1,54 @@
+{
+  "texture_resolution": [
+    512,
+    512
+  ],
+  "license": "CC0-1.0 original seeded artwork",
+  "uv0": {
+    "name": "UV_Material",
+    "repeat_m": [
+      0.25,
+      0.25
+    ],
+    "mapping": "per-face dominant-axis planar from local geometry in metres; object scales applied",
+    "sampler": "REPEAT"
+  },
+  "uv1": {
+    "name": "UV_AO",
+    "unique_atlas_per_asset": true,
+    "sampler": "CLAMP_TO_EDGE"
+  },
+  "channels": {
+    "basecolor": "sRGB RGB",
+    "normal_gl": "linear tangent-space OpenGL XYZ",
+    "roughmetal": "linear R unused=255 G roughness B metallic",
+    "ao": "separate linear RGB grayscale on UV1"
+  },
+  "pbr_factors": {
+    "basecolor": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "roughness": 1,
+    "metallic": 1,
+    "normal_scale": 1,
+    "ao_strength": 1
+  },
+  "materials": {
+    "satin_steel": {
+      "metallic": 1
+    },
+    "rubber_grey": {
+      "metallic": 0
+    },
+    "dark_gasket": {
+      "metallic": 0
+    },
+    "lens_dark": {
+      "metallic": 0,
+      "opaque": true
+    }
+  }
+}

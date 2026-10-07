@@ -1,0 +1,59 @@
+{
+  "status": "Internal visual QA passed; parent/user art acceptance pending",
+  "reviewed_utc": "2026-10-07",
+  "method": "Inspected actual final runtime GLB reimport pixels for LOD0, LOD1 and original illustrative desk context",
+  "findings": [
+    "Bucket silhouette, padded lid and metal bands read clearly at real scale",
+    "Tray has real through-cut carry handles, closed underside and visible inset mat",
+    "Fixed an initially over-clamped mat bevel that created degenerate UVs",
+    "Grouped 36 stitch meshes into one owned component; bucket has 7 mesh nodes and tray 2",
+    "Preserved bucket main-body geometry in LOD1 to eliminate wavy shading from aggressive decimation; lower LOD has 1614 triangles versus 3096",
+    "No logos, labels, third-party pixels, phone/UI behavior or engine gameplay claims",
+    "Context desk is preview-only; Room101 v4 untouched"
+  ],
+  "limits": [
+    "Neutral studio and illustrative context are Blender renders, not engine screenshots",
+    "LOD thresholds, actual engine camera/light response and user art acceptance remain integration-owner decisions",
+    "32-sample CPU previews have mild grain; no texture denoising/alteration applied"
+  ],
+  "previews": [
+    {
+      "path": "previews/bucket_neutral.png",
+      "sha256": "8c9b8c267612626cebe889189040d27fb72ff030c8a3ebb914a502f7d396abf6"
+    },
+    {
+      "path": "previews/desk_context.png",
+      "sha256": "5b284a5f641f2c6561842f42af684e182536abd48c3d7579e3c40aa5c079b72f"
+    },
+    {
+      "path": "previews/final_glb_reimport.png",
+      "sha256": "6996f70163d2122455d364dcf7758266ceb19b4015fe75399d3f40338c5ab83b"
+    },
+    {
+      "path": "previews/lod1_glb_reimport.png",
+      "sha256": "413b0dca7a85b90a47fb010e790bc74b0595b679469b6d70ce45bde137767040"
+    },
+    {
+      "path": "previews/tray_neutral.png",
+      "sha256": "58de51ec543db85afa4205bc57473a20161ec56046fb09ca065a03b5863dd816"
+    }
+  ],
+  "exports": [
+    {
+      "file": "mg01_hospitality_service_tray_lod0.glb",
+      "sha256": "02d20574d82641410c735c0c682243966557f50b74eab5d5ff19c94574be416b"
+    },
+    {
+      "file": "mg01_hospitality_service_tray_lod1.glb",
+      "sha256": "a06809d2a0af2920063e7599052d3918adf9acdacea56e8fa31a5bede17d519a"
+    },
+    {
+      "file": "mg01_lidded_ice_bucket_lod0.glb",
+      "sha256": "edd7904622542158bdda82c23ba8759e547585ba5ebc5f95de390306c3d1f493"
+    },
+    {
+      "file": "mg01_lidded_ice_bucket_lod1.glb",
+      "sha256": "57b72f5b51db562f0b7ad411d1b7b8776e1096d1c5bd600131d5a64cfe286653"
+    }
+  ]
+}

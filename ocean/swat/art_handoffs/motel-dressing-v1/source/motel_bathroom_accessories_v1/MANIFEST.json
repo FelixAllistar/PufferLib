@@ -1,0 +1,62 @@
+{
+  "schema": "swat_original_prop_set_v1",
+  "set": "motel_bathroom_accessories_v1",
+  "unique_designs": 2,
+  "date": "2026-10-07",
+  "status": "standalone_art_package; not integrated, no user art acceptance yet",
+  "units": "metres",
+  "license": "CC0-1.0",
+  "texture_max_px": 512,
+  "assets": [
+    {
+      "id": "mb01_wall_toilet_roll_holder",
+      "name": "Wall-mounted toilet roll holder with roll",
+      "triangles_lod0": 1992,
+      "triangles_lod1": 776,
+      "dimensions_gltf_xyz_m": [
+        0.1850000061094761,
+        0.13521511852741241,
+        0.14800000190734863
+      ],
+      "pivot": "wall-contact plane center",
+      "runtime": [
+        {
+          "file": "exports/mb01_wall_toilet_roll_holder_lod0.glb",
+          "sha256": "a7ed684565f4c0ebcb1a02b990da754513fc6616544b526acdb216c6318dd665"
+        },
+        {
+          "file": "exports/mb01_wall_toilet_roll_holder_lod1.glb",
+          "sha256": "80dc9841c320f55a6ee9e8f3deaeb501478f7671a41d292e436c3b2743595869"
+        }
+      ],
+      "source": "motel_bathroom_accessories_v1.blend",
+      "collision_authoritative": false,
+      "destruction_supported": false
+    },
+    {
+      "id": "mb01_double_robe_hook",
+      "name": "Double robe hook",
+      "triangles_lod0": 532,
+      "triangles_lod1": 180,
+      "dimensions_gltf_xyz_m": [
+        0.10499999672174454,
+        0.050500000768806785,
+        0.05999999865889549
+      ],
+      "pivot": "wall-contact plane center",
+      "runtime": [
+        {
+          "file": "exports/mb01_double_robe_hook_lod0.glb",
+          "sha256": "c1ffdb22fd4b044943b601a6b6c5423ea7e7f689b7072095d77e9a6573685bb2"
+        },
+        {
+          "file": "exports/mb01_double_robe_hook_lod1.glb",
+          "sha256": "bc167cd6f49b23a2f33b02eb9e7db350b7bdc58e3577010ae65a8400198a278b"
+        }
+      ],
+      "source": "motel_bathroom_accessories_v1.blend",
+      "collision_authoritative": false,
+      "destruction_supported": false
+    }
+  ]
+}

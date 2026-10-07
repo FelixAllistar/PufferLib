@@ -192,6 +192,15 @@ separate AO UV set is supported by the material shader. Existing door/walking
 routes and original motel instance IDs are preserved; these props are static
 furniture for now. See the [integration and captures](art_handoffs/motel-utility-v1/engine/README.md).
 
+The four guest rooms also have seven supported decorative details each: toilet
+roll holder, robe hook, ice bucket/tray, framed print, door viewer and wall bumper.
+The viewer follows its hinged door; other details inherit their wall or desk.
+The three walls between guest rooms now use physical drywall skins and studs.
+Hold **7** to mount a charge and **K** to detonate; the resulting opening is
+shared by bullets, player collision, NPC navigation and network replicas.
+Exterior walls and bathroom partitions retain their authored mesh collision.
+See the [dressing and breach review](art_handoffs/motel-dressing-v1/engine/README.md).
+
 At Cedar House, enter through doors or create openings, secure two suspects,
 order the three civilians to comply, cuff them, and bring all surviving officers
 back to staging. Any civilian harm fails the mission. Human play defaults to

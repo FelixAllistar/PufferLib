@@ -1,0 +1,4 @@
+SPDX-License-Identifier: CC0-1.0
+Original procedural geometry, generated texture pixels, scripts and documentation in this package are dedicated to the public domain under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/
+No purchased assets, external meshes, manufacturer CAD, branding, fonts or third-party image pixels are incorporated. Manufacturer URLs in REFERENCES.json are factual scale/construction references and do not grant a license over their website material; that material is not redistributed here.
+Textures: deterministic NumPy seed 672685, 512 x 512 PNG. Basecolor is sRGB; normal_gl is tangent-space OpenGL (+Y); roughmetal is linear R=255 (unused), G=roughness, B=metallic. Each object's AO is separately baked original geometry in Blender on uniquely packed UV1, linear. No baked lighting in basecolor. Scripts adapted from the original CC0 motel bathroom accessory build pipeline.

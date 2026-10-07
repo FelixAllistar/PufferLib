@@ -1,0 +1,115 @@
+{
+  "scope": "All 4 runtime GLBs and 14 textures; Blender 4.3.2 CPU 4 threads; .blend bytes excluded",
+  "pass": true,
+  "files": [
+    {
+      "file": "exports/mb01_double_robe_hook_lod0.glb",
+      "sha256": "c1ffdb22fd4b044943b601a6b6c5423ea7e7f689b7072095d77e9a6573685bb2",
+      "rebuild_sha256": "c1ffdb22fd4b044943b601a6b6c5423ea7e7f689b7072095d77e9a6573685bb2",
+      "identical": true
+    },
+    {
+      "file": "exports/mb01_double_robe_hook_lod1.glb",
+      "sha256": "bc167cd6f49b23a2f33b02eb9e7db350b7bdc58e3577010ae65a8400198a278b",
+      "rebuild_sha256": "bc167cd6f49b23a2f33b02eb9e7db350b7bdc58e3577010ae65a8400198a278b",
+      "identical": true
+    },
+    {
+      "file": "exports/mb01_wall_toilet_roll_holder_lod0.glb",
+      "sha256": "a7ed684565f4c0ebcb1a02b990da754513fc6616544b526acdb216c6318dd665",
+      "rebuild_sha256": "a7ed684565f4c0ebcb1a02b990da754513fc6616544b526acdb216c6318dd665",
+      "identical": true
+    },
+    {
+      "file": "exports/mb01_wall_toilet_roll_holder_lod1.glb",
+      "sha256": "80dc9841c320f55a6ee9e8f3deaeb501478f7671a41d292e436c3b2743595869",
+      "rebuild_sha256": "80dc9841c320f55a6ee9e8f3deaeb501478f7671a41d292e436c3b2743595869",
+      "identical": true
+    },
+    {
+      "file": "textures/cardboard_basecolor.png",
+      "sha256": "b5720f4f61b0d15e188366628e79188ca3df8c300519e84c0206f225ebf40821",
+      "rebuild_sha256": "b5720f4f61b0d15e188366628e79188ca3df8c300519e84c0206f225ebf40821",
+      "identical": true
+    },
+    {
+      "file": "textures/cardboard_normal_gl.png",
+      "sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "rebuild_sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "identical": true
+    },
+    {
+      "file": "textures/cardboard_roughmetal.png",
+      "sha256": "8a8a632957c75e31f6b0cf8b20de3b8ffcb7919b5562110025db8b749045b8d1",
+      "rebuild_sha256": "8a8a632957c75e31f6b0cf8b20de3b8ffcb7919b5562110025db8b749045b8d1",
+      "identical": true
+    },
+    {
+      "file": "textures/dark_gasket_basecolor.png",
+      "sha256": "1929679922996fbf9e85b21531c68f003aef9998636efefe02ef029c8423746c",
+      "rebuild_sha256": "1929679922996fbf9e85b21531c68f003aef9998636efefe02ef029c8423746c",
+      "identical": true
+    },
+    {
+      "file": "textures/dark_gasket_normal_gl.png",
+      "sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "rebuild_sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b",
+      "identical": true
+    },
+    {
+      "file": "textures/dark_gasket_roughmetal.png",
+      "sha256": "25f52d482e9ebc5e1bb5c030bd5f935ea7da168ad5ed602537710f0df70d74d1",
+      "rebuild_sha256": "25f52d482e9ebc5e1bb5c030bd5f935ea7da168ad5ed602537710f0df70d74d1",
+      "identical": true
+    },
+    {
+      "file": "textures/mb01_double_robe_hook_ao.png",
+      "sha256": "0f22172d53283586eb30a6f0810b5f99adfed850574f56edd82cf5ccbe62167b",
+      "rebuild_sha256": "0f22172d53283586eb30a6f0810b5f99adfed850574f56edd82cf5ccbe62167b",
+      "identical": true
+    },
+    {
+      "file": "textures/mb01_wall_toilet_roll_holder_ao.png",
+      "sha256": "b07eb89f6b92b594f50e72b48ea63feb0fa6da702b72686ec92a06c1f553b441",
+      "rebuild_sha256": "b07eb89f6b92b594f50e72b48ea63feb0fa6da702b72686ec92a06c1f553b441",
+      "identical": true
+    },
+    {
+      "file": "textures/paper_basecolor.png",
+      "sha256": "fc64f77590492c33bbc7c60d038d067f5d8f7820e39225f01af409c5fc569d93",
+      "rebuild_sha256": "fc64f77590492c33bbc7c60d038d067f5d8f7820e39225f01af409c5fc569d93",
+      "identical": true
+    },
+    {
+      "file": "textures/paper_normal_gl.png",
+      "sha256": "55f0a19e50fd27d40ea1a591019cce248a0c2969944eccfef1d29de7170ef7a3",
+      "rebuild_sha256": "55f0a19e50fd27d40ea1a591019cce248a0c2969944eccfef1d29de7170ef7a3",
+      "identical": true
+    },
+    {
+      "file": "textures/paper_roughmetal.png",
+      "sha256": "c91035dcc35d61722fc46aef1c605e59f263da1c7d3e6ae27196f84188f415d4",
+      "rebuild_sha256": "c91035dcc35d61722fc46aef1c605e59f263da1c7d3e6ae27196f84188f415d4",
+      "identical": true
+    },
+    {
+      "file": "textures/satin_steel_basecolor.png",
+      "sha256": "f0d948740a02dcbf52482a10da2ff53d67c00fcbb686b1b99f74b611b49d8182",
+      "rebuild_sha256": "f0d948740a02dcbf52482a10da2ff53d67c00fcbb686b1b99f74b611b49d8182",
+      "identical": true
+    },
+    {
+      "file": "textures/satin_steel_normal_gl.png",
+      "sha256": "f5401941592911f4458f6915ac813d3c2c34625806e340525c6e9cb25043dfdb",
+      "rebuild_sha256": "f5401941592911f4458f6915ac813d3c2c34625806e340525c6e9cb25043dfdb",
+      "identical": true
+    },
+    {
+      "file": "textures/satin_steel_roughmetal.png",
+      "sha256": "df736a32398cc92bd89bce8f59e0747e3e8f1c81d07990bf6805ae8c42c34d24",
+      "rebuild_sha256": "df736a32398cc92bd89bce8f59e0747e3e8f1c81d07990bf6805ae8c42c34d24",
+      "identical": true
+    }
+  ],
+  "procedural_texture_regeneration": "PASS: make_textures.py rerun and all generated PNG hashes identical"
+}

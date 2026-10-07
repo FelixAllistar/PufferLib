@@ -1,0 +1,47 @@
+{
+  "source": "swat_asset_catalog_revisions/r005_motel_props/assets.csv",
+  "sha256": "31214afc1aff9830fd419759eb5577282aaf7d0a7610264c0b4daac770ff863a",
+  "catalog_rows": 424,
+  "unique_designs": 319,
+  "original_designs": 315,
+  "new_existing_designs": 4,
+  "related_existing_designs": [
+    {
+      "id": "env:02_household_clutter/tissue_carton",
+      "name": "Printed blue carton with opening and folded tissue"
+    },
+    {
+      "id": "env:02_household_clutter/rotary_telephone",
+      "name": "Brown rotary telephone with separate dial, handset and coiled cord"
+    },
+    {
+      "id": "env:02_household_clutter/twin_bell_alarm_clock",
+      "name": "Green alarm clock with numbered face, bells, striker and feet"
+    },
+    {
+      "id": "env:02_household_clutter/television_remote",
+      "name": "Worn remote with screen, buttons and directional ring"
+    },
+    {
+      "id": "env:06_discarded_clutter/crimped_takeout_tray",
+      "name": "Crimped foil takeout tray with raised ribs, grease and crumbs"
+    },
+    {
+      "id": "env:09_garage_workshop/gw09_socket_rail_tray",
+      "name": "Socket tray + ratchet"
+    },
+    {
+      "id": "env:14_rundown_carnival/cv14_ring_toss",
+      "name": "Ring toss tray"
+    },
+    {
+      "id": "env:01_house/ashtray",
+      "name": "ashtray"
+    },
+    {
+      "id": "env:01_house/bucket",
+      "name": "bucket"
+    }
+  ],
+  "decision": "No insulated closed guestroom ice bucket or handled hospitality service tray found. Generic household bucket is a different object; existing trays are foil takeout, tools, carnival or ashtray. Existing tissue carton, rotary telephone, clock and remote deliberately skipped."
+}

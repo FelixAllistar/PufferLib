@@ -1,0 +1,553 @@
+[
+  {
+    "file": "mb01_double_robe_hook_lod0.glb",
+    "sha256": "c1ffdb22fd4b044943b601a6b6c5423ea7e7f689b7072095d77e9a6573685bb2",
+    "bytes": 938180,
+    "triangles": 532,
+    "export_vertices": 1148,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.05249999836087227,
+        -0.025500000396277755,
+        0.0
+      ],
+      [
+        0.05249999836087227,
+        0.02500000037252903,
+        0.05999999865889549
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.10499999672174454,
+      0.050500000768806785,
+      0.05999999865889549
+    ],
+    "images": [
+      {
+        "name": "satin_steel_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mb01_double_robe_hook_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "hook_contoured_double_cap",
+        "triangles": 84,
+        "normal_tangent_orthogonality_max": 1.4901161193847656e-08
+      },
+      {
+        "name": "hook_square_flange",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "hook_support_arm",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "hook_underside_setscrew",
+        "triangles": 124,
+        "normal_tangent_orthogonality_max": 6.079673767089844e-05
+      },
+      {
+        "name": "hook_wall_gasket",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  },
+  {
+    "file": "mb01_double_robe_hook_lod1.glb",
+    "sha256": "bc167cd6f49b23a2f33b02eb9e7db350b7bdc58e3577010ae65a8400198a278b",
+    "bytes": 900532,
+    "triangles": 180,
+    "export_vertices": 536,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.052219994366168976,
+        -0.02500000037252903,
+        5.287950625643134e-05
+      ],
+      [
+        0.052219994366168976,
+        0.024471208453178406,
+        0.05999999865889549
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.10443998873233795,
+      0.049471208825707436,
+      0.05994711915263906
+    ],
+    "images": [
+      {
+        "name": "satin_steel_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mb01_double_robe_hook_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "hook_contoured_double_cap_LOD1",
+        "triangles": 36,
+        "normal_tangent_orthogonality_max": 7.736682891845703e-05
+      },
+      {
+        "name": "hook_square_flange_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.611248970031738e-05
+      },
+      {
+        "name": "hook_support_arm_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 8.787703700363636e-05
+      },
+      {
+        "name": "hook_wall_gasket_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.308094740845263e-05
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  },
+  {
+    "file": "mb01_wall_toilet_roll_holder_lod0.glb",
+    "sha256": "a7ed684565f4c0ebcb1a02b990da754513fc6616544b526acdb216c6318dd665",
+    "bytes": 2030168,
+    "triangles": 1992,
+    "export_vertices": 3484,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.09250000305473804,
+        -0.08321511745452881,
+        0.0
+      ],
+      [
+        0.09250000305473804,
+        0.052000001072883606,
+        0.14800000190734863
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.1850000061094761,
+      0.13521511852741241,
+      0.14800000190734863
+    ],
+    "images": [
+      {
+        "name": "cardboard_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cardboard_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cardboard_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mb01_wall_toilet_roll_holder_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "holder_cardboard_core",
+        "triangles": 384,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "holder_hanging_paper_tail",
+        "triangles": 44,
+        "normal_tangent_orthogonality_max": 7.387809455394745e-05
+      },
+      {
+        "name": "holder_paper_roll",
+        "triangles": 384,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "holder_spindle",
+        "triangles": 284,
+        "normal_tangent_orthogonality_max": 0.00010031461715698242
+      },
+      {
+        "name": "holder_square_flange_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "holder_square_flange_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "holder_support_arm_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "holder_support_arm_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "holder_underside_setscrew_-1",
+        "triangles": 124,
+        "normal_tangent_orthogonality_max": 6.079673767089844e-05
+      },
+      {
+        "name": "holder_underside_setscrew_1",
+        "triangles": 124,
+        "normal_tangent_orthogonality_max": 6.079673767089844e-05
+      },
+      {
+        "name": "holder_wall_gasket_-1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "holder_wall_gasket_1",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  },
+  {
+    "file": "mb01_wall_toilet_roll_holder_lod1.glb",
+    "sha256": "80dc9841c320f55a6ee9e8f3deaeb501478f7671a41d292e436c3b2743595869",
+    "bytes": 1937588,
+    "triangles": 776,
+    "export_vertices": 1973,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.09250000305473804,
+        -0.08321511745452881,
+        5.287950625643134e-05
+      ],
+      [
+        0.09250000305473804,
+        0.05202547833323479,
+        0.147800013422966
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.1850000061094761,
+      0.1352405957877636,
+      0.14774713391670957
+    ],
+    "images": [
+      {
+        "name": "cardboard_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cardboard_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "cardboard_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "dark_gasket_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mb01_wall_toilet_roll_holder_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "holder_cardboard_core_LOD1",
+        "triangles": 172,
+        "normal_tangent_orthogonality_max": 0.0001022435026243329
+      },
+      {
+        "name": "holder_hanging_paper_tail_LOD1",
+        "triangles": 18,
+        "normal_tangent_orthogonality_max": 4.927045665681362e-05
+      },
+      {
+        "name": "holder_paper_roll_LOD1",
+        "triangles": 172,
+        "normal_tangent_orthogonality_max": 0.00010005652438849211
+      },
+      {
+        "name": "holder_spindle_LOD1",
+        "triangles": 126,
+        "normal_tangent_orthogonality_max": 9.014667011797428e-05
+      },
+      {
+        "name": "holder_square_flange_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.611248970031738e-05
+      },
+      {
+        "name": "holder_square_flange_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.611248970031738e-05
+      },
+      {
+        "name": "holder_support_arm_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.18358564376831e-05
+      },
+      {
+        "name": "holder_support_arm_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.18358564376831e-05
+      },
+      {
+        "name": "holder_wall_gasket_-1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.308094740845263e-05
+      },
+      {
+        "name": "holder_wall_gasket_1_LOD1",
+        "triangles": 48,
+        "normal_tangent_orthogonality_max": 9.308094740845263e-05
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  }
+]

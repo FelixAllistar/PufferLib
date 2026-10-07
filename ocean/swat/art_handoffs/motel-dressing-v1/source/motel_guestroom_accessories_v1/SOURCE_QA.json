@@ -1,0 +1,140 @@
+[
+  {
+    "asset": "mg01_lidded_ice_bucket",
+    "triangles_lod0": 3096,
+    "bounds_blender_xyz_m": [
+      [
+        -0.10159999877214432,
+        -0.10159999877214432,
+        0.0
+      ],
+      [
+        0.10159999877214432,
+        0.10159999877214432,
+        0.20319999754428864
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.20319999754428864,
+      0.20319999754428864,
+      0.20319999754428864
+    ],
+    "parts": [
+      {
+        "name": "bucket_insulated_body",
+        "vertices": 384,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bucket_lid_edge",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bucket_lid_knob",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bucket_lower_trim",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bucket_padded_lid",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bucket_seam_stitches",
+        "vertices": 288,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "bucket_upper_trim",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ],
+    "triangles_lod1": 1614
+  },
+  {
+    "asset": "mg01_hospitality_service_tray",
+    "triangles_lod0": 1360,
+    "bounds_blender_xyz_m": [
+      [
+        -0.1902533322572708,
+        -0.15215519070625305,
+        0.0
+      ],
+      [
+        0.1902533322572708,
+        0.15215519070625305,
+        0.05079999938607216
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.3805066645145416,
+      0.05079999938607216,
+      0.3043103814125061
+    ],
+    "parts": [
+      {
+        "name": "tray_inset_non_slip_mat",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "tray_molded_basin",
+        "vertices": 624,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ],
+    "triangles_lod1": 610
+  }
+]

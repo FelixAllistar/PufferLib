@@ -1,0 +1,54 @@
+[
+  {
+    "file": "me01_concave_wall_bumper_lod0.glb",
+    "actual_variant_metadata": "PASS",
+    "root_parent_ownership": "PASS",
+    "uv1_degenerate_triangles": 0,
+    "uv1_overlap_texels_512": 0,
+    "uv1_covered_texels_512": 125390,
+    "ao_min_max": [
+      0,
+      255
+    ],
+    "texture_limit_px": 512
+  },
+  {
+    "file": "me01_concave_wall_bumper_lod1.glb",
+    "actual_variant_metadata": "PASS",
+    "root_parent_ownership": "PASS",
+    "uv1_degenerate_triangles": 0,
+    "uv1_overlap_texels_512": 0,
+    "uv1_covered_texels_512": 123776,
+    "ao_min_max": [
+      0,
+      255
+    ],
+    "texture_limit_px": 512
+  },
+  {
+    "file": "me01_door_viewer_face_lod0.glb",
+    "actual_variant_metadata": "PASS",
+    "root_parent_ownership": "PASS",
+    "uv1_degenerate_triangles": 0,
+    "uv1_overlap_texels_512": 0,
+    "uv1_covered_texels_512": 131974,
+    "ao_min_max": [
+      0,
+      255
+    ],
+    "texture_limit_px": 512
+  },
+  {
+    "file": "me01_door_viewer_face_lod1.glb",
+    "actual_variant_metadata": "PASS",
+    "root_parent_ownership": "PASS",
+    "uv1_degenerate_triangles": 0,
+    "uv1_overlap_texels_512": 0,
+    "uv1_covered_texels_512": 129078,
+    "ao_min_max": [
+      0,
+      255
+    ],
+    "texture_limit_px": 512
+  }
+]

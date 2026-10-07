@@ -1,0 +1,4 @@
+CC0 1.0 Universal — Original authored mesh geometry, procedural material maps, AO, build scripts and renders in this package are dedicated to the public domain to the extent permitted by law.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Reference vendors' product photographs, names, measurements and documents are used only for visual research. No vendor photograph, CAD, logo, trademark artwork or downloaded mesh is included or relicensed. These are original generic unbranded visual props, not certified products or exact engineering reproductions. No patent, trademark or product-safety rights are granted.

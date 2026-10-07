@@ -1,0 +1,11 @@
+{
+  "status": "No collision authored. Visual-only fixtures.",
+  "engine_files_changed": false,
+  "existing_Room101_door_and_collision_ids_changed": false,
+  "ownership": {
+    "me01_door_viewer_face": "door leaf only",
+    "me01_concave_wall_bumper": "fixed wall only"
+  },
+  "placement": "Mount-contact pivot. Actual engine parent transform must be reviewed by engine owner; no mounting IDs assigned.",
+  "functional_claims": []
+}

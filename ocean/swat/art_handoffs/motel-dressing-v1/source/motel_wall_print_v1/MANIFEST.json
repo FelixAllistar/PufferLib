@@ -1,0 +1,31 @@
+{
+  "schema": "motel_wall_print_v1",
+  "asset_id": "mw01_framed_woodland_print",
+  "name": "Modest framed woodland landscape print",
+  "version": 1,
+  "status": "UNINTEGRATED_CANDIDATE",
+  "triangles": 468,
+  "lod": "LOD0 only; already below 500 triangles",
+  "dimensions_gltf_xyz_m": [
+    0.53,
+    0.43,
+    0.01
+  ],
+  "owner": "Room101_wall_dressing_candidate",
+  "pivot": "Wall contact center at origin; glTF +Y up, front +Z, back/contact plane Z=0. Blender +Z up, front -Y.",
+  "runtime": "exports/mw01_framed_woodland_print_lod0.glb",
+  "source": "motel_wall_print_v1.blend",
+  "rebuild": "build_prop.py",
+  "collision": "No collider supplied or engine writes; render-only proposal",
+  "destruction": "No destruction variant",
+  "placement": "Not integrated; no exact Room101 location proposed or validated",
+  "material_count": 4,
+  "mesh_parts": 7,
+  "license": "See LICENSE.txt: original generated artwork and authored procedural geometry, no imported product mesh/image",
+  "qa": [
+    "SOURCE_QA.json",
+    "GLB_QA.json",
+    "REBUILD_QA.json",
+    "VISUAL_REVIEW.json"
+  ]
+}

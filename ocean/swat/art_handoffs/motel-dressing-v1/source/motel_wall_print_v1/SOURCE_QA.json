@@ -1,0 +1,95 @@
+[
+  {
+    "asset": "mw01_framed_woodland_print",
+    "triangles_lod0": 468,
+    "bounds_blender_xyz_m": [
+      [
+        -0.26499998569488525,
+        -0.009999999776482582,
+        -0.2150000035762787
+      ],
+      [
+        0.26499998569488525,
+        0.0,
+        0.2150000035762787
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.5299999713897705,
+      0.4300000071525574,
+      0.009999999776482582
+    ],
+    "parts": [
+      {
+        "name": "fibreboard_backing",
+        "vertices": 8,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "frame_rail_0",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "frame_rail_1",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "frame_rail_2",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "frame_rail_3",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "print_with_polystyrene_protection",
+        "vertices": 8,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "recessed_hanging_tab",
+        "vertices": 8,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ]
+  }
+]

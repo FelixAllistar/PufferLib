@@ -1,0 +1,17 @@
+{
+  "physical_reference": {
+    "url": "https://www.ikea.com/se/en/p/fiskbo-frame-white-00300386/",
+    "accessed": "2026-10-07",
+    "facts": "40x50 cm picture, 43x53 cm outer frame, 1 cm depth; fibreboard/paper foil, polystyrene front. Used as size/material plausibility reference, not exact product reproduction.",
+    "authored_variation": "Landscape orientation, dark brown wood-look foil, generic original mitered geometry; no brand markings."
+  },
+  "artwork": {
+    "source": "source/landscape_original.png",
+    "method": "OpenAI built-in image_gen",
+    "prompt": "Use case: stylized-concept. Asset type: original flat printed landscape artwork texture for an inexpensive modest motel wall print. Primary request: understated distant low mountain ridges with quiet woodland and a small muted lake, soft overcast sky. Original period-neutral commercial landscape illustration, gently painterly but restrained, desaturated sage greens, grey-blue distant hills and warm pale grey sky. Composition landscape 5:4, full bleed artwork, horizon above middle, unobtrusive and plausible as mass-produced budget wall decor. No frame, no mat, no wall, no room, no perspective, no photographed reflections or lighting, no text, letters, logo, signature or watermark. Do not reference or imitate any specific artist.",
+    "source_sha256": "29b5b354e04066151dd77db7bdc71748e8903c67d3974b16a738d48917d4bca1",
+    "reference_images": [],
+    "runtime_processing": "ImageMagick proportional downsample to maximum 1024 px only; no compositional edit.",
+    "repeatability": "Original generation is stochastic. Byte-exact rebuild uses the supplied frozen original, not re-generation."
+  }
+}

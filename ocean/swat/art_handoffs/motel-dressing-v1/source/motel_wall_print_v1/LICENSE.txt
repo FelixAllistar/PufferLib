@@ -1,0 +1,3 @@
+Original procedural geometry/scripts/material channels authored for this project. To the extent any applicable rights exist, these authored assets are offered under CC0-1.0.
+Original landscape image generated with the OpenAI built-in image generation tool, using the included prompt and no reference images or named artists. No third-party image was downloaded or incorporated. No guarantee is made that AI-generated output is copyrightable or unique.
+The IKEA source URL is a dimension/material reference only; no product photography, mesh, branding, or text is included in the deliverable.

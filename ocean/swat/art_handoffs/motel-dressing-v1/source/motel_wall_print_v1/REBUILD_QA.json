@@ -1,0 +1,21 @@
+{
+  "scope": "Byte-exact runtime GLB and all texture outputs rebuilt in separate directory from supplied frozen inputs. Source .blend serialization is not claimed byte-exact.",
+  "glb_sha256": "94adb307e33e146b52803a672c54251aa9e6d767b9e8de8e763d0dbc74775cad",
+  "rebuild_glb_sha256": "94adb307e33e146b52803a672c54251aa9e6d767b9e8de8e763d0dbc74775cad",
+  "glb_byte_exact": true,
+  "textures_byte_exact": {
+    "backing_roughmetal.png": true,
+    "mw01_framed_woodland_print_ao.png": true,
+    "hanger_basecolor.png": true,
+    "backing_normal_gl.png": true,
+    "print_protected_roughmetal.png": true,
+    "backing_basecolor.png": true,
+    "hanger_normal_gl.png": true,
+    "frame_foil_roughmetal.png": true,
+    "hanger_roughmetal.png": true,
+    "print_protected_basecolor.png": true,
+    "frame_foil_normal_gl.png": true,
+    "frame_foil_basecolor.png": true,
+    "print_protected_normal_gl.png": true
+  }
+}

@@ -1,0 +1,3 @@
+Original geometry, procedural textures, scripts, and documentation in this package are dedicated to the public domain under CC0 1.0 Universal.
+https://creativecommons.org/publicdomain/zero/1.0/
+Vendor references are for dimensions and visual study only. No vendor photographs, BIM files, proprietary mesh, branding, or other vendor content are distributed.

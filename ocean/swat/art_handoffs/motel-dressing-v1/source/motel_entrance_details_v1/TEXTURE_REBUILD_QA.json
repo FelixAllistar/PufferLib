@@ -1,0 +1,66 @@
+{
+  "independent_script_run": "make_textures.py in a new empty directory",
+  "all_byte_exact": true,
+  "files": [
+    {
+      "file": "dark_gasket_basecolor.png",
+      "byte_exact": true,
+      "sha256": "1929679922996fbf9e85b21531c68f003aef9998636efefe02ef029c8423746c"
+    },
+    {
+      "file": "dark_gasket_normal_gl.png",
+      "byte_exact": true,
+      "sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b"
+    },
+    {
+      "file": "dark_gasket_roughmetal.png",
+      "byte_exact": true,
+      "sha256": "25f52d482e9ebc5e1bb5c030bd5f935ea7da168ad5ed602537710f0df70d74d1"
+    },
+    {
+      "file": "lens_dark_basecolor.png",
+      "byte_exact": true,
+      "sha256": "9cf0ea60a0c04fd8c740c359c2a353bdb7655e3888a042dd4989e3598e231128"
+    },
+    {
+      "file": "lens_dark_normal_gl.png",
+      "byte_exact": true,
+      "sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b"
+    },
+    {
+      "file": "lens_dark_roughmetal.png",
+      "byte_exact": true,
+      "sha256": "b277f9f778ca456b6548ecbb712e6f786d14ef53ae83930797d3b90c5f737f31"
+    },
+    {
+      "file": "rubber_grey_basecolor.png",
+      "byte_exact": true,
+      "sha256": "8b7c6d274c71628a69b0a9086a971939d84156e745987dd8075b5850e5d4c8dc"
+    },
+    {
+      "file": "rubber_grey_normal_gl.png",
+      "byte_exact": true,
+      "sha256": "b853875105120e9df78809b8f5ebb57203241b0253e946b77a7d660c6f4e5a6b"
+    },
+    {
+      "file": "rubber_grey_roughmetal.png",
+      "byte_exact": true,
+      "sha256": "646b298125b92a4aa9e137e7e8e2ad1acb343b1f7af35ccb65f08cefc20e7685"
+    },
+    {
+      "file": "satin_steel_basecolor.png",
+      "byte_exact": true,
+      "sha256": "f0d948740a02dcbf52482a10da2ff53d67c00fcbb686b1b99f74b611b49d8182"
+    },
+    {
+      "file": "satin_steel_normal_gl.png",
+      "byte_exact": true,
+      "sha256": "f5401941592911f4458f6915ac813d3c2c34625806e340525c6e9cb25043dfdb"
+    },
+    {
+      "file": "satin_steel_roughmetal.png",
+      "byte_exact": true,
+      "sha256": "df736a32398cc92bd89bce8f59e0747e3e8f1c81d07990bf6805ae8c42c34d24"
+    }
+  ]
+}

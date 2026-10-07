@@ -1,0 +1,8 @@
+{
+  "catalog": "swat_asset_catalog_revisions/r005_motel_props/catalog.json",
+  "catalog_sha256": "98d6fad66238d6c407b15a561a72ff151e8d59eb3f785d5e900c05bedf818b85",
+  "matching_asset": "env:06_discarded_clutter/snapped_picture_frame",
+  "existing_description": "Broken 30 cm wood frame with splayed rail, torn blank backing and loose shards",
+  "equivalent_intact_wall_print_found": false,
+  "decision": "One new intact framed landscape print candidate; broken discard is not interchangeable. No canonical catalog writes."
+}

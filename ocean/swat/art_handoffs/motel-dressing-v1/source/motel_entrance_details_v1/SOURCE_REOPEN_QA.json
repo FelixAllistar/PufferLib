@@ -1,0 +1,83 @@
+{
+  "status": "PASS",
+  "blender_version": "4.3.2",
+  "root_count": 2,
+  "parts": {
+    "me01_door_viewer_face": 3,
+    "me01_concave_wall_bumper": 5
+  },
+  "root_identity": true,
+  "scale_length": 1,
+  "images": [
+    {
+      "image": "dark_gasket_basecolor.png",
+      "relative_path": "//textures/dark_gasket_basecolor.png",
+      "exists": true
+    },
+    {
+      "image": "dark_gasket_normal_gl.png",
+      "relative_path": "//textures/dark_gasket_normal_gl.png",
+      "exists": true
+    },
+    {
+      "image": "dark_gasket_roughmetal.png",
+      "relative_path": "//textures/dark_gasket_roughmetal.png",
+      "exists": true
+    },
+    {
+      "image": "lens_dark_basecolor.png",
+      "relative_path": "//textures/lens_dark_basecolor.png",
+      "exists": true
+    },
+    {
+      "image": "lens_dark_normal_gl.png",
+      "relative_path": "//textures/lens_dark_normal_gl.png",
+      "exists": true
+    },
+    {
+      "image": "lens_dark_roughmetal.png",
+      "relative_path": "//textures/lens_dark_roughmetal.png",
+      "exists": true
+    },
+    {
+      "image": "me01_concave_wall_bumper_AO",
+      "relative_path": "//textures/me01_concave_wall_bumper_ao.png",
+      "exists": true
+    },
+    {
+      "image": "me01_door_viewer_face_AO",
+      "relative_path": "//textures/me01_door_viewer_face_ao.png",
+      "exists": true
+    },
+    {
+      "image": "rubber_grey_basecolor.png",
+      "relative_path": "//textures/rubber_grey_basecolor.png",
+      "exists": true
+    },
+    {
+      "image": "rubber_grey_normal_gl.png",
+      "relative_path": "//textures/rubber_grey_normal_gl.png",
+      "exists": true
+    },
+    {
+      "image": "rubber_grey_roughmetal.png",
+      "relative_path": "//textures/rubber_grey_roughmetal.png",
+      "exists": true
+    },
+    {
+      "image": "satin_steel_basecolor.png",
+      "relative_path": "//textures/satin_steel_basecolor.png",
+      "exists": true
+    },
+    {
+      "image": "satin_steel_normal_gl.png",
+      "relative_path": "//textures/satin_steel_normal_gl.png",
+      "exists": true
+    },
+    {
+      "image": "satin_steel_roughmetal.png",
+      "relative_path": "//textures/satin_steel_roughmetal.png",
+      "exists": true
+    }
+  ]
+}

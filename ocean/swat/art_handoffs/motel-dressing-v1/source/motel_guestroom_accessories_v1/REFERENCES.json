@@ -1,0 +1,8 @@
+{
+  "retrieved_utc": "2026-10-07",
+  "policy": "Manufacturer references establish realistic size and construction only. No reference photographs, logos, meshes, or licensed textures are redistributed.",
+  "references": [
+    {"asset":"mg01_lidded_ice_bucket","manufacturer":"Hapco Elmar","product":"Executive 7310 round insulated guestroom ice bucket","url":"https://hapcoelmar.com/product/3-qt-round-with-vinyl-padded-lid-small-metal-knob-and-built-in-insulating-liner-2/","published_size_inches":[8,8],"interpretation":"Generic original 203.2 mm diameter x 203.2 mm overall height envelope; manufacturer lists 8 x 8 without further dimension diagram. Knob, trims and proportions are original, not CAD-matched.","construction_basis":"Vinyl wrapped body, padded lid and small metal knob; fixed closed decorative asset."},
+    {"asset":"mg01_hospitality_service_tray","manufacturer":"Hospitality 1 Source","product":"TRCFB in-room service tray","url":"https://hospitality1.com/wp-content/uploads/2023/02/Service-Trays.pdf","published_dimensions_inches":{"length":15,"width":12,"height":2},"target_blender_xyz_m":[0.381,0.3048,0.0508],"construction_basis":"Molded plastic tray with real carry apertures; generic rounded basin and inset mat are original."}
+  ]
+}

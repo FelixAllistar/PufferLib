@@ -1,0 +1,28 @@
+[
+  {
+    "file": "textures/mg01_lidded_ice_bucket_ao.png",
+    "size": [
+      512,
+      512
+    ],
+    "min": 0,
+    "max": 255,
+    "mean": 139.0352668762207,
+    "nonwhite_pixels": 143118,
+    "color_space": "linear/non-color",
+    "method": "original geometry Cycles AO bake, separate packed UV1"
+  },
+  {
+    "file": "textures/mg01_hospitality_service_tray_ao.png",
+    "size": [
+      512,
+      512
+    ],
+    "min": 0,
+    "max": 255,
+    "mean": 200.16961669921875,
+    "nonwhite_pixels": 91897,
+    "color_space": "linear/non-color",
+    "method": "original geometry Cycles AO bake, separate packed UV1"
+  }
+]

@@ -1,0 +1,220 @@
+[
+  {
+    "asset": "mb01_wall_toilet_roll_holder",
+    "triangles_lod0": 1992,
+    "bounds_blender_xyz_m": [
+      [
+        -0.0925000011920929,
+        -0.14800000190734863,
+        -0.08321511745452881
+      ],
+      [
+        0.0925000011920929,
+        0.0,
+        0.052000001072883606
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.1850000023841858,
+      0.13521511852741241,
+      0.14800000190734863
+    ],
+    "parts": [
+      {
+        "name": "holder_cardboard_core",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_hanging_paper_tail",
+        "vertices": 24,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_paper_roll",
+        "vertices": 192,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_spindle",
+        "vertices": 144,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_square_flange_-1",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_square_flange_1",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_support_arm_-1",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_support_arm_1",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_underside_setscrew_-1",
+        "vertices": 64,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_underside_setscrew_1",
+        "vertices": 64,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_wall_gasket_-1",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "holder_wall_gasket_1",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ],
+    "triangles_lod1": 776
+  },
+  {
+    "asset": "mb01_double_robe_hook",
+    "triangles_lod0": 532,
+    "bounds_blender_xyz_m": [
+      [
+        -0.05249999836087227,
+        -0.05999999865889549,
+        -0.025499999523162842
+      ],
+      [
+        0.05249999836087227,
+        0.0,
+        0.02500000037252903
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.10499999672174454,
+      0.05049999989569187,
+      0.05999999865889549
+    ],
+    "parts": [
+      {
+        "name": "hook_contoured_double_cap",
+        "vertices": 44,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "hook_square_flange",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "hook_support_arm",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "hook_underside_setscrew",
+        "vertices": 64,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "hook_wall_gasket",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ],
+    "triangles_lod1": 180
+  }
+]
