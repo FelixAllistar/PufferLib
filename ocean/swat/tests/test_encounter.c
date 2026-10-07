@@ -16,10 +16,30 @@ static void fixture(void) {
 static void navigation(void) {
     fixture(); int wall=swat_world_box(&sim.world,(b3Pos){3,1.5f,0},swat_v(.1f,1.5f,12.5f),SWAT_DRYWALL,30);
     b3Pos next; assert(!swat_navigation_next(&sim,(b3Pos){0,0,0},(b3Pos){6,0,0},&next));
+    assert(sim.navigation && sim.navigation->built);
     assert(swat_world_damage(&sim.world,wall,100));
     assert(swat_navigation_next(&sim,(b3Pos){0,0,0},(b3Pos){6,0,0},&next));
     swat_sim_close(&sim);
+    assert(!sim.navigation);
     puts("PASS navigation: actual static clearance blocks a route; authoritative destruction invalidates the cache and opens it");
+}
+static void navigation_lifecycle(void) {
+    SwatConfig config=swat_default_config(); config.mission=SWAT_RANGE; config.randomize=false;
+    swat_sim_init(&sim,config,73);
+    static SwatMap map;
+    for(int i=0;i<3;i++) {
+        assert(!sim.navigation);
+        assert(!swat_navigation_crouch(&sim,(b3Pos){0,0,0}));
+        b3Pos next; (void)swat_navigation_next(&sim,(b3Pos){0,0,0},(b3Pos){1,0,0},&next);
+        assert(sim.navigation && sim.navigation->built);
+        swat_capture_map(&sim,1,&map); swat_apply_map(&sim,&map);
+        assert(!sim.navigation);
+        (void)swat_navigation_next(&sim,(b3Pos){0,0,0},(b3Pos){1,0,0},&next);
+        assert(sim.navigation);
+        swat_sim_reset(&sim);
+    }
+    swat_sim_close(&sim); swat_sim_close(&sim);
+    puts("PASS navigation lifecycle: lazy allocation, map replacement, reset and repeated close");
 }
 static void orders_and_escort(void) {
     fixture(); assert(swat_sim_set_player(&sim,1,true)); sim.actors[3].mind.bot=true; sim.actors[3].mind.team=1;
@@ -62,4 +82,4 @@ static void perception_evidence_roe(void) {
     swat_sim_close(&replica); swat_sim_close(&sim);
     puts("PASS encounter: no hidden-position pursuit, weapon evidence exactly once, unlawful force record, public state/debrief replication and truncation rejection");
 }
-int main(void) { navigation(); orders_and_escort(); perception_evidence_roe(); return 0; }
+int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); perception_evidence_roe(); return 0; }

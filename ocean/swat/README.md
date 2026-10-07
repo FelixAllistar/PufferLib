@@ -843,6 +843,27 @@ verify training, loading and Windows playback, not capable movement policy quali
 
 ### Simulation performance and physics comparison
 
+Movement courses allocate a navigation grid only if a route is actually requested;
+ordinary movement training never needs it. Suspect courses contain the learner
+alone. Their movement step shares the gameplay controller, door interaction,
+collision world, 60 Hz tick and four solver substeps, while skipping unused combat,
+device and footstep bookkeeping. Gameplay and the combat task use the full step.
+Observation/action dimensions and existing movement checkpoints remain compatible.
+
+The 7 October pass reduces `SwatSim` from 810,016 to 372,744 bytes: 854 MiB less
+reserved across 2,048 courses. A 4,500-decision before/after trace exactly matches
+observations, rewards and terminals; a further 6,000 decisions compare the movement
+step with full gameplay stepping. Navigation allocation, reset, map replacement,
+door/breach routing and cleanup have separate regression coverage.
+
+Two repeated benchmarks visiting every world each decision averaged **15,986 to
+20,008 decisions/s** (+25%). A short native Puffer job with the existing 2,048
+environments and horizon 64 finished in **57.23 to 43.10 seconds**, with peak
+process RSS **2.27 to 1.43 GiB**. These short local runs include startup and have
+WSL/background variability. A 512-environment/horizon-256 trial reduced memory
+further but had slower rollout intervals, so the user's batching is retained.
+Raw results are in [the movement iteration report](benchmarks/movement-iteration-2026-10-07.json).
+
 Character clearance casts exclude the querying actor in the broad phase, while
 physical collision masks continue to include walls, other actors and projectiles.
 Movement training skips automatic door targeting when there is no closed door in
@@ -852,10 +873,13 @@ are unchanged. A 7,500-decision before/after trace matched exact observations,
 rewards, terminal results and serialized game snapshots; another 1,000 clearance
 sweeps matched the previous callback filter exactly, including other actors.
 
-On this four-core WSL workstation, two adjacent full movement-simulation benchmark
+In the earlier 6 October pass on this four-core WSL workstation, two adjacent movement-simulation benchmark
 runs averaged **24,939 decisions/s before and 33,551 after** (35% higher throughput).
 These measurements include sensors and episode resets, but exclude the neural
 policy, rollout transfers and PPO updates. They are not complete training SPS.
+That older benchmark stepped each world repeatedly while its data stayed in cache.
+The benchmark now defaults to `--schedule rollout`, visiting every world on each
+decision; `--schedule env` reproduces the older scheduling for historical comparisons.
 Your normal `bash build.sh swat --float` / `./puffer train` uses these optimizations.
 No config change or alternative trainer is needed.
 

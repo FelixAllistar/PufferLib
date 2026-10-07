@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "motel.h"
 #include "storefront.h"
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct Writer { unsigned char* p; size_t left; bool ok; } Writer;
@@ -486,6 +487,8 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
     }
 }
 void swat_apply_map(SwatSim* sim,const SwatMap* map) {
+    free(sim->navigation);
+    sim->navigation=NULL;
 #pragma omp critical(swat_world_lifecycle)
     {
         swat_world_close(&sim->world); memset(sim,0,sizeof(*sim));

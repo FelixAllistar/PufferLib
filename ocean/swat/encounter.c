@@ -1,5 +1,6 @@
 #include "sim.h"
 #include "locomotion.h"
+#include <stdlib.h>
 #include <string.h>
 
 static b3Pos cell_position(const SwatNavigation* nav,int index) {
@@ -78,7 +79,7 @@ static unsigned char navigation_object_state(const SwatObject* o) {
     return (unsigned char)(o->active ? 1+(o->door && o->wedge_owner>=0) : 0);
 }
 static void navigation_build(SwatSim* s) {
-    SwatNavigation* nav=&s->navigation;
+    SwatNavigation* nav=s->navigation;
     bool full=!nav->built || nav->count!=s->world.count;
     unsigned char cells[SWAT_NAV_CELLS]={0},edges[SWAT_NAV_CELLS]={0};
     if(full) {
@@ -150,10 +151,15 @@ static int nearest(const SwatNavigation* nav,b3Pos point) {
     return best;
 }
 bool swat_navigation_crouch(const SwatSim* s,b3Pos position) {
-    int at=nearest(&s->navigation,position); return at>=0 && !(s->navigation.walkable[at]&2);
+    if(!s->navigation || !s->navigation->built) return false;
+    int at=nearest(s->navigation,position); return at>=0 && !(s->navigation->walkable[at]&2);
 }
 bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {
-    SwatNavigation* nav=&s->navigation;
+    if(!s->navigation) {
+        s->navigation=calloc(1,sizeof(*s->navigation));
+        if(!s->navigation) return false;
+    }
+    SwatNavigation* nav=s->navigation;
     if(!nav->built || nav->generation!=s->world.generation || nav->count!=s->world.count) navigation_build(s);
     int from=nearest(nav,start),to=nearest(nav,goal); if(from<0 || to<0) return false;
     int32_t parent[SWAT_NAV_NODES]; uint16_t queue[SWAT_NAV_NODES];

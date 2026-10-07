@@ -3,6 +3,7 @@
 #include "motel.h"
 #include "storefront.h"
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 SwatConfig swat_default_config(void) {
@@ -41,6 +42,8 @@ void swat_sim_reset(SwatSim* s) {
     SwatConfig config = s->config;
     uint32_t rng = s->rng;
     int episode = s->episode+1;
+    free(s->navigation);
+    s->navigation=NULL;
 #pragma omp critical(swat_world_lifecycle)
     {
         swat_world_close(&s->world);
@@ -141,6 +144,8 @@ void swat_sim_reset(SwatSim* s) {
 }
 
 void swat_sim_close(SwatSim* s) {
+    free(s->navigation);
+    s->navigation=NULL;
 #pragma omp critical(swat_world_lifecycle)
     { swat_world_close(&s->world); }
 }
@@ -525,49 +530,52 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     swat_controller_recoil(c,swat_arsenal_def(&a->arsenal,a->arsenal.active)->recoil*SWAT_RAD,shot.recoil_yaw);
 }
 
-void swat_sim_step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS]) {
+static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],bool movement_only) {
     if (s->end != SWAT_RUNNING) return;
     memset(&s->events,0,sizeof(s->events));
     s->tick++;
     SwatInput inputs[SWAT_MAX_ACTORS]; memcpy(inputs,requested,sizeof(inputs));
-    swat_devices_inputs(s,inputs);
-    swat_encounter_orders(s,inputs);
-    swat_overwatch_inputs(s,inputs);
-    for(int i=0;i<s->actor_count;i++) if(s->actors[i].alive) swat_actor_equipment(s,i,&inputs[i]);
+    if(!movement_only) {
+        swat_devices_inputs(s,inputs);
+        swat_encounter_orders(s,inputs);
+        swat_overwatch_inputs(s,inputs);
+        for(int i=0;i<s->actor_count;i++) if(s->actors[i].alive) swat_actor_equipment(s,i,&inputs[i]);
+    }
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_actor_interact(s,i,&inputs[i]);
     swat_world_step_doors(&s->world);
-    swat_traps_step(s);
+    if(!movement_only) swat_traps_step(s);
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_controller_pre_step(&s->actors[i].controller,&inputs[i],swat_weapons_busy(&s->actors[i].arsenal));
     b3World_Step(s->world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);
-    swat_projectiles_step(s);
-    swat_devices_step(s);
+    if(!movement_only) { swat_projectiles_step(s); swat_devices_step(s); }
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_controller_post_step(&s->actors[i].controller,&inputs[i]);
-    for(int i=0;i<s->actor_count;i++) if(s->actors[i].alive) {
-        SwatActor* a=&s->actors[i];
-        b3Pos feet=swat_body_feet_position(&a->controller.body);
-        float distance=b3Distance(feet,a->last_foot_position);
-        a->last_foot_position=feet;
-        if(a->controller.body.onGround && distance<0.3f) a->foot_distance+=distance;
-        if(a->foot_distance>=0.85f) {
-            a->foot_distance=0;
-            float strength=a->controller.body.crouched ? 0.12f : (a->controller.sprinting ? 0.8f : 0.45f);
-            SwatHit ground=swat_world_ray(&s->world,b3OffsetPos(feet,swat_v(0,.2f,0)),swat_v(0,-1,0),.6f,a->controller.body.body);
-            SwatMaterial surface=ground.kind==SWAT_HIT_WORLD && ground.index>=0 ? s->world.objects[ground.index].material : SWAT_CONCRETE;
-            swat_sound_surface(&s->sounds,s->tick,i,SWAT_SOUND_STEP,b3OffsetPos(feet,swat_v(0,0.1f,0)),strength*swat_material(surface)->footstep_gain,16,surface);
+    if(!movement_only) {
+        for(int i=0;i<s->actor_count;i++) if(s->actors[i].alive) {
+            SwatActor* a=&s->actors[i];
+            b3Pos feet=swat_body_feet_position(&a->controller.body);
+            float distance=b3Distance(feet,a->last_foot_position);
+            a->last_foot_position=feet;
+            if(a->controller.body.onGround && distance<0.3f) a->foot_distance+=distance;
+            if(a->foot_distance>=0.85f) {
+                a->foot_distance=0;
+                float strength=a->controller.body.crouched ? 0.12f : (a->controller.sprinting ? 0.8f : 0.45f);
+                SwatHit ground=swat_world_ray(&s->world,b3OffsetPos(feet,swat_v(0,.2f,0)),swat_v(0,-1,0),.6f,a->controller.body.body);
+                SwatMaterial surface=ground.kind==SWAT_HIT_WORLD && ground.index>=0 ? s->world.objects[ground.index].material : SWAT_CONCRETE;
+                swat_sound_surface(&s->sounds,s->tick,i,SWAT_SOUND_STEP,b3OffsetPos(feet,swat_v(0,0.1f,0)),strength*swat_material(surface)->footstep_gain,16,surface);
+            }
         }
+        for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive && s->actors[i].role != SWAT_CIVILIAN)
+            swat_actor_weapon(s,i,&inputs[i]);
+        s->totals.hostile_damage += s->events.hostile_damage;
+        s->totals.civilian_damage += s->events.civilian_damage;
+        s->totals.officer_damage += s->events.officer_damage;
+        s->totals.shots += s->events.shots;
+        s->totals.destroyed += s->events.destroyed;
+        s->totals.hostile_down += s->events.hostile_down;
+        swat_encounter_step(s);
     }
-    for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive && s->actors[i].role != SWAT_CIVILIAN)
-        swat_actor_weapon(s,i,&inputs[i]);
-    s->totals.hostile_damage += s->events.hostile_damage;
-    s->totals.civilian_damage += s->events.civilian_damage;
-    s->totals.officer_damage += s->events.officer_damage;
-    s->totals.shots += s->events.shots;
-    s->totals.destroyed += s->events.destroyed;
-    s->totals.hostile_down += s->events.hostile_down;
-    swat_encounter_step(s);
     int officers=0,living=0,extracted=0,fallen=0;
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i];
@@ -584,6 +592,13 @@ void swat_sim_step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS]
     else if(s->config.mission!=SWAT_RANGE && living && swat_sim_hostiles(s)==0 && extracted==living &&
         (s->config.mission==SWAT_ANNEX || !swat_sim_unsecured(s))) s->end=SWAT_SUCCESS;
     else if (s->tick >= s->config.max_ticks) s->end = SWAT_TIMEOUT;
+}
+
+void swat_sim_step_inputs(SwatSim* s,const SwatInput inputs[SWAT_MAX_ACTORS]) {
+    step_inputs(s,inputs,false);
+}
+void swat_sim_step_movement(SwatSim* s,const SwatInput inputs[SWAT_MAX_ACTORS]) {
+    step_inputs(s,inputs,true);
 }
 
 void swat_sim_step(SwatSim* s, const SwatInput* player) {

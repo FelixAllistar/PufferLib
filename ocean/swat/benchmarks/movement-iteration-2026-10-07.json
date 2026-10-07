@@ -1,0 +1,354 @@
+{
+  "date": "2026-10-07",
+  "hardware": {
+    "cpu": "Intel Core i5-7400, four cores",
+    "gpu": "GeForce GTX 1060 3GB",
+    "platform": "WSL2 Linux"
+  },
+  "changes": [
+    "Lazy navigation allocation for all simulations; movement courses never allocate a grid",
+    "Single learner in suspect navigation courses, retaining actor slot and weapon seed",
+    "Shared controller/door/physics stepping with unused combat/device/footstep bookkeeping omitted in movement courses",
+    "Simulation benchmark defaults to trainer-like rollout scheduling"
+  ],
+  "simulation_bytes": {
+    "before": 810016,
+    "after": 372744,
+    "saved_at_2048_envs": 895533056
+  },
+  "equivalence": {
+    "decisions": 4500,
+    "compared": "Exact float observations, rewards and integer terminal codes",
+    "sha256": "054d18ef6c2e18a729e3bc35752b3f974f5b2cff18d6c4e6ca9d8361951186f6",
+    "full_step_regression_decisions": 6000,
+    "scope": "Both roles, all five courses, goal-directed and random actions, repeated resets; game snapshots intentionally differ in unused bookkeeping and removed parked officer"
+  },
+  "runs": {
+    "before-final-1": [
+      {
+        "stage": 0,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1660,
+        "successes": 1660,
+        "seconds": 4.176902,
+        "cpu_seconds": 13.985719,
+        "decisions_per_second": 23535,
+        "checksum": "288dab7e",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 1,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 2427,
+        "successes": 2411,
+        "seconds": 4.653615,
+        "cpu_seconds": 16.693848,
+        "decisions_per_second": 21124,
+        "checksum": "a0f3edae",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 2,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1024,
+        "successes": 1024,
+        "seconds": 4.392331,
+        "cpu_seconds": 15.81046,
+        "decisions_per_second": 22381,
+        "checksum": "e82975be",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 3,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1655,
+        "successes": 1655,
+        "seconds": 5.725593,
+        "cpu_seconds": 20.983357,
+        "decisions_per_second": 17169,
+        "checksum": "b2d007bf",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 4,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1785,
+        "successes": 1785,
+        "seconds": 5.739837,
+        "cpu_seconds": 20.728117,
+        "decisions_per_second": 17127,
+        "checksum": "b101309e",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      }
+    ],
+    "before-final-2": [
+      {
+        "stage": 0,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1660,
+        "successes": 1660,
+        "seconds": 5.559649,
+        "cpu_seconds": 21.141417,
+        "decisions_per_second": 17682,
+        "checksum": "288dab7e",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 1,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 2427,
+        "successes": 2411,
+        "seconds": 6.519694,
+        "cpu_seconds": 22.580425,
+        "decisions_per_second": 15078,
+        "checksum": "a0f3edae",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 2,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1024,
+        "successes": 1024,
+        "seconds": 5.913829,
+        "cpu_seconds": 21.699524,
+        "decisions_per_second": 16623,
+        "checksum": "e82975be",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 3,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1655,
+        "successes": 1655,
+        "seconds": 9.336236,
+        "cpu_seconds": 34.003645,
+        "decisions_per_second": 10529,
+        "checksum": "b2d007bf",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      },
+      {
+        "stage": 4,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1785,
+        "successes": 1785,
+        "seconds": 9.476018,
+        "cpu_seconds": 29.363893,
+        "decisions_per_second": 10374,
+        "checksum": "b101309e",
+        "schedule": "rollout",
+        "sim_bytes": 810016
+      }
+    ],
+    "after-final-1": [
+      {
+        "stage": 0,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1660,
+        "successes": 1660,
+        "seconds": 3.744595,
+        "cpu_seconds": 13.043139,
+        "decisions_per_second": 26252,
+        "checksum": "288dab7e",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 1,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 2427,
+        "successes": 2411,
+        "seconds": 3.475347,
+        "cpu_seconds": 12.354883,
+        "decisions_per_second": 28286,
+        "checksum": "a0f3edae",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 2,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1024,
+        "successes": 1024,
+        "seconds": 3.473468,
+        "cpu_seconds": 12.469513,
+        "decisions_per_second": 28301,
+        "checksum": "e82975be",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 3,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1655,
+        "successes": 1655,
+        "seconds": 6.444423,
+        "cpu_seconds": 21.662915,
+        "decisions_per_second": 15254,
+        "checksum": "b2d007bf",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 4,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1785,
+        "successes": 1785,
+        "seconds": 6.007811,
+        "cpu_seconds": 19.399564,
+        "decisions_per_second": 16363,
+        "checksum": "b101309e",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      }
+    ],
+    "after-final-2": [
+      {
+        "stage": 0,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1660,
+        "successes": 1660,
+        "seconds": 4.255176,
+        "cpu_seconds": 14.863532,
+        "decisions_per_second": 23102,
+        "checksum": "288dab7e",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 1,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 2427,
+        "successes": 2411,
+        "seconds": 4.707637,
+        "cpu_seconds": 17.304927,
+        "decisions_per_second": 20882,
+        "checksum": "a0f3edae",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 2,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1024,
+        "successes": 1024,
+        "seconds": 4.455998,
+        "cpu_seconds": 16.833531,
+        "decisions_per_second": 22061,
+        "checksum": "e82975be",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 3,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1655,
+        "successes": 1655,
+        "seconds": 5.722204,
+        "cpu_seconds": 20.327875,
+        "decisions_per_second": 17179,
+        "checksum": "b2d007bf",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      },
+      {
+        "stage": 4,
+        "envs": 256,
+        "threads": 4,
+        "decisions": 98304,
+        "resets": 1785,
+        "successes": 1785,
+        "seconds": 6.844561,
+        "cpu_seconds": 21.282343,
+        "decisions_per_second": 14362,
+        "checksum": "b101309e",
+        "schedule": "rollout",
+        "sim_bytes": 372744
+      }
+    ]
+  },
+  "native": {
+    "command": "./puffer train --train.total_timesteps=393216 --base.eval_episodes=0",
+    "existing_config": {
+      "envs": 2048,
+      "horizon": 64,
+      "threads": 4,
+      "async": 1
+    },
+    "before": {
+      "elapsed_seconds": 57.23,
+      "peak_rss_kib": 2376316
+    },
+    "after": {
+      "elapsed_seconds": 43.1,
+      "peak_rss_kib": 1504092
+    },
+    "smaller_batch_trial": {
+      "envs": 512,
+      "horizon": 256,
+      "elapsed_seconds": 39.24,
+      "peak_rss_kib": 802152,
+      "decision": "Retain user batching: slower rollout intervals despite lower startup cost"
+    }
+  },
+  "limitations": [
+    "Simulation benchmark excludes network inference, CUDA copies and PPO",
+    "Native measurements are short jobs including startup, not long-run throughput or trained-policy quality",
+    "Async trainer final learner-only SPS is not environment throughput and is excluded",
+    "512-world trial changes recurrent horizon and reset frequency, so is not a learning-quality comparison",
+    "Physics precision, timestep and solver settings were not reduced; this pass does not implement GPU physics"
+  ],
+  "verification": {
+    "core_tests": 21,
+    "asan_ubsan_tests": 3,
+    "native_parallel_reset_episodes": 4096,
+    "native_weight_and_inference_tests": "passed",
+    "native_train_smoke_runs": 3
+  }
+}

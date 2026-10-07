@@ -99,11 +99,12 @@ void swat_training_reset(void* pointer,uint32_t seed,int role,int stage) {
         }
     }
     env->actor=role==SWAT_SUSPECT ? 1 : 0;
-    swat_sim_spawn_actor(s,0,SWAT_OFFICER,env->actor ? (b3Pos){-7,0,6} : start,0);
-    if(env->actor) swat_sim_spawn_actor(s,1,SWAT_SUSPECT,start,0);
+    // Solo navigation needs only the learner. Retain its actor slot and weapon
+    // seed so officer/suspect checkpoints and presentation bindings stay valid.
+    swat_sim_spawn_actor(s,env->actor,(SwatRole)role,start,0);
     s->actor_count=env->actor+1; s->actors[env->actor].controller.yaw=(swat_rand01(&s->rng)-.5f)*2*SWAT_PI;
     SwatInput inputs[SWAT_MAX_ACTORS]; for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=swat_neutral_input();
-    for(int t=0;t<8;t++) swat_sim_step_inputs(s,inputs);
+    for(int t=0;t<8;t++) swat_sim_step_movement(s,inputs);
     s->tick=0; env->distance=b3Distance(swat_body_feet_position(&s->actors[env->actor].controller.body),env->goal);
 }
 void* swat_training_create(uint32_t seed,int role,int stage) {
@@ -124,7 +125,7 @@ int swat_training_step(void* pointer,const float* action,float* observation,floa
             SwatHit hit=swat_context_hit(&env->sim,env->actor,1.7f);
             inputs[env->actor].interact=hit.kind==SWAT_HIT_WORLD && env->sim.world.objects[hit.index].door && !env->sim.world.objects[hit.index].door_open && !actor->last_interact;
         }
-        swat_sim_step_inputs(&env->sim,inputs);
+        swat_sim_step_movement(&env->sim,inputs);
     }
     env->steps++; b3Pos feet=swat_body_feet_position(&env->sim.actors[env->actor].controller.body); float distance=b3Distance(feet,env->goal);
     *reward=env->progress_reward*(env->distance-distance)-env->step_cost; env->distance=distance;

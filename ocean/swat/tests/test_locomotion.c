@@ -7,6 +7,9 @@ static void curriculum(void) {
     assert(!swat_training_create(1,2,0) && !swat_training_create(1,0,5));
     for(int stage=0;stage<5;stage++) for(int role=0;role<2;role++) {
         void* env=swat_training_create(73,role,stage); assert(env);
+        SwatSim* sim=swat_training_sim(env); int learners=0;
+        for(int i=0;i<sim->actor_count;i++) learners+=sim->actors[i].present;
+        assert(learners==1 && sim->actors[swat_training_actor(env)].role==(SwatRole)role);
         float obs[32],initial[32],again[32],reward=0,actions[6]={2,1,1,0,0,0};
         swat_training_observe(env,initial);
         for(int i=0;i<32;i++) assert(isfinite(initial[i]));
@@ -24,6 +27,7 @@ static void curriculum(void) {
             assert(isfinite(reward)); for(int i=0;i<32;i++) assert(isfinite(again[i]));
         }
         assert(status==1 && reward>1);
+        assert(!swat_training_sim(env)->navigation);
         assert(swat_training_step(env,actions,again,&reward)==2 && reward==0);
         swat_training_close(env);
     }
@@ -53,8 +57,45 @@ static void clearance_filter(void) {
     }
     puts("PASS 1000 character sweeps: broad-phase self exclusion matches callback filtering exactly and still hits other actors");
 }
+static void movement_step_equivalence(void) {
+    uint32_t random=19; const int sizes[]=SWAT_LOCOMOTION_ACTION_SIZES;
+    for(int stage=0;stage<5;stage++) for(int role=0;role<2;role++) {
+        void* course=swat_training_create(73,role,stage);
+        void* reference=swat_training_create(73,role,stage);
+        float obs[32],expected[32],reward,action[6]; int episodes=0;
+        swat_training_observe(course,obs);
+        for(int step=0;step<600;step++) {
+            float error=atan2f(obs[13],obs[12]);
+            action[0]=error<-.07f ? 0 : error<-.015f ? 1 : error>.07f ? 4 : error>.015f ? 3 : 2;
+            action[1]=fabsf(error)<.9f ? 2 : 1; action[2]=1;
+            action[3]=obs[26]<.65f && obs[21]>obs[26]+.08f; action[4]=0; action[5]=1;
+            if(step>=300) for(int j=0;j<6;j++) action[j]=swat_random(&random)%sizes[j];
+            SwatSim* sim=swat_training_sim(reference); int actor=swat_training_actor(reference);
+            SwatInput inputs[SWAT_MAX_ACTORS];
+            for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=swat_neutral_input();
+            inputs[actor]=swat_locomotion_decode(action);
+            for(int frame=0;frame<4;frame++) {
+                SwatHit hit=swat_context_hit(sim,actor,1.7f);
+                inputs[actor].interact=hit.kind==SWAT_HIT_WORLD && sim->world.objects[hit.index].door &&
+                    !sim->world.objects[hit.index].door_open && !sim->actors[actor].last_interact;
+                swat_sim_step_inputs(sim,inputs);
+            }
+            int terminal=swat_training_step(course,action,obs,&reward);
+            swat_training_observe(reference,expected);
+            assert(!memcmp(obs,expected,sizeof(obs)));
+            assert(sim->tick==swat_training_sim(course)->tick && sim->end==swat_training_sim(course)->end);
+            if(terminal) {
+                uint32_t seed=73+(++episodes);
+                swat_training_reset(course,seed,role,stage); swat_training_reset(reference,seed,role,stage);
+                swat_training_observe(course,obs);
+            }
+        }
+        swat_training_close(course); swat_training_close(reference);
+    }
+    puts("PASS 6000 movement decisions: optimized courses exactly match full game stepping across both roles and all five stages");
+}
 int main(int argc,char** argv) {
-    clearance_filter(); curriculum();
+    clearance_filter(); curriculum(); movement_step_equivalence();
     puts("PASS locomotion: authoritative stairs/crouch/door/breach traversal for both roles, deterministic resets, terminal reward once");
     return 0;
 }
