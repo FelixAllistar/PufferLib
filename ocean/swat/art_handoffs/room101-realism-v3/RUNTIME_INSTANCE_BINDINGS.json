@@ -1,0 +1,387 @@
+{
+  "baseline_engine_report": "5.0 local a406c933b",
+  "engine_handoff_sha256": "7fcf7d1588ac7ebd5a6bc0f5c62d3331dbb7f5d9d4868f5e22888605926c0361",
+  "engine_message_ts": "1791360364.192779",
+  "source_basis": "metres Z-up; exported basis is metres Y-up",
+  "records": [
+    {
+      "file": "room_window_insert_016_v3.glb",
+      "source_instance": "INSTANCE__room_window_insert__016",
+      "sha256": "7ce9e66a972b20c0d58e35053708ee5384e9a8e9284537424f16467f82422d09",
+      "bytes": 4579400,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 16,
+      "engine_tag_index": 17,
+      "original_asset_index": 10,
+      "original_assembly": {
+        "object": "INSTANCE__room_window_insert__016",
+        "asset_id": "mc15_room_window_insert",
+        "position_source_m": [
+          -5.2,
+          -0.018,
+          0.88
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{10,{-5.2f,0.88f,0.018f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,false},"
+    },
+    {
+      "file": "through_wall_ac_017_v3.glb",
+      "source_instance": "INSTANCE__through_wall_ac__017",
+      "sha256": "ce85308a71de992660505da75e3a4c374200083200e858049e850c72bb118e0f",
+      "bytes": 436628,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 17,
+      "engine_tag_index": 18,
+      "original_asset_index": 18,
+      "original_assembly": {
+        "object": "INSTANCE__through_wall_ac__017",
+        "asset_id": "mc15_through_wall_ac",
+        "position_source_m": [
+          -5.2,
+          -0.16,
+          0.2
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{18,{-5.2f,0.2f,0.16f},{1.0f,1.0f,1.0f},0.0f,SWAT_STEEL,false,false},"
+    },
+    {
+      "file": "room_number_plaque_018_v3.glb",
+      "source_instance": "INSTANCE__room_number_plaque__018",
+      "sha256": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+      "bytes": 178240,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 18,
+      "engine_tag_index": 19,
+      "original_asset_index": 17,
+      "original_assembly": {
+        "object": "INSTANCE__room_number_plaque__018",
+        "asset_id": "mc15_room_number_plaque",
+        "position_source_m": [
+          -6.4,
+          -0.11,
+          1.92
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02c_FIXTURES_FURNISHINGS",
+        "number_variant": 101
+      },
+      "original_engine_instance_recipe": "{17,{-6.4f,1.92f,0.11f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,false},"
+    },
+    {
+      "file": "room_floor_4x6m_008_v3.glb",
+      "source_instance": "INSTANCE__room_floor_4x6m__008",
+      "sha256": "817a8820e746f99f698a0f4ffe302a6c190390119fd3dbd258a4192f8f41e9e0",
+      "bytes": 4710856,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 8,
+      "engine_tag_index": 9,
+      "original_asset_index": 4,
+      "original_assembly": {
+        "object": "INSTANCE__room_floor_4x6m__008",
+        "asset_id": "mc15_room_floor_4x6m",
+        "position_source_m": [
+          -6,
+          3,
+          0
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{4,{-6.0f,0.0f,-3.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_CONCRETE,false,false},"
+    },
+    {
+      "file": "end_wall_6m_104_v3.glb",
+      "source_instance": "INSTANCE__end_wall_6m__104",
+      "sha256": "227c8ffd45d6acf8743c68ec3376e6aa816d6c9d2e3a532aa43e17078c5da2cd",
+      "bytes": 4249060,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 104,
+      "engine_tag_index": 105,
+      "original_asset_index": 2,
+      "original_assembly": {
+        "object": "INSTANCE__end_wall_6m__104",
+        "asset_id": "mc15_end_wall_6m",
+        "position_source_m": [
+          -8,
+          3,
+          0
+        ],
+        "yaw_source_deg": 90.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{2,{-8.0f,0.0f,-3.0f},{1.0f,1.0f,1.0f},1.5707963f,SWAT_PLASTER,false,false},"
+    },
+    {
+      "file": "end_wall_6m_105_v3.glb",
+      "source_instance": "INSTANCE__end_wall_6m__105",
+      "sha256": "a541bb7e013575856514a45ee35bf577ee61525190c731b5c3b4f8cf42eac8b5",
+      "bytes": 4249060,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 105,
+      "engine_tag_index": 106,
+      "original_asset_index": 2,
+      "original_assembly": {
+        "object": "INSTANCE__end_wall_6m__105",
+        "asset_id": "mc15_end_wall_6m",
+        "position_source_m": [
+          -4,
+          3,
+          0
+        ],
+        "yaw_source_deg": 90.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{2,{-4.0f,0.0f,-3.0f},{1.0f,1.0f,1.0f},1.5707963f,SWAT_PLASTER,false,false},"
+    },
+    {
+      "file": "bathroom_partition_4m_019_v3.glb",
+      "source_instance": "INSTANCE__bathroom_partition_4m__019",
+      "sha256": "b3f9bf6aa362a1d28e893b3bc67ba18fc1f63e0f80d0b8745e65886a76e1f327",
+      "bytes": 4256564,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 19,
+      "engine_tag_index": 20,
+      "original_asset_index": 22,
+      "original_assembly": {
+        "object": "INSTANCE__bathroom_partition_4m__019",
+        "asset_id": "mc15_bathroom_partition_4m",
+        "position_source_m": [
+          -6,
+          4,
+          0
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{22,{-6.0f,0.0f,-4.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_PLASTER,false,false},"
+    },
+    {
+      "file": "flat_roof_4x6m_009_v3.glb",
+      "source_instance": "INSTANCE__flat_roof_4x6m__009",
+      "sha256": "06c3a25d1573871a4eb36d86f0e01373773fe01ac1c8cf1bdde2154553fe7b6f",
+      "bytes": 4285748,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 9,
+      "engine_tag_index": 10,
+      "original_asset_index": 5,
+      "original_assembly": {
+        "object": "INSTANCE__flat_roof_4x6m__009",
+        "asset_id": "mc15_flat_roof_4x6m",
+        "position_source_m": [
+          -6,
+          3,
+          2.8
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02b_ROOFS_toggle_cutaway"
+      },
+      "original_engine_instance_recipe": "{5,{-6.0f,2.8f,-3.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,true},"
+    },
+    {
+      "file": "mattress_dirty_022_v3.glb",
+      "source_instance": "REUSE__mattress_dirty__022",
+      "sha256": "a6aa41be9758e0c99f93e9b396f0f38de81bf606f61c7fb2abf5aa0f58b7ed9b",
+      "bytes": 5422624,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 22,
+      "engine_tag_index": 23,
+      "original_asset_index": 25,
+      "original_assembly": {
+        "object": "REUSE__mattress_dirty__022",
+        "asset_id": "mattress_dirty",
+        "position_source_m": [
+          -5.17,
+          2.52,
+          0.389
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          0.6800000071525574,
+          0.9800000190734863,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{25,{-5.17f,0.389f,-2.52f},{0.68000001f,1.0f,0.98000002f},0.0f,SWAT_WOOD,false,false},"
+    },
+    {
+      "file": "folded_bedsheet_stack_027_v3.glb",
+      "source_instance": "REUSE__folded_bedsheet_stack__027",
+      "sha256": "3c1fddeae26cec0f5ba388c43e587e43bc2aff2334b483cfb599de9b6a50e07d",
+      "bytes": 4265564,
+      "root_datum": "original identity local datum; apply existing instance transform once",
+      "collider": "no supplied collider; retain original compiled collision and damage ID",
+      "source_assembly_index": 27,
+      "engine_tag_index": 28,
+      "original_asset_index": 36,
+      "original_assembly": {
+        "object": "REUSE__folded_bedsheet_stack__027",
+        "asset_id": "lb11_folded_bedsheet_stack",
+        "position_source_m": [
+          -5.17,
+          2.5,
+          0.658
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{36,{-5.17f,0.658f,-2.5f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,false,false},"
+    },
+    {
+      "file": "facade_optional_detail_overlay_v3.glb",
+      "source_owner": "INSTANCE__room_facade_4m__012",
+      "sha256": "2c7e14054a7fdf22c52720cfdb94f723f256d104e035c8b85d2b86bb6f5db937",
+      "bytes": 102548,
+      "replaces": "corresponding v2 optional overlay only",
+      "selected_nodes": [
+        "R101_casing_fixing",
+        "R101_casing_fixing.001",
+        "R101_casing_fixing.002",
+        "R101_casing_fixing.003",
+        "R101_casing_fixing.004",
+        "R101_casing_fixing.005",
+        "R101_flush_threshold_plate",
+        "R101_head_casing",
+        "R101_hinge_casing",
+        "R101_hinge_outer_caulk",
+        "R101_latch_casing",
+        "R101_latch_outer_caulk"
+      ],
+      "collider": "none; same parent removal/motion ownership",
+      "source_assembly_index": 12,
+      "engine_tag_index": 13,
+      "original_asset_index": 0,
+      "original_assembly": {
+        "object": "INSTANCE__room_facade_4m__012",
+        "asset_id": "mc15_room_facade_4m",
+        "position_source_m": [
+          -6,
+          0,
+          0
+        ],
+        "yaw_source_deg": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02a_STRUCTURE"
+      },
+      "original_engine_instance_recipe": "{0,{-6.0f,0.0f,0.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_PLASTER,false,false},"
+    },
+    {
+      "file": "door_optional_detail_overlay_v3.glb",
+      "source_owner": "INSTANCE__room_door_leaf__015",
+      "sha256": "63a1daeb6bb5a3c9fe2cc960af63dbf91b01794a5017247303e54b138693fd3b",
+      "bytes": 263652,
+      "replaces": "corresponding v2 optional overlay only",
+      "selected_nodes": [
+        "R101_kickplate_fixing",
+        "R101_kickplate_fixing.001",
+        "R101_kickplate_fixing.002",
+        "R101_kickplate_fixing.003",
+        "R101_latch_fixing",
+        "R101_latch_fixing.001",
+        "R101_panel_edge",
+        "R101_panel_edge.001",
+        "R101_panel_edge.002",
+        "R101_panel_edge.003",
+        "R101_panel_edge.004",
+        "R101_panel_edge.005",
+        "R101_panel_edge.006",
+        "R101_panel_edge.007"
+      ],
+      "collider": "none; same parent removal/motion ownership",
+      "source_assembly_index": 15,
+      "engine_tag_index": 16,
+      "original_asset_index": 9,
+      "original_assembly": {
+        "object": "INSTANCE__room_door_leaf__015",
+        "asset_id": "mc15_room_door_leaf",
+        "position_source_m": [
+          -7.74,
+          0,
+          0
+        ],
+        "yaw_source_deg": 100.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": false,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "original_engine_instance_recipe": "{9,{-7.74f,0.0f,0.0f},{1.0f,1.0f,1.0f},0.0f,SWAT_WOOD,true,false},"
+    }
+  ]
+}

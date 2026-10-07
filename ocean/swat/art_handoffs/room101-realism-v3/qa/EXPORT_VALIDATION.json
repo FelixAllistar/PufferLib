@@ -1,0 +1,1300 @@
+{
+  "status": "passed",
+  "files": [
+    {
+      "file": "bathroom_partition_4m_019_v3.glb",
+      "bytes": 4256564,
+      "sha256": "b3f9bf6aa362a1d28e893b3bc67ba18fc1f63e0f80d0b8745e65886a76e1f327",
+      "triangles": 264,
+      "meshes": 1,
+      "nodes": 1,
+      "bounds_model_Yup_m": [
+        [
+          -2.0,
+          0.0,
+          -0.08500000089406967
+        ],
+        [
+          2.0,
+          2.799999952316284,
+          0.08500000089406967
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "cream",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "ce1a8158b7006c1dd072cc2ffc65e6b7d8216a75e883659ca0b79d8859297c8a"
+        },
+        {
+          "name": "tile",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "ba48c91493e0554cf34cb3dcf210340bd2b1b40925a52c5ead8b1a26bef386eb"
+        },
+        {
+          "name": "wood",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "a6f99b03fed6b68272960d4a97d244728b8ba0af1a7a33dcd2663453702af6cc"
+        },
+        {
+          "name": "white_plaster_02_runtime_normal",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a"
+        },
+        {
+          "name": "white_plaster_02_restrained_basecolor",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167"
+        },
+        {
+          "name": "white_plaster_02_restrained_roughness",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c"
+        }
+      ],
+      "materials": [
+        {
+          "name": "MC15_cream",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8199999928474426,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 0
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_tile",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8999999761581421,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_wood",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8299999833106995,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 2
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_SCAN_fine_plaster",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.3499999940395355
+          },
+          "metallicRoughnessTexture": {
+            "index": 5
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "door_optional_detail_overlay_v3.glb",
+      "bytes": 263652,
+      "sha256": "63a1daeb6bb5a3c9fe2cc960af63dbf91b01794a5017247303e54b138693fd3b",
+      "triangles": 1768,
+      "meshes": 14,
+      "nodes": 14,
+      "bounds_model_Yup_m": [
+        [
+          0.0799999968148768,
+          0.06699999976138253,
+          0.03140000021085143
+        ],
+        [
+          0.9999999790452421,
+          1.8759999834001064,
+          0.05360000020425166
+        ]
+      ],
+      "envelope": null,
+      "images": [
+        {
+          "name": "door_paint_normal",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28"
+        },
+        {
+          "name": "door_paint_basecolor",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9"
+        },
+        {
+          "name": "door_paint_roughness",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "c12bff6b000dc42f87bbcd592113bc2c8e354ed95d0fba6b461864c1bf530c4c"
+        }
+      ],
+      "materials": [
+        {
+          "name": "R101_satin_metal",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.30000001192092896,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_sage_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "end_wall_6m_104_v3.glb",
+      "bytes": 4249060,
+      "sha256": "227c8ffd45d6acf8743c68ec3376e6aa816d6c9d2e3a532aa43e17078c5da2cd",
+      "triangles": 95,
+      "meshes": 1,
+      "nodes": 1,
+      "bounds_model_Yup_m": [
+        [
+          -3.0,
+          0.0,
+          -0.09000000357627869
+        ],
+        [
+          3.0,
+          2.799999952316284,
+          0.11300000548362732
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "stucco",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "afe86e66dea745088a231e25525f658665af27ac0d4d1dc7a67e93e7df5bbedf"
+        },
+        {
+          "name": "concrete_dark",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "67cd557c42b7779064b9c91928f88b8b2672e5f49914191a3a39c0deec32fcc7"
+        },
+        {
+          "name": "repair",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "73ab07a9300312603981e11eed3142fed2936782b73dbf9f59aee4e2fb4489c1"
+        },
+        {
+          "name": "white_plaster_02_runtime_normal",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a"
+        },
+        {
+          "name": "white_plaster_02_restrained_basecolor",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167"
+        },
+        {
+          "name": "white_plaster_02_restrained_roughness",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c"
+        }
+      ],
+      "materials": [
+        {
+          "name": "MC15_stucco",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9599999785423279,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 0
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_concrete_dark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9700000286102295,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_repair",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9399999976158142,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 2
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_SCAN_fine_plaster",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.3499999940395355
+          },
+          "metallicRoughnessTexture": {
+            "index": 5
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "end_wall_6m_105_v3.glb",
+      "bytes": 4249060,
+      "sha256": "a541bb7e013575856514a45ee35bf577ee61525190c731b5c3b4f8cf42eac8b5",
+      "triangles": 95,
+      "meshes": 1,
+      "nodes": 1,
+      "bounds_model_Yup_m": [
+        [
+          -3.0,
+          0.0,
+          -0.09000000357627869
+        ],
+        [
+          3.0,
+          2.799999952316284,
+          0.11300000548362732
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "stucco",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "afe86e66dea745088a231e25525f658665af27ac0d4d1dc7a67e93e7df5bbedf"
+        },
+        {
+          "name": "concrete_dark",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "67cd557c42b7779064b9c91928f88b8b2672e5f49914191a3a39c0deec32fcc7"
+        },
+        {
+          "name": "repair",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "73ab07a9300312603981e11eed3142fed2936782b73dbf9f59aee4e2fb4489c1"
+        },
+        {
+          "name": "white_plaster_02_runtime_normal",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a"
+        },
+        {
+          "name": "white_plaster_02_restrained_basecolor",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167"
+        },
+        {
+          "name": "white_plaster_02_restrained_roughness",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c"
+        }
+      ],
+      "materials": [
+        {
+          "name": "MC15_stucco",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9599999785423279,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 0
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_concrete_dark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9700000286102295,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_repair",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9399999976158142,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 2
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_SCAN_fine_plaster",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.3499999940395355
+          },
+          "metallicRoughnessTexture": {
+            "index": 5
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "facade_optional_detail_overlay_v3.glb",
+      "bytes": 102548,
+      "sha256": "2c7e14054a7fdf22c52720cfdb94f723f256d104e035c8b85d2b86bb6f5db937",
+      "triangles": 1392,
+      "meshes": 12,
+      "nodes": 12,
+      "bounds_model_Yup_m": [
+        [
+          -1.8554999723564833,
+          -0.0045999998692423105,
+          -0.05000000074505806
+        ],
+        [
+          -0.5445000038016587,
+          2.3139998987317085,
+          0.15000000223517418
+        ]
+      ],
+      "envelope": null,
+      "images": [],
+      "materials": [
+        {
+          "name": "R101_satin_metal",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.30000001192092896,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_cream_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.36000001430511475,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_rubber_seal",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8199999928474426,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "flat_roof_4x6m_009_v3.glb",
+      "bytes": 4285748,
+      "sha256": "06c3a25d1573871a4eb36d86f0e01373773fe01ac1c8cf1bdde2154553fe7b6f",
+      "triangles": 168,
+      "meshes": 1,
+      "nodes": 1,
+      "bounds_model_Yup_m": [
+        [
+          -2.0,
+          -0.019999995827674866,
+          -3.1474997997283936
+        ],
+        [
+          2.0,
+          0.2199999988079071,
+          3.1524999141693115
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "cream",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "ce1a8158b7006c1dd072cc2ffc65e6b7d8216a75e883659ca0b79d8859297c8a"
+        },
+        {
+          "name": "concrete_dark",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "67cd557c42b7779064b9c91928f88b8b2672e5f49914191a3a39c0deec32fcc7"
+        },
+        {
+          "name": "teal",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "29965ae6c354c311ec8d88df84326e166b32c651c505c364fc8667dc205015d8"
+        },
+        {
+          "name": "ochre",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "ffe7f32d59b5307d7eaedfe9963c12e38667611892b0337563767f334886139f"
+        },
+        {
+          "name": "white_plaster_02_runtime_normal",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a"
+        },
+        {
+          "name": "white_plaster_02_restrained_basecolor",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167"
+        },
+        {
+          "name": "white_plaster_02_restrained_roughness",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "ac686efd732077eb3e322e606717fd95b45c47517d42d86b1cce7177716d5d1c"
+        }
+      ],
+      "materials": [
+        {
+          "name": "MC15_cream",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8199999928474426,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 0
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_concrete_dark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9700000286102295,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_teal",
+          "metallicFactor": 0.11999999731779099,
+          "roughnessFactor": 0.8100000023841858,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 2
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_ochre",
+          "metallicFactor": 0.10000000149011612,
+          "roughnessFactor": 0.8199999928474426,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 3
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_SCAN_fine_plaster",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 4,
+            "scale": 0.3499999940395355
+          },
+          "metallicRoughnessTexture": {
+            "index": 6
+          },
+          "baseColorTexture": {
+            "index": 5
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "folded_bedsheet_stack_027_v3.glb",
+      "bytes": 4265564,
+      "sha256": "3c1fddeae26cec0f5ba388c43e587e43bc2aff2334b483cfb599de9b6a50e07d",
+      "triangles": 388,
+      "meshes": 1,
+      "nodes": 1,
+      "bounds_model_Yup_m": [
+        [
+          -0.23742148280143738,
+          0.0,
+          -0.17382186651229858
+        ],
+        [
+          0.23742148280143738,
+          0.15042652189731598,
+          0.17382186651229858
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "linen_normal_gl",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9"
+        },
+        {
+          "name": "linen_basecolor",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb"
+        },
+        {
+          "name": "linen_roughness",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985"
+        }
+      ],
+      "materials": [
+        {
+          "name": "R101V3_bed_linen",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0,
+            "scale": 0.1599999964237213
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "mattress_dirty_022_v3.glb",
+      "bytes": 5422624,
+      "sha256": "a6aa41be9758e0c99f93e9b396f0f38de81bf606f61c7fb2abf5aa0f58b7ed9b",
+      "triangles": 3284,
+      "meshes": 5,
+      "nodes": 5,
+      "bounds_model_Yup_m": [
+        [
+          -0.6790000200271606,
+          0.014812052249908447,
+          -0.9790000319480896
+        ],
+        [
+          0.6790000200271606,
+          0.42214998602867126,
+          0.9790000319480896
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "linen_normal_gl",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9"
+        },
+        {
+          "name": "blanket_basecolor",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "147d9087cba420e773d7bde38ba8ab461e030388af0f83ec15125a6cbff7ad72"
+        },
+        {
+          "name": "linen_roughness",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985"
+        },
+        {
+          "name": "linen_basecolor",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "f7b4390130c40f74c58a8d313eb3b7277d8f9196b2fcf6910bc893e830d2c1bb"
+        }
+      ],
+      "materials": [
+        {
+          "name": "R101V3_folded_blanket",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0,
+            "scale": 0.23999999463558197
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_bed_linen",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.1599999964237213
+          },
+          "metallicRoughnessTexture": {
+            "index": 5
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "room_floor_4x6m_008_v3.glb",
+      "bytes": 4710856,
+      "sha256": "817a8820e746f99f698a0f4ffe302a6c190390119fd3dbd258a4192f8f41e9e0",
+      "triangles": 200,
+      "meshes": 1,
+      "nodes": 1,
+      "bounds_model_Yup_m": [
+        [
+          -2.0,
+          -0.10000000149011612,
+          -3.0
+        ],
+        [
+          2.0,
+          0.006500000134110451,
+          3.0
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "concrete",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "d88360ca693bb62cd787ebf7ee91d073a2d377d56c3665d2800565b41dac7f49"
+        },
+        {
+          "name": "tile",
+          "size": [
+            192,
+            192
+          ],
+          "mode": "RGB",
+          "sha256": "ba48c91493e0554cf34cb3dcf210340bd2b1b40925a52c5ead8b1a26bef386eb"
+        },
+        {
+          "name": "carpet_normal_gl",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "34ab4613ae1ce68fc0bfa62a9dd8da5c0935fd8f80df3beb745bd7f2521a7c30"
+        },
+        {
+          "name": "carpet_ao-carpet_roughness",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "018900da1891572d3e2a3ad2192ec87bf0eea3565b46e23779f8e3bcfe1c8305"
+        },
+        {
+          "name": "carpet_basecolor",
+          "size": [
+            1024,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "9b2a9aba9ca9b82d8211a56d643146a718d31449673f6f6efc349e0bc70514d3"
+        }
+      ],
+      "materials": [
+        {
+          "name": "MC15_concrete",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.9399999976158142,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 0
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "MC15_tile",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8999999761581421,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_carpet",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 2,
+            "scale": 0.18000000715255737
+          },
+          "metallicRoughnessTexture": {
+            "index": 3
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": {
+            "index": 3,
+            "strength": 0.30000001192092896
+          },
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "room_number_plaque_018_v3.glb",
+      "bytes": 178240,
+      "sha256": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+      "triangles": 132,
+      "meshes": 3,
+      "nodes": 3,
+      "bounds_model_Yup_m": [
+        [
+          -0.1599999964237213,
+          -0.08500000089406967,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.08500000089406967,
+          0.03180000011807335
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "door_paint_normal",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28"
+        },
+        {
+          "name": "door_paint_basecolor",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9"
+        },
+        {
+          "name": "door_paint_roughness",
+          "size": [
+            512,
+            512
+          ],
+          "mode": "RGB",
+          "sha256": "c12bff6b000dc42f87bbcd592113bc2c8e354ed95d0fba6b461864c1bf530c4c"
+        },
+        {
+          "name": "plaque101_normal_gl",
+          "size": [
+            1024,
+            544
+          ],
+          "mode": "RGB",
+          "sha256": "9dcb14168b63e12f144389aaf94a50cf9aa498031d0694847ecccdf5461ddf7e"
+        },
+        {
+          "name": "plaque101_basecolor",
+          "size": [
+            1024,
+            544
+          ],
+          "mode": "RGB",
+          "sha256": "8b008dea1ac38eb62569f43200bc223a7b48094b31a20e19d80b51a288cc734c"
+        },
+        {
+          "name": "plaque101_roughness",
+          "size": [
+            1024,
+            544
+          ],
+          "mode": "RGB",
+          "sha256": "80ec2f7d4a432cda07a0a6fb0e21a007daafa9fb2e82bb993b5205045434c59b"
+        }
+      ],
+      "materials": [
+        {
+          "name": "R101_satin_metal",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.30000001192092896,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_sage_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_painted_101",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 3
+          },
+          "metallicRoughnessTexture": {
+            "index": 5
+          },
+          "baseColorTexture": {
+            "index": 4
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "room_window_insert_016_v3.glb",
+      "bytes": 4579400,
+      "sha256": "7ce9e66a972b20c0d58e35053708ee5384e9a8e9284537424f16467f82422d09",
+      "triangles": 7588,
+      "meshes": 25,
+      "nodes": 25,
+      "bounds_model_Yup_m": [
+        [
+          -1.034999966621399,
+          -0.008499999530613422,
+          -0.06499999761581421
+        ],
+        [
+          1.034999966621399,
+          1.2999999523162842,
+          0.1850000023841858
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [
+        {
+          "name": "linen_normal_gl",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "26a38791dd7113e0677123177c5810dfc76ff7e2b6bf6ef0f8ec5ef086a0efb9"
+        },
+        {
+          "name": "curtain_basecolor",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "5de3796c05e73f84273c0ea07ec1cdd67e376ffe15bddaec84b645fac55b1f4f"
+        },
+        {
+          "name": "linen_roughness",
+          "size": [
+            1022,
+            1024
+          ],
+          "mode": "RGB",
+          "sha256": "2e44e419cb6120396aeb2bcb21f1b49b454d63bf2ba26a9c819a5f3aa9c15985"
+        }
+      ],
+      "materials": [
+        {
+          "name": "R101V3_curtain_linen",
+          "metallicFactor": 0,
+          "roughnessFactor": 1,
+          "normalTexture": {
+            "index": 0,
+            "scale": 0.20000000298023224
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          },
+          "baseColorTexture": {
+            "index": 1
+          },
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_satin_aluminum",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.3700000047683716,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_black_gasket",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.800000011920929,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_opaque_glazing_compatibility",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.17000000178813934,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101_cream_enamel",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.36000001430511475,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    },
+    {
+      "file": "through_wall_ac_017_v3.glb",
+      "bytes": 436628,
+      "sha256": "ce85308a71de992660505da75e3a4c374200083200e858049e850c72bb118e0f",
+      "triangles": 6092,
+      "meshes": 36,
+      "nodes": 36,
+      "bounds_model_Yup_m": [
+        [
+          -0.5049999952316284,
+          -0.04000002145767212,
+          -0.1925000101327896
+        ],
+        [
+          0.5049999952316284,
+          0.5600000023841858,
+          0.19600000604987144
+        ]
+      ],
+      "envelope": {
+        "max_outside_m": 0.0,
+        "passed_2um": true
+      },
+      "images": [],
+      "materials": [
+        {
+          "name": "R101V3_satin_aluminum",
+          "metallicFactor": 1,
+          "roughnessFactor": 0.3700000047683716,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_vent_recess",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.8500000238418579,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        },
+        {
+          "name": "R101V3_enamel_housing",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.4300000071525574,
+          "normalTexture": null,
+          "metallicRoughnessTexture": null,
+          "baseColorTexture": null,
+          "occlusionTexture": null,
+          "alphaMode": "OPAQUE"
+        }
+      ]
+    }
+  ],
+  "total_bytes": 36999944,
+  "total_triangles": 21466,
+  "unique_embedded_image_hashes": 26,
+  "estimated_unique_RGBA8_full_mips_MiB": 72.80208333333333,
+  "estimated_repeated_RGBA8_full_mips_MiB": 152.54166666666666,
+  "memory_note": "Planning estimate only, assumes RGBA8 + full mip chain. Actual GPU allocation/deduplication/performance must be measured by engine.",
+  "checks": [
+    "GLB headers/accessors/indices",
+    "finite positions/UVs",
+    "unit vertex normals",
+    "every embedded image <=1024px",
+    "new scanned/textured surfaces carry basecolor,+Y normal and packed metallic-roughness",
+    "all materials OPAQUE alpha1",
+    "named pane/frame/curtain hierarchy",
+    "complete transformed core model envelopes within original bounds 2um tolerance"
+  ],
+  "not_checked": [
+    "Native engine gameplay/render integration",
+    "AI/collision semantics",
+    "actual graphics performance",
+    "lighting parity"
+  ]
+}

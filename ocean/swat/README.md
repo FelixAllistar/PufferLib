@@ -136,8 +136,11 @@ Original character specular/gloss maps now separate cloth, gloves and hard gear
 instead of assigning the entire body one rough finish; see [CHARACTER_ART.md](CHARACTER_ART.md).
 Frame limits are applied on change, eliminating the per-frame timer-log spam.
 
-The player-nearest room has a shadow map; other room lights use room
-bounds to limit their reach. This remains an authored preview lighting model,
+Every room has a stable shadow-atlas tile. Architecture depths are cached per
+room and refreshed when nearby doors or geometry change; moving silhouettes are
+composited over those depths every four ticks. Walking between rooms or backing
+away no longer switches neighboring room shadows off. Room bounds still limit
+each light's reach. This remains an authored preview lighting model,
 with no baked global illumination or physical fixtures yet. Both immediate
 geometry and imported door/prop models receive lighting. The HUD remains
 unmodified. For comparison, `SWAT_LIGHTING=0 ./swat play` restores unlit shading;

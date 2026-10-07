@@ -1,0 +1,108 @@
+[
+  {
+    "owner": "INSTANCE__room_window_insert__016",
+    "action": "remove_cosmetic_faces",
+    "faces": 286,
+    "reason": "Replace box-slat curtains and single meeting rail, retaining source frame, sill and opaque pane geometry"
+  },
+  {
+    "owner": "INSTANCE__room_window_insert__016",
+    "action": "remove_cosmetic_faces",
+    "faces": 52,
+    "reason": "Split original opaque panes into named child meshes without moving them or changing visibility/collision ownership"
+  },
+  {
+    "owner": "INSTANCE__room_window_insert__016",
+    "action": "continuous_pleats_sash_track_latch_gaskets",
+    "glazing": "OPAQUE compatibility preserved; curtains behind pane and reviewable only from interior",
+    "reference": "Milgard A250 slider and Hunter Douglas hospitality pinch-pleat construction",
+    "outer_envelope_change": "none intended; validation checks aggregate candidate against original bounds"
+  },
+  {
+    "owner": "INSTANCE__through_wall_ac__017",
+    "action": "remove_cosmetic_faces",
+    "faces": 553,
+    "reason": "Replace overscale grille/louvers and cosmetic rust polygon; retain cabinet/flange and authority"
+  },
+  {
+    "owner": "INSTANCE__through_wall_ac__017",
+    "action": "folded_louvre_grille_and_fasteners",
+    "reference": "GE RAB71B 42-inch PTAC sleeve construction only; not a GE product replica",
+    "scope": "Source 1.01x.399x.60m envelope/pivot retained; no wall opening, electrical system, drainage behavior or collider added"
+  },
+  {
+    "owner": "INSTANCE__room_number_plaque__018",
+    "action": "painted_typography",
+    "font": "DejaVu Sans Condensed Bold, included Bitstream license",
+    "engine_instruction": "Replace v2 plaque mesh and REMOVE v2 plaque_optional_detail_overlay, otherwise old physical numerals duplicate the paint. V3 plaque GLB includes its mounting screws."
+  },
+  {
+    "owner": "INSTANCE__room_floor_4x6m__008",
+    "action": "interior_material_faces_only",
+    "changed_polygon_indices": [
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "geometry": "all original vertex positions and topology unchanged",
+    "adjacent_faces": "Unselected faces retain original material and UV"
+  },
+  {
+    "owner": "INSTANCE__end_wall_6m__104",
+    "action": "interior_material_faces_only",
+    "changed_polygon_indices": [
+      0
+    ],
+    "geometry": "all original vertex positions and topology unchanged",
+    "adjacent_faces": "Unselected faces retain original material and UV"
+  },
+  {
+    "owner": "INSTANCE__end_wall_6m__105",
+    "action": "interior_material_faces_only",
+    "changed_polygon_indices": [
+      4
+    ],
+    "geometry": "all original vertex positions and topology unchanged",
+    "adjacent_faces": "Unselected faces retain original material and UV"
+  },
+  {
+    "owner": "INSTANCE__bathroom_partition_4m__019",
+    "action": "interior_material_faces_only",
+    "changed_polygon_indices": [
+      0,
+      26,
+      52
+    ],
+    "geometry": "all original vertex positions and topology unchanged",
+    "adjacent_faces": "Unselected faces retain original material and UV"
+  },
+  {
+    "owner": "INSTANCE__flat_roof_4x6m__009",
+    "action": "interior_material_faces_only",
+    "changed_polygon_indices": [
+      25
+    ],
+    "geometry": "all original vertex positions and topology unchanged",
+    "adjacent_faces": "Unselected faces retain original material and UV"
+  },
+  {
+    "owner": "REUSE__mattress_dirty__022",
+    "action": "remove_cosmetic_faces",
+    "faces": 512,
+    "reason": "Replace block pillow and folded blanket, remove flat cosmetic stains; retain original mattress base and its non-pillow seam"
+  },
+  {
+    "owner": "REUSE__mattress_dirty__022",
+    "action": "soft_pillow_and_folded_blanket",
+    "reference": "Standard Textile economical sheet/hem construction vocabulary, no commercial pattern copied",
+    "geometry": "Original base mattress retained; new textile shapes stay inside original overall bounds; compiled collision unchanged and must not be regenerated from art"
+  },
+  {
+    "owner": "REUSE__folded_bedsheet_stack__027",
+    "action": "linen_material_only",
+    "geometry": "unchanged; removes book-like contrast of prior paper/stripe materials"
+  }
+]

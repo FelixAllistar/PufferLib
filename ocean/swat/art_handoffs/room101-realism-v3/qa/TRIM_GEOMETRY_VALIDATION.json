@@ -1,0 +1,42 @@
+{
+  "status": "passed_bounded_native_check",
+  "bead_corner_old_exposed_overlaps": 8,
+  "bead_corner_new_exposed_overlaps": 0,
+  "minimum_corner_gap_m": 0.000999987,
+  "maximum_corner_gap_m": 0.001000047,
+  "exposed_front_planes_unchanged": true,
+  "casing_front_y_source_m": -0.1375,
+  "casing_back_y_source_m": -0.09,
+  "head_joint_gap_m": 0.000499964,
+  "caulk_y_range_m": [
+    -0.094,
+    -0.09
+  ],
+  "facade_door_walkway_mesh_and_TRS_unchanged": true,
+  "new_exposed_same_facing_coplanarity": false,
+  "buried_underside_contacts": [
+    {
+      "casing_polygon": 97,
+      "facade_polygons": [
+        181,
+        207
+      ],
+      "plane_source_z_m": 0,
+      "area_each_mm2": 310
+    },
+    {
+      "caulk_polygon": 97,
+      "facade_polygons": [
+        181,
+        207
+      ],
+      "plane_source_z_m": 0,
+      "area_each_mm2": 6
+    }
+  ],
+  "remaining": [
+    "Two inherited jamb/head overlaps unchanged",
+    "Prior +0.4mm threshold retained",
+    "Native geometry check is not engine renderer or gameplay qualification"
+  ]
+}

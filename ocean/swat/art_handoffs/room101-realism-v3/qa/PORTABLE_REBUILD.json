@@ -1,0 +1,102 @@
+{
+  "status": "passed",
+  "method": "Fresh separate-folder material regeneration and Blender export; includes final separate AO map and glTF strength",
+  "files": [
+    {
+      "file": "textures/blanket_basecolor.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/carpet_ao.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/carpet_basecolor.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/carpet_normal_gl.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/carpet_roughness.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/curtain_basecolor.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/linen_basecolor.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/linen_normal_gl.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/linen_roughness.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/plaque101_basecolor.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/plaque101_normal_gl.png",
+      "byte_identical": true
+    },
+    {
+      "file": "textures/plaque101_roughness.png",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/bathroom_partition_4m_019_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/door_optional_detail_overlay_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/end_wall_6m_104_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/end_wall_6m_105_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/facade_optional_detail_overlay_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/flat_roof_4x6m_009_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/folded_bedsheet_stack_027_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/mattress_dirty_022_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/room_floor_4x6m_008_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/room_number_plaque_018_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/room_window_insert_016_v3.glb",
+      "byte_identical": true
+    },
+    {
+      "file": "assets/through_wall_ac_017_v3.glb",
+      "byte_identical": true
+    }
+  ]
+}

@@ -237,6 +237,8 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
     for(int i=0;i<sim->world.count;i++) {
         const SwatObject* o=&sim->world.objects[i];
         if(!o->active || o->material==SWAT_GLASS) continue;
+        if(view->lighting.shadow_room>=0 && !swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],
+            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
         if(swat_environment_motel_draw(&view->environment,&sim->world,o,true,cutaway)) continue;
         if(swat_environment_storefront_draw(&view->environment,&sim->world,o,true,cutaway)) continue;
         if(cutaway && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
@@ -246,7 +248,18 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
         else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);
         rlPopMatrix();
     }
-    if(!cutaway) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,true);
+}
+static void swat_draw_shadow_actors(void* context,const SwatSim* sim,bool cutaway) {
+    SwatView* view=context;if(cutaway)return;
+    for(int i=0;i<sim->actor_count;i++) {
+        if(!sim->actors[i].present)continue;
+        if(view->lighting.shadow_room>=0) {
+            b3Pos p=swat_body_feet_position(&sim->actors[i].controller.body);
+            if(!swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],
+                (Vector3){p.x,p.y+1,p.z},(Vector3){.5f,1,.5f}))continue;
+        }
+        swat_draw_actor(view,sim,i,true);
+    }
 }
 
 static void swat_draw_contact_scene(void* context,const SwatSim* sim,bool cutaway) {
@@ -458,7 +471,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
     swat_character_runtime_prepare(view->characters,s);
     swat_environment_art_prepare_location(&view->environment,&s->world);
-    swat_lighting_prepare_context(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene,view);
+    swat_lighting_prepare_split(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene,swat_draw_shadow_actors,view);
     if(view->planning) { swat_draw_plan(view,s); return; }
     if(view->actor<0 || view->actor>=s->actor_count || !s->actors[view->actor].present) {
         ClearBackground((Color){25,37,47,255});

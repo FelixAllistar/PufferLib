@@ -1,0 +1,131 @@
+[
+  {
+    "name": "doorway",
+    "eye_source_Zup_m": [
+      -6.099999904632568,
+      -4.400000095367432,
+      1.6399999856948853
+    ],
+    "target_source_Zup_m": [
+      -6.25,
+      0.0,
+      1.25
+    ],
+    "up_source": [
+      -0.003006407292559743,
+      0.08818792551755905,
+      0.9960992932319641
+    ],
+    "eye_engine_Yup_m": [
+      -6.099999904632568,
+      1.6399999856948853,
+      4.400000095367432
+    ],
+    "target_engine_Yup_m": [
+      -6.25,
+      1.25,
+      0.0
+    ],
+    "up_engine": [
+      -0.003006407292559743,
+      0.9960992932319641,
+      -0.08818792551755905
+    ],
+    "horizontal_fov_deg": 58.71550672076532,
+    "vertical_fov_deg": 43.190620482741885,
+    "lens_mm": 32.0,
+    "sensor_width_mm": 36,
+    "resolution": [
+      1080,
+      760
+    ],
+    "door_pose_deg": 0,
+    "lighting": "Unchanged v2 source courtyard/room lights and world, AgX Medium High Contrast, +0.7EV; NOT current-engine light parity"
+  },
+  {
+    "name": "interior_bed",
+    "eye_source_Zup_m": [
+      -7.150000095367432,
+      0.6700000166893005,
+      1.6200000047683716
+    ],
+    "target_source_Zup_m": [
+      -5.739999771118164,
+      2.930000066757202,
+      1.0499999523162842
+    ],
+    "up_source": [
+      0.11075848340988159,
+      0.1775277554988861,
+      0.9778631925582886
+    ],
+    "eye_engine_Yup_m": [
+      -7.150000095367432,
+      1.6200000047683716,
+      -0.6700000166893005
+    ],
+    "target_engine_Yup_m": [
+      -5.739999771118164,
+      1.0499999523162842,
+      -2.930000066757202
+    ],
+    "up_engine": [
+      0.11075848340988159,
+      0.9778631925582886,
+      -0.1775277554988861
+    ],
+    "horizontal_fov_deg": 78.57881433363144,
+    "vertical_fov_deg": 59.86302406256408,
+    "lens_mm": 22.0,
+    "sensor_width_mm": 36,
+    "resolution": [
+      1080,
+      760
+    ],
+    "door_pose_deg": 100,
+    "lighting": "Unchanged v2 source courtyard/room lights and world, AgX Medium High Contrast, +0.7EV; NOT current-engine light parity"
+  },
+  {
+    "name": "interior_window",
+    "eye_source_Zup_m": [
+      -6.349999904632568,
+      2.5999999046325684,
+      1.5499999523162842
+    ],
+    "target_source_Zup_m": [
+      -5.449999809265137,
+      0.0,
+      1.4500000476837158
+    ],
+    "up_source": [
+      0.011881250888109207,
+      -0.03432324528694153,
+      0.9993401765823364
+    ],
+    "eye_engine_Yup_m": [
+      -6.349999904632568,
+      1.5499999523162842,
+      -2.5999999046325684
+    ],
+    "target_engine_Yup_m": [
+      -5.449999809265137,
+      1.4500000476837158,
+      0.0
+    ],
+    "up_engine": [
+      0.011881250888109207,
+      0.9993401765823364,
+      0.03432324528694153
+    ],
+    "horizontal_fov_deg": 61.927514269474564,
+    "vertical_fov_deg": 45.78110416269205,
+    "lens_mm": 30.0,
+    "sensor_width_mm": 36,
+    "resolution": [
+      1080,
+      760
+    ],
+    "door_pose_deg": 100,
+    "lighting": "Unchanged v2 source courtyard/room lights and world, AgX Medium High Contrast, +0.7EV; NOT current-engine light parity"
+  }
+]

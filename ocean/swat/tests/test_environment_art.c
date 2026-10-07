@@ -195,14 +195,20 @@ static void room101_shadow(void* context,const SwatSim* s,bool cutaway) {
     SwatEnvironmentArt* art=context;
     for(int i=1;i<s->world.count;i++) swat_environment_motel_draw(art,&s->world,&s->world.objects[i],true,cutaway);
 }
-static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {
+static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int width,int height) {
     SwatEnvironmentArt* art=&view->environment; SwatLighting* light=&view->lighting;
     light->prepared=false;
     if(lit) swat_lighting_prepare_context(light,&sim,camera.position,false,room101_shadow,art);
-    if(lit) swat_lighting_contact(light,&sim,camera,960,800,room101_shadow,art);
-    RenderTexture2D target=LoadRenderTexture(960,800); assert(target.id);
-    BeginTextureMode(target); ClearBackground(MAGENTA); BeginMode3D(camera);
+    if(lit) swat_lighting_contact(light,&sim,camera,width,height,room101_shadow,art);
+    RenderTexture2D target=LoadRenderTexture(width,height); assert(target.id);
+    BeginTextureMode(target); ClearBackground(MAGENTA);
+    if(lit)swat_lighting_sky(light,camera,width,height);
+    BeginMode3D(camera);
     if(lit) swat_lighting_begin(light,art,&sim.world,camera.position);
+    if(lit) {
+        const SwatObject* floor=&sim.world.objects[0];
+        DrawCubeV((Vector3){floor->center.x,floor->center.y,floor->center.z},(Vector3){2*floor->half.x,2*floor->half.y,2*floor->half.z},(Color){110,123,125,255});
+    }
     for(int i=1;i<sim.world.count;i++) assert(swat_environment_motel_draw(art,&sim.world,&sim.world.objects[i],false,false));
     swat_environment_art_transparent(art,&sim.world,camera.position,false);
     if(lit) swat_lighting_end(light,art);
@@ -210,11 +216,49 @@ static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {
     Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image); UnloadRenderTexture(target);
     return image;
 }
+static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {return room101_capture_size(view,camera,lit,960,800);}
+static int room101_owner_pixels(SwatEnvironmentArt* art,SwatObject* o,bool cutaway) {
+    float d=b3Length(o->half)*2+1;
+    Camera3D camera={{o->center.x+d,o->center.y+d,o->center.z+d},{o->center.x,o->center.y,o->center.z},{0,1,0},50,CAMERA_PERSPECTIVE};
+    RenderTexture2D target=LoadRenderTexture(256,256);BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
+    assert(swat_environment_motel_draw(art,&sim.world,o,false,cutaway));EndMode3D();EndTextureMode();
+    Image frame=LoadImageFromTexture(target.texture);Color* pixels=LoadImageColors(frame);int count=0;
+    for(int i=0;i<256*256;i++)count+=pixels[i].r!=MAGENTA.r || pixels[i].g!=MAGENTA.g || pixels[i].b!=MAGENTA.b;
+    UnloadImageColors(pixels);UnloadImage(frame);UnloadRenderTexture(target);return count;
+}
 static void room101_graphics(SwatView* view,const char* directory) {
     SwatEnvironmentArt* art=&view->environment;
     SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.hostile_fire=false;
     swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
     assert(art->room101_ready);
+    assert(art->room101_v3_ready);
+    for(int i=0;i<SWAT_ROOM101_V3_ASSETS;i++)assert(art->room101_v3[i].meshCount);
+    const int original_assets[10]={10,18,17,4,2,2,22,5,25,36};
+    for(int i=0;i<10;i++) {
+        // Node hierarchy and original nonuniform instance scale remain intact;
+        // every replacement stays within its source geometry's local envelope.
+        BoundingBox a=GetModelBoundingBox(art->room101_v3[i]),b=GetModelBoundingBox(art->motel[original_assets[i]]);
+        assert(a.min.x>=b.min.x-.001f && a.min.y>=b.min.y-.001f && a.min.z>=b.min.z-.001f);
+        assert(a.max.x<=b.max.x+.001f && a.max.y<=b.max.y+.001f && a.max.z<=b.max.z+.001f);
+    }
+    int ao_materials=0;
+    for(int m=0;m<art->room101_v3[3].materialCount;m++) {
+        Material material=art->room101_v3[3].materials[m];
+        if(material.maps[MATERIAL_MAP_OCCLUSION].texture.id) {
+            assert(fabsf(material.maps[MATERIAL_MAP_OCCLUSION].value-.30f)<1e-5f);
+            assert(fabsf(art->room101_v3_normal_scale[3][m]-.18f)<1e-5f);ao_materials++;
+        }
+    }
+    assert(ao_materials==1);
+    const int owners[10]={17,18,19,9,105,106,20,10,23,28};
+    for(int i=0;i<10;i++) {
+        SwatObject* o=&sim.world.objects[owners[i]];
+        assert(o->active && room101_owner_pixels(art,o,false)>50);
+        o->active=false;assert(!room101_owner_pixels(art,o,false));o->active=true;
+        if(i==7)assert(!room101_owner_pixels(art,o,true));
+    }
+    puts("PASS v3 ownership: all ten replacements visible, children removed with parent, roof hidden in cutaway");
+    art->room101_v3_ready=false;
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) assert(art->room101[i].meshCount);
     assert(fabsf(art->room101_normal_scale[0][1]-.35f)<1e-6f);
     assert(art->room101_normal_scale[2][1]==.25f);
@@ -240,10 +284,25 @@ static void room101_graphics(SwatView* view,const char* directory) {
     Camera3D inside={{-7.2f,1.62f,-2.1f},{-6.45f,1.22f,-5.2f},{0,1,0},64,CAMERA_PERSPECTIVE};
     Image room=room101_capture(view,inside,true);
     snprintf(path,sizeof(path),"%s/room101-interior.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    art->room101_v3_ready=true;
+    room=room101_capture(view,camera,true);snprintf(path,sizeof(path),"%s/room101-v3.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    room=room101_capture(view,inside,true);snprintf(path,sizeof(path),"%s/room101-v3-interior.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
     Color* a=LoadImageColors(captures[0]),*b=LoadImageColors(captures[1]); int changed=0;
     for(int i=0;i<960*800;i++) changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>12;
     assert(changed>5000);
     UnloadImageColors(a); UnloadImageColors(b); UnloadImage(captures[0]); UnloadImage(captures[1]);
+    // Actual motel row from outside, with every authored entrance open.
+    for(int i=1;i<sim.world.count;i++)if(sim.world.objects[i].door) {
+        SwatObject* o=&sim.world.objects[i];o->yaw=o->closed_yaw+100*SWAT_RAD;
+        o->center=b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
+    }
+    Camera3D row={{-4,1.64f,8},{-4,1.35f,-3},{0,1,0},54,CAMERA_PERSPECTIVE};
+    room=room101_capture_size(view,row,true,1440,810);snprintf(path,sizeof(path),"%s/motel-all-room-shadows.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    Camera3D bed={{-7.15f,1.62f,-.67f},{-5.74f,1.05f,-2.93f},{0,1,0},59.863f,CAMERA_PERSPECTIVE};
+    Camera3D window={{-6.35f,1.55f,-2.6f},{-5.45f,1.45f,0},{0,1,0},45.781f,CAMERA_PERSPECTIVE};
+    room=room101_capture(view,bed,true);snprintf(path,sizeof(path),"%s/room101-v3-bed.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    room=room101_capture(view,window,true);snprintf(path,sizeof(path),"%s/room101-v3-window.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     // The entire moving overlay follows the door and vanishes with its parent.
     for(int i=1;i<sim.world.count;i++) sim.world.objects[i].active=i==16;
     double centroid[3]={0}; const float angles[]={0,45,100};

@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "material": "R101V3_carpet",
+  "source_url": "https://ambientcg.com/view?id=Carpet016",
+  "license_url": "https://docs.ambientcg.com/license/",
+  "raw_runtime_file": "textures/carpet_ao.png",
+  "raw_runtime_channel": "R linear",
+  "glTF_packing": "shared ORM image: R occlusion, G roughness, B metallic multiplied by metallicFactor 0",
+  "glTF_occlusion_strength": 0.30000001192092896,
+  "raw_to_packed_R_max_uint8_error": 0,
+  "roughness_to_packed_G_max_uint8_error": 0,
+  "raw_AO_mean": 0.9251172869813209,
+  "effective_AO_mean_at_strength": 0.9775351860943962,
+  "basecolor_modified_by_AO": false,
+  "Blender_note": "Official glTF export side-channel only; not connected to basecolor or Cycles BSDF. Source images use physical Cycles lighting.",
+  "other_materials": "No occlusionTexture; use unbound/white AO, not arbitrary darkening"
+}

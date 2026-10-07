@@ -75,6 +75,73 @@ static Image capture(SwatLighting* light,SwatEnvironmentArt* art,Camera3D camera
     Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image);
     UnloadRenderTexture(target); return image;
 }
+static int static_calls;
+static bool fake_actor;
+static void counted_geometry(void* context,const SwatSim* s,bool cutaway) {
+    (void)context;static_calls++;scene(s,cutaway);
+}
+static void test_actors(void* context,const SwatSim* s,bool cutaway) {
+    (void)context;(void)s;(void)cutaway;if(fake_actor)DrawCubeV((Vector3){0,.6f,0},(Vector3){1.2f,1.2f,1.2f},WHITE);
+}
+static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const char* directory) {
+    sim.world=(SwatWorld){0};sim.world.room_count=3;sim.world.count=6;sim.tick=100;
+    for(int r=0;r<3;r++) {
+        float x=(r-1)*5;
+        sim.world.rooms[r]=(SwatRoom){{x,1.5f,0},{2,1.5f,2},SWAT_DRYWALL,SWAT_CONCRETE};
+        sim.world.objects[r*2]=(SwatObject){.active=true,.center={x,-.05f,0},.half={2,.05f,2},.material=SWAT_CONCRETE};
+        sim.world.objects[r*2+1]=(SwatObject){.active=true,.center={x,.6f,0},.half={.6f,.6f,.6f},.material=SWAT_WOOD};
+    }
+    Camera3D camera={{0,16,7},{0,0,0},{0,1,0},17,CAMERA_ORTHOGRAPHIC};
+    light->prepared=false;static_calls=0;fake_actor=false;light->sun_energy=(Vector3){0};
+    swat_lighting_prepare_split(light,&sim,(Vector3){-5,1.6f,5},false,counted_geometry,test_actors,NULL);
+    assert(static_calls==4);int updates=light->room_updates;
+    Image original=capture(light,art,camera,NULL);Color* a=LoadImageColors(original);
+    char path[4096];snprintf(path,sizeof(path),"%s/all-room-shadows.png",directory);assert(ExportImage(original,path));
+    // Walk along and back from a row of visible rooms. The fixed inspection
+    // camera removes perspective/specular differences and isolates shadow state.
+    const Vector3 eyes[]={{5,1.6f,5},{0,1.6f,20},{-12,1.6f,20}};
+    for(int i=0;i<3;i++) {
+        sim.tick+=4;static_calls=0;
+        swat_lighting_prepare_split(light,&sim,eyes[i],false,counted_geometry,test_actors,NULL);
+        assert(static_calls==1 && light->room_updates==updates); // Sun only; rooms reused.
+        Image frame=capture(light,art,camera,NULL);Color* b=LoadImageColors(frame);
+        int mismatch=0;for(int p=0;p<512*512;p++)mismatch+=abs(a[p].r-b[p].r)+abs(a[p].g-b[p].g)+abs(a[p].b-b[p].b)>3;
+        assert(!mismatch);UnloadImageColors(b);UnloadImage(frame);
+    }
+    for(int r=0;r<3;r++) {
+        sim.world.objects[2*r+1].active=false;
+        swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+        Image open=capture(light,art,camera,NULL);Color* b=LoadImageColors(open);int shadowed=0;
+        for(float z=-.3f;z<.3f;z+=.03f) {
+            Vector2 p=GetWorldToScreenEx((Vector3){(r-1)*5+.85f,.001f,z},camera,512,512);
+            int index=(int)p.y*512+(int)p.x;
+            shadowed+=b[index].r+b[index].g+b[index].b>a[index].r+a[index].g+a[index].b+20;
+        }
+        printf("room %d lamp-shadow floor samples=%d\n",r,shadowed);assert(shadowed>10);
+        UnloadImageColors(b);UnloadImage(open);sim.world.objects[2*r+1].active=true;
+        swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+    }
+    updates=light->room_updates;
+    // Removing one blocker updates exactly that room immediately.
+    sim.world.objects[3].active=false;static_calls=0;
+    swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+    assert(static_calls==2 && light->room_updates==updates+1);
+    Image removed=capture(light,art,camera,NULL);Color* b=LoadImageColors(removed);int changed=0;
+    for(int i=0;i<512*512;i++)changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>12;
+    assert(changed>50);
+    fake_actor=true;sim.tick+=4;static_calls=0;updates=light->room_updates;
+    swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+    assert(static_calls==1 && light->room_updates==updates);
+    Image actor=capture(light,art,camera,NULL);Color* c=LoadImageColors(actor);changed=0;
+    for(int i=0;i<512*512;i++)changed+=b[i].r+b[i].g+b[i].b>c[i].r+c[i].g+c[i].b+20;
+    assert(changed>50);UnloadImageColors(c);UnloadImage(actor);
+    fake_actor=false;sim.tick+=4;
+    swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+    Image cleared=capture(light,art,camera,NULL);c=LoadImageColors(cleared);
+    assert(!memcmp(b,c,512*512*sizeof(Color)));UnloadImageColors(c);UnloadImage(cleared);
+    UnloadImageColors(a);UnloadImageColors(b);UnloadImage(original);UnloadImage(removed);
+    puts("PASS all room shadows: three lit-room shadow proofs, camera-independent tiles, local invalidation, moving silhouette with no trails");
+}
 
 static void wall_quad(float x,bool mirrored) {
     rlBegin(RL_QUADS); rlColor4ub(180,180,180,255); rlNormal3f(0,0,1);
@@ -261,6 +328,7 @@ int main(int argc,char** argv) {
     sky_check(&light,directory);
     swat_lighting_prepare(&light,&sim,(Vector3){1.1f,3,1.1f},false,scene);
     source_finish(&light,&art); // Original spec/gloss still works with the HDR environment.
+    multi_room_checks(&light,&art,directory);
     swat_lighting_close(&light);assert(!light.environment_atlas.id && !light.environment_sky.id);
     environment("SWAT_LIGHTING","0"); swat_lighting_init(&light); assert(!light.enabled && !light.sun.id);
     swat_lighting_close(&light); environment("SWAT_LIGHTING",NULL);

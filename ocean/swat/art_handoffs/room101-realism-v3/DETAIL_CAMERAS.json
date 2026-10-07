@@ -1,0 +1,80 @@
+[
+  {
+    "name": "trim_detail",
+    "eye_source_Zup_m": [
+      -7.5,
+      -1.15,
+      2.06
+    ],
+    "target_source_Zup_m": [
+      -7.55,
+      0,
+      2.06
+    ],
+    "eye_engine_Yup_m": [
+      -7.5,
+      2.059999942779541,
+      1.149999976158142
+    ],
+    "target_engine_Yup_m": [
+      -7.550000190734863,
+      2.059999942779541,
+      0.0
+    ],
+    "up_engine": [
+      7.160850579168709e-09,
+      1.0,
+      4.3441342967298624e-08
+    ],
+    "horizontal_fov_deg": 39.59775410217631,
+    "vertical_fov_deg": 26.99146832855439,
+    "resolution": [
+      960,
+      640
+    ],
+    "samples_max": 384,
+    "adaptive_threshold": 0.012,
+    "denoiser": false,
+    "door_pose_deg": 0,
+    "lighting": "same v2 source world/lights, AgX Medium High Contrast +0.7EV; not matched engine lighting"
+  },
+  {
+    "name": "fabric_detail",
+    "eye_source_Zup_m": [
+      -6.25,
+      1.05,
+      1.13
+    ],
+    "target_source_Zup_m": [
+      -5.35,
+      2.02,
+      0.73
+    ],
+    "eye_engine_Yup_m": [
+      -6.25,
+      1.1299999952316284,
+      -1.0499999523162842
+    ],
+    "target_engine_Yup_m": [
+      -5.349999904632568,
+      0.7300000190734863,
+      -2.0199999809265137
+    ],
+    "up_engine": [
+      0.19681242108345032,
+      0.9572198987007141,
+      -0.21211998164653778
+    ],
+    "horizontal_fov_deg": 36.24372020211886,
+    "vertical_fov_deg": 24.61603213919926,
+    "resolution": [
+      960,
+      640
+    ],
+    "samples_max": 384,
+    "adaptive_threshold": 0.012,
+    "denoiser": false,
+    "door_pose_deg": 100,
+    "lighting": "same v2 source world/lights, AgX Medium High Contrast +0.7EV; not matched engine lighting"
+  }
+]

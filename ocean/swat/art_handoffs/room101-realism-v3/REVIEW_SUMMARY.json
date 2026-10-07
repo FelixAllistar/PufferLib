@@ -1,0 +1,45 @@
+{
+  "candidate": "Briar Court Room101 v3",
+  "status": "art handoff awaiting engine integration/review",
+  "base": "verified v2 art / engine-reported local 5.0 a406c933b integration",
+  "source_instances": 10,
+  "existing_designs_revised": 9,
+  "overlay_revisions": 2,
+  "GLBs": 12,
+  "GLB_bytes": 36999944,
+  "triangles": 21466,
+  "unique_embedded_image_hashes": 26,
+  "runtime_image_limit": 1024,
+  "checks_passed": [
+    "Native base vertex positions and TRS unchanged",
+    "Owned complete model geometry inside original envelopes, <=2um numerical tolerance",
+    "GLB/accessor/UV/normal/image checks",
+    "All materials opaque, panes/frame/curtains separately named under one owner",
+    "No exposed revised bead-corner coplanarity; casing front/clearance preserved",
+    "12 runtime maps and 12 GLBs byte-identical fresh rebuild",
+    "Carpet AO separate ORM R strength .30, packed R/G exactly match input maps",
+    "Matched three wide view pairs, two high-sample detail pairs, two exact engine-camera source pairs reviewed"
+  ],
+  "engine_baseline": "CURRENT_ENGINE_BASELINE.json",
+  "not_claimed": [
+    "V3 game integration",
+    "V3 target GPU timing",
+    "New collision/AI visibility qualification",
+    "Blender-to-engine lighting parity",
+    "Photorealism/Ready or Not-equivalent fidelity"
+  ],
+  "known_art_limits": [
+    "Rectilinear mattress side",
+    "Thick folded blanket remains cushion-like",
+    "Institutional bed frame, desk/chair/TV/bathroom context unchanged",
+    "Inherited source jamb/head overlaps and modular grooves remain",
+    "Threshold +0.4mm unchanged"
+  ],
+  "recommended_first_views": [
+    "qa/candidate_v3_doorway.png",
+    "qa/candidate_v3_interior_bed.png",
+    "qa/candidate_v3_interior_window.png"
+  ],
+  "handoff": "RUNTIME_HANDOFF.md",
+  "catalog": "CATALOG_ENTRIES.json"
+}

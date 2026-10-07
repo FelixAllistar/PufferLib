@@ -1,0 +1,80 @@
+[
+  {
+    "name": "engine_entrance",
+    "eye_engine_Yup_m": [
+      -6.7,
+      1.64,
+      4.2
+    ],
+    "target_engine_Yup_m": [
+      -6.95,
+      1.26,
+      0
+    ],
+    "camera_up_engine": [
+      0,
+      1,
+      0
+    ],
+    "eye_source_Zup_m": [
+      -6.699999809265137,
+      -4.199999809265137,
+      1.6399999856948853
+    ],
+    "target_source_Zup_m": [
+      -6.949999809265137,
+      0.0,
+      1.2599999904632568
+    ],
+    "vertical_fov_deg": 45,
+    "verified_Blender_vertical_fov_deg": 45.00000240668388,
+    "resolution": [
+      960,
+      800
+    ],
+    "engine_exposure_setting": 1.1,
+    "Blender_exposure_EV": 0.7,
+    "door_pose_source_deg": 0,
+    "door_pose_note": "entrance closed as specified; interior engine pose unspecified, source pair uses 100deg",
+    "comparison_scope": "Exact camera match only. Source Blender world/lights/AgX are unchanged; not engine HDR parity."
+  },
+  {
+    "name": "engine_interior",
+    "eye_engine_Yup_m": [
+      -7.2,
+      1.62,
+      -2.1
+    ],
+    "target_engine_Yup_m": [
+      -6.45,
+      1.22,
+      -5.2
+    ],
+    "camera_up_engine": [
+      0,
+      1,
+      0
+    ],
+    "eye_source_Zup_m": [
+      -7.199999809265137,
+      2.0999999046325684,
+      1.6200000047683716
+    ],
+    "target_source_Zup_m": [
+      -6.449999809265137,
+      5.199999809265137,
+      1.2200000286102295
+    ],
+    "vertical_fov_deg": 64,
+    "verified_Blender_vertical_fov_deg": 64.00000012655063,
+    "resolution": [
+      960,
+      800
+    ],
+    "engine_exposure_setting": 1.1,
+    "Blender_exposure_EV": 0.7,
+    "door_pose_source_deg": 100,
+    "door_pose_note": "entrance closed as specified; interior engine pose unspecified, source pair uses 100deg",
+    "comparison_scope": "Exact camera match only. Source Blender world/lights/AgX are unchanged; not engine HDR parity."
+  }
+]

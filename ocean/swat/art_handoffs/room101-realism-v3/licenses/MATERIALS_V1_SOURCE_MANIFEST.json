@@ -1,0 +1,430 @@
+{
+  "base_commit": "a2d84371c9cbadf46733afb87cc39b73f72dc405",
+  "binding_advisory": {
+    "door_paint": "Existing door leaf painted primitives; remap UVs to metres, retain same moving door owner.",
+    "door_wood": "Existing exposed timber/chip primitives on same door owner; no additional surviving overlay.",
+    "floor_pine": "SWAT_WOOD floor role only, never all wooden boxes.",
+    "framing_pine": "SWAT_WOOD framing/support role; align V with long member axis.",
+    "plaster_painted": "SWAT_DRYWALL/SWAT_PLASTER intact skins; preserve each existing damage owner.",
+    "plaster_worn": "Opt-in sparse cosmetic variant on selected existing skins only; no per-cell randomized UV offsets."
+  },
+  "created_utc": "2026-10-04",
+  "encoding": {
+    "basecolor": "RGB8 sRGB; decode exactly once to linear before shading. Procedural surfaces contain no lighting/AO/specular. Scan floor is derived from official Diffuse, with no added shading; minor source cavity shading may remain and is not certified calibrated albedo.",
+    "height": "Procedural metres; normal derived using independent U/V physical texel spacing. Height is source-only and not a runtime displacement map.",
+    "normal": "RGB8 linear, tangent-space OpenGL +Y/+V. N=normalize(2*RGB-1), +U right, +V up, outward +Z. PNG row 0 corresponds to V=1. Do not sRGB-decode. DirectX consumers must invert green exactly once.",
+    "roughness": "R8 linear perceptual roughness in [0,1], not gloss. No sRGB decode. Microfacet alpha = roughness squared where required by shader.",
+    "sampler": "REPEAT U/V; trilinear mipmapping; normalize filtered normals. Non-square physical tiles still use square images."
+  },
+  "external_source_provenance": {
+    "asset": "wood_floor_worn",
+    "asset_url": "https://polyhaven.com/a/wood_floor_worn",
+    "author": "Dimitrios Savva",
+    "files": {
+      "wood_floor_worn_diff_1k.jpg": {
+        "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor_worn/wood_floor_worn_diff_1k.jpg",
+        "sha256": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758"
+      },
+      "wood_floor_worn_nor_gl_1k.jpg": {
+        "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor_worn/wood_floor_worn_nor_gl_1k.jpg",
+        "sha256": "f428496e5d6c726d17d9ecea29c0acd8660348630acf791cea7bdd7f3c6e262b"
+      },
+      "wood_floor_worn_rough_1k.jpg": {
+        "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor_worn/wood_floor_worn_rough_1k.jpg",
+        "sha256": "9d7492db1197f1386466dfd7dd43f692446166c1433ddeebf66c10e8b226a6d0"
+      }
+    },
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "license_verified_utc": "2026-10-04",
+    "physical_width_m": 2.0,
+    "source": "Unmodified local house_kit/textures source files; hashes matched source provenance, official asset and license pages freshly read 2026-10-04."
+  },
+  "license": "CC0-1.0",
+  "limitations": [
+    "Current engine selects one wood map and supports basecolor only. Role-specific map binding, rectangular tiles and tangent-space PBR need a separate engine-agent integration.",
+    "No loader, shared material enum, shader, lighting, geometry, gameplay, networking, damage, original texture path, or existing GLB is changed.",
+    "Existing door GLB UVs are not a metric contract; these maps are not drop-in embedded replacements.",
+    "Procedural surfaces have authored physical dimensions; floor uses the source scan's documented 2m tile. No instrument-measured BRDF values are claimed.",
+    "Floor source is an official Diffuse scan: visual inspection found no broad directional illumination gradient, but small dark knot/nail/joint features may contain residual cavity occlusion. No AO is added. This is not a certified shadow-free albedo measurement.",
+    "Abraded islands repeat every 2 m if tiled. Use worn plaster sparingly; broad damage/local masks remain engine-owned.",
+    "No end-grain, separate normal mipchain, BC compression, or distant LOD supplied.",
+    "CPU QA renders are reference material tests, not captures from the current SWAT renderer."
+  ],
+  "materials": [
+    {
+      "grain_axis": null,
+      "height_range_metres": [
+        -0.00019940092695921376,
+        0.0001071173225613974
+      ],
+      "height_scale_m": 0.00017,
+      "id": "plaster_painted",
+      "maps": {
+        "basecolor": {
+          "bytes": 97929,
+          "color_space": "sRGB",
+          "file": "plaster_painted_basecolor.png",
+          "mode": "RGB",
+          "sha256": "540a8ff7152ab914caffd3bb3d20b29ae82b77010ff76055e0ed350c70b5f881"
+        },
+        "normal": {
+          "bytes": 139020,
+          "color_space": "linear",
+          "file": "plaster_painted_normal.png",
+          "mode": "RGB",
+          "sha256": "16f4452075b0ac3986bb1929f600c19b5b55047af1fcca7dce5530c12220658b"
+        },
+        "roughness": {
+          "bytes": 46453,
+          "color_space": "linear",
+          "file": "plaster_painted_roughness.png",
+          "mode": "L",
+          "sha256": "046db2d87873e2cd4b0d7880c1a1e4672075d2928d2f1a53abaecc54d568f1df"
+        }
+      },
+      "metallic": 0.0,
+      "normal_application_strength": 1.0,
+      "pigment_srgb": [
+        0.76,
+        0.745,
+        0.704
+      ],
+      "purpose": "Calm warm-white painted residential plaster; default intact wall finish.",
+      "resolution": [
+        512,
+        512
+      ],
+      "roughness": 0.83,
+      "roughness_encoded_range": [
+        0.8117647058823529,
+        0.8745098039215686
+      ],
+      "roughness_range": [
+        0.8116494255498552,
+        0.8725600294462055
+      ],
+      "seed": 21061,
+      "tile_metres": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "grain_axis": null,
+      "height_range_metres": [
+        -0.0005193493143010571,
+        0.00015152254147565155
+      ],
+      "height_scale_m": 0.00024,
+      "id": "plaster_worn",
+      "maps": {
+        "basecolor": {
+          "bytes": 99931,
+          "color_space": "sRGB",
+          "file": "plaster_worn_basecolor.png",
+          "mode": "RGB",
+          "sha256": "80d8e456ff463f257b2c6c43f5ab1fd7eaf4f02d64eda8cea80705d1f062e028"
+        },
+        "normal": {
+          "bytes": 116444,
+          "color_space": "linear",
+          "file": "plaster_worn_normal.png",
+          "mode": "RGB",
+          "sha256": "c84b2ff837e36f95b1d27e0f16955dfa2fd90c5a383de7339d7420fa5ec09e63"
+        },
+        "roughness": {
+          "bytes": 47463,
+          "color_space": "linear",
+          "file": "plaster_worn_roughness.png",
+          "mode": "L",
+          "sha256": "2a4b061b0ae6329f3ee0da18686512b7be965dc9d0de6ddeef0bd9a53af907ad"
+        }
+      },
+      "metallic": 0.0,
+      "normal_application_strength": 1.0,
+      "pigment_srgb": [
+        0.745,
+        0.734,
+        0.7
+      ],
+      "purpose": "Subtle abraded plaster with sparse shallow exposed chalk islands; sparse selected surfaces only.",
+      "resolution": [
+        512,
+        512
+      ],
+      "roughness": 0.87,
+      "roughness_encoded_range": [
+        0.8509803921568627,
+        0.9411764705882353
+      ],
+      "roughness_range": [
+        0.8527009825315273,
+        0.942050566878286
+      ],
+      "seed": 21062,
+      "tile_metres": [
+        2.0,
+        2.0
+      ],
+      "wear_area_fraction": 0.014255523681640625,
+      "wear_note": "Shallow cosmetic chalk abrasions; use on selected pieces only. Never repeat this variant on all walls. No structural damage or transparency."
+    },
+    {
+      "grain_axis": "+V",
+      "height_range_metres": null,
+      "height_scale_m": 0.00014,
+      "id": "floor_pine",
+      "maps": {
+        "basecolor": {
+          "bytes": 247436,
+          "color_space": "sRGB",
+          "file": "floor_pine_basecolor.png",
+          "mode": "RGB",
+          "sha256": "f6a9b7645db4e0fa572ea12b1294a0d96e46b541f3bd2174fefee19cebd63e23"
+        },
+        "normal": {
+          "bytes": 215036,
+          "color_space": "linear",
+          "file": "floor_pine_normal.png",
+          "mode": "RGB",
+          "sha256": "8e64c9f878c12a10581ecc559a408993bcd7b2e8a49b515d9dd69ae22474dbe1"
+        },
+        "roughness": {
+          "bytes": 44294,
+          "color_space": "linear",
+          "file": "floor_pine_roughness.png",
+          "mode": "L",
+          "sha256": "b7eaf3acffad62c9b465f1db8309c43c25a9ac409772f01f047853529d6fb61a"
+        }
+      },
+      "metallic": 0.0,
+      "normal_application_strength": 1.0,
+      "pigment_srgb": [
+        0.46,
+        0.369,
+        0.28
+      ],
+      "purpose": "Desaturated worn pine floor from verified Poly Haven CC0 source; physical 2 m scan, grain +V.",
+      "resolution": [
+        512,
+        512
+      ],
+      "roughness": 0.7,
+      "roughness_encoded_range": [
+        0.6352941176470588,
+        0.6745098039215687
+      ],
+      "roughness_range": [
+        0.633921568627451,
+        0.674156862745098
+      ],
+      "seed": 21063,
+      "source": "Poly Haven wood_floor_worn, Dimitrios Savva, CC0-1.0",
+      "source_normal_strength": 0.65,
+      "tile_metres": [
+        2.0,
+        2.0
+      ],
+      "transformation": "512px Lanczos; rotate pixels 90 degrees CCW; rotate tangent normals (Nx,Ny)->(-Ny,Nx); reduce tangent slopes 0.65 and renormalize; desaturate/regrade diffuse; roughness=0.47+0.38*source."
+    },
+    {
+      "grain_axis": "+V",
+      "height_range_metres": [
+        -0.00022328240991689464,
+        0.00016989203665574945
+      ],
+      "height_scale_m": 0.00028,
+      "id": "framing_pine",
+      "maps": {
+        "basecolor": {
+          "bytes": 183988,
+          "color_space": "sRGB",
+          "file": "framing_pine_basecolor.png",
+          "mode": "RGB",
+          "sha256": "d61852a7641a67068fbf49b24fc9fbaeed973b05bac9463a9d7e22b2188655cb"
+        },
+        "normal": {
+          "bytes": 122639,
+          "color_space": "linear",
+          "file": "framing_pine_normal.png",
+          "mode": "RGB",
+          "sha256": "ad519b2b8c9271c6fbd06ef2f876b370c8fac4f3402827b310ceb9833b819ea3"
+        },
+        "roughness": {
+          "bytes": 43896,
+          "color_space": "linear",
+          "file": "framing_pine_roughness.png",
+          "mode": "L",
+          "sha256": "76cfa04b4b6b6e6be32e3e4486931a1b768368830529cffa20d88d4365002f21"
+        }
+      },
+      "metallic": 0.0,
+      "normal_application_strength": 1.0,
+      "pigment_srgb": [
+        0.58,
+        0.461,
+        0.335
+      ],
+      "purpose": "Dry untreated exposed softwood; no floorboard grooves; grain +V along member.",
+      "resolution": [
+        512,
+        512
+      ],
+      "roughness": 0.88,
+      "roughness_encoded_range": [
+        0.8509803921568627,
+        0.9411764705882353
+      ],
+      "roughness_range": [
+        0.8521217335169412,
+        0.9426344464960696
+      ],
+      "seed": 21064,
+      "tile_metres": [
+        0.4,
+        2.0
+      ]
+    },
+    {
+      "grain_axis": "+V",
+      "height_range_metres": [
+        -4.555428454550885e-05,
+        4.285900285041765e-05
+      ],
+      "height_scale_m": 8e-05,
+      "id": "door_paint",
+      "maps": {
+        "basecolor": {
+          "bytes": 19925,
+          "color_space": "sRGB",
+          "file": "door_paint_basecolor.png",
+          "mode": "RGB",
+          "sha256": "7698ac36929894fff9bdb3294901472bf53eae854fbcc657b05b3be60fa23fc9"
+        },
+        "normal": {
+          "bytes": 46293,
+          "color_space": "linear",
+          "file": "door_paint_normal.png",
+          "mode": "RGB",
+          "sha256": "b46dc025def410b5befc22d7d2c29df93424843be09a5dccf72acc75c6becd28"
+        },
+        "roughness": {
+          "bytes": 29843,
+          "color_space": "linear",
+          "file": "door_paint_roughness.png",
+          "mode": "L",
+          "sha256": "69dc722ad7b88b1a832f4f7019c7d556b44722b34c37999f61dfe933247c542a"
+        }
+      },
+      "metallic": 0.0,
+      "normal_application_strength": 1.0,
+      "pigment_srgb": [
+        0.362,
+        0.428,
+        0.377
+      ],
+      "purpose": "Restrained sage painted door surface; faint brush/wood texture; no permanent damage holes.",
+      "resolution": [
+        512,
+        512
+      ],
+      "roughness": 0.66,
+      "roughness_encoded_range": [
+        0.6431372549019608,
+        0.6784313725490196
+      ],
+      "roughness_range": [
+        0.6420252865551099,
+        0.6779781996248269
+      ],
+      "seed": 21065,
+      "tile_metres": [
+        0.6,
+        2.0
+      ]
+    },
+    {
+      "grain_axis": "+V",
+      "height_range_metres": [
+        -9.663614710003242e-05,
+        7.33816674497748e-05
+      ],
+      "height_scale_m": 0.00012,
+      "id": "door_wood",
+      "maps": {
+        "basecolor": {
+          "bytes": 200871,
+          "color_space": "sRGB",
+          "file": "door_wood_basecolor.png",
+          "mode": "RGB",
+          "sha256": "19eff6c77c51302cfad2d260e3c19d2edeae86a91b76e63ad9fef39930012440"
+        },
+        "normal": {
+          "bytes": 85704,
+          "color_space": "linear",
+          "file": "door_wood_normal.png",
+          "mode": "RGB",
+          "sha256": "4eee14f7f7b28f0fb5eb00977116459a83cc0566a874227c5a8e295c606be7c5"
+        },
+        "roughness": {
+          "bytes": 52880,
+          "color_space": "linear",
+          "file": "door_wood_roughness.png",
+          "mode": "L",
+          "sha256": "bdb8f6c56a0bdad3004862c3444b406e6fcac69ce09cbd716f6b074a67d6de48"
+        }
+      },
+      "metallic": 0.0,
+      "normal_application_strength": 1.0,
+      "pigment_srgb": [
+        0.45,
+        0.337,
+        0.234
+      ],
+      "purpose": "Exposed unpainted door timber for existing chips/wood surfaces; grain +V.",
+      "resolution": [
+        512,
+        512
+      ],
+      "roughness": 0.74,
+      "roughness_encoded_range": [
+        0.7137254901960784,
+        0.803921568627451
+      ],
+      "roughness_range": [
+        0.7122111361964258,
+        0.802157790695338
+      ],
+      "seed": 21066,
+      "tile_metres": [
+        0.6,
+        2.0
+      ]
+    }
+  ],
+  "reference_build": {
+    "numpy": "2.3.5",
+    "pillow": "12.3.0",
+    "python": "3.12.14"
+  },
+  "runtime_budget": {
+    "compressed_bytes_all_maps": 1840045,
+    "compressed_bytes_basecolor_only": 850080,
+    "current_game_extra_loaded_bytes": 0,
+    "decoded_bytes_native_formats": 11010048,
+    "decoded_bytes_rgba8_all_maps": 18874368,
+    "estimated_rgba8_with_full_mips_bytes": 25165800,
+    "png_count": 18
+  },
+  "schema": "swat_environment_material_family_v1",
+  "source": "Five original deterministic procedural fields plus the verified Poly Haven CC0 wood_floor_worn diffuse/normal/roughness scan for floor_pine. No imagegen artwork is used or relabeled.",
+  "source_files": {
+    "source/build_materials.py": "9f0e7cb9467a1abe36cb4c8691b70b288ec5afbe914563a365878458141c1bc7",
+    "source/cc0/wood_floor_worn_diff_1k.jpg": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758",
+    "source/cc0/wood_floor_worn_nor_gl_1k.jpg": "f428496e5d6c726d17d9ecea29c0acd8660348630acf791cea7bdd7f3c6e262b",
+    "source/cc0/wood_floor_worn_rough_1k.jpg": "9d7492db1197f1386466dfd7dd43f692446166c1433ddeebf66c10e8b226a6d0",
+    "source/parameters.json": "a6f087094e74b3b626e14d106570ff32e194875a9c35478feb3a730466e90a88"
+  },
+  "status": "asset-only candidates; no live loader selection"
+}

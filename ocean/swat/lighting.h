@@ -6,7 +6,8 @@
 
 typedef struct SwatLightingProgram {
     Shader shader;
-    int camera,sun_matrix,lamp_matrix,sun_map,lamp_map,rooms,centers,halves,origins,lamp_room,exposure;
+    int camera,sun_matrix,sun_map,lamp_map,rooms,centers,halves,origins,exposure;
+    int lamp_matrix[SWAT_MAX_ROOMS];
     int orm,pbr,normal_map,roughness,metalness,spec_gloss;
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
@@ -18,12 +19,14 @@ typedef struct SwatLighting {
     bool initialized,enabled,prepared;
     SwatLightingProgram batch,mesh;
     Shader sky; int sky_forward,sky_right,sky_up,sky_scale,sky_size,sky_exposure;
-    RenderTexture2D sun,lamp;
-    Matrix sun_matrix,lamp_matrix;
+    RenderTexture2D sun,lamp,lamp_static;
+    Matrix sun_matrix,lamp_matrix[SWAT_MAX_ROOMS];
     Vector3 sun_direction;
     float exposure;
     uint32_t geometry;
-    int lamp_room,last_tick,updates;
+    int shadow_room,last_tick,updates,room_updates;
+    uint32_t room_geometry[SWAT_MAX_ROOMS];
+    bool room_ready[SWAT_MAX_ROOMS],split_shadows;
     bool cutaway;
     unsigned int surface_normal,surface_roughness;
     Texture2D environment_atlas,environment_sky;
@@ -50,6 +53,11 @@ void swat_lighting_prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowScene draw);
 void swat_lighting_prepare_context(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowSceneContext draw,void* context);
+// Static room depths are cached independently; moving actors are composited
+// over them. shadow_room selects the room being drawn, or -1 for the sun.
+void swat_lighting_prepare_split(SwatLighting* light,const SwatSim* sim,Vector3 eye,
+                           bool cutaway,SwatShadowSceneContext geometry,SwatShadowSceneContext actors,void* context);
+bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 half);
 // Screen-space contact occlusion: half-resolution depth, no physics queries.
 // Recomputed from the current camera/geometry; only indirect light is darkened.
 void swat_lighting_contact(SwatLighting* light,const SwatSim* sim,Camera3D camera,int width,int height,

@@ -1,0 +1,19 @@
+{
+  "source": "room101-native-daylight-20261007.zip",
+  "source_sha256": "86641254aa54152fce0931c8700d12d6448a59d7ba86c336b318cbcfdebad08b",
+  "slack_message_ts": "1791362856.236029",
+  "content": "Actual Windows GTX1060 captures using v2 art and current default HDR lighting; contact AO off",
+  "engine_exposure": 1.1,
+  "HDRI": {
+    "title": "Kloofendal 48d Partly Cloudy (Pure Sky)",
+    "url": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+    "authors": [
+      "Greg Zaal (original)",
+      "Jarod Guest (sky edits)"
+    ],
+    "license": "CC0",
+    "license_url": "https://polyhaven.com/license",
+    "redistributed_here": false
+  },
+  "comparison_note": "Engine reference files are not v3 screenshots. Exact camera Blender pairs use different source lighting/AgX, not HDR parity."
+}

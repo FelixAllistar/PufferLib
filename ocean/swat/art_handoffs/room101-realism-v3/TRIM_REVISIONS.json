@@ -1,0 +1,60 @@
+{
+  "measured_issue": "Eight new bead coplanar corner patches; floating casing and 6mm decorative head gaps",
+  "corrections": [
+    {
+      "object": "R101_head_casing",
+      "action": "extend back to wall by 12.5mm; exposed face fixed; side top +5.5mm leaves 0.5mm head joint",
+      "source_owner": "INSTANCE__room_facade_4m__012",
+      "authority": "opening clear envelope/parent collision unchanged"
+    },
+    {
+      "object": "R101_hinge_casing",
+      "action": "extend back to wall by 12.5mm; exposed face fixed; side top +5.5mm leaves 0.5mm head joint",
+      "source_owner": "INSTANCE__room_facade_4m__012",
+      "authority": "opening clear envelope/parent collision unchanged"
+    },
+    {
+      "object": "R101_hinge_outer_caulk",
+      "action": "seat caulk back on wall Y=-.09m, follow side casing top",
+      "source_owner": "INSTANCE__room_facade_4m__012",
+      "authority": "visual only"
+    },
+    {
+      "object": "R101_latch_casing",
+      "action": "extend back to wall by 12.5mm; exposed face fixed; side top +5.5mm leaves 0.5mm head joint",
+      "source_owner": "INSTANCE__room_facade_4m__012",
+      "authority": "opening clear envelope/parent collision unchanged"
+    },
+    {
+      "object": "R101_latch_outer_caulk",
+      "action": "seat caulk back on wall Y=-.09m, follow side casing top",
+      "source_owner": "INSTANCE__room_facade_4m__012",
+      "authority": "visual only"
+    },
+    {
+      "object": "R101_panel_edge",
+      "action": "shorten vertical decorative bead by 20mm; 1mm butt gap removes four corner overlaps per panel",
+      "source_owner": "INSTANCE__room_door_leaf__015",
+      "authority": "unchanged door slab/hinge/collider"
+    },
+    {
+      "object": "R101_panel_edge.001",
+      "action": "shorten vertical decorative bead by 20mm; 1mm butt gap removes four corner overlaps per panel",
+      "source_owner": "INSTANCE__room_door_leaf__015",
+      "authority": "unchanged door slab/hinge/collider"
+    },
+    {
+      "object": "R101_panel_edge.004",
+      "action": "shorten vertical decorative bead by 20mm; 1mm butt gap removes four corner overlaps per panel",
+      "source_owner": "INSTANCE__room_door_leaf__015",
+      "authority": "unchanged door slab/hinge/collider"
+    },
+    {
+      "object": "R101_panel_edge.005",
+      "action": "shorten vertical decorative bead by 20mm; 1mm butt gap removes four corner overlaps per panel",
+      "source_owner": "INSTANCE__room_door_leaf__015",
+      "authority": "unchanged door slab/hinge/collider"
+    }
+  ],
+  "unmodified_issue": "Two inherited original jamb/head front-face overlaps remain in original facade; engine/shadow aliasing also contributes to longer lines"
+}

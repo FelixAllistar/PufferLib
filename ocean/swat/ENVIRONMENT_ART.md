@@ -32,9 +32,12 @@ away the actual roof object. All main, planning, sniper and device views use
 the same binding path. Debug mode adds box wires over the art.
 
 The initial lighting pass covers both primitives and imported models using
-linear diffuse shading, exposure, warm room lights and filtered sun/nearest-room
+linear diffuse shading, exposure, warm room lights and filtered sun/per-room
 depth maps. Geometry changes invalidate immediately; moving silhouettes refresh
 every four ticks. It remains an authored approximation without GI or scene reflection probes.
+Each room keeps its own cached architecture depth tile; moving people are
+composited separately. Shadow availability does not depend on the player's
+nearest room. Geometry changes only rebuild affected room tiles.
 Metric normals/roughness, original model PBR factors, daylight reflections and
 textured character shadows are now connected; see ENVIRONMENT_MATERIALS.md.
 The generated-house shadow caster geometry follows authoritative boxes; decorative tabletop detail does

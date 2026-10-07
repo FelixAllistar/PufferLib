@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-07",
+  "handoff": "Room 101 v3",
+  "drive_folder": "https://drive.google.com/drive/folders/14ztEpKf1FPSHhkwj2dD5bOf-c1gt1Lt2",
+  "runtime_file_id": "1pTzueHVgf5fsEKiXYzsYGMo9ckaJWikG",
+  "runtime_sha256": "417c2a1bcef082e6a269ec51bcdaaf94d68e61640b9b4eae9b828732eac7d81b",
+  "review_sha256": "10286374b8fc33399e9d602c00c9dca8d5597722bc7e1cc631955ed2d94a147d",
+  "metadata": "../../../art_handoffs/room101-realism-v3/",
+  "files": [
+    {
+      "file": "room_window_insert_016_v3.glb",
+      "bytes": 4579400,
+      "sha256": "7ce9e66a972b20c0d58e35053708ee5384e9a8e9284537424f16467f82422d09",
+      "owner": 17
+    },
+    {
+      "file": "through_wall_ac_017_v3.glb",
+      "bytes": 436628,
+      "sha256": "ce85308a71de992660505da75e3a4c374200083200e858049e850c72bb118e0f",
+      "owner": 18
+    },
+    {
+      "file": "room_number_plaque_018_v3.glb",
+      "bytes": 178240,
+      "sha256": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+      "owner": 19
+    },
+    {
+      "file": "room_floor_4x6m_008_v3.glb",
+      "bytes": 4710856,
+      "sha256": "817a8820e746f99f698a0f4ffe302a6c190390119fd3dbd258a4192f8f41e9e0",
+      "owner": 9
+    },
+    {
+      "file": "end_wall_6m_104_v3.glb",
+      "bytes": 4249060,
+      "sha256": "227c8ffd45d6acf8743c68ec3376e6aa816d6c9d2e3a532aa43e17078c5da2cd",
+      "owner": 105
+    },
+    {
+      "file": "end_wall_6m_105_v3.glb",
+      "bytes": 4249060,
+      "sha256": "a541bb7e013575856514a45ee35bf577ee61525190c731b5c3b4f8cf42eac8b5",
+      "owner": 106
+    },
+    {
+      "file": "bathroom_partition_4m_019_v3.glb",
+      "bytes": 4256564,
+      "sha256": "b3f9bf6aa362a1d28e893b3bc67ba18fc1f63e0f80d0b8745e65886a76e1f327",
+      "owner": 20
+    },
+    {
+      "file": "flat_roof_4x6m_009_v3.glb",
+      "bytes": 4285748,
+      "sha256": "06c3a25d1573871a4eb36d86f0e01373773fe01ac1c8cf1bdde2154553fe7b6f",
+      "owner": 10
+    },
+    {
+      "file": "mattress_dirty_022_v3.glb",
+      "bytes": 5422624,
+      "sha256": "a6aa41be9758e0c99f93e9b396f0f38de81bf606f61c7fb2abf5aa0f58b7ed9b",
+      "owner": 23
+    },
+    {
+      "file": "folded_bedsheet_stack_027_v3.glb",
+      "bytes": 4265564,
+      "sha256": "3c1fddeae26cec0f5ba388c43e587e43bc2aff2334b483cfb599de9b6a50e07d",
+      "owner": 28
+    },
+    {
+      "file": "facade_optional_detail_overlay_v3.glb",
+      "bytes": 102548,
+      "sha256": "2c7e14054a7fdf22c52720cfdb94f723f256d104e035c8b85d2b86bb6f5db937",
+      "owner": 13
+    },
+    {
+      "file": "door_optional_detail_overlay_v3.glb",
+      "bytes": 263652,
+      "sha256": "63a1daeb6bb5a3c9fe2cc960af63dbf91b01794a5017247303e54b138693fd3b",
+      "owner": 16
+    }
+  ]
+}
