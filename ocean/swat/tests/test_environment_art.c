@@ -199,6 +199,7 @@ static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {
     SwatEnvironmentArt* art=&view->environment; SwatLighting* light=&view->lighting;
     light->prepared=false;
     if(lit) swat_lighting_prepare_context(light,&sim,camera.position,false,room101_shadow,art);
+    if(lit) swat_lighting_contact(light,&sim,camera,960,800,room101_shadow,art);
     RenderTexture2D target=LoadRenderTexture(960,800); assert(target.id);
     BeginTextureMode(target); ClearBackground(MAGENTA); BeginMode3D(camera);
     if(lit) swat_lighting_begin(light,art,&sim.world,camera.position);
@@ -236,6 +237,9 @@ static void room101_graphics(SwatView* view,const char* directory) {
         assert(ExportImage(captures[candidate],path));
         assert(!memcmp(&before,&sim.world,sizeof(before)));
     }
+    Camera3D inside={{-7.2f,1.62f,-2.1f},{-6.45f,1.22f,-5.2f},{0,1,0},64,CAMERA_PERSPECTIVE};
+    Image room=room101_capture(view,inside,true);
+    snprintf(path,sizeof(path),"%s/room101-interior.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     Color* a=LoadImageColors(captures[0]),*b=LoadImageColors(captures[1]); int changed=0;
     for(int i=0;i<960*800;i++) changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>12;
     assert(changed>5000);

@@ -3,6 +3,7 @@
 #include "rlgl.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 // Immediate-mode vertices and normals already include rlPushMatrix transforms.
 // Mesh vertices do not: separate programs prevent a second transform on batches.
@@ -47,6 +48,8 @@ static const char* fragment_source=
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform mat4 sunMatrix,lampMatrix; uniform vec3 camera;\n"
+    "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
+    "uniform float occlusionStrength;uniform vec3 sunDirection,sunEnergy;uniform mat4 contactMatrix;\n"
     "uniform int rooms,lampRoom; uniform vec3 centers[8],halves[8],origins[8]; uniform float exposure;\n"
     "float visible(sampler2D map,mat4 matrix,vec3 n,vec3 l){"
     "vec4 clip=matrix*vec4(position,1.0); if(clip.w<=0.0)return 1.0;"
@@ -65,6 +68,9 @@ static const char* fragment_source=
     "vec2 weight=2.0-abs(offset-fraction);"
     "v+=weight.x*weight.y*step(p.z+dot(gradient,sampleUV-p.xy)-bias,texture(map,sampleUV).r); } return v/16.0; }\n"
     SWAT_SKY_GLSL
+    "vec2 envUV(vec3 d){return vec2(atan(d.z,d.x)/6.2831853+0.5,acos(clamp(d.y,-1.0,1.0))/3.14159265); }"
+    "vec3 atlas(vec2 uv,float layer){return texture(iblAtlas,vec2(uv.x,(layer+clamp(uv.y,0.00390625,0.99609375))/8.0)).rgb;}"
+    "vec3 filteredSky(vec3 d,float r){float lod=r*5.0;return mix(atlas(envUV(d),floor(lod)),atlas(envUV(d),min(5.0,floor(lod)+1.0)),fract(lod));}"
     "vec3 specular(vec3 n,vec3 v,vec3 l,vec3 f0,float r){"
     "vec3 h=normalize(v+l); float nv=max(dot(n,v),0.001),nl=max(dot(n,l),0.0),nh=max(dot(n,h),0.0);"
     "float a=r*r,a2=a*a,d=nh*nh*(a2-1.0)+1.0; float distribution=a2/(3.14159265*d*d);"
@@ -94,15 +100,16 @@ static const char* fragment_source=
     "else {t=vec3(0.0);b=vec3(0.0);} }"
     "else {t=normalize(tangent.xyz-n*dot(n,tangent.xyz));b=cross(n,t)*tangent.w;}"
     "if(dot(t,t)>1e-12){vec3 mapped=texture(normalMap,uv).xyz*2.0-1.0;mapped.xy*=normalScale;mapped.y*=normalGreen;n=normalize(mat3(t,b,n)*mapped);} } }"
-    "vec3 sun=normalize(vec3(-0.45,0.82,-0.35));"
+    "vec3 sun=sunDirection;"
     "float sunVisibility=visible(sunMap,sunMatrix,n,sun); float direct=max(dot(n,sun),0.0)*sunVisibility;"
     "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
     "vec3 reflectedDirection=reflect(-v,n),environment=skyRadiance(reflectedDirection,roughness);"
-    "float contact=1.0;"
-    "vec3 punctual=vec3(0.95,0.88,0.76)*direct;"
-    "if(usePbr!=0||useEnvironment!=0)reflection+=vec3(0.95,0.88,0.76)*sunVisibility*specular(n,v,sun,f0,roughness);"
+    "float contact=1.0;bool insideRoom=false;"
+    "vec3 punctual=sunEnergy*direct;"
+    "if(usePbr!=0||useEnvironment!=0)reflection+=sunEnergy*sunVisibility*specular(n,v,sun,f0,roughness);"
     "for(int i=0;i<rooms;i++){ vec3 delta=position-centers[i];"
     "if(abs(delta.x)>halves[i].x+0.12||abs(delta.z)>halves[i].z+0.12||abs(delta.y)>halves[i].y+0.15)continue;"
+    "insideRoom=true;"
     "vec3 gap=max(halves[i]-abs(delta),vec3(0.0));"
     // A bounded room approximation darkens ambient near adjacent planes only.
     // The surface's own plane does not occlude itself; punctual lights retain
@@ -116,10 +123,17 @@ static const char* fragment_source=
     "float visibility=i==lampRoom?visible(lampMap,lampMatrix,n,l):1.0;"
     "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*1.8/(1.0+0.18*d2);"
     "punctual+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
+    "if(useIbl!=0&&!insideRoom){illumination=atlas(envUV(n),6.0);environment=filteredSky(reflectedDirection,roughness);}"
     // Roughness-aware grazing reflection for painted surfaces as well as metal.
     // This analytic environment is deliberately bounded; it is not a scene probe.
     "float nv=max(dot(n,v),0.0); vec3 fresnel=f0+(max(vec3(1.0-roughness),f0)-f0)*pow(1.0-nv,5.0);"
     "vec3 indirect=(usePbr!=0||useEnvironment!=0)?environment*fresnel:vec3(0.0);"
+    "if(useIbl!=0&&(usePbr!=0||useEnvironment!=0)){vec2 brdf=atlas(vec2(clamp(nv,0.001953125,0.998046875),roughness),7.0).rg;indirect=environment*(f0*brdf.x+brdf.y);}"
+    "if(useOcclusion!=0)contact*=mix(1.0,texture(occlusionMap,uv).r,occlusionStrength);"
+    "if(useContact!=0){vec4 p=contactMatrix*vec4(position,1.0);vec3 q=p.xyz/p.w*0.5+0.5;"
+    "if(p.w>0.0&&all(greaterThanEqual(q.xy,vec2(0.0)))&&all(lessThanEqual(q.xy,vec2(1.0)))){"
+    "float tolerance=max(0.00003,2.0*(abs(dFdx(q.z))+abs(dFdy(q.z))));"
+    "if(abs(texture(contactDepth,q.xy).r-q.z)<tolerance)contact*=texture(contactMap,q.xy).r;}}"
     "vec3 emission=useEmission!=0?pow(max(texture(emissionMap,uv).rgb,vec3(0.0)),vec3(2.2)):vec3(0.0);"
     "float diffuseEnergy=useSpecGloss!=0?1.0-max(f0.r,max(f0.g,f0.b)):1.0-metalness;"
     "vec3 color=tone((albedo*(illumination*contact+punctual)*diffuseEnergy+reflection+indirect*contact+emission)*exposure);"
@@ -154,7 +168,13 @@ static SwatLightingProgram program(void) {
     p.sun_map=GetShaderLocation(p.shader,"sunMap"); p.lamp_map=GetShaderLocation(p.shader,"lampMap");
     p.rooms=GetShaderLocation(p.shader,"rooms"); p.centers=GetShaderLocation(p.shader,"centers[0]");
     p.halves=GetShaderLocation(p.shader,"halves[0]"); p.origins=GetShaderLocation(p.shader,"origins[0]"); p.lamp_room=GetShaderLocation(p.shader,"lampRoom");
-    p.exposure=GetShaderLocation(p.shader,"exposure"); return p;
+    p.exposure=GetShaderLocation(p.shader,"exposure");
+    p.ibl=GetShaderLocation(p.shader,"useIbl");p.ibl_atlas=GetShaderLocation(p.shader,"iblAtlas");
+    p.sun_direction=GetShaderLocation(p.shader,"sunDirection");p.sun_energy=GetShaderLocation(p.shader,"sunEnergy");
+    p.occlusion=GetShaderLocation(p.shader,"useOcclusion");p.occlusion_strength=GetShaderLocation(p.shader,"occlusionStrength");
+    p.shader.locs[SHADER_LOC_MAP_OCCLUSION]=GetShaderLocation(p.shader,"occlusionMap");
+    p.contact=GetShaderLocation(p.shader,"useContact");p.contact_map=GetShaderLocation(p.shader,"contactMap");
+    p.contact_matrix=GetShaderLocation(p.shader,"contactMatrix");p.contact_depth_map=GetShaderLocation(p.shader,"contactDepth");return p;
 }
 
 Shader swat_lighting_skin_shader(void) {
@@ -180,25 +200,145 @@ static RenderTexture2D depth_target(int size) {
     rlDisableFramebuffer(); return target;
 }
 
+static void environment_load(SwatLighting* light) {
+    const char* enabled=getenv("SWAT_IBL");if(enabled && !strcmp(enabled,"0"))return;
+    char path[4096];const char* custom=getenv("SWAT_ENVIRONMENT_ASSETS");
+    if(custom && *custom)snprintf(path,sizeof(path),"%s/lighting_v1/daylight.bin",custom);
+    else {
+        snprintf(path,sizeof(path),"%sassets/environment/lighting_v1/daylight.bin",GetApplicationDirectory());
+        if(!FileExists(path))snprintf(path,sizeof(path),"ocean/swat/assets/environment/lighting_v1/daylight.bin");
+    }
+    FILE* file=fopen(path,"rb");if(!file)return;
+    uint32_t header[6]={0};float scale=0;Vector3 sun={0},energy={0};
+    bool valid=fread(header,sizeof(header),1,file)==1 && header[0]==0x31424953u &&
+        header[1]==256 && header[2]==128 && header[3]==6 && header[4]==1024 && header[5]==512 &&
+        fread(&scale,sizeof(scale),1,file)==1 && isfinite(scale) && scale>0 &&
+        fread(&sun,sizeof(sun),1,file)==1 && fread(&energy,sizeof(energy),1,file)==1;
+    const size_t atlas_count=256*128*8,sky_count=1024*512;
+    Vector3* pixels=valid ? malloc((atlas_count+sky_count)*sizeof(Vector3)) : NULL;
+    valid=valid && pixels && fread(pixels,sizeof(Vector3),atlas_count+sky_count,file)==atlas_count+sky_count && fgetc(file)==EOF;
+    fclose(file);
+    if(valid) {
+        // Reject corrupt non-finite data before sending it to the driver.
+        const float* values=(float*)pixels;
+        for(size_t i=0;i<(atlas_count+sky_count)*3;i++)if(!isfinite(values[i]) || values[i]<0) { valid=false;break; }
+    }
+    if(valid && isfinite(sun.x) && isfinite(sun.y) && isfinite(sun.z) &&
+        Vector3Length(sun)>.99f && Vector3Length(sun)<1.01f &&
+        isfinite(energy.x) && isfinite(energy.y) && isfinite(energy.z) && energy.x>=0 && energy.y>=0 && energy.z>=0) {
+        light->environment_atlas=LoadTextureFromImage((Image){pixels,256,128*8,1,PIXELFORMAT_UNCOMPRESSED_R32G32B32});
+        light->environment_sky=LoadTextureFromImage((Image){pixels+atlas_count,1024,512,1,PIXELFORMAT_UNCOMPRESSED_R32G32B32});
+        if(light->environment_atlas.id && light->environment_sky.id) {
+            light->environment_scale=scale;light->sun_direction=sun;light->sun_energy=energy;
+            SetTextureFilter(light->environment_atlas,TEXTURE_FILTER_BILINEAR);
+            SetTextureFilter(light->environment_sky,TEXTURE_FILTER_BILINEAR);
+            // Longitude repeats; latitude clamps at poles/atlas edges.
+            rlTextureParameters(light->environment_atlas.id,RL_TEXTURE_WRAP_S,RL_TEXTURE_WRAP_REPEAT);
+            rlTextureParameters(light->environment_atlas.id,RL_TEXTURE_WRAP_T,RL_TEXTURE_WRAP_CLAMP);
+            rlTextureParameters(light->environment_sky.id,RL_TEXTURE_WRAP_S,RL_TEXTURE_WRAP_REPEAT);
+            rlTextureParameters(light->environment_sky.id,RL_TEXTURE_WRAP_T,RL_TEXTURE_WRAP_CLAMP);
+            TraceLog(LOG_INFO,"SWAT: CC0 HDR daylight, convolved diffuse / GGX reflections");
+        } else {
+            if(light->environment_atlas.id)UnloadTexture(light->environment_atlas);
+            if(light->environment_sky.id)UnloadTexture(light->environment_sky);
+            light->environment_atlas=light->environment_sky=(Texture2D){0};
+        }
+    }
+    free(pixels);
+}
+
+static const char* contact_fragment=
+    "#version 330\n uniform sampler2D texture0;uniform mat4 inverseProjection,projection;uniform vec2 size;out vec4 finalColor;\n"
+    "vec3 point(vec2 uv){float z=texture(texture0,uv).r;vec4 p=inverseProjection*vec4(uv*2.0-1.0,z*2.0-1.0,1.0);return p.xyz/p.w;}"
+    "void main(){vec2 uv=gl_FragCoord.xy/size,px=1.0/size;float depth=texture(texture0,uv).r;"
+    "if(depth>=0.99999){finalColor=vec4(1.0);return;}vec3 p=point(uv);"
+    // Use the nearer difference at silhouettes to avoid normals spanning rooms.
+    "vec3 r=point(uv+vec2(px.x,0.0))-p,l=p-point(uv-vec2(px.x,0.0));"
+    "vec3 u=point(uv+vec2(0.0,px.y))-p,d=p-point(uv-vec2(0.0,px.y));"
+    "vec3 n=normalize(cross(abs(r.z)<abs(l.z)?r:l,abs(u.z)<abs(d.z)?u:d));"
+    "if(dot(n,-p)<0.0)n=-n;float radius=0.28,occ=0.0;"
+    "float pixels=clamp(radius*abs(projection[1][1])*size.y*0.5/max(-p.z,0.1),2.0,60.0);"
+    "for(int i=0;i<8;i++){float angle=(float(i)+0.5)*0.785398163;vec2 dir=vec2(cos(angle),sin(angle));float horizon=0.0;"
+    "for(int j=1;j<=4;j++){vec2 q=uv+dir*px*pixels*float(j)/4.0;"
+    "if(any(lessThan(q,vec2(0.0)))||any(greaterThan(q,vec2(1.0))))continue;"
+    "vec3 delta=point(q)-p;float distance=length(delta);"
+    "if(distance>0.01&&distance<radius)horizon=max(horizon,max(0.0,dot(n,delta/distance)-0.08)*(1.0-distance/radius));}occ+=horizon;}"
+    "float ao=clamp(1.0-occ*0.16,0.65,1.0);finalColor=vec4(ao,ao,ao,1.0);}";
+
+void swat_lighting_contact(SwatLighting* light,const SwatSim* sim,Camera3D camera,int width,int height,
+                           SwatShadowSceneContext draw,void* context) {
+    light->contact_ready=false;
+    if(!light->enabled || !light->contact_enabled || camera.projection!=CAMERA_PERSPECTIVE || width<2 || height<2)return;
+    rlDrawRenderBatchActive();unsigned int previous=rlGetActiveFramebuffer();
+    Matrix previous_projection=rlGetMatrixProjection(),previous_view=rlGetMatrixModelview();
+    int w=(width+1)/2,h=(height+1)/2;
+    if(light->contact_depth.id && (light->contact_depth.depth.width!=w || light->contact_depth.depth.height!=h)) {
+        rlUnloadFramebuffer(light->contact_depth.id);light->contact_depth=(RenderTexture2D){0};
+        UnloadRenderTexture(light->contact_ao);light->contact_ao=(RenderTexture2D){0};
+    }
+    if(!light->contact_depth.id) {
+        RenderTexture2D* target=&light->contact_depth;target->id=rlLoadFramebuffer();
+        target->texture.width=w;target->texture.height=h;
+        target->depth=(Texture2D){rlLoadTextureDepth(w,h,false),w,h,1,19};
+        rlFramebufferAttach(target->id,target->depth.id,RL_ATTACHMENT_DEPTH,RL_ATTACHMENT_TEXTURE2D,0);
+        if(!target->depth.id || !rlFramebufferComplete(target->id)) {rlUnloadFramebuffer(target->id);*target=(RenderTexture2D){0};goto restore;}
+        SetTextureFilter(target->depth,TEXTURE_FILTER_POINT);SetTextureWrap(target->depth,TEXTURE_WRAP_CLAMP);
+        light->contact_ao=LoadRenderTexture(w,h);
+        SetTextureFilter(light->contact_ao.texture,TEXTURE_FILTER_BILINEAR);
+    }
+    if(!light->contact_depth.id || !light->contact_ao.id)goto restore;
+    light->contact_eye=camera.position;
+    BeginTextureMode(light->contact_depth);ClearBackground(WHITE);BeginMode3D(camera);
+    Matrix projection=rlGetMatrixProjection(),inverse=MatrixInvert(projection);
+    light->contact_matrix=MatrixMultiply(rlGetMatrixModelview(),projection);
+    draw(context,sim,false);EndMode3D();EndTextureMode();
+    Vector2 size={(float)w,(float)h};
+    SetShaderValueMatrix(light->contact_shader,light->contact_projection,projection);
+    SetShaderValueMatrix(light->contact_shader,light->contact_inverse,inverse);
+    SetShaderValue(light->contact_shader,light->contact_size,&size,SHADER_UNIFORM_VEC2);
+    BeginTextureMode(light->contact_ao);ClearBackground(WHITE);BeginShaderMode(light->contact_shader);
+    DrawTexturePro(light->contact_depth.depth,(Rectangle){0,0,w,h},(Rectangle){0,0,w,h},(Vector2){0},0,WHITE);
+    EndShaderMode();EndTextureMode();
+    light->contact_ready=true;
+restore:
+    rlEnableFramebuffer(previous);rlViewport(0,0,width,height);
+    rlSetMatrixProjection(previous_projection);rlSetMatrixModelview(previous_view);
+}
+
 void swat_lighting_init(SwatLighting* light) {
     if(light->initialized) return;
     light->initialized=true; light->exposure=1.1f; light->lamp_room=-1;
+    light->sun_direction=Vector3Normalize((Vector3){-.45f,.82f,-.35f});light->sun_energy=(Vector3){.95f,.88f,.76f};
     const char* mode=getenv("SWAT_LIGHTING"),*exposure=getenv("SWAT_EXPOSURE");
     if(mode && !strcmp(mode,"0")) return;
     if(exposure) { char* end; float v=strtof(exposure,&end); if(end!=exposure && !*end && isfinite(v)) light->exposure=swat_clamp(v,.25f,3); }
     light->batch=program(); light->mesh=program();
+    environment_load(light);
     const char* sky_fragment="#version 330\n in vec2 fragTexCoord; out vec4 finalColor; uniform vec3 skyForward,skyRight,skyUp; uniform vec2 skyScale,skySize; uniform float exposure;\n"
         SWAT_SKY_GLSL
-        "void main(){vec2 p=(gl_FragCoord.xy/skySize*2.0-1.0)*skyScale;vec3 d=normalize(skyForward+p.x*skyRight+p.y*skyUp);finalColor=vec4(pow(tone(skyRadiance(d,0.0)*exposure),vec3(1.0/2.2)),1.0);}";
+        "uniform sampler2D skyMap;uniform int useIbl;uniform float skyMapScale;"
+        "void main(){vec2 p=(gl_FragCoord.xy/skySize*2.0-1.0)*skyScale;vec3 d=normalize(skyForward+p.x*skyRight+p.y*skyUp);"
+        "vec3 radiance=skyRadiance(d,0.0);if(useIbl!=0)radiance=texture(skyMap,vec2(atan(d.z,d.x)/6.2831853+0.5,acos(clamp(d.y,-1.0,1.0))/3.14159265)).rgb*skyMapScale;"
+        "finalColor=vec4(pow(tone(radiance*exposure),vec3(1.0/2.2)),1.0);}";
     light->sky=LoadShaderFromMemory(NULL,sky_fragment);
     light->sky_forward=GetShaderLocation(light->sky,"skyForward"); light->sky_right=GetShaderLocation(light->sky,"skyRight");
     light->sky_up=GetShaderLocation(light->sky,"skyUp"); light->sky_scale=GetShaderLocation(light->sky,"skyScale");
     light->sky_size=GetShaderLocation(light->sky,"skySize");
     light->sky_exposure=GetShaderLocation(light->sky,"exposure");
+    light->sky_map=GetShaderLocation(light->sky,"skyMap");light->sky_ibl=GetShaderLocation(light->sky,"useIbl");
+    light->sky_map_scale=GetShaderLocation(light->sky,"skyMapScale");
     light->sun=depth_target(1536); light->lamp=depth_target(768);
+    const char* contact=getenv("SWAT_CONTACT_SHADOWS");
+    // Keep the extra geometry pass opt-in until its cost is lower on the 1060.
+    if(contact && strcmp(contact,"0")) {
+        light->contact_shader=LoadShaderFromMemory(NULL,contact_fragment);
+        light->contact_enabled=light->contact_shader.id && light->contact_shader.id!=rlGetShaderIdDefault();
+        light->contact_inverse=GetShaderLocation(light->contact_shader,"inverseProjection");
+        light->contact_projection=GetShaderLocation(light->contact_shader,"projection");
+        light->contact_size=GetShaderLocation(light->contact_shader,"size");
+    }
     light->enabled=light->sun.id && light->lamp.id && light->batch.shader.id!=rlGetShaderIdDefault() &&
         light->mesh.shader.id!=rlGetShaderIdDefault();
-    light->sun_direction=Vector3Normalize((Vector3){-.45f,.82f,-.35f});
     if(!light->enabled) {
         TraceLog(LOG_WARNING,"SWAT: lighting unavailable, using unlit fallback"); return;
     }
@@ -232,6 +372,10 @@ void swat_lighting_material_scaled(SwatLighting* light,Material material,bool en
     SetShaderValue(p->shader,p->normal_scale,&normal_scale,SHADER_UNIFORM_FLOAT);
     int emission=enabled && material.maps && material.maps[MATERIAL_MAP_EMISSION].texture.id;
     SetShaderValue(p->shader,p->emission,&emission,SHADER_UNIFORM_INT);
+    int occlusion=enabled && material.maps && material.maps[MATERIAL_MAP_OCCLUSION].texture.id;
+    float strength=occlusion?material.maps[MATERIAL_MAP_OCCLUSION].value:1;
+    SetShaderValue(p->shader,p->occlusion,&occlusion,SHADER_UNIFORM_INT);
+    SetShaderValue(p->shader,p->occlusion_strength,&strength,SHADER_UNIFORM_FLOAT);
     SetShaderValue(p->shader,p->skinning,&zero,SHADER_UNIFORM_INT);
     if(pbr) {
         SetShaderValue(p->shader,p->roughness,&material.maps[MATERIAL_MAP_ROUGHNESS].value,SHADER_UNIFORM_FLOAT);
@@ -255,6 +399,7 @@ void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughn
     SetShaderValue(p->shader,p->environment_normal,&use_normal,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->pbr,&zero,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->spec_gloss,&zero,SHADER_UNIFORM_INT);
+    SetShaderValue(p->shader,p->occlusion,&zero,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_normal_map,&nslot,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_roughness_map,&rslot,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_size,&size,SHADER_UNIFORM_VEC3);
@@ -273,6 +418,11 @@ void swat_lighting_close(SwatLighting* light) {
     if(light->batch.shader.id && light->batch.shader.id!=rlGetShaderIdDefault()) UnloadShader(light->batch.shader);
     if(light->mesh.shader.id && light->mesh.shader.id!=rlGetShaderIdDefault()) UnloadShader(light->mesh.shader);
     if(light->sky.id && light->sky.id!=rlGetShaderIdDefault()) UnloadShader(light->sky);
+    if(light->environment_atlas.id)UnloadTexture(light->environment_atlas);
+    if(light->environment_sky.id)UnloadTexture(light->environment_sky);
+    if(light->contact_depth.id)rlUnloadFramebuffer(light->contact_depth.id);
+    if(light->contact_ao.id)UnloadRenderTexture(light->contact_ao);
+    if(light->contact_shader.id && light->contact_shader.id!=rlGetShaderIdDefault())UnloadShader(light->contact_shader);
     memset(light,0,sizeof(*light));
 }
 
@@ -367,6 +517,14 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValue(s,p->skinning,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->emission,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->environment,&zero,SHADER_UNIFORM_INT);
+        SetShaderValue(s,p->occlusion,&zero,SHADER_UNIFORM_INT);
+        int ibl=light->environment_atlas.id!=0,ibl_slot=9,contact=light->contact_ready,contact_slot=7,depth_slot=8;
+        SetShaderValue(s,p->ibl,&ibl,SHADER_UNIFORM_INT);SetShaderValue(s,p->ibl_atlas,&ibl_slot,SHADER_UNIFORM_INT);
+        SetShaderValue(s,p->sun_direction,&light->sun_direction,SHADER_UNIFORM_VEC3);
+        SetShaderValue(s,p->sun_energy,&light->sun_energy,SHADER_UNIFORM_VEC3);
+        SetShaderValue(s,p->contact,&contact,SHADER_UNIFORM_INT);SetShaderValue(s,p->contact_map,&contact_slot,SHADER_UNIFORM_INT);
+        SetShaderValue(s,p->contact_depth_map,&depth_slot,SHADER_UNIFORM_INT);
+        SetShaderValueMatrix(s,p->contact_matrix,light->contact_matrix);
         SetShaderValue(s,p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
         SetShaderValueMatrix(s,p->sun_matrix,light->sun_matrix); SetShaderValueMatrix(s,p->lamp_matrix,light->lamp_matrix);
         SetShaderValue(s,p->camera,&camera,SHADER_UNIFORM_VEC3);
@@ -379,6 +537,9 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
             SetShaderValueV(s,p->origins,origins,SHADER_UNIFORM_VEC3,world->room_count);
         }
     }
+    rlActiveTextureSlot(9);if(light->environment_atlas.id)rlEnableTexture(light->environment_atlas.id);
+    rlActiveTextureSlot(7);if(light->contact_ready)rlEnableTexture(light->contact_ao.texture.id);
+    rlActiveTextureSlot(8);if(light->contact_ready)rlEnableTexture(light->contact_depth.depth.id);
     rlActiveTextureSlot(14); rlEnableTexture(light->sun.depth.id);
     rlActiveTextureSlot(15); rlEnableTexture(light->lamp.depth.id); rlActiveTextureSlot(0);
     light->surface_normal=light->surface_roughness=~0u;
@@ -387,6 +548,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
 void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art) {
     if(!light->enabled || !light->prepared) return;
     EndShaderMode(); art->lit=false; art->lighting=NULL; art_shader(art,(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()});
+    rlActiveTextureSlot(7);rlDisableTexture();rlActiveTextureSlot(8);rlDisableTexture();rlActiveTextureSlot(9);rlDisableTexture();
     rlActiveTextureSlot(12); rlDisableTexture(); rlActiveTextureSlot(13); rlDisableTexture();
     rlActiveTextureSlot(14); rlDisableTexture(); rlActiveTextureSlot(15); rlDisableTexture(); rlActiveTextureSlot(0);
 }
@@ -402,5 +564,12 @@ void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height)
     SetShaderValue(light->sky,light->sky_scale,&scale,SHADER_UNIFORM_VEC2);
     Vector2 size={(float)width,(float)height}; SetShaderValue(light->sky,light->sky_size,&size,SHADER_UNIFORM_VEC2);
     SetShaderValue(light->sky,light->sky_exposure,&light->exposure,SHADER_UNIFORM_FLOAT);
-    BeginShaderMode(light->sky); DrawRectangle(0,0,width,height,WHITE); EndShaderMode();
+    int ibl=light->environment_sky.id!=0;
+    SetShaderValue(light->sky,light->sky_ibl,&ibl,SHADER_UNIFORM_INT);
+    SetShaderValue(light->sky,light->sky_map_scale,&light->environment_scale,SHADER_UNIFORM_FLOAT);
+    // Shader switching flushes Raylib's batch and clears its sampler registry.
+    // Register the sky texture after that flush, so the quad retains its map.
+    BeginShaderMode(light->sky);
+    if(ibl)SetShaderValueTexture(light->sky,light->sky_map,light->environment_sky);
+    DrawRectangle(0,0,width,height,WHITE); EndShaderMode();
 }

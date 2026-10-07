@@ -11,6 +11,8 @@ typedef struct SwatLightingProgram {
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
     int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green,normal_scale;
+    int ibl,ibl_atlas,sun_direction,sun_energy,occlusion,occlusion_strength;
+    int contact,contact_map,contact_depth_map,contact_matrix;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -24,6 +26,16 @@ typedef struct SwatLighting {
     int lamp_room,last_tick,updates;
     bool cutaway;
     unsigned int surface_normal,surface_roughness;
+    Texture2D environment_atlas,environment_sky;
+    float environment_scale;
+    Vector3 sun_energy;
+    int sky_map,sky_ibl,sky_map_scale;
+    RenderTexture2D contact_depth,contact_ao;
+    Shader contact_shader;
+    int contact_projection,contact_inverse,contact_size;
+    Matrix contact_matrix;
+    bool contact_ready,contact_enabled;
+    Vector3 contact_eye;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
 typedef void (*SwatShadowSceneContext)(void* context,const SwatSim* sim,bool cutaway);
@@ -38,6 +50,10 @@ void swat_lighting_prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowScene draw);
 void swat_lighting_prepare_context(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowSceneContext draw,void* context);
+// Screen-space contact occlusion: half-resolution depth, no physics queries.
+// Recomputed from the current camera/geometry; only indirect light is darkened.
+void swat_lighting_contact(SwatLighting* light,const SwatSim* sim,Camera3D camera,int width,int height,
+                           SwatShadowSceneContext draw,void* context);
 // Called inside BeginMode3D; the shader never touches text or HUD compositing.
 void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatWorld* world,Vector3 camera);
 void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height);

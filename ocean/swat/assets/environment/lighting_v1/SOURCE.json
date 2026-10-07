@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-07",
+  "title": "Kloofendal 48d Partly Cloudy (Pure Sky)",
+  "authors": {
+    "Greg Zaal": "Original",
+    "Jarod Guest": "Sky edits"
+  },
+  "asset_url": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+  "license": "CC0-1.0",
+  "license_url": "https://polyhaven.com/license",
+  "download_url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/kloofendal_48d_partly_cloudy_puresky_1k.hdr",
+  "source": {
+    "file": "kloofendal_48d_partly_cloudy_puresky_1k.hdr",
+    "sha256": "fd94c84997b8a3c353b62c2125a9b44e19509956986a126e472684432a02d798",
+    "md5": "c69498687e876bf68d2a8b8a62234eb9",
+    "bytes": 1435119
+  },
+  "bake": {
+    "file": "daylight.bin",
+    "sha256": "71e4922d41c5f4e5dd28556ae5f42e8a026e66314ed8b9543cb1aae841ace085",
+    "bytes": 9437236,
+    "tool": "ocean/swat/lighting_bake.c",
+    "command": "make -C ocean/swat lighting-bake",
+    "samples": 256,
+    "layers": [
+      "GGX roughness 0",
+      "GGX roughness 0.2",
+      "GGX roughness 0.4",
+      "GGX roughness 0.6",
+      "GGX roughness 0.8",
+      "GGX roughness 1",
+      "cosine-weighted diffuse irradiance / pi",
+      "split-sum BRDF (R scale, G bias)"
+    ],
+    "sun_disc_removed_degrees": 1.25,
+    "exposure_basis": "Upper-hemisphere mean luminance normalized to 0.45; scale is shared with visible HDR background",
+    "format": "Little-endian SIB1 magic, 6 uint32 fields [magic,256,128,6,1024,512], float scale, float3 sun direction, float3 direct energy, 256x1024 RGB32F atlas, 1024x512 RGB32F source sky"
+  },
+  "limits": [
+    "Filtered distant sky lighting, not local scene reflection capture or global illumination",
+    "Interior ambient still uses the existing bounded room approximation",
+    "Contact occlusion is screen-space and omits off-screen geometry and small secondary feeds"
+  ]
+}

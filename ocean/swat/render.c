@@ -1,4 +1,5 @@
 #include "render.h"
+#include "raymath.h"
 #include "pose.h"
 #include "rlgl.h"
 #include <stdlib.h>
@@ -248,7 +249,43 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
     if(!cutaway) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,true);
 }
 
+static void swat_draw_contact_scene(void* context,const SwatSim* sim,bool cutaway) {
+    SwatView* view=context;
+    Matrix m=view->lighting.contact_matrix;
+    Vector4 planes[]={
+        {m.m3+m.m0,m.m7+m.m4,m.m11+m.m8,m.m15+m.m12},
+        {m.m3-m.m0,m.m7-m.m4,m.m11-m.m8,m.m15-m.m12},
+        {m.m3+m.m1,m.m7+m.m5,m.m11+m.m9,m.m15+m.m13},
+        {m.m3-m.m1,m.m7-m.m5,m.m11-m.m9,m.m15-m.m13},
+        {m.m3+m.m2,m.m7+m.m6,m.m11+m.m10,m.m15+m.m14},
+        {m.m3-m.m2,m.m7-m.m6,m.m11-m.m10,m.m15-m.m14}};
+    for(int i=0;i<6;i++) {
+        float length=sqrtf(planes[i].x*planes[i].x+planes[i].y*planes[i].y+planes[i].z*planes[i].z);
+        planes[i]=Vector4Scale(planes[i],1/fmaxf(length,1e-6f));
+    }
+    // Contact detail is local. Avoid a second full-location/character draw.
+    for(int i=0;i<sim->world.count;i++) {
+        const SwatObject* o=&sim->world.objects[i];if(!o->active || o->material==SWAT_GLASS)continue;
+        Vector3 p={(float)o->center.x,(float)o->center.y,(float)o->center.z};
+        float radius=b3Length(o->half)+.5f; // Include trim beyond the collider.
+        if(Vector3DistanceSqr(p,view->lighting.contact_eye)>(radius+10)*(radius+10))continue;
+        bool visible=true;
+        for(int j=0;j<6;j++)if(planes[j].x*p.x+planes[j].y*p.y+planes[j].z*p.z+planes[j].w< -radius) {visible=false;break;}
+        if(!visible)continue;
+        if(swat_environment_motel_draw(&view->environment,&sim->world,o,true,false))continue;
+        if(swat_environment_storefront_draw(&view->environment,&sim->world,o,true,false))continue;
+        rlPushMatrix();rlTranslatef(p.x,p.y,p.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);
+        if(o->fractured)swat_environment_fragment_draw(o);
+        else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);
+        rlPopMatrix();
+    }
+}
 static void swat_begin_scene(SwatView* view,const SwatSim* sim,Camera3D camera,int width,int height) {
+    // Small remote/planning feeds omit contact AO; do not reallocate a shared
+    // full-window target twice per frame or double the geometry submission.
+    if(width==GetScreenWidth() && height==GetScreenHeight())
+        swat_lighting_contact(&view->lighting,sim,camera,width,height,swat_draw_contact_scene,view);
+    else view->lighting.contact_ready=false;
     swat_lighting_sky(&view->lighting,camera,width,height);
     BeginMode3D(camera);
     swat_lighting_begin(&view->lighting,&view->environment,&sim->world,camera.position);
@@ -486,6 +523,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         // Physics, achieved pose and obstruction logic still use the world camera.
         swat_end_scene(view);
         Camera3D weapon_camera=camera;
+        view->lighting.contact_ready=false; // Separate viewmodel projection has no scene-depth match.
         float hip=2*atanf(tanf(31*SWAT_RAD)/view->weapon_size)/SWAT_RAD;
         weapon_camera.fovy=hip+((a->arsenal.sight==SWAT_OPTIC?30:45)-hip)*c->ads;
         BeginMode3D(weapon_camera);

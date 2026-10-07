@@ -38,11 +38,13 @@ green to share a basis. Original PNG files are never re-encoded. Signed screen
 derivatives construct the normal basis on immediate boxes and the original
 door meshes, including mirrored UVs. Degenerate UVs keep the geometric normal.
 Metalness is zero; roughness drives the existing GGX direct specular response.
-This is still preview lighting, without scene IBL or baked GI.
+The current renderer adds HDR sky IBL; local scene probes and baked GI remain absent.
 
 Each surface owns three textures with repeating trilinear mipmaps. Auxiliary
 normal/roughness use units 12/13, separate from Raylib model maps and depth maps
-14/15. Material transitions flush queued vertices before changing uniforms;
+14/15. The HDR atlas uses unit 9; contact occlusion/depth use 7/8. These slots are
+reserved globally and must not be populated as per-model cubemap/IBL maps.
+Material transitions flush queued vertices before changing uniforms;
 plain geometry, meshes and the next camera reset their state. Shutdown releases
 each owned texture once. Missing channels fall back to diffuse shading, missing
 new basecolors to the old maps, and missing art to grayboxes. Explicit asset
@@ -84,8 +86,11 @@ these runtime captures are separate from the handoff's Blender QA.
 
 ## Daylight and material follow-up
 
-The visible daylight sky and analytic reflection environment now share their
-linear radiance. Specular reflection varies with roughness and view angle for
+The visible daylight sky and filtered reflection environment now share the
+CC0 Poly Haven HDR source in [lighting_v1](assets/environment/lighting_v1/README.md).
+Its diffuse convolution, six GGX roughness levels and BRDF lookup are baked
+offline in C and checked in with the original HDR and provenance. Specular
+reflection varies with roughness and view angle for
 painted surfaces as well as metal; interior surfaces use restrained room
 reflection and contact shading. This remains an approximation without scene
 reflection probes or GI. Imported scalar metallic/roughness factors are restored
@@ -93,6 +98,15 @@ where Raylib 5.5 omits them for materials lacking an ORM texture; the shader now
 supports those materials independently of texture presence. Original rifle
 G-roughness/B-metalness maps and their unit factors remain unchanged, following
 the [glTF material contract](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#metallic-roughness-material).
+
+Room 101 imports also restore glTF occlusion strength. AO uses the texture's red
+channel and affects indirect light only. Optional half-resolution camera depth contributes
+short-range contact occlusion from current nearby geometry, with no physics
+queries or temporal history; doors and removed objects change it immediately.
+First-person weapons and small secondary feeds omit this pass. It complements
+the existing bounded indoor ambient approximation rather than replacing it with
+full light transport.
+Use `SWAT_CONTACT_SHADOWS=1` to inspect it; profiling keeps it disabled by default.
 
 First-person weapon rendering uses a 62-degree vertical hip FOV (bounded by the
 world FOV) and interpolates to the same sight FOV at full ADS. It preserves the

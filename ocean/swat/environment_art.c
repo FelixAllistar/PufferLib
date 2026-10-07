@@ -68,6 +68,7 @@ static void room101_load(SwatEnvironmentArt* art) {
             Material* material=&model->materials[m+1]; const SwatArtMaterialFactors* f=&factors[m];
             material->maps[MATERIAL_MAP_ROUGHNESS].value=f->roughness;
             material->maps[MATERIAL_MAP_METALNESS].value=f->metalness;
+            material->maps[MATERIAL_MAP_OCCLUSION].value=f->occlusion_strength;
             material->maps[MATERIAL_MAP_NORMAL].value=2; // Signed derivative basis, including mirrored UVs.
             art->room101_normal_scale[i][m+1]=f->normal_scale;
             // The lighting shader decodes texture * tint with gamma 2.2.
@@ -157,6 +158,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             material->maps[MATERIAL_MAP_ROUGHNESS].value=a->materials[m].roughness;
             material->maps[MATERIAL_MAP_METALNESS].value=a->materials[m].metalness;
             material->maps[MATERIAL_MAP_NORMAL].value=2; // Signed UV derivatives.
+            material->maps[MATERIAL_MAP_OCCLUSION].value=1;
             for(int k=0;k<=MATERIAL_MAP_BRDF;k++) {
                 Texture2D* t=&material->maps[k].texture;
                 if(t->id && t->id!=rlGetTextureIdDefault()) { GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR); }
@@ -381,6 +383,14 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
         Material material=model->materials[model->meshMaterial[i]];
         bool blend=material.maps[MATERIAL_MAP_ALBEDO].color.a<255;
         if(blend!=transparent || (shadow && blend)) continue;
+        // Opaque depth passes need geometry only. Binding every full-resolution
+        // material map here wastes driver work for both shadows and contact AO.
+        MaterialMap depth_maps[MATERIAL_MAP_BRDF+1]={0};
+        if(shadow) {
+            depth_maps[MATERIAL_MAP_ALBEDO].texture.id=rlGetTextureIdDefault();
+            depth_maps[MATERIAL_MAP_ALBEDO].color=WHITE;
+            material.maps=depth_maps;
+        }
         material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
         if(lit) {
             float normal_scale=1;

@@ -352,12 +352,13 @@ int swat_art_material_factors(const char* path,SwatArtMaterialFactors* out,int c
     for(int i=0;i<count;i++) {
         const cgltf_material* m=&source->materials[i];
         const cgltf_pbr_metallic_roughness* p=&m->pbr_metallic_roughness;
-        out[i]=(SwatArtMaterialFactors){.base_color={1,1,1,1},.roughness=1,.metalness=1,.normal_scale=1};
+        out[i]=(SwatArtMaterialFactors){.base_color={1,1,1,1},.roughness=1,.metalness=1,.normal_scale=1,.occlusion_strength=1};
         if(m->has_pbr_metallic_roughness) {
             memcpy(out[i].base_color,p->base_color_factor,sizeof(out[i].base_color));
             out[i].roughness=p->roughness_factor; out[i].metalness=p->metallic_factor;
         }
         if(m->normal_texture.texture) out[i].normal_scale=m->normal_texture.scale;
+        if(m->occlusion_texture.texture) out[i].occlusion_strength=m->occlusion_texture.scale;
     }
     cgltf_free(source); return count;
 }

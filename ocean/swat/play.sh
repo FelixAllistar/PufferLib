@@ -18,6 +18,7 @@ swat_needs_build() {
     for source in ocean/swat/*.c ocean/swat/*.h ocean/swat/generated/*.h ocean/swat/vendor/*.h ocean/swat/tests/character_probe.c ocean/swat/CMakeLists.txt ocean/swat/Makefile resources/shared/Roboto-Regular.ttf ocean/swat/build-windows.sh \
                   ocean/swat/assets/environment/* \
                   ocean/swat/assets/environment/materials_v1/*.png \
+                  ocean/swat/assets/environment/lighting_v1/*.bin \
                   ocean/swat/assets/environment/motel_v1/*.glb \
                   ocean/swat/assets/environment/motel_room101_v2/*.glb \
                   ocean/swat/assets/environment/storefront_v1/*.glb \
@@ -40,7 +41,7 @@ if { [ -n "${WSL_INTEROP:-}" ] || [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; } 
     # Linux variables otherwise disappear across interop. Forward only supplied
     # game overrides; path entries are translated by WSL, existing rules kept.
     for SWAT_FORWARD in SWAT_SOUND_ASSETS/pw SWAT_LIGHTING/w SWAT_EXPOSURE/w SWAT_PLASTER_STYLE/w SWAT_ENVIRONMENT_STYLE/w SWAT_ENVIRONMENT_PBR/w SWAT_ENVIRONMENT_ART/w SWAT_WEAPON_ART/w SWAT_WEAPON_ASSETS/pw SWAT_CHARACTER_ART/w SWAT_CHARACTER_NORMALS/w SWAT_CHARACTER_ASSETS/pw \
-                        SWAT_ENVIRONMENT_ASSETS/pw SWAT_MOTEL_ROOM101/w SWAT_STEAM_AUDIO_LIBRARY/pw SWAT_HRTF_SOFA/pw; do
+                        SWAT_ENVIRONMENT_ASSETS/pw SWAT_MOTEL_ROOM101/w SWAT_IBL/w SWAT_CONTACT_SHADOWS/w SWAT_STEAM_AUDIO_LIBRARY/pw SWAT_HRTF_SOFA/pw; do
         SWAT_FORWARD_KEY=${SWAT_FORWARD%%/*}
         if [ -v "$SWAT_FORWARD_KEY" ]; then
             case ":${WSLENV:-}:" in

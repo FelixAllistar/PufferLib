@@ -26,6 +26,38 @@ static void scene(const SwatSim* s,bool cutaway) {
         rlPopMatrix();
     }
 }
+static void contact_scene(void* context,const SwatSim* s,bool cutaway) { (void)context;scene(s,cutaway); }
+static void contact_checks(SwatLighting* light,const char* directory) {
+    sim.world.room_count=0;sim.world.count=2;
+    sim.world.objects[0]=(SwatObject){.active=true,.center={0,-.05f,0},.half={4,.05f,4},.material=SWAT_CONCRETE};
+    sim.world.objects[1]=(SwatObject){.active=true,.center={0,.5f,0},.half={.5f,.5f,.5f},.material=SWAT_WOOD};
+    Camera3D camera={{2.2f,2.3f,2.2f},{0,.1f,0},{0,1,0},55,CAMERA_PERSPECTIVE};
+    before=sim.world;
+    // Insets and test captures already have an FBO bound. Both allocation and
+    // resize must return to that exact target, with its original matrices.
+    RenderTexture2D outer=LoadRenderTexture(512,384);BeginTextureMode(outer);
+    unsigned int bound=rlGetActiveFramebuffer();Matrix projection=rlGetMatrixProjection();
+    swat_lighting_contact(light,&sim,camera,512,384,contact_scene,NULL);
+    assert(light->contact_ready && rlGetActiveFramebuffer()==bound);
+    Matrix restored=rlGetMatrixProjection();assert(!memcmp(&projection,&restored,sizeof(projection)));
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
+    Image blocked=LoadImageFromTexture(light->contact_ao.texture);
+    sim.world.objects[1].active=false;
+    swat_lighting_contact(light,&sim,camera,512,384,contact_scene,NULL);
+    Image open=LoadImageFromTexture(light->contact_ao.texture);
+    Color* a=LoadImageColors(blocked),*b=LoadImageColors(open);int changed=0,dark=0;
+    for(int i=0;i<blocked.width*blocked.height;i++) {changed+=a[i].r+3<b[i].r;dark+=b[i].r<250;}
+    printf("contact occlusion changed pixels=%d, plain-plane dark pixels=%d\n",changed,dark);
+    assert(changed>30 && dark<blocked.width*blocked.height/50);
+    char path[4096];ImageFlipVertical(&blocked);snprintf(path,sizeof(path),"%s/contact-occlusion.png",directory);assert(ExportImage(blocked,path));
+    UnloadImageColors(a);UnloadImageColors(b);UnloadImage(blocked);UnloadImage(open);
+    swat_lighting_contact(light,&sim,camera,256,192,contact_scene,NULL);
+    assert(light->contact_depth.depth.width==128 && rlGetActiveFramebuffer()==bound);
+    light->contact_enabled=false;swat_lighting_contact(light,&sim,camera,256,192,contact_scene,NULL);
+    assert(!light->contact_ready);light->contact_enabled=true;
+    EndTextureMode();UnloadRenderTexture(outer);
+    puts("PASS contact: immediate geometry removal, clean flat plane, authority immutable, nested framebuffer and resize restored");
+}
 static Image capture(SwatLighting* light,SwatEnvironmentArt* art,Camera3D camera,Model* model) {
     RenderTexture2D target=LoadRenderTexture(512,512); assert(target.id);
     BeginTextureMode(target); ClearBackground(BLACK); BeginMode3D(camera);
@@ -67,6 +99,19 @@ static Image surface_capture(SwatLighting* light,SwatEnvironmentArt* art,Texture
 }
 static Texture2D solid_texture(Color color) {
     Image image=GenImageColor(2,2,color); Texture2D result=LoadTextureFromImage(image); UnloadImage(image); return result;
+}
+static void sky_check(SwatLighting* light,const char* directory) {
+    RenderTexture2D target=LoadRenderTexture(320,180);
+    Camera3D camera={{0,0,0},{0,1,.1f},{0,0,-1},60,CAMERA_PERSPECTIVE};
+    BeginTextureMode(target);ClearBackground(BLACK);
+    DrawRectangle(0,0,10,10,RED); // Exercise the shader-switch batch flush.
+    swat_lighting_sky(light,camera,320,180);EndTextureMode();
+    Image frame=LoadImageFromTexture(target.texture);Color* pixels=LoadImageColors(frame);
+    int lit=0;for(int i=0;i<320*180;i++)lit+=pixels[i].r+pixels[i].g+pixels[i].b>120;
+    assert(lit>320*180*9/10);
+    ImageFlipVertical(&frame);char path[4096];snprintf(path,sizeof(path),"%s/hdr-sky.png",directory);assert(ExportImage(frame,path));
+    UnloadImageColors(pixels);UnloadImage(frame);UnloadRenderTexture(target);
+    puts("PASS HDR sky remains sampled after shader-switch batch flush");
 }
 static void environment_basis(SwatLighting* light,SwatEnvironmentArt* art) {
     sim.world.room_count=0; sim.world.objects[0].active=sim.world.objects[1].active=false;
@@ -121,6 +166,21 @@ static void source_finish(SwatLighting* light,SwatEnvironmentArt* art) {
     }
     printf("source specular-color response=%d gloss-response pixels=%d\n",colored,gloss_changed);
     assert(colored>1000 && gloss_changed>1000);
+    Texture2D ao=solid_texture(BLACK);
+    model.materials[0].maps[MATERIAL_MAP_OCCLUSION].texture=ao;
+    model.materials[0].maps[MATERIAL_MAP_OCCLUSION].value=1;
+    Image occluded=finish_capture(light,art,&model,red,dull);
+    model.materials[0].maps[MATERIAL_MAP_OCCLUSION].value=0;
+    Image disabled=finish_capture(light,art,&model,red,dull);
+    Color* po=LoadImageColors(occluded),*pd=LoadImageColors(disabled);int affected=0,still_lit=0;
+    for(int i=0;i<256*256;i++) {
+        affected+=pa[i].r+pa[i].g+pa[i].b>po[i].r+po[i].g+po[i].b+5;
+        still_lit+=po[i].r+po[i].g+po[i].b>30;
+        assert(!memcmp(&pa[i],&pd[i],sizeof(Color)));
+    }
+    assert(affected>1000 && still_lit>1000);
+    model.materials[0].maps[MATERIAL_MAP_OCCLUSION].texture=(Texture2D){0};UnloadTexture(ao);
+    UnloadImageColors(po);UnloadImageColors(pd);UnloadImage(occluded);UnloadImage(disabled);
     // Both source texture slots are borrowed; release each owner once.
     model.materials[0].shader=(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()}; UnloadModel(model);
     UnloadTexture(dull); UnloadTexture(smooth); UnloadTexture(red); UnloadTexture(blue);
@@ -132,7 +192,10 @@ int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : ".";
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(640,480,"SWAT lighting regression"); assert(IsWindowReady());
     environment("SWAT_LIGHTING",NULL); environment("SWAT_EXPOSURE",NULL);
+    environment("SWAT_CONTACT_SHADOWS","1");
+    environment("SWAT_IBL","0"); // Fixed legacy sun direction for the shadow-coordinate fixture.
     SwatLighting light={0}; swat_lighting_init(&light); assert(light.enabled);
+    assert(!light.environment_atlas.id);
     SwatEnvironmentArt art={0};
     sim.world.count=2; sim.world.room_count=1;
     sim.world.rooms[0]=(SwatRoom){{0,1.5f,0},{4,1.5f,4},SWAT_DRYWALL,SWAT_CONCRETE};
@@ -190,7 +253,15 @@ int main(int argc,char** argv) {
     UnloadImageColors(a); UnloadImage(ground);
     environment_basis(&light,&art);
     source_finish(&light,&art);
-    swat_lighting_close(&light); assert(!light.sun.id && !light.batch.shader.id);
+    contact_checks(&light,directory);
+    swat_lighting_close(&light); assert(!light.sun.id && !light.batch.shader.id && !light.contact_depth.id);
+    environment("SWAT_IBL",NULL);swat_lighting_init(&light);
+    assert(light.environment_atlas.id && light.environment_sky.id && light.environment_scale>0);
+    assert(light.environment_atlas.width==256 && light.environment_atlas.height==1024);
+    sky_check(&light,directory);
+    swat_lighting_prepare(&light,&sim,(Vector3){1.1f,3,1.1f},false,scene);
+    source_finish(&light,&art); // Original spec/gloss still works with the HDR environment.
+    swat_lighting_close(&light);assert(!light.environment_atlas.id && !light.environment_sky.id);
     environment("SWAT_LIGHTING","0"); swat_lighting_init(&light); assert(!light.enabled && !light.sun.id);
     swat_lighting_close(&light); environment("SWAT_LIGHTING",NULL);
     environment("SWAT_EXPOSURE","99"); swat_lighting_init(&light); assert(light.exposure==3);

@@ -114,8 +114,10 @@ Use
 `--capture FILE.png` for a final scene capture. **F3** shows FPS/frame time as
 small debug text in play.
 
-The initial lighting pass adds linear diffuse shading, a cool sky/warm sun,
-warm room lights and continuously weighted depth shadows. Geometry changes invalidate the
+Lighting uses linear material shading, a free CC0 HDR sky with convolved diffuse
+illumination and roughness-filtered reflections, warm room lights and continuously
+weighted depth shadows. The visible sky, outdoor reflections and sun direction
+come from the same source. Geometry changes invalidate the
 shadow cache immediately; moving silhouettes refresh every four simulation
 ticks.
 
@@ -123,7 +125,13 @@ Indoor ambient now darkens near adjacent floor/wall/ceiling planes, excluding a
 surface's own plane. This room-bound approximation affects diffuse ambient and
 indirect reflections; direct sun/lamp light keeps its existing shadow visibility.
 Room lights use a less yellow neutral-warm tint. It is an inexpensive structural
-approximation; furniture-scale occlusion and scene-probe/GI remain future work.
+approximation. An experimental half-resolution camera depth pass adds contact occlusion around
+nearby world surfaces, recomputed after geometry changes without physics queries.
+It affects indirect light only; first-person weapons and small camera feeds omit
+this pass. Local scene reflections and global illumination remain future work.
+`SWAT_IBL=0 ./swat` compares the previous analytic sky. Contact occlusion is
+opt-in with `SWAT_CONTACT_SHADOWS=1 ./swat` because its extra geometry pass still
+costs too much on the GTX 1060. See the [lighting source and bake notes](assets/environment/lighting_v1/README.md).
 Original character specular/gloss maps now separate cloth, gloves and hard gear
 instead of assigning the entire body one rough finish; see [CHARACTER_ART.md](CHARACTER_ART.md).
 Frame limits are applied on change, eliminating the per-frame timer-log spam.
