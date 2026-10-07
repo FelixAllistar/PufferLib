@@ -139,9 +139,23 @@ def run_bc(args, ini, shapes, overrides):
         print("BC queue complete: all requested checkpoints verified; nothing to train.",flush=True)
 
 
+def sweep_results(ini):
+    folder = ROOT/ini["base"]["log_dir"]/"kaggriculture"
+    rows = []
+    for path in folder.glob("sweep_*/result.json"):
+        result = json.loads(path.read_text())
+        if result.get("status") == "complete":
+            rows.append(result)
+    print("Fresh-start mean cash | win rate | steps | checkpoint")
+    for result in sorted(rows, key=lambda r: r["score"], reverse=True):
+        print(f"${result['score']:,.2f} | {result['win_rate']:.1%} | {result['steps']:,} | {result['checkpoint']}")
+    if not rows:
+        print("No completed sweep results yet.")
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode",choices=("train","eval","match","build-bc","prepare-bc","bc","bc-grid","critic"))
+    parser.add_argument("mode",choices=("train","eval","match","sweep","sweep-results","build-bc","prepare-bc","bc","bc-grid","critic"))
     parser.add_argument("--hidden",type=int,choices=(256,512,1024))
     parser.add_argument("--layers",type=int,choices=(2,3))
     parser.add_argument("--binary",type=Path,default=ROOT/"puffer")
@@ -158,6 +172,12 @@ def main():
     if any(not x.startswith("--") or "." not in x or "=" not in x for x in overrides):
         parser.error("use native --section.key=value overrides; legacy --profile overlays are retired")
     ini=settings()
+    args.binary = ROOT/args.binary
+    if args.mode == "sweep-results":
+        if overrides or args.hidden or args.layers:
+            parser.error("sweep-results reads completed results using the shared config")
+        sweep_results(ini)
+        return 0
     h=args.hidden or ini.getint("policy","hidden_size")
     l=args.layers or ini.getint("policy","num_layers")
     if args.mode=="build-bc":
@@ -184,6 +204,8 @@ def main():
             return 1
     else:
         command=[str(args.binary),args.mode]
+        if args.mode == "sweep" and (args.hidden or args.layers):
+            parser.error("sweep architecture is fixed in the single shared config; edit its fixed bounds too")
         if args.hidden or args.layers:
             command += [f"--policy.hidden_size={h}",f"--policy.num_layers={l}",
                         f"--base.load_model_path={model_path(ini,h,l)}",
@@ -191,7 +213,15 @@ def main():
         if args.mode in ("eval","match"):
             command += ["--headless","--env.reset_state_prob=0","--base.eval_episodes=64",
                         f"--env.num_agents={2 if args.mode=='match' else 1}"]
-        launch(command+overrides,args.dry_run)
+            if args.mode == "eval":
+                command += ["--vec.num_policies=1", "--vec.hist_policy_percent=0",
+                            "--selfplay.enabled=0", "--train.teacher_kl_coefficient=0"]
+        if args.mode == "sweep":
+            command += [f"--sweep.trainer_path={args.binary}"]
+            log = ROOT/"logs/kaggriculture"/f"sweep.{time.time_ns()}.log"
+            launch(command+overrides,args.dry_run,log)
+        else:
+            launch(command+overrides,args.dry_run)
     return 0
 
 

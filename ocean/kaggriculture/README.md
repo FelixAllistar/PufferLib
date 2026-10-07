@@ -36,19 +36,23 @@ gradient. The same conditional masks are stored during rollout and reused by
 PPO, teacher KL and evaluation. Masking is not a full forward simulator:
 an otherwise supported primitive action can still do nothing in the game.
 
-The baseline uses terminal +1/0/-1 WLD, gamma 1, paired zero-sum value,
-lambda .97, PPO clip .2, entropy .0015 and frozen-teacher KL .2.
-Both current-policy seats train. Historical league, scripted training
-opponents, opponent action noise, PBRS and auxiliary rewards are off.
-Replay resets are enabled at 90%, leaving 10% fresh starts. `root_money`
+The current 1024x2 BC-start baseline uses terminal +1/0/-1 WLD, gamma 1,
+paired zero-sum value, lambda .97, PPO clip .2 and entropy .0015.
+Current-policy matches train both seats; 25% of environments use a historical
+opponent (only the live seat trains there). The pool has at most six historical
+opponents, refreshed at the checkpoint cadence, not every 500M steps.
+Scripted training opponents, opponent action noise, PBRS, auxiliary rewards
+and frozen-teacher KL are off. Teacher KL currently cannot run with a league.
+Replay resets are enabled at 10%, leaving 90% fresh starts. `root_money`
 remains visible. Optional land/crop/animal bonuses
 remain available for later experiments; adding them is no longer pure WLD.
 
-The shared profile has a 500M-agent-step budget, horizon 720, 256 agent rows
+The shared config retains the user's 5B-agent-step regular-training budget,
+horizon 720, 256 agent rows
 and two full sequences per minibatch. A game has 719 action steps; Puffer's
 BF16 GAE needs a horizon divisible by eight. The 256-row vector retains
 memory headroom on the current 8GB GPU; larger shapes need separate checks.
-The user's reduced PPO learning rate is preserved; the BC Adam rate is separate.
+The user's PPO learning rate is preserved; the BC Adam rate is separate.
 Do not infer stronger play or production throughput from smoke tests.
 
 ### Fresh BC: six shapes, one configuration
@@ -98,7 +102,7 @@ clip 5; only the best held-out-CE weights are saved. Every shape starts fresh.
 The critic is frozen during actor BC. Subsequent teacher-guided PPO uses the
 matching BC policy as its frozen reference, with the teacher's own recurrent
 state. Changing `bc_grid.output_root` starts a new version without overwriting
-models. The default selected policy is 256×2; selecting another is explicit:
+models. The default selected policy is 1024×2; selecting another is explicit:
 
 ```bash
 python ocean/kaggriculture/run.py train --hidden 512 --layers 3
@@ -108,6 +112,53 @@ python ocean/kaggriculture/run.py eval --hidden 512 --layers 3
 Evaluation starts fresh with no reset bank or opponent noise. Native eval and
 match are supported. The old CPU/web/Kaggle macro exporters cannot load ABI 7;
 the build rejects those paths rather than silently exporting the wrong policy.
+
+### BC-start PROTEIN sweep
+
+```bash
+python3 ocean/kaggriculture/run.py sweep --dry-run
+python3 ocean/kaggriculture/run.py sweep
+python3 ocean/kaggriculture/run.py sweep-results
+```
+
+The first screening sweep is 12 serial trials of 50M agent steps each (rounded
+down to whole 256x720 rollouts), all freshly loading the same 1024x2 BC.
+It searches Muon learning rate (1e-5–3e-3), entropy coefficient (1e-5–1e-2),
+value coefficient (.5–3), and momentum (.5–.95). Trial zero uses the current
+settings. All inherited architecture, horizon, batch, reward and discount
+search dimensions are explicitly frozen in **the same config**. This is a
+screen, not a claim that 50M predicts the best 500M+ policy. Recheck promising
+trials with longer runs, multiple training seeds and stronger opponents.
+
+`sweep.trial_timesteps` overrides the regular training budget only for sweeps.
+If changing it, also change both fixed `[sweep.train.total_timesteps]` bounds.
+The default total is 600M nominal steps, roughly 8–12 GPU-hours at the observed
+1024 throughput; this is an estimate, not a time limit. `max_suggestion_cost`
+is a PROTEIN suggestion setting, not a process timeout.
+
+The native PROTEIN search launches an environment-owned Python worker. Each
+worker waits for training to **exit and release GPU memory**, then evaluates
+128 fresh games on each seat against the fixed built-in rule bot, with 32
+environments and no resets, noise, league or teacher KL. Map sequences are
+fixed by environment indices; `sweep.eval_seed` fixes policy-sampling RNG.
+These are repeatable screening games, not held-out game seeds or an expert
+opponent ladder. The objective is the mean final cash across seats; win rate
+and draws are reported separately. Pooled self-play win rate and reset-start
+wealth do not determine rankings. A weak bot win rate is not evidence of
+strong play, and better held-out BC loss is not evidence of better game cash.
+
+Logs survive exit: each `logs/kaggriculture/sweep_*/` directory contains exact
+input arguments, `train.log`, two `eval_seat*.log` files and `result.json`
+(or `failure.json`). Native INI metric snapshots remain alongside them.
+The Python launcher also saves a timestamped sweep console log. `sweep-results`
+prints completed trials ranked by evaluated cash. Native `./puffer sweep`
+also works after rebuilding, but use the launcher to retain its console log.
+Three failed workers abort the sweep; failed evaluation never falls back to
+a training score. Completed checkpoints are never removed or overwritten.
+Checkpoint cadence 64 keeps this 12-trial screen near 3.5GB of checkpoint
+storage. Do not start a sweep alongside another GPU trainer on the 8GB box.
+Sweep optimizer state is not resumable; rerunning starts a new set of trials
+without replacing prior results.
 
 ### Deliberate adaptations and remaining gaps
 

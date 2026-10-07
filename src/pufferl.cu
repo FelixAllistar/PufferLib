@@ -2746,6 +2746,9 @@ typedef struct {
     float costs[TRAIN_RESULT_MAX_POINTS];
     float step_points[TRAIN_RESULT_MAX_POINTS];
 } TrainResult;
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+static_assert(sizeof(TrainResult) == 784, "update the Kag sweep worker's pipe ABI");
+#endif
 
 #define EVAL_RENDER 0
 #define EVAL_SCORE 1
@@ -2805,6 +2808,23 @@ typedef struct {
 } SweepJob;
 
 void run_sweep(Ini* ini, const char* exe_path) {
+    // Optional env-owned worker: it can let train exit before scoring on the
+    // same GPU, then return the unchanged TrainResult pipe protocol. Ordinary
+    // sweeps still spawn this binary directly.
+    Dict* sweep_options = puf_ini_section(ini, "sweep", 0);
+    DictItem* worker = dict_find(sweep_options, "worker_path");
+    const char* worker_path = worker && worker->str && strcmp(worker->str, "None")
+        ? worker->str : exe_path;
+    DictItem* trial_steps = dict_find(sweep_options, "trial_timesteps");
+    if (trial_steps) {
+        assert(trial_steps->value > 0);
+        char value[64];
+        snprintf(value, sizeof(value), "%.17g", trial_steps->value);
+        puf_ini_put(ini, "train.total_timesteps", value);
+    }
+    DictItem* failure_limit = dict_find(sweep_options, "max_failures");
+    int max_failures = failure_limit ? (int)failure_limit->value : 1000;
+    assert(max_failures > 0);
     // Build SweepSpace + param map from [sweep.<section>.<key>] sections.
     const char* goal = puf_ini_get_str(ini, "sweep", "goal");
     assert((strcmp(goal, "maximize") == 0 || strcmp(goal, "minimize") == 0)
@@ -3002,7 +3022,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
                 nkeys += ini->sections[s].size;
             }
             char** argv = (char**)calloc(nkeys + 3, sizeof(char*));
-            argv[0] = (char*)exe_path;
+            argv[0] = (char*)worker_path;
             argv[1] = (char*)"train";
             int argc = 2;
             char full_key[PUF_DICT_MAX_KEY * 2];
@@ -3031,7 +3051,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
             posix_spawn_file_actions_addclose(&actions, pipefd[0]);
             posix_spawn_file_actions_addopen(
                 &actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
-            assert(posix_spawnp(&job.pid, exe_path, &actions, NULL, argv, environ) == 0
+            assert(posix_spawnp(&job.pid, worker_path, &actions, NULL, argv, environ) == 0
                 && "posix_spawn train failed");
             posix_spawn_file_actions_destroy(&actions);
             for (int a = 2; a < argc; a++) {
@@ -3069,7 +3089,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
             fprintf(stderr, "sweep worker run=%d failed; marking sample bad\n",
                 job->run);
             protein_sweep_observe(protein, job->sample, NAN, max_cost, 1);
-            assert(++failed_workers <= 1000 && "too many failed sweep workers");
+            assert(++failed_workers < max_failures && "too many failed sweep workers; inspect trial logs");
             continue;
         }
         // points[]: learning-curve downsample, or 1 final score (e.g. selfplay).
@@ -3144,9 +3164,7 @@ static EvalResult eval_loop(Ini* ini, PuffeRL* p, int mode, int verbose,
         result.score = match ? dict_get(&el, "env/policy_0_score")
             : (m ? m->value : dict_get(&el, "env/score"));
         result.perf = dict_get(&el, "env/perf");
-        if (match) {
-            result.draw = dict_get(&el, "env/draw_rate");
-        }
+        result.draw = dict_get(&el, "env/draw_rate");
         result.games = (int)n;
         dict_clear(&el);
         return result;
