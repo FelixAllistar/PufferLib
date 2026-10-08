@@ -529,9 +529,11 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     swat_draw_projectiles(s);
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material == SWAT_GLASS)
         swat_draw_object(view,&s->world,&s->world.objects[i]);
-    bool cleared=swat_sim_hostiles(s)==0 && (s->config.mission==SWAT_ANNEX || !swat_sim_unsecured(s));
+    SwatScenarioProgress progress=swat_sim_progress(s);
+    bool cleared=progress.secured;
     Color extraction = cleared ? (Color){99,197,144,255} : (Color){177,146,77,180};
-    DrawCylinder((Vector3){(float)s->extraction.x,0.01f,(float)s->extraction.z},1.3f,1.3f,0.025f,32,extraction);
+    float extraction_radius=s->config.tactical_rules ? SWAT_STAGING_RADIUS : 1.3f;
+    DrawCylinder((Vector3){(float)s->extraction.x,(float)s->extraction.y+.01f,(float)s->extraction.z},extraction_radius,extraction_radius,0.025f,32,extraction);
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
@@ -577,8 +579,10 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
 
     if(view->debug) swat_hud_center(view,TextFormat("%d FPS / %.1f ms / tick %d / %d objects / %s",GetFPS(),GetFrameTime()*1000,s->tick,s->world.count,view->lighting.enabled ? "lit" : "unlit"),width/2,80,14,swat_gold);
     swat_hud_text(view,swat_sim_mission(s)->name,24,22,15,swat_paper);
-    const char* objective=swat_sim_hostiles(s) ? "Secure the armed threats" :
-        (s->config.mission!=SWAT_ANNEX && swat_sim_unsecured(s) ? "Restrain the hostages" : "Return to extraction");
+    const char* objective=progress.threats ? TextFormat("Secure armed occupants (%d)",progress.threats) :
+        progress.unsecured ? TextFormat("Restrain civilians (%d)",progress.unsecured) :
+        progress.evidence ? TextFormat("Recover dropped weapons (%d)",progress.evidence) :
+        progress.evacuees ? TextFormat("Escort civilians to staging (%d)",progress.evacuees) : "Regroup at staging";
     swat_hud_text(view,objective,24,43,15,swat_gold);
     if(view->session_status[0] || policy)
         swat_hud_text(view,policy ? "Policy control" : view->session_status,24,64,13,(Color){180,191,195,255});

@@ -225,9 +225,19 @@ and whole-building structural collapse are unfinished. Furniture remains solid
 behind a breach. Floors, roofs, piers and most props are still static.
 See the [dressing and breach review](art_handoffs/motel-dressing-v1/engine/README.md).
 
-At Cedar House, enter through doors or create openings, secure two suspects,
-order the three civilians to comply, cuff them, and bring all surviving officers
-back to staging. Any civilian harm fails the mission. Human play defaults to
+Guest rooms have distinct [101–104 plaques](art_handoffs/motel-room-numbers/engine/README.md)
+and supported [guest folders](art_handoffs/motel-guest-folder/engine/README.md).
+The [reception sign](art_handoffs/motel-reception/engine/README.md) faces parking
+from the office canopy. These additions keep the original physics and owner IDs.
+
+At Cedar House or Briar Court, choose entry routes, secure the armed occupants,
+restrain and escort surviving civilians, recover dropped weapons, and regroup
+all surviving officers at staging. These requirements can be completed in any
+order. Human tactical scenarios deploy three squad bots by default. Civilian
+injury does not stop tactical play; harm, casualties and force violations remain
+in the debrief. The small training environments retain their immediate civilian
+harm failure. The tactical staging radius is 2.5 m to accommodate the squad.
+Human play defaults to
 five minutes. **P** opens planning: orbit the roof cutaway with A/D or inspect
 three authored overwatch viewpoints. The overview shows geometry, not hidden
 actor positions; optical previews show only what the camera can see through

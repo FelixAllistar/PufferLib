@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "runtime_sha256": "6fbfb585c2ae21fe40b5cb064246a8a57cde53dbb8b2cd7b0ad5d9dd85aeb35b",
+  "reimport_meshes": 4,
+  "triangles": 432,
+  "bottom_contact_z_m": 0.0,
+  "two_uv_layers": true,
+  "bounds_blender_xyz_m": [
+    [
+      -0.11650000512599945,
+      -0.15299999713897705,
+      0.0
+    ],
+    [
+      0.11599999666213989,
+      0.15299999713897705,
+      0.008200000040233135
+    ]
+  ]
+}

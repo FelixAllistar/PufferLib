@@ -53,6 +53,8 @@ static void room101_close(SwatEnvironmentArt* art) {
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
+    for(int i=0;i<3;i++) {swat_art_model_close(art->motel_numbers[i]);art->motel_numbers[i]=(Model){0};}
+    swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
     art->room101_ready=false;
     for(int i=0;i<SWAT_ROOM101_V3_ASSETS;i++) {swat_art_model_close(art->room101_v3[i]);art->room101_v3[i]=(Model){0};}
@@ -135,11 +137,21 @@ static void room101_load(SwatEnvironmentArt* art) {
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
+    if(!room101_model_load(&art->motel_reception,art->motel_reception_normal_scale,"motel_reception/reception_sign.glb")) {
+        swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
+    }
+    for(int i=0;i<3;i++) {
+        char file[128];snprintf(file,sizeof(file),"motel_numbers/room_number_%d.glb",102+i);
+        if(!room101_model_load(&art->motel_numbers[i],art->motel_number_normal_scale[i],file)) {
+            swat_art_model_close(art->motel_numbers[i]);art->motel_numbers[i]=(Model){0};
+        }
+    }
     static const char* files[SWAT_MOTEL_DRESSING_ASSETS]={
         "mb01_wall_toilet_roll_holder_lod0.glb","mb01_double_robe_hook_lod0.glb",
         "mg01_lidded_ice_bucket_lod0.glb","mg01_hospitality_service_tray_lod0.glb",
         "mw01_framed_woodland_print_lod0.glb","me01_door_viewer_face_lod0.glb",
-        "me01_concave_wall_bumper_lod0.glb","mb01_bedside_reading_lamp_lod0.glb"};
+        "me01_concave_wall_bumper_lod0.glb","mb01_bedside_reading_lamp_lod0.glb",
+        "mi01_guest_information_folder_lod0.glb"};
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {
         char file[256],path[4096];snprintf(file,sizeof(file),"motel_dressing_v1/%s",files[i]);
         Model* model=&art->motel_dressing[i];
@@ -481,6 +493,8 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
         material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
         if(lit) {
             float normal_scale=1;
+            if(source==&art->motel_reception)normal_scale=art->motel_reception_normal_scale[model->meshMaterial[i]];
+            for(int n=0;n<3;n++)if(source==&art->motel_numbers[n])normal_scale=art->motel_number_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
             if(source==&art->room101_desk)normal_scale=art->room101_desk_normal_scale[model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(source==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
@@ -537,6 +551,10 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
 }
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel || o->tag.index<1)return false;
+    if(o->tag.index==5 && o->active && art->motel_reception.meshCount) {
+        SwatMotelInstance sign={.origin={-10.6f,2.4f,2.01f},.scale={1,1,1},.roof=true};
+        location_draw(art,o,&sign,&art->motel_reception,shadow,cutaway,false);
+    }
     if(o->active)for(int i=0;i<SWAT_MOTEL_DRESSING_INSTANCES;i++) {
         // The analytic beam represents its own shade. Near-field point-shadow
         // projection of that shade produces giant aliases below the fixture.
@@ -553,6 +571,9 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     if(o->tag.index>SWAT_MOTEL_INSTANCES)return motel_wall_draw(art,world,o,shadow,cutaway);
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
+    // Explicit source 042/066/090 ownership. Inherited GLB 101 metadata is provenance.
+    for(int n=0;n<3;n++)if(o->tag.index==43+24*n && art->motel_numbers[n].meshCount)
+        return location_draw(art,o,p,&art->motel_numbers[n],shadow,cutaway,false);
     if(o->tag.index==24 && art->room101_v4_ready && art->room101_desk.meshCount)
         return location_draw(art,o,p,&art->room101_desk,shadow,cutaway,false);
     if(art->room101_ready) {

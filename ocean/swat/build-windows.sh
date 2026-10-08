@@ -89,14 +89,10 @@ SWAT_NET=()
 if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = character ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/character_probe.c" \
     "$SWAT_ROOT/ocean/swat/character_asset.c" -static -lm -o "$SWAT_BUILD/character_probe.exe"
-"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/character_lab.c" \
-    "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
-    "$SWAT_ROOT/ocean/swat/lighting.c" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/character_lab.exe"
 fi
 # Compile the growing shared simulation once for the player, server and checks.
 # Each invocation refreshes objects with the same flags; no stale header cache.
 mkdir -p "$SWAT_BUILD/objects"
-if [ "$SWAT_TARGET" != character ]; then
 for source in "${SWAT_CORE[@]}" protocol.c net.c replay.c; do
     object="$SWAT_BUILD/objects/${source%.c}.o"
     "$SWAT_CC" "${SWAT_FLAGS[@]}" -c "$SWAT_ROOT/ocean/swat/$source" -o "$object"
@@ -105,7 +101,10 @@ for source in "${SWAT_CORE[@]}" protocol.c net.c replay.c; do
         *) SWAT_SOURCES+=("$object") ;;
     esac
 done
-
+if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = character ]; then
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/character_lab.c" \
+    "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
+    "$SWAT_ROOT/ocean/swat/lighting.c" "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/character_lab.exe"
 fi
 
 if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = player ]; then
@@ -218,7 +217,7 @@ done
     "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_weapon_art.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_lighting.c" \
-    "$SWAT_ROOT/ocean/swat/lighting.c" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_lighting.exe"
+    "$SWAT_ROOT/ocean/swat/lighting.c" "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_lighting.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/performance_tool.c" \
     "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \

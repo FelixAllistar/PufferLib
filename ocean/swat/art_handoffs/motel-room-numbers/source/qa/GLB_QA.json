@@ -1,0 +1,119 @@
+[
+  {
+    "number": 101,
+    "file": "runtime/room_number_101.glb",
+    "sha256": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+    "bytes": 178240,
+    "triangles": 132,
+    "nodes": 3,
+    "meshes": 3,
+    "primitives": 4,
+    "materials": 3,
+    "embedded_images": 6,
+    "geometry_normals_UV_indices_transforms_materials_exact": true,
+    "only_changed_buffer_views": [],
+    "baseline_byte_identical": true,
+    "local_bounds_Yup_m": [
+      [
+        -0.16,
+        -0.085,
+        0
+      ],
+      [
+        0.16,
+        0.085,
+        0.0318
+      ]
+    ]
+  },
+  {
+    "number": 102,
+    "file": "runtime/room_number_102.glb",
+    "sha256": "4009304d0e8e6a1203f744e01a097494900e1a8db44e4026626b1d31b9ee6258",
+    "bytes": 177780,
+    "triangles": 132,
+    "nodes": 3,
+    "meshes": 3,
+    "primitives": 4,
+    "materials": 3,
+    "embedded_images": 6,
+    "geometry_normals_UV_indices_transforms_materials_exact": true,
+    "only_changed_buffer_views": [
+      19,
+      20
+    ],
+    "baseline_byte_identical": false,
+    "local_bounds_Yup_m": [
+      [
+        -0.16,
+        -0.085,
+        0
+      ],
+      [
+        0.16,
+        0.085,
+        0.0318
+      ]
+    ]
+  },
+  {
+    "number": 103,
+    "file": "runtime/room_number_103.glb",
+    "sha256": "e7c9eb3e4b7caf29c640d7ff85a3d64645876c40d2b50d6728bbbfc10d812535",
+    "bytes": 179536,
+    "triangles": 132,
+    "nodes": 3,
+    "meshes": 3,
+    "primitives": 4,
+    "materials": 3,
+    "embedded_images": 6,
+    "geometry_normals_UV_indices_transforms_materials_exact": true,
+    "only_changed_buffer_views": [
+      19,
+      20
+    ],
+    "baseline_byte_identical": false,
+    "local_bounds_Yup_m": [
+      [
+        -0.16,
+        -0.085,
+        0
+      ],
+      [
+        0.16,
+        0.085,
+        0.0318
+      ]
+    ]
+  },
+  {
+    "number": 104,
+    "file": "runtime/room_number_104.glb",
+    "sha256": "e551693ff9762117fd48cfc0aa8d509cd424733b5cd1bd315466b8adf1e9cd2f",
+    "bytes": 174824,
+    "triangles": 132,
+    "nodes": 3,
+    "meshes": 3,
+    "primitives": 4,
+    "materials": 3,
+    "embedded_images": 6,
+    "geometry_normals_UV_indices_transforms_materials_exact": true,
+    "only_changed_buffer_views": [
+      19,
+      20
+    ],
+    "baseline_byte_identical": false,
+    "local_bounds_Yup_m": [
+      [
+        -0.16,
+        -0.085,
+        0
+      ],
+      [
+        0.16,
+        0.085,
+        0.0318
+      ]
+    ]
+  }
+]

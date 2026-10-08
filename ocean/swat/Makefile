@@ -24,7 +24,7 @@ character-probe: | $(BUILD)
 character-test: character-probe
 	python3 tests/test_character_contract.py --probe $(BUILD)/character_probe
 character-lab: | $(BUILD)
-	$(CC) $(CFLAGS) $(CPPFLAGS) character_lab.c character_view.c character_asset.c lighting.c -lm -lpthread $(VIEW_LIBS) -o $(BUILD)/character_lab
+	$(CC) $(CFLAGS) $(CPPFLAGS) character_lab.c character_view.c character_asset.c lighting.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/character_lab
 character-render-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_character_render.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_character_render
 performance-tool: $(ENET_LIB) ui-assets | $(BUILD)
@@ -120,7 +120,7 @@ environment-art-test-build: ui-assets | $(BUILD)
 weapon-art-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapon_art.c weapon_art.c character_asset.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_weapon_art
 lighting-test-build: | $(BUILD)
-	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_lighting.c lighting.c -lm $(VIEW_LIBS) -o $(BUILD)/test_lighting
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_lighting.c lighting.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_lighting
 frontend-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_frontend.c $(CLIENT) $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_frontend
 

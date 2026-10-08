@@ -1,0 +1,11 @@
+{
+  "id": "env:25_motel_guest_information/mi01_guest_information_folder",
+  "name": "Closed vinyl guest-information folder",
+  "record_kind": "unique_design",
+  "category": "environment",
+  "subtype": "clutter",
+  "status": "candidate; not merged into pinned r008",
+  "manifest": "MANIFEST.json",
+  "source_evidence": "INVENTORY_CHECK.json",
+  "runtime_sha256": "6fbfb585c2ae21fe40b5cb064246a8a57cde53dbb8b2cd7b0ad5d9dd85aeb35b"
+}

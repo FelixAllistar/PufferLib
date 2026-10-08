@@ -1,0 +1,135 @@
+{
+  "status": "PASS",
+  "maps": [
+    {
+      "file": "mi01_guest_information_folder_ao.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "channel_min": [
+        0,
+        0,
+        0
+      ],
+      "channel_max": [
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "file": "paper_edges_basecolor.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "channel_min": [
+        200,
+        192,
+        169
+      ],
+      "channel_max": [
+        212,
+        204,
+        181
+      ]
+    },
+    {
+      "file": "paper_edges_normal_gl.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "channel_min": [
+        125,
+        125,
+        255
+      ],
+      "channel_max": [
+        130,
+        130,
+        255
+      ]
+    },
+    {
+      "file": "paper_edges_roughmetal.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "channel_min": [
+        255,
+        206,
+        0
+      ],
+      "channel_max": [
+        255,
+        231,
+        0
+      ]
+    },
+    {
+      "file": "vinyl_cover_basecolor.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "channel_min": [
+        55,
+        37,
+        28
+      ],
+      "channel_max": [
+        183,
+        159,
+        113
+      ]
+    },
+    {
+      "file": "vinyl_cover_normal_gl.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "channel_min": [
+        125,
+        125,
+        255
+      ],
+      "channel_max": [
+        130,
+        130,
+        255
+      ]
+    },
+    {
+      "file": "vinyl_cover_roughmetal.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "channel_min": [
+        255,
+        178,
+        0
+      ],
+      "channel_max": [
+        255,
+        201,
+        0
+      ]
+    }
+  ],
+  "basecolor_space": "sRGB",
+  "normal_space": "linear OpenGL +Y",
+  "roughmetal": "linear R=255 G=roughness B=0 dielectric",
+  "AO": "linear R, unique UV1, glTF strength 1"
+}

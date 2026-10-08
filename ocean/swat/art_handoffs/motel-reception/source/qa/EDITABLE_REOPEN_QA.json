@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "meshes": 3,
+  "triangles": 36,
+  "two_uv_sets_per_mesh": true,
+  "typography_image_packed": true,
+  "source_basis": "Blender Z-up metres; export runtime is Y-up"
+}

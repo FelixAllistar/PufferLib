@@ -1,0 +1,6 @@
+{
+  "isolated_directory_rebuild": true,
+  "all_runtime_bytes_match": true,
+  "runtime_sha256": "a56aa84bbcc486927ee0cb23a9419a418a0aec3d159c9ec95b92ee5806180781",
+  "source_dependencies": "Only bundled font, build_sign.py and Pillow; no original working directory dependency"
+}

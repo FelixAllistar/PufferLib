@@ -171,8 +171,7 @@ int main(int argc, char** argv) {
     env.agents[0].observations=obs; env.agents[0].actions=actions;
     env.agents[0].rewards=&reward; env.agents[0].terminals=&terminal;
     env.sim->config.mission=mission<0 ? (model ? SWAT_ANNEX : SWAT_HOUSE) : mission;
-    env.sim->config.tactical_rules=!model && env.sim->config.mission!=SWAT_ANNEX;
-    env.sim->config.squad_bots=!model && (env.sim->config.mission==SWAT_HOUSE || env.sim->config.mission==SWAT_GENERATED || env.sim->config.mission==SWAT_BUILDING) ? 3 : 0;
+    if(!model)swat_config_human(&env.sim->config);
     env.sim->config.layout_seed=layout_seed; env.sim->config.generator=generator; env.sim->config.difficulty=difficulty;
     if(!model && !max_ticks_override && env.sim->config.max_ticks==1800) env.sim->config.max_ticks=18000;
     puf_reset(&env);

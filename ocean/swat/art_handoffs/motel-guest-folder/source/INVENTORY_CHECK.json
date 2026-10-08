@@ -1,0 +1,20 @@
+{
+  "catalog": "swat_asset_catalog_revisions/r008_lamp_desk_maintenance/assets.csv",
+  "catalog_sha256": "69fd9a76c6564d6fd7c3af820bce982f8a714a4feeadac202924a8e5a07795cf",
+  "rows": 435,
+  "search_terms": [
+    "guest_information",
+    "information_folder",
+    "notepad",
+    "room_guide"
+  ],
+  "matches": [],
+  "nearby_existing": "Generic 01_house/papers are loose papers, not a bound guest-information folder. Existing hospitality tray/ice bucket remain unchanged.",
+  "later_local_deliveries_checked": [
+    "motel_privacy_bolt_v1",
+    "motel_masonry_edge_strip_v1",
+    "motel_masonry_edge_strip_v2",
+    "motel_bedside_reading_lamp_v1_anchor_fix_v1"
+  ],
+  "decision": "One missing closed guest-information folder; no second variant."
+}

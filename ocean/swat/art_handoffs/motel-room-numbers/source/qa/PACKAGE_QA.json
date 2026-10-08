@@ -1,0 +1,27 @@
+{
+  "front_UV0": [
+    [
+      0.017500028014183044,
+      0.9670588374137878
+    ],
+    [
+      0.017500028014183044,
+      0.03294116258621216
+    ],
+    [
+      0.9824999570846558,
+      0.9670588374137878
+    ],
+    [
+      0.9824999570846558,
+      0.03294116258621216
+    ]
+  ],
+  "front_UV0_unit_square": true,
+  "all_geometry_UV_binary_unchanged": true,
+  "all_4_source_positions_numbers_and_instances_match_original_assembly": true,
+  "all_4_engine_world_positions_match_original_header": true,
+  "independent_Blender_reimport_132_triangles_3_meshes_equal_bounds_2um": true,
+  "baseline_sha256": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+  "bounds_tolerance_m": 2e-06
+}

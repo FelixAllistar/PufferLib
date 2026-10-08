@@ -1,0 +1,16 @@
+{
+  "reviewer": "asset builder visual inspection",
+  "views": [
+    "previews/neutral_glb_reimport.png",
+    "previews/cover_readability.png",
+    "previews/contact_edge.png"
+  ],
+  "status": "PASS candidate",
+  "findings": [
+    "Cover title reads GUEST INFORMATION and ROOM GUIDE with no fake fine print.",
+    "Restrained brown vinyl and cream paper insert suit a modest motel desk.",
+    "Closed folder silhouette, layered edges and bottom support contact are readable.",
+    "No logos, unrelated variants or missing texture magenta."
+  ],
+  "scope": "Neutral Blender GLB reimports. Final export differs from preview-import bytes only in corrected material-mapping metadata; final runtime reimport separately validated. Not an engine capture or final user art approval."
+}

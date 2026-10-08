@@ -1,0 +1,57 @@
+{
+  "two_builds_byte_identical": true,
+  "runtime_sha256": "a56aa84bbcc486927ee0cb23a9419a418a0aec3d159c9ec95b92ee5806180781",
+  "triangles": 36,
+  "anchor_local": [
+    0,
+    0,
+    0
+  ],
+  "bounds_Yup_m": [
+    [
+      -0.625,
+      -0.3,
+      -0.01
+    ],
+    [
+      0.625,
+      0,
+      0.01
+    ]
+  ],
+  "world_anchor_Yup_m": [
+    -10.6,
+    2.4,
+    2.01
+  ],
+  "world_bounds_Yup_m": [
+    [
+      -11.225,
+      2.1,
+      2.0
+    ],
+    [
+      -9.975,
+      2.4,
+      2.02
+    ]
+  ],
+  "front": "+Z",
+  "panel_dimensions_m": [
+    1.25,
+    0.22,
+    0.02
+  ],
+  "texture_dimensions": [
+    1024,
+    256
+  ],
+  "opaque": true,
+  "animations": false,
+  "basecolor": "sRGB; exact original MC15 palette converted from linear; sparse edge scuffs",
+  "roughness": 0.81,
+  "metallic": 0.12,
+  "AO": "unbound neutral; no baked AO needed for flat static plaque; TEXCOORD_1 provided as unique 6x3 padded atlas",
+  "collider_nav_interaction": "Not authored or claimed",
+  "engine_validation": "Required for final controller clearance and parking visibility"
+}

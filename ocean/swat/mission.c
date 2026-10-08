@@ -12,7 +12,7 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
         {{"Window post A",{0,0,0},{0,0,0}},{"Window post B",{0,0,0},{0,0,0}},{"Window post C",{0,0,0},{0,0,0}}}},
     {"Controller test range","Stairs, ramps, crouch clearance, cover, doors and target lanes. No live hostiles.",
         {0,0,0},{0,0,0},0,{{0}}},
-    {"Briar Court motel","Secure the rooms and reception, restrain occupants, then return to staging.",
+    {"Briar Court motel","Two armed occupants reported. Secure rooms and reception, recover weapons and evacuate civilians. Choose your entry routes.",
         {0,-.079f,8},{0,-.079f,10},0,{{0}}},
     {"Morrow Block","Clear the laundromat, pawn shop and shared rear service area. Secure occupants and return to the street.",
         {-3,-.139f,5},{-3,-.139f,7},0,{{0}}},

@@ -5,7 +5,7 @@
 #define SWAT_MOTEL_BASE_INSTANCES 146
 #define SWAT_MOTEL_ASSETS SWAT_MOTEL_MESH_CAPACITY
 #define SWAT_MOTEL_INSTANCES 154
-#define SWAT_MOTEL_DRESSING_ASSETS 8
+#define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 typedef struct SwatMotelMaterial { float roughness,metalness; } SwatMotelMaterial;
 typedef struct SwatMotelAsset {

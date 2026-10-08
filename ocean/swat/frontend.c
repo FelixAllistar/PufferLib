@@ -527,9 +527,11 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         y+=52;
         if(app->plan_tab==0) {
             const char* report=(sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? TextFormat("%d reported gunmen / three hostages",1+sim->config.difficulty) :
-                (sim->config.mission==SWAT_HOUSE ? "Two gunmen / three reported hostages" : "One armed target / one civilian");
+                (sim->config.mission==SWAT_HOUSE || sim->config.mission==SWAT_MOTEL || sim->config.mission==SWAT_STOREFRONT ? "Two armed occupants / three civilians" : "One armed target / one civilian");
             DrawText(report,(int)x,(int)y,16,menu_paper); y+=30;
-            DrawText(sim->config.mission!=SWAT_ANNEX ? "Secure occupants. Return to staging." : "Clear the annex. Extract at the far end.",(int)x,(int)y,16,menu_muted); y+=42;
+            DrawText(sim->config.tactical_rules ? "Secure occupants. Recover weapons." : "Clear the annex. Extract at the far end.",(int)x,(int)y,16,menu_muted); y+=21;
+            if(sim->config.tactical_rules)DrawText("Escort civilians and regroup at staging.",(int)x,(int)y,16,menu_muted);
+            y+=21;
             if(GuiButton((Rectangle){x,y,376,38},"Drone / cutaway model")) app->plan_preview=0;
             y+=48;
             for(int i=0;i<mission->overwatch_count;i++) {
@@ -696,10 +698,12 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
     float content_w=panel_w-64;
     DrawText("SWAT  /  GOLD ELEMENT",(int)x,(int)y,24,menu_gold);
     const char* title=settings ? "SETTINGS" : (app->screen==SWAT_SCREEN_CONNECT ?
-        (app->hosting ? "HOST CO-OP" : "JOIN CO-OP") : (app->screen==SWAT_SCREEN_MAIN ? "TRAINING ANNEX" :
-        (sim->end==SWAT_RUNNING ? "PAUSED" : swat_end_name(sim->end))));
+        (app->hosting ? "HOST CO-OP" : "JOIN CO-OP") : (app->screen==SWAT_SCREEN_MAIN ? swat_sim_mission(sim)->name :
+        (sim->end==SWAT_RUNNING ? "PAUSED" : (sim->end==SWAT_SUCCESS && sim->config.tactical_rules ? "SCENARIO COMPLETE" : swat_end_name(sim->end)))));
     DrawText(title,(int)x,(int)y+43,30,menu_paper);
     if(!settings && sim->end!=SWAT_RUNNING && sim->config.tactical_rules) {
+        SwatScenarioProgress progress=swat_sim_progress(sim);
+        swat_hud_text(view,TextFormat("Civilian deaths %d / officer deaths %d",progress.civilian_casualties,progress.officer_casualties),24,GetScreenHeight()-92,16,menu_paper);
         swat_hud_text(view,TextFormat("Arrests %d / rescued %d / evidence %d",sim->debrief.arrests,sim->debrief.rescued,sim->debrief.evidence),24,GetScreenHeight()-67,16,menu_paper);
         swat_hud_text(view,TextFormat("Force violations %d / unlawful harm %.0f",sim->debrief.roe_violations,sim->debrief.unlawful_damage),24,GetScreenHeight()-42,16,menu_gold);
     }

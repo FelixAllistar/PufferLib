@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "mesh_parts": 4,
+  "source_reopened": true,
+  "images_resolved": true,
+  "manifold": true,
+  "nondegenerate": true,
+  "two_uv_sets": true,
+  "preview_helpers_absent": true
+}

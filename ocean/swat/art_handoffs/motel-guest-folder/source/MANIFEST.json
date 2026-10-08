@@ -1,0 +1,30 @@
+{
+  "asset_id": "mi01_guest_information_folder",
+  "version": 1,
+  "license": "CC0-1.0 original artwork",
+  "runtime": "exports/mi01_guest_information_folder_lod0.glb",
+  "source": "motel_guest_information_folder_v1.blend",
+  "runtime_sha256": "6fbfb585c2ae21fe40b5cb064246a8a57cde53dbb8b2cd7b0ad5d9dd85aeb35b",
+  "runtime_bytes": 1124748,
+  "dimensions_gltf_xyz_m": [
+    0.23249999876134098,
+    0.008200000273063779,
+    0.3059999942779541
+  ],
+  "triangles": 432,
+  "materials": 2,
+  "lods": 1,
+  "lod_reason": "432 triangles; duplicate LOD not useful",
+  "placement_anchor": "ANCHOR_surface_contact; root bottom plane glTF Y=0",
+  "static_only": true,
+  "engine_owns": [
+    "placement",
+    "collision",
+    "support_attachment",
+    "interaction",
+    "destruction"
+  ],
+  "pbr": "512px sRGB basecolor; linear OpenGL normal; RM R=255/G=roughness/B=0; separate AO UV1",
+  "art_approval": "pending user review",
+  "integration": "not integrated"
+}

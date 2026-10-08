@@ -1,0 +1,9 @@
+{
+  "two_builds_identical": true,
+  "sha256": {
+    "room_number_104.glb": "e551693ff9762117fd48cfc0aa8d509cd424733b5cd1bd315466b8adf1e9cd2f",
+    "room_number_102.glb": "4009304d0e8e6a1203f744e01a097494900e1a8db44e4026626b1d31b9ee6258",
+    "room_number_101.glb": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+    "room_number_103.glb": "e7c9eb3e4b7caf29c640d7ff85a3d64645876c40d2b50d6728bbbfc10d812535"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "original_blend": "environment_realism_review/briar_court_101_candidate_v2/pinned_input/motor_court_motel.blend",
+  "original_sha256": "ed6f103f58b7a87c7604c6b66795250be4e82ddcbc1b3ff3a485850cb6bb2b5f",
+  "accepted_font": "DejaVu Sans Condensed Bold from accepted room number artwork",
+  "palette_linear_RGB": {
+    "MC15_teal": [
+      0.1,
+      0.26,
+      0.25
+    ],
+    "MC15_cream": [
+      0.77,
+      0.75,
+      0.63
+    ]
+  },
+  "catalog_reference": "swat_asset_catalog_revisions/r008_lamp_desk_maintenance/catalog.json",
+  "source_assembly_index": 4,
+  "support_engine_object": 5,
+  "new_geometry_only": true,
+  "context_modified": false
+}

@@ -10,6 +10,63 @@ low-level Box3D character ancestry and owns its controller and game systems
 from here. New work belongs under `ocean/swat` and `config/swat.ini` unless it
 is deliberately a general engine improvement.
 
+## Active goal: Briar Court vertical slice (2026-10-08)
+
+Deliver one complete, replayable motel scenario and level. The player chooses
+the plan and tools; there is no required sequence of encounter triggers. Keep
+the normal branch, config and native `./swat` path. Coordinate compact art
+handoffs on Slack and integrate them here. Do not use Python for local work.
+
+The slice is complete when these checks pass in the actual Windows player:
+
+- Deploy with a useful squad, understand the task with minimal HUD text, execute
+  a plan, account for occupants/evidence, extract and inspect a truthful debrief.
+  Injuries have persistent consequences instead of abruptly ending tactical play.
+- At least three viable approaches (front doors, exterior charge entry and an
+  inter-room breach) work for humans, squad navigation, bullets, sound and replicas.
+  Material rules are legible; breach boundaries stop looking like removed tiles.
+- The motel and immediate approaches read as a finished place: reception,
+  distinct rooms, readable numbers, background/perimeter, consistent materials,
+  lighting, occupied-room variation and no conspicuous placeholder geometry.
+- Officer and suspect behavior remains behind physical perception/controller
+  boundaries; squad orders accomplish actual entry/security tasks. A reproducible
+  baseline and held-out evaluation precede any claim of learned improvement.
+- Weapon handling/reloads, hit feedback, destruction and spatial sound form a
+  coherent playable loop. Integrate properly licensed production sounds rather
+  than treating procedural placeholders as finished audio.
+- The same scenario can be completed through different approaches, replayed,
+  saved/resumed and joined late in co-op. Validate geometry/authority agreement,
+  bounded performance during indoor shooting/breaches and asset fallbacks.
+
+Current audit: human tactical scenarios now deploy three squad bots and require
+occupant security, evidence, civilian evacuation and surviving-officer regrouping.
+Tactical harm persists into the debrief instead of ending play. A 2.5 m staging
+zone accommodates the formation; the real motel controller test walks an officer
+through a door, escorts a civilian out of the furnished room, enters the cleared
+aisle and regroups all three bots. Local visible-body avoidance only uses supported,
+collision-checked space; narrow aisles still require their occupant to move.
+Delivered numbers 102–104, desk folders and reception sign are integrated and
+validated in the native view, including support removal and location teardown.
+Stack/Clear are still generic movement orders, not useful room-entry procedures.
+Bedside switches and material-aware masonry work, but light does not affect
+perception and openings remain rectangular. Production audio, room/approach art
+and trained tactical policies are unfinished.
+
+Work order: close the scenario completion/squad gaps and integrate delivered art;
+prove alternative routes with the actual controller; improve fracture silhouettes;
+then address perception/behavior, level composition, sound and remaining polish.
+Reorder using concrete play-test failures. Record each completed increment and
+its evidence here; a successful subsystem test is not a finished vertical slice.
+
+First slice increment: Linux encounter, motel, tactical, simulation, mission,
+protocol, UDP, 3D navigation and save/replay checks pass. Native Windows encounter
+and motel controller checks pass; the full Windows tool build, complete environment
+graphics regression and ordinary `./swat play --mission motel --capture ...` pass.
+Native proof and compact editable sources are under the guest-folder, room-numbers
+and reception art handoffs. Shared the review on Slack (`F0C7N974YQ5`). The artist
+is preparing an open-ended east perimeter fence and Room 103 variation; these are
+not integrated yet. No claim of learned tactical behavior or a finished slice.
+
 ## Landed: playable foundation
 
 - Motel: seven supported detail props in each guest room; three inter-room

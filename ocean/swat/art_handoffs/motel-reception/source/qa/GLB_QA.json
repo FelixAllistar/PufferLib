@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "GLB_bytes": 36320,
+  "sha256": "a56aa84bbcc486927ee0cb23a9419a418a0aec3d159c9ec95b92ee5806180781",
+  "triangles": 36,
+  "opaque": true,
+  "embedded_image_matches_source_bytes": true,
+  "outward_winding_verified": true,
+  "valid_padded_UV1": true,
+  "external_image_dependencies": 0,
+  "native_engine_test": "Pending engine owner",
+  "source_existing_objects_modified": false
+}

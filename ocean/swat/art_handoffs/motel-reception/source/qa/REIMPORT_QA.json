@@ -1,0 +1,30 @@
+{
+  "runtime_reimport_success": true,
+  "mesh_objects": 3,
+  "triangles": 36,
+  "local_bounds_Zup_m": [
+    [
+      -0.625,
+      -0.009999999776482582,
+      -0.30000001192092896
+    ],
+    [
+      0.625,
+      0.009999999776482582,
+      0.0
+    ]
+  ],
+  "source_context_objects": [
+    "INSTANCE__room_floor_4x6m__001",
+    "INSTANCE__flat_roof_4x6m__002",
+    "INSTANCE__gallery_walkway_4m__003",
+    "INSTANCE__gallery_canopy_4m__004",
+    "INSTANCE__lobby_glazed_facade__005",
+    "INSTANCE__service_doorway_4m__006",
+    "INSTANCE__canopy_post__113",
+    "INSTANCE__canopy_post__114"
+  ],
+  "context_is_preview_only": true,
+  "runtime_contains_no_existing_facade_or_canopy": true,
+  "native_engine_clearance_visibility": "Not tested here; engine owner verification required"
+}

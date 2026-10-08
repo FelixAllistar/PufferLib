@@ -38,6 +38,10 @@ typedef struct SwatEnvironmentArt {
     float motel_dressing_normal_scale[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
     int motel_dressing_occlusion_uv[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
     int motel_occlusion_uv[SWAT_MOTEL_ASSETS][SWAT_ROOM101_MATERIALS];
+    Model motel_numbers[3]; // Rooms 102–104; 101 keeps its accepted v3 asset.
+    float motel_number_normal_scale[3][SWAT_ROOM101_MATERIALS];
+    Model motel_reception;
+    float motel_reception_normal_scale[SWAT_ROOM101_MATERIALS];
     Model room101[SWAT_ROOM101_ASSETS];
     float room101_normal_scale[SWAT_ROOM101_ASSETS][SWAT_ROOM101_MATERIALS];
     bool room101_ready;

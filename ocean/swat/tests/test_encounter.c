@@ -82,4 +82,81 @@ static void perception_evidence_roe(void) {
     swat_sim_close(&replica); swat_sim_close(&sim);
     puts("PASS encounter: no hidden-position pursuit, weapon evidence exactly once, unlawful force record, public state/debrief replication and truncation rejection");
 }
-int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); perception_evidence_roe(); return 0; }
+static void place_actor(int id,b3Pos feet) {
+    SwatController* c=&sim.actors[id].controller;
+    b3Body_SetTransform(c->body.body,b3OffsetPos(feet,swat_v(0,c->body.totalHeight*.5f+.01f,0)),b3Quat_identity);
+    b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0));
+}
+static void scenario_completion(void) {
+    SwatConfig config=swat_default_config();assert(!config.tactical_rules && !config.squad_bots);
+    for(int mission=0;mission<SWAT_MISSION_COUNT;mission++) {
+        config.mission=mission;swat_config_human(&config);
+        bool tactical=mission!=SWAT_ANNEX && mission!=SWAT_RANGE;
+        assert(config.tactical_rules==tactical && config.squad_bots==(tactical?3:0));
+    }
+    config.mission=SWAT_MOTEL;swat_config_human(&config);config.hostile_fire=false;
+    swat_sim_init(&sim,config,42);
+    for(int slot=1;slot<SWAT_MAX_PLAYERS;slot++)assert(sim.actors[swat_player_actor(slot)].mind.bot);
+    SwatScenarioProgress p=swat_sim_progress(&sim);
+    assert(p.threats==2 && p.unsecured==3 && p.evacuees==3 && !p.secured);
+    swat_sim_close(&sim);
+
+    // Outcome rules are isolated from pathfinding here; controller-driven
+    // escort/navigation tests exercise the physical trip separately.
+    fixture();sim.config.mission=SWAT_HOUSE;
+    sim.actors[1].gear.surrendered=sim.actors[1].gear.restrained=true;
+    sim.actors[2].gear.surrendered=sim.actors[2].gear.restrained=true;
+    swat_sim_damage_actor(&sim,2,0,10);
+    sim.totals.civilian_damage=10; // Historical accepted injury, before the next tick clears events.
+    swat_sim_step(&sim,&(SwatInput){0});
+    assert(sim.end==SWAT_RUNNING && sim.actors[2].alive && sim.debrief.roe_violations==1);
+    p=swat_sim_progress(&sim);assert(!p.threats && !p.unsecured && p.evacuees==1 && p.evidence==1);
+    place_actor(0,sim.extraction);swat_sim_step(&sim,&(SwatInput){0});assert(sim.end==SWAT_RUNNING);
+    assert(swat_sim_set_player(&sim,1,true));sim.actors[3].mind.bot=true;sim.actors[3].mind.order=SWAT_ORDER_HOLD;
+    place_actor(3,b3OffsetPos(sim.extraction,swat_v(4,0,0)));
+    sim.evidence[1].collected=true;sim.debrief.evidence=1;
+    swat_sim_step(&sim,&(SwatInput){0});assert(sim.end==SWAT_RUNNING);
+    sim.actors[2].mind.escort_owner=0;
+    place_actor(2,b3OffsetPos(sim.extraction,swat_v(0,0,2)));
+    swat_sim_step(&sim,&(SwatInput){0});
+    assert(sim.actors[2].rescued && sim.actors[2].mind.escort_owner==-1 && sim.end==SWAT_RUNNING);
+    p=swat_sim_progress(&sim);assert(p.secured && p.officers_away==1);
+    place_actor(3,b3OffsetPos(sim.extraction,swat_v(1.8f,0,0)));
+    swat_sim_step(&sim,&(SwatInput){0});assert(sim.end==SWAT_SUCCESS);
+    assert(sim.debrief.roe_violations==1 && sim.debrief.unlawful_damage==10 && sim.debrief.rescued==1);
+    static SwatMap map;static SwatSnapshot state,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    swat_capture_map(&sim,7,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,7,&state);
+    size_t n=swat_encode_snapshot(bytes,sizeof(bytes),&state);assert(n && swat_decode_snapshot(&decoded,bytes,n));
+    assert(swat_apply_snapshot(&replica,&decoded));
+    p=swat_sim_progress(&replica);assert(p.secured && !p.officers_away && replica.end==SWAT_SUCCESS && replica.debrief.roe_violations==1);
+    swat_sim_close(&replica);swat_sim_close(&sim);
+
+    fixture();sim.config.mission=SWAT_HOUSE;
+    sim.actors[2].gear.restrained=true;place_actor(2,sim.extraction);
+    swat_sim_damage_actor(&sim,2,0,1000);sim.totals.civilian_damage=100;
+    swat_sim_step(&sim,&(SwatInput){0});p=swat_sim_progress(&sim);
+    assert(sim.end==SWAT_RUNNING && p.civilian_casualties==1 && !p.evacuees && !sim.actors[2].rescued);
+    swat_sim_damage_actor(&sim,0,1,1000);swat_sim_step(&sim,&(SwatInput){0});
+    assert(sim.end==SWAT_OFFICER_DOWN && swat_sim_progress(&sim).officer_casualties==1);
+    swat_sim_close(&sim);
+    puts("PASS tactical completion: shared human defaults, motel squad, persistent civilian harm, evidence/evacuation/regroup gates, formation-sized staging, casualties and exact replicated debrief");
+}
+static void local_body_avoidance(void) {
+    fixture();sim.config.mission=SWAT_HOUSE;
+    sim.actors[1].gear.surrendered=true;sim.actors[2].gear.surrendered=true;
+    place_actor(0,(b3Pos){-5,0,5});place_actor(1,(b3Pos){10,0,5});place_actor(2,(b3Pos){0,0,0});
+    swat_sim_spawn_actor(&sim,3,SWAT_OFFICER,(b3Pos){-3,0,0},0);sim.actor_count=4;
+    sim.actors[3].mind.bot=true;sim.actors[3].mind.order=SWAT_ORDER_MOVE;sim.actors[3].mind.goal=(b3Pos){3,0,0};
+    int t=0;float clearance=100,side=0;
+    for(;t<900;t++) {
+        swat_sim_step(&sim,&(SwatInput){0});b3Pos p=swat_body_feet_position(&sim.actors[3].controller.body);
+        b3Pos civilian=swat_body_feet_position(&sim.actors[2].controller.body);
+        clearance=fminf(clearance,hypotf((float)(p.x-civilian.x),(float)(p.z-civilian.z)));side=fmaxf(side,fabsf((float)p.z));
+        if(b3Distance(p,sim.actors[3].mind.goal)<.65f)break;
+    }
+    printf("Body avoidance: %d ticks, %.3f m closest centers, %.3f m sidestep\n",t,clearance,side);fflush(stdout);
+    assert(t<900 && clearance>.48f && side>.55f && sim.actors[2].health==100);
+    swat_sim_close(&sim);
+    puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
+}
+int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); perception_evidence_roe(); scenario_completion(); local_body_avoidance(); return 0; }

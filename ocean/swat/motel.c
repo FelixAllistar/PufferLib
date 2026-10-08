@@ -170,7 +170,7 @@ void swat_motel_build(SwatWorld* w) {
 
 int swat_motel_dressing_parent(int index) {
     if(index<0 || index>=SWAT_MOTEL_DRESSING_INSTANCES)return -1;
-    const int owners[]={14,14,24,24,20,16,105,20};
+    const int owners[]={14,14,24,24,20,16,105,20,24};
     int room=index/SWAT_MOTEL_DRESSING_ASSETS,kind=index%SWAT_MOTEL_DRESSING_ASSETS;
     return owners[kind]+room*(kind==6?1:24);
 }
@@ -195,6 +195,8 @@ int swat_motel_dressing(const SwatWorld* w,int index,SwatMotelInstance* p) {
         break;
     }
     case 7: p->origin=(b3Pos){x+1.35f,1.25f,-3.938f};break;
+    case 8: // Bottom contact anchor on the free end of the desk, clear of the tray/TV.
+        p->origin=(b3Pos){x-1.67f,room==0?.7583f:.7606f,-1.88f};p->yaw=SWAT_PI*.5f;break;
     case 6:
         p->origin=(b3Pos){x-1.885f,.99f,-.95f};p->yaw=SWAT_PI*.5f;break;
     }

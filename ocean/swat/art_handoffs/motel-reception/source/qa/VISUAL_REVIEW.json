@@ -1,0 +1,21 @@
+{
+  "reviewed": [
+    "previews/neutral_runtime_reimport.png",
+    "previews/accepted_office_placement.png",
+    "previews/canopy_contact_detail.png"
+  ],
+  "readable_RECEPTION": true,
+  "same_font_family_as_accepted_numbers": true,
+  "compact_additive_panel": true,
+  "short_mount_tabs_contact_original_fascia": true,
+  "existing_OFFICE_preserved": true,
+  "existing_facade_canopy_unchanged": true,
+  "no_new_branding_or_clutter": true,
+  "wear": "Sparse edge scuffs; no distressed letter interiors",
+  "limitations": [
+    "Offline reimported GLB renders only",
+    "Native parking image not available before sealing",
+    "Engine owner must verify final controller clearance, walking envelope and native parking visibility"
+  ],
+  "status": "Passed offline art review; native integration review pending"
+}

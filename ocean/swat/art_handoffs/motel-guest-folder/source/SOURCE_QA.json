@@ -1,0 +1,65 @@
+[
+  {
+    "asset": "mi01_guest_information_folder",
+    "triangles_lod0": 432,
+    "bounds_blender_xyz_m": [
+      [
+        -0.11650000512599945,
+        -0.15299999713897705,
+        0.0
+      ],
+      [
+        0.11599999666213989,
+        0.15299999713897705,
+        0.008200000040233135
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.23250000178813934,
+      0.008200000040233135,
+      0.3059999942779541
+    ],
+    "parts": [
+      {
+        "name": "back_vinyl_board",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "cream_insert_edges",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "folded_left_spine",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "front_vinyl_board",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ]
+  }
+]

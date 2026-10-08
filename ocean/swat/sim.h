@@ -57,6 +57,13 @@ typedef struct SwatConfig {
     int generator,difficulty,squad_bots;
 } SwatConfig;
 
+#define SWAT_STAGING_RADIUS 2.5f
+typedef struct SwatScenarioProgress {
+    int threats,unsecured,evacuees,evidence,officers_away;
+    int civilian_casualties,officer_casualties;
+    bool secured;
+} SwatScenarioProgress;
+
 typedef struct SwatEvents {
     float hostile_damage, civilian_damage, officer_damage;
     int shots, destroyed, hostile_down;
@@ -87,6 +94,8 @@ typedef struct SwatSim {
 } SwatSim;
 
 SwatConfig swat_default_config(void);
+void swat_config_human(SwatConfig* config);
+SwatScenarioProgress swat_sim_progress(const SwatSim* sim);
 void swat_sim_init(SwatSim* sim, SwatConfig config, uint32_t seed);
 void swat_sim_reset(SwatSim* sim);
 void swat_sim_close(SwatSim* sim);

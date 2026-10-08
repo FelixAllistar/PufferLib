@@ -203,6 +203,50 @@ bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {
     if(parent[from]<0) return false;
     *next=cell_position(nav,from==to ? to : parent[from]); return true;
 }
+static bool actor_lane_clear(const SwatSim* s,int index,b3Pos from,b3Pos to) {
+    b3Vec3 segment=b3SubPos(to,from);segment.y=0;float length2=b3LengthSquared(segment);
+    for(int i=0;i<s->actor_count;i++) {
+        const SwatActor* other=&s->actors[i];if(i==index || !other->present || !other->alive)continue;
+        b3Pos position=swat_body_feet_position(&other->controller.body);
+        b3Vec3 delta=b3SubPos(position,from);if(fabsf(delta.y)>1 || hypotf(delta.x,delta.z)>3)continue;
+        // Local visible body avoidance only; this is not an omniscient occupancy
+        // map of people in other rooms. Static geometry still owns the route.
+        if(!swat_world_visible(&s->world,swat_controller_eye(&s->actors[index].controller),swat_controller_eye(&other->controller)))continue;
+        delta.y=0;float t=length2>1e-6f ? swat_clamp(b3Dot(delta,segment)/length2,0,1) : 0;
+        float distance=b3Length(b3Sub(delta,swat_mul(segment,t)));
+        if(distance<.62f) {
+            // A crowded actor must be allowed to separate, rather than freezing
+            // because its initial position is already inside the comfort margin.
+            float end=b3Length(b3Sub(delta,segment));
+            if(b3Length(delta)<.62f && end>b3Length(delta)+.02f && b3Dot(delta,segment)<0)continue;
+            return false;
+        }
+    }
+    return true;
+}
+static bool avoid_local_actors(SwatSim* s,int index,b3Pos feet,b3Pos goal,b3Pos* waypoint) {
+    if(actor_lane_clear(s,index,feet,*waypoint))return true;
+    b3Vec3 direction=swat_normalize(b3SubPos(*waypoint,feet)),right=swat_v(-direction.z,0,direction.x);
+    float height=s->actors[index].controller.body.crouched ? 1.016f : 1.8288f;
+    bool found=false;float best=1e9f;b3Pos chosen=*waypoint;
+    for(int ring=1;ring<=3;ring++)for(int side=-1;side<=1;side+=2) {
+        b3Pos candidate=b3OffsetPos(*waypoint,swat_mul(right,side*ring*.28f));
+        NavFloors floors={0};
+        b3World_CastRay(s->world.id,b3OffsetPos(candidate,swat_v(0,.6f,0)),swat_v(0,-1.2f,0),b3DefaultQueryFilter(),floor_hit,&floors);
+        float nearest=1e9f,support=0;
+        for(int i=0;i<floors.count;i++) {
+            float difference=fabsf(floors.y[i]-(float)feet.y);
+            if(difference<nearest) {nearest=difference;support=floors.y[i];}
+        }
+        if(nearest>.4572f)continue; // Never steer off a ledge to evade another body.
+        candidate.y=support;
+        if(!actor_lane_clear(s,index,feet,candidate) || !nav_clear(&s->world,candidate,height) || !nav_edge(&s->world,feet,candidate,height))continue;
+        float score=b3Distance(candidate,goal)+.2f*b3Distance(feet,candidate);
+        if(score<best) {best=score;chosen=candidate;found=true;}
+    }
+    if(found)*waypoint=chosen;
+    return found;
+}
 static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
     SwatActor* a=&s->actors[index]; SwatMind* mind=&a->mind;
     b3Pos feet=swat_body_feet_position(&a->controller.body); b3Vec3 delta=b3SubPos(goal,feet);
@@ -212,6 +256,7 @@ static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
         mind->replan_tick=s->tick+30;
     }
     in->crouch=swat_navigation_crouch(s,feet) || swat_navigation_crouch(s,mind->waypoint);
+    if(!avoid_local_actors(s,index,feet,goal,&mind->waypoint))return;
     delta=b3SubPos(mind->waypoint,feet); float yaw=atan2f(delta.z,delta.x),error=swat_angle(yaw-a->controller.yaw);
     in->yaw_delta=swat_clamp(error,-3*SWAT_RAD,3*SWAT_RAD);
     if(fabsf(error)<50*SWAT_RAD) in->forward=.7f;
@@ -224,11 +269,6 @@ static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
         if(door->wedge_owner>=0) { in->forward=0; mind->replan_tick=0; return; }
         if(door->locked) { in->forward=0; if(a->role==SWAT_OFFICER) in->door_tool=SWAT_LOCKPICK; return; }
         if(!door->door_open) { in->forward=0; in->interact=!a->last_interact; }
-    }
-    // Yield for teammates close ahead; keep the commanded goal.
-    for(int i=0;i<s->actor_count;i++) if(i!=index && s->actors[i].present && s->actors[i].alive) {
-        b3Vec3 d=b3SubPos(swat_body_feet_position(&s->actors[i].controller.body),feet);
-        if(fabsf(d.y)<1 && hypotf(d.x,d.z)<.85f && b3Dot(swat_direction(a->controller.yaw,0),d)>.15f) in->forward=0;
     }
 }
 static int visible_target(SwatSim* s,int index,bool officer) {
@@ -294,6 +334,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
         if(a->gear.stunned_ticks) continue;
         if(a->gear.restrained) {
             mind->state=SWAT_DETAINED;
+            if(a->rescued)continue;
             if(a->role==SWAT_CIVILIAN && mind->escort_owner>=0 && mind->escort_owner<s->actor_count && s->actors[mind->escort_owner].alive) {
                 mind->state=SWAT_ESCORT; in->crouch=false;
                 move_to(s,i,swat_body_feet_position(&s->actors[mind->escort_owner].controller.body),in);
@@ -359,7 +400,9 @@ void swat_encounter_step(SwatSim* s) {
         if(a->role==SWAT_SUSPECT && (!a->alive || a->gear.surrendered) && !s->evidence[i].dropped) {
             s->evidence[i]=(SwatEvidence){true,false,i,b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_v(.35f,.055f,0))};
         }
-        if(a->role==SWAT_CIVILIAN && a->gear.restrained && b3Distance(swat_body_feet_position(&a->controller.body),s->extraction)<2) a->rescued=true;
+        if(a->role==SWAT_CIVILIAN && a->alive && a->gear.restrained && b3Distance(swat_body_feet_position(&a->controller.body),s->extraction)<SWAT_STAGING_RADIUS) {
+            a->rescued=true;a->mind.escort_owner=-1;
+        }
         s->debrief.rescued+=a->role==SWAT_CIVILIAN && a->rescued;
     }
 }

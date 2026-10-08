@@ -10,6 +10,10 @@ SwatConfig swat_default_config(void) {
     return (SwatConfig){.max_ticks=1800,.randomize=true,.hostile_fire=true,.mission=SWAT_ANNEX,
         .layout_seed=1,.generator=SWAT_LAYOUT_NEURAL,.difficulty=1};
 }
+void swat_config_human(SwatConfig* config) {
+    config->tactical_rules=config->mission!=SWAT_ANNEX && config->mission!=SWAT_RANGE;
+    config->squad_bots=config->tactical_rules ? 3 : 0;
+}
 const SwatMissionDef* swat_sim_mission(const SwatSim* s) { return &s->mission; }
 
 void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, float yaw) {
@@ -185,6 +189,27 @@ int swat_sim_unsecured(const SwatSim* s) {
     for(int i=0;i<s->actor_count;i++) if(s->actors[i].present && s->actors[i].alive &&
         s->actors[i].role==SWAT_CIVILIAN && !s->actors[i].gear.restrained) count++;
     return count;
+}
+
+SwatScenarioProgress swat_sim_progress(const SwatSim* s) {
+    SwatScenarioProgress p={0};
+    p.threats=swat_sim_hostiles(s);
+    p.unsecured=s->config.mission==SWAT_ANNEX ? 0 : swat_sim_unsecured(s);
+    for(int i=0;i<s->actor_count;i++) {
+        const SwatActor* a=&s->actors[i];if(!a->present)continue;
+        if(a->role==SWAT_CIVILIAN) {
+            p.civilian_casualties+=!a->alive;
+            p.evacuees+=s->config.tactical_rules && a->alive && !a->rescued;
+        }
+        if(a->role==SWAT_OFFICER) {
+            p.officer_casualties+=!a->alive;
+            float radius=s->config.tactical_rules ? SWAT_STAGING_RADIUS : 1.4f;
+            p.officers_away+=a->alive && b3Distance(swat_body_feet_position(&a->controller.body),s->extraction)>=radius;
+        }
+        p.evidence+=s->config.tactical_rules && s->evidence[i].dropped && !s->evidence[i].collected;
+    }
+    p.secured=!p.threats && !p.unsecured && !p.evacuees && !p.evidence;
+    return p;
 }
 
 SwatHitRegion swat_sim_hit_region(const SwatActor* actor,b3Pos point) {
@@ -587,7 +612,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
         s->totals.hostile_down += s->events.hostile_down;
         swat_encounter_step(s);
     }
-    int officers=0,living=0,extracted=0,fallen=0;
+    int officers=0,living=0,fallen=0;
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i];
         if(!a->present || a->role!=SWAT_OFFICER) continue;
@@ -596,12 +621,13 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
         b3Pos feet=swat_body_feet_position(&a->controller.body);
         if(feet.y < -8) { a->alive=false; a->health=0; b3Body_Disable(a->controller.body.body); fallen++; continue; }
         living++;
-        extracted+=b3Distance(feet,s->extraction)<1.4f;
     }
-    if (s->totals.civilian_damage > 0) s->end = SWAT_CIVILIAN_HARMED;
+    SwatScenarioProgress progress=swat_sim_progress(s);
+    // Tactical scenarios preserve the consequences and allow the team to finish
+    // the response. The compact training contract keeps its immediate failure.
+    if (!s->config.tactical_rules && s->totals.civilian_damage > 0) s->end = SWAT_CIVILIAN_HARMED;
     else if(officers && !living) s->end=fallen ? SWAT_FALL : SWAT_OFFICER_DOWN;
-    else if(s->config.mission!=SWAT_RANGE && living && swat_sim_hostiles(s)==0 && extracted==living &&
-        (s->config.mission==SWAT_ANNEX || !swat_sim_unsecured(s))) s->end=SWAT_SUCCESS;
+    else if(s->config.mission!=SWAT_RANGE && living && progress.secured && !progress.officers_away) s->end=SWAT_SUCCESS;
     else if (s->tick >= s->config.max_ticks) s->end = SWAT_TIMEOUT;
 }
 

@@ -1,0 +1,52 @@
+{
+  "accepted_plaque": {
+    "source": "environment_realism_review/briar_court_101_candidate_v3/assets/room_number_plaque_018_v3.glb",
+    "sha256": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c"
+  },
+  "accepted_font": {
+    "name": "DejaVu Sans Condensed Bold",
+    "path": "fonts/DejaVuSansCondensed-Bold.ttf",
+    "sha256": "21f02ebcea75529d3ed9d26e089cd1b9c59a4b784119ba3a96e9bc83cf755ec7"
+  },
+  "catalog_review": "swat_asset_catalog_revisions/r008_lamp_desk_maintenance/catalog.json; accepted v3 revision record matches baseline hash; v4 inherits typography unchanged",
+  "source_recipe": "source/accepted_prepare_maps.py, original plaque section lines 45\u201347",
+  "scope": "Only two image payloads per 102\u2013104 runtime GLB; baseline and every other glTF property unchanged",
+  "variant_metadata": "Inherited 101 names/extras retained as source provenance; targets resolved by INSTANCE_BINDINGS.json",
+  "source_files": [
+    {
+      "file": "source/accepted_bindings.json",
+      "sha256": "8fd8debe1cdc3bef807fc40b48a4a7f268d9d6cb18045c58797d26fd5c9f0b9c",
+      "bytes": 13540
+    },
+    {
+      "file": "source/accepted_prepare_maps.py",
+      "sha256": "340dc5c4ff5d1ee4fe8f165242d9b4b220dffd5304f2798189d586691d63e717",
+      "bytes": 5056
+    },
+    {
+      "file": "source/assembly_manifest.json",
+      "sha256": "cfc45e039ded42816135ce8c8b2aaf9965886b17a79c118ed3df36a165a4e34f",
+      "bytes": 52749
+    },
+    {
+      "file": "source/motel_instances.h",
+      "sha256": "2044eeac88079dc168aa7e36049e80a9a353c333bf8015f207b6f6e4050170fe",
+      "bytes": 10838
+    },
+    {
+      "file": "source/preview_context/room_door_leaf_candidate.glb",
+      "sha256": "cf2cd3c1e521d53cd9e799b1035737f7247badf6d1d8b1cc32286934f7f89afc",
+      "bytes": 171288
+    },
+    {
+      "file": "source/preview_context/room_facade_4m_candidate.glb",
+      "sha256": "20585f411836bbc0cdb4b9edcd769f44c1003bfb41b1ad67d041d4df093baa6c",
+      "bytes": 4120824
+    },
+    {
+      "file": "source/room_number_plaque_018_v3.glb",
+      "sha256": "ea1f792eaa83f169034f19a0ba1ce92cb48f9b5b7b8e9db24fa3d24e42c5d08c",
+      "bytes": 178240
+    }
+  ]
+}

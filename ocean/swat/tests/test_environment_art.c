@@ -243,6 +243,23 @@ static void room101_graphics(SwatView* view,const char* directory) {
     assert(art->masonry_edge.meshCount==4);int edge_triangles=0;
     for(int i=0;i<art->masonry_edge.meshCount;i++)edge_triangles+=art->masonry_edge.meshes[i].triangleCount;
     assert(edge_triangles==164);
+    assert(art->motel_reception.meshCount==18);
+    BoundingBox sign_bounds=GetModelBoundingBox(art->motel_reception);
+    assert(fabsf(sign_bounds.min.y+.3f)<1e-5f && fabsf(sign_bounds.max.y)<1e-5f);
+    assert(2.4f+sign_bounds.min.y>1.8288f); // Standing controller clears the panel.
+    int sign_triangles=0;for(int i=0;i<art->motel_reception.meshCount;i++)sign_triangles+=art->motel_reception.meshes[i].triangleCount;
+    assert(sign_triangles==36);
+    assert(room101_owner_pixels(art,&sim.world.objects[5],false)>10);
+    assert(room101_owner_pixels(art,&sim.world.objects[5],true)==0);
+    sim.world.objects[5].active=false;assert(room101_owner_pixels(art,&sim.world.objects[5],false)==0);sim.world.objects[5].active=true;
+    for(int room=0;room<3;room++) {
+        Model number=art->motel_numbers[room];assert(number.meshCount==4);
+        int triangles=0;for(int m=0;m<number.meshCount;m++)triangles+=number.meshes[m].triangleCount;
+        assert(triangles==132);
+        int owner=43+24*room;assert(swat_motel_instance(owner-1)->asset==17);
+        assert(room101_owner_pixels(art,&sim.world.objects[owner],true)>10);
+        sim.world.objects[owner].active=false;assert(room101_owner_pixels(art,&sim.world.objects[owner],true)==0);sim.world.objects[owner].active=true;
+    }
     const int v4_originals[]={25,36,24,29,1,22,4,10},v4_owners[]={23,28,22,29,14,20,9,17};
     before=sim.world;
     for(int i=0;i<SWAT_ROOM101_V4_ASSETS;i++) {
@@ -391,15 +408,19 @@ static void room101_graphics(SwatView* view,const char* directory) {
         {{-6.6f,1.35f,-1.7f},{-7.49f,.85f,-2.28f},{0,1,0},45,CAMERA_PERSPECTIVE},
         {{-6.3f,1.6f,-2.25f},{-5.4f,1.65f,-3.94f},{0,1,0},48,CAMERA_PERSPECTIVE},
         {{-7.22f,1.60f,.45f},{-7.2f,1.60f,.0345f},{0,1,0},45,CAMERA_PERSPECTIVE},
-        {{-7.35f,1.25f,-1.5f},{-7.89f,.99f,-.95f},{0,1,0},45,CAMERA_PERSPECTIVE}};
-    const char* dressing_names[]={"bathroom","desk","print","viewer","bumper"};
+        {{-7.35f,1.25f,-1.5f},{-7.89f,.99f,-.95f},{0,1,0},45,CAMERA_PERSPECTIVE},
+        {{-6.9f,1.38f,-1.88f},{-7.67f,.758f,-1.88f},{0,1,0},38,CAMERA_PERSPECTIVE}};
+    const char* dressing_names[]={"bathroom","desk","print","viewer","bumper","folder"};
     SwatObject saved_door=sim.world.objects[16];sim.world.objects[16].yaw=sim.world.objects[16].closed_yaw;
-    for(int i=0;i<5;i++) {
+    for(int i=0;i<6;i++) {
         room=room101_capture(view,dressing_views[i],true);
         snprintf(path,sizeof(path),"%s/dressing-%s.png",directory,dressing_names[i]);assert(ExportImage(room,path));UnloadImage(room);
     }
     sim.world.objects[16]=saved_door;
-    puts("PASS dressing: eight embedded PBR models, second UV AO, metre-scale supported mounts");
+    assert(art->motel_dressing[8].meshCount==4);
+    int folder_triangles=0;for(int i=0;i<art->motel_dressing[8].meshCount;i++)folder_triangles+=art->motel_dressing[8].meshes[i].triangleCount;
+    assert(folder_triangles==432);
+    puts("PASS dressing: nine embedded PBR models, second UV AO, metre-scale supported mounts and 432-triangle guest folder");
     Camera3D lamp_view={{-5.25f,1.48f,-3.2f},{-4.65f,1.34f,-3.83f},{0,1,0},40,CAMERA_PERSPECTIVE};
     room=room101_capture(view,lamp_view,true);snprintf(path,sizeof(path),"%s/reading-lamp.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     SwatMotelInstance lamp_mount;b3Pos bulb;int lamp_owner=swat_motel_dressing(&sim.world,7,&lamp_mount);
@@ -484,6 +505,12 @@ static void room101_graphics(SwatView* view,const char* directory) {
     for(int i=0;i<room.width*room.height;i++)red+=edge_pixels[i].r>200 && edge_pixels[i].g<80 && edge_pixels[i].b<80;
     assert(red>100);UnloadImageColors(edge_pixels);UnloadImage(room);
     UnloadModel(art->masonry_edge);art->masonry_edge=saved_edge;
+    for(int i=0;i<4;i++) {
+        float x=-6.4f+4*i;Camera3D plaque={{x,1.92f,1.05f},{x,1.92f,.11f},{0,1,0},35,CAMERA_PERSPECTIVE};
+        room=room101_capture(view,plaque,true);snprintf(path,sizeof(path),"%s/room-number-%d.png",directory,101+i);assert(ExportImage(room,path));UnloadImage(room);
+    }
+    Camera3D reception={{-10.3f,1.65f,5.2f},{-10,1.65f,0},{0,1,0},65,CAMERA_PERSPECTIVE};
+    room=room101_capture(view,reception,true);snprintf(path,sizeof(path),"%s/reception-approach.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     swat_sim_close(&sim);
     printf("PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (%d changed pixels), three door poses and removal\n",changed);
 }
@@ -515,6 +542,8 @@ int main(int argc,char** argv) {
     assert(!view.environment.room101_ready && !view.environment.room101[0].meshCount);
     assert(!view.environment.room101_v4_ready && !view.environment.room101_v4[0].meshCount);
     assert(!view.environment.room101_desk.meshCount);
+    for(int i=0;i<3;i++)assert(!view.environment.motel_numbers[i].meshCount);
+    assert(!view.environment.motel_reception.meshCount);
     for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) {
         const SwatMotelAsset* source=swat_storefront_asset(i);Model model=view.environment.storefront[i];
         assert(model.meshCount>0 && model.materialCount==source->material_count+1);

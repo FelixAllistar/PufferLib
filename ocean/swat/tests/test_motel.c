@@ -111,7 +111,61 @@ static void masonry_ballistics(void) {
     printf("PASS masonry: %d pieces/%d objects, all weapon profiles stopped, civilian protected, ram resisted, localized charge aperture/capsule/replica, strength and thickness limits\n",assemblies,world.count);
     swat_world_close(&world);
 }
+static void live_squad_and_evacuation(void) {
+    static SwatSim s;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;swat_config_human(&cfg);
+    cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=12000;
+    swat_sim_init(&s,cfg,81);
+    // Isolate navigation/interaction from combat decisions, preserving the
+    // real doors, furnished rooms, body controller and civilian escort rules.
+    for(int i=1;i<s.actor_count;i++)if(s.actors[i].present) {
+        if(s.actors[i].role==SWAT_OFFICER)s.actors[i].mind.order=SWAT_ORDER_HOLD;
+        else s.actors[i].gear.surrendered=true;
+    }
+    SwatActor* officer=&s.actors[3];officer->mind.order=SWAT_ORDER_MOVE;officer->mind.goal=(b3Pos){-6.8f,0,-.85f};
+    int t=0;for(;t<2400;t++) {
+        swat_sim_step(&s,&(SwatInput){0});
+        if(b3Distance(swat_body_feet_position(&officer->controller.body),officer->mind.goal)<.65f)break;
+    }
+    b3Pos feet=swat_body_feet_position(&officer->controller.body);
+    printf("Motel squad room101 after %d ticks: %.3f %.3f %.3f\n",t,(float)feet.x,(float)feet.y,(float)feet.z);fflush(stdout);
+    if(t==2400) {
+        printf("Route waypoint %.3f %.3f %.3f yaw %.3f\n",(float)officer->mind.waypoint.x,(float)officer->mind.waypoint.y,(float)officer->mind.waypoint.z,officer->controller.yaw);
+        for(int i=0;i<s.actor_count;i++)if(s.actors[i].present) {
+            b3Pos p=swat_body_feet_position(&s.actors[i].controller.body);
+            printf("Actor %d role%d feet %.3f %.3f %.3f\n",i,s.actors[i].role,(float)p.x,(float)p.y,(float)p.z);
+        }fflush(stdout);
+    }
+    assert(t<2400 && s.world.objects[16].door_open);
+    // The standing civilian physically fills the narrow chair/bed aisle. Clear
+    // that occupant through an ordinary escort before asking a body to pass.
+    officer->mind.goal=(b3Pos){-7.2f,0,2};officer->mind.replan_tick=0;
+    for(t=0;t<900;t++) {swat_sim_step(&s,&(SwatInput){0});if(b3Distance(swat_body_feet_position(&officer->controller.body),officer->mind.goal)<.65f)break;}
+    assert(t<900);officer->mind.order=SWAT_ORDER_HOLD;
+    SwatController* leader=&s.actors[0].controller;
+    b3Body_SetTransform(leader->body.body,b3OffsetPos(s.extraction,swat_v(0,leader->body.totalHeight*.5f+.01f,0)),b3Quat_identity);
+    b3Body_SetLinearVelocity(leader->body.body,swat_v(0,0,0));
+    s.actors[2].gear.restrained=true;s.actors[2].mind.escort_owner=0;
+    for(t=0;t<2400 && !s.actors[2].rescued;t++)swat_sim_step(&s,&(SwatInput){0});
+    feet=swat_body_feet_position(&s.actors[2].controller.body);
+    printf("Motel civilian evacuation after %d ticks: %.3f %.3f %.3f\n",t,(float)feet.x,(float)feet.y,(float)feet.z);fflush(stdout);
+    assert(s.actors[2].rescued && s.actors[2].mind.escort_owner==-1 && s.end==SWAT_RUNNING);
+    officer->mind.order=SWAT_ORDER_MOVE;officer->mind.goal=(b3Pos){-6.15f,0,-3.5f};officer->mind.replan_tick=0;
+    for(t=0;t<1200;t++) {swat_sim_step(&s,&(SwatInput){0});if(b3Distance(swat_body_feet_position(&officer->controller.body),officer->mind.goal)<.65f)break;}
+    feet=swat_body_feet_position(&officer->controller.body);
+    printf("Motel squad cleared aisle after %d ticks: %.3f %.3f %.3f\n",t,(float)feet.x,(float)feet.y,(float)feet.z);fflush(stdout);
+    assert(t<1200);
+    // Regroup the complete three-officer squad, including the officer still
+    // inside. The evacuated civilian remains a real body at staging.
+    for(int i=0;i<s.actor_count;i++)if(s.actors[i].present && s.actors[i].mind.bot && s.actors[i].role==SWAT_OFFICER)
+        s.actors[i].mind.order=SWAT_ORDER_FALL_IN;
+    for(t=0;t<2400 && swat_sim_progress(&s).officers_away;t++)swat_sim_step(&s,&(SwatInput){0});
+    printf("Motel full squad regroup after %d ticks, away=%d\n",t,swat_sim_progress(&s).officers_away);fflush(stdout);
+    assert(!swat_sim_progress(&s).officers_away);
+    swat_sim_close(&s);
+    puts("PASS motel live route: squad opens front door and crosses furnished room; restrained civilian physically follows to staging and stays evacuated");
+}
 int main(void) {
+    live_squad_and_evacuation();
     masonry_ballistics();
     swat_world_init(&world); swat_motel_build(&world); assert(world.motel && world.count>SWAT_MOTEL_INSTANCES+1 && world.room_count==6);
     utility_hits(&world);

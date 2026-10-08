@@ -1,0 +1,100 @@
+[
+  {
+    "file": "mi01_guest_information_folder_lod0.glb",
+    "sha256": "6fbfb585c2ae21fe40b5cb064246a8a57cde53dbb8b2cd7b0ad5d9dd85aeb35b",
+    "bytes": 1124748,
+    "triangles": 432,
+    "export_vertices": 1104,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.11650000209920108,
+        0.0,
+        -0.15299999713897705
+      ],
+      [
+        0.11599999666213989,
+        0.008200000273063779,
+        0.15299999713897705
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.23249999876134098,
+      0.008200000273063779,
+      0.3059999942779541
+    ],
+    "images": [
+      {
+        "name": "vinyl_cover_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "vinyl_cover_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "vinyl_cover_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_edges_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_edges_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "paper_edges_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mi01_guest_information_folder_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "back_vinyl_board",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "cream_insert_edges",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.076693534851074e-05
+      },
+      {
+        "name": "folded_left_spine",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 9.748339653015137e-05
+      },
+      {
+        "name": "front_vinyl_board",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  }
+]

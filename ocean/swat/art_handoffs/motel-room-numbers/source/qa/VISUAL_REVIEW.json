@@ -1,0 +1,15 @@
+{
+  "runtime_reimport_101_104.png": {
+    "inspected": true,
+    "result": "All four numbers are clear and distinct. Same accepted DejaVu typography, centered cream numerals, sage plate, bevel and two screws. No duplicate or extruded numeral overlay."
+  },
+  "assembly_placement_context.png": {
+    "inspected": true,
+    "result": "All four plaques align beside their respective existing door openings at the original assembly height and spacing. Facade and door context is the unchanged supplied v2 geometry. This reduced context view omits window inserts, roofs and other set dressing; it is not a full-scene or engine screenshot."
+  },
+  "engine_native_validation": "Not performed; engine must verify current instance IDs, shader appearance, ownership/lifecycle and native legibility.",
+  "101_placement_detail.png": {
+    "inspected": true,
+    "result": "Confirms the unchanged plaque position, wall clearance and relation to the door head. This existing studio light setup is dim at Room 101; use the evenly lit side-by-side image for typography/material review, not this context crop."
+  }
+}

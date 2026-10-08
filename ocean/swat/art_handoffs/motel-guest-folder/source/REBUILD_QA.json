@@ -1,0 +1,54 @@
+{
+  "all_byte_exact": true,
+  "scope": "Runtime GLBs and all procedural/baked textures; .blend timestamps excluded",
+  "files": [
+    {
+      "path": "exports/mi01_guest_information_folder_lod0.glb",
+      "source_sha256": "6fbfb585c2ae21fe40b5cb064246a8a57cde53dbb8b2cd7b0ad5d9dd85aeb35b",
+      "rebuild_sha256": "6fbfb585c2ae21fe40b5cb064246a8a57cde53dbb8b2cd7b0ad5d9dd85aeb35b",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/mi01_guest_information_folder_ao.png",
+      "source_sha256": "c1b34febdf4ad385fd187005362bbf98cc2692889a0e79c5f8cf7319026e6b72",
+      "rebuild_sha256": "c1b34febdf4ad385fd187005362bbf98cc2692889a0e79c5f8cf7319026e6b72",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/paper_edges_basecolor.png",
+      "source_sha256": "367116e91e65885354da5433fb18ef036e29577020047531c5f7a4bcfc65182b",
+      "rebuild_sha256": "367116e91e65885354da5433fb18ef036e29577020047531c5f7a4bcfc65182b",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/paper_edges_normal_gl.png",
+      "source_sha256": "401e9d86f768f8dd114b743b6e93745e617143c2247738322ac6a0a7dafd1271",
+      "rebuild_sha256": "401e9d86f768f8dd114b743b6e93745e617143c2247738322ac6a0a7dafd1271",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/paper_edges_roughmetal.png",
+      "source_sha256": "261fa3ed4fea7c1a4f64eb3d187250a13f73b6a3040816f32018f7cbb3a1bd10",
+      "rebuild_sha256": "261fa3ed4fea7c1a4f64eb3d187250a13f73b6a3040816f32018f7cbb3a1bd10",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/vinyl_cover_basecolor.png",
+      "source_sha256": "c5b45d42d86e9426ac0d2f77f58af3ddc93cec9fc68fdde299925d85468428e1",
+      "rebuild_sha256": "c5b45d42d86e9426ac0d2f77f58af3ddc93cec9fc68fdde299925d85468428e1",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/vinyl_cover_normal_gl.png",
+      "source_sha256": "8e0faf917e1f64f77b8537142bf3ce9e1332f4bc813eb2fedc22dbaa0a044191",
+      "rebuild_sha256": "8e0faf917e1f64f77b8537142bf3ce9e1332f4bc813eb2fedc22dbaa0a044191",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/vinyl_cover_roughmetal.png",
+      "source_sha256": "7001d39752f4c9a39abad0869823b620e9b41148826c02548cdf67cd6e0a3128",
+      "rebuild_sha256": "7001d39752f4c9a39abad0869823b620e9b41148826c02548cdf67cd6e0a3128",
+      "byte_exact": true
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+Original procedural mesh, material artwork and build scripts in this package are dedicated to the public domain under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/
+No external photographs, downloaded models, third-party logos or purchased assets are included.
+Rendered typography uses the installed DejaVu Serif font. The font binary is not redistributed; its license is separate from this original artwork. Supplied baked texture inputs allow rebuilding without the font.

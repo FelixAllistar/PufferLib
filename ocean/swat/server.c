@@ -55,6 +55,7 @@ int main(int argc,char** argv) {
         else if(!strcmp(key,"--run-ticks")) run_ticks=(int)n;
         else { fprintf(stderr,"Unknown or invalid option %s\n",key); return 2; }
     }
+    swat_config_human(&config);
     SwatSim* sim=calloc(1,sizeof(*sim));
     SwatNetServer* server=calloc(1,sizeof(*server));
     if(!sim || !server) { free(sim); free(server); return 1; }

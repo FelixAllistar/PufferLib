@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "byte_exact": true,
+  "sha256": {
+    "vinyl_cover_roughmetal.png": "7001d39752f4c9a39abad0869823b620e9b41148826c02548cdf67cd6e0a3128",
+    "vinyl_cover_normal_gl.png": "8e0faf917e1f64f77b8537142bf3ce9e1332f4bc813eb2fedc22dbaa0a044191",
+    "paper_edges_basecolor.png": "367116e91e65885354da5433fb18ef036e29577020047531c5f7a4bcfc65182b",
+    "vinyl_cover_basecolor.png": "c5b45d42d86e9426ac0d2f77f58af3ddc93cec9fc68fdde299925d85468428e1",
+    "paper_edges_normal_gl.png": "401e9d86f768f8dd114b743b6e93745e617143c2247738322ac6a0a7dafd1271",
+    "paper_edges_roughmetal.png": "261fa3ed4fea7c1a4f64eb3d187250a13f73b6a3040816f32018f7cbb3a1bd10"
+  }
+}
