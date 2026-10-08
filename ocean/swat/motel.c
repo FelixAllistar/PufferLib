@@ -7,6 +7,7 @@
 #include "motel_utility_data.h"
 #include "motel_fence_data.h"
 #include "motel_surroundings_data.h"
+#include "motel_ground_data.h"
 typedef struct SwatMotelContactSource {int asset;const int32_t* indices;int triangle_count;} SwatMotelContactSource;
 #include "motel_contacts_data.h"
 static void contact_meshes_create(SwatWorld* w) {
@@ -31,6 +32,34 @@ static bool contact_meshes_bind(SwatWorld* w,SwatObject* o,const SwatMotelInstan
     }
     if(found)o->query_mesh=(b3Mesh){w->motel_meshes[p->asset],p->scale};
     return found;
+}
+const SwatMotelAsset* swat_motel_ground_asset(int part) {return part>=0 && part<SWAT_GROUND_PARTS?&ground_parts[part]:NULL;}
+int swat_motel_ground_part(const SwatWorld* w,const SwatObject* o) {
+    int part=o->tag.index-SWAT_MOTEL_GROUND_FIRST;
+    return w->motel && w->count>=SWAT_MOTEL_OBJECTS && part>=0 && part<SWAT_GROUND_PARTS?part:-1;
+}
+static bool ground_validate(const SwatWorld* w) {
+    if(w->count<=SWAT_MOTEL_GROUND_FIRST)return true; // Older canonical prefix.
+    if(w->count<SWAT_MOTEL_OBJECTS)return false;
+    for(int k=0;k<SWAT_GROUND_PARTS;k++) {
+        const SwatObject* o=&w->objects[SWAT_MOTEL_GROUND_FIRST+k];const SwatMotelAsset* a=&ground_parts[k];
+        b3Pos center={a->center.x,a->center.y,a->center.z};
+        if(b3Distance(center,o->center)>1e-4f || b3Length(b3Sub(a->half,o->half))>1e-4f || o->yaw!=0 || o->pitch!=0 ||
+           o->door || o->fractured || o->wall_group || o->part!=SWAT_PART_SOLID || o->max_health!=0 || o->material!=ground_materials[k])return false;
+    }
+    return true;
+}
+static void ground_bind(SwatWorld* w) {
+    if(w->count<=SWAT_MOTEL_GROUND_FIRST)return;
+    for(int k=0;k<SWAT_GROUND_PARTS;k++) {
+        const SwatMotelAsset* a=&ground_parts[k];
+        b3MeshDef mesh={.vertices=a->vertices,.indices=a->indices,.vertexCount=a->vertex_count,.triangleCount=a->triangle_count,
+            .weldVertices=true,.weldTolerance=1e-6f,.identifyEdges=true};
+        w->ground_meshes[k]=b3CreateMesh(&mesh,NULL,0);assert(w->ground_meshes[k]);
+        SwatObject* o=&w->objects[SWAT_MOTEL_GROUND_FIRST+k];b3DestroyShape(o->shape,false);
+        b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
+        o->shape=b3CreateMeshShape(o->body,&def,w->ground_meshes[k],swat_v(1,1,1));assert(B3_IS_NON_NULL(o->shape));
+    }
 }
 const SwatMotelAsset* swat_motel_surroundings_asset(int part) {return part>=0 && part<SWAT_SURROUNDINGS_PARTS?&surroundings_parts[part]:NULL;}
 int swat_motel_surroundings_part(const SwatWorld* w,const SwatObject* o) {
@@ -163,7 +192,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
     int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
-    if(!fence_validate(w) || !surroundings_validate(w))return false;
+    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w))return false;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];
         const SwatMotelInstance* p=swat_motel_instance(i);
@@ -200,6 +229,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     }
     fence_bind(w);
     surroundings_bind(w);
+    ground_bind(w);
     w->motel=true; return true;
 }
 
@@ -342,6 +372,12 @@ void swat_motel_build(SwatWorld* w) {
         int id=swat_world_box(w,center,half,k%SWAT_SURROUNDINGS_PARTS<2?SWAT_SOIL:SWAT_STONE,0);swat_world_place(&w->objects[id],yaw);
     }
     assert(surroundings_validate(w));surroundings_bind(w);
+    assert(w->count==SWAT_MOTEL_GROUND_FIRST);
+    for(int k=0;k<SWAT_GROUND_PARTS;k++) {
+        const SwatMotelAsset* a=&ground_parts[k];
+        swat_world_box(w,(b3Pos){a->center.x,a->center.y,a->center.z},a->half,ground_materials[k],0);
+    }
+    assert(ground_validate(w));ground_bind(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }

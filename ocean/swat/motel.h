@@ -8,6 +8,8 @@
 #define SWAT_MOTEL_INSTANCES 158
 #define SWAT_MOTEL_SURROUNDINGS_FIRST 1044
 #define SWAT_MOTEL_SURROUNDINGS_COUNT (5*SWAT_SURROUNDINGS_PARTS)
+#define SWAT_MOTEL_GROUND_FIRST (SWAT_MOTEL_SURROUNDINGS_FIRST+SWAT_MOTEL_SURROUNDINGS_COUNT)
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_GROUND_FIRST+SWAT_GROUND_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 typedef struct SwatMotelMaterial { float roughness,metalness; } SwatMotelMaterial;
@@ -25,6 +27,8 @@ int swat_motel_fence_part_count(void);
 int swat_motel_fence_triangle_part(int triangle);
 int swat_motel_fence_parent(const SwatWorld*,const SwatObject*);
 bool swat_motel_fence_proxy(const SwatWorld*,const SwatObject*);
+int swat_motel_ground_part(const SwatWorld*,const SwatObject*);
+const SwatMotelAsset* swat_motel_ground_asset(int part);
 int swat_motel_surroundings_part(const SwatWorld*,const SwatObject*);
 const SwatMotelAsset* swat_motel_surroundings_asset(int part);
 bool swat_motel_surroundings_instance(int owner,SwatMotelInstance* out);

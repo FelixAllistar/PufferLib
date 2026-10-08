@@ -295,6 +295,52 @@ static void masonry_silhouette(SwatView* view,const char* directory) {
     view->lighting.prepared=prepared;assert(filled>1000 && empty>1000);
     printf("PASS masonry silhouette: %d native GPU samples match exact convex collision on both faces (%d solid/%d empty)\n",checked,filled,empty);
 }
+static void ground_graphics(SwatView* view,const char* directory) {
+    SwatEnvironmentArt* art=&view->environment;Model source=art->motel_ground;
+    assert(source.meshCount==SWAT_GROUND_PARTS && source.materialCount==3);
+    before=sim.world;int checked=0;
+    for(int k=0;k<SWAT_GROUND_PARTS;k++) {
+        Mesh mesh=source.meshes[k];assert(mesh.triangleCount==12);
+        BoundingBox bounds=GetMeshBoundingBox(mesh);const SwatMotelAsset* a=swat_motel_ground_asset(k);
+        assert(fabsf(bounds.min.x-(a->center.x-a->half.x))<.0001f && fabsf(bounds.max.x-(a->center.x+a->half.x))<.0001f);
+        assert(fabsf(bounds.min.z-(a->center.z-a->half.z))<.0001f && fabsf(bounds.max.z-(a->center.z+a->half.z))<.0001f);
+        for(int m=1;m<source.materialCount;m++)assert(source.materials[m].maps[MATERIAL_MAP_NORMAL].texture.id && source.materials[m].maps[MATERIAL_MAP_ALBEDO].texture.id && source.materials[m].maps[MATERIAL_MAP_ROUGHNESS].texture.id);
+    }
+    Camera3D cameras[]={{{0,1.65f,42},{0,1,-2},{0,1,0},70,CAMERA_PERSPECTIVE},
+        {{38,12,48},{0,0,8},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{31,1.65f,11},{25,-.1f,8},{0,1,0},65,CAMERA_PERSPECTIVE}};
+    const char* names[]={"road","context","join"};char path[4096];
+    for(int i=0;i<3;i++) {
+        Image image=room101_capture_size(view,cameras[i],true,1440,810);
+        snprintf(path,sizeof(path),"%s/ground-%s.png",directory,names[i]);assert(ExportImage(image,path));UnloadImage(image);
+    }
+    // Native raster coverage checks the identity/world-space owner association
+    // and exact missing-art fallback independently of the scene-wide draw.
+    bool prepared=view->lighting.prepared;view->lighting.prepared=false;
+    const int parts[]={0,6,14,40,53};
+    for(unsigned p=0;p<sizeof(parts)/sizeof(parts[0]);p++)for(int fallback=0;fallback<2;fallback++) {
+        int k=parts[p];const SwatMotelAsset* a=swat_motel_ground_asset(k);SwatObject* o=&sim.world.objects[SWAT_MOTEL_GROUND_FIRST+k];
+        art->motel_ground=fallback?(Model){0}:source;
+        Camera3D camera={{a->center.x,5,a->center.z},{a->center.x,0,a->center.z},{0,0,-1},fmaxf(a->half.x,a->half.z)*2.4f,CAMERA_ORTHOGRAPHIC};
+        RenderTexture2D target=LoadRenderTexture(384,384);BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
+        assert(swat_environment_motel_draw(art,&sim.world,o,false,false));EndMode3D();EndTextureMode();
+        Image image=LoadImageFromTexture(target.texture);Color* pixels=LoadImageColors(image);int filled=0,empty=0;
+        for(int y=5;y<379;y+=5)for(int x=5;x<379;x+=5) {
+            Ray ray=GetScreenToWorldRayEx((Vector2){x+.5f,y+.5f},camera,384,384);
+            bool hit=b3Shape_RayCast(o->shape,(b3Pos){ray.position.x,ray.position.y,ray.position.z},swat_mul(swat_v(ray.direction.x,ray.direction.y,ray.direction.z),10)).hit;
+            Color c=pixels[(383-y)*384+x];bool visible=c.r!=MAGENTA.r || c.g!=MAGENTA.g || c.b!=MAGENTA.b;
+            assert(hit==visible);checked++;filled+=visible;empty+=!visible;
+        }
+        assert(filled>20 && empty>20);UnloadImageColors(pixels);UnloadImage(image);UnloadRenderTexture(target);
+        o->active=false;target=LoadRenderTexture(64,64);BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
+        assert(swat_environment_motel_draw(art,&sim.world,o,false,false));EndMode3D();EndTextureMode();image=LoadImageFromTexture(target.texture);pixels=LoadImageColors(image);
+        for(int i=0;i<64*64;i++)assert(pixels[i].r==MAGENTA.r && pixels[i].g==MAGENTA.g && pixels[i].b==MAGENTA.b);
+        UnloadImageColors(pixels);UnloadImage(image);UnloadRenderTexture(target);o->active=true;
+    }
+    art->motel_ground=source;view->lighting.prepared=prepared;
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
+    printf("PASS ground graphics: 54 native owner/bounds matches, original PBR maps, three engine captures, %d collision/raster samples, independent removal and exact fallback\n",checked);
+}
 static void surroundings_graphics(SwatView* view,const char* directory) {
     SwatEnvironmentArt* art=&view->environment;Model shoulder=art->motel_surroundings[0],bank=art->motel_surroundings[1];
     assert(shoulder.meshCount==1 && bank.meshCount==4 && shoulder.materialCount==2 && bank.materialCount==5);
@@ -340,6 +386,7 @@ static void room101_graphics(SwatView* view,const char* directory) {
     SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.hostile_fire=false;
     swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
     surroundings_graphics(view,directory);
+    ground_graphics(view,directory);
     masonry_silhouette(view,directory);
     Texture2D asphalt_maps[]={art->motel_asphalt.color,art->motel_asphalt.normal,art->motel_asphalt.roughness};
     const int coordinates[4][2]={{0,0},{127,311},{1023,1023},{512,512}};
@@ -721,10 +768,10 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
-    if(argc>2 && !strcmp(argv[2],"surroundings")) {
+    if(argc>2 && (!strcmp(argv[2],"surroundings") || !strcmp(argv[2],"ground"))) {
         SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;
         swat_sim_init(&sim,config,73);swat_environment_art_prepare_location(&view.environment,&sim.world);
-        surroundings_graphics(&view,directory);swat_sim_close(&sim);swat_view_close(&view);return 0;
+        if(!strcmp(argv[2],"ground"))ground_graphics(&view,directory);else surroundings_graphics(&view,directory);swat_sim_close(&sim);swat_view_close(&view);return 0;
     }
     if(argc>2 && !strcmp(argv[2],"personal")) {personal_shadow_review(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel")) {room101_graphics(&view,directory);swat_view_close(&view);return 0;}
@@ -749,6 +796,7 @@ int main(int argc,char** argv) {
     assert(!view.environment.room101_v4_ready && !view.environment.room101_v4[0].meshCount);
     assert(!view.environment.room101_desk.meshCount);
     assert(!view.environment.motel_guest_desk.meshCount);
+    assert(!view.environment.motel_ground.meshCount);
     assert(!view.environment.motel_surroundings[0].meshCount && !view.environment.motel_surroundings[1].meshCount);
     for(int i=0;i<3;i++)assert(!view.environment.motel_numbers[i].meshCount);
     assert(!view.environment.motel_reception.meshCount);

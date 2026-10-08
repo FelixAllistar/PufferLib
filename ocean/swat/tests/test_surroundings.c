@@ -49,7 +49,7 @@ static void ballistic_materials(void) {
 }
 int main(void) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;cfg.max_ticks=60000;
-    swat_sim_init(&sim,cfg,81);assert(sim.world.count==1119);
+    swat_sim_init(&sim,cfg,81);assert(sim.world.count==SWAT_MOTEL_OBJECTS);
     int triangles=0;for(int p=0;p<SWAT_SURROUNDINGS_PARTS;p++) {
         assert(sim.world.surroundings_meshes[p] && sim.world.surroundings_meshes[p]->triangleCount<=240);
         triangles+=sim.world.surroundings_meshes[p]->triangleCount;
@@ -114,7 +114,7 @@ int main(void) {
     }
     static SwatMap map,decoded;static SwatSnapshot state,wire;static unsigned char bytes[SWAT_NET_PACKET_MAX];
     swat_capture_map(&sim,1,&map);size_t n=swat_encode_map(bytes,sizeof(bytes),&map);assert(n && swat_decode_map(&decoded,bytes,n));
-    swat_apply_map(&replica,&decoded);assert(replica.world.motel && replica.world.count==1119);
+    swat_apply_map(&replica,&decoded);assert(replica.world.motel && replica.world.count==SWAT_MOTEL_OBJECTS);
     swat_capture_snapshot(&sim,1,&state);n=swat_encode_snapshot(bytes,sizeof(bytes),&state);assert(n && swat_decode_snapshot(&wire,bytes,n) && swat_apply_snapshot(&replica,&wire));
     for(int i=SWAT_MOTEL_SURROUNDINGS_FIRST;i<sim.world.count;i++) {
         const SwatObject* o=&sim.world.objects[i];SwatHit a=ground(&sim.world,o->center),b=ground(&replica.world,o->center);
@@ -122,7 +122,7 @@ int main(void) {
     }
     swat_sim_close(&replica);map.objects[SWAT_MOTEL_SURROUNDINGS_FIRST].center.x+=.1f;
     swat_apply_map(&replica,&map);assert(!replica.world.motel && !replica.world.surroundings_meshes[0]);swat_sim_close(&replica);
-    swat_sim_reset(&sim);assert(sim.world.count==1119 && sim.world.surroundings_meshes[14]);swat_sim_close(&sim);
+    swat_sim_reset(&sim);assert(sim.world.count==SWAT_MOTEL_OBJECTS && sim.world.surroundings_meshes[14]);swat_sim_close(&sim);
     for(int i=0;i<15;i++)assert(!sim.world.surroundings_meshes[i]);
     puts("PASS surroundings: physical squad movement on both outer edges, encoded map/snapshot exact reconstruction, modified-map rejection and reset/close ownership");
     return 0;

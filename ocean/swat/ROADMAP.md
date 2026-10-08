@@ -247,6 +247,46 @@ support/solid-bank owners and verify seams/routes/replicas; final numeric IDs ar
 not assigned yet. Existing ground owner 0, openings and fence-end routes remain.
 The empty ground boundary/background is still conspicuous until delivery is integrated.
 
+
+The connected road/ground foundation is now integrated: 54 closed supports
+(owners 1119–1172), an 8 m road, 6 m driveway and graded joins extend the
+physical envelope to X [-64,64], Z [-48,52]. Original court/perimeter ownership,
+staging and extraction stay intact. Original render/collision triangles and
+identity placement are checked by the hash-validating Node importer. Runtime,
+packed editable source, source/QA records and scoped CC0 provenance are in the
+repo. Asphalt currently shares CONCRETE authority; gravel uses SOIL. No terrain
+cratering or loose-gravel simulation is claimed.
+
+Navigation keeps exact prior indoor 60 cm arithmetic while covering the wider
+level with 216 × 168 cells and four height layers. Grid and 32-bit BFS scratch
+share a lazy heap allocation, eliminating the enlarged Windows stack hazard;
+small worlds retain their prior grid size. Linux/Windows ground QA checks 740
+support/seam rays, finite edges, physical player/squad crossings, replica
+reconstruction, high layer indices beyond 65535, modified-map rejection and
+reset/close. Native graphics validates all 54 owner bounds, original PBR maps,
+56,250 silhouette samples, independent removal and exact collision fallback.
+Actual native context was shared as Slack file F0C7RRC86ER.
+
+The road setting is still sparse, pale and bounded. Far scenery, road markings
+and near-realism dressing remain acceptance work. Slack art is continuing a
+separate coordinated gravel/stone material and collision-free shrub silhouette
+revision; chipped rock geometry requires matched new collision. The backed-up
+hose hanger and other maintenance/roadside props are queued for placement.
+Full scenario checks continue to accept lawful return fire on every hostile
+approach, rather than requiring an arrest outcome for a particular entry route.
+Protected deaths, restrained deaths, unlawful force and missing evidence remain
+failures. Protocol/replay version is now 16.
+
+After this ground expansion, front-door, exterior-charge and inter-room-charge
+completion all pass on Linux and native Windows, with exact per-tick replay,
+mid-run save/resume and fresh-replica debrief. These runs finish with two arrests,
+three civilian evacuations, both weapons collected, squad regroup and no deaths
+or unlawful force; lawful hostile outcomes remain permitted by the QA. Existing
+encounter, generated two-storey movement and real-UDP regressions pass. The normal
+Windows player rebuild and ordinary `./swat` motel capture also pass on the GTX
+1060. Full-slice acceptance still needs human/co-op playtesting, finished setting
+and audio, and useful held-out trained policies.
+
 ## Landed: playable foundation
 
 - Motel: seven supported detail props in each guest room; three inter-room

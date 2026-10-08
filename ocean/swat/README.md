@@ -1043,3 +1043,43 @@ cmake --build build/swat/physics-comparison --target swat_physics_benchmark --pa
 Add `--trace FILE.csv --envs 1 --threads 1 --steps 30` to inspect a two-second
 grenade trajectory. `--physx-substeps 4` requests four explicit calls per tick in
 addition to TGS's internal substeps; use it only as a separately labeled experiment.
+
+### Connected motel road and ground
+
+The motel now includes a physically supported 8 m road, 6 m driveway and graded
+surrounding ground inside X [-64,64], Z [-48,52]. The 54 original closed supports
+are owners 1119–1172; existing court/perimeter owners and staging/extraction
+positions stay intact. Render vertices are already world-placed and use identity
+roots. The importer checks the original runtime hashes, closure and exact
+render/collision triangles before generating collision data:
+
+```bash
+node ocean/swat/tools/import_motel_ground.cjs
+make -C ocean/swat ground-test
+```
+
+The native player uses the delivered Clean Asphalt and Gravel Ground 01 maps
+with their original UVs/PBR factors. Missing art draws exact closed collision;
+individual support removal hides only its matching mesh. Source, original
+manifest, QA and CC0/third-party records live in `art_handoffs/motel-ground`.
+Asphalt currently uses CONCRETE physical response; gravel uses SOIL. These
+static supports do not promise physical craters, collapsing terrain or loose
+gravel. The exposed outer edge remains finite; far scenery and road dressing
+are still development work.
+
+Navigation lazily allocates 216 × 168 cells and four height layers for the wider
+motel, retaining the exact previous 60 cm indoor sampling arithmetic. Smaller
+worlds retain their previous 108 × 108 grid. Grid/route scratch share one heap
+allocation, with 32-bit queue indices; reset/map replacement/close free it once.
+Protocol/replay version is 16; older recorded sessions must be regenerated.
+
+Native rendering QA can be run after a Windows player build:
+
+```bash
+./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" ground
+```
+
+The graphics test executable is built by the full Windows build, or the
+`environment-art-test-build` Make target for Linux. The native check compares
+54 mesh bounds to their collision owners, validates original PBR maps and
+compares selected owner silhouettes, removal and missing-art fallback.

@@ -18,8 +18,14 @@ typedef struct SwatMind {
     b3Pos memory,goal,waypoint,pending_goal;
 } SwatMind;
 typedef struct SwatNavigation {
-    unsigned char walkable[SWAT_NAV_NODES],links[SWAT_NAV_NODES][4];
-    float height[SWAT_NAV_NODES],x[SWAT_NAV_NODES],z[SWAT_NAV_NODES];
+    // A single lazy heap allocation owns the grid and route scratch. Small
+    // training worlds retain their original size; wide motel ground keeps 60cm.
+    unsigned char *walkable,(*links)[4],*dirty_cells,*dirty_edges;
+    float *height,*x,*z;
+    int32_t *parent;
+    uint32_t *queue;
+    int width,depth,cells,nodes;
+    float min_x,min_z;
     unsigned char object_state[SWAT_MAX_OBJECTS];
     float top,bottom;
     int generation,count,built_tick,updated_cells;

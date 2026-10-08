@@ -29,6 +29,7 @@ void swat_world_close(SwatWorld* w) {
     for(int i=0;i<SWAT_SURROUNDINGS_PARTS;i++)if(w->surroundings_meshes[i])b3DestroyMesh(w->surroundings_meshes[i]);
     for(int i=0;i<w->motel_contact_mesh_count;i++)b3DestroyMesh(w->motel_contact_meshes[i]);
     free(w->motel_contact_meshes);
+    for(int i=0;i<SWAT_GROUND_PARTS;i++)if(w->ground_meshes[i])b3DestroyMesh(w->ground_meshes[i]);
     memset(w,0,sizeof(*w));
 }
 

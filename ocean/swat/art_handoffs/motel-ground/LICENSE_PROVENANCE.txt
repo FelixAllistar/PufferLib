@@ -1,0 +1,23 @@
+BRIAR COURT CONNECTED ROAD / GROUND V1 — 2026-10-08
+
+Original geometry, collision solids, placement data, editable source, rebuild scripts and QA scripts created for this candidate on Felix's behalf are dedicated under CC0 1.0 Universal (SPDX CC0-1.0), to the extent permitted by law and to the extent the affirmer holds rights. This permits copying, modification, commercial use and redistribution without attribution. Where waiver is ineffective, CC0's public-license fallback applies. No claim that every generated element is copyrightable is made. The work is supplied as-is; no patent or trademark rights are granted.
+
+Full governing instrument: https://creativecommons.org/publicdomain/zero/1.0/legalcode.en
+Canonical identifier: https://creativecommons.org/publicdomain/zero/1.0/
+
+This explicit grant has the same original-art/script scope as the prior surroundings library dedication. It covers this package's original ground geometry and scripts; it does not license the entire game, accepted motel/fence/sign/court assets, engine code, Blender/exporter, Python, fonts or external dependencies.
+
+Reused third-party material assets retain their own CC0 terms:
+1. Clean Asphalt — Dimitrios Savva / Poly Haven.
+   https://polyhaven.com/a/clean_asphalt
+   https://polyhaven.com/license
+   Exact approved 1K16-bit diffuse, OpenGL normal and roughness PNGs are unchanged in source/textures and embedded byte-identically in the final runtime render GLB. Source approval archive SHA-256: 1bef0bbc83fece8a04f5a690586b37020b477490558a8fd9dc86d3526f083960.
+   Full source records: provenance/LICENSE_AND_SOURCE.md, download_manifest.json, clean_asphalt_info.json, clean_asphalt_files.json.
+2. gravel_ground_01 — Poly Haven, CC0.
+   https://polyhaven.com/a/gravel_ground_01
+   https://polyhaven.com/license
+   Reused 1K maps from accepted motel_surroundings_kit_v2materials/source/textures/gravel_soil_*.png. Exact original download/hash records are in provenance/SCAN_PROVENANCE.json. That inherited record includes other prior kit assets not redistributed in this candidate.
+
+No imported third-party model or new prop is part of the new ground runtime. Original geometry is deterministic rectangular closed wedges with exact preserved-footprint subtraction and a 2 m grade. Preview images include unchanged prior licensed perimeter models plus simple original reference blockouts; they are offline technical context, not native captures. Accepted assets are referenced and preserved, not rededicated under this notice.
+
+COVERED_FILES.json exhaustively lists the distributed candidate files and their hash identities; original and third-party categories are explicitly distinguished. Dependencies are not included merely because scripts import them.

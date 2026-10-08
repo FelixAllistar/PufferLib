@@ -1,0 +1,3440 @@
+{
+  "status": "ART CANDIDATE; requires separate native integration/traversal approval",
+  "units": "metres",
+  "up": "Y",
+  "envelope_xz": [
+    -64,
+    64,
+    -48,
+    52
+  ],
+  "no_geometry_beyond_envelope": true,
+  "court_unchanged": {
+    "numeric_owner": 0,
+    "xz": [
+      -24,
+      24,
+      -24,
+      24
+    ],
+    "top_y": -0.08
+  },
+  "preserved_shoulder_cuts_xz": [
+    [
+      24,
+      30,
+      -12,
+      12
+    ],
+    [
+      -30,
+      -24,
+      -8,
+      8
+    ]
+  ],
+  "support_footprint_area_m2": 10256,
+  "numeric_owners": "engine assigned; no new numeric IDs",
+  "new_root_transform": "identity; vertices already world-placed Y-up",
+  "preserved_roots": [
+    {
+      "semantic_instance": "east_0",
+      "module": "shoulder",
+      "translation_yup": [
+        24,
+        0,
+        -8
+      ],
+      "rotation_y_radians": 0,
+      "matrix_row_major": [
+        [
+          1.0,
+          0,
+          0.0,
+          24
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -0.0,
+          0,
+          1.0,
+          -8
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "east_0_shoulder_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "shoulder_render.glb",
+      "collision": "shoulder_collision.glb"
+    },
+    {
+      "semantic_instance": "east_0",
+      "module": "bank",
+      "translation_yup": [
+        27,
+        0,
+        -8
+      ],
+      "rotation_y_radians": 0,
+      "matrix_row_major": [
+        [
+          1.0,
+          0,
+          0.0,
+          27
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -0.0,
+          0,
+          1.0,
+          -8
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "east_0_bank_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "bank_render.glb",
+      "collision": "bank_collision.glb"
+    },
+    {
+      "semantic_instance": "east_1",
+      "module": "shoulder",
+      "translation_yup": [
+        24,
+        0,
+        0
+      ],
+      "rotation_y_radians": 0,
+      "matrix_row_major": [
+        [
+          1.0,
+          0,
+          0.0,
+          24
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -0.0,
+          0,
+          1.0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "east_1_shoulder_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "shoulder_render.glb",
+      "collision": "shoulder_collision.glb"
+    },
+    {
+      "semantic_instance": "east_1",
+      "module": "bank",
+      "translation_yup": [
+        27,
+        0,
+        0
+      ],
+      "rotation_y_radians": 0,
+      "matrix_row_major": [
+        [
+          1.0,
+          0,
+          0.0,
+          27
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -0.0,
+          0,
+          1.0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "east_1_bank_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "bank_render.glb",
+      "collision": "bank_collision.glb"
+    },
+    {
+      "semantic_instance": "east_2",
+      "module": "shoulder",
+      "translation_yup": [
+        24,
+        0,
+        8
+      ],
+      "rotation_y_radians": 0,
+      "matrix_row_major": [
+        [
+          1.0,
+          0,
+          0.0,
+          24
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -0.0,
+          0,
+          1.0,
+          8
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "east_2_shoulder_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "shoulder_render.glb",
+      "collision": "shoulder_collision.glb"
+    },
+    {
+      "semantic_instance": "east_2",
+      "module": "bank",
+      "translation_yup": [
+        27,
+        0,
+        8
+      ],
+      "rotation_y_radians": 0,
+      "matrix_row_major": [
+        [
+          1.0,
+          0,
+          0.0,
+          27
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -0.0,
+          0,
+          1.0,
+          8
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "east_2_bank_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "bank_render.glb",
+      "collision": "bank_collision.glb"
+    },
+    {
+      "semantic_instance": "west_0",
+      "module": "shoulder",
+      "translation_yup": [
+        -24,
+        0,
+        -4
+      ],
+      "rotation_y_radians": 3.141592653589793,
+      "matrix_row_major": [
+        [
+          -1.0,
+          0,
+          1.2246467991473532e-16,
+          -24
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -1.2246467991473532e-16,
+          0,
+          -1.0,
+          -4
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "west_0_shoulder_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "shoulder_render.glb",
+      "collision": "shoulder_collision.glb"
+    },
+    {
+      "semantic_instance": "west_0",
+      "module": "bank",
+      "translation_yup": [
+        -27,
+        0,
+        -4
+      ],
+      "rotation_y_radians": 3.141592653589793,
+      "matrix_row_major": [
+        [
+          -1.0,
+          0,
+          1.2246467991473532e-16,
+          -27
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -1.2246467991473532e-16,
+          0,
+          -1.0,
+          -4
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "west_0_bank_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "bank_render.glb",
+      "collision": "bank_collision.glb"
+    },
+    {
+      "semantic_instance": "west_1",
+      "module": "shoulder",
+      "translation_yup": [
+        -24,
+        0,
+        4
+      ],
+      "rotation_y_radians": 3.141592653589793,
+      "matrix_row_major": [
+        [
+          -1.0,
+          0,
+          1.2246467991473532e-16,
+          -24
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -1.2246467991473532e-16,
+          0,
+          -1.0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "west_1_shoulder_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "shoulder_render.glb",
+      "collision": "shoulder_collision.glb"
+    },
+    {
+      "semantic_instance": "west_1",
+      "module": "bank",
+      "translation_yup": [
+        -27,
+        0,
+        4
+      ],
+      "rotation_y_radians": 3.141592653589793,
+      "matrix_row_major": [
+        [
+          -1.0,
+          0,
+          1.2246467991473532e-16,
+          -27
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          -1.2246467991473532e-16,
+          0,
+          -1.0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "support_owner": "west_1_bank_SOIL",
+      "numeric_owner": "assigned by engine import after existing 1044 objects",
+      "render": "bank_render.glb",
+      "collision": "bank_collision.glb"
+    }
+  ],
+  "grade": {
+    "distance_m": 2,
+    "method": "piecewise-linear exact existing shoulder profile, bilinear falloff at corners, top triangulated consistently",
+    "shoulder_outer_y": -0.2,
+    "flat_ground_y": -0.08
+  },
+  "reservations": {
+    "protected_xz": [
+      -3,
+      3,
+      5,
+      13
+    ],
+    "clear_corridor_xz": [
+      -3,
+      3,
+      13,
+      48
+    ],
+    "staging_yup": [
+      0,
+      -0.079,
+      8
+    ],
+    "extraction_yup": [
+      0,
+      -0.079,
+      10
+    ],
+    "extraction_radius_m": 2.5,
+    "fence_end_clearance_m": 2,
+    "fence_ends_xz": [
+      [
+        12.5,
+        0
+      ],
+      [
+        12.5,
+        6
+      ]
+    ]
+  },
+  "logical_regions_xz": {
+    "apron": [
+      -40,
+      40,
+      -36,
+      36
+    ],
+    "road": [
+      -56,
+      56,
+      36,
+      44
+    ],
+    "driveway": [
+      -3,
+      3,
+      24,
+      36
+    ],
+    "far_verge": [
+      -56,
+      56,
+      44,
+      48
+    ],
+    "outer_envelope": [
+      -64,
+      64,
+      -48,
+      52
+    ]
+  },
+  "flat_compaction": {
+    "unmerged_count": 306,
+    "graded_pieces_preserved": 40,
+    "flat_rectangles": 14,
+    "final_support_pieces": 54,
+    "method": "deterministic largest-area exact flat rectangle merging; no claim of arbitrary-polygon global minimum"
+  },
+  "support_matrix": [
+    {
+      "semantic_name": "ground_support_000",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -64,
+        64,
+        -48,
+        -24
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_000",
+      "collision_mesh": "ground_support_000"
+    },
+    {
+      "semantic_name": "ground_support_001",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -64,
+        -32,
+        -24,
+        36
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_001",
+      "collision_mesh": "ground_support_001"
+    },
+    {
+      "semantic_name": "ground_support_002",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -64,
+        -56,
+        36,
+        44
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_002",
+      "collision_mesh": "ground_support_002"
+    },
+    {
+      "semantic_name": "ground_support_003",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -64,
+        64,
+        44,
+        52
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_003",
+      "collision_mesh": "ground_support_003"
+    },
+    {
+      "semantic_name": "road_support_004",
+      "numeric_owner": null,
+      "region": "road",
+      "material": "asphalt",
+      "repeat_m": 2.1,
+      "xz": [
+        -56,
+        56,
+        36,
+        44
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "road_support_004",
+      "collision_mesh": "road_support_004"
+    },
+    {
+      "semantic_name": "ground_support_005",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -24,
+        -24,
+        -10
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_005",
+      "collision_mesh": "ground_support_005"
+    },
+    {
+      "semantic_name": "apron_support_006",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -30,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.2,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_006",
+      "collision_mesh": "apron_support_006"
+    },
+    {
+      "semantic_name": "apron_support_007",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -30,
+        -8,
+        -6
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.2,
+        -0.2,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_007",
+      "collision_mesh": "apron_support_007"
+    },
+    {
+      "semantic_name": "apron_support_008",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -30,
+        -6,
+        0
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.2,
+        -0.2,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_008",
+      "collision_mesh": "apron_support_008"
+    },
+    {
+      "semantic_name": "apron_support_009",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -30,
+        0,
+        6
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.2,
+        -0.2,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_009",
+      "collision_mesh": "apron_support_009"
+    },
+    {
+      "semantic_name": "apron_support_010",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -30,
+        6,
+        8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.2,
+        -0.2,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_010",
+      "collision_mesh": "apron_support_010"
+    },
+    {
+      "semantic_name": "apron_support_011",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -30,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.2,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_011",
+      "collision_mesh": "apron_support_011"
+    },
+    {
+      "semantic_name": "ground_support_012",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -24,
+        10,
+        24
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_012",
+      "collision_mesh": "ground_support_012"
+    },
+    {
+      "semantic_name": "ground_support_013",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -32,
+        -3,
+        24,
+        36
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_013",
+      "collision_mesh": "ground_support_013"
+    },
+    {
+      "semantic_name": "apron_support_014",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -30,
+        -29,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.1738180849853969,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_014",
+      "collision_mesh": "apron_support_014"
+    },
+    {
+      "semantic_name": "apron_support_015",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -30,
+        -29,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.1738180849853969,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_015",
+      "collision_mesh": "apron_support_015"
+    },
+    {
+      "semantic_name": "apron_support_016",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -29,
+        -28,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.14941575415290043,
+        -0.1738180849853969
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_016",
+      "collision_mesh": "apron_support_016"
+    },
+    {
+      "semantic_name": "apron_support_017",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -29,
+        -28,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.1738180849853969,
+        -0.14941575415290043,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_017",
+      "collision_mesh": "apron_support_017"
+    },
+    {
+      "semantic_name": "apron_support_018",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -28,
+        -27,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.12707504587380503,
+        -0.14941575415290043
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_018",
+      "collision_mesh": "apron_support_018"
+    },
+    {
+      "semantic_name": "apron_support_019",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -28,
+        -27,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.14941575415290043,
+        -0.12707504587380503,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_019",
+      "collision_mesh": "apron_support_019"
+    },
+    {
+      "semantic_name": "apron_support_020",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -27,
+        -26,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.10723124842593801,
+        -0.12707504587380503
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_020",
+      "collision_mesh": "apron_support_020"
+    },
+    {
+      "semantic_name": "apron_support_021",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -27,
+        -26,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.12707504587380503,
+        -0.10723124842593801,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_021",
+      "collision_mesh": "apron_support_021"
+    },
+    {
+      "semantic_name": "apron_support_022",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -26,
+        -25,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.09068260224043345,
+        -0.10723124842593801
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_022",
+      "collision_mesh": "apron_support_022"
+    },
+    {
+      "semantic_name": "apron_support_023",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -26,
+        -25,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.10723124842593801,
+        -0.09068260224043345,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_023",
+      "collision_mesh": "apron_support_023"
+    },
+    {
+      "semantic_name": "apron_support_024",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -25,
+        -24,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.09068260224043345
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_024",
+      "collision_mesh": "apron_support_024"
+    },
+    {
+      "semantic_name": "apron_support_025",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        -25,
+        -24,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.09068260224043345,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_025",
+      "collision_mesh": "apron_support_025"
+    },
+    {
+      "semantic_name": "driveway_support_026",
+      "numeric_owner": null,
+      "region": "driveway",
+      "material": "asphalt",
+      "repeat_m": 2.1,
+      "xz": [
+        -3,
+        3,
+        24,
+        36
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "driveway_support_026",
+      "collision_mesh": "driveway_support_026"
+    },
+    {
+      "semantic_name": "ground_support_027",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        3,
+        32,
+        24,
+        36
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_027",
+      "collision_mesh": "ground_support_027"
+    },
+    {
+      "semantic_name": "ground_support_028",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        24,
+        32,
+        -24,
+        -14
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_028",
+      "collision_mesh": "ground_support_028"
+    },
+    {
+      "semantic_name": "apron_support_029",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        24,
+        25,
+        -14,
+        -12
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.09068260224043345,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_029",
+      "collision_mesh": "apron_support_029"
+    },
+    {
+      "semantic_name": "apron_support_030",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        24,
+        25,
+        12,
+        14
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.09068260224043345,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_030",
+      "collision_mesh": "apron_support_030"
+    },
+    {
+      "semantic_name": "ground_support_031",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        24,
+        32,
+        14,
+        24
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_031",
+      "collision_mesh": "ground_support_031"
+    },
+    {
+      "semantic_name": "apron_support_032",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        25,
+        26,
+        -14,
+        -12
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.10723124842593801,
+        -0.09068260224043345
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_032",
+      "collision_mesh": "apron_support_032"
+    },
+    {
+      "semantic_name": "apron_support_033",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        25,
+        26,
+        12,
+        14
+      ],
+      "top_y_corners": [
+        -0.09068260224043345,
+        -0.10723124842593801,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_033",
+      "collision_mesh": "apron_support_033"
+    },
+    {
+      "semantic_name": "apron_support_034",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        26,
+        27,
+        -14,
+        -12
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.12707504587380503,
+        -0.10723124842593801
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_034",
+      "collision_mesh": "apron_support_034"
+    },
+    {
+      "semantic_name": "apron_support_035",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        26,
+        27,
+        12,
+        14
+      ],
+      "top_y_corners": [
+        -0.10723124842593801,
+        -0.12707504587380503,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_035",
+      "collision_mesh": "apron_support_035"
+    },
+    {
+      "semantic_name": "apron_support_036",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        27,
+        28,
+        -14,
+        -12
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.14941575415290043,
+        -0.12707504587380503
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_036",
+      "collision_mesh": "apron_support_036"
+    },
+    {
+      "semantic_name": "apron_support_037",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        27,
+        28,
+        12,
+        14
+      ],
+      "top_y_corners": [
+        -0.12707504587380503,
+        -0.14941575415290043,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_037",
+      "collision_mesh": "apron_support_037"
+    },
+    {
+      "semantic_name": "apron_support_038",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        28,
+        29,
+        -14,
+        -12
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.1738180849853969,
+        -0.14941575415290043
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_038",
+      "collision_mesh": "apron_support_038"
+    },
+    {
+      "semantic_name": "apron_support_039",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        28,
+        29,
+        12,
+        14
+      ],
+      "top_y_corners": [
+        -0.14941575415290043,
+        -0.1738180849853969,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_039",
+      "collision_mesh": "apron_support_039"
+    },
+    {
+      "semantic_name": "apron_support_040",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        29,
+        30,
+        -14,
+        -12
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.2,
+        -0.1738180849853969
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_040",
+      "collision_mesh": "apron_support_040"
+    },
+    {
+      "semantic_name": "apron_support_041",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        29,
+        30,
+        12,
+        14
+      ],
+      "top_y_corners": [
+        -0.1738180849853969,
+        -0.2,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_041",
+      "collision_mesh": "apron_support_041"
+    },
+    {
+      "semantic_name": "apron_support_042",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        -14,
+        -12
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_042",
+      "collision_mesh": "apron_support_042"
+    },
+    {
+      "semantic_name": "apron_support_043",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        -12,
+        -10
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_043",
+      "collision_mesh": "apron_support_043"
+    },
+    {
+      "semantic_name": "apron_support_044",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        -10,
+        -8
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_044",
+      "collision_mesh": "apron_support_044"
+    },
+    {
+      "semantic_name": "apron_support_045",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        -8,
+        -6
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_045",
+      "collision_mesh": "apron_support_045"
+    },
+    {
+      "semantic_name": "apron_support_046",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        -6,
+        0
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_046",
+      "collision_mesh": "apron_support_046"
+    },
+    {
+      "semantic_name": "apron_support_047",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        0,
+        6
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_047",
+      "collision_mesh": "apron_support_047"
+    },
+    {
+      "semantic_name": "apron_support_048",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        6,
+        8
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_048",
+      "collision_mesh": "apron_support_048"
+    },
+    {
+      "semantic_name": "apron_support_049",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        8,
+        10
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_049",
+      "collision_mesh": "apron_support_049"
+    },
+    {
+      "semantic_name": "apron_support_050",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        10,
+        12
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.2
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_050",
+      "collision_mesh": "apron_support_050"
+    },
+    {
+      "semantic_name": "apron_support_051",
+      "numeric_owner": null,
+      "region": "apron",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        30,
+        32,
+        12,
+        14
+      ],
+      "top_y_corners": [
+        -0.2,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "apron_support_051",
+      "collision_mesh": "apron_support_051"
+    },
+    {
+      "semantic_name": "ground_support_052",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        32,
+        64,
+        -24,
+        36
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_052",
+      "collision_mesh": "ground_support_052"
+    },
+    {
+      "semantic_name": "ground_support_053",
+      "numeric_owner": null,
+      "region": "ground",
+      "material": "soil",
+      "repeat_m": 2.6666666666666665,
+      "xz": [
+        56,
+        64,
+        36,
+        44
+      ],
+      "top_y_corners": [
+        -0.08,
+        -0.08,
+        -0.08,
+        -0.08
+      ],
+      "bottom_y": -0.6,
+      "triangle_count": 12,
+      "translation_yup": [
+        0,
+        0,
+        0
+      ],
+      "matrix_row_major": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "render_mesh": "ground_support_053",
+      "collision_mesh": "ground_support_053"
+    }
+  ]
+}

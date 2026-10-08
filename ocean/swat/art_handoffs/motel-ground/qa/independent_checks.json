@@ -1,0 +1,917 @@
+{
+  "method": "Independent Python standard-library parser of emitted GLBs/embedded PNGs; no build-script imports. Geometry closure tested after 1e-6 m positional welding of normal/UV-split vertices. Bounds/overlap are derived from actual scene-transformed geometry. Coverage is exhaustive rectangular arrangement, not sampling-only.",
+  "tolerance_metres": 1e-06,
+  "checks": {
+    "render_closed_manifold_winding": {
+      "passed": true,
+      "mesh_count": 54,
+      "triangle_total": 648,
+      "triangle_min": 12,
+      "triangle_max": 12,
+      "positive_volume_total_m3": 5326.607371628284,
+      "failures": {}
+    },
+    "collision_closed_manifold_winding": {
+      "passed": true,
+      "mesh_count": 54,
+      "triangle_total": 648,
+      "triangle_min": 12,
+      "triangle_max": 12,
+      "positive_volume_total_m3": 5326.607371628284,
+      "failures": {}
+    },
+    "collision_triangle_budget": {
+      "passed": true,
+      "limit_exclusive": 240,
+      "max_triangles": 12
+    },
+    "render_collision_geometry_equality": {
+      "passed": true,
+      "render_meshes": 54,
+      "collision_meshes": 54,
+      "manifest_supports": 54,
+      "unequal_meshes": [],
+      "comparison": "Complete world-space triangle multisets after 1e-6 m positional quantization."
+    },
+    "world_roots_identity": {
+      "passed": true,
+      "root_count": 108
+    },
+    "actual_rectangular_top_footprints": {
+      "passed": true,
+      "failures": [],
+      "method": "Each mesh has exactly two upward triangles whose projected vertices are its rectangle corners and whose summed projected area equals the rectangle area; actual bounds equal declared cell."
+    },
+    "pairwise_xz_overlap": {
+      "passed": true,
+      "pairs_checked": 1431,
+      "positive_area_overlaps": [],
+      "boundary_touch_allowed": true
+    },
+    "exact_envelope_coverage": {
+      "passed": true,
+      "envelope_xz": [
+        -64,
+        64,
+        -48,
+        52
+      ],
+      "excluded_xz": [
+        [
+          -24,
+          24,
+          -24,
+          24
+        ],
+        [
+          24,
+          30,
+          -12,
+          12
+        ],
+        [
+          -30,
+          -24,
+          -8,
+          8
+        ]
+      ],
+      "coverage_area_m2": 10256.0,
+      "expected_area_m2": 10256,
+      "arrangement_cells_checked": 336,
+      "coverage_failures": [],
+      "outside_envelope_meshes": []
+    },
+    "new_support_seam_continuity": {
+      "passed": true,
+      "shared_edges_checked": 108,
+      "maximum_gap_m": 1.3877787807814457e-17,
+      "failures": [],
+      "method": "Actual top-triangle interpolation at both endpoints and midpoint of every shared rectangle edge; each top boundary is linear."
+    },
+    "new_support_connected_footprint": {
+      "passed": true,
+      "edge_connected_meshes": 54,
+      "total_meshes": 54
+    },
+    "preserved_shoulder_seams": {
+      "passed": true,
+      "sample_count": 70,
+      "maximum_gap_m": 2.7755575615628914e-17,
+      "missing_samples": [],
+      "integer_x_profiles": [
+        {
+          "side": "east",
+          "edge_z": 12,
+          "integer_x_profile": [
+            {
+              "xz": [
+                24,
+                12
+              ],
+              "existing_y": -0.07999999821186066,
+              "new_y": -0.07999999821186066,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                25,
+                12
+              ],
+              "existing_y": -0.09068260341882706,
+              "new_y": -0.09068260341882706,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                26,
+                12
+              ],
+              "existing_y": -0.1072312518954277,
+              "new_y": -0.1072312518954277,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                27,
+                12
+              ],
+              "existing_y": -0.12707504630088806,
+              "new_y": -0.12707504630088806,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                28,
+                12
+              ],
+              "existing_y": -0.1494157612323761,
+              "new_y": -0.1494157612323761,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                29,
+                12
+              ],
+              "existing_y": -0.17381808161735535,
+              "new_y": -0.17381808161735535,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                30,
+                12
+              ],
+              "existing_y": -0.20000000298023224,
+              "new_y": -0.20000000298023224,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                30,
+                12
+              ],
+              "existing_y": -0.20000000298023224,
+              "new_y": -0.20000000298023224,
+              "gap_m": 0.0
+            }
+          ]
+        },
+        {
+          "side": "west",
+          "edge_z": 8,
+          "integer_x_profile": [
+            {
+              "xz": [
+                -24,
+                8
+              ],
+              "existing_y": -0.07999999821186066,
+              "new_y": -0.07999999821186066,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                -25,
+                8
+              ],
+              "existing_y": -0.09068260341882706,
+              "new_y": -0.09068260341882706,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                -26,
+                8
+              ],
+              "existing_y": -0.1072312518954277,
+              "new_y": -0.1072312518954277,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                -27,
+                8
+              ],
+              "existing_y": -0.12707504630088806,
+              "new_y": -0.12707504630088806,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                -28,
+                8
+              ],
+              "existing_y": -0.1494157612323761,
+              "new_y": -0.1494157612323761,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                -29,
+                8
+              ],
+              "existing_y": -0.17381808161735535,
+              "new_y": -0.17381808161735535,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                -30,
+                8
+              ],
+              "existing_y": -0.20000000298023224,
+              "new_y": -0.20000000298023224,
+              "gap_m": 0.0
+            },
+            {
+              "xz": [
+                -30,
+                8
+              ],
+              "existing_y": -0.20000000298023224,
+              "new_y": -0.20000000298023224,
+              "gap_m": 0.0
+            }
+          ]
+        }
+      ],
+      "method": "Read actual old shoulder collision GLB and transform with each actual preserved instance matrix, including west yaw pi; interpolate top triangles. Check all integer X on outer end edges and integer Z on outer X edges."
+    },
+    "court_boundary_height": {
+      "passed": true,
+      "sample_count": 158,
+      "maximum_gap_m": 1.788139358804841e-09,
+      "source": "Supplied court manifest top Y=-0.08; native court asset unavailable."
+    },
+    "preserved_roots": {
+      "passed": true,
+      "instance_records_checked": 10,
+      "shoulder_root_count": 5,
+      "west_yaws_radians": [
+        3.141592653589793,
+        3.141592653589793,
+        3.141592653589793,
+        3.141592653589793
+      ],
+      "original_manifest_sha256": "3aa9b960ff2c330502d2f393f6bc5e7118309a85ab0f4810c450c4c9f3af7d2a",
+      "preserved_copy_sha256": "3aa9b960ff2c330502d2f393f6bc5e7118309a85ab0f4810c450c4c9f3af7d2a"
+    },
+    "manifest_geometry_heights_and_unassigned_owners": {
+      "passed": true,
+      "failures": []
+    },
+    "asphalt_source_16bit": {
+      "passed": true,
+      "dimensions": [
+        1024,
+        1024
+      ]
+    },
+    "gltf_material_map_channels": {
+      "passed": true,
+      "materials_checked": 2,
+      "details": "All roughness pixels independently reconstructed from PNG filters and compared against source; sampled metallic B multiplied by metallicFactor must be zero. Grayscale samples replicate into RGB. Color spaces follow glTF texture-slot semantics."
+    },
+    "unchanged_basecolor_normals_and_asphalt_roughness_bytes": {
+      "passed": true,
+      "images_checked": 5
+    },
+    "referenced_asphalt_maps_lossless_16bit": {
+      "passed": true,
+      "channels": [
+        {
+          "channel": "basecolor",
+          "referenced_image": "clean_asphalt_diff_1k",
+          "runtime_bit_depth": 16,
+          "byte_identical_to_source": true,
+          "passed": true
+        },
+        {
+          "channel": "normal",
+          "referenced_image": "clean_asphalt_nor_gl_1k",
+          "runtime_bit_depth": 16,
+          "byte_identical_to_source": true,
+          "passed": true
+        },
+        {
+          "channel": "roughness",
+          "referenced_image": "clean_asphalt_rough_1k_ORIGINAL_16BIT",
+          "runtime_bit_depth": 16,
+          "byte_identical_to_source": true,
+          "passed": true
+        }
+      ]
+    },
+    "texture_repeat_samplers": {
+      "passed": true,
+      "textures_checked": 6,
+      "failures": []
+    },
+    "world_planar_uv_basis": {
+      "passed": true,
+      "maximum_uv_error": 6.357828752356909e-07,
+      "expected": "UV0 U=X/repeat_metres; V=1-Z/repeat_metres. Therefore +U is +X and +V is -Z, with +Y ground normal.",
+      "soil_repeat_m": 2.6666666666666665,
+      "asphalt_repeat_m": 2.1
+    },
+    "top_surface_tangent_basis": {
+      "passed": true,
+      "corner_samples": 324,
+      "minimum_u_alignment": 0.9999999713042347,
+      "minimum_v_alignment": 0.9999935662565695,
+      "maximum_normal_tangent_dot": 1.9438423632483225e-09,
+      "failure_count": 0,
+      "failures": [],
+      "scope": "All upward top triangles; side triangles have intentionally degenerate ground-planar UVs and are not used to validate a ground texture basis."
+    },
+    "input_hash_preservation": {
+      "passed": true,
+      "baseline": "/workspace/scratch/eac4961518d4/motel_surroundings_kit_v2materials/RUNTIME_SHA256SUMS.txt",
+      "files_checked": 6,
+      "details": [
+        {
+          "path": "runtime/bank_collision.glb",
+          "expected_sha256": "65adc2d587b9884ccaef648b84283edca402dd5b891bd2ea3e1732bf3b9ca0db",
+          "actual_sha256": "65adc2d587b9884ccaef648b84283edca402dd5b891bd2ea3e1732bf3b9ca0db",
+          "passed": true
+        },
+        {
+          "path": "runtime/bank_render.glb",
+          "expected_sha256": "3309d6484f4f2b8199e84e960f99094653fcf753e14fb05fdcdd9fd2bf99a88b",
+          "actual_sha256": "3309d6484f4f2b8199e84e960f99094653fcf753e14fb05fdcdd9fd2bf99a88b",
+          "passed": true
+        },
+        {
+          "path": "runtime/five_placements_render.glb",
+          "expected_sha256": "9308b73eae34bd07479e7ef70ee09e46533268675dd53d4010ba47c8cebcdff4",
+          "actual_sha256": "9308b73eae34bd07479e7ef70ee09e46533268675dd53d4010ba47c8cebcdff4",
+          "passed": true
+        },
+        {
+          "path": "runtime/placement_manifest.json",
+          "expected_sha256": "3aa9b960ff2c330502d2f393f6bc5e7118309a85ab0f4810c450c4c9f3af7d2a",
+          "actual_sha256": "3aa9b960ff2c330502d2f393f6bc5e7118309a85ab0f4810c450c4c9f3af7d2a",
+          "passed": true
+        },
+        {
+          "path": "runtime/shoulder_collision.glb",
+          "expected_sha256": "362b4f7ad3b3eb435bc9b8f3f385d025f738e07e3d68d37537ae8e502ec6e2cb",
+          "actual_sha256": "362b4f7ad3b3eb435bc9b8f3f385d025f738e07e3d68d37537ae8e502ec6e2cb",
+          "passed": true
+        },
+        {
+          "path": "runtime/shoulder_render.glb",
+          "expected_sha256": "82eb3209a079333bc82db30d89038a7f002bf45d144297dce00e393bb659863d",
+          "actual_sha256": "82eb3209a079333bc82db30d89038a7f002bf45d144297dce00e393bb659863d",
+          "passed": true
+        }
+      ],
+      "failures": []
+    },
+    "existing_kit_source_hash_preservation": {
+      "passed": true,
+      "baseline": "/workspace/scratch/eac4961518d4/motel_surroundings_kit_v2materials/SOURCE_SHA256SUMS.txt",
+      "files_checked": 43,
+      "details": [
+        {
+          "path": "source/SCAN_PROVENANCE.json",
+          "expected_sha256": "40edfe3b064a9b1475640cff5845caba8fe7fa5bb2b20e933cac39cf9f257cf9",
+          "actual_sha256": "40edfe3b064a9b1475640cff5845caba8fe7fa5bb2b20e933cac39cf9f257cf9",
+          "passed": true
+        },
+        {
+          "path": "source/build_kit.py",
+          "expected_sha256": "03a75d02f2ff1dc245adaef8316e086bc3ef09642a0129fa57078d7bd180cd88",
+          "actual_sha256": "03a75d02f2ff1dc245adaef8316e086bc3ef09642a0129fa57078d7bd180cd88",
+          "passed": true
+        },
+        {
+          "path": "source/download_scans.py",
+          "expected_sha256": "efbfe24a092766507d3934386e1b2dfe4308e6ad62e99470c037ad66aa6859b7",
+          "actual_sha256": "efbfe24a092766507d3934386e1b2dfe4308e6ad62e99470c037ad66aa6859b7",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/dirt_diff_1k.png",
+          "expected_sha256": "96b3eb441121c41806a4766f37eeeeb4667af73207ccd8bfb56bbd446a221d42",
+          "actual_sha256": "96b3eb441121c41806a4766f37eeeeb4667af73207ccd8bfb56bbd446a221d42",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/dirt_diff_2k.png",
+          "expected_sha256": "f0fee6965209d08fd073067c9c61cefc815fecdede90070b361e3f8c47c87801",
+          "actual_sha256": "f0fee6965209d08fd073067c9c61cefc815fecdede90070b361e3f8c47c87801",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/dirt_nor_gl_1k.png",
+          "expected_sha256": "be315cdb7667d58df160a92be2b22423480912ac5668188f3c8360d464203f47",
+          "actual_sha256": "be315cdb7667d58df160a92be2b22423480912ac5668188f3c8360d464203f47",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/dirt_nor_gl_2k.png",
+          "expected_sha256": "d269f7e4c8f113474735c1d9e346f48272dcb5c2cba72c3976b0181a0867d7aa",
+          "actual_sha256": "d269f7e4c8f113474735c1d9e346f48272dcb5c2cba72c3976b0181a0867d7aa",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/dirt_rough_1k.png",
+          "expected_sha256": "29f68a8972f1e69cf47e67924efe469350f953a5f707f63633a9c36cd7c63f6a",
+          "actual_sha256": "29f68a8972f1e69cf47e67924efe469350f953a5f707f63633a9c36cd7c63f6a",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/dirt_rough_2k.png",
+          "expected_sha256": "620354e281625391002fba6e9bcb1123859b434370f7ed6f046f4e8cb107f6f8",
+          "actual_sha256": "620354e281625391002fba6e9bcb1123859b434370f7ed6f046f4e8cb107f6f8",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/files.json",
+          "expected_sha256": "d1afea245279c2162127ddebf2892c1edaafe5e54a3f1831b8aaceb28e8417d3",
+          "actual_sha256": "d1afea245279c2162127ddebf2892c1edaafe5e54a3f1831b8aaceb28e8417d3",
+          "passed": true
+        },
+        {
+          "path": "source/scans/dirt/info.json",
+          "expected_sha256": "538d83b03f9ae6e76e2f3d999254ede5faa17db0087d476bbf29b23cba218e0c",
+          "actual_sha256": "538d83b03f9ae6e76e2f3d999254ede5faa17db0087d476bbf29b23cba218e0c",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/files.json",
+          "expected_sha256": "548ad06e792d9ebbe62e5851a7fe941491ffa2dbd8a4c8ec2a86d744f2a6c61e",
+          "actual_sha256": "548ad06e792d9ebbe62e5851a7fe941491ffa2dbd8a4c8ec2a86d744f2a6c61e",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/gravel_ground_01_diff_1k.png",
+          "expected_sha256": "98de56b46955d2a196a74b5bff9fa6e72e01b8e8f047f0217b82c3361e2c9db5",
+          "actual_sha256": "98de56b46955d2a196a74b5bff9fa6e72e01b8e8f047f0217b82c3361e2c9db5",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/gravel_ground_01_diff_2k.png",
+          "expected_sha256": "b5ba2a265b4412366dfeba09427a0bf351b49d14a3dcb5c3f7fc5fd4404c8b41",
+          "actual_sha256": "b5ba2a265b4412366dfeba09427a0bf351b49d14a3dcb5c3f7fc5fd4404c8b41",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/gravel_ground_01_nor_gl_1k.png",
+          "expected_sha256": "4e20f2dd84237fb46b3ae7005b8134ec2f8f08c6dc57c69df7c24d28df7d83b0",
+          "actual_sha256": "4e20f2dd84237fb46b3ae7005b8134ec2f8f08c6dc57c69df7c24d28df7d83b0",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/gravel_ground_01_nor_gl_2k.png",
+          "expected_sha256": "f395e13c6952c58bde883a01a59d65834adcca976509074dc485a760863b7d2d",
+          "actual_sha256": "f395e13c6952c58bde883a01a59d65834adcca976509074dc485a760863b7d2d",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/gravel_ground_01_rough_1k.png",
+          "expected_sha256": "88cedfeef6e57ed0a57908a6063596cc82377d39978158f8e1ee85b5c22f3c8f",
+          "actual_sha256": "88cedfeef6e57ed0a57908a6063596cc82377d39978158f8e1ee85b5c22f3c8f",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/gravel_ground_01_rough_2k.png",
+          "expected_sha256": "9f7060c601c5335be696572350b1a3519cae1c9a24162cf347f221d0879c7f29",
+          "actual_sha256": "9f7060c601c5335be696572350b1a3519cae1c9a24162cf347f221d0879c7f29",
+          "passed": true
+        },
+        {
+          "path": "source/scans/gravel_ground_01/info.json",
+          "expected_sha256": "a8bcb10279ac48f3221dc1afb498df8b6e525a4ae6b21ac28ef69e608eb345aa",
+          "actual_sha256": "a8bcb10279ac48f3221dc1afb498df8b6e525a4ae6b21ac28ef69e608eb345aa",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/files.json",
+          "expected_sha256": "c3c7b22e928922c264b5f0f3cbb6504355a645cf8400000402849d1583b1a0ec",
+          "actual_sha256": "c3c7b22e928922c264b5f0f3cbb6504355a645cf8400000402849d1583b1a0ec",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/info.json",
+          "expected_sha256": "150d9c32feeda54a4a4b4acf9b3dde75ed8c102c2bda9495f03462184df096e8",
+          "actual_sha256": "150d9c32feeda54a4a4b4acf9b3dde75ed8c102c2bda9495f03462184df096e8",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/rock_boulder_dry_diff_1k.png",
+          "expected_sha256": "0bfb547e1785e4639a3735b2412099dac8d3077e39777299e4e273da6efd8ed5",
+          "actual_sha256": "0bfb547e1785e4639a3735b2412099dac8d3077e39777299e4e273da6efd8ed5",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/rock_boulder_dry_diff_2k.png",
+          "expected_sha256": "bba278641d6cda8c6907ee34b749b0b968a1731ca697470ba64a5819e8288085",
+          "actual_sha256": "bba278641d6cda8c6907ee34b749b0b968a1731ca697470ba64a5819e8288085",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/rock_boulder_dry_nor_gl_1k.png",
+          "expected_sha256": "7ae21a2702d613d9d3eedcfb8b42d212b69302c07e2c4fd94ecaa91d52e9345b",
+          "actual_sha256": "7ae21a2702d613d9d3eedcfb8b42d212b69302c07e2c4fd94ecaa91d52e9345b",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/rock_boulder_dry_nor_gl_2k.png",
+          "expected_sha256": "bee644c2d15f0b0f031d5699fc83e05a19c969541baa72533e136641ad9e7318",
+          "actual_sha256": "bee644c2d15f0b0f031d5699fc83e05a19c969541baa72533e136641ad9e7318",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/rock_boulder_dry_rough_1k.png",
+          "expected_sha256": "ef66a872c0197e766f024cfaee95a48589c3435fa83581840dffdc2523a9a19c",
+          "actual_sha256": "ef66a872c0197e766f024cfaee95a48589c3435fa83581840dffdc2523a9a19c",
+          "passed": true
+        },
+        {
+          "path": "source/scans/rock_boulder_dry/rock_boulder_dry_rough_2k.png",
+          "expected_sha256": "236c8c8bcb210db07fc0dc83ac0de8a843d26ee12766a5bb8ce0b29aa9915def",
+          "actual_sha256": "236c8c8bcb210db07fc0dc83ac0de8a843d26ee12766a5bb8ce0b29aa9915def",
+          "passed": true
+        },
+        {
+          "path": "source/surroundings.blend",
+          "expected_sha256": "e98e333cf91eec37e1728a73204d83f4161c7ffea4ffa77e7176776161381e44",
+          "actual_sha256": "e98e333cf91eec37e1728a73204d83f4161c7ffea4ffa77e7176776161381e44",
+          "passed": true
+        },
+        {
+          "path": "source/textures/bank_soil_basecolor.png",
+          "expected_sha256": "96b3eb441121c41806a4766f37eeeeb4667af73207ccd8bfb56bbd446a221d42",
+          "actual_sha256": "96b3eb441121c41806a4766f37eeeeb4667af73207ccd8bfb56bbd446a221d42",
+          "passed": true
+        },
+        {
+          "path": "source/textures/bank_soil_normal.png",
+          "expected_sha256": "be315cdb7667d58df160a92be2b22423480912ac5668188f3c8360d464203f47",
+          "actual_sha256": "be315cdb7667d58df160a92be2b22423480912ac5668188f3c8360d464203f47",
+          "passed": true
+        },
+        {
+          "path": "source/textures/bank_soil_roughness.png",
+          "expected_sha256": "29f68a8972f1e69cf47e67924efe469350f953a5f707f63633a9c36cd7c63f6a",
+          "actual_sha256": "29f68a8972f1e69cf47e67924efe469350f953a5f707f63633a9c36cd7c63f6a",
+          "passed": true
+        },
+        {
+          "path": "source/textures/bark_basecolor.png",
+          "expected_sha256": "011e38d14ac3b4924d57a2b16df5176615f3b1974e5c7b0a14ea464c4452ac54",
+          "actual_sha256": "011e38d14ac3b4924d57a2b16df5176615f3b1974e5c7b0a14ea464c4452ac54",
+          "passed": true
+        },
+        {
+          "path": "source/textures/bark_normal.png",
+          "expected_sha256": "7a9f45979d714eac505bdc93f77873d11a8f5def594ae4ebd91ee6e29e626abe",
+          "actual_sha256": "7a9f45979d714eac505bdc93f77873d11a8f5def594ae4ebd91ee6e29e626abe",
+          "passed": true
+        },
+        {
+          "path": "source/textures/bark_roughness.png",
+          "expected_sha256": "dab9f45c7134e322cf5c72173a47aece5405a6fdb9da2cd6905500882ebaaca5",
+          "actual_sha256": "dab9f45c7134e322cf5c72173a47aece5405a6fdb9da2cd6905500882ebaaca5",
+          "passed": true
+        },
+        {
+          "path": "source/textures/gravel_soil_basecolor.png",
+          "expected_sha256": "98de56b46955d2a196a74b5bff9fa6e72e01b8e8f047f0217b82c3361e2c9db5",
+          "actual_sha256": "98de56b46955d2a196a74b5bff9fa6e72e01b8e8f047f0217b82c3361e2c9db5",
+          "passed": true
+        },
+        {
+          "path": "source/textures/gravel_soil_normal.png",
+          "expected_sha256": "4e20f2dd84237fb46b3ae7005b8134ec2f8f08c6dc57c69df7c24d28df7d83b0",
+          "actual_sha256": "4e20f2dd84237fb46b3ae7005b8134ec2f8f08c6dc57c69df7c24d28df7d83b0",
+          "passed": true
+        },
+        {
+          "path": "source/textures/gravel_soil_roughness.png",
+          "expected_sha256": "88cedfeef6e57ed0a57908a6063596cc82377d39978158f8e1ee85b5c22f3c8f",
+          "actual_sha256": "88cedfeef6e57ed0a57908a6063596cc82377d39978158f8e1ee85b5c22f3c8f",
+          "passed": true
+        },
+        {
+          "path": "source/textures/leaf_basecolor.png",
+          "expected_sha256": "de88b649e5b33746f1550580d6edf4a5b0e16b59e2b58a0fadc3604fbcd90634",
+          "actual_sha256": "de88b649e5b33746f1550580d6edf4a5b0e16b59e2b58a0fadc3604fbcd90634",
+          "passed": true
+        },
+        {
+          "path": "source/textures/leaf_normal.png",
+          "expected_sha256": "996c683c926f1cb251a644231320bf36872fffa52c60ddb4ceaf99f96ce13c28",
+          "actual_sha256": "996c683c926f1cb251a644231320bf36872fffa52c60ddb4ceaf99f96ce13c28",
+          "passed": true
+        },
+        {
+          "path": "source/textures/leaf_roughness.png",
+          "expected_sha256": "ca9facc5bb875127666275c2baad7628aa3106849aff4f4447b232400f1b8371",
+          "actual_sha256": "ca9facc5bb875127666275c2baad7628aa3106849aff4f4447b232400f1b8371",
+          "passed": true
+        },
+        {
+          "path": "source/textures/stone_basecolor.png",
+          "expected_sha256": "0bfb547e1785e4639a3735b2412099dac8d3077e39777299e4e273da6efd8ed5",
+          "actual_sha256": "0bfb547e1785e4639a3735b2412099dac8d3077e39777299e4e273da6efd8ed5",
+          "passed": true
+        },
+        {
+          "path": "source/textures/stone_normal.png",
+          "expected_sha256": "7ae21a2702d613d9d3eedcfb8b42d212b69302c07e2c4fd94ecaa91d52e9345b",
+          "actual_sha256": "7ae21a2702d613d9d3eedcfb8b42d212b69302c07e2c4fd94ecaa91d52e9345b",
+          "passed": true
+        },
+        {
+          "path": "source/textures/stone_roughness.png",
+          "expected_sha256": "ef66a872c0197e766f024cfaee95a48589c3435fa83581840dffdc2523a9a19c",
+          "actual_sha256": "ef66a872c0197e766f024cfaee95a48589c3435fa83581840dffdc2523a9a19c",
+          "passed": true
+        }
+      ]
+    },
+    "downloaded_asphalt_source_hashes": {
+      "passed": true,
+      "files_checked": 3
+    },
+    "deterministic_runtime_rebuild": {
+      "passed": true,
+      "first_build": {
+        "connected_ground_collision.glb": "b58d324b5543006c2f0b357e118ad3c7bd683b830b4d88a52d7c0af1bbd82c57",
+        "connected_ground_render.glb": "bc118ef8708e3843a60b1753abdc2a9d8e9ba5a5f3ef0ae6b7f94b974cec80f3",
+        "placement_manifest.json": "522cc7d12c978f6b65cd8c3f72dc803d978dc2c3d3e5f5bfc80d6af1e5729ed4"
+      },
+      "second_build": {
+        "connected_ground_collision.glb": "b58d324b5543006c2f0b357e118ad3c7bd683b830b4d88a52d7c0af1bbd82c57",
+        "connected_ground_render.glb": "bc118ef8708e3843a60b1753abdc2a9d8e9ba5a5f3ef0ae6b7f94b974cec80f3",
+        "placement_manifest.json": "522cc7d12c978f6b65cd8c3f72dc803d978dc2c3d3e5f5bfc80d6af1e5729ed4"
+      },
+      "verified_against_current_runtime": true
+    },
+    "runtime_stable_during_verification": {
+      "passed": true
+    }
+  },
+  "limitations": [
+    "No native engine integration, traversal, ownership assignment, navigation, player/AI/rifle or fallback behavior was tested.",
+    "Existing engine court geometry is unavailable here; court boundary height is checked against its supplied manifest value."
+  ],
+  "runtime_sha256": {
+    "placement_manifest.json": "522cc7d12c978f6b65cd8c3f72dc803d978dc2c3d3e5f5bfc80d6af1e5729ed4",
+    "connected_ground_collision.glb": "b58d324b5543006c2f0b357e118ad3c7bd683b830b4d88a52d7c0af1bbd82c57",
+    "connected_ground_render.glb": "bc118ef8708e3843a60b1753abdc2a9d8e9ba5a5f3ef0ae6b7f94b974cec80f3"
+  },
+  "source_png_headers": {
+    "gravel_soil_basecolor.png": {
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 8,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA"
+      ]
+    },
+    "gravel_soil_normal.png": {
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 8,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA"
+      ]
+    },
+    "gravel_soil_roughness.png": {
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 8,
+      "color_type": 0,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA"
+      ]
+    },
+    "clean_asphalt_rough_1k.png": {
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 16,
+      "color_type": 0,
+      "interlace": 0,
+      "color_metadata_chunks": []
+    },
+    "clean_asphalt_nor_gl_1k.png": {
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 16,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA",
+        "sRGB"
+      ]
+    },
+    "clean_asphalt_diff_1k.png": {
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 16,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA",
+        "sRGB"
+      ]
+    }
+  },
+  "embedded_png_headers": [
+    {
+      "name": "gravel_soil_normal",
+      "sha256": "4e20f2dd84237fb46b3ae7005b8134ec2f8f08c6dc57c69df7c24d28df7d83b0",
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 8,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA"
+      ]
+    },
+    {
+      "name": "gravel_soil_basecolor",
+      "sha256": "98de56b46955d2a196a74b5bff9fa6e72e01b8e8f047f0217b82c3361e2c9db5",
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 8,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA"
+      ]
+    },
+    {
+      "name": "gravel_soil_roughness",
+      "sha256": "6324fa9f41b9fb2f98be0808d54d8d37bc9f71f095b1d935ae8a2a592c0f032e",
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 8,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": []
+    },
+    {
+      "name": "clean_asphalt_nor_gl_1k",
+      "sha256": "5d5f512a8d90fa4c43f52f22c1904a845aefddb162b03d2547f0c60175b17125",
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 16,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA",
+        "sRGB"
+      ]
+    },
+    {
+      "name": "clean_asphalt_diff_1k",
+      "sha256": "57cea7a4dc688aa9764d64450997124edf188c802a94d2b773441618ec3cab19",
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 16,
+      "color_type": 2,
+      "interlace": 0,
+      "color_metadata_chunks": [
+        "gAMA",
+        "sRGB"
+      ]
+    },
+    {
+      "name": "clean_asphalt_rough_1k_ORIGINAL_16BIT",
+      "sha256": "aff9bbdf84f878887e3b259bcb46e38135eb3416e56d83da5d02b123dade1911",
+      "width": 1024,
+      "height": 1024,
+      "bit_depth": 16,
+      "color_type": 0,
+      "interlace": 0,
+      "color_metadata_chunks": []
+    }
+  ],
+  "materials": [
+    {
+      "name": "CC0_Gravel_ground_01_8over3m",
+      "base_color_image": "gravel_soil_basecolor",
+      "normal_image": "gravel_soil_normal",
+      "roughness_metallic_image": "gravel_soil_roughness",
+      "base_color_space": "sRGB by glTF baseColorTexture semantics",
+      "normal_and_roughness_space": "linear by glTF normalTexture and metallicRoughnessTexture semantics",
+      "roughness_channel": "G",
+      "metallic_channel": "B",
+      "metallic_factor": 0,
+      "blue_range_8bit_units": [
+        255,
+        255
+      ],
+      "effective_metallic_range": [
+        0.0,
+        0.0
+      ],
+      "roughness_green_range": [
+        173,
+        250
+      ],
+      "roughness_max_source_error_8bit_units": 0,
+      "pixels_checked": 1048576,
+      "roughness_runtime_bit_depth": 8,
+      "roughness_source_bit_depth": 8,
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "CC0_Clean_Asphalt_2p1m",
+      "base_color_image": "clean_asphalt_diff_1k",
+      "normal_image": "clean_asphalt_nor_gl_1k",
+      "roughness_metallic_image": "clean_asphalt_rough_1k_ORIGINAL_16BIT",
+      "base_color_space": "sRGB by glTF baseColorTexture semantics",
+      "normal_and_roughness_space": "linear by glTF normalTexture and metallicRoughnessTexture semantics",
+      "roughness_channel": "G",
+      "metallic_channel": "B",
+      "metallic_factor": 0,
+      "blue_range_8bit_units": [
+        142.3112840466926,
+        190.50194552529183
+      ],
+      "effective_metallic_range": [
+        0.0,
+        0.0
+      ],
+      "roughness_green_range": [
+        142.3112840466926,
+        190.50194552529183
+      ],
+      "roughness_max_source_error_8bit_units": 0,
+      "pixels_checked": 1048576,
+      "roughness_runtime_bit_depth": 16,
+      "roughness_source_bit_depth": 16,
+      "passed": true,
+      "errors": []
+    }
+  ],
+  "precision_note": "Asphalt source base color, OpenGL normal and roughness are 16-bit PNG. Approved custom-engine runtime retains 16-bit asphalt base color, normal and roughness. The 16-bit base color is a documented exception to standard glTF 2.0 portability (which requires 8-bit base color). Grayscale roughness replicates into RGB, so G provides roughness while metallicFactor=0 forces dielectric. Soil source/runtime maps are 8-bit.",
+  "gltf_basecolor_portability": {
+    "strict_gltf_conformant": false,
+    "accepted_exception": "Custom-engine runtime deliberately retains original PNG16 base color. This QA does not independently certify the engine texture decoder. Generic glTF consumers may reject, downconvert or differ.",
+    "details": [
+      {
+        "material": "CC0_Gravel_ground_01_8over3m",
+        "source_bit_depth": 8,
+        "runtime_bit_depth": 8,
+        "maximum_error_8bit_units": 0,
+        "passed": true
+      },
+      {
+        "material": "CC0_Clean_Asphalt_2p1m",
+        "source_bit_depth": 16,
+        "runtime_bit_depth": 16,
+        "maximum_error_8bit_units": 0,
+        "passed": false
+      }
+    ],
+    "source": "https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#metallic-roughness-material"
+  },
+  "tangent_basis_reference": "https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#meshes-overview: bitangent = cross(normal.xyz, tangent.xyz) * tangent.w",
+  "current_existing_kit_runtime_sha256": {
+    "bank_collision.glb": "65adc2d587b9884ccaef648b84283edca402dd5b891bd2ea3e1732bf3b9ca0db",
+    "five_placements_render.glb": "9308b73eae34bd07479e7ef70ee09e46533268675dd53d4010ba47c8cebcdff4",
+    "shoulder_render.glb": "82eb3209a079333bc82db30d89038a7f002bf45d144297dce00e393bb659863d",
+    "placement_manifest.json": "3aa9b960ff2c330502d2f393f6bc5e7118309a85ab0f4810c450c4c9f3af7d2a",
+    "bank_render.glb": "3309d6484f4f2b8199e84e960f99094653fcf753e14fb05fdcdd9fd2bf99a88b",
+    "shoulder_collision.glb": "362b4f7ad3b3eb435bc9b8f3f385d025f738e07e3d68d37537ae8e502ec6e2cb"
+  },
+  "passed": true,
+  "incomplete_checks": [],
+  "failed_checks": []
+}

@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 static SwatSim sim,replica;
 static SwatMap map,decoded_map;
@@ -52,11 +53,15 @@ static void walls(void) {
     assert(swat_world_visible(&sim.world,(b3Pos){2,1.2f,0},(b3Pos){4,1.2f,0}));
     assert(swat_navigation_next(&sim,(b3Pos){1,0,0},(b3Pos){4.5f,0,0},&next));
     assert(sim.navigation->updated_cells>0 && sim.navigation->updated_cells<SWAT_NAV_CELLS/4);
-    static SwatNavigation incremental;
-    incremental=*sim.navigation; sim.navigation->built=false;
+    size_t nodes=(size_t)sim.navigation->nodes;
+    unsigned char* incremental=malloc(nodes*5);assert(incremental);
+    memcpy(incremental,sim.navigation->walkable,nodes);
+    memcpy(incremental+nodes,sim.navigation->links,nodes*4);
+    sim.navigation->built=false;
     assert(swat_navigation_next(&sim,(b3Pos){1,0,0},(b3Pos){4.5f,0,0},&next));
-    assert(!memcmp(incremental.walkable,sim.navigation->walkable,sizeof(incremental.walkable)));
-    assert(!memcmp(incremental.links,sim.navigation->links,sizeof(incremental.links)));
+    assert(!memcmp(incremental,sim.navigation->walkable,nodes));
+    assert(!memcmp(incremental+nodes,sim.navigation->links,nodes*4));
+    free(incremental);
     // The human controller, rather than a teleported nav marker, crosses it.
     in=swat_neutral_input(); in.forward=1; step(in,180);
     assert(swat_body_feet_position(&sim.actors[0].controller.body).x>3.7f);
@@ -97,7 +102,7 @@ static void buildings(void) {
     sim.actor_count=1;
     b3Pos start={5.6f,0,-3.6f},goal={7.1f,3,3.2f},next;
     bool route=swat_navigation_next(&sim,start,goal,&next);
-    if(!route) for(int n=0;n<SWAT_NAV_NODES;n++) if(fabsf(sim.navigation->x[n]-5.5f)<.05f && sim.navigation->z[n]>-4 && sim.navigation->z[n]<4)
+    if(!route) for(int n=0;n<sim.navigation->nodes;n++) if(fabsf(sim.navigation->x[n]-5.5f)<.05f && sim.navigation->z[n]>-4 && sim.navigation->z[n]<4)
         fprintf(stderr,"nav x%.1f z%.1f y%.2f clear%d links %x %x %x %x\n",sim.navigation->x[n],sim.navigation->z[n],sim.navigation->height[n],sim.navigation->walkable[n],sim.navigation->links[n][0],sim.navigation->links[n][1],sim.navigation->links[n][2],sim.navigation->links[n][3]);
     assert(route);
     SwatController* actor=&sim.actors[0].controller;

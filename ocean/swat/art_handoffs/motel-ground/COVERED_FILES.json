@@ -1,0 +1,274 @@
+{
+  "license": "CC0-1.0 with third-party scopes distinguished in LICENSE_PROVENANCE.txt",
+  "index_exclusions": [
+    "this self-referential index",
+    "SHA256SUMS.txt",
+    "packages/ distribution containers"
+  ],
+  "files": [
+    {
+      "path": "LICENSE_PROVENANCE.txt",
+      "bytes": 2754,
+      "sha256": "2c8b232a5c5dffe18666e46d7941dfafe1588ce826aee6ec2f2992f287b1a079",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "QA_SUMMARY.md",
+      "bytes": 2447,
+      "sha256": "51743cc2ee2fcd982852070aa41849d3b7f6b8ea9f1c20cfdec24a4b6d078da7",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "README.md",
+      "bytes": 6661,
+      "sha256": "5199e0dd536be2e6fe0755dc4eb43df8c214b6c3ffabb11645d29359026c15e6",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "preview/README.txt",
+      "bytes": 1094,
+      "sha256": "f457502a63cdedf3e87f43ee7e398b1954a45f144a10bb21885ac8027230634a",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "preview/connected_road_placement_plan.png",
+      "bytes": 261312,
+      "sha256": "a39252fe7c4a04bd4bb186daad4668fbcaf2e6736fb29daaca316bde8a387032",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "preview/context_overview.png",
+      "bytes": 2123526,
+      "sha256": "b1c839f126a64fb316dfa05a315beb23011f24364cc8b20c573674f5fe93fc8d",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "preview/neutral_module_join.png",
+      "bytes": 2656381,
+      "sha256": "46319d24e440833ff9618f1e50cd03307b887e727c4a8efd7ddf14e26cb39030",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "preview/player_approach.png",
+      "bytes": 1501710,
+      "sha256": "ad58f3270f7ba46931d720c9211a0c64f99b1ffbf202f1eaebe99204537d0d5f",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "preview/topdown.png",
+      "bytes": 2381943,
+      "sha256": "9e6ffb551f2356c8dbc90962ed33d5cec362b1c9a8066275d9f8db45795c6e08",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "preview/west_join.png",
+      "bytes": 2628276,
+      "sha256": "7be4803e00012969da74a05392326260734768c87715dc0541049649c5bf15fb",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "provenance/LICENSE_AND_SOURCE.md",
+      "bytes": 1820,
+      "sha256": "3f4e640bf97e3aafadf42e4e2c8affa27165ed62a4aef5a745071c1ac62643c4",
+      "category": "source record/reference"
+    },
+    {
+      "path": "provenance/SCAN_PROVENANCE.json",
+      "bytes": 7936,
+      "sha256": "40edfe3b064a9b1475640cff5845caba8fe7fa5bb2b20e933cac39cf9f257cf9",
+      "category": "source record/reference"
+    },
+    {
+      "path": "provenance/clean_asphalt_files.json",
+      "bytes": 26213,
+      "sha256": "4c8cfadc6f2dcfd5092b8d75c62ee5a6ad731a56870dc0c5c86ccd6a2891e63f",
+      "category": "source record/reference"
+    },
+    {
+      "path": "provenance/clean_asphalt_info.json",
+      "bytes": 1012,
+      "sha256": "4d784c50eb45b973df8618d418c094fe9306489324328438d8a286c466d819f0",
+      "category": "source record/reference"
+    },
+    {
+      "path": "provenance/download_manifest.json",
+      "bytes": 1034,
+      "sha256": "0e74bfe4f24c983cf1ab9e6be21d5ccee5244a014ea8b610e003006f080a6180",
+      "category": "source record/reference"
+    },
+    {
+      "path": "provenance/original_plan.json",
+      "bytes": 6902,
+      "sha256": "9d05f781e3c0546583c93e445e8c0fcddd568c0e836d85b684193e6f1872cafa",
+      "category": "source record/reference"
+    },
+    {
+      "path": "provenance/preserved_placement_manifest.json",
+      "bytes": 7706,
+      "sha256": "3aa9b960ff2c330502d2f393f6bc5e7118309a85ab0f4810c450c4c9f3af7d2a",
+      "category": "source record/reference"
+    },
+    {
+      "path": "qa/build.log",
+      "bytes": 10861,
+      "sha256": "93d1facbee951e8ab35c05f262749ea2bbf71edf385b78bd50323049ae14f46e",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/compaction_check.py",
+      "bytes": 1739,
+      "sha256": "c88a7c16e376bdc149e856a0bb66d04ffbd53b71e408ff4bc7d86b1049d3f46d",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/compaction_report.json",
+      "bytes": 531,
+      "sha256": "a9f9457d5cfb105cb0b968c9d2f07216d36f65abff00aa9a2362a6a8f70e4239",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/first_build_sha256.txt",
+      "bytes": 398,
+      "sha256": "e9bd7b5cd2c84cd4c5a71b73e05545558730ecbb13be8c274f7e464a41fe3cb3",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/independent_checks.json",
+      "bytes": 34085,
+      "sha256": "ba0de4fd5f1f834228c41f52477b5e3e4f3bc2b4de35d8174900886a4660e0cf",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/independent_checks.py",
+      "bytes": 28041,
+      "sha256": "4170738466b3e33c230983b42c2ecf889358baba33fc947a434d5feecbbfca3b",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/make_plan.py",
+      "bytes": 3696,
+      "sha256": "b2c879bc0afc1a2025806d5144c42b83148e6fd06544edb50bab36546f2f866b",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/preview_settings.json",
+      "bytes": 1085,
+      "sha256": "0ca9e6d00ab8d5f3cde7784d043fb45e4de301808dc18bb951dc3c70ff848a0d",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/rebuild.log",
+      "bytes": 10863,
+      "sha256": "db722155b0908c7201107fc1cf663c35dc5c9faea04210e34472f7ac387be410",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/render.log",
+      "bytes": 74686,
+      "sha256": "310b7faba625f5f0e2b8a5beb2e4d624eab55512b49a6d5835d1b5cfcc5e0700",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/render_previews.py",
+      "bytes": 3140,
+      "sha256": "de0e22402a7c270e3c2a073365089ba200d8fe62686c0cfef93f4ec0843fc033",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/second_build_sha256.txt",
+      "bytes": 398,
+      "sha256": "e9bd7b5cd2c84cd4c5a71b73e05545558730ecbb13be8c274f7e464a41fe3cb3",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "qa/tangent_repair.json",
+      "bytes": 619,
+      "sha256": "c61ef6daf7926d2650f87c4586efc43da3a58f6b93b0a5f38be68e064be6df7e",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "runtime/connected_ground_collision.glb",
+      "bytes": 85144,
+      "sha256": "b58d324b5543006c2f0b357e118ad3c7bd683b830b4d88a52d7c0af1bbd82c57",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "runtime/connected_ground_render.glb",
+      "bytes": 20301724,
+      "sha256": "bc118ef8708e3843a60b1753abdc2a9d8e9ba5a5f3ef0ae6b7f94b974cec80f3",
+      "category": "mixed original geometry + embedded third-party CC0 maps"
+    },
+    {
+      "path": "runtime/placement_manifest.json",
+      "bytes": 56923,
+      "sha256": "522cc7d12c978f6b65cd8c3f72dc803d978dc2c3d3e5f5bfc80d6af1e5729ed4",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "source/build_ground.py",
+      "bytes": 6897,
+      "sha256": "8fff4af65d78719dcdeae686c7a58cd855539aa1a3045adddc5768d5e3f20832",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "source/connected_ground.blend",
+      "bytes": 19522128,
+      "sha256": "05a2a83689f902ff6df9a810a5e49742b81f236b377e614f570014c276e18c3d",
+      "category": "mixed original geometry + embedded third-party CC0 maps"
+    },
+    {
+      "path": "source/fix_tangents.py",
+      "bytes": 5663,
+      "sha256": "a31ef97b8a8938f3ec8eda496f2bdc44bb631ed1760cad7a384580dde25ce63a",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "source/merge_flat.py",
+      "bytes": 1088,
+      "sha256": "73de02819121e84de1e1f197f3404121eb7389570acccef4e1936b1806a29be7",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "source/preserve_roughness.py",
+      "bytes": 1501,
+      "sha256": "467ad03f0d60da600d24cbc3089696817fc741425eca09b4d08afdf6b9336baf",
+      "category": "original candidate geometry/script/documentation/QA"
+    },
+    {
+      "path": "source/textures/clean_asphalt_diff_1k.png",
+      "bytes": 5618915,
+      "sha256": "57cea7a4dc688aa9764d64450997124edf188c802a94d2b773441618ec3cab19",
+      "category": "third-party CC0 map"
+    },
+    {
+      "path": "source/textures/clean_asphalt_nor_gl_1k.png",
+      "bytes": 5632375,
+      "sha256": "5d5f512a8d90fa4c43f52f22c1904a845aefddb162b03d2547f0c60175b17125",
+      "category": "third-party CC0 map"
+    },
+    {
+      "path": "source/textures/clean_asphalt_rough_1k.png",
+      "bytes": 1878547,
+      "sha256": "aff9bbdf84f878887e3b259bcb46e38135eb3416e56d83da5d02b123dade1911",
+      "category": "third-party CC0 map"
+    },
+    {
+      "path": "source/textures/gravel_soil_basecolor.png",
+      "bytes": 2523579,
+      "sha256": "98de56b46955d2a196a74b5bff9fa6e72e01b8e8f047f0217b82c3361e2c9db5",
+      "category": "third-party CC0 map"
+    },
+    {
+      "path": "source/textures/gravel_soil_normal.png",
+      "bytes": 2422235,
+      "sha256": "4e20f2dd84237fb46b3ae7005b8134ec2f8f08c6dc57c69df7c24d28df7d83b0",
+      "category": "third-party CC0 map"
+    },
+    {
+      "path": "source/textures/gravel_soil_roughness.png",
+      "bytes": 588347,
+      "sha256": "88cedfeef6e57ed0a57908a6063596cc82377d39978158f8e1ee85b5c22f3c8f",
+      "category": "third-party CC0 map"
+    }
+  ]
+}

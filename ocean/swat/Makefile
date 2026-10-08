@@ -99,7 +99,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: locomotion-test scenarios-test motel-test motel-contacts-test surroundings-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: locomotion-test scenarios-test motel-test motel-contacts-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
@@ -136,6 +136,9 @@ motel-test: | $(BUILD)
 motel-contacts-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_contacts.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_contacts
 	ulimit -c 0; $(BUILD)/test_motel_contacts
+ground-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_ground.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_ground
+	$(BUILD)/test_ground
 surroundings-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_surroundings.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_surroundings
 	ulimit -c 0; $(BUILD)/test_surroundings

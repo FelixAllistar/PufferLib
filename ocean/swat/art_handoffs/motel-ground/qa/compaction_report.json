@@ -1,0 +1,16 @@
+{
+  "pass": true,
+  "unmerged_support_pieces": 306,
+  "unmerged_flat": 266,
+  "unchanged_graded_pieces": 40,
+  "merged_flat_rectangles": 14,
+  "final_closed_pieces": 54,
+  "triangles_per_piece": 12,
+  "total_collision_triangles": 648,
+  "material_sets": 2,
+  "render_primitives": 54,
+  "road_pieces": 1,
+  "driveway_pieces": 1,
+  "grade_bounds_and_corner_heights_exactly_preserved": true,
+  "minimality_claim": "compact verified rectangular partition only; no claim of mathematical optimum for arbitrary polygon/compound solids"
+}

@@ -53,6 +53,7 @@ static void room101_close(SwatEnvironmentArt* art) {
     if(art->motel_asphalt.normal.id)UnloadTexture(art->motel_asphalt.normal);
     if(art->motel_asphalt.roughness.id)UnloadTexture(art->motel_asphalt.roughness);
     art->motel_asphalt=(SwatSurfaceMaps){0};
+    swat_art_model_close(art->motel_ground);art->motel_ground=(Model){0};
     wall_art_close(art);
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
@@ -145,6 +146,9 @@ static void room101_load(SwatEnvironmentArt* art) {
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
+    if(!room101_model_load(&art->motel_ground,art->motel_ground_normal_scale,"motel_ground/connected_ground_render.glb") || art->motel_ground.meshCount!=SWAT_GROUND_PARTS) {
+        swat_art_model_close(art->motel_ground);art->motel_ground=(Model){0};
+    }
     const char* surroundings[]={"motel_surroundings/shoulder_render.glb","motel_surroundings/bank_render.glb"};
     for(int i=0;i<2;i++)if(!room101_model_load(&art->motel_surroundings[i],art->motel_surroundings_normal_scale[i],surroundings[i])) {
         swat_art_model_close(art->motel_surroundings[i]);art->motel_surroundings[i]=(Model){0};
@@ -530,6 +534,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
         material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
         if(lit) {
             float normal_scale=1;
+            if(source==&art->motel_ground)normal_scale=art->motel_ground_normal_scale[model->meshMaterial[i]];
             if(source==&art->motel_reception)normal_scale=art->motel_reception_normal_scale[model->meshMaterial[i]];
             if(source==&art->motel_roadside)normal_scale=art->motel_roadside_normal_scale[model->meshMaterial[i]];
             for(int n=0;n<2;n++)if(source==&art->motel_personal[n])normal_scale=art->motel_personal_normal_scale[n][model->meshMaterial[i]];
@@ -606,11 +611,18 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         rlPopMatrix();clear_surface(art);return true;
     }
     if(o->tag.index<1)return false;
+    int ground_part=swat_motel_ground_part(world,o);
+    if(ground_part>=0 && art->motel_ground.meshCount==SWAT_GROUND_PARTS) {
+        const Model* source=&art->motel_ground;Model part=*source;
+        part.meshCount=1;part.meshes=&source->meshes[ground_part];part.meshMaterial=&source->meshMaterial[ground_part];
+        SwatMotelInstance p={.scale={1,1,1}};
+        return location_mesh_draw(art,o,&p,&part,source,shadow,cutaway,false,NULL);
+    }
     int surroundings_part=swat_motel_surroundings_part(world,o);
-    if(surroundings_part>=0) {
-        SwatMotelInstance p;swat_motel_surroundings_instance(o->tag.index,&p);
+    if(surroundings_part>=0 || ground_part>=0) {
+        SwatMotelInstance p={0};if(surroundings_part>=0)swat_motel_surroundings_instance(o->tag.index,&p);
         const Model* source=&art->motel_surroundings[surroundings_part!=0];
-        if(source->meshCount && (surroundings_part==0 || art->motel_wall_art)) {
+        if(ground_part<0 && source->meshCount && (surroundings_part==0 || art->motel_wall_art)) {
             if(surroundings_part>=2)return true; // Rocks share their bank's cached material draw.
             const Model* model=surroundings_part==1?bank_mesh(art->motel_wall_art,source,world,o->tag.index):source;
             if(!model->meshCount)return true;

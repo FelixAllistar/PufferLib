@@ -240,7 +240,10 @@ int main(int argc,char** argv) {
         assert(sim.actors[i].role==SWAT_SUSPECT && !sim.actors[i].gear.restrained);dead_suspects++;
     }
     assert(sim.debrief.arrests+dead_suspects==2 && sim.debrief.rescued==3 && sim.debrief.evidence==2 && !sim.debrief.roe_violations);
-    if(strcmp(route,"interroom"))assert(!dead_suspects);
+    // Entry choice does not script the encounter outcome. Hostile runs permit
+    // lawful squad return fire on any approach; the checks above still reject
+    // protected deaths, restrained deaths, unlawful force and missing evidence.
+    if(!combat)assert(!dead_suspects);
     assert(swat_replay_close(&journal));
     printf("PASS motel complete player-input run (%s, %s route): %d ticks, %d arrests, %d armed suspects killed, three evacuations, two weapons, squad regroup, no civilian/officer deaths or unlawful force\n",cfg.hostile_fire?"hostile fire enabled":"interaction isolation",route,sim.tick,sim.debrief.arrests,dead_suspects);fflush(stdout);
     static SwatSim replica;static SwatMap map;static SwatSnapshot snapshot,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];

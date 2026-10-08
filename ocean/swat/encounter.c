@@ -6,9 +6,36 @@
 static b3Pos cell_position(const SwatNavigation* nav,int index) {
     return (b3Pos){nav->x[index],nav->height[index],nav->z[index]};
 }
-// Preserve the 60 cm sampling phase and cover both new +/-30 m perimeter edges.
-_Static_assert(SWAT_NAV_NODES<=UINT16_MAX,"navigation queue index capacity");
-static b3Pos grid_position(const SwatWorld* world,int index) { return (b3Pos){(world->motel?-32:-8)+(index%SWAT_NAV_SIDE+.5f)*.6f,0,-24+(index/SWAT_NAV_SIDE+.5f)*.6f}; }
+static SwatNavigation* navigation_create(const SwatWorld* world) {
+    int width=world->motel?216:SWAT_NAV_SIDE,depth=world->motel?168:SWAT_NAV_SIDE;
+    int cells=width*depth,nodes=cells*SWAT_NAV_LAYERS;
+    // Float/index arrays first preserve alignment; all pointers live in this
+    // allocation so existing reset/map replacement/close free it exactly once.
+    size_t bytes=sizeof(SwatNavigation)+(size_t)nodes*(5*sizeof(uint32_t)+5)+(size_t)cells*2;
+    SwatNavigation* nav=calloc(1,bytes);if(!nav)return NULL;
+    unsigned char* at=(unsigned char*)(nav+1);
+    nav->height=(float*)at;at+=(size_t)nodes*sizeof(float);
+    nav->x=(float*)at;at+=(size_t)nodes*sizeof(float);
+    nav->z=(float*)at;at+=(size_t)nodes*sizeof(float);
+    nav->parent=(int32_t*)at;at+=(size_t)nodes*sizeof(int32_t);
+    nav->queue=(uint32_t*)at;at+=(size_t)nodes*sizeof(uint32_t);
+    nav->walkable=at;at+=nodes;nav->links=(unsigned char(*)[4])at;at+=(size_t)nodes*4;
+    nav->dirty_cells=at;nav->dirty_edges=at+cells;
+    nav->width=width;nav->depth=depth;nav->cells=cells;nav->nodes=nodes;
+    // -64.4 preserves the original -32m indoor X sampling phase.
+    nav->min_x=world->motel?-64.4f:-8;nav->min_z=world->motel?-48:-24;
+    return nav;
+}
+static b3Pos grid_position(const SwatNavigation* nav,int index) {
+    if(nav->width==216) {
+        // Preserve the previous indoor arithmetic, not merely its nominal
+        // phase. Reassociating floats after shifting the origin changed some
+        // doorway samples enough to alter controller arrival and encounters.
+        int x=index%nav->width-54,z=index/nav->width-40;
+        return (b3Pos){-32+(x+.5f)*.6f,0,-24+(z+.5f)*.6f};
+    }
+    return (b3Pos){nav->min_x+(index%nav->width+.5f)*.6f,0,nav->min_z+(index/nav->width+.5f)*.6f};
+}
 typedef struct NavQuery { const SwatWorld* world; bool blocked; } NavQuery;
 static bool obstacle(b3ShapeId shape,void* context) {
     NavQuery* query=context;
@@ -72,9 +99,9 @@ static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {
     if(!query.blocked) b3World_CastShape(world->id,raised,&lower,translation,b3DefaultQueryFilter(),edge_hit,&query);
     return !query.blocked;
 }
-static int adjacent(int cell,int direction) {
-    int x=cell%SWAT_NAV_SIDE,z=cell/SWAT_NAV_SIDE;
-    const int neighbors[]={x>0 ? cell-1 : -1,x+1<SWAT_NAV_SIDE ? cell+1 : -1,z>0 ? cell-SWAT_NAV_SIDE : -1,z+1<SWAT_NAV_SIDE ? cell+SWAT_NAV_SIDE : -1};
+static int adjacent(const SwatNavigation* nav,int cell,int direction) {
+    int x=cell%nav->width,z=cell/nav->width;
+    const int neighbors[]={x>0 ? cell-1 : -1,x+1<nav->width ? cell+1 : -1,z>0 ? cell-nav->width : -1,z+1<nav->depth ? cell+nav->width : -1};
     return neighbors[direction];
 }
 static unsigned char navigation_object_state(const SwatObject* o) {
@@ -95,7 +122,7 @@ static bool navigation_sample(const SwatWorld* world,SwatNavigation* nav,int cel
         if(!walk) {complete=false;continue;}
         int slot=-1;bool existing=false;
         for(int l=0;l<SWAT_NAV_LAYERS;l++) {
-            int at=l*SWAT_NAV_CELLS+cell;
+            int at=l*nav->cells+cell;
             if(nav->walkable[at] && fabsf(nav->height[at]-floors.y[layer])<.05f)existing=true;
             if(!nav->walkable[at] && slot<0)slot=at;
         }
@@ -107,9 +134,10 @@ static bool navigation_sample(const SwatWorld* world,SwatNavigation* nav,int cel
 static void navigation_build(SwatSim* s) {
     SwatNavigation* nav=s->navigation;
     bool full=!nav->built || nav->count!=s->world.count;
-    unsigned char cells[SWAT_NAV_CELLS]={0},edges[SWAT_NAV_CELLS]={0};
+    unsigned char *cells=nav->dirty_cells,*edges=nav->dirty_edges;
+    memset(cells,0,(size_t)nav->cells);memset(edges,0,(size_t)nav->cells);
     if(full) {
-        memset(nav,0,sizeof(*nav)); memset(cells,1,sizeof(cells));
+        memset(nav->walkable,0,(size_t)nav->nodes);memset(cells,1,(size_t)nav->cells);
         nav->top=3; nav->bottom=-1;
         for(int i=0;i<s->world.count;i++) if(s->world.objects[i].active) {
             const SwatObject* o=&s->world.objects[i];
@@ -124,17 +152,17 @@ static void navigation_build(SwatSim* s) {
         float radius=o->door ? b3Length(o->half)*2 : 0;
         float x=fabsf(cosf(o->yaw))*o->half.x+fabsf(sinf(o->yaw))*o->half.z+1.1f+radius;
         float z=fabsf(sinf(o->yaw))*o->half.x+fabsf(cosf(o->yaw))*o->half.z+1.1f+radius;
-        for(int cell=0;cell<SWAT_NAV_CELLS;cell++) {
-            b3Pos p=grid_position(&s->world,cell);
+        for(int cell=0;cell<nav->cells;cell++) {
+            b3Pos p=grid_position(nav,cell);
             if(fabs(p.x-o->center.x)<=x && fabs(p.z-o->center.z)<=z) cells[cell]=1;
         }
     }
     nav->updated_cells=0;
-    for(int cell=0;cell<SWAT_NAV_CELLS;cell++) if(cells[cell]) {
+    for(int cell=0;cell<nav->cells;cell++) if(cells[cell]) {
         nav->updated_cells++; edges[cell]=1;
-        for(int d=0;d<4;d++) { int other=adjacent(cell,d); if(other>=0) edges[other]=1; }
-        for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) nav->walkable[layer*SWAT_NAV_CELLS+cell]=0;
-        b3Pos p=grid_position(&s->world,cell);
+        for(int d=0;d<4;d++) { int other=adjacent(nav,cell,d); if(other>=0) edges[other]=1; }
+        for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) nav->walkable[layer*nav->cells+cell]=0;
+        b3Pos p=grid_position(nav,cell);
         // Align narrow door apertures before checking physical body clearance.
         for(int j=0;j<s->world.count;j++) {
             const SwatObject* o=&s->world.objects[j]; if(!o->active || !o->door) continue;
@@ -153,12 +181,12 @@ static void navigation_build(SwatSim* s) {
                 if(navigation_sample(&s->world,nav,cell,b3OffsetPos(p,swat_v(offsets[sample][0],0,offsets[sample][1]))))break;
         }
     }
-    for(int at=0;at<SWAT_NAV_NODES;at++) if(edges[at%SWAT_NAV_CELLS]) {
+    for(int at=0;at<nav->nodes;at++) if(edges[at%nav->cells]) {
         memset(nav->links[at],0,sizeof(nav->links[at])); if(!nav->walkable[at]) continue;
         for(int direction=0;direction<4;direction++) {
-            int neighbor=adjacent(at%SWAT_NAV_CELLS,direction); if(neighbor<0) continue;
+            int neighbor=adjacent(nav,at%nav->cells,direction); if(neighbor<0) continue;
             for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
-                int other=layer*SWAT_NAV_CELLS+neighbor; if(!nav->walkable[other]) continue;
+                int other=layer*nav->cells+neighbor; if(!nav->walkable[other]) continue;
                 float height=(nav->walkable[at]&nav->walkable[other]&2) ? 1.8288f : 1.016f;
                 if(nav_edge(&s->world,cell_position(nav,at),cell_position(nav,other),height)) nav->links[at][direction]|=1u<<layer;
             }
@@ -169,7 +197,7 @@ static void navigation_build(SwatSim* s) {
 }
 static int nearest(const SwatNavigation* nav,b3Pos point) {
     int best=-1; float distance=2;
-    for(int i=0;i<SWAT_NAV_NODES;i++) if(nav->walkable[i]) {
+    for(int i=0;i<nav->nodes;i++) if(nav->walkable[i]) {
         b3Pos p=cell_position(nav,i);
         if(fabs(p.y-point.y)>.65) continue;
         float d=b3Distance(point,p); if(d<distance) { distance=d; best=i; }
@@ -221,7 +249,7 @@ static bool people_clear(const NavPeople* people,b3Pos from,b3Pos to) {
 }
 static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next) {
     if(!s->navigation) {
-        s->navigation=calloc(1,sizeof(*s->navigation));
+        s->navigation=navigation_create(&s->world);
         if(!s->navigation) return false;
     }
     SwatNavigation* nav=s->navigation;
@@ -252,7 +280,7 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
     int from=nearest(nav,start),to=nearest(nav,goal); if(from<0 || to<0) return false;
     if(!door_leaves_clear(&s->world,doors,door_count,start,cell_position(nav,from))) {
         float best=2;from=-1;
-        for(int i=0;i<SWAT_NAV_NODES;i++)if(nav->walkable[i]) {
+        for(int i=0;i<nav->nodes;i++)if(nav->walkable[i]) {
             b3Pos p=cell_position(nav,i);float distance=b3Distance(start,p);
             float height=(nav->walkable[i]&2)?1.8288f:1.016f;
             if(fabs(p.y-start.y)<.65 && distance<best &&
@@ -266,24 +294,24 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
        !door_leaves_clear(&s->world,doors,door_count,cell_position(nav,to),cell_position(nav,to));
     if(occupied) {
         float best=2;to=-1;
-        for(int i=0;i<SWAT_NAV_NODES;i++)if(nav->walkable[i]) {
+        for(int i=0;i<nav->nodes;i++)if(nav->walkable[i]) {
             b3Pos p=cell_position(nav,i);float distance=b3Distance(p,goal);
             if(fabs(p.y-goal.y)<.65 && distance<best && people_clear(&people,p,p) && door_leaves_clear(&s->world,doors,door_count,p,p)) {best=distance;to=i;}
         }
         if(to<0)return false;
     }
-    int32_t parent[SWAT_NAV_NODES]; uint16_t queue[SWAT_NAV_NODES];
-    for(int i=0;i<SWAT_NAV_NODES;i++) parent[i]=-1;
-    int head=0,tail=0; queue[tail++]=(uint16_t)from; parent[from]=from;
+    int32_t* parent=nav->parent;uint32_t* queue=nav->queue;
+    for(int i=0;i<nav->nodes;i++) parent[i]=-1;
+    int head=0,tail=0; queue[tail++]=(uint32_t)from; parent[from]=from;
     while(head<tail && parent[to]<0) {
         int at=queue[head++];
         for(int direction=0;direction<4;direction++) {
-            int cell=adjacent(at%SWAT_NAV_CELLS,direction); if(cell<0) continue;
+            int cell=adjacent(nav,at%nav->cells,direction); if(cell<0) continue;
             for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
-                int n=layer*SWAT_NAV_CELLS+cell;
+                int n=layer*nav->cells+cell;
                 if((nav->links[at][direction]&(1u<<layer)) && parent[n]<0 &&
                    people_clear(&people,at==from?start:cell_position(nav,at),cell_position(nav,n)) &&
-                   door_leaves_clear(&s->world,doors,door_count,at==from?start:cell_position(nav,at),cell_position(nav,n))) { parent[n]=at; queue[tail++]=(uint16_t)n; }
+                   door_leaves_clear(&s->world,doors,door_count,at==from?start:cell_position(nav,at),cell_position(nav,n))) { parent[n]=at; queue[tail++]=(uint32_t)n; }
             }
         }
     }
@@ -292,7 +320,7 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
         // The closest free sample beside a person may be across a desk/wall.
         // Choose the closest reachable alternative, not an isolated pocket.
         float best=2;to=-1;
-        for(int i=0;i<SWAT_NAV_NODES;i++)if(parent[i]>=0) {
+        for(int i=0;i<nav->nodes;i++)if(parent[i]>=0) {
             b3Pos p=cell_position(nav,i);float distance=b3Distance(p,goal);
             if(fabs(p.y-goal.y)<.65 && distance<best && people_clear(&people,p,p) &&
                door_leaves_clear(&s->world,doors,door_count,p,p)) {best=distance;to=i;}
@@ -301,8 +329,8 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
     }
     // Reuse the completed BFS queue to reconstruct the chosen path backwards.
     int length=0,at=to;
-    while(at!=from) {queue[length++]=(uint16_t)at;at=parent[at];}
-    queue[length++]=(uint16_t)from;int route=length>1?length-2:0;at=queue[route];
+    while(at!=from) {queue[length++]=(uint32_t)at;at=parent[at];}
+    queue[length++]=(uint32_t)from;int route=length>1?length-2:0;at=queue[route];
     // Door alignment can place adjacent grid samples at the same X/Z, with
     // the court and thin room floor supplying two almost coincident heights.
     // Returning that alias forever prevents the controller reaching the next

@@ -1,0 +1,252 @@
+{
+  "status": "PLACEMENT PLAN ONLY \u2014 NOT BUILT OR ROUTE-CERTIFIED",
+  "units": "metres",
+  "world_axes": {
+    "up": "+Y",
+    "frontage": "+Z",
+    "east": "+X",
+    "north": "not assigned"
+  },
+  "scope": "One finite connected ground apron, roadside strip and visible-only backdrop. No new buildings, props, gates or missions.",
+  "envelope_xz": [
+    -64,
+    64,
+    -48,
+    52
+  ],
+  "existing": {
+    "court_owner": 0,
+    "court_xz": [
+      -24,
+      24,
+      -24,
+      24
+    ],
+    "court_top_y": -0.08,
+    "perimeter_roots": [
+      {
+        "name": "east_0",
+        "translation_yup": [
+          24,
+          0,
+          -8
+        ],
+        "yaw_radians": 0,
+        "preserve": true
+      },
+      {
+        "name": "east_1",
+        "translation_yup": [
+          24,
+          0,
+          0
+        ],
+        "yaw_radians": 0,
+        "preserve": true
+      },
+      {
+        "name": "east_2",
+        "translation_yup": [
+          24,
+          0,
+          8
+        ],
+        "yaw_radians": 0,
+        "preserve": true
+      },
+      {
+        "name": "west_0",
+        "translation_yup": [
+          -24,
+          0,
+          -4
+        ],
+        "yaw_radians": 3.141592653589793,
+        "preserve": true
+      },
+      {
+        "name": "west_1",
+        "translation_yup": [
+          -24,
+          0,
+          4
+        ],
+        "yaw_radians": 3.141592653589793,
+        "preserve": true
+      }
+    ],
+    "perimeter_owners": "1044\u20131118 unchanged; 75 existing components",
+    "bank_ground_east_xz": [
+      27,
+      30,
+      -12,
+      12
+    ],
+    "bank_ground_west_xz": [
+      -30,
+      -27,
+      -8,
+      8
+    ],
+    "building_outline_xz": [
+      -12,
+      8,
+      -6,
+      0
+    ],
+    "building_outline_status": "engine-provided gross footprint, not a newly surveyed precise polygon",
+    "sign": {
+      "owner": 140,
+      "root_yup": [
+        9.7,
+        -0.08,
+        8
+      ],
+      "yaw_radians": -0.13,
+      "local_dimensions": [
+        3.2,
+        4.1125,
+        0.7
+      ]
+    },
+    "fence": {
+      "x": 12.5,
+      "z_min_max": [
+        -0.037,
+        6.037
+      ],
+      "top_y": 1.545,
+      "end_paths": "Keep both ends at Z approximately 0 and 6 open; precise route polygons pending"
+    }
+  },
+  "proposed_walkable_support": [
+    {
+      "semantic_name": "apron_support",
+      "numeric_owner": null,
+      "outer_xz": [
+        -40,
+        40,
+        -36,
+        36
+      ],
+      "subtract": [
+        "court rectangle",
+        "all five existing shoulder/bank footprints"
+      ],
+      "top_y": -0.08,
+      "notes": "Fill around existing footprints without overlapping or altering current support. Flat open ground; butt-seam to court/module substrate. Surface intersection with banks requires exact boundary sampling, not a guessed bank cut."
+    },
+    {
+      "semantic_name": "road_support",
+      "numeric_owner": null,
+      "xz": [
+        -56,
+        56,
+        36,
+        44
+      ],
+      "top_y": -0.08,
+      "width_m": 8,
+      "length_m": 112,
+      "notes": "Two nominal 3.5 m lanes plus 0.5 m edge strips; no raised curbs or dividers. Design strip dimensions only, not a road-code claim."
+    },
+    {
+      "semantic_name": "road_far_verge_support",
+      "numeric_owner": null,
+      "xz": [
+        -56,
+        56,
+        44,
+        48
+      ],
+      "top_y": -0.08,
+      "notes": "4 m clear soil verge; route-bearing only if approved and integrated with support."
+    }
+  ],
+  "appearance_only_zones": [
+    {
+      "semantic_name": "driveway_material_zone",
+      "xz": [
+        -6,
+        6,
+        24,
+        36
+      ],
+      "notes": "12 m wide, 12 m long flush asphalt/gravel tie on apron_support; no separate overlapping collider or owner required."
+    }
+  ],
+  "visible_background_geometry": {
+    "semantic_name": "background_ground_visual",
+    "numeric_owner": null,
+    "outer_xz": [
+      -64,
+      64,
+      -48,
+      52
+    ],
+    "subtract": [
+      "existing court/module footprints",
+      "all proposed support footprints"
+    ],
+    "collision": false,
+    "navigation": false,
+    "ballistic_cover": false,
+    "ground_y_range": [
+      -1,
+      -0.08
+    ],
+    "backdrop_optional_y_range": [
+      -0.08,
+      3.6
+    ],
+    "placement_limit": "Optional low scrub/landform silhouettes only in X outside \u00b148 with Z below 30, or Z below -40; never in the front apron or road continuation buffers. Finite boundary may remain visible from untested views; no promise of infinite terrain. Background is not safe walking support."
+  },
+  "reservations": {
+    "existing_scene_no_edit_xz": [
+      -24,
+      24,
+      -24,
+      24
+    ],
+    "front_open_apron_xz": [
+      -40,
+      40,
+      24,
+      36
+    ],
+    "all_side_apron": "No new vertical blockers anywhere in apron_support. Existing banks preserved. No new fence, invisible wall, ditch or cover object.",
+    "fence_endpoint_markers": "Markers at (12.5,0) and (12.5,6) show known opening locations, not certified route widths.",
+    "road_continuation_buffers": [
+      [
+        -64,
+        -56,
+        32,
+        52
+      ],
+      [
+        56,
+        64,
+        32,
+        52
+      ]
+    ],
+    "extraction": "Exact extraction and spawn/AI corridor coordinates not supplied. Entire existing court preserved; route clearance beyond it remains unverified. Clip/revise proposal before building if engine corridor intersects visual-only ground or finite boundary."
+  },
+  "physics_contract": "This deliverable changes nothing. Existing colliders, owners, seams, fallback, rifle/AI and nav behavior must remain unchanged. Proposed support means future additional closed colliders and matching render, never visual ground silently treated as walkable. Engine assigns IDs after explicit build approval; no invented IDs.",
+  "required_before_build": [
+    "Engine extraction polygon and route centerline/corridor width, spawn positions and AI route bounds",
+    "Engine confirmation that road/apron extent covers relevant travel; explicit handling of finite road ends without concealed blockers",
+    "Exact border-height sampling at preserved module perimeter, closed-support seam checks and navigation/support integration scope"
+  ],
+  "sources": [
+    "native proof README.md, graphics.log, physics-windows.log; actual east/west/context PNGs reviewed",
+    "runtime v1 placement_manifest.json extracted read-only",
+    "parent-provided engine building, sign and fence coordinates"
+  ],
+  "acceptance_after_future_build": [
+    "Matched native context capture must show contiguous ground rather than slab-to-void",
+    "Keep five transforms and all existing 75 physical owners unchanged",
+    "Both fence-end paths, extraction corridor, player/AI/rifle and fallback must be rechecked",
+    "No hidden closure or noncolliding ground represented as support"
+  ]
+}
