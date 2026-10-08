@@ -118,10 +118,16 @@ motel/controller and replay/save checks and ordinary `./swat` capture pass.
 Sources, licensing and compact proof live in the asphalt, roadside and east-fence
 art handoffs. Review logs are in `build/swat/review/fence-destruction`.
 
-Next: diagnose the detached-looking eyeglass shadows with matched lighting
-captures; continue irregular masonry silhouettes, full scenario completion
-through different approaches, perception and level context. The empty ground
-boundary/background is still conspicuous in approach views.
+Matched native lighting/caster/unlit/removal diagnostics attribute the apparent
+detached eyeglass strokes to seven original desk scratch boxes, not the personal
+props or shadows. Compact decisive proof and the diagnostic command are retained
+in the Room 103 handoff; the artist has a bounded desk cleanup queued after the
+surroundings layout. Fence/asphalt/sign proof was shared as Slack `F0C7PCK3485`.
+
+Next: continue irregular masonry silhouettes, full scenario completion through
+different approaches, perception and level context. The artist is proposing
+surroundings placements while preserving the current entry/flank routes; the
+empty ground boundary/background is still conspicuous in approach views.
 
 ## Landed: playable foundation
 

@@ -19,6 +19,7 @@ static void environment(const char* key,const char* value) {
 static SwatSim sim;
 static SwatWorld before;
 static SwatWorld prop_world;
+static bool omit_personal_shadow;
 
 static void fixture_u32(FILE* file,uint32_t value) {
     for(int i=0;i<4;i++) assert(fputc((int)((value>>(8*i))&255),file)!=EOF);
@@ -201,7 +202,10 @@ static void motel_piece(SwatEnvironmentArt* art,const SwatWorld* world,const Swa
 }
 static void room101_shadow(void* context,const SwatSim* s,bool cutaway) {
     SwatView* view=context;SwatEnvironmentArt* art=&view->environment;art->shadow_room=view->lighting.shadow_room;
+    Model glasses=art->motel_personal[1];
+    if(omit_personal_shadow)art->motel_personal[1]=(Model){0};
     for(int i=1;i<s->world.count;i++) motel_piece(art,&s->world,&s->world.objects[i],true,cutaway);
+    art->motel_personal[1]=glasses;
     art->shadow_room=-1;
 }
 static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int width,int height) {
@@ -227,6 +231,26 @@ static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int wi
     return image;
 }
 static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {return room101_capture_size(view,camera,lit,960,800);}
+static void personal_shadow_review(SwatView* view,const char* directory) {
+    SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;
+    swat_sim_init(&sim,config,73);swat_environment_art_prepare_location(&view->environment,&sim.world);
+    before=sim.world;
+    Camera3D camera={{1.3f,1.30f,-1.7f},{.65f,.78f,-2.15f},{0,1,0},40,CAMERA_PERSPECTIVE};
+    const char* names[]={"baseline","no-glasses-caster","no-lamp-shadow","no-contact","shifted","unlit","no-personal-props"};
+    bool contact=view->lighting.contact_enabled;
+    for(int i=0;i<7;i++) {
+        omit_personal_shadow=i==1;view->lighting.lamp_shadows=i!=2;view->lighting.contact_enabled=contact && i!=3;
+        Camera3D c=camera;if(i==4){c.position.x+=.15f;c.target.x+=.15f;}
+        Model personal[2]={view->environment.motel_personal[0],view->environment.motel_personal[1]};
+        if(i==6)for(int j=0;j<2;j++)view->environment.motel_personal[j]=(Model){0};
+        Image image=room101_capture_size(view,c,i!=5,1440,810);char path[4096];
+        for(int j=0;j<2;j++)view->environment.motel_personal[j]=personal[j];
+        snprintf(path,sizeof(path),"%s/personal-%s.png",directory,names[i]);assert(ExportImage(image,path));UnloadImage(image);
+    }
+    omit_personal_shadow=false;view->lighting.lamp_shadows=true;view->lighting.contact_enabled=contact;
+    assert(!memcmp(&before,&sim.world,sizeof(before)));swat_sim_close(&sim);
+    puts("PASS personal shadow diagnostics: fixed camera/geometry, caster/lamp/contact isolation, shifted view, immutable authority");
+}
 static int room101_owner_pixels(SwatEnvironmentArt* art,SwatObject* o,bool cutaway) {
     float d=b3Length(o->half)*2+1;
     Camera3D camera={{o->center.x+d,o->center.y+d,o->center.z+d},{o->center.x,o->center.y,o->center.z},{0,1,0},50,CAMERA_PERSPECTIVE};
@@ -601,6 +625,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"personal")) {personal_shadow_review(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel")) {room101_graphics(&view,directory);swat_view_close(&view);return 0;}
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
     assert(view.environment.location==0 && !view.environment.motel[0].meshCount && !view.environment.storefront[0].meshCount);
