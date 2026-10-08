@@ -86,7 +86,7 @@ SwatContext swat_context(const SwatSim* s,int actor) {
         const SwatActor* target=&s->actors[out.hit.index];
         out.action=target->gear.restrained ? SWAT_CONTEXT_SECURED :
             (target->gear.surrendered ? SWAT_CONTEXT_CUFF : SWAT_CONTEXT_COMPLY);
-        out.ready=out.action!=SWAT_CONTEXT_CUFF || out.hit.distance<1.7f;
+        out.ready=(out.action!=SWAT_CONTEXT_CUFF && out.action!=SWAT_CONTEXT_SECURED) || out.hit.distance<1.7f;
     }
     return out;
 }

@@ -75,8 +75,8 @@ area (route planning now includes visible people out to the existing 24 m
 perception range), and dropped evidence could consume the initial cuff press
 despite the displayed cuff action (body interaction now takes precedence).
 Contact avoidance still checks local bodies every tick; walls still occlude
-route occupancy. Full completion through the two breach approaches and a
-multi-human co-op run remain acceptance work.
+route occupancy. The later breach-route increment below extends this proof;
+a multi-human co-op playthrough remains acceptance work.
 
 Validation for this increment: Linux isolated/hostile completion, encounter,
 motel, tactical and real-UDP regressions pass; native Windows hostile completion,
@@ -105,19 +105,63 @@ full Linux/Windows UDP door-tool and scenario suites pass.
 The full environment graphics suite, full Windows tool build and final player
 rebuild pass. Ordinary `./swat play --mission motel --capture ...` launches the
 native GTX 1060 renderer and captures the deployed squad correctly. Terrain
-proof was shared as Slack file `F0C7TS1RL3G`. The furnished-room completion
-log still emits Box3D's 256-triangle contact-buffer warning; identify and split
-that existing dense collision mesh before final physical acceptance. Each new
-perimeter component is below 240 triangles.
+proof was shared as Slack file `F0C7TS1RL3G`. Its furnished-room completion
+exposed Box3D's 256-triangle contact-buffer warning, addressed in the next
+increment below. Each perimeter component is below 240 triangles.
 
 Appearance remains provisional: the first native perimeter has sparse repeated
 shrubs and rounded rocks, and the level still needs a connected wider setting.
-A separate Poly Haven scanned gravel/dirt/stone candidate has verified runtime
-hashes, unchanged geometry/collision and a matched provenance/license packet
-(`F0C7QEJ23FX`); native comparison remains pending. The delivered service trio
-(caddy, sprayer, squeegee) is the next small prop integration. Complete breach-route
-runs, broader context, material refinement and the other acceptance gaps above
-remain active work.
+The Poly Haven scanned gravel/dirt/stone revision is now integrated after native
+comparison, with verified hashes, a packed editable source and the matched
+provenance/license packet (`F0C7QEJ23FX`). Collision and placement are unchanged;
+the importer regenerates a byte-identical collision header. Native removal and
+fallback checks pass. Gravel remains very bright, and the repeated vegetation
+and rock silhouettes still need improvement. Duplicate source-map copies and
+downloaded split archives were removed after retaining the verified packed source.
+
+Full front-door, exterior-charge and inter-room-charge scenario runs now pass
+on Linux and native Windows. All use ordinary inputs from the canonical spawn,
+with finite charge inventory, placement/retreat/remote detonation and actual
+wall-plane crossing. No forced surrender, teleports, door-state edits, wedge
+injection or scripted completion are used. The exterior route also physically
+escorts its first civilian back through the hole. The inter-room route cuffs a
+suspect who stops in the aperture, leads him to the cleared sidewalk, uses
+follow/hold to leave him there, closes the front leaf through the hole, and
+crosses it. That run includes lawful squad return fire: one suspect is arrested,
+one armed suspect dies and an officer survives wounded. Front/exterior retain
+two arrests and no deaths. All routes recover two weapons, rescue three
+civilians, regroup the surviving squad and reject unlawful force or protected
+deaths. Every run also passes exact per-tick replay, mid-run save/resume and
+fresh-replica state/debrief reconstruction. This is repeatable controller QA,
+not an RL policy or a substitute for human playtesting.
+
+The shared route planner now respects physical open door leaves, resamples
+their completed swing locally, backs away while a leaf opens, skips reached
+coincident doorway samples only after a body sweep, and chooses a reachable
+free stopping point beside a visible person. Cuffed suspects share civilian
+follow/hold controls; they remain arrests, never civilian rescues, and learned
+locomotion does not override custody movement. Both roles pass physical
+open-leaf detours from either side. Furnished-room squad entry, tactical tools,
+training locomotion equivalence, real UDP and ordinary native-player capture
+also pass.
+
+Debugger traces identified the contact overflows in the bed frame and luggage
+rack. `tools/partition_motel_contacts.cjs` groups whole connected components
+into at most 240 triangles per shared contact mesh. Rendering and ballistic
+exit-distance queries retain the original complete surface. Linux/Windows
+checks preserve 22,103 triangles and edge flags over 21 active asset types,
+50,400 matching ray hits and exit distances, replica rebuilding and teardown.
+All full completion routes now emit zero overflow warnings. Several unrelated
+indivisible dense source components remain unpartitioned; this is not a claim
+that every possible collision in the level has been stress-tested. Protocol
+and replay version 15 distinguish this physical/navigation recipe.
+
+Next integration: the delivered connected-ground/road handoff has verified
+runtime/source/review archive hashes and 54 closed support pieces. Native
+support, traversal, navigation-domain and rendering checks remain to be done.
+The delivered service trio and roadside delineator are queued behind it.
+Broader context, material refinement, human/co-op testing and the other
+acceptance gaps above remain active work.
 
 First slice increment: Linux encounter, motel, tactical, simulation, mission,
 protocol, UDP, 3D navigation and save/replay checks pass. Native Windows encounter

@@ -1,5 +1,6 @@
 #include "world.h"
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 static float swat_bounce(float a,uint64_t ma,float b,uint64_t mb) {
@@ -26,6 +27,8 @@ void swat_world_close(SwatWorld* w) {
     for(int i=0;i<40;i++) if(w->storefront_meshes[i]) b3DestroyMesh(w->storefront_meshes[i]);
     for(int i=0;i<SWAT_FENCE_PART_CAPACITY;i++)if(w->fence_meshes[i])b3DestroyMesh(w->fence_meshes[i]);
     for(int i=0;i<SWAT_SURROUNDINGS_PARTS;i++)if(w->surroundings_meshes[i])b3DestroyMesh(w->surroundings_meshes[i]);
+    for(int i=0;i<w->motel_contact_mesh_count;i++)b3DestroyMesh(w->motel_contact_meshes[i]);
+    free(w->motel_contact_meshes);
     memset(w,0,sizeof(*w));
 }
 
@@ -283,7 +286,7 @@ float swat_world_exit_distance(const SwatObject* o,b3Pos entry,b3Vec3 d) {
         // A furniture/fence bounding box contains air. Find the first actual
         // outward triangle through the mesh BVH, then let the next world cast
         // encounter subsequent pieces (or a person behind an opening).
-        b3Mesh mesh=b3Shape_GetMesh(o->shape);
+        b3Mesh mesh=o->query_mesh.data ? o->query_mesh : b3Shape_GetMesh(o->shape);
         b3Vec3 end=b3Add(rel,swat_mul(direction,exit+.001f)),pad=swat_v(.001f,.001f,.001f);
         b3AABB bounds={b3Sub(b3Min(rel,end),pad),b3Add(b3Max(rel,end),pad)};
         MeshExit query={rel,direction,exit+.002f};

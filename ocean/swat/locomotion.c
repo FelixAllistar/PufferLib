@@ -38,7 +38,7 @@ SwatInput swat_locomotion_decode(const float a[SWAT_LOCOMOTION_HEADS]) {
     in.crouch=action_value(a[3],1); in.jump=action_value(a[4],1); in.gait=(SwatGait)action_value(a[5],2); return in;
 }
 bool swat_locomotion_input(const SwatSim* s,int actor,b3Pos goal,SwatInput* input) {
-    if(!movement_policy || !input || actor<0 || actor>=s->actor_count || !s->actors[actor].present) return false;
+    if(!movement_policy || !input || actor<0 || actor>=s->actor_count || !s->actors[actor].present || s->actors[actor].gear.restrained) return false;
     float obs[SWAT_LOCOMOTION_OBS],action[SWAT_LOCOMOTION_HEADS];
     swat_locomotion_observe(s,actor,goal,obs);
     if(s->actors[actor].role!=SWAT_OFFICER && s->actors[actor].role!=SWAT_SUSPECT) return false;

@@ -1,0 +1,92 @@
+BRIAR COURT V2MATERIALS: SCANNED PERIMETER PROVENANCE / LICENSE RECORD
+Prepared 2026-10-08 UTC. Additive convenience packet for engine1791488386.186169.
+
+IDENTITY AND SCOPE
+This packet adds documentation only. It changes no sealed archive, source asset,
+runtime file, engine code, or acceptance status. The complete source backup is
+already retained in folder 19MzH55aJwa9BbQdZ_uaG6AU2lDaznzdA; this is a compact
+handoff for consumers of the runtime/review packages, not a replacement backup.
+
+Exact referenced runtime: briar-court-v2materials-runtime.tar.xz
+SHA-256: 1805ec2dad81bf943aad4cd3dc30092670f43de560011add4fa5331116bee48e
+Bytes: 32327564
+Runtime's six individual file hashes: RUNTIME_SHA256SUMS.txt (unchanged copy).
+Original source manifest: SOURCE_SHA256SUMS.txt (unchanged copy; paths refer to
+the complete source kit, not all files being included in this tiny packet).
+Original source/SCAN_PROVENANCE.json is included byte-for-byte unchanged.
+SHA-256: 40edfe3b064a9b1475640cff5845caba8fe7fa5bb2b20e933cac39cf9f257cf9
+It contains all 18 original PNG download URLs, byte sizes, provider MD5 and
+locally recorded SHA-256 values: three channels at 1K and 2K for three assets.
+All 18 original files and all six runtime hashes were rechecked when packaging.
+
+THIRD-PARTY SCANNED TEXTURES
+Provider: Poly Haven. Asset license: CC0 1.0 Universal (SPDX CC0-1.0).
+Official asset-license record: https://polyhaven.com/license
+CC0 instrument: https://creativecommons.org/publicdomain/zero/1.0/legalcode.en
+CC0 identifier: https://creativecommons.org/publicdomain/zero/1.0/
+The official provider pages were checked on 2026-10-08. They identify these
+assets as CC0. Commercial use, modification and redistribution are permitted;
+attribution is not required. Credits below retain provenance voluntarily.
+This record does not grant new third-party rights. Poly Haven website text,
+logos, avatars, promotional/example renders and user-submitted renders are not
+covered by the asset CC0 statement. No such imagery is included here. CC0 does
+not supply patent/trademark rights or warranties. Tool and dependency licenses
+remain separate.
+
+1. Gravel Ground 01 / gravel_ground_01
+Author: Rob Tuytel.
+Official source: https://polyhaven.com/a/gravel_ground_01
+Metadata: https://api.polyhaven.com/info/gravel_ground_01
+Native calibration: 3.0 x 3.0 metres.
+Actual runtime planar repeat: 8/3 = 2.6666666667 metres; three repeats per 8 m
+module. UVs are 0.75 times v1 UVs, or 0.375 cycles/metre. Feature linear scale
+is 8/9 = 88.8889% of native calibration (11.1111% smaller), deliberately chosen
+to preserve repeat phase at east and west module joins.
+
+2. Dirt / dirt
+Author: Charlotte Baglioni.
+Official source: https://polyhaven.com/a/dirt
+Metadata: https://api.polyhaven.com/info/dirt
+Native calibration: 2.0 x 2.0 metres.
+Actual runtime planar repeat: 2.0 metres; four repeats per 8 m module. UVs are
+unchanged from v1 (0.5 cycles/metre). Sloped-bank projection stretches over the
+surface; these are projected-axis dimensions, not geodesic surface distances.
+
+3. Rock Boulder Dry / rock_boulder_dry
+Authors: Dimitrios Savva (photography), Rico Cilliers (processing).
+Official source: https://polyhaven.com/a/rock_boulder_dry
+Metadata: https://api.polyhaven.com/info/rock_boulder_dry
+Native calibration: approximately 1.8 x 1.8 metres.
+Actual runtime dominant-face planar repeat: 1.8 metres. UVs are multiplied by
+(1/1.8)/1.5 = 0.3703703704 relative to v1, yielding 0.5555555556 cycles/metre.
+Existing dominant-face projection is retained, including projection transitions.
+
+glTF export flips V: V_new = 1 - scale * (1 - V_old). Runtime maps are original
+1024 x 1024 PNG inputs; 2048 x 2048 originals are optional source-only inputs.
+Diffuse supplies sRGB base color; OpenGL normals and pure roughness use Non-Color.
+The three scanned materials use native normalTexture.scale 0.65 (serialized
+0.6499999762), roughnessFactor 1, metallicFactor 0. No AO or displacement is used.
+Bark and leaves retain their original v1 512 x 512 maps and UVs. See unchanged
+V2_README.md for the existing implementation, preservation checks and limits.
+
+ORIGINAL KIT RIGHTS: EXISTING NOTICE ONLY
+The existing v1 additive CC0 notice is reproduced unchanged under
+original_v1_license/, with its exhaustive COVERED_FILES.json and original hash
+references. Its dedication applies only to the original project art and scripts
+identified there, to the extent permitted by law and held by its affirmer.
+Original geometry, collision proxies, bark/leaf content and placement data
+retained from that kit remain subject to that existing notice. This packet
+makes no fresh dedication of v2-specific code or other unlisted contributions,
+and does not expand the original notice to third-party scans or the whole game.
+The scans rely independently on Poly Haven's verified CC0 asset license above.
+Engine/game code, previously accepted motel/sign/fence/asphalt assets, third-party
+references, other library content, tools and dependencies are outside its scope.
+The v1 notice's statement of no downloaded scans describes v1 only, not v2.
+
+Referenced original license addendum archive:
+briar-court-surroundings-license-addendum-v1.tar.gz
+SHA-256: e98067ba24a433cf366b073b13977a4d02bce4f5981635de275ed10809eb73f7
+Its enclosed ADDENDUM_SHA256SUMS.txt is an unchanged original reference manifest;
+some original verification files it lists are not duplicated in this packet.
+PACKET_SHA256SUMS.txt verifies all actual members of this packet except itself.
+No native-engine appearance, collision or performance acceptance is implied.

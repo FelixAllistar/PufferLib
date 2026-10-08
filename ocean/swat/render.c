@@ -49,7 +49,7 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
             action=context.ready ? "Hold [RMB] Handcuff" : "Move closer to handcuff"; break;
         case SWAT_CONTEXT_COMPLY: action="[F] Request compliance"; break;
         case SWAT_CONTEXT_SECURED:
-            if(sim->config.tactical_rules && sim->actors[context.hit.index].role==SWAT_CIVILIAN) { action="[F] Escort / hold position"; break; }
+            if(sim->config.tactical_rules) { action=context.ready?"[F] Escort / hold position":"Move closer to escort"; break; }
             return;
         case SWAT_CONTEXT_DEVICE: action=context.ready ? "[F] Recover device" : "Teammate device"; break;
         case SWAT_CONTEXT_LIGHT:

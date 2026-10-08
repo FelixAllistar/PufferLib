@@ -26,6 +26,7 @@ typedef struct SwatObject {
     SwatTag tag;
     b3BodyId body;
     b3ShapeId shape;
+    b3Mesh query_mesh; // Original full mesh for thickness when contacts use bounded parts.
     b3Pos center;
     b3Vec3 half;
     float yaw, health, max_health, door_angle, closed_yaw,pitch;
@@ -52,6 +53,8 @@ typedef struct SwatWorld {
     b3MeshData* storefront_meshes[40];
     b3MeshData* fence_meshes[SWAT_FENCE_PART_CAPACITY];
     b3MeshData* surroundings_meshes[SWAT_SURROUNDINGS_PARTS];
+    b3MeshData** motel_contact_meshes; // Shared bounded parts; owned by this world.
+    int motel_contact_mesh_count;
     SwatObject objects[SWAT_MAX_OBJECTS];
     int count, generation;
     SwatRoom rooms[SWAT_MAX_ROOMS];

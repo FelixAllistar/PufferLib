@@ -7,6 +7,31 @@
 #include "motel_utility_data.h"
 #include "motel_fence_data.h"
 #include "motel_surroundings_data.h"
+typedef struct SwatMotelContactSource {int asset;const int32_t* indices;int triangle_count;} SwatMotelContactSource;
+#include "motel_contacts_data.h"
+static void contact_meshes_create(SwatWorld* w) {
+    int count=(int)(sizeof(motel_contact_sources)/sizeof(motel_contact_sources[0]));
+    w->motel_contact_meshes=calloc((size_t)count,sizeof(*w->motel_contact_meshes));assert(w->motel_contact_meshes);
+    w->motel_contact_mesh_count=count;
+    for(int i=0;i<count;i++) {
+        const SwatMotelContactSource* part=&motel_contact_sources[i];const SwatMotelAsset* source=swat_motel_asset(part->asset);
+        assert(part->triangle_count<=240);b3Vec3 vertices[720];int32_t indices[720];
+        for(int v=0;v<part->triangle_count*3;v++){vertices[v]=source->vertices[part->indices[v]];indices[v]=v;}
+        b3MeshDef def={.vertices=vertices,.indices=indices,.vertexCount=part->triangle_count*3,.triangleCount=part->triangle_count,
+            .weldVertices=true,.weldTolerance=1e-6f,.identifyEdges=true};
+        w->motel_contact_meshes[i]=b3CreateMesh(&def,NULL,0);assert(w->motel_contact_meshes[i]);
+    }
+}
+static bool contact_meshes_bind(SwatWorld* w,SwatObject* o,const SwatMotelInstance* p,const b3ShapeDef* def) {
+    bool found=false;
+    for(int i=0;i<w->motel_contact_mesh_count;i++)if(motel_contact_sources[i].asset==p->asset) {
+        b3ShapeId shape=b3CreateMeshShape(o->body,def,w->motel_contact_meshes[i],p->scale);assert(B3_IS_NON_NULL(shape));
+        if(!found)o->shape=shape;
+        found=true;
+    }
+    if(found)o->query_mesh=(b3Mesh){w->motel_meshes[p->asset],p->scale};
+    return found;
+}
 const SwatMotelAsset* swat_motel_surroundings_asset(int part) {return part>=0 && part<SWAT_SURROUNDINGS_PARTS?&surroundings_parts[part]:NULL;}
 int swat_motel_surroundings_part(const SwatWorld* w,const SwatObject* o) {
     int id=o->tag.index-SWAT_MOTEL_SURROUNDINGS_FIRST;
@@ -158,11 +183,13 @@ bool swat_motel_bind_collision(SwatWorld* w) {
             .weldVertices=true,.weldTolerance=1e-6f,.identifyEdges=true};
         w->motel_meshes[i]=b3CreateMesh(&def,NULL,0); assert(w->motel_meshes[i]);
     }
+    contact_meshes_create(w);
     for(int i=0;i<instances;i++) {
         const SwatMotelInstance* p=swat_motel_instance(i); if(p->door) continue;
         SwatObject* o=&w->objects[i+1]; b3DestroyShape(o->shape,false);
         b3ShapeDef def=b3DefaultShapeDef(); def.baseMaterial=swat_physics_material(o->material);
-        o->shape=b3CreateMeshShape(o->body,&def,w->motel_meshes[p->asset],p->scale); assert(B3_IS_NON_NULL(o->shape));
+        if(!contact_meshes_bind(w,o,p,&def))o->shape=b3CreateMeshShape(o->body,&def,w->motel_meshes[p->asset],p->scale);
+        assert(B3_IS_NON_NULL(o->shape));
     }
     // New maps replace these whole walls with authored layers. Legacy maps
     // without those layers keep their original solid wall, even if truncated.

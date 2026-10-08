@@ -236,6 +236,11 @@ At Cedar House or Briar Court, choose entry routes, secure the armed occupants,
 restrain and escort surviving civilians, recover dropped weapons, and regroup
 all surviving officers at staging. These requirements can be completed in any
 order. Human tactical scenarios deploy three squad bots by default. Civilian
+and cuffed-suspect escorts use **F** to follow or hold position, so a restrained
+person can be moved out of a doorway or breach. Suspects remain arrests rather
+than receiving civilian-rescue credit. Escorts walk around physical door leaves;
+officers give swinging doors room and replan around visible occupants.
+Civilian
 injury does not stop tactical play; harm, casualties and force violations remain
 in the debrief. The small training environments retain their immediate civilian
 harm failure. The tactical staging radius is 2.5 m to accommodate the squad.
@@ -731,13 +736,20 @@ checkpoint compatibility, not policy quality. Reproduce a short run with:
 
 ## Controller range and deterministic replays
 
-`make -C ocean/swat motel-completion-test` runs a complete motel scenario using
-only player inputs, both with hostile fire disabled to isolate interactions and
-with hostile fire enabled. It cuffs both suspects, collects their weapons,
-escorts all three civilians and regroups the squad. Each run then verifies an
-exact replay, mid-run save/resume and the completed state on a fresh replica.
+`make -C ocean/swat motel-completion-test` runs complete motel scenarios using
+only player inputs: isolated/front-door, hostile front-door, exterior charge and
+inter-room charge approaches. It checks real charge placement/retreat/detonation
+and aperture crossing, secured threats, weapon evidence, three civilian escorts
+and squad regrouping. The inter-room route also clears a cuffed suspect from the
+opening using follow/hold and closes a leaf that obstructs the chosen aperture.
+Front/exterior runs require two arrests and no deaths; inter-room permits lawful
+squad return fire, with no civilian/officer deaths or force violations. Each run
+verifies exact replay, mid-run save/resume, fresh-replica state and no contact
+buffer overflows. Dense bed/rack contacts preserve their original triangles,
+edge flags and ballistic thickness in bounded shared mesh components.
 Windows builds the equivalent `test_motel_completion.exe`; pass an output
-`.sgrp` path and optional `combat` argument. The QA driver knows the room plan;
+`.sgrp` path, optional `combat`, and optional `exterior` or `interroom` argument.
+The QA driver knows the room plan;
 this is not an RL evaluation or a substitute for human playtesting.
 
 Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
@@ -820,7 +832,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 14) and the same generated
+Saves require this network/replay version (currently 15) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 

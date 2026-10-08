@@ -2,7 +2,7 @@
 
 The five original shoulder/bank placements use the delivered Y-up, metre-scale
 geometry and transforms. `tools/import_motel_surroundings.cjs` checks the original
-GLB hashes, closed oriented edges and render/collider triangle correspondence,
+current GLB hashes, unchanged original collision hashes, closed oriented edges and render/collider triangle correspondence,
 then generates `motel_surroundings_data.h`. No authoring scripts run on import.
 
 | Placement | Shoulder soil | Bank soil | Separate stone owners |
@@ -24,7 +24,8 @@ Each bank's four materials share one cached visibility mask for its soil/foliage
 and 13 rocks. Removed owners cannot leave their art behind. If art is absent,
 the exact closed collision surfaces render as the fallback. Map reconstruction
 validates the recipe before binding meshes and reset/close releases the shared
-mesh data. Protocol/replay version 14 distinguishes this physical recipe.
+mesh data. Protocol/replay version 14 introduced this physical recipe; current
+version 15 also includes bounded motel furniture contacts and navigation fixes.
 
 The navigation grid retains 60 cm spacing and covers both ±30 m edges. Its
 capacity remains within the 16-bit traversal queue. The node buffer is allocated
@@ -37,7 +38,17 @@ civilian, foliage acoustic transparency, replica reconstruction and teardown.
 The native `test_environment_art.exe <directory> surroundings` adds matched
 east/west/context captures, independent rock removal and missing-art fallback.
 
-`source/surroundings.blend` retains the compact editable baseline with packed
-maps. Original licenses and file hashes accompany the runtime and source.
-The scanned-material candidate is reviewed separately; original procedural
-materials, repeated foliage and rounded rock silhouettes remain provisional.
+`source/surroundings.blend` retains the current editable scene with packed maps.
+The scanned-material revision replaces the gravel, bank soil and stone surfaces
+with Poly Haven Gravel Ground 01, Dirt and Rock Boulder Dry (CC0). Provider URLs,
+hashes and measured scales are in `source/SCAN_PROVENANCE.json`; the runtime
+license packet keeps the original-art dedication and scan rights distinct.
+The 1K maps use runtime repeats of 8/3 m, 2 m and 1.8 m, with normal strength .65.
+Geometry, collision, transforms, foliage and owner IDs are unchanged. Regenerating
+the collision header produces byte-identical output. The three PNGs show the
+native scanned-material revision, with missing-art and individual-removal checks
+also passing. Original manifests remain under `V1_` names; current manifests
+are the untouched delivered V2 records. Full source backups remain on Drive.
+
+This improves surface detail, not the repeated foliage, rounded rock silhouettes
+or incomplete wider setting. Those remain provisional.

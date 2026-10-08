@@ -60,6 +60,26 @@ static void orders_and_escort(void) {
     swat_sim_close(&sim);
     puts("PASS squad/escort: leader-only orders, delayed queue/execute, human replacement immune to bot orders, collision-based restrained civilian movement");
 }
+static void escort_open_leaf(void) {
+    for(int role=0;role<2;role++)for(int side=-1;side<=1;side+=2) {
+        fixture();
+        sim.actors[1].gear.surrendered=true;
+        SwatActor* civilian=&sim.actors[2];
+        civilian->role=role?SWAT_SUSPECT:SWAT_CIVILIAN;
+        civilian->gear.surrendered=civilian->gear.restrained=true;civilian->mind.escort_owner=0;
+        b3Body_SetTransform(sim.actors[0].controller.body.body,(b3Pos){side*4,.9144f,0},b3Quat_identity);
+        b3Body_SetTransform(civilian->controller.body.body,(b3Pos){-side*1.2f,.9144f,0},b3Quat_identity);
+        int owner=swat_world_box(&sim.world,(b3Pos){0,1.095f,0},swat_v(.025f,1.095f,.54f),SWAT_WOOD,120);
+        SwatObject* door=&sim.world.objects[owner];door->door=true;door->door_open=true;
+        door->closed_yaw=-SWAT_PI*.5f;door->door_angle=SWAT_PI*.5f;door->hinge=(b3Pos){0,1.095f,-.54f};
+        for(int t=0;t<1200 && side*swat_body_feet_position(&civilian->controller.body).x<1;t++)swat_sim_step(&sim,&(SwatInput){0});
+        assert(side*swat_body_feet_position(&civilian->controller.body).x>1);
+        assert(door->door_open && fabsf(door->door_angle-SWAT_PI*.5f)<1e-5f);
+        if(role)assert(!civilian->rescued && sim.debrief.rescued==0);
+        swat_sim_close(&sim);
+    }
+    puts("PASS escort: civilian and cuffed suspect detour around an open leaf from both sides, without closing it or crediting suspect rescue");
+}
 static void perception_evidence_roe(void) {
     fixture(); sim.actors[2].gear.surrendered=true;
     int wall=swat_world_box(&sim.world,(b3Pos){3,1.5f,0},swat_v(.1f,1.5f,12.5f),SWAT_CONCRETE,0);
@@ -197,4 +217,4 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
-int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); perception_evidence_roe(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }
+int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }

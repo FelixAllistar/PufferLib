@@ -402,7 +402,8 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
             swat_controller_aim(&a->controller),2.2f,a->controller.body.body) : swat_context_hit(s,actor,2.2f);
     if(hit.kind==SWAT_HIT_ACTOR && hit.index>=0 && a->role==SWAT_OFFICER && hit.distance<1.7f) {
         SwatActor* target=&s->actors[hit.index];
-        if(s->config.tactical_rules && pressed && target->alive && target->role==SWAT_CIVILIAN && target->gear.restrained) {
+        if(s->config.tactical_rules && pressed && target->alive &&
+           (target->role==SWAT_CIVILIAN || target->role==SWAT_SUSPECT) && target->gear.restrained) {
             target->mind.escort_owner=target->mind.escort_owner==actor ? -1 : actor; return;
         }
         if(target->alive && (target->role==SWAT_SUSPECT || target->role==SWAT_CIVILIAN) && target->gear.surrendered && !target->gear.restrained) {
@@ -520,7 +521,7 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     }
     a->controller.mobility=swat_equipment_mobility(gear);
     if(gear->inspecting) { in->fire=in->reload=false; in->gait=SWAT_SLOW; in->aim=false; }
-    bool escorted=s->config.tactical_rules && a->role==SWAT_CIVILIAN && gear->restrained && a->mind.escort_owner>=0;
+    bool escorted=s->config.tactical_rules && (a->role==SWAT_CIVILIAN || a->role==SWAT_SUSPECT) && gear->restrained && a->mind.escort_owner>=0;
     if(!escorted && (gear->restrained || gear->surrendered || gear->stunned_ticks)) {
         *in=swat_neutral_input(); in->crouch=true;
     }

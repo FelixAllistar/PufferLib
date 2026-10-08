@@ -15,7 +15,7 @@ static bool obstacle(b3ShapeId shape,void* context) {
     SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape));
     if(!tag || tag->kind!=SWAT_HIT_WORLD) return true;
     const SwatObject* o=&query->world->objects[tag->index];
-    if(o->door && o->wedge_owner<0) return true;
+    if(o->door && o->wedge_owner<0 && o->door_angle<SWAT_PI*.5f-.03f) return true;
     query->blocked=true; return false;
 }
 typedef struct NavFloors { float y[SWAT_NAV_LAYERS]; int count; float top,span; } NavFloors;
@@ -78,7 +78,8 @@ static int adjacent(int cell,int direction) {
     return neighbors[direction];
 }
 static unsigned char navigation_object_state(const SwatObject* o) {
-    return (unsigned char)(o->active ? 1+(o->door && o->wedge_owner>=0) : 0);
+    return (unsigned char)(o->active ? 1+(o->door && o->wedge_owner>=0)+
+        4*(o->door && o->door_angle>=SWAT_PI*.5f-.03f) : 0);
 }
 static bool navigation_sample(const SwatWorld* world,SwatNavigation* nav,int cell,b3Pos p) {
     NavFloors floors={0};p.y=nav->top;
@@ -180,13 +181,19 @@ bool swat_navigation_crouch(const SwatSim* s,b3Pos position) {
     int at=nearest(s->navigation,position); return at>=0 && !(s->navigation->walkable[at]&2);
 }
 typedef struct NavPeople {b3Pos feet[SWAT_MAX_ACTORS];int count;} NavPeople;
-static bool closed_doors_clear(const SwatWorld* world,const int doors[],int count,b3Pos from,b3Pos to) {
+static bool door_leaves_clear(const SwatWorld* world,const int doors[],int count,b3Pos from,b3Pos to) {
     for(int i=0;i<count;i++) {
         const SwatObject* o=&world->objects[doors[i]];
         if(from.y>o->center.y+o->half.y || from.y+1.8288f<o->center.y-o->half.y)continue;
         b3Vec3 p=b3SubPos(from,o->center),d=b3SubPos(to,from);float c=cosf(o->yaw),s=sinf(o->yaw);
         float origin[]={c*p.x-s*p.z,s*p.x+c*p.z},delta[]={c*d.x-s*d.z,s*d.x+c*d.z};
-        float half[]={o->half.x+.30f,o->half.z+.30f},enter=0,exit=1;
+        float half[]={o->half.x+.289f,o->half.z+.289f},enter=0,exit=1;
+        // A controller touching a leaf can sit just inside this conservative
+        // margin. Let it separate along the nearest face, never cross the leaf.
+        if(fabsf(origin[0])<half[0] && fabsf(origin[1])<half[1]) {
+            int face=(half[0]-fabsf(origin[0])<half[1]-fabsf(origin[1]))?0:1;
+            if(origin[face]*delta[face]>0 && fabsf(origin[face]+delta[face])>half[face])continue;
+        }
         bool intersects=true;
         for(int axis=0;axis<2;axis++) {
             if(fabsf(delta[axis])<1e-7f) {if(fabsf(origin[axis])>half[axis]){intersects=false;break;}}
@@ -218,11 +225,19 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
         if(!s->navigation) return false;
     }
     SwatNavigation* nav=s->navigation;
-    if(!nav->built || nav->generation!=s->world.generation || nav->count!=s->world.count) navigation_build(s);
+    bool dirty=!nav->built || nav->generation!=s->world.generation || nav->count!=s->world.count;
+    if(!dirty)for(int i=0;i<s->world.count;i++)if(s->world.objects[i].door && nav->object_state[i]!=navigation_object_state(&s->world.objects[i])) {dirty=true;break;}
+    if(dirty)navigation_build(s);
     NavPeople people={0};
     int doors[SWAT_MAX_OBJECTS],door_count=0;
-    if(actor>=0 && s->actors[actor].mind.order==SWAT_ORDER_STACK)
-        for(int i=0;i<s->world.count;i++)if(s->world.objects[i].active && s->world.objects[i].door && !s->world.objects[i].door_open)doors[door_count++]=i;
+    bool stacking=actor>=0 && s->actors[actor].mind.order==SWAT_ORDER_STACK;
+    // Closed, usable doors remain actionable route edges. An opened leaf is
+    // still solid cover: evaluate its current pose per request without baking
+    // moving geometry into the shared static grid.
+    for(int i=0;i<s->world.count;i++) {
+        const SwatObject* o=&s->world.objects[i];
+        if(o->active && o->door && (fabsf(o->door_angle)>.05f || (stacking && !o->door_open)))doors[door_count++]=i;
+    }
     if(actor>=0)for(int i=0;i<s->actor_count;i++) {
         SwatActor* other=&s->actors[i];if(i==actor || !other->present || !other->alive)continue;
         b3Pos feet=swat_body_feet_position(&other->controller.body);
@@ -235,36 +250,100 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
             people.feet[people.count++]=feet;
     }
     int from=nearest(nav,start),to=nearest(nav,goal); if(from<0 || to<0) return false;
+    if(!door_leaves_clear(&s->world,doors,door_count,start,cell_position(nav,from))) {
+        float best=2;from=-1;
+        for(int i=0;i<SWAT_NAV_NODES;i++)if(nav->walkable[i]) {
+            b3Pos p=cell_position(nav,i);float distance=b3Distance(start,p);
+            float height=(nav->walkable[i]&2)?1.8288f:1.016f;
+            if(fabs(p.y-start.y)<.65 && distance<best &&
+               door_leaves_clear(&s->world,doors,door_count,start,p) && nav_edge(&s->world,start,p,height)) {best=distance;from=i;}
+        }
+        if(from<0)return false;
+    }
     // Dynamic occupancy is local to this route request. Never bake people into
     // the shared static nav grid or reveal occupants behind closed cover.
-    if(!people_clear(&people,cell_position(nav,to),cell_position(nav,to))) {
+    bool occupied=!people_clear(&people,cell_position(nav,to),cell_position(nav,to)) ||
+       !door_leaves_clear(&s->world,doors,door_count,cell_position(nav,to),cell_position(nav,to));
+    if(occupied) {
         float best=2;to=-1;
         for(int i=0;i<SWAT_NAV_NODES;i++)if(nav->walkable[i]) {
             b3Pos p=cell_position(nav,i);float distance=b3Distance(p,goal);
-            if(fabs(p.y-goal.y)<.65 && distance<best && people_clear(&people,p,p)) {best=distance;to=i;}
+            if(fabs(p.y-goal.y)<.65 && distance<best && people_clear(&people,p,p) && door_leaves_clear(&s->world,doors,door_count,p,p)) {best=distance;to=i;}
         }
         if(to<0)return false;
     }
     int32_t parent[SWAT_NAV_NODES]; uint16_t queue[SWAT_NAV_NODES];
     for(int i=0;i<SWAT_NAV_NODES;i++) parent[i]=-1;
-    int head=0,tail=0; queue[tail++]=(uint16_t)to; parent[to]=to;
-    while(head<tail && parent[from]<0) {
+    int head=0,tail=0; queue[tail++]=(uint16_t)from; parent[from]=from;
+    while(head<tail && parent[to]<0) {
         int at=queue[head++];
         for(int direction=0;direction<4;direction++) {
             int cell=adjacent(at%SWAT_NAV_CELLS,direction); if(cell<0) continue;
             for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
                 int n=layer*SWAT_NAV_CELLS+cell;
-                // Reverse traversal; each edge may require a lower stance.
-                if((nav->links[n][direction^1]&(1u<<(at/SWAT_NAV_CELLS))) && parent[n]<0 &&
-                   people_clear(&people,n==from?start:cell_position(nav,n),cell_position(nav,at)) &&
-                   closed_doors_clear(&s->world,doors,door_count,n==from?start:cell_position(nav,n),cell_position(nav,at))) { parent[n]=at; queue[tail++]=(uint16_t)n; }
+                if((nav->links[at][direction]&(1u<<layer)) && parent[n]<0 &&
+                   people_clear(&people,at==from?start:cell_position(nav,at),cell_position(nav,n)) &&
+                   door_leaves_clear(&s->world,doors,door_count,at==from?start:cell_position(nav,at),cell_position(nav,n))) { parent[n]=at; queue[tail++]=(uint16_t)n; }
             }
         }
     }
-    if(parent[from]<0) return false;
-    *next=cell_position(nav,from==to ? to : parent[from]); return true;
+    if(parent[to]<0) {
+        if(!occupied)return false;
+        // The closest free sample beside a person may be across a desk/wall.
+        // Choose the closest reachable alternative, not an isolated pocket.
+        float best=2;to=-1;
+        for(int i=0;i<SWAT_NAV_NODES;i++)if(parent[i]>=0) {
+            b3Pos p=cell_position(nav,i);float distance=b3Distance(p,goal);
+            if(fabs(p.y-goal.y)<.65 && distance<best && people_clear(&people,p,p) &&
+               door_leaves_clear(&s->world,doors,door_count,p,p)) {best=distance;to=i;}
+        }
+        if(to<0)return false;
+    }
+    // Reuse the completed BFS queue to reconstruct the chosen path backwards.
+    int length=0,at=to;
+    while(at!=from) {queue[length++]=(uint16_t)at;at=parent[at];}
+    queue[length++]=(uint16_t)from;int route=length>1?length-2:0;at=queue[route];
+    // Door alignment can place adjacent grid samples at the same X/Z, with
+    // the court and thin room floor supplying two almost coincident heights.
+    // Returning that alias forever prevents the controller reaching the next
+    // real edge. Advance past arrived samples only with a fresh body sweep.
+    while(route>0) {
+        b3Pos p=cell_position(nav,at);
+        if(hypotf(p.x-start.x,p.z-start.z)>=.30f || fabs(p.y-start.y)>=.30f)break;
+        int ahead=queue[route-1];b3Pos target=cell_position(nav,ahead);
+        float height=(nav->walkable[from]&nav->walkable[ahead]&2)?1.8288f:1.016f;
+        if(!nav_edge(&s->world,start,target,height) || !people_clear(&people,start,target) ||
+           !door_leaves_clear(&s->world,doors,door_count,start,target))break;
+        route--;at=ahead;
+    }
+    *next=cell_position(nav,at); return true;
 }
 bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {return navigation_next_actor(s,-1,start,goal,next);}
+bool swat_navigation_next_for_actor(SwatSim* s,int actor,b3Pos goal,b3Pos* next) {
+    if(actor<0 || actor>=s->actor_count || !s->actors[actor].present)return false;
+    return navigation_next_actor(s,actor,swat_body_feet_position(&s->actors[actor].controller.body),goal,next);
+}
+bool swat_navigation_yield_door(const SwatSim* s,int actor,SwatInput* in) {
+    if(actor<0 || actor>=s->actor_count || !s->actors[actor].present)return false;
+    const SwatController* c=&s->actors[actor].controller;b3Pos feet=swat_body_feet_position(&c->body);
+    for(int i=0;i<s->world.count;i++) {
+        const SwatObject* o=&s->world.objects[i];
+        float target=o->peek?12*SWAT_RAD:SWAT_PI*.5f;
+        if(!o->active || !o->door || !o->door_open || o->wedge_owner>=0 || target-o->door_angle<.03f)continue;
+        if(feet.y>o->center.y+o->half.y || feet.y+c->body.totalHeight<o->center.y-o->half.y)continue;
+        b3Vec3 n=swat_v(cosf(o->closed_yaw),0,-sinf(o->closed_yaw));
+        b3Vec3 t=swat_v(sinf(o->closed_yaw),0,cosf(o->closed_yaw)),d=b3SubPos(feet,o->hinge);
+        float along=b3Dot(d,t),across=b3Dot(d,n);
+        // Give the swinging leaf room before approaching its opening. Keep
+        // the retreat on the current side and let the real controller collide.
+        if(along<-.32f || along>2*o->half.z+.32f || fabsf(across)>1.4f)continue;
+        b3Vec3 retreat=swat_mul(n,across<0?-1:1);
+        b3Vec3 forward=swat_direction(c->yaw,0),right=swat_v(-forward.z,0,forward.x);
+        in->forward=.7f*b3Dot(retreat,forward);in->strafe=.7f*b3Dot(retreat,right);in->gait=SWAT_WALK;
+        return true;
+    }
+    return false;
+}
 static bool actor_lane_clear(const SwatSim* s,int index,b3Pos from,b3Pos to) {
     b3Vec3 segment=b3SubPos(to,from);segment.y=0;float length2=b3LengthSquared(segment);
     for(int i=0;i<s->actor_count;i++) {
@@ -313,6 +392,7 @@ static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
     SwatActor* a=&s->actors[index]; SwatMind* mind=&a->mind;
     b3Pos feet=swat_body_feet_position(&a->controller.body); b3Vec3 delta=b3SubPos(goal,feet);
     if(hypotf(delta.x,delta.z)<.45f && fabsf(delta.y)<.45f) return;
+    if(swat_navigation_yield_door(s,index,in)) {mind->replan_tick=0;return;}
     if(s->tick>=mind->replan_tick || (hypotf((float)(feet.x-mind->waypoint.x),(float)(feet.z-mind->waypoint.z))<.30f && fabs(feet.y-mind->waypoint.y)<.55)) {
         if(!navigation_next_actor(s,index,feet,goal,&mind->waypoint)) return;
         mind->replan_tick=s->tick+30;
@@ -465,7 +545,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
         if(a->gear.restrained) {
             mind->state=SWAT_DETAINED;
             if(a->rescued)continue;
-            if(a->role==SWAT_CIVILIAN && mind->escort_owner>=0 && mind->escort_owner<s->actor_count && s->actors[mind->escort_owner].alive) {
+            if((a->role==SWAT_CIVILIAN || a->role==SWAT_SUSPECT) && mind->escort_owner>=0 && mind->escort_owner<s->actor_count && s->actors[mind->escort_owner].alive) {
                 mind->state=SWAT_ESCORT; in->crouch=false;
                 move_to(s,i,swat_body_feet_position(&s->actors[mind->escort_owner].controller.body),in);
             }
