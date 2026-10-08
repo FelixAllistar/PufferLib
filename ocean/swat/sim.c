@@ -289,7 +289,7 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
         SwatObject* object = &s->world.objects[hit.index];
         float thickness = swat_world_exit_distance(object,hit.point,direction);
         float cost = swat_material_resistance(object->material)*fmaxf(thickness,0.01f);
-        if (swat_world_damage(&s->world,hit.index,shot.damage*(energy/shot.energy)*(object->door && a->arsenal.active==0 && a->arsenal.primary==6 ? 3 : 1))) {
+        if (swat_world_impact(&s->world,hit.index,shot.damage*(energy/shot.energy)*(object->door && a->arsenal.active==0 && a->arsenal.primary==6 ? 3 : 1))) {
             s->events.destroyed++;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
         }
@@ -473,7 +473,7 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
             SwatMaterial material=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? s->world.objects[hit.index].material : SWAT_CARPET;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,1,25,material);
             if(hit.kind==SWAT_HIT_ACTOR) swat_sim_damage_region(s,hit.index,actor,5,swat_sim_hit_region(&s->actors[hit.index],hit.point),true);
-            else if(hit.index>=0 && swat_world_damage(&s->world,hit.index,swat_kit(gear->kit)->ram ? 160 : 18)) {
+            else if(hit.index>=0 && swat_world_impact(&s->world,hit.index,swat_kit(gear->kit)->ram ? 160 : 18)) {
                 s->events.destroyed++; swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
             }
         }

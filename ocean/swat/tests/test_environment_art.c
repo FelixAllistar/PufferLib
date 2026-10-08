@@ -247,8 +247,15 @@ static void room101_graphics(SwatView* view,const char* directory) {
         assert(a.min.x>=b.min.x-.001f && a.min.y>=b.min.y-.001f && a.min.z>=b.min.z-.001f);
         assert(a.max.x<=b.max.x+.001f && a.max.y<=b.max.y+.001f && a.max.z<=b.max.z+.001f);
         SwatObject* o=&sim.world.objects[v4_owners[i]];
+        if(!o->active) {
+            assert(o->wall_group && !room101_owner_pixels(art,o,false));
+            SwatObject* piece=&sim.world.objects[o->wall_group-1];
+            assert(room101_owner_pixels(art,piece,false)>50);
+            piece->active=false;assert(!room101_owner_pixels(art,piece,false));piece->active=true;
+        } else {
         assert(room101_owner_pixels(art,o,false)>50);
         o->active=false;assert(!room101_owner_pixels(art,o,false));o->active=true;
+        }
         for(int m=1;m<model.materialCount;m++)assert(model.materials[m].maps[MATERIAL_MAP_ALBEDO].color.a==255);
     }
     assert(!memcmp(&before,&sim.world,sizeof(before)));
@@ -275,7 +282,7 @@ static void room101_graphics(SwatView* view,const char* directory) {
     const int owners[10]={17,18,19,9,105,106,20,10,23,28};
     for(int i=0;i<10;i++) {
         SwatObject* o=&sim.world.objects[owners[i]];
-        if(!o->active) {assert(owners[i]==106 && !room101_owner_pixels(art,o,false));continue;}
+        if(!o->active) {assert(o->wall_group && !room101_owner_pixels(art,o,false));continue;}
         assert(room101_owner_pixels(art,o,false)>50);
         o->active=false;assert(!room101_owner_pixels(art,o,false));o->active=true;
         if(i==7)assert(!room101_owner_pixels(art,o,true));
@@ -432,6 +439,15 @@ static void room101_graphics(SwatView* view,const char* directory) {
     for(int stage=0;stage<2;stage++) {
         if(stage) {assert(swat_world_breach(&sim.world,sim.world.objects[106].wall_group-1,(b3Pos){-3.9885f,1.05f,-1.17f})>4);}
         room=room101_capture(view,breach,true);snprintf(path,sizeof(path),"%s/motel-breach-%d.png",directory,stage);assert(ExportImage(room,path));UnloadImage(room);
+    }
+    Camera3D exterior={{-6.7f,1.6f,-9.5f},{-6.7f,1.1f,-5.5f},{0,1,0},65,CAMERA_PERSPECTIVE};
+    for(int stage=0;stage<2;stage++) {
+        if(stage) {
+            SwatHit hit=swat_world_ray(&sim.world,(b3Pos){-6.7f,1,-7},swat_v(0,0,1),2,b3_nullBodyId);
+            assert(hit.hit && sim.world.objects[hit.index].material==SWAT_BRICK);
+            assert(swat_world_breach(&sim.world,hit.index,hit.point)>0);
+        }
+        room=room101_capture(view,exterior,true);snprintf(path,sizeof(path),"%s/motel-masonry-%d.png",directory,stage);assert(ExportImage(room,path));UnloadImage(room);
     }
     swat_sim_close(&sim);
     printf("PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (%d changed pixels), three door poses and removal\n",changed);

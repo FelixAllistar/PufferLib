@@ -189,6 +189,10 @@ static void test_damage_and_destruction(void) {
     swat_sim_shoot(&s,0,(b3Pos){15,1.3f,2.9f},swat_v(1,0,0),test_shot(1));
     assert(s.actors[1].health<80 && s.actors[1].health>65);
     assert(s.world.objects[cover].active);
+    float penetrated_health=s.actors[1].health;
+    s.actors[1].health=100;s.actors[1].role=SWAT_CIVILIAN;
+    swat_sim_shoot(&s,0,(b3Pos){15,1.3f,2.9f},swat_v(1,0,0),test_shot(1));
+    assert(fabsf(s.actors[1].health-penetrated_health)<1e-5f && s.world.objects[cover].active);
     // A destroyed cell is gone from both the observation rays and physics.
     float obs_before[SWAT_OBS_SIZE],obs_after[SWAT_OBS_SIZE];
     swat_sim_observe(&s,0,obs_before);

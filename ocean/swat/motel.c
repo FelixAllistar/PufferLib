@@ -1,6 +1,7 @@
 #include "motel.h"
 #include "mission.h"
 #include <assert.h>
+#include <stdlib.h>
 #include "motel_data.h"
 #include "motel_utility_data.h"
 // Floor-level dressing stays outside the established door and capsule routes.
@@ -60,12 +61,70 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     }
     // New maps replace these whole walls with authored layers. Legacy maps
     // without those layers keep their original solid wall, even if truncated.
-    for(int i=106;i<=108;i++) {
+    for(int i=1;i<=instances;i++) {
         SwatObject* o=&w->objects[i]; int first=o->wall_group-1;
         if(first<=SWAT_MOTEL_INSTANCES || first>=w->count || w->objects[first].wall_group!=o->wall_group)continue;
         b3DestroyBody(o->body);o->body=b3_nullBodyId;o->shape=b3_nullShapeId;o->active=false;
     }
     w->motel=true; return true;
+}
+
+static bool sectioned_asset(int asset) {return asset==0 || asset==1 || asset==2 || asset==21 || asset==22;}
+int swat_motel_wall_parent(const SwatWorld* w,const SwatObject* piece) {
+    if(!w->motel || piece->tag.index<=SWAT_MOTEL_INSTANCES || !piece->wall_group)return -1;
+    for(int i=1;i<=SWAT_MOTEL_INSTANCES && i<w->count;i++) {
+        const SwatObject* parent=&w->objects[i];
+        if(i>=106 && i<=108)continue; // Existing timber party walls use their own skins.
+        if(!parent->active && parent->wall_group==piece->wall_group && sectioned_asset(swat_motel_instance(i-1)->asset))return i;
+    }
+    return -1;
+}
+static int float_order(const void* a,const void* b) {float x=*(const float*)a,y=*(const float*)b;return (x>y)-(x<y);}
+static void wall_cut(float* cuts,int* count,float v) {
+    // Source bevels are 3 mm. Snap their paired edges to the structural datum.
+    v=roundf(v*100)*.01f;
+    for(int i=0;i<*count;i++)if(fabsf(cuts[i]-v)<.001f)return;
+    assert(*count<64);cuts[(*count)++]=v;
+}
+static bool wall_face(const SwatMotelAsset* a,int tri,float depth,b3Vec3 v[3]) {
+    for(int k=0;k<3;k++) {v[k]=b3Add(a->vertices[a->indices[3*tri+k]],a->center);if(fabsf(v[k].z-depth)>.0001f)return false;}
+    return fabsf((v[1].x-v[0].x)*(v[2].y-v[0].y)-(v[1].y-v[0].y)*(v[2].x-v[0].x))>1e-5f;
+}
+static bool wall_occupied(const SwatMotelAsset* a,float depth,float x,float y) {
+    for(int t=0;t<a->triangle_count;t++) {
+        b3Vec3 v[3];if(!wall_face(a,t,depth,v))continue;
+        bool positive=false,negative=false;
+        for(int k=0;k<3;k++) {
+            b3Vec3 p=v[k],q=v[(k+1)%3];float cross=(q.x-p.x)*(y-p.y)-(q.y-p.y)*(x-p.x);
+            float tolerance=.006f*(fabsf(q.x-p.x)+fabsf(q.y-p.y));
+            positive|=cross>tolerance;negative|=cross< -tolerance;
+        }
+        if(!(positive&&negative))return true;
+    }
+    return false;
+}
+static void sectioned_wall(SwatWorld* w,int owner) {
+    const SwatMotelInstance* p=swat_motel_instance(owner-1);const SwatMotelAsset* a=swat_motel_asset(p->asset);
+    float depth=p->asset==22?.06f:.09f,x[64],y[64];int nx=0,ny=0;
+    for(int t=0;t<a->triangle_count;t++) {b3Vec3 v[3];if(!wall_face(a,t,depth,v))continue;
+        for(int k=0;k<3;k++){wall_cut(x,&nx,v[k].x);wall_cut(y,&ny,v[k].y);}}
+    assert(nx>=2 && ny>=2);qsort(x,nx,sizeof(float),float_order);qsort(y,ny,sizeof(float),float_order);
+    int first=w->count;SwatMaterial material=p->asset==22?SWAT_DRYWALL:SWAT_BRICK;
+    for(int ix=0;ix<nx-1;ix++)for(int iy=0;iy<ny-1;iy++) {
+        float width=x[ix+1]-x[ix],height=y[iy+1]-y[iy];
+        if(!wall_occupied(a,depth,(x[ix]+x[ix+1])*.5f,(y[iy]+y[iy+1])*.5f))continue;
+        int columns=(int)ceilf(width/.7f),rows=(int)ceilf(height/.8f);
+        for(int c=0;c<columns;c++)for(int r=0;r<rows;r++) {
+            float lx=(x[ix]+width*(c+.5f)/columns)*p->scale.x,ly=(y[iy]+height*(r+.5f)/rows)*p->scale.y;
+            b3Pos center=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*lx,ly,-sinf(p->yaw)*lx));
+            b3Vec3 half=swat_v(depth*p->scale.z,height*p->scale.y/(2*rows),width*p->scale.x/(2*columns));
+            int id=swat_world_box(w,center,half,material,swat_material(material)->fracture_health);
+            SwatObject* o=&w->objects[id];o->part=SWAT_PART_SKIN;o->wall_group=first+1;
+            swat_world_place(o,swat_angle(p->yaw+SWAT_PI*.5f));
+        }
+    }
+    assert(w->count>first);SwatObject* old=&w->objects[owner];old->wall_group=first+1;
+    b3DestroyBody(old->body);old->body=b3_nullBodyId;old->shape=b3_nullShapeId;old->active=false;
 }
 void swat_motel_build(SwatWorld* w) {
     swat_world_box(w,(b3Pos){0,-.58f,0},swat_v(24,.5f,24),SWAT_CONCRETE,0);
@@ -84,6 +143,7 @@ void swat_motel_build(SwatWorld* w) {
         o->wall_group=first+1;
         b3DestroyBody(o->body);o->body=b3_nullBodyId;o->shape=b3_nullShapeId;o->active=false;
     }
+    for(int i=1;i<=SWAT_MOTEL_INSTANCES;i++)if(w->objects[i].active && sectioned_asset(swat_motel_instance(i-1)->asset))sectioned_wall(w,i);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }
@@ -119,22 +179,20 @@ int swat_motel_dressing(const SwatWorld* w,int index,SwatMotelInstance* p) {
     }
     const SwatObject* support=&w->objects[owner];
     if(support->active)return owner;
-    if(kind!=6 || !support->wall_group)return -1;
-    // The bumper stays on the room-facing board, not an invisible retired wall.
-    // Select by the original convex footprint even after a piece is destroyed,
-    // so it cannot jump to a neighbouring support after a breach.
-    for(int i=SWAT_MOTEL_INSTANCES+1;i<w->count;i++) {
-        const SwatObject* s=&w->objects[i];
-        if(s->wall_group!=support->wall_group || s->part!=SWAT_PART_SKIN || s->center.x<support->center.x)continue;
-        float y=p->origin.y-s->center.y,z=p->origin.z-s->center.z;
-        if(fabsf(y)>s->half.y || fabsf(z)>s->half.z)continue;
+    if(!support->wall_group)return -1;
+    for(int i=support->wall_group-1;i<w->count && w->objects[i].wall_group==support->wall_group;i++) {
+        const SwatObject* s=&w->objects[i];if(s->part!=SWAT_PART_SKIN)continue;
+        b3Vec3 d=b3SubPos(p->origin,s->center);
+        float c=cosf(s->yaw),sn=sinf(s->yaw),x=c*d.x-sn*d.z,y=d.y,z=sn*d.x+c*d.z;
+        if(fabsf(y)>s->half.y || fabsf(z)>s->half.z || fabsf(x)>s->half.x+.08f)continue;
         bool inside=true;
         if(s->fractured)for(int j=0;j<4;j++) {
             int k=(j+1)%4;float ay=s->corners[j][0],az=s->corners[j][1];
             if((s->corners[k][0]-ay)*(z-az)-(s->corners[k][1]-az)*(y-ay)<-1e-5f)inside=false;
         }
         if(!inside)continue;
-        p->origin.x=s->center.x+s->half.x+.001f;
+        float shift=copysignf(s->half.x+.001f,x)-x;
+        p->origin=b3OffsetPos(p->origin,swat_v(c*shift,0,-sn*shift));
         return s->active?i:-1;
     }
     return -1;

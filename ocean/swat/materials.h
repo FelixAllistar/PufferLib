@@ -18,6 +18,8 @@ typedef struct SwatMaterialDef {
     uint8_t color[4];
     float density, friction, restitution, rolling_resistance;
     float impact_pitch, impact_decay, footstep_gain;
+    // Game-space structural values, independent of ballistic penetration.
+    float fracture_health, impact_threshold, charge_resistance;
 } SwatMaterialDef;
 const SwatMaterialDef* swat_material(SwatMaterial material);
 #ifdef __cplusplus

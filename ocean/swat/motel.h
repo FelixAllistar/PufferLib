@@ -23,6 +23,8 @@ const SwatMotelInstance* swat_motel_instance(int index);
 // Returns the current supporting object, or -1 when that support is gone.
 int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* placement);
 int swat_motel_dressing_parent(int index);
+// Retired imported wall supporting this physical section, or -1.
+int swat_motel_wall_parent(const SwatWorld* world,const SwatObject* piece);
 void swat_motel_build(SwatWorld* world);
 // Reconstruct canonical mesh collision after receiving the ordinary map boxes.
 // Every instance transform is checked before replacing any collider.

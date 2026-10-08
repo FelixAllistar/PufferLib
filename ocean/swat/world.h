@@ -72,6 +72,7 @@ SwatHit swat_world_ray(const SwatWorld* world, b3Pos origin, b3Vec3 direction,
 SwatHit swat_world_sphere_cast(const SwatWorld* world, b3Pos origin,
                               b3Vec3 translation, float radius, b3BodyId ignore);
 bool swat_world_damage(SwatWorld* world, int object, float damage);
+bool swat_world_impact(SwatWorld* world,int object,float damage);
 float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 direction);
 float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);

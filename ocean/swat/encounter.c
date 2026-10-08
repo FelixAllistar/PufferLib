@@ -6,7 +6,8 @@
 static b3Pos cell_position(const SwatNavigation* nav,int index) {
     return (b3Pos){nav->x[index],nav->height[index],nav->z[index]};
 }
-static b3Pos grid_position(int index) { return (b3Pos){-8+(index%SWAT_NAV_SIDE+.5f)*.6f,0,-24+(index/SWAT_NAV_SIDE+.5f)*.6f}; }
+// Cover the motel reception and its west exterior approach as well as the rooms.
+static b3Pos grid_position(const SwatWorld* world,int index) { return (b3Pos){(world->motel?-20:-8)+(index%SWAT_NAV_SIDE+.5f)*.6f,0,-24+(index/SWAT_NAV_SIDE+.5f)*.6f}; }
 typedef struct NavQuery { const SwatWorld* world; bool blocked; } NavQuery;
 static bool obstacle(b3ShapeId shape,void* context) {
     NavQuery* query=context;
@@ -122,7 +123,7 @@ static void navigation_build(SwatSim* s) {
         float x=fabsf(cosf(o->yaw))*o->half.x+fabsf(sinf(o->yaw))*o->half.z+1.1f+radius;
         float z=fabsf(sinf(o->yaw))*o->half.x+fabsf(cosf(o->yaw))*o->half.z+1.1f+radius;
         for(int cell=0;cell<SWAT_NAV_CELLS;cell++) {
-            b3Pos p=grid_position(cell);
+            b3Pos p=grid_position(&s->world,cell);
             if(fabs(p.x-o->center.x)<=x && fabs(p.z-o->center.z)<=z) cells[cell]=1;
         }
     }
@@ -131,7 +132,7 @@ static void navigation_build(SwatSim* s) {
         nav->updated_cells++; edges[cell]=1;
         for(int d=0;d<4;d++) { int other=adjacent(cell,d); if(other>=0) edges[other]=1; }
         for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) nav->walkable[layer*SWAT_NAV_CELLS+cell]=0;
-        b3Pos p=grid_position(cell);
+        b3Pos p=grid_position(&s->world,cell);
         // Align narrow door apertures before checking physical body clearance.
         for(int j=0;j<s->world.count;j++) {
             const SwatObject* o=&s->world.objects[j]; if(!o->active || !o->door) continue;

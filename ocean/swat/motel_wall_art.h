@@ -1,0 +1,71 @@
+// Internal render cache: clip authored wall triangles to physical sections.
+// Materials/textures are borrowed from the original bank, never duplicated.
+#ifndef SWAT_MOTEL_WALL_ART_H
+#define SWAT_MOTEL_WALL_ART_H
+typedef struct SwatWallVertex {Vector3 p,n;Vector2 uv,uv2;} SwatWallVertex;
+typedef struct SwatWallMeshCache {
+    Model model;const Mesh* source;b3Pos center;b3Vec3 half;
+} SwatWallMeshCache;
+typedef struct SwatMotelWallArt {SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2];} SwatMotelWallArt;
+static void wall_mesh_close(SwatWallMeshCache* cache) {
+    for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
+    MemFree(cache->model.meshes);MemFree(cache->model.meshMaterial);memset(cache,0,sizeof(*cache));
+}
+static void wall_art_close(SwatEnvironmentArt* art) {
+    if(!art->motel_wall_art)return;
+    for(int i=0;i<SWAT_MAX_OBJECTS;i++)for(int j=0;j<2;j++)wall_mesh_close(&art->motel_wall_art->pieces[i][j]);
+    free(art->motel_wall_art);art->motel_wall_art=NULL;
+}
+static SwatWallVertex wall_lerp(SwatWallVertex a,SwatWallVertex b,float t) {
+    return (SwatWallVertex){Vector3Lerp(a.p,b.p,t),Vector3Lerp(a.n,b.n,t),Vector2Lerp(a.uv,b.uv,t),Vector2Lerp(a.uv2,b.uv2,t)};
+}
+static int wall_clip(SwatWallVertex* vertices,int count,int axis,float edge,float sign) {
+    SwatWallVertex out[12];int n=0;
+    for(int i=0;i<count;i++) {
+        SwatWallVertex a=vertices[i],b=vertices[(i+1)%count];
+        float av=axis?a.p.y:a.p.x,bv=axis?b.p.y:b.p.x;
+        bool ain=sign*(av-edge)>=0,bin=sign*(bv-edge)>=0;
+        if(ain)out[n++]=a;
+        if(ain!=bin)out[n++]=wall_lerp(a,b,(edge-av)/(bv-av));
+    }
+    memcpy(vertices,out,n*sizeof(*out));return n;
+}
+static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const SwatObject* o,const SwatMotelInstance* p) {
+    if(cache->source==source->meshes && b3Distance(cache->center,o->center)<1e-6f && b3Length(b3Sub(cache->half,o->half))<1e-6f)return &cache->model;
+    wall_mesh_close(cache);cache->source=source->meshes;cache->center=o->center;cache->half=o->half;
+    b3Vec3 d=b3SubPos(o->center,p->origin);float cx=(cosf(p->yaw)*d.x-sinf(p->yaw)*d.z)/p->scale.x;
+    float cy=d.y/p->scale.y,hx=o->half.z/p->scale.x,hy=o->half.y/p->scale.y;
+    Model* model=&cache->model;model->transform=MatrixIdentity();
+    model->materials=source->materials;model->materialCount=source->materialCount;
+    model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
+    model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
+    for(int m=0;m<source->meshCount;m++) {
+        const Mesh* src=&source->meshes[m];Mesh mesh={0};int capacity=src->triangleCount*21;
+        mesh.vertices=MemAlloc(capacity*3*sizeof(float));mesh.normals=MemAlloc(capacity*3*sizeof(float));
+        mesh.texcoords=MemAlloc(capacity*2*sizeof(float));if(src->texcoords2)mesh.texcoords2=MemAlloc(capacity*2*sizeof(float));
+        for(int t=0;t<src->triangleCount;t++) {
+            SwatWallVertex v[12];int n=3;
+            for(int k=0;k<3;k++) {
+                int at=src->indices?src->indices[3*t+k]:3*t+k;
+                v[k]=(SwatWallVertex){0};memcpy(&v[k].p,src->vertices+3*at,3*sizeof(float));
+                if(src->normals)memcpy(&v[k].n,src->normals+3*at,3*sizeof(float));
+                if(src->texcoords)memcpy(&v[k].uv,src->texcoords+2*at,2*sizeof(float));
+                if(src->texcoords2)memcpy(&v[k].uv2,src->texcoords2+2*at,2*sizeof(float));
+            }
+            n=wall_clip(v,n,0,cx-hx,1);n=wall_clip(v,n,0,cx+hx,-1);
+            n=wall_clip(v,n,1,cy-hy,1);n=wall_clip(v,n,1,cy+hy,-1);
+            for(int k=1;k<n-1;k++) {
+                int corner[]={0,k,k+1};
+                if(Vector3LengthSqr(Vector3CrossProduct(Vector3Subtract(v[k].p,v[0].p),Vector3Subtract(v[k+1].p,v[0].p)))<1e-14f)continue;
+                for(int j=0;j<3;j++) {SwatWallVertex a=v[corner[j]];int at=mesh.vertexCount++;
+                    memcpy(mesh.vertices+3*at,&a.p,3*sizeof(float));memcpy(mesh.normals+3*at,&a.n,3*sizeof(float));
+                    memcpy(mesh.texcoords+2*at,&a.uv,2*sizeof(float));if(mesh.texcoords2)memcpy(mesh.texcoords2+2*at,&a.uv2,2*sizeof(float));}
+            }
+        }
+        mesh.triangleCount=mesh.vertexCount/3;
+        if(!mesh.triangleCount) {MemFree(mesh.vertices);MemFree(mesh.normals);MemFree(mesh.texcoords);MemFree(mesh.texcoords2);continue;}
+        UploadMesh(&mesh,false);model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=mesh;
+    }
+    return model;
+}
+#endif

@@ -15,6 +15,7 @@ typedef struct SwatSurfaceMaps {
     Vector2 tile;
 } SwatSurfaceMaps;
 struct SwatLighting;
+struct SwatMotelWallArt;
 #define SWAT_ROOM101_ASSETS 8
 #define SWAT_ROOM101_V3_ASSETS 12
 #define SWAT_ROOM101_V4_ASSETS 8
@@ -31,6 +32,7 @@ typedef struct SwatEnvironmentArt {
     struct SwatLighting* lighting;
     Model door;
     Model motel[SWAT_MOTEL_ASSETS];
+    struct SwatMotelWallArt* motel_wall_art;
     Model motel_dressing[SWAT_MOTEL_DRESSING_ASSETS];
     float motel_dressing_normal_scale[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
     int motel_dressing_occlusion_uv[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];

@@ -139,6 +139,18 @@ bool swat_world_damage(SwatWorld* w, int object, float damage) {
     return true;
 }
 
+bool swat_world_impact(SwatWorld* w,int object,float damage) {
+    if(object<0 || object>=w->count)return false;
+    // Small repeated impacts do not accumulate into a doorway through masonry.
+    // Thin boards, timber and glass still use their existing damage budgets.
+    return swat_world_damage(w,object,fmaxf(0,damage-swat_material(w->objects[object].material)->impact_threshold));
+}
+
+static float charge_demand(const SwatObject* o) {
+    const SwatMaterialDef* m=swat_material(o->material);
+    return m->charge_resistance*(2*o->half.x/m->reference_thickness);
+}
+
 bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
     if(!o->active || o->door || o->part!=SWAT_PART_SKIN) return false;
     b3Vec3 points[8];
@@ -157,7 +169,7 @@ bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
 }
 
 bool swat_world_breachable(const SwatObject* o) {
-    return o->active && o->max_health>0 && (o->door || (o->wall_group>0 &&
+    return o->active && o->max_health>0 && charge_demand(o)<=1 && (o->door || (o->wall_group>0 &&
         (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME)));
 }
 
@@ -172,20 +184,23 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     for(int i=0;i<w->count;i++) if(w->objects[i].wall_group==source.wall_group)
         floor_y=fminf(floor_y,(float)w->objects[i].center.y-w->objects[i].half.y);
     b3Pos center=position; center.y=fmax(floor_y+1.05,position.y-.35);
+    float aperture=.72f*swat_clamp(1-.25f*charge_demand(&source),.65f,1);
     int removed=0;
     for(int i=0;i<w->count;i++) {
         SwatObject* o=&w->objects[i];
         if(!swat_world_breachable(o) || o->door || o->wall_group!=source.wall_group) continue;
         b3Vec3 delta=b3SubPos(o->center,center);
         float z=fabsf(b3Dot(delta,tangent)),y=fabsf(delta.y);
-        if(z<.72f+o->half.z*.6f && y<1.10f+o->half.y*.45f)
+        if(z<aperture+o->half.z*.6f && y<1.10f+o->half.y*.45f)
             removed+=swat_world_damage(w,i,o->max_health);
     }
+    bool framed=false;
+    for(int i=0;i<w->count;i++)if(w->objects[i].wall_group==source.wall_group && w->objects[i].part==SWAT_PART_FRAME)framed=true;
     // Board islands without a surviving timber attachment shed locally.
     // This is a bounded wall-assembly support rule, not whole-building collapse.
     for(int i=0;i<w->count;i++) {
         SwatObject* skin=&w->objects[i];
-        if(!skin->active || skin->part!=SWAT_PART_SKIN || skin->wall_group!=source.wall_group) continue;
+        if(!framed || !skin->active || skin->part!=SWAT_PART_SKIN || skin->wall_group!=source.wall_group) continue;
         bool supported=false;
         for(int j=0;j<w->count && !supported;j++) {
             const SwatObject* frame=&w->objects[j];

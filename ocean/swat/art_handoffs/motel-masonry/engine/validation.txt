@@ -1,0 +1,58 @@
+motel
+PASS masonry: 504 pieces/953 objects, all weapon profiles stopped, civilian protected, ram resisted, localized charge aperture/capsule/replica, strength and thickness limits
+PASS motel: nine capsule routes, five functional hinged/breachable doors, original mesh openings, exact network collision reconstruction, reset, attached dressing, breach capsule/LOS/nav and replicated destruction
+
+native-motel
+PASS masonry: 504 pieces/953 objects, all weapon profiles stopped, civilian protected, ram resisted, localized charge aperture/capsule/replica, strength and thickness limits
+PASS motel: nine capsule routes, five functional hinged/breachable doors, original mesh openings, exact network collision reconstruction, reset, attached dressing, breach capsule/LOS/nav and replicated destruction
+
+sim
+PASS movement normalization, sprint/ADS/stance gates, stamina, edge-triggered jump
+PASS stand blockage, crouch traversal, blocked stand-up, clearance recovery
+PASS lean moves real hit geometry and eye, clamps at cover, and recenters
+PASS leaned head blocks stand-up under offset overhang and clears after recentering
+PASS semi/auto/safe, fire cadence, tactical/empty reload conservation, cancellation, equip and obstruction gates
+PASS nearest-cover damage, collider removal, thickness/energy penetration and fresh sensor geometry
+PASS door interaction edge, physical opening and muzzle-wall firing prevention
+PASS opening/closing doors stop for actors and resume after obstruction clears
+PASS guard respects occlusion and reaction time, fires through shared weapons, loses sight behind cover
+PASS eight randomized live-fire missions: open door, traverse, engage armed target, protect civilian, extract
+PASS co-op: all living officers extract, teammate survival, squad wipe, shared civilian failure and guard engages a remote officer
+PASS exact timeout and full character/weapon/scene reset
+SWAT simulation checks passed
+
+tactical
+PASS physical materials: mass, receiving-surface bounce, thin-wall collision and material impact event
+PASS optiwand: automatic closed-door insertion, independent lens rotation, body/fire lock and collision-limited corner reach
+PASS throws: finite inventory, held-key edge, action recovery, no staging refill and hand clearance
+PASS effects: flash occlusion/compliance, gas wall/destruction boundaries, masks, taser cover/range/recovery and zero damage
+PASS door tools: locked latch, held/aborted quiet pick, fire/movement isolation, closed-door charge mounting, finite stock, owner remote, material occlusion/injury, no refill and mounted/spent replication
+PASS tactical protocol: flight, inventory, inputs, replica body isolation and every truncated packet rejected
+PASS contextual use: narrow aim tolerance, larger misses rejected, intact-wall blocking, forward-only compliance, close cuff reach, look-away interruption and authority held-target isolation
+PASS tactical tools: held-action isolation, persistent/recoverable wedge, physical peek, inspection-before-disarm, trap exposure, finite and occluded spray
+
+protocol
+PASS protocol: explicit portable encoding, all truncations, NaN/trailing bytes, no partial mutation, exact replica pose/lean/crouch and destruction
+
+encounter
+PASS navigation: actual static clearance blocks a route; authoritative destruction invalidates the cache and opens it
+PASS navigation lifecycle: lazy allocation, map replacement, reset and repeated close
+PASS squad/escort: leader-only orders, delayed queue/execute, human replacement immune to bot orders, collision-based restrained civilian movement
+PASS encounter: no hidden-position pursuit, weapon evidence exactly once, unlawful force record, public state/debrief replication and truncation rejection
+
+mission
+PASS house wall: two independent 12.5 mm faces, open cavity after break, retained timber stud collision
+PASS equipment: mass/mobility, impact primary, staging restriction, blocked lens, floor-gap optiwand and fire isolation
+PASS house doors: impact rounds stop at closed wood, ram removes the real leaf, rotated hinge opens/closes its collider
+PASS arrests: less-lethal surrender, interruptible cuff hold, melee, civilian compliance, injury mobility and secured-house extraction
+PASS house protocol: full framed map, rooms, impact launcher, wounds, restraints and mission outcome round-trip
+
+graphics
+PASS v4: eight bounded replacements, original ownership/removal, opaque surfaces and immutable authority
+PASS v3 ownership: all ten replacements visible, children removed with parent, roof hidden in cutaway
+PASS desk W1: 580 triangles, original local bounds/authority, 0.3 normal scale, matched engine captures and support removal
+PASS utility props: original metre-scale meshes, second UV buffers/material binding and per-instance removal
+PASS dressing: seven embedded PBR models, second UV AO, metre-scale supported mounts
+PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (352973 changed pixels), three door poses and removal
+PASS prop graphics: all six imported models rendered at metre scale, generated tabletop captures, per-asset fallback and support visibility
+PASS environment graphics: GLB and surfaces rendered (43398 door pixels), inactive hidden, layered breach with surviving studs, immutable world, generated view, missing/corrupt assets, opt-out and repeated lifecycle

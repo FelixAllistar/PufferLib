@@ -202,7 +202,16 @@ The viewer follows its hinged door; other details inherit their wall or desk.
 The three walls between guest rooms now use physical drywall skins and studs.
 Hold **7** to mount a charge and **K** to detonate; the resulting opening is
 shared by bullets, player collision, NPC navigation and network replicas.
-Exterior walls and bathroom partitions retain their authored mesh collision.
+Exterior facades, rear and end walls now have 18 cm masonry cores: current guns
+and the ram cannot remove them or shoot through them; a charge opens a local
+passage. Bathroom partitions use destructible gypsum board. Door/window openings
+remain authored openings, and the original wall textures, trim and mounted props
+follow their physical sections. Concrete and substantial steel resist the current
+charge. Material impact thresholds and thickness-scaled charge resistance live in
+`materials.c`, separately from ballistic resistance. These are game approximations.
+Breach edges are currently rectangular sections; irregular chipped finish/rubble
+and whole-building structural collapse are unfinished. Furniture remains solid
+behind a breach. Floors, roofs, piers and most props are still static.
 See the [dressing and breach review](art_handoffs/motel-dressing-v1/engine/README.md).
 
 At Cedar House, enter through doors or create openings, secure two suspects,

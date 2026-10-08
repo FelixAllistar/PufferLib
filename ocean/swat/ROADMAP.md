@@ -115,7 +115,10 @@ sidearm needs physical-size calibration. The first coherent environment material
 quality pass is integrated; [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md)
 records its scope. Briar Court batch 15 is now a playable authored motel with
 146 instances, original mesh collision, five functional door leaves and network
-replica reconstruction; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). The
+replica reconstruction. Exterior masonry and bathroom partitions now use
+material-aware destructible sections with clipped original art; masonry stops
+gunfire but accepts a local charge breach. Irregular exposed edges, rubble and
+building-scale structural support remain unfinished; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). The
 checks now also cover Morrow Block batch 16: 151 modular placements plus the
 authored street/sidewalk, five functional doors, original static triangle
 collision and actual controller traversal. Original lateral, held crouch and

@@ -33,7 +33,74 @@ static void route(b3Pos* source,int count) {
         printf("capsule route %.2f %.2f -> %.2f %.2f: %.6f\n",(float)from.x,(float)from.z,(float)to.x,(float)to.z,f); fflush(stdout); assert(f>.999f);
     }
 }
+typedef struct WallQuery {SwatWorld* world;int group;} WallQuery;
+static bool wall_only(b3ShapeId shape,void* context) {
+    WallQuery* q=context;SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape));
+    return tag && tag->kind==SWAT_HIT_WORLD && q->world->objects[tag->index].wall_group==q->group;
+}
+static void masonry_ballistics(void) {
+    static SwatSim s,replica;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;
+    swat_sim_init(&s,cfg,81);
+    // Empty rear-wall lane: the target is behind the masonry, before the bathroom partition.
+    b3Pos origin={-6.7f,1.1f,-7};b3Vec3 direction=swat_v(0,0,1);
+    SwatHit hit=swat_world_ray(&s.world,origin,direction,1.5f,b3_nullBodyId);
+    assert(hit.hit && s.world.objects[hit.index].material==SWAT_BRICK);
+    SwatObject* wall=&s.world.objects[hit.index];int group=wall->wall_group;
+    assert(swat_world_breachable(wall));
+    swat_sim_spawn_actor(&s,1,SWAT_CIVILIAN,(b3Pos){-6.7f,.01f,-5.5f},-SWAT_PI*.5f);
+    for(int weapon=0;weapon<SWAT_WEAPON_PROFILES;weapon++) {
+        const SwatWeaponDef* def=swat_weapon_def(weapon);
+        SwatShot shot={.fired=true,.damage=def->damage,.range=def->range,.energy=def->energy};
+        for(int i=0;i<30;i++)swat_sim_shoot(&s,0,origin,direction,shot);
+        assert(s.actors[1].health==100 && wall->health==wall->max_health && wall->active);
+    }
+    assert(!swat_world_impact(&s.world,hit.index,160)); // A ram cannot demolish exterior masonry.
+    b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
+    b3Pos entry={-6.7f,.06f,-6.6f},exit={-6.7f,.06f,-5.4f};
+    WallQuery query={&s.world,group};
+    assert(b3World_CastMover(s.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),wall_only,&query)<.99f);
+    int removed=swat_world_breach(&s.world,hit.index,hit.point),surviving=0;
+    assert(removed>0);
+    for(int i=0;i<s.world.count;i++)surviving+=s.world.objects[i].active && s.world.objects[i].wall_group==group;
+    assert(surviving>0); // A local aperture, not removal of the entire facade.
+    // Isolate the assembly clearance: bathroom fixtures behind it deliberately remain solid.
+    swat_sim_spawn_actor(&s,1,SWAT_CIVILIAN,(b3Pos){-6.7f,.01f,-5},-SWAT_PI*.5f);
+    assert(b3World_CastMover(s.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),wall_only,&query)>.999f);
+    static SwatMap map;static SwatSnapshot snapshot;
+    swat_capture_map(&s,1,&map);swat_capture_snapshot(&s,1,&snapshot);
+    swat_apply_map(&replica,&map);assert(swat_apply_snapshot(&replica,&snapshot));
+    query.world=&replica.world;
+    assert(b3World_CastMover(replica.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),wall_only,&query)>.999f);
+    swat_sim_close(&replica);
+    SwatShot shot={.fired=true,.damage=34,.range=30,.energy=1};
+    swat_sim_shoot(&s,0,origin,direction,shot);assert(s.actors[1].health==66);
+    // Actual unobstructed exterior entry, with all world collisions enabled.
+    entry=(b3Pos){-12.6f,.06f,-1.17f};exit=(b3Pos){-11.4f,.06f,-1.17f};
+    hit=swat_world_ray(&s.world,b3OffsetPos(entry,swat_v(0,1,0)),swat_v(1,0,0),1.2f,b3_nullBodyId);
+    assert(hit.hit && s.world.objects[hit.index].material==SWAT_BRICK);
+    assert(b3World_CastMover(s.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),NULL,NULL)<.99f);
+    assert(swat_world_breach(&s.world,hit.index,hit.point)>0);
+    assert(b3World_CastMover(s.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),NULL,NULL)>.999f);
+    b3Pos next;assert(swat_navigation_next(&s,entry,exit,&next));
+    swat_sim_close(&s);
+    // Every exterior assembly uses masonry; bathroom partitions use board.
+    swat_world_init(&world);swat_motel_build(&world);
+    int assemblies=0;
+    for(int i=SWAT_MOTEL_INSTANCES+1;i<world.count;i++) {
+        SwatObject* o=&world.objects[i];int parent=swat_motel_wall_parent(&world,o);if(parent<0)continue;
+        int asset=swat_motel_instance(parent-1)->asset;
+        assert(o->material==(asset==22?SWAT_DRYWALL:SWAT_BRICK));assert(swat_world_breachable(o));assemblies++;
+    }
+    assert(assemblies>100 && world.count<SWAT_MAX_OBJECTS);
+    SwatObject probe=world.objects[world.count-1];probe.half.x=.09f;probe.material=SWAT_BRICK;assert(swat_world_breachable(&probe));
+    probe.half.x=.3f;assert(!swat_world_breachable(&probe));
+    probe.half.x=.1f;probe.material=SWAT_CONCRETE;assert(!swat_world_breachable(&probe));
+    probe.half.x=.004f;probe.material=SWAT_STEEL;assert(!swat_world_breachable(&probe));
+    printf("PASS masonry: %d pieces/%d objects, all weapon profiles stopped, civilian protected, ram resisted, localized charge aperture/capsule/replica, strength and thickness limits\n",assemblies,world.count);
+    swat_world_close(&world);
+}
 int main(void) {
+    masonry_ballistics();
     swat_world_init(&world); swat_motel_build(&world); assert(world.motel && world.count>SWAT_MOTEL_INSTANCES+1 && world.room_count==6);
     utility_hits(&world);
     for(int i=0;i<SWAT_MOTEL_DRESSING_INSTANCES;i++) {
