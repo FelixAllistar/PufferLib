@@ -164,8 +164,43 @@ static void live_squad_and_evacuation(void) {
     swat_sim_close(&s);
     puts("PASS motel live route: squad opens front door and crosses furnished room; restrained civilian physically follows to staging and stays evacuated");
 }
+static void live_breach_routes(void) {
+    static SwatSim s;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;swat_config_human(&cfg);
+    cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=6000;
+    const b3Pos starts[]={{-12.7f,0,-1.17f},{-4.6f,.02f,-1.17f}};
+    const b3Pos goals[]={{-11.0f,.02f,-1.17f},{-3.1f,.02f,-1.17f}};
+    for(int route=0;route<2;route++) {
+        swat_sim_init(&s,cfg,81);
+        for(int i=1;i<s.actor_count;i++)if(s.actors[i].present) {
+            if(s.actors[i].role==SWAT_OFFICER)s.actors[i].mind.order=SWAT_ORDER_HOLD;
+            else s.actors[i].gear.surrendered=true;
+        }
+        // Block door detours: only the physical opening can connect these goals.
+        for(int i=0;i<s.world.count;i++)if(s.world.objects[i].door)s.world.objects[i].wedge_owner=0;
+        s.world.generation++;
+        SwatActor* a=&s.actors[3];SwatController* c=&a->controller;
+        b3Body_SetTransform(c->body.body,b3OffsetPos(starts[route],swat_v(0,c->body.totalHeight*.5f+.01f,0)),b3Quat_identity);
+        b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0));c->yaw=0;
+        a->mind.order=SWAT_ORDER_MOVE;a->mind.goal=goals[route];
+        for(int t=0;t<120;t++)swat_sim_step(&s,&(SwatInput){0});
+        b3Pos feet=swat_body_feet_position(&c->body);
+        assert(feet.x<starts[route].x+.15f);
+        SwatHit wall=swat_world_ray(&s.world,b3OffsetPos(feet,swat_v(0,1,0)),swat_v(1,0,0),1.5f,c->body.body);
+        assert(wall.hit && wall.kind==SWAT_HIT_WORLD && swat_world_breachable(&s.world.objects[wall.index]));
+        assert(swat_world_breach(&s.world,wall.index,wall.point)>0);
+        int t=0;for(;t<900;t++) {
+            swat_sim_step(&s,&(SwatInput){0});feet=swat_body_feet_position(&c->body);
+            if(b3Distance(feet,goals[route])<.5f)break;
+        }
+        printf("Motel live %s breach after %d ticks: %.3f %.3f %.3f\n",route?"inter-room":"exterior",t,(float)feet.x,(float)feet.y,(float)feet.z);fflush(stdout);
+        assert(t<900 && a->health==100);
+        swat_sim_close(&s);
+    }
+    puts("PASS motel breach movement: wedged doors prevent detours; actual squad controller crosses exterior masonry and inter-room openings after destruction without teleporting");
+}
 int main(void) {
     live_squad_and_evacuation();
+    live_breach_routes();
     masonry_ballistics();
     swat_world_init(&world); swat_motel_build(&world); assert(world.motel && world.count>SWAT_MOTEL_INSTANCES+1 && world.room_count==6);
     utility_hits(&world);

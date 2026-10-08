@@ -67,6 +67,14 @@ and reception art handoffs. Shared the review on Slack (`F0C7N974YQ5`). The arti
 is preparing an open-ended east perimeter fence and Room 103 variation; these are
 not integrated yet. No claim of learned tactical behavior or a finished slice.
 
+Alternative-route regression: with all doors wedged, the normal squad controller
+remains blocked until destruction opens an exterior reception wall or guest-room
+party wall, then physically crosses each opening. Linux and native Windows pass
+(166 ticks exterior, 34 ticks inter-room). This tests traversal of the shared
+breach result; charge placement/detonation has separate tactical/network tests.
+Next gameplay priority is genuine Stack/Clear semantics and separated squad goals;
+current single-point orders can still pile teammates together.
+
 ## Landed: playable foundation
 
 - Motel: seven supported detail props in each guest room; three inter-room
