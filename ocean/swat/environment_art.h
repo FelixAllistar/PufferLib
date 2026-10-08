@@ -25,6 +25,7 @@ typedef struct SwatEnvironmentArt {
     bool initialized;
     int location; // Only the current mission's module bank resides on the GPU.
     bool lit;
+    int shadow_room; // Set by depth callbacks; -1 for sun/contact passes.
     Texture2D plaster,wood;
     float plaster_tile_metres;
     bool legacy_plaster;
@@ -46,6 +47,8 @@ typedef struct SwatEnvironmentArt {
     Model room101_v4[SWAT_ROOM101_V4_ASSETS];
     float room101_v4_normal_scale[SWAT_ROOM101_V4_ASSETS][SWAT_ROOM101_MATERIALS];
     bool room101_v4_ready;
+    Model masonry_edge;
+    float masonry_edge_normal_scale[SWAT_ROOM101_MATERIALS];
     Model room101_desk;
     float room101_desk_normal_scale[SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];

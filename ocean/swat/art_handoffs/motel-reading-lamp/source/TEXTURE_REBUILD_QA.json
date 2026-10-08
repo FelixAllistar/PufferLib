@@ -1,0 +1,41 @@
+{
+  "all_byte_exact": true,
+  "files": [
+    {
+      "file": "satin_steel_basecolor.png",
+      "byte_exact": true
+    },
+    {
+      "file": "satin_steel_normal_gl.png",
+      "byte_exact": true
+    },
+    {
+      "file": "satin_steel_roughmetal.png",
+      "byte_exact": true
+    },
+    {
+      "file": "switch_charcoal_basecolor.png",
+      "byte_exact": true
+    },
+    {
+      "file": "switch_charcoal_normal_gl.png",
+      "byte_exact": true
+    },
+    {
+      "file": "switch_charcoal_roughmetal.png",
+      "byte_exact": true
+    },
+    {
+      "file": "warm_ivory_basecolor.png",
+      "byte_exact": true
+    },
+    {
+      "file": "warm_ivory_normal_gl.png",
+      "byte_exact": true
+    },
+    {
+      "file": "warm_ivory_roughmetal.png",
+      "byte_exact": true
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "package": "motel_bedside_reading_lamp_v1",
+  "asset_id": "mb01_bedside_reading_lamp",
+  "license": "CC0-1.0",
+  "authoring": "Original procedural mesh and analytic textures, Blender 4.3.2",
+  "units": "metres",
+  "pivot": "rear mount-plane center",
+  "axes": "Blender +Z up, -Y outward; GLB +Y up, +Z outward",
+  "source_dimensions_width_height_depth_m": [
+    0.10999999940395355,
+    0.19806138798594475,
+    0.19575481116771698
+  ],
+  "lods": [
+    {
+      "file": "mb01_bedside_reading_lamp_lod0.glb",
+      "triangles": 952,
+      "export_vertices": 1256,
+      "bytes": 280336,
+      "sha256": "3bf5c5316d975b80a8115eed87ec71ff26d4aef504ffc9577b150935af614249",
+      "dimensions_gltf_xyz_m": [
+        0.10999999940395355,
+        0.19806139353354488,
+        0.19575480402151046
+      ]
+    },
+    {
+      "file": "mb01_bedside_reading_lamp_lod1.glb",
+      "triangles": 378,
+      "export_vertices": 652,
+      "bytes": 242844,
+      "sha256": "c12be317e788215053b4f346569fd4961ce6cfb11d859d500adcc6156c7e3ae8",
+      "dimensions_gltf_xyz_m": [
+        0.11011681705713272,
+        0.19771910533960355,
+        0.19580981777547446
+      ]
+    }
+  ],
+  "material_count": 3,
+  "mesh_parts": 8,
+  "texture_resolution": [
+    512,
+    512
+  ],
+  "uv0": "UV_Material, repeat 0.25m planar projection",
+  "uv1": "UV_AO, independent packed atlas; AO separate from roughmetal",
+  "anchor": "ANCHOR_bulb_light, empty only; local -Z through opening",
+  "actual_lights": 0,
+  "collision": "none; engine decision",
+  "placement": "proposal only: fixed wall beside headboard outside wall print; no exact Room101 coordinates",
+  "integration": "art candidate; engine acceptance untested"
+}

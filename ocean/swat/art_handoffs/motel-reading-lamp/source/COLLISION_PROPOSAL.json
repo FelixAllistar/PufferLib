@@ -1,0 +1,8 @@
+{
+  "status": "proposal only; no collision exported",
+  "owner": "fixed wall fixture assembly, never door or movable furniture",
+  "suggestion": "Normally omit physical collision for this small visual prop; engine may choose a simple coarse proxy if gameplay requires it",
+  "support_removal": "Engine must decide fixture removal/attachment when its wall support is removed; no persistence/destruction implementation in art",
+  "lighting": "Engine owns bulb/light type, intensity, color temperature, range, shadow casting and budget; no light exists in GLBs",
+  "switch": "Visible static pushbutton only; no interaction, electrical connection or gameplay state"
+}

@@ -1,0 +1,22 @@
+{
+  "reviewed": [
+    "01_glb_reimport_detail.png",
+    "02_glb_reimport_context.png",
+    "03_cut_face.png",
+    "04_packet_after_8_edges.png",
+    "04_packet_before_8_edges.png"
+  ],
+  "findings": [
+    "Single warm-grey exposed cement core with restrained mineral grain and mortar marks.",
+    "Chipped plaster edge stays in 40mm surviving-wall band, with only authorized 1.5mm cap overlap into aperture.",
+    "All eight packet instances compose a continuous left/right/top edge; no floor or rubble strip.",
+    "Matching existing plaster material removes added-white-trim appearance in contextual render.",
+    "Before condition restores all 24 sections and hides all eight strips."
+  ],
+  "limits": [
+    "Preview is a Blender reimport with simple exact-section boxes, not a native engine capture.",
+    "Repeated designed chip profile is intentionally one reusable asset, not random variants.",
+    "Engine lifecycle and physics regressions remain engine-owner integration work."
+  ],
+  "status": "VISUAL_QA_PASS"
+}

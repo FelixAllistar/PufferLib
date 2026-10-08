@@ -1,0 +1,20 @@
+{
+  "basis": "Parent completed catalog r007 and motel assembly gap check before task; local assets.csv reviewed",
+  "existing_categories": [
+    "generic table lamp 256 triangles, 340x605x340mm",
+    "generic toggle/outlets",
+    "ceiling domes",
+    "exterior ribbed sconce"
+  ],
+  "gap": "No bedside wall fixture or nightstand in current motel assembly; integral button avoids adding furniture",
+  "new_design_count": 1,
+  "runtime_lod_files": 2,
+  "not_added": [
+    "nightstand",
+    "bulb mesh",
+    "engine light",
+    "interaction",
+    "room-placement edit",
+    "new material download"
+  ]
+}

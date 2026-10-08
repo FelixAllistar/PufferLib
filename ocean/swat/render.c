@@ -233,7 +233,7 @@ static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
 }
 
 static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway) {
-    SwatView* view=context;
+    SwatView* view=context;view->environment.shadow_room=view->lighting.shadow_room;
     for(int i=0;i<sim->world.count;i++) {
         const SwatObject* o=&sim->world.objects[i];
         if(!o->active || o->material==SWAT_GLASS) continue;
@@ -249,6 +249,7 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
         else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);
         rlPopMatrix();
     }
+    view->environment.shadow_room=-1;
 }
 static void swat_draw_shadow_actors(void* context,const SwatSim* sim,bool cutaway) {
     SwatView* view=context;if(cutaway)return;

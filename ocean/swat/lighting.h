@@ -9,7 +9,7 @@
 typedef struct SwatLightingProgram {
     Shader shader;
     int lamp_shadows;
-    int camera,sun_matrix,sun_map,lamp_map,rooms,centers,halves,origins,exposure;
+    int camera,sun_matrix,sun_map,lamp_map,rooms,centers,halves,origins,room_power,room_direction,exposure;
     int lamp_matrix[SWAT_LAMP_FACES];
     int orm,pbr,normal_map,roughness,metalness,spec_gloss;
     int environment,environment_normal,environment_normal_map,environment_roughness_map;

@@ -1,0 +1,4 @@
+CC0 1.0 Universal
+Original mesh geometry, analytic texture maps, baked AO, scripts and renders in this package are dedicated to the public domain to the extent permitted by law.
+https://creativecommons.org/publicdomain/zero/1.0/
+No external photographs, downloaded meshes, logos or trademarks are bundled. This is an original generic visual fixture, not a certified electrical product or engineering reproduction. No trademark, patent or product-safety rights are granted.

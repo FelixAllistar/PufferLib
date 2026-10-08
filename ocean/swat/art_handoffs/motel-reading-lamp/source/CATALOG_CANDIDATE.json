@@ -1,0 +1,13 @@
+{
+  "status": "new unpublished candidate; existing catalog untouched",
+  "asset_id": "mb01_bedside_reading_lamp",
+  "display_name": "Motel bedside wall reading lamp with pushbutton",
+  "category": "environment / motel / wall lighting",
+  "design_count": 1,
+  "lod_count": 2,
+  "package": "motel_bedside_reading_lamp_v1_CC0.zip",
+  "source": "motel_bedside_reading_lamp_v1.blend",
+  "preview": "previews/neutral_glb_reimport_lod0.png",
+  "license": "CC0-1.0",
+  "engine_implemented": false
+}

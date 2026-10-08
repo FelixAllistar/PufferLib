@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "blender_version": "4.3.2",
+  "mesh_parts": 8,
+  "anchor": "ANCHOR_bulb_light",
+  "source_lights": 0,
+  "source_cameras": 0,
+  "root_identity": true,
+  "scale_length": 1,
+  "images": [
+    {
+      "name": "mb01_bedside_reading_lamp_AO",
+      "path": "//textures/mb01_bedside_reading_lamp_ao.png",
+      "exists": true
+    },
+    {
+      "name": "satin_steel_basecolor.png",
+      "path": "//textures/satin_steel_basecolor.png",
+      "exists": true
+    },
+    {
+      "name": "satin_steel_normal_gl.png",
+      "path": "//textures/satin_steel_normal_gl.png",
+      "exists": true
+    },
+    {
+      "name": "satin_steel_roughmetal.png",
+      "path": "//textures/satin_steel_roughmetal.png",
+      "exists": true
+    },
+    {
+      "name": "switch_charcoal_basecolor.png",
+      "path": "//textures/switch_charcoal_basecolor.png",
+      "exists": true
+    },
+    {
+      "name": "switch_charcoal_normal_gl.png",
+      "path": "//textures/switch_charcoal_normal_gl.png",
+      "exists": true
+    },
+    {
+      "name": "switch_charcoal_roughmetal.png",
+      "path": "//textures/switch_charcoal_roughmetal.png",
+      "exists": true
+    },
+    {
+      "name": "warm_ivory_basecolor.png",
+      "path": "//textures/warm_ivory_basecolor.png",
+      "exists": true
+    },
+    {
+      "name": "warm_ivory_normal_gl.png",
+      "path": "//textures/warm_ivory_normal_gl.png",
+      "exists": true
+    },
+    {
+      "name": "warm_ivory_roughmetal.png",
+      "path": "//textures/warm_ivory_roughmetal.png",
+      "exists": true
+    }
+  ]
+}

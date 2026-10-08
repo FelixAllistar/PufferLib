@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "exports": [
+    {
+      "file": "mb01_bedside_reading_lamp_lod0.glb",
+      "self_contained": true,
+      "lights": 0,
+      "cameras": 0,
+      "animations": 0,
+      "mesh_parts": 8,
+      "materials": 3,
+      "empty_anchor": true,
+      "identity_root": true,
+      "triangles": 952
+    },
+    {
+      "file": "mb01_bedside_reading_lamp_lod1.glb",
+      "self_contained": true,
+      "lights": 0,
+      "cameras": 0,
+      "animations": 0,
+      "mesh_parts": 8,
+      "materials": 3,
+      "empty_anchor": true,
+      "identity_root": true,
+      "triangles": 378
+    }
+  ],
+  "ao_min": 0,
+  "ao_max": 255,
+  "ao_mean": 210.04344940185547,
+  "note": "AO statistics verify nonblank output, not bake accuracy."
+}

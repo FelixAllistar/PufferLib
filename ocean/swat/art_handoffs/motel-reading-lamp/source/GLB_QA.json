@@ -1,0 +1,280 @@
+[
+  {
+    "file": "mb01_bedside_reading_lamp_lod0.glb",
+    "sha256": "8c58694c2bf99b8f48504caf777295b127a8f7bb57f33e0afd902813825d3941",
+    "bytes": 280336,
+    "triangles": 952,
+    "export_vertices": 1256,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.054999999701976776,
+        -0.05999999865889549,
+        0.0
+      ],
+      [
+        0.054999999701976776,
+        0.13806139487464938,
+        0.19575480402151046
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.10999999940395355,
+      0.19806139353354488,
+      0.19575480402151046
+    ],
+    "images": [
+      {
+        "name": "satin_steel_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "warm_ivory_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "warm_ivory_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "warm_ivory_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "switch_charcoal_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "switch_charcoal_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "switch_charcoal_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mb01_bedside_reading_lamp_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "arm_wall_socket",
+        "triangles": 60,
+        "normal_tangent_orthogonality_max": 2.9802322387695312e-08
+      },
+      {
+        "name": "fixed_arm_rise",
+        "triangles": 44,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "fixed_arm_shade_link",
+        "triangles": 44,
+        "normal_tangent_orthogonality_max": 0.0
+      },
+      {
+        "name": "formed_wall_backplate",
+        "triangles": 108,
+        "normal_tangent_orthogonality_max": 6.073713302612305e-05
+      },
+      {
+        "name": "opaque_ivory_shade",
+        "triangles": 448,
+        "normal_tangent_orthogonality_max": 0.00010538101196289062
+      },
+      {
+        "name": "pushbutton_charcoal",
+        "triangles": 60,
+        "normal_tangent_orthogonality_max": 2.9802322387695312e-08
+      },
+      {
+        "name": "pushbutton_metal_bezel",
+        "triangles": 128,
+        "normal_tangent_orthogonality_max": 9.31471586227417e-05
+      },
+      {
+        "name": "shade_neck_cap",
+        "triangles": 60,
+        "normal_tangent_orthogonality_max": 2.9802322387695312e-08
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  },
+  {
+    "file": "mb01_bedside_reading_lamp_lod1.glb",
+    "sha256": "bb0c03cd5bfa6027f1e3514fb87177133bf5ecd1aa54551c4f40db3f42328190",
+    "bytes": 242844,
+    "triangles": 378,
+    "export_vertices": 652,
+    "bounds_gltf_xyz_m": [
+      [
+        -0.05505840852856636,
+        -0.05964747071266174,
+        0.0
+      ],
+      [
+        0.05505840852856636,
+        0.1380716346269418,
+        0.19580981777547446
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.11011681705713272,
+      0.19771910533960355,
+      0.19580981777547446
+    ],
+    "images": [
+      {
+        "name": "satin_steel_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "satin_steel_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "warm_ivory_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "warm_ivory_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "warm_ivory_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "switch_charcoal_normal_gl",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "switch_charcoal_roughmetal",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "switch_charcoal_basecolor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "mb01_bedside_reading_lamp_AO_separate",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "parts": [
+      {
+        "name": "arm_wall_socket_LOD1",
+        "triangles": 30,
+        "normal_tangent_orthogonality_max": 8.632242679595947e-05
+      },
+      {
+        "name": "fixed_arm_rise_LOD1",
+        "triangles": 22,
+        "normal_tangent_orthogonality_max": 8.58604907989502e-05
+      },
+      {
+        "name": "fixed_arm_shade_link_LOD1",
+        "triangles": 22,
+        "normal_tangent_orthogonality_max": 4.64320182800293e-05
+      },
+      {
+        "name": "formed_wall_backplate_LOD1",
+        "triangles": 38,
+        "normal_tangent_orthogonality_max": 7.790327072143555e-05
+      },
+      {
+        "name": "opaque_ivory_shade_LOD1",
+        "triangles": 160,
+        "normal_tangent_orthogonality_max": 9.611248970031738e-05
+      },
+      {
+        "name": "pushbutton_charcoal_LOD1",
+        "triangles": 30,
+        "normal_tangent_orthogonality_max": 8.994340896606445e-05
+      },
+      {
+        "name": "pushbutton_metal_bezel_LOD1",
+        "triangles": 46,
+        "normal_tangent_orthogonality_max": 8.440017700195312e-05
+      },
+      {
+        "name": "shade_neck_cap_LOD1",
+        "triangles": 30,
+        "normal_tangent_orthogonality_max": 0.00011739134788513184
+      }
+    ],
+    "checks": "PASS: binary bounds, finite attributes, welded manifold topology, positive signed volume, nondegenerate triangles, unit normals/tangents, tangent orthogonality, UV1 range, PBR factors, separate AO UV1, textures <=1K, ownership"
+  }
+]

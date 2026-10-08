@@ -79,6 +79,26 @@ int swat_motel_wall_parent(const SwatWorld* w,const SwatObject* piece) {
     }
     return -1;
 }
+int swat_motel_wall_edges(const SwatWorld* w,const SwatObject* o,SwatMotelEdge* edges,int capacity) {
+    if(!o->active || o->material!=SWAT_BRICK || swat_motel_wall_parent(w,o)<0)return 0;
+    int count=0;float c=cosf(o->yaw),s=sinf(o->yaw);
+    for(int i=o->wall_group-1;i<w->count && w->objects[i].wall_group==o->wall_group;i++) {
+        const SwatObject* n=&w->objects[i];if(n->active || n->part!=SWAT_PART_SKIN)continue;
+        b3Vec3 d=b3SubPos(n->center,o->center);float y=d.y,z=s*d.x+c*d.z;
+        float ly=0,lz=0,length=0,roll=0;
+        if(fabsf(fabsf(y)-o->half.y-n->half.y)<.0001f) {
+            float lo=fmaxf(-o->half.z,z-n->half.z),hi=fminf(o->half.z,z+n->half.z);
+            length=hi-lo;lz=(hi+lo)*.5f;ly=copysignf(o->half.y,y);roll=y>0?SWAT_PI:0;
+        } else if(fabsf(fabsf(z)-o->half.z-n->half.z)<.0001f) {
+            float lo=fmaxf(-o->half.y,y-n->half.y),hi=fminf(o->half.y,y+n->half.y);
+            length=hi-lo;ly=(hi+lo)*.5f;lz=copysignf(o->half.z,z);roll=z>0?-SWAT_PI*.5f:SWAT_PI*.5f;
+        }
+        if(length<.0001f)continue;
+        if(count>=capacity)return count;
+        edges[count++]=(SwatMotelEdge){o->tag.index,i,b3OffsetPos(o->center,swat_v(s*lz,ly,c*lz)),o->yaw,roll,length,2*o->half.x};
+    }
+    return count;
+}
 static int float_order(const void* a,const void* b) {float x=*(const float*)a,y=*(const float*)b;return (x>y)-(x<y);}
 static void wall_cut(float* cuts,int* count,float v) {
     // Source bevels are 3 mm. Snap their paired edges to the structural datum.
@@ -150,7 +170,7 @@ void swat_motel_build(SwatWorld* w) {
 
 int swat_motel_dressing_parent(int index) {
     if(index<0 || index>=SWAT_MOTEL_DRESSING_INSTANCES)return -1;
-    const int owners[]={14,14,24,24,20,16,105};
+    const int owners[]={14,14,24,24,20,16,105,20};
     int room=index/SWAT_MOTEL_DRESSING_ASSETS,kind=index%SWAT_MOTEL_DRESSING_ASSETS;
     return owners[kind]+room*(kind==6?1:24);
 }
@@ -174,6 +194,7 @@ int swat_motel_dressing(const SwatWorld* w,int index,SwatMotelInstance* p) {
         p->origin=b3OffsetPos(door->hinge,swat_v(.54f*cosf(p->yaw)+.0345f*sinf(p->yaw),1.6f-door->half.y,-.54f*sinf(p->yaw)+.0345f*cosf(p->yaw)));
         break;
     }
+    case 7: p->origin=(b3Pos){x+1.35f,1.25f,-3.938f};break;
     case 6:
         p->origin=(b3Pos){x-1.885f,.99f,-.95f};p->yaw=SWAT_PI*.5f;break;
     }
@@ -196,4 +217,13 @@ int swat_motel_dressing(const SwatWorld* w,int index,SwatMotelInstance* p) {
         return s->active?i:-1;
     }
     return -1;
+}
+
+bool swat_motel_lamp(const SwatWorld* w,int room,b3Pos* origin) {
+    if(!w->motel || room<1 || room>4)return false;
+    SwatMotelInstance p;int owner=swat_motel_dressing(w,(room-1)*SWAT_MOTEL_DRESSING_ASSETS+7,&p);
+    if(owner<0)return false;
+    // ANCHOR_bulb_light from the accepted identity-root GLB, in metres.
+    *origin=b3OffsetPos(p.origin,swat_v(.12970687f*sinf(p.yaw),.08959322f,.12970687f*cosf(p.yaw)));
+    return true;
 }

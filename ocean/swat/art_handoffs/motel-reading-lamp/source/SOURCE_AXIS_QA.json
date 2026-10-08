@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "Blender_local_positive_y_through_opening": [
+    0.0,
+    -0.3420201241970062,
+    -0.9396926760673523
+  ],
+  "quaternion_wxyz": [
+    0.5735764503479004,
+    -0.8191520571708679,
+    0.0,
+    0.0
+  ],
+  "texture_dependency": "../motel_bedside_reading_lamp_v1/textures; keep original package alongside this additive correction",
+  "corrected_source_reexport_anchor_xyzw": [
+    -0.8191520571708679,
+    0,
+    0,
+    0.5735764503479004
+  ],
+  "relative_textures_resolve": true
+}

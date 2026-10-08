@@ -1,4 +1,5 @@
 #include "sim.h"
+#include "motel.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +26,25 @@ static void print_plan(const SwatLayout* p) {
     printf("],\"rooms\":%d,\"width\":%.1f,\"depth\":%.1f,\"furniture\":%d,\"path_length\":%.4f,\"quality\":%.6f,\"valid\":true}\n",
         p->room_count,p->width,p->depth,p->furniture_count,p->path_length,p->quality);
 }
+static int motel_walls(void) {
+    static SwatWorld w;swat_world_init(&w);swat_motel_build(&w);
+    const SwatMotelInstance* p=swat_motel_instance(13);int group=w.objects[14].wall_group;
+    SwatHit hit=swat_world_ray(&w,(b3Pos){-6.7f,1,-7},swat_v(0,0,1),2,b3_nullBodyId);
+    if(!hit.hit || !swat_world_breach(&w,hit.index,hit.point))return 1;
+    printf("{\"format\":1,\"parent\":14,\"units\":\"metres\",\"source_origin\":[%.6f,%.6f,%.6f],\"source_yaw\":%.6f,\"source_scale\":[%.6f,%.6f,%.6f],\"sections\":[",(double)p->origin.x,(double)p->origin.y,(double)p->origin.z,p->yaw,p->scale.x,p->scale.y,p->scale.z);
+    int count=0;for(int i=group-1;i<w.count && w.objects[i].wall_group==group;i++) {
+        SwatObject* o=&w.objects[i];b3Vec3 d=b3SubPos(o->center,p->origin);float x=cosf(p->yaw)*d.x-sinf(p->yaw)*d.z;
+        printf("%s{\"id\":%d,\"center_world\":[%.6f,%.6f,%.6f],\"half_wall_xyz\":[%.6f,%.6f,%.6f],\"yaw\":%.6f,\"source_xy_bounds\":[%.6f,%.6f,%.6f,%.6f],\"survives\":%s}",count++?",":"",i,(double)o->center.x,(double)o->center.y,(double)o->center.z,o->half.x,o->half.y,o->half.z,o->yaw,x-o->half.z,d.y-o->half.y,x+o->half.z,d.y+o->half.y,o->active?"true":"false");
+    }
+    printf("],\"edges\":[");count=0;
+    for(int i=group-1;i<w.count && w.objects[i].wall_group==group;i++) {
+        SwatMotelEdge edges[32];int n=swat_motel_wall_edges(&w,&w.objects[i],edges,32);
+        for(int k=0;k<n;k++){SwatMotelEdge* e=&edges[k];printf("%s{\"owner\":%d,\"removed_neighbor\":%d,\"origin\":[%.6f,%.6f,%.6f],\"yaw\":%.6f,\"roll\":%.6f,\"length\":%.6f,\"depth\":%.6f}",count++?",":"",e->owner,e->neighbor,(double)e->origin.x,(double)e->origin.y,(double)e->origin.z,e->yaw,e->roll,e->length,e->depth);}
+    }
+    puts("]}");swat_world_close(&w);return 0;
+}
 int main(int argc,char** argv) {
+    if(argc==2 && !strcmp(argv[1],"motel-walls"))return motel_walls();
     const char* command=argc>1 ? argv[1] : "";
     for(int i=2;i<argc;i++) if(!strcmp(argv[i],"--model")) {
         if(i+1>=argc || !swat_layout_load_policy(argv[i+1])) { fprintf(stderr,"Invalid layout model.\n"); return 2; }
@@ -81,6 +100,6 @@ int main(int argc,char** argv) {
         printf("{\"checked\":%u,\"maximum_objects\":%d,\"room_counts\":[%d,%d,%d],\"mean_bootstrap_quality\":%.6f}\n",first,largest,histogram[0],histogram[1],histogram[2],quality/first);
         return 0;
     }
-    fprintf(stderr,"usage: layout_tool corpus COUNT SEED | sample SEED DIFFICULTY [uniform|neural] | evaluate TOKENS DIFFICULTY | logits DIFFICULTY STEP PREFIX | check COUNT [uniform|neural] [--model PATH]\n");
+    fprintf(stderr,"usage: layout_tool motel-walls | corpus COUNT SEED | sample SEED DIFFICULTY [uniform|neural] | evaluate TOKENS DIFFICULTY | logits DIFFICULTY STEP PREFIX | check COUNT [uniform|neural] [--model PATH]\n");
     return 2;
 }

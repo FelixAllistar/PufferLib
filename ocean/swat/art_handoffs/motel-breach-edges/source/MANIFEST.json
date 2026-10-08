@@ -1,0 +1,182 @@
+{
+  "asset": "ME01_masonry_edge_strip",
+  "runtime": "motel_breach_v1/masonry_edge.glb",
+  "asset_status": "local QA complete; engine integration pending",
+  "files": [
+    {
+      "path": "CHANNEL_QA.json",
+      "bytes": 2950,
+      "sha256": "a6c28f01706fe1e60eb6c34c538650eb3b3a5737fee2d5a0f1eb54a14106d812"
+    },
+    {
+      "path": "GLB_QA.json",
+      "bytes": 2231,
+      "sha256": "688ba346f01926039482ede58636be8f1fb4356f36ce39c98590e7a41f00a08a"
+    },
+    {
+      "path": "INSTANCE_QA.json",
+      "bytes": 5866,
+      "sha256": "08c7356a7361ac6d02afc63951a180d51522a0572fb098d2a1f85b2dbd76bd6f"
+    },
+    {
+      "path": "LICENSE.txt",
+      "bytes": 344,
+      "sha256": "9b80def634ba8dcd795b5b53e623a956b289cb4b5851ba3c6971ea7a9b301f4c"
+    },
+    {
+      "path": "PACKET_CONTRACT_QA.json",
+      "bytes": 3801,
+      "sha256": "1dc9b095e881d8c7539e98162faab31acb3a4e09b2315dd971ce72cce44bd3b4"
+    },
+    {
+      "path": "PROVENANCE.json",
+      "bytes": 1096,
+      "sha256": "3ee3568b11e553d4b2e34cc463e67554df4e9484046a72d9a59ca84888166bb7"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3389,
+      "sha256": "3538a2028f8a68ce2e1e3a1cb21f1cce0fe9477e8f5930ec829ea642b915dcff"
+    },
+    {
+      "path": "REBUILD_QA.json",
+      "bytes": 213,
+      "sha256": "63f18adab97e70172bf5f8680104c92961e676ba432b7d05a70dea26d1c92194"
+    },
+    {
+      "path": "SOURCE_QA.json",
+      "bytes": 257,
+      "sha256": "0472ad677aaeaf6f0fa81aaf2c27a8cbaadf3ed0157261ee79db0ebbae61ecbf"
+    },
+    {
+      "path": "VISUAL_REVIEW.json",
+      "bytes": 1022,
+      "sha256": "eb713ea5b2934b4edf0e949515eabbb32ee04e0c173fd29d54073a730e0c528c"
+    },
+    {
+      "path": "audit_glb.py",
+      "bytes": 2553,
+      "sha256": "642783cb7192012e459c95c79e64e18fb61a82eb81fff91a35b7ded05fd6c1b1"
+    },
+    {
+      "path": "build_strip.py",
+      "bytes": 4816,
+      "sha256": "60c8ebf74e5367698d89932f4aa48cb368d5854da83d8c1ab2a4190315673e9d"
+    },
+    {
+      "path": "check_channels.py",
+      "bytes": 1296,
+      "sha256": "076270fea53d9fe63c6565cc779f8b6c17754f5f61462daf3040716821119a64"
+    },
+    {
+      "path": "check_instances.py",
+      "bytes": 1798,
+      "sha256": "a86a25e9c7b14b92e4d2016188b6a8fa46036c86fffad6047bfeb3ba1c96c995"
+    },
+    {
+      "path": "check_source.py",
+      "bytes": 1060,
+      "sha256": "56adeb29f385961f49dde320d40a1fcd7eb13406b237f9dd16e6346545420cf4"
+    },
+    {
+      "path": "evidence/rear-wall.json",
+      "bytes": 5919,
+      "sha256": "5317b67607e6779e73ad2210907fcb4f2163b82277db4afe8d813c7ea64f5390"
+    },
+    {
+      "path": "make_textures.py",
+      "bytes": 1342,
+      "sha256": "836a3f251f0f44945dc24cbc0c29d67bd162340d3218d55dd3a61f3831154c31"
+    },
+    {
+      "path": "masonry_edge_strip.blend",
+      "bytes": 5115265,
+      "sha256": "7d07ccb47088173b530effb4eb27787b402625849eec18c275ceb0261b805d85"
+    },
+    {
+      "path": "motel_breach_v1/masonry_edge.glb",
+      "bytes": 4960336,
+      "sha256": "d2836227b66c7425270024f1a000ce1d87eeedce51417894de689a5e6fa01d35"
+    },
+    {
+      "path": "package.py",
+      "bytes": 1663,
+      "sha256": "73ec5846a460e28b3f578422fae01725e092f9ec99ddae9ed82ba33f12f82bce"
+    },
+    {
+      "path": "previews/01_glb_reimport_detail.png",
+      "bytes": 651315,
+      "sha256": "b59d56061bbe759bd4b7e517c384781c3db28b6017074b4c45e5dbe6d0074c19"
+    },
+    {
+      "path": "previews/02_glb_reimport_context.png",
+      "bytes": 821623,
+      "sha256": "bd18db9096368af3e492dcae779d6bb3ddb17f1057b42d6115ecf0b836d0e6ff"
+    },
+    {
+      "path": "previews/03_cut_face.png",
+      "bytes": 683340,
+      "sha256": "04e7e42f9606cebc0d5f4d436dfa0de118f764920fc24b5b70afdef188be8057"
+    },
+    {
+      "path": "previews/04_packet_after_8_edges.png",
+      "bytes": 994027,
+      "sha256": "e9eb526f0142c83c309817885b645a399f8522b378d2be6177ab9e923b2b4c17"
+    },
+    {
+      "path": "previews/04_packet_before_8_edges.png",
+      "bytes": 1056519,
+      "sha256": "019fbba10ef5deba4df05c2240c9b6b099464099739f8aa00603591fbf2ed59b"
+    },
+    {
+      "path": "render_packet.py",
+      "bytes": 3204,
+      "sha256": "9f4aeae80c74d2a248dd59d5f550bbc16977e67ff43cdab8526f998e6660e185"
+    },
+    {
+      "path": "render_strip.py",
+      "bytes": 2057,
+      "sha256": "5c69b468b99d34fc9c820dbb57e624b89ef86f676b39e3fe43e5d5e35f2fa5fe"
+    },
+    {
+      "path": "seal_channels.py",
+      "bytes": 1216,
+      "sha256": "5a77b5e7fbf47590da79272c85752ad90fbd059ef604c0f8b84cb3ce41b18232"
+    },
+    {
+      "path": "textures/masonry_basecolor.png",
+      "bytes": 245895,
+      "sha256": "1698e0a6a3b90b50af44be9030afade83bbdb66c6db6446a058a29ad56966d49"
+    },
+    {
+      "path": "textures/masonry_normal_gl.png",
+      "bytes": 352896,
+      "sha256": "3bdb24a164ec593fe1fa3861cecb4b2a57be278211036a65ea719639800882e3"
+    },
+    {
+      "path": "textures/masonry_roughmetal.png",
+      "bytes": 216227,
+      "sha256": "05f3acd5e6990e39e80b3ba5e0f9c6e521cba3e22e665041c21abb41618c9b2c"
+    },
+    {
+      "path": "textures/neutral_ao.png",
+      "bytes": 77,
+      "sha256": "6e5edb15b6bed556ae7e6c4e156378ddb721f066f5f0e523a61106080ef8be08"
+    },
+    {
+      "path": "textures/white_plaster_02_restrained_basecolor.png",
+      "bytes": 1296610,
+      "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167"
+    },
+    {
+      "path": "textures/white_plaster_02_restrained_roughness.png",
+      "bytes": 424539,
+      "sha256": "54ac875abbc21081f0126adc56cdab7042106d77c233598ad8382106c39b6c76"
+    },
+    {
+      "path": "textures/white_plaster_02_runtime_normal.png",
+      "bytes": 1998380,
+      "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a"
+    }
+  ]
+}

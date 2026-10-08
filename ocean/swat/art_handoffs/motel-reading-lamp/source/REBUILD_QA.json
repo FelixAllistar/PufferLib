@@ -1,0 +1,78 @@
+{
+  "all_byte_exact": true,
+  "scope": "Runtime GLBs and all procedural/baked textures; .blend timestamps excluded",
+  "files": [
+    {
+      "path": "exports/mb01_bedside_reading_lamp_lod0.glb",
+      "source_sha256": "3bf5c5316d975b80a8115eed87ec71ff26d4aef504ffc9577b150935af614249",
+      "rebuild_sha256": "3bf5c5316d975b80a8115eed87ec71ff26d4aef504ffc9577b150935af614249",
+      "byte_exact": true
+    },
+    {
+      "path": "exports/mb01_bedside_reading_lamp_lod1.glb",
+      "source_sha256": "c12be317e788215053b4f346569fd4961ce6cfb11d859d500adcc6156c7e3ae8",
+      "rebuild_sha256": "c12be317e788215053b4f346569fd4961ce6cfb11d859d500adcc6156c7e3ae8",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/mb01_bedside_reading_lamp_ao.png",
+      "source_sha256": "604e66e1904a38c2dac1269ca1f17a22fe74fd687908baa365af69abb341451e",
+      "rebuild_sha256": "604e66e1904a38c2dac1269ca1f17a22fe74fd687908baa365af69abb341451e",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/satin_steel_basecolor.png",
+      "source_sha256": "1ca4f04c2690706a446a5f539a9a430b4bf023673861e6dc86b09438ad3165a6",
+      "rebuild_sha256": "1ca4f04c2690706a446a5f539a9a430b4bf023673861e6dc86b09438ad3165a6",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/satin_steel_normal_gl.png",
+      "source_sha256": "82f11923d5e92211b66b39625b072ffe33f61bf04f348340efb7cdaf4fe207b4",
+      "rebuild_sha256": "82f11923d5e92211b66b39625b072ffe33f61bf04f348340efb7cdaf4fe207b4",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/satin_steel_roughmetal.png",
+      "source_sha256": "6d462cdb30d6df318cf5e4a6fa37f11ee2c8780813d084748676bcb21aba79b0",
+      "rebuild_sha256": "6d462cdb30d6df318cf5e4a6fa37f11ee2c8780813d084748676bcb21aba79b0",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/switch_charcoal_basecolor.png",
+      "source_sha256": "c10eb37993d873e25cd726b9fbe0839ebf13a848e70c0ab25628aa359d125e95",
+      "rebuild_sha256": "c10eb37993d873e25cd726b9fbe0839ebf13a848e70c0ab25628aa359d125e95",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/switch_charcoal_normal_gl.png",
+      "source_sha256": "82f11923d5e92211b66b39625b072ffe33f61bf04f348340efb7cdaf4fe207b4",
+      "rebuild_sha256": "82f11923d5e92211b66b39625b072ffe33f61bf04f348340efb7cdaf4fe207b4",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/switch_charcoal_roughmetal.png",
+      "source_sha256": "fcf78c070330f497535b7eda738136b3391d63f6da6ff31ed86ceb80c33cf48b",
+      "rebuild_sha256": "fcf78c070330f497535b7eda738136b3391d63f6da6ff31ed86ceb80c33cf48b",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/warm_ivory_basecolor.png",
+      "source_sha256": "12b8175a58141010bfb14e40b52c0d106d78c63a91a1cc8566d64390e04e6c40",
+      "rebuild_sha256": "12b8175a58141010bfb14e40b52c0d106d78c63a91a1cc8566d64390e04e6c40",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/warm_ivory_normal_gl.png",
+      "source_sha256": "82f11923d5e92211b66b39625b072ffe33f61bf04f348340efb7cdaf4fe207b4",
+      "rebuild_sha256": "82f11923d5e92211b66b39625b072ffe33f61bf04f348340efb7cdaf4fe207b4",
+      "byte_exact": true
+    },
+    {
+      "path": "textures/warm_ivory_roughmetal.png",
+      "source_sha256": "1d2bee670a0a800abc047abe18436bd7ab18c1850109dd287c799588f7f211d5",
+      "rebuild_sha256": "1d2bee670a0a800abc047abe18436bd7ab18c1850109dd287c799588f7f211d5",
+      "byte_exact": true
+    }
+  ]
+}

@@ -50,6 +50,7 @@ static Texture2D load_surface(const char* name,bool metric) {
 
 static void room101_close(SwatEnvironmentArt* art) {
     wall_art_close(art);
+    swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
@@ -123,7 +124,11 @@ static void room101_load(SwatEnvironmentArt* art) {
     art->room101_v4_ready=true;
     // Only Room 101's desktop material/UVs change. The original mesh bank and
     // physical desk remain the fallback and authority for this instance.
-    if(!room101_model_load(&art->room101_desk,art->room101_desk_normal_scale,
+    const char* desk=getenv("SWAT_MOTEL_DESK");
+    bool w2=!(desk && !strcmp(desk,"w1")) && room101_model_load(&art->room101_desk,art->room101_desk_normal_scale,
+            "motel_desk_w2/desk_023_oak_veneer01_w2_comparison.glb");
+    if(!w2) {swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};}
+    if(!w2 && !room101_model_load(&art->room101_desk,art->room101_desk_normal_scale,
             "motel_desk_w1/desk_023_oak_veneer01_w1.glb")) {
         swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
     }
@@ -134,7 +139,7 @@ static void motel_dressing_load(SwatEnvironmentArt* art) {
         "mb01_wall_toilet_roll_holder_lod0.glb","mb01_double_robe_hook_lod0.glb",
         "mg01_lidded_ice_bucket_lod0.glb","mg01_hospitality_service_tray_lod0.glb",
         "mw01_framed_woodland_print_lod0.glb","me01_door_viewer_face_lod0.glb",
-        "me01_concave_wall_bumper_lod0.glb"};
+        "me01_concave_wall_bumper_lod0.glb","mb01_bedside_reading_lamp_lod0.glb"};
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {
         char file[256],path[4096];snprintf(file,sizeof(file),"motel_dressing_v1/%s",files[i]);
         Model* model=&art->motel_dressing[i];
@@ -155,7 +160,7 @@ static void motel_dressing_load(SwatEnvironmentArt* art) {
 
 void swat_environment_art_init(SwatEnvironmentArt* art) {
     if(art->initialized) return;
-    art->initialized=true;
+    art->initialized=true;art->shadow_room=-1;
     const char* enabled=getenv("SWAT_ENVIRONMENT_ART");
     if(enabled && !strcmp(enabled,"0")) return;
     const char* plaster_style=getenv("SWAT_PLASTER_STYLE");
@@ -233,7 +238,17 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         }
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
-    if(selected==1) {room101_load(art);motel_dressing_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));}
+    if(selected==1) {room101_load(art);motel_dressing_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
+        if(!room101_model_load(&art->masonry_edge,art->masonry_edge_normal_scale,"motel_breach_v1/masonry_edge.glb")) {
+            swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
+        } else {
+            BoundingBox b=GetModelBoundingBox(art->masonry_edge);
+            if(b.min.x<-.0921f || b.max.x>.0921f || b.min.y<-.0021f || b.max.y>.0401f ||
+               fabsf(b.min.z+.5f)>.0001f || fabsf(b.max.z-.5f)>.0001f) {
+                swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
+            }
+        }
+    }
 }
 
 void swat_art_model_close(Model model) {
@@ -436,7 +451,7 @@ void swat_environment_art_draw_props(const SwatEnvironmentArt* art,const SwatWor
     rlEnableBackfaceCulling();
 }
 
-static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o,const SwatMotelInstance* p,const Model* model,const Model* source,bool shadow,bool cutaway,bool transparent) {
+static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o,const SwatMotelInstance* p,const Model* model,const Model* source,bool shadow,bool cutaway,bool transparent,const Matrix* override) {
     if(!o->active) return true;
     if(cutaway && p->roof) return true;
     if(!model->meshCount) return false;
@@ -444,6 +459,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
     if(p->door) { origin=(Vector3){o->hinge.x,o->hinge.y-o->half.y,o->hinge.z}; yaw=o->yaw-SWAT_PI*.5f; }
     Matrix scale=MatrixScale(p->scale.x,p->scale.y,p->scale.z);
     Matrix transform=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(yaw)),MatrixTranslate(origin.x,origin.y,origin.z));
+    if(override)transform=*override;
     bool lit=!shadow && art->lighting && art->lighting->enabled && art->lighting->prepared;
     rlDrawRenderBatchActive();
     for(int i=0;i<model->meshCount;i++) {
@@ -465,6 +481,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
         material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
         if(lit) {
             float normal_scale=1;
+            if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
             if(source==&art->room101_desk)normal_scale=art->room101_desk_normal_scale[model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(source==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(source==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
@@ -483,7 +500,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
     return true;
 }
 static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,const SwatMotelInstance* p,const Model* model,bool shadow,bool cutaway,bool transparent) {
-    return location_mesh_draw(art,o,p,model,model,shadow,cutaway,transparent);
+    return location_mesh_draw(art,o,p,model,model,shadow,cutaway,transparent,NULL);
 }
 static const Model* motel_wall_source(const SwatEnvironmentArt* art,int owner) {
     if(art->room101_v4_ready) {const int tags[]={23,28,22,29,14,20,9,17};for(int i=0;i<8;i++)if(tags[i]==owner)return &art->room101_v4[i];}
@@ -501,17 +518,31 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
     const uint8_t* c=swat_material(o->material)->color;
     DrawCubeV((Vector3){0},(Vector3){2*o->half.x-.002f,2*o->half.y,2*o->half.z},(Color){c[0],c[1],c[2],255});rlPopMatrix();
     const Model* clipped=wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p);
-    location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false);
+    location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
     if(owner==13 && art->room101_ready) {
         source=art->room101_v3_ready?&art->room101_v3[10]:&art->room101[5];
         clipped=wall_mesh(&art->motel_wall_art->pieces[o->tag.index][1],source,o,p);
-        location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false);
+        location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
+    }
+    if(art->masonry_edge.meshCount) {
+        SwatMotelEdge edges[32];int n=swat_motel_wall_edges(w,o,edges,32);
+        for(int i=0;i<n;i++) {
+            const SwatMotelEdge* e=&edges[i];
+            Matrix transform=MatrixMultiply(MatrixMultiply(MatrixMultiply(MatrixScale(e->depth/.18f,1,e->length),
+                MatrixRotateX(e->roll)),MatrixRotateY(e->yaw)),MatrixTranslate(e->origin.x,e->origin.y,e->origin.z));
+            location_mesh_draw(art,o,p,&art->masonry_edge,&art->masonry_edge,shadow,cutaway,false,&transform);
+        }
     }
     return true;
 }
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel || o->tag.index<1)return false;
     if(o->active)for(int i=0;i<SWAT_MOTEL_DRESSING_INSTANCES;i++) {
+        // The analytic beam represents its own shade. Near-field point-shadow
+        // projection of that shade produces giant aliases below the fixture.
+        // Keep it in sun/contact/other-room passes, omit only its own emitter.
+        if(shadow && i%SWAT_MOTEL_DRESSING_ASSETS==7 &&
+           art->shadow_room==i/SWAT_MOTEL_DRESSING_ASSETS+1)continue;
         int parent=swat_motel_dressing_parent(i);
         if(parent!=o->tag.index && (o->tag.index<=SWAT_MOTEL_INSTANCES ||
             o->part!=SWAT_PART_SKIN || !o->wall_group ||

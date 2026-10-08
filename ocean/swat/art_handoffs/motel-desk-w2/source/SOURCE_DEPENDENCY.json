@@ -1,0 +1,6 @@
+{
+  "w1_scene_sha256": "4387b9f378935241ac8a32b23b1c62c0cf827f16bf5d7657ad09755e838ef1d6",
+  "source": "environment_realism_review/briar_court_101_tabletop_candidate_w1/room101_desk_oak_w1_comparison.blend",
+  "requires_existing_W1_package": true,
+  "w1_glb_sha256": "c84d99136be4592a886a28abd367a4ad39c1bad0aea406eb818ea68bf51819d8"
+}

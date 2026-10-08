@@ -1,0 +1,163 @@
+{
+  "source_packet": "evidence/rear-wall.json",
+  "sections": 24,
+  "removed_ids": [
+    503,
+    504,
+    505,
+    507,
+    508,
+    509
+  ],
+  "visible_after": 8,
+  "visible_before": 0,
+  "transform": "T @ Ry @ Rx @ S(depth/.18,1,length)",
+  "all_vertices_in_owner_plus_2mm_overlay": true,
+  "instances": [
+    {
+      "owner": 499,
+      "removed_neighbor": 503,
+      "max_owned_section_surface_overlay_m": 0.002000109110664436,
+      "world_bounds": [
+        [
+          -7.37333314354927,
+          -4.901736239126819e-10,
+          -6.092000013250642
+        ],
+        [
+          -7.33183285603381,
+          0.7000000130717768,
+          -5.9080000035466265
+        ]
+      ],
+      "visibility_four_states_pass": true
+    },
+    {
+      "owner": 500,
+      "removed_neighbor": 504,
+      "max_owned_section_surface_overlay_m": 0.002000109110664436,
+      "world_bounds": [
+        [
+          -7.37333314354927,
+          0.6999999995098265,
+          -6.092000013250642
+        ],
+        [
+          -7.33183285603381,
+          1.400000013071777,
+          -5.9080000035466265
+        ]
+      ],
+      "visibility_four_states_pass": true
+    },
+    {
+      "owner": 501,
+      "removed_neighbor": 505,
+      "max_owned_section_surface_overlay_m": 0.002000109110664436,
+      "world_bounds": [
+        [
+          -7.37333314354927,
+          1.3999999995098265,
+          -6.092000013250642
+        ],
+        [
+          -7.33183285603381,
+          2.100000013071777,
+          -5.9080000035466265
+        ]
+      ],
+      "visibility_four_states_pass": true
+    },
+    {
+      "owner": 506,
+      "removed_neighbor": 505,
+      "max_owned_section_surface_overlay_m": 0.002000000178814354,
+      "world_bounds": [
+        [
+          -7.333333530065112,
+          2.0984999999869616,
+          -6.092000109110495
+        ],
+        [
+          -6.666666469934888,
+          2.1399999991059304,
+          -5.907999890889505
+        ]
+      ],
+      "visibility_four_states_pass": true
+    },
+    {
+      "owner": 510,
+      "removed_neighbor": 509,
+      "max_owned_section_surface_overlay_m": 0.002000000178814354,
+      "world_bounds": [
+        [
+          -6.666666530065112,
+          2.0984999999869616,
+          -6.092000109110495
+        ],
+        [
+          -5.999999469934887,
+          2.1399999991059304,
+          -5.907999890889505
+        ]
+      ],
+      "visibility_four_states_pass": true
+    },
+    {
+      "owner": 511,
+      "removed_neighbor": 507,
+      "max_owned_section_surface_overlay_m": 0.002000109110337628,
+      "world_bounds": [
+        [
+          -6.001500143966189,
+          -4.901736239126819e-10,
+          -6.091999996257302
+        ],
+        [
+          -5.95999985645073,
+          0.7000000130717768,
+          -5.907999986749358
+        ]
+      ],
+      "visibility_four_states_pass": true
+    },
+    {
+      "owner": 512,
+      "removed_neighbor": 508,
+      "max_owned_section_surface_overlay_m": 0.002000109110337628,
+      "world_bounds": [
+        [
+          -6.001500143966189,
+          0.6999999995098265,
+          -6.091999996257302
+        ],
+        [
+          -5.95999985645073,
+          1.400000013071777,
+          -5.907999986749358
+        ]
+      ],
+      "visibility_four_states_pass": true
+    },
+    {
+      "owner": 513,
+      "removed_neighbor": 509,
+      "max_owned_section_surface_overlay_m": 0.002000109110337628,
+      "world_bounds": [
+        [
+          -6.001500143966189,
+          1.3999999995098265,
+          -6.091999996257302
+        ],
+        [
+          -5.95999985645073,
+          2.100000013071777,
+          -5.907999986749358
+        ]
+      ],
+      "visibility_four_states_pass": true
+    }
+  ],
+  "scope": "Executed local transform/lifecycle contract tests. Does not execute engine."
+}

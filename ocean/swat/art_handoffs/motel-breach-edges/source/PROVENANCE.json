@@ -1,0 +1,29 @@
+{
+  "packet": {
+    "file": "evidence/rear-wall.json",
+    "sha256": "5317b67607e6779e73ad2210907fcb4f2163b82277db4afe8d813c7ea64f5390",
+    "source_attachment": "aac0a72d-ce4c-43da-be40-25498e463726/rear-wall.json"
+  },
+  "plaster": {
+    "asset": "Poly Haven White Plaster 02",
+    "author": "Rob Tuytel",
+    "license": "CC0-1.0",
+    "page": "https://polyhaven.com/a/white_plaster_02",
+    "source": "Existing supplied Room101 v4 restrained material palette",
+    "files": [
+      {
+        "file": "textures/white_plaster_02_restrained_basecolor.png",
+        "sha256": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167"
+      },
+      {
+        "file": "textures/white_plaster_02_restrained_roughness.png",
+        "sha256": "54ac875abbc21081f0126adc56cdab7042106d77c233598ad8382106c39b6c76"
+      },
+      {
+        "file": "textures/white_plaster_02_runtime_normal.png",
+        "sha256": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a"
+      }
+    ]
+  },
+  "new_assets": "Original procedural geometry and seeded aggregate maps; CC0-1.0; no downloads"
+}

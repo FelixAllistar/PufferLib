@@ -1,0 +1,33 @@
+{
+  "asset": "Oak Veneer 01",
+  "author": "Jenelle van Heerden / Poly Haven",
+  "source": "https://polyhaven.com/a/oak_veneer_01",
+  "license": "CC0-1.0",
+  "license_url": "https://polyhaven.com/license",
+  "downloaded": "2026-10-07",
+  "surface_width_metres": 1.8,
+  "status": "Source maps for artist tabletop comparison; not installed as a runtime replacement",
+  "files": [
+    {
+      "file": "oak_veneer_01_diff_1k.png",
+      "channel": "Diffuse",
+      "bytes": 5309654,
+      "sha256": "0f815b3d49d21c4edeea00c8708455ecd904fc747b0c1d3402e52c26fa70cbc9",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/oak_veneer_01/oak_veneer_01_diff_1k.png"
+    },
+    {
+      "file": "oak_veneer_01_nor_gl_1k.png",
+      "channel": "nor_gl",
+      "bytes": 5045076,
+      "sha256": "662d0514253d80a0b68a882ead3dbdcd5ab389d6e0b00bcf22b0f6baa3158877",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/oak_veneer_01/oak_veneer_01_nor_gl_1k.png"
+    },
+    {
+      "file": "oak_veneer_01_rough_1k.png",
+      "channel": "Rough",
+      "bytes": 2590653,
+      "sha256": "35947213050e8e54e9ff6b91cdb5317f5b3560a03e5724d461a73beb89a2aa11",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/oak_veneer_01/oak_veneer_01_rough_1k.png"
+    }
+  ]
+}

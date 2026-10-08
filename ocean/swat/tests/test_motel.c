@@ -63,6 +63,18 @@ static void masonry_ballistics(void) {
     assert(removed>0);
     for(int i=0;i<s.world.count;i++)surviving+=s.world.objects[i].active && s.world.objects[i].wall_group==group;
     assert(surviving>0); // A local aperture, not removal of the entire facade.
+    int exposed=0;
+    for(int i=group-1;i<s.world.count && s.world.objects[i].wall_group==group;i++) {
+        SwatMotelEdge edges[32];int n=swat_motel_wall_edges(&s.world,&s.world.objects[i],edges,32);
+        exposed+=n;for(int k=0;k<n;k++) {
+            assert(edges[k].owner==i && s.world.objects[i].active && !s.world.objects[edges[k].neighbor].active && edges[k].length>0);
+            int neighbor=edges[k].neighbor;s.world.objects[neighbor].active=true;
+            assert(swat_motel_wall_edges(&s.world,&s.world.objects[i],edges,32)==n-1);
+            s.world.objects[neighbor].active=false;
+            break;
+        }
+    }
+    assert(exposed>0);
     // Isolate the assembly clearance: bathroom fixtures behind it deliberately remain solid.
     swat_sim_spawn_actor(&s,1,SWAT_CIVILIAN,(b3Pos){-6.7f,.01f,-5},-SWAT_PI*.5f);
     assert(b3World_CastMover(s.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),wall_only,&query)>.999f);
@@ -103,6 +115,12 @@ int main(void) {
     masonry_ballistics();
     swat_world_init(&world); swat_motel_build(&world); assert(world.motel && world.count>SWAT_MOTEL_INSTANCES+1 && world.room_count==6);
     utility_hits(&world);
+    for(int room=1;room<=4;room++) {
+        b3Pos bulb;assert(swat_motel_lamp(&world,room,&bulb));
+        SwatMotelInstance mount;int owner=swat_motel_dressing(&world,(room-1)*SWAT_MOTEL_DRESSING_ASSETS+7,&mount);
+        assert(owner>0 && fabsf((float)(bulb.y-mount.origin.y)-.08959322f)<1e-6f);
+        world.objects[owner].active=false;assert(!swat_motel_lamp(&world,room,&bulb));world.objects[owner].active=true;
+    }
     for(int i=0;i<SWAT_MOTEL_DRESSING_INSTANCES;i++) {
         SwatMotelInstance mount;int owner=swat_motel_dressing(&world,i,&mount);assert(owner>0);
         world.objects[owner].active=false;assert(swat_motel_dressing(&world,i,&mount)==-1);world.objects[owner].active=true;

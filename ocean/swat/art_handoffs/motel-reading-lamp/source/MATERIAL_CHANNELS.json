@@ -1,0 +1,12 @@
+{
+  "materials": {
+    "warm_ivory": "Opaque powder-coated shade, dielectric; same coating on interior",
+    "satin_steel": "Plate, fixed arm, cap and button bezel; conductive metal",
+    "switch_charcoal": "Opaque dark polymer button; dielectric"
+  },
+  "basecolor": "sRGB RGB; no baked light/AO",
+  "normal_gl": "linear RGB tangent-space +Y, intentionally flat (128,128,255)",
+  "roughmetal": "linear R=255 neutral, G=roughness, B=metallic (0 or 255)",
+  "ao": "separate linear grayscale atlas on UV1, Cycles AO baked 16 samples; not packed into UV0 roughmetal",
+  "wear": "Analytic low-amplitude tone and directional satin finish; two faint localized scuff strokes in shared material coordinates. No rust, random noise, labels or logos. No claimed per-contact wear bake."
+}

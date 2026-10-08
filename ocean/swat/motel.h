@@ -5,7 +5,7 @@
 #define SWAT_MOTEL_BASE_INSTANCES 146
 #define SWAT_MOTEL_ASSETS SWAT_MOTEL_MESH_CAPACITY
 #define SWAT_MOTEL_INSTANCES 154
-#define SWAT_MOTEL_DRESSING_ASSETS 7
+#define SWAT_MOTEL_DRESSING_ASSETS 8
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 typedef struct SwatMotelMaterial { float roughness,metalness; } SwatMotelMaterial;
 typedef struct SwatMotelAsset {
@@ -23,8 +23,17 @@ const SwatMotelInstance* swat_motel_instance(int index);
 // Returns the current supporting object, or -1 when that support is gone.
 int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* placement);
 int swat_motel_dressing_parent(int index);
+// Authored bulb anchor in a supported fixed bedside fixture (guest rooms 1..4).
+bool swat_motel_lamp(const SwatWorld*,int room,b3Pos* origin);
 // Retired imported wall supporting this physical section, or -1.
 int swat_motel_wall_parent(const SwatWorld* world,const SwatObject* piece);
+typedef struct SwatMotelEdge {
+    int owner,neighbor;
+    b3Pos origin;
+    float yaw,roll,length,depth;
+} SwatMotelEdge;
+// Render-only cut edges: +X across core, +Y into survivor, +Z along edge.
+int swat_motel_wall_edges(const SwatWorld*,const SwatObject*,SwatMotelEdge*,int capacity);
 void swat_motel_build(SwatWorld* world);
 // Reconstruct canonical mesh collision after receiving the ordinary map boxes.
 // Every instance transform is checked before replacing any collider.

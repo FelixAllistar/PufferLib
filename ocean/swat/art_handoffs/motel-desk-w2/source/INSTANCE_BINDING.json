@@ -1,0 +1,34 @@
+{
+  "owner": "REUSE__desk__023",
+  "source_assembly_index": 23,
+  "original_assembly": {
+    "object": "REUSE__desk__023",
+    "asset_id": "desk",
+    "position_source_m": [
+      -7.49,
+      2.45,
+      0.008
+    ],
+    "yaw_source_deg": 90.0,
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "reused_existing_design": true,
+    "collection": "02c_FIXTURES_FURNISHINGS"
+  },
+  "candidate_file": "desk_023_oak_veneer01_w2_comparison.glb",
+  "mode": "Optional comparison only; not bound or pinned",
+  "geometry": "Complete544-triangle render mesh:84 ridge triangles removed;2 original top faces replaced by50 integrated coplanar finish-region triangles",
+  "rule": "Retain existing instance placement and authority; replace its render mesh only if separately approved. Do not apply source TRS twice.",
+  "engine_render_owner": 24,
+  "source_object": "REUSE__desk__023",
+  "render_bounds_warning": "Only maximum render z decreases 0.7523 m to 0.7500 m. Retain existing authority/collider envelope and original compiled collision; never rebuild it from candidate render bounds.",
+  "custom_shallow_wear": "Four sparse roughness-only finish-abrasion regions integrated in tabletop topology; no displacement or overlapping faces",
+  "material_primitive_cost": {
+    "W1": 5,
+    "W2": 6,
+    "extra": 1
+  }
+}

@@ -1,0 +1,106 @@
+[
+  {
+    "asset": "mb01_bedside_reading_lamp",
+    "triangles_lod0": 952,
+    "bounds_blender_xyz_m": [
+      [
+        -0.054999999701976776,
+        -0.19575481116771698,
+        -0.05999999865889549
+      ],
+      [
+        0.054999999701976776,
+        0.0,
+        0.13806138932704926
+      ]
+    ],
+    "dimensions_gltf_xyz_m": [
+      0.10999999940395355,
+      0.19806138798594475,
+      0.19575481116771698
+    ],
+    "parts": [
+      {
+        "name": "arm_wall_socket",
+        "vertices": 32,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "fixed_arm_rise",
+        "vertices": 24,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "fixed_arm_shade_link",
+        "vertices": 24,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "formed_wall_backplate",
+        "vertices": 56,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "opaque_ivory_shade",
+        "vertices": 224,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "pushbutton_charcoal",
+        "vertices": 32,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "pushbutton_metal_bezel",
+        "vertices": 64,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      },
+      {
+        "name": "shade_neck_cap",
+        "vertices": 32,
+        "nonmanifold_edges": 0,
+        "zero_area_faces": 0,
+        "uv_layers": [
+          "UV_Material",
+          "UV_AO"
+        ]
+      }
+    ],
+    "triangles_lod1": 378
+  }
+]

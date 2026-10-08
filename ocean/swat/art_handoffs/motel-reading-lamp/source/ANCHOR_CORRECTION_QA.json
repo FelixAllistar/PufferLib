@@ -1,0 +1,114 @@
+{
+  "status": "PASS",
+  "correction": "Runtime glTF empty local -Z now points through shade opening; Blender source corresponding axis is local +Y.",
+  "exports": [
+    {
+      "actual_shade_node_quaternion_xyzw": [
+        0.5735764503479004,
+        0,
+        0,
+        0.8191519975662231
+      ],
+      "actual_shade_local_positive_z_world_gltf": [
+        0.0,
+        -0.9396926469604555,
+        0.342020071411683
+      ],
+      "file": "mb01_bedside_reading_lamp_lod0.glb",
+      "original_sha256": "3bf5c5316d975b80a8115eed87ec71ff26d4aef504ffc9577b150935af614249",
+      "corrected_sha256": "8c58694c2bf99b8f48504caf777295b127a8f7bb57f33e0afd902813825d3941",
+      "original_bytes": 280336,
+      "corrected_bytes": 280336,
+      "before_quaternion_xyzw": [
+        -0.17364823818206787,
+        0,
+        0,
+        0.9848078489303589
+      ],
+      "after_quaternion_xyzw": [
+        -0.8191520571708679,
+        0,
+        0,
+        0.5735764503479004
+      ],
+      "before_local_negative_z_world_gltf": [
+        -0.0,
+        -0.3420202240260187,
+        -0.9396925914133791
+      ],
+      "after_local_negative_z_world_gltf": [
+        -0.0,
+        -0.9396926235746115,
+        0.34202013566377043
+      ],
+      "shade_opening_world_gltf": [
+        0,
+        -0.9396926207859084,
+        0.3420201433256687
+      ],
+      "unchanged_anchor_translation": [
+        0,
+        0.08959321677684784,
+        0.12970687448978424
+      ],
+      "binary_chunk_sha256": "fc1efd295e05fdd1aa317672260d0acacc3dda0a7f401d9ab06523c862a25c72",
+      "entire_binary_chunk_identical": true,
+      "mesh_material_image_json_identical": true,
+      "sole_json_difference": "ANCHOR_bulb_light.rotation"
+    },
+    {
+      "actual_shade_node_quaternion_xyzw": [
+        0.5735764503479004,
+        0,
+        0,
+        0.8191519975662231
+      ],
+      "actual_shade_local_positive_z_world_gltf": [
+        0.0,
+        -0.9396926469604555,
+        0.342020071411683
+      ],
+      "file": "mb01_bedside_reading_lamp_lod1.glb",
+      "original_sha256": "c12be317e788215053b4f346569fd4961ce6cfb11d859d500adcc6156c7e3ae8",
+      "corrected_sha256": "bb0c03cd5bfa6027f1e3514fb87177133bf5ecd1aa54551c4f40db3f42328190",
+      "original_bytes": 242844,
+      "corrected_bytes": 242844,
+      "before_quaternion_xyzw": [
+        -0.17364823818206787,
+        0,
+        0,
+        0.9848078489303589
+      ],
+      "after_quaternion_xyzw": [
+        -0.8191520571708679,
+        0,
+        0,
+        0.5735764503479004
+      ],
+      "before_local_negative_z_world_gltf": [
+        -0.0,
+        -0.3420202240260187,
+        -0.9396925914133791
+      ],
+      "after_local_negative_z_world_gltf": [
+        -0.0,
+        -0.9396926235746115,
+        0.34202013566377043
+      ],
+      "shade_opening_world_gltf": [
+        0,
+        -0.9396926207859084,
+        0.3420201433256687
+      ],
+      "unchanged_anchor_translation": [
+        0,
+        0.08959321677684784,
+        0.12970687448978424
+      ],
+      "binary_chunk_sha256": "f57f98ccf84d83f8ecb92040e0a22531bad8e7c56df8c1cff8c4e3b9d3d9a0da",
+      "entire_binary_chunk_identical": true,
+      "mesh_material_image_json_identical": true,
+      "sole_json_difference": "ANCHOR_bulb_light.rotation"
+    }
+  ]
+}

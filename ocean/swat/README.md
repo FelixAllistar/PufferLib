@@ -185,10 +185,12 @@ Original instance transforms, collision and removal ownership are preserved.
 the same corrected lighting; `2` selects v2 and `0` the original bank.
 Missing or invalid v4 assets fall back to the complete v3 set.
 See the [native review](art_handoffs/room101-realism-v4/engine/README.md).
-Room 101's desk now uses the separate W1 oak tabletop finish at the source's
-1.8 m texture scale, with restrained normal strength. Other desks keep their
+Room 101's desk now uses the warmer W2 oak finish at the source's 1.8 m
+texture scale, with restrained normal strength and shallow finish wear. Raised
+black scratch geometry is removed. W1 remains the fallback and can be compared
+with `SWAT_MOTEL_DESK=w1 ./swat play --mission motel`. Other desks keep their
 existing materials; the original model remains the missing-asset fallback.
-See the [matched desk captures](art_handoffs/motel-desk-w1/engine/README.md).
+See the [W2 desk and lamp review](art_handoffs/motel-desk-w2/engine/README.md).
 
 All four motel guest rooms now include a luggage rack and wastebasket at their
 authored metre scale, with open mesh collision and replicated ownership. Their
@@ -196,8 +198,11 @@ separate AO UV set is supported by the material shader. Existing door/walking
 routes and original motel instance IDs are preserved; these props are static
 furniture for now. See the [integration and captures](art_handoffs/motel-utility-v1/engine/README.md).
 
-The four guest rooms also have seven supported decorative details each: toilet
-roll holder, robe hook, ice bucket/tray, framed print, door viewer and wall bumper.
+The four guest rooms also have eight supported decorative details each: toilet
+roll holder, robe hook, ice bucket/tray, framed print, door viewer, wall bumper
+and bedside reading lamp. The lamp uses its measured bulb position and a downward
+beam in the existing room shadow slot; removing its supporting wall section
+removes the fixture and extinguishes that light. Its button is currently static.
 The viewer follows its hinged door; other details inherit their wall or desk.
 The three walls between guest rooms now use physical drywall skins and studs.
 Hold **7** to mount a charge and **K** to detonate; the resulting opening is
@@ -209,7 +214,9 @@ remain authored openings, and the original wall textures, trim and mounted props
 follow their physical sections. Concrete and substantial steel resist the current
 charge. Material impact thresholds and thickness-scaled charge resistance live in
 `materials.c`, separately from ballistic resistance. These are game approximations.
-Breach edges are currently rectangular sections; irregular chipped finish/rubble
+Exposed masonry and chipped-plaster strips follow surviving section/removed-neighbor pairs;
+`swat_layout_tool motel-walls` exports exact geometry for art handoffs.
+Breach edges are currently rectangular sections; irregular opening silhouettes, rubble
 and whole-building structural collapse are unfinished. Furniture remains solid
 behind a breach. Floors, roofs, piers and most props are still static.
 See the [dressing and breach review](art_handoffs/motel-dressing-v1/engine/README.md).

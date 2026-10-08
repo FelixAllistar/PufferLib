@@ -1,0 +1,5 @@
+Original ME01 geometry, procedural masonry textures and build scripts: dedicated to CC0-1.0.
+Existing plaster texture derivatives: Poly Haven White Plaster 02, Rob Tuytel, CC0.
+https://polyhaven.com/a/white_plaster_02
+https://polyhaven.com/license
+No new external download. Provenance inherited from supplied Room101 v4 SOURCE_PROVENANCE.json.

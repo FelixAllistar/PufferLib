@@ -50,7 +50,7 @@ static const char* fragment_source=
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
     "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
     "uniform int occlusionUV;uniform float occlusionStrength;uniform vec3 sunDirection,sunEnergy;uniform mat4 contactMatrix;\n"
-    "uniform int lampShadows;uniform int rooms; uniform vec3 centers[8],halves[8],origins[8]; uniform float exposure;\n"
+    "uniform int lampShadows;uniform int rooms; uniform vec3 centers[8],halves[8],origins[8]; uniform vec3 roomDirection[8];uniform float roomPower[8]; uniform float exposure;\n"
     "float visible(sampler2D map,mat4 matrix,vec3 point,vec3 n,vec3 l,int tile){"
     "vec4 clip=matrix*vec4(point,1.0); if(clip.w<=0.0)return 1.0;"
     "vec3 p=clip.xyz/clip.w*0.5+0.5;"
@@ -128,7 +128,8 @@ static const char* fragment_source=
     "float d2=dot(toLight,toLight); vec3 l=normalize(toLight);"
     "vec3 q=-toLight,a=abs(q);int face=a.x>=a.y&&a.x>=a.z?(q.x>=0.0?0:1):(a.y>=a.z?(q.y>=0.0?2:3):(q.z>=0.0?4:5));"
     "float visibility=lampShadows!=0?visible(lampMap,lampMatrix[face],q,n,l,i*6+face):1.0;"
-    "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*1.8/(1.0+0.18*d2);"
+    "float beam=dot(roomDirection[i],roomDirection[i])>0.5?smoothstep(0.05,0.35,dot(-l,roomDirection[i])):1.0;"
+    "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*roomPower[i]*beam*1.8/(1.0+0.18*d2);"
     "punctual+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
     "if(useIbl!=0&&!insideRoom){illumination=atlas(envUV(n),6.0);environment=filteredSky(reflectedDirection,roughness);}"
     // Roughness-aware grazing reflection for painted surfaces as well as metal.
@@ -178,7 +179,7 @@ static SwatLightingProgram program(void) {
     p.lamp_shadows=GetShaderLocation(p.shader,"lampShadows");
     p.sun_map=GetShaderLocation(p.shader,"sunMap"); p.lamp_map=GetShaderLocation(p.shader,"lampMap");
     p.rooms=GetShaderLocation(p.shader,"rooms"); p.centers=GetShaderLocation(p.shader,"centers[0]");
-    p.halves=GetShaderLocation(p.shader,"halves[0]"); p.origins=GetShaderLocation(p.shader,"origins[0]");
+    p.halves=GetShaderLocation(p.shader,"halves[0]"); p.origins=GetShaderLocation(p.shader,"origins[0]"); p.room_power=GetShaderLocation(p.shader,"roomPower[0]");p.room_direction=GetShaderLocation(p.shader,"roomDirection[0]");
     p.exposure=GetShaderLocation(p.shader,"exposure");
     p.ibl=GetShaderLocation(p.shader,"useIbl");p.ibl_atlas=GetShaderLocation(p.shader,"iblAtlas");
     p.sun_direction=GetShaderLocation(p.shader,"sunDirection");p.sun_energy=GetShaderLocation(p.shader,"sunEnergy");
@@ -504,6 +505,7 @@ static uint32_t room_geometry_hash(const SwatWorld* world,int room) {
     return hash;
 }
 static Vector3 room_light_origin(const SwatWorld* world,int room) {
+    b3Pos bulb;if(swat_motel_lamp(world,room,&bulb))return (Vector3){bulb.x,bulb.y,bulb.z};
     const SwatRoom* r=&world->rooms[room];
     Vector3 origin={(float)r->center.x,(float)r->center.y+r->half.y-.18f,(float)r->center.z};
     for(int i=0;i<world->count;i++) {
@@ -590,11 +592,13 @@ static void art_shader(SwatEnvironmentArt* art,Shader shader) {
 }
 void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatWorld* world,Vector3 camera) {
     if(!light->enabled || !light->prepared) return;
-    Vector3 centers[SWAT_MAX_ROOMS],halves[SWAT_MAX_ROOMS],origins[SWAT_MAX_ROOMS];
+    Vector3 centers[SWAT_MAX_ROOMS],halves[SWAT_MAX_ROOMS],origins[SWAT_MAX_ROOMS],directions[SWAT_MAX_ROOMS]={0};float room_power[SWAT_MAX_ROOMS];
     for(int i=0;i<world->room_count;i++) {
         const SwatRoom* r=&world->rooms[i];
         centers[i]=(Vector3){(float)r->center.x,(float)r->center.y,(float)r->center.z};
         halves[i]=(Vector3){r->half.x,r->half.y,r->half.z}; origins[i]=room_light_origin(world,i);
+        if(world->motel && i>=1 && i<=4)directions[i]=(Vector3){0,-.9396926f,.3420201f};
+        b3Pos bulb;room_power[i]=!world->motel || i<1 || i>4 || swat_motel_lamp(world,i,&bulb) ? 1 : 0;
     }
     SwatLightingProgram* programs[]={&light->batch,&light->mesh};
     for(int i=0;i<2;i++) {
@@ -625,6 +629,8 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
             SetShaderValueV(s,p->centers,centers,SHADER_UNIFORM_VEC3,world->room_count);
             SetShaderValueV(s,p->halves,halves,SHADER_UNIFORM_VEC3,world->room_count);
             SetShaderValueV(s,p->origins,origins,SHADER_UNIFORM_VEC3,world->room_count);
+            SetShaderValueV(s,p->room_power,room_power,SHADER_UNIFORM_FLOAT,world->room_count);
+            SetShaderValueV(s,p->room_direction,directions,SHADER_UNIFORM_VEC3,world->room_count);
         }
     }
     rlActiveTextureSlot(9);if(light->environment_atlas.id)rlEnableTexture(light->environment_atlas.id);

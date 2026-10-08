@@ -1,0 +1,177 @@
+{
+  "materials": [
+    {
+      "name": "ME01_dense_cement_masonry",
+      "metallic_effective": 0,
+      "opaque": true,
+      "single_sided": true,
+      "basecolor": {
+        "texCoord": 0,
+        "dimensions": [
+          512,
+          512
+        ],
+        "min_RGB": [
+          93,
+          90,
+          79
+        ],
+        "max_RGB": [
+          146,
+          141,
+          127
+        ]
+      },
+      "roughmetal": {
+        "texCoord": 0,
+        "dimensions": [
+          512,
+          512
+        ],
+        "min_RGB": [
+          255,
+          202,
+          255
+        ],
+        "max_RGB": [
+          255,
+          244,
+          255
+        ]
+      },
+      "normal": {
+        "texCoord": 0,
+        "dimensions": [
+          512,
+          512
+        ],
+        "min_RGB": [
+          86,
+          86,
+          248
+        ],
+        "max_RGB": [
+          169,
+          167,
+          254
+        ]
+      },
+      "AO": {
+        "texCoord": 0,
+        "dimensions": [
+          4,
+          4
+        ],
+        "min_RGB": [
+          255,
+          255,
+          255
+        ],
+        "max_RGB": [
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "name": "ME01_existing_warm_plaster",
+      "metallic_effective": 0,
+      "opaque": true,
+      "single_sided": true,
+      "basecolor": {
+        "texCoord": 0,
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "min_RGB": [
+          176,
+          173,
+          167
+        ],
+        "max_RGB": [
+          231,
+          225,
+          212
+        ]
+      },
+      "roughmetal": {
+        "texCoord": 0,
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "min_RGB": [
+          255,
+          186,
+          255
+        ],
+        "max_RGB": [
+          255,
+          221,
+          255
+        ]
+      },
+      "normal": {
+        "texCoord": 0,
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "min_RGB": [
+          36,
+          35,
+          201
+        ],
+        "max_RGB": [
+          215,
+          206,
+          255
+        ]
+      },
+      "AO": {
+        "texCoord": 0,
+        "dimensions": [
+          4,
+          4
+        ],
+        "min_RGB": [
+          255,
+          255,
+          255
+        ],
+        "max_RGB": [
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "name": "ME01_fresh_plaster_break",
+      "metallic_effective": 0,
+      "opaque": true,
+      "single_sided": true,
+      "AO": {
+        "texCoord": 0,
+        "dimensions": [
+          4,
+          4
+        ],
+        "min_RGB": [
+          255,
+          255,
+          255
+        ],
+        "max_RGB": [
+          255,
+          255,
+          255
+        ]
+      }
+    }
+  ],
+  "AO": "neutral white separate RGB; UV0; no lighting baked",
+  "notes": "Metallic effective value is zero via factor, regardless of packed B."
+}

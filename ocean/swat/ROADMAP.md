@@ -117,15 +117,16 @@ records its scope. Briar Court batch 15 is now a playable authored motel with
 146 instances, original mesh collision, five functional door leaves and network
 replica reconstruction. Exterior masonry and bathroom partitions now use
 material-aware destructible sections with clipped original art; masonry stops
-gunfire but accepts a local charge breach. Irregular exposed edges, rubble and
-building-scale structural support remain unfinished; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). The
+gunfire but accepts a local charge breach. Exposed-core/chipped-plaster strips now track surviving edges. Irregular opening
+silhouettes, rubble and building-scale structural support remain unfinished; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). The
 checks now also cover Morrow Block batch 16: 151 modular placements plus the
 authored street/sidewalk, five functional doors, original static triangle
 collision and actual controller traversal. Original lateral, held crouch and
 crouch-forward animation banks are integrated, with source-specific travel
 phase and the original reload retained. Glass draws after opaque geometry and
-current-mission module banks load on demand. These
-foundation checks do not imply a finished
+current-mission module banks load on demand. The
+motel desk now uses W2 oak, and supported bedside fixtures drive downward room
+lighting without adding shadow slots. These foundation checks do not imply a finished
 animation pipeline, production lighting or completed roadmap.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,

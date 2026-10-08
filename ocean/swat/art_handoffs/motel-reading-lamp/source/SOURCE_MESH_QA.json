@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "geometry_uv_smoothing_material_assignments_world_transforms_identical": true,
+  "parts": {
+    "arm_wall_socket": "e9f7fa909911c8110cf73c19d2231340fa391c60c23b29b2b4b730c1d73ce4f8",
+    "fixed_arm_rise": "83567ef03b2e21b6f632e95b1a62f076008b66fff21223af7250c1d0f8f41d68",
+    "fixed_arm_shade_link": "33057767b2780d736bde04794a36bf91785143c4649014474c8b9394adc9040e",
+    "formed_wall_backplate": "f366cdc463261d6ca9acf53dbfdac4552a7bba664769fcaa872d02b0fdc22537",
+    "opaque_ivory_shade": "7685f7782548da31157a347e38f07dcc0acbc0ca95971faed5563168c3649e7a",
+    "pushbutton_charcoal": "61aa38b5224767a747c5a0019fc20e037467538e802c8ab3564879419a46813c",
+    "pushbutton_metal_bezel": "a87ae619f8b5d40eb708397aee6f56d2f8e0ca73415da86a581770557f7776a5",
+    "shade_neck_cap": "5c5ce832bb5662881690a148d07ce5865808996d24b8f1034616c0bc6e4bc20f"
+  }
+}
