@@ -56,6 +56,7 @@ static void room101_close(SwatEnvironmentArt* art) {
     wall_art_close(art);
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
+    swat_art_model_close(art->motel_guest_desk);art->motel_guest_desk=(Model){0};
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
     for(int i=0;i<3;i++) {swat_art_model_close(art->motel_numbers[i]);art->motel_numbers[i]=(Model){0};}
     swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
@@ -143,6 +144,9 @@ static void room101_load(SwatEnvironmentArt* art) {
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
+    if(!room101_model_load(&art->motel_guest_desk,art->motel_guest_desk_normal_scale,"motel_guest_desk/desk_original_clean_strokes_v1.glb")) {
+        swat_art_model_close(art->motel_guest_desk);art->motel_guest_desk=(Model){0};
+    }
     if(!room101_model_load(&art->motel_roadside,art->motel_roadside_normal_scale,"motel_roadside/roadside_sign.glb")) {
         swat_art_model_close(art->motel_roadside);art->motel_roadside=(Model){0};
     }
@@ -527,6 +531,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             for(int n=0;n<3;n++)if(source==&art->motel_numbers[n])normal_scale=art->motel_number_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
             if(source==&art->room101_desk)normal_scale=art->room101_desk_normal_scale[model->meshMaterial[i]];
+            if(source==&art->motel_guest_desk)normal_scale=art->motel_guest_desk_normal_scale[model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(source==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(source==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(source==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
@@ -647,6 +652,8 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         return location_draw(art,o,p,&art->motel_numbers[n],shadow,cutaway,false);
     if(o->tag.index==24 && art->room101_v4_ready && art->room101_desk.meshCount)
         return location_draw(art,o,p,&art->room101_desk,shadow,cutaway,false);
+    if((o->tag.index==48 || o->tag.index==72 || o->tag.index==96) && art->motel_guest_desk.meshCount)
+        return location_draw(art,o,p,&art->motel_guest_desk,shadow,cutaway,false);
     if(art->room101_ready) {
         if(art->room101_v4_ready) {
             static const int tags[SWAT_ROOM101_V4_ASSETS]={23,28,22,29,14,20,9,17};

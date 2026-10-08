@@ -192,6 +192,15 @@ or collision need intentional, versioned design and multiplayer qualification.
 
 ## Briar Court motel
 
+Rooms 102–104 now use `motel_guest_desk/desk_original_clean_strokes_v1.glb`
+on render owners 48/72/96. The original finish is preserved; only seven raised
+dark scratch boxes were removed (580 to 496 triangles). Retained positions,
+normals, UVs, material assignment and embedded images are byte-identical to the
+original desk. Existing collision and support bounds remain authoritative;
+Room101 W2, the service desk and personal-prop transforms are unchanged. A missing
+cleanup asset falls back to the original model. See the compact editable source,
+CC0 provenance and native proof in `art_handoffs/motel-guest-desk`.
+
 `./swat play --mission motel` selects the complete motor-court encounter. The
 Houses planning tab also offers Briar Court. The CC0 batch-15 import adds 24
 new modules, 16 reused designs and 146 placed instances. The source GLBs remain

@@ -1,0 +1,9 @@
+{
+  "sourceTriangles": 580,
+  "runtimeTriangles": 496,
+  "removedTriangles": 84,
+  "retainedAttributes": "byte-identical positions/normals/UVs/material assignment",
+  "materials": "identical",
+  "embeddedTextures": "byte-identical",
+  "runtimeSha256": "059e130f812852234af1f897b35ceabf4cfd54faa08941336e2254576499da16"
+}

@@ -465,6 +465,25 @@ static void room101_graphics(SwatView* view,const char* directory) {
     SwatObject* desk_owner=&sim.world.objects[24];assert(room101_owner_pixels(art,desk_owner,false)>50);
     desk_owner->active=false;assert(!room101_owner_pixels(art,desk_owner,false));desk_owner->active=true;
     puts("PASS desk W2: 544 triangles, ridge removal with original authority, 0.3 normal scale, matched engine captures and support removal");
+    Model guest_desk=art->motel_guest_desk;assert(guest_desk.meshCount && guest_desk.materialCount==art->motel[26].materialCount);
+    int guest_triangles=0;for(int m=0;m<guest_desk.meshCount;m++)guest_triangles+=guest_desk.meshes[m].triangleCount;
+    assert(guest_triangles==496);
+    BoundingBox guest_box=GetModelBoundingBox(guest_desk);
+    assert(fabsf(guest_box.max.y-(original_box.max.y-.0023f))<1e-4f);
+    before=sim.world;
+    Camera3D guest_view={{1.3f,1.30f,-1.7f},{.65f,.78f,-2.15f},{0,1,0},40,CAMERA_PERSPECTIVE};
+    for(int candidate=0;candidate<2;candidate++) {
+        art->motel_guest_desk=candidate?guest_desk:(Model){0};
+        room=room101_capture_size(view,guest_view,true,1440,810);
+        snprintf(path,sizeof(path),"%s/guest-desk-%s.png",directory,candidate?"after":"before");assert(ExportImage(room,path));UnloadImage(room);
+    }
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
+    for(int owner=48;owner<=96;owner+=24) {
+        assert(swat_motel_instance(owner-1)->asset==26);
+        SwatObject* o=&sim.world.objects[owner];assert(room101_owner_pixels(art,o,false)>50);
+        o->active=false;assert(!room101_owner_pixels(art,o,false));o->active=true;
+    }
+    puts("PASS original guest desk: 496 triangles, explicit owners 48/72/96, unchanged authority/support, original fallback and matched native captures");
     for(int i=SWAT_MOTEL_BASE_ASSETS;i<42;i++) {
         Model model=art->motel[i];assert(model.meshCount);
         for(int m=0;m<model.meshCount;m++)assert(model.meshes[m].texcoords2 && model.meshes[m].vboId[5]);
@@ -683,6 +702,7 @@ int main(int argc,char** argv) {
     assert(!view.environment.room101_ready && !view.environment.room101[0].meshCount);
     assert(!view.environment.room101_v4_ready && !view.environment.room101_v4[0].meshCount);
     assert(!view.environment.room101_desk.meshCount);
+    assert(!view.environment.motel_guest_desk.meshCount);
     for(int i=0;i<3;i++)assert(!view.environment.motel_numbers[i].meshCount);
     assert(!view.environment.motel_reception.meshCount);
     assert(!view.environment.motel_roadside.meshCount);

@@ -78,6 +78,10 @@ devices-test: | $(BUILD)
 encounter-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	$(BUILD)/test_encounter
+motel-completion-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_completion.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_completion
+	$(BUILD)/test_motel_completion $(BUILD)/motel-completion.sgrp
+	$(BUILD)/test_motel_completion $(BUILD)/motel-completion-combat.sgrp combat
 environment-binding-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_binding.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_environment_binding
 	$(BUILD)/test_environment_binding
@@ -93,7 +97,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: locomotion-test scenarios-test motel-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: locomotion-test scenarios-test motel-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

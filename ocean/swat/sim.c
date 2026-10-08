@@ -396,7 +396,7 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
             return;
         }
     }
-    if(pressed && (swat_device_recover(s,actor) || swat_collect_evidence(s,actor))) return;
+    if(pressed && swat_device_recover(s,actor)) return;
     SwatHit hit = s->config.mission==SWAT_ANNEX ?
         swat_world_ray(&s->world,swat_controller_eye(&a->controller),
             swat_controller_aim(&a->controller),2.2f,a->controller.body.body) : swat_context_hit(s,actor,2.2f);
@@ -419,6 +419,9 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
             return;
         }
     }
+    // Match the displayed body interaction: a dropped weapon within the
+    // evidence aim cone must not consume the first press of a cuff/escort hold.
+    if(pressed && swat_collect_evidence(s,actor)) return;
     a->gear.cuff_ticks=0; a->gear.cuff_target=-1;
     if (pressed && hit.kind == SWAT_HIT_WORLD && hit.index >= 0 && s->world.objects[hit.index].door) {
         if(s->world.objects[hit.index].locked || s->world.objects[hit.index].wedge_owner>=0 || s->world.objects[hit.index].breach_owner>=0) {

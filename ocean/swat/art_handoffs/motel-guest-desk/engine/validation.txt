@@ -1,0 +1,14 @@
+PASS masonry silhouette: 19856 native GPU samples match exact convex collision on both faces (10934 solid/8922 empty)
+PASS asphalt: PNG16 normalized GPU samples, flipped rows, linear data maps, 2.1 m repeat and original ground physics
+PASS v4: eight bounded replacements, original ownership/removal, opaque surfaces and immutable authority
+PASS v3 ownership: all ten replacements visible, children removed with parent, roof hidden in cutaway
+PASS desk W2: 544 triangles, ridge removal with original authority, 0.3 normal scale, matched engine captures and support removal
+PASS original guest desk: 496 triangles, explicit owners 48/72/96, unchanged authority/support, original fallback and matched native captures
+PASS utility props: original metre-scale meshes, second UV buffers/material binding and per-instance removal
+PASS east fence and Room 103: native context/detail captures, original personal prop scale/topology
+PASS dressing: nine embedded PBR models, second UV AO, metre-scale supported mounts and 432-triangle guest folder
+PASS reading lamps: supported anchors, existing room shadow slot, switches and support removal extinguish actual illumination
+PASS fence graphics: cached intact/cut material batches, surviving posts, changed shadow silhouette and exact collision-art fallback
+PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (353438 changed pixels), three door poses and removal
+PASS prop graphics: all six imported models rendered at metre scale, generated tabletop captures, per-asset fallback and support visibility
+PASS environment graphics: GLB and surfaces rendered (43398 door pixels), inactive hidden, layered breach with surviving studs, immutable world, generated view, missing/corrupt assets, opt-out and repeated lifecycle

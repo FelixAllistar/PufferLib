@@ -1,0 +1,33 @@
+{
+  "original_archive": {
+    "filename": "motor-court-motel-batch-15.tar.xz",
+    "drive_url": "https://drive.google.com/file/d/1MceTtpBriTUP1-0nvkMC58f8iZG4INVX/view",
+    "sha256": "92896091ee009a131cf76e73e0e3c6f94e543bb9e50debda797f89568c213fb3",
+    "backup_record_match": true
+  },
+  "original_mesh": {
+    "member": "motor_court_motel_batch15_CC0/reused_assets/desk.glb",
+    "sha256": "acb19cfa1461ba4bd960615ccbc2971493ac82a198d4a7445c9922f9f8325bb7",
+    "bytes": 343140
+  },
+  "original_native_scene": {
+    "member": "motor_court_motel_batch15_CC0/motor_court_motel.blend",
+    "sha256": "ed6f103f58b7a87c7604c6b66795250be4e82ddcbc1b3ff3a485850cb6bb2b5f",
+    "inspection": "Six mesh users, all 580 triangles; five placed and one source master. Original native scene retained unchanged in restored input directory."
+  },
+  "catalog_r008_runtime_record": {
+    "repository_path": "ocean/swat/assets/environment/motel_v1/desk.glb",
+    "public_url": "https://github.com/FelixAllistar/PufferLib/blob/b0a02f7bf642628e816d6a1089bd2fd3ba5ef382/ocean/swat/assets/environment/motel_v1/desk.glb",
+    "bytes": 343140,
+    "git_blob_sha1": "bc26a045e54754ec7bcd72fc513b3660118f49a1",
+    "sha256": "acb19cfa1461ba4bd960615ccbc2971493ac82a198d4a7445c9922f9f8325bb7",
+    "sha256_evidence": "Pinned source manifest; binary not independently redownloaded/hashed for this read-only catalog",
+    "asset_id": "desk",
+    "source_path": "../../house_kit/modules/props/desk.glb",
+    "license": "CC0-1.0",
+    "reused_design": true
+  },
+  "catalog_limit": "Pinned catalog evidence, not a live repository read. Current dynamic owner IDs are unverified.",
+  "candidate_source": "Compact editable Blender scene freshly imported from candidate GLB; rebuild.py uses the exact original GLB to preserve retained payload bytes, not a lossy Blender re-export.",
+  "original_finish": "HP_wood, HP_wood_faded, HP_wood_dark, HP_iron; all four embedded texture payloads, material definitions, UVs and retained normals remain exact. No W1/W2 finish inputs used."
+}

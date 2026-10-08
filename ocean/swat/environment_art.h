@@ -61,6 +61,8 @@ typedef struct SwatEnvironmentArt {
     float masonry_edge_normal_scale[SWAT_ROOM101_MATERIALS];
     Model room101_desk;
     float room101_desk_normal_scale[SWAT_ROOM101_MATERIALS];
+    Model motel_guest_desk; // Original finish, removed raised scratches; owners 48/72/96.
+    float motel_guest_desk_normal_scale[SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;

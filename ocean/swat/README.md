@@ -731,6 +731,15 @@ checkpoint compatibility, not policy quality. Reproduce a short run with:
 
 ## Controller range and deterministic replays
 
+`make -C ocean/swat motel-completion-test` runs a complete motel scenario using
+only player inputs, both with hostile fire disabled to isolate interactions and
+with hostile fire enabled. It cuffs both suspects, collects their weapons,
+escorts all three civilians and regroups the squad. Each run then verifies an
+exact replay, mid-run save/resume and the completed state on a fresh replica.
+Windows builds the equivalent `test_motel_completion.exe`; pass an output
+`.sgrp` path and optional `combat` argument. The QA driver knows the room plan;
+this is not an RL evaluation or a substitute for human playtesting.
+
 Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
 **End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows

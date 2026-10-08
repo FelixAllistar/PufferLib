@@ -1,0 +1,99 @@
+{
+  "status": "CANDIDATE_ONLY_NOT_APPLIED",
+  "candidate_scope": "Original-finish guest desks in Rooms 102, 103 and 104 only, subject to current engine binding verification.",
+  "targets": [
+    {
+      "room": 102,
+      "source_assembly_index": 47,
+      "source_object": "REUSE__desk__047",
+      "source_transform": {
+        "object": "REUSE__desk__047",
+        "asset_id": "desk",
+        "position_source_m": [
+          -3.49,
+          2.45,
+          0.008
+        ],
+        "yaw_source_deg": 90.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "proposed_runtime_file": "runtime/desk_original_clean_strokes_v1.glb",
+      "engine_dynamic_render_owner": null,
+      "verification": "Original assembly and build_motel.py room loop agree; runtime mapping requires engine-side verification."
+    },
+    {
+      "room": 103,
+      "source_assembly_index": 71,
+      "source_object": "REUSE__desk__071",
+      "source_transform": {
+        "object": "REUSE__desk__071",
+        "asset_id": "desk",
+        "position_source_m": [
+          0.51,
+          2.45,
+          0.008
+        ],
+        "yaw_source_deg": 90.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "proposed_runtime_file": "runtime/desk_original_clean_strokes_v1.glb",
+      "engine_dynamic_render_owner": null,
+      "verification": "Original assembly and build_motel.py room loop agree; runtime mapping requires engine-side verification."
+    },
+    {
+      "room": 104,
+      "source_assembly_index": 95,
+      "source_object": "REUSE__desk__095",
+      "source_transform": {
+        "object": "REUSE__desk__095",
+        "asset_id": "desk",
+        "position_source_m": [
+          4.51,
+          2.45,
+          0.008
+        ],
+        "yaw_source_deg": 90.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reused_existing_design": true,
+        "collection": "02c_FIXTURES_FURNISHINGS"
+      },
+      "proposed_runtime_file": "runtime/desk_original_clean_strokes_v1.glb",
+      "engine_dynamic_render_owner": null,
+      "verification": "Original assembly and build_motel.py room loop agree; runtime mapping requires engine-side verification."
+    }
+  ],
+  "room_mapping_evidence": "build_motel.py: rooms cx -6,-2,2,6 map to 101,102,103,104, desk at cx-1.49,2.45,0.008; assembly indices 23,47,71,95.",
+  "excluded": [
+    "Room101 REUSE__desk__023 and its W2 render",
+    "REUSE__desk__134 service-area desk",
+    "REUSED_desk shared source master",
+    "wallet and glasses and all other placed props"
+  ],
+  "do_not_replace_shared_motel_v1_desk_glb": true,
+  "apply_decision_required": [
+    "Resolve current dynamic render owner separately for each target by source object/instance identity, not guessed index offset.",
+    "Bind the candidate as per-instance render-only replacement; do not change transforms, authority, support planes, collision geometry, routing, interaction or prop ownership.",
+    "Retain exact existing collider and physical-authority bounds; candidate visual max height decreases by 0.0023000240325927734 m.",
+    "Keep wallet/glasses transforms and support ownership exactly as they are; do not lower props automatically to new visual bounds.",
+    "Confirm Room101 remains on W2, and service/source-master users remain original.",
+    "Run native Room103 matched before/after view and support/collision checks after engine-side application."
+  ],
+  "engine_changes_performed": false,
+  "native_runtime_QA": "Not performed; offline candidate and GLB-import QA only."
+}

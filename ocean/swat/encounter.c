@@ -225,7 +225,12 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
     if(actor>=0)for(int i=0;i<s->actor_count;i++) {
         SwatActor* other=&s->actors[i];if(i==actor || !other->present || !other->alive)continue;
         b3Pos feet=swat_body_feet_position(&other->controller.body);
-        if(b3Distance(start,feet)<3 && swat_world_visible(&s->world,swat_controller_eye(&s->actors[actor].controller),swat_controller_eye(&other->controller)))
+        // Plan around visible bodies over the same range as target perception.
+        // Restricting this to the 3 m contact-avoidance radius made destination
+        // occupancy disappear/reappear during approach, reversing routes at
+        // that boundary (especially escorts joining a crowded staging area).
+        // Walls still hide occupants; the shared static nav stays unchanged.
+        if(b3Distance(start,feet)<24 && swat_world_visible(&s->world,swat_controller_eye(&s->actors[actor].controller),swat_controller_eye(&other->controller)))
             people.feet[people.count++]=feet;
     }
     int from=nearest(nav,start),to=nearest(nav,goal); if(from<0 || to<0) return false;

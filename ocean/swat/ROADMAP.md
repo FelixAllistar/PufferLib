@@ -63,6 +63,38 @@ then address perception/behavior, level composition, sound and remaining polish.
 Reorder using concrete play-test failures. Record each completed increment and
 its evidence here; a successful subsystem test is not a finished vertical slice.
 
+Full front-door completion now has a C player-input regression starting from
+the canonical motel spawn: five compliance/cuff interactions, two collected
+weapons, three physical civilian escorts and all surviving officers regrouped.
+It passes with hostile fire enabled, no deaths or unlawful force, exact per-tick
+input replay, a mid-run save/resume and final late-replica state/debrief. The QA
+driver knows the room plan and reacts to actual unobstructed rays; this is a
+repeatable controller test, not a learned policy. It catches two real failures:
+the 3 m occupancy horizon could make escorts oscillate around a crowded staging
+area (route planning now includes visible people out to the existing 24 m
+perception range), and dropped evidence could consume the initial cuff press
+despite the displayed cuff action (body interaction now takes precedence).
+Contact avoidance still checks local bodies every tick; walls still occlude
+route occupancy. Full completion through the two breach approaches and a
+multi-human co-op run remain acceptance work.
+
+Validation for this increment: Linux isolated/hostile completion, encounter,
+motel, tactical and real-UDP regressions pass; native Windows hostile completion,
+encounter/motel/tactical/UDP checks pass. Full Windows build, complete environment
+graphics regression and ordinary `./swat` motel capture pass. The original-finish
+guest desks now remove their seven raised scratch boxes on owners 48/72/96,
+with byte-identical retained art and unchanged support/collision. Native review
+was shared as Slack file `F0C8PNE4YGY`.
+
+Next art integration is the delivered shoulder/scrub kit (five named placements,
+ten semantic support owners, separate closed ground/rock collision, visual-only
+foliage). Both runtime/source archive hashes pass; source and runtime are staged
+under `build/swat/review/surroundings/briar-court-surroundings-v1`. The source
+links and CC0 addendum are in the art thread (delivery `1791484687.573289`, license
+file `F0C7P4168M9`). Numeric IDs, native seams/support/navigation and render bindings
+are still engine work. The artist is continuing a service/maintenance grouping;
+the repeated rocks/shrubs remain a later appearance refinement.
+
 First slice increment: Linux encounter, motel, tactical, simulation, mission,
 protocol, UDP, 3D navigation and save/replay checks pass. Native Windows encounter
 and motel controller checks pass; the full Windows tool build, complete environment
