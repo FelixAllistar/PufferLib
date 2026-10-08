@@ -1,0 +1,25 @@
+{
+  "owner": "REUSE__desk__023",
+  "source_assembly_index": 23,
+  "original_assembly": {
+    "object": "REUSE__desk__023",
+    "asset_id": "desk",
+    "position_source_m": [
+      -7.49,
+      2.45,
+      0.008
+    ],
+    "yaw_source_deg": 90.0,
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "reused_existing_design": true,
+    "collection": "02c_FIXTURES_FURNISHINGS"
+  },
+  "candidate_file": "desk_023_oak_veneer01_w1_comparison.glb",
+  "mode": "Optional comparison only; not bound or pinned",
+  "geometry": "Complete 580-triangle desk render mesh; no collision supplied",
+  "rule": "Retain existing instance placement and authority; replace its render mesh only if separately approved. Do not apply source TRS twice."
+}

@@ -44,6 +44,8 @@ typedef struct SwatEnvironmentArt {
     Model room101_v4[SWAT_ROOM101_V4_ASSETS];
     float room101_v4_normal_scale[SWAT_ROOM101_V4_ASSETS][SWAT_ROOM101_MATERIALS];
     bool room101_v4_ready;
+    Model room101_desk;
+    float room101_desk_normal_scale[SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;

@@ -48,6 +48,7 @@ static Texture2D load_surface(const char* name,bool metric) {
 }
 
 static void room101_close(SwatEnvironmentArt* art) {
+    swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
     art->room101_ready=false;
@@ -118,6 +119,12 @@ static void room101_load(SwatEnvironmentArt* art) {
         }
     }
     art->room101_v4_ready=true;
+    // Only Room 101's desktop material/UVs change. The original mesh bank and
+    // physical desk remain the fallback and authority for this instance.
+    if(!room101_model_load(&art->room101_desk,art->room101_desk_normal_scale,
+            "motel_desk_w1/desk_023_oak_veneer01_w1.glb")) {
+        swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
+    }
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
@@ -456,6 +463,7 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
         material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
         if(lit) {
             float normal_scale=1;
+            if(model==&art->room101_desk)normal_scale=art->room101_desk_normal_scale[model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(model==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(model==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(model==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
@@ -485,6 +493,8 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     if(o->tag.index>SWAT_MOTEL_INSTANCES)return false;
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
+    if(o->tag.index==24 && art->room101_v4_ready && art->room101_desk.meshCount)
+        return location_draw(art,o,p,&art->room101_desk,shadow,cutaway,false);
     if(art->room101_ready) {
         if(art->room101_v4_ready) {
             static const int tags[SWAT_ROOM101_V4_ASSETS]={23,28,22,29,14,20,9,17};

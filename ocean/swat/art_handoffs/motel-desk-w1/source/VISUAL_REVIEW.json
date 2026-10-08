@@ -1,0 +1,21 @@
+{
+  "status": "PASS_AS_OPTIONAL_COMPARISON_NOT_PIN",
+  "source_light_only": true,
+  "room_pair": [
+    "bed_before.png",
+    "bed_after.png"
+  ],
+  "finding": "At the matched room camera, the supplied oak at 1.8m repeat removes the original tight striped repetition. Broader photographed grain is visibly quieter and more credible.",
+  "tradeoffs": [
+    "Top becomes noticeably lighter/blonder than the golden-brown original.",
+    "Existing thin black scratch/detail mesh strokes remain conspicuous; untouched by design.",
+    "Lower desk components retain original materials, so this is not a whole-desk finish redesign."
+  ],
+  "runtime_visual_check": "Not performed; no engine binding changes.",
+  "detail_pair": [
+    "desk_detail_before.png",
+    "desk_detail_after.png"
+  ],
+  "detail_finding": "Close-up confirms reduced dense periodic banding, photographed broad grain and long-axis orientation. Existing scratches remain prominent. Blonder top contrasts with untouched darker base; useful comparison, not an automatic replacement recommendation.",
+  "export_gate": "Both actual matched-camera pairs were visually inspected before runtime export."
+}

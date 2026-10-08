@@ -1,0 +1,9 @@
+{
+  "source": "source_materials/polyhaven_oak_veneer_01/oak_veneer_01_rough_1k.png",
+  "derived": "runtime_maps/oak_veneer01_w1_derived_metallic_roughness.png",
+  "operation": "Blender 4.3.2 glTF exporter standard metallic-roughness packing; 8-bit PNG RGB. R=255, G=original roughness, B=255 with metallicFactor=0.",
+  "green_max_difference_from_PIL_8bit_source_decode": 1,
+  "effective_metalness": 0,
+  "sha256": "d48246ea4fdc78c2b607d43176c9e6550d8c4cde5e3340f719260cf0805f4542",
+  "normal_and_diffuse_embedded_byte_identical_to_supplied_originals": true
+}

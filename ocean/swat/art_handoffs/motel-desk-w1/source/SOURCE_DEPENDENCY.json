@@ -1,0 +1,16 @@
+{
+  "pinned_scene_filename": "room101_v4_source.blend",
+  "pinned_scene_sha256": "acfef364aefd9b0850ef5274225120c7fecc5972193bac50783b94f7bd9246cc",
+  "verified_source_folder": "https://drive.google.com/drive/folders/1cTHfhPDlX5XIMHiShJ37yJtzStd3TZd2",
+  "source_delivery": "Nine parts plus recovery helper and manifest; follow their verified reassembly instructions.",
+  "reassembled_fullsource_archive_bytes": 223220440,
+  "reassembled_fullsource_archive_sha256": "280dd234657441926c01013fdfc90aff363ab14bc0e978b7becfbca4c687d6af",
+  "verified_receipt": "Parent verified 142 members / 141 payload hashes on downloaded reconstruction, 2026-10-07.",
+  "pinned_runtime_unchanged": {
+    "url": "https://drive.google.com/file/d/1AtaOAhyZsI1mpOSBAUCzputbPtb_OgIc/view",
+    "bytes": 17921652,
+    "sha256": "e54814611da429fb3d451a5cba6d4f39c52c94138c659a8e66c5002de07c4d30"
+  },
+  "rebuild_usage": "blender -b -t 6 --python build_compare.py -- --source /absolute/path/to/room101_v4_source.blend --export --render",
+  "package_scope": "Full pinned room source is an explicit immutable dependency, not duplicated in this delta. Desk-only asset source includes packed images."
+}

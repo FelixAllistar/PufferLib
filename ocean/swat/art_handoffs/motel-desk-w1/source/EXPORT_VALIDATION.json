@@ -1,0 +1,142 @@
+{
+  "status": "PASS",
+  "bytes": 11917280,
+  "sha256": "c84d99136be4592a886a28abd367a4ad39c1bad0aea406eb818ea68bf51819d8",
+  "triangles": 580,
+  "material_triangle_counts": {
+    "HP_wood": 132,
+    "HP_wood_faded": 102,
+    "HP_wood_dark": 260,
+    "HP_iron": 56,
+    "SWAT_desk023_oak_veneer01_1p8m_w1": 30
+  },
+  "bounds_Yup": [
+    [
+      -0.7099999785423279,
+      0.0,
+      -0.41499999165534973
+    ],
+    [
+      0.7099999785423279,
+      0.7523000240325928,
+      0.41499999165534973
+    ]
+  ],
+  "identity_local_datum": true,
+  "owner_nodes": [
+    "REUSE__desk__023"
+  ],
+  "images": [
+    {
+      "name": "wood",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB",
+      "sha256": "8e6053e49ef4c6668f699abe4bc46eca29994f0fd40c9bea5b03fedb46dc5366",
+      "byte_identical_supplied_original": null,
+      "encoding_note": "Exporter-derived encoding/channel packing or original legacy desk image; not a supplied source original"
+    },
+    {
+      "name": "wood_faded",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB",
+      "sha256": "cd04593b9ee0b69997c0fd03de569a462265987c637c82d07047517d33e19530",
+      "byte_identical_supplied_original": null,
+      "encoding_note": "Exporter-derived encoding/channel packing or original legacy desk image; not a supplied source original"
+    },
+    {
+      "name": "wood_dark",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB",
+      "sha256": "b5cd6908b8ff42e65c7f75bbac79c3ebfd9270fd6e9e20335260102bf9443d43",
+      "byte_identical_supplied_original": null,
+      "encoding_note": "Exporter-derived encoding/channel packing or original legacy desk image; not a supplied source original"
+    },
+    {
+      "name": "iron",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB",
+      "sha256": "96c2f6489515bae9ddd6eac084aab88f40bed9b474c767f5a39aaa1db00b16f1",
+      "byte_identical_supplied_original": null,
+      "encoding_note": "Exporter-derived encoding/channel packing or original legacy desk image; not a supplied source original"
+    },
+    {
+      "name": "oak_veneer_01_nor_gl_1k",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "sha256": "662d0514253d80a0b68a882ead3dbdcd5ab389d6e0b00bcf22b0f6baa3158877",
+      "byte_identical_supplied_original": "oak_veneer_01_nor_gl_1k.png",
+      "encoding_note": "Original supplied map bytes"
+    },
+    {
+      "name": "oak_veneer_01_diff_1k",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "sha256": "0f815b3d49d21c4edeea00c8708455ecd904fc747b0c1d3402e52c26fa70cbc9",
+      "byte_identical_supplied_original": "oak_veneer_01_diff_1k.png",
+      "encoding_note": "Original supplied map bytes"
+    },
+    {
+      "name": "oak_veneer_01_rough_1k",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "sha256": "d48246ea4fdc78c2b607d43176c9e6550d8c4cde5e3340f719260cf0805f4542",
+      "byte_identical_supplied_original": null,
+      "encoding_note": "Exporter-derived encoding/channel packing or original legacy desk image; not a supplied source original"
+    }
+  ],
+  "oak_material": {
+    "doubleSided": true,
+    "name": "SWAT_desk023_oak_veneer01_1p8m_w1",
+    "normalTexture": {
+      "index": 4,
+      "scale": 0.30000001192092896
+    },
+    "pbrMetallicRoughness": {
+      "baseColorTexture": {
+        "index": 5
+      },
+      "metallicFactor": 0,
+      "metallicRoughnessTexture": {
+        "index": 6
+      }
+    }
+  },
+  "checks": [
+    "finite positions/UV/normals/tangents",
+    "unit normals/tangents and tangent orthogonality",
+    "valid triangle indices",
+    "580 triangles unchanged",
+    "30 triangles bound to isolated oak",
+    "exact local envelope within 1 micrometre",
+    "all nodes identity local datum",
+    "opaque materials",
+    "correct three-map PBR routing, metalness zero, normal scale 0.3"
+  ],
+  "not_tested": [
+    "native engine appearance",
+    "engine collision/AI",
+    "performance",
+    "binding installation"
+  ]
+}

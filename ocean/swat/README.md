@@ -185,6 +185,10 @@ Original instance transforms, collision and removal ownership are preserved.
 the same corrected lighting; `2` selects v2 and `0` the original bank.
 Missing or invalid v4 assets fall back to the complete v3 set.
 See the [native review](art_handoffs/room101-realism-v4/engine/README.md).
+Room 101's desk now uses the separate W1 oak tabletop finish at the source's
+1.8 m texture scale, with restrained normal strength. Other desks keep their
+existing materials; the original model remains the missing-asset fallback.
+See the [matched desk captures](art_handoffs/motel-desk-w1/engine/README.md).
 
 All four motel guest rooms now include a luggage rack and wastebasket at their
 authored metre scale, with open mesh collision and replicated ownership. Their

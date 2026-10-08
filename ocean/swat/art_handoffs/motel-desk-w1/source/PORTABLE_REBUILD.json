@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "blender": "4.3.2",
+  "fresh_directory": true,
+  "source_dependency_sha256": "acfef364aefd9b0850ef5274225120c7fecc5972193bac50783b94f7bd9246cc",
+  "export_byte_identical": true,
+  "sha256": "c84d99136be4592a886a28abd367a4ad39c1bad0aea406eb818ea68bf51819d8",
+  "bytes": 11917280
+}
