@@ -31,10 +31,12 @@ static int motel_walls(void) {
     const SwatMotelInstance* p=swat_motel_instance(13);int group=w.objects[14].wall_group;
     SwatHit hit=swat_world_ray(&w,(b3Pos){-6.7f,1,-7},swat_v(0,0,1),2,b3_nullBodyId);
     if(!hit.hit || !swat_world_breach(&w,hit.index,hit.point))return 1;
-    printf("{\"format\":1,\"parent\":14,\"units\":\"metres\",\"source_origin\":[%.6f,%.6f,%.6f],\"source_yaw\":%.6f,\"source_scale\":[%.6f,%.6f,%.6f],\"sections\":[",(double)p->origin.x,(double)p->origin.y,(double)p->origin.z,p->yaw,p->scale.x,p->scale.y,p->scale.z);
+    printf("{\"format\":2,\"parent\":14,\"units\":\"metres\",\"source_origin\":[%.6f,%.6f,%.6f],\"source_yaw\":%.6f,\"source_scale\":[%.6f,%.6f,%.6f],\"sections\":[",(double)p->origin.x,(double)p->origin.y,(double)p->origin.z,p->yaw,p->scale.x,p->scale.y,p->scale.z);
     int count=0;for(int i=group-1;i<w.count && w.objects[i].wall_group==group;i++) {
         SwatObject* o=&w.objects[i];b3Vec3 d=b3SubPos(o->center,p->origin);float x=cosf(p->yaw)*d.x-sinf(p->yaw)*d.z;
-        printf("%s{\"id\":%d,\"center_world\":[%.6f,%.6f,%.6f],\"half_wall_xyz\":[%.6f,%.6f,%.6f],\"yaw\":%.6f,\"source_xy_bounds\":[%.6f,%.6f,%.6f,%.6f],\"survives\":%s}",count++?",":"",i,(double)o->center.x,(double)o->center.y,(double)o->center.z,o->half.x,o->half.y,o->half.z,o->yaw,x-o->half.z,d.y-o->half.y,x+o->half.z,d.y+o->half.y,o->active?"true":"false");
+        printf("%s{\"id\":%d,\"center_world\":[%.6f,%.6f,%.6f],\"half_wall_xyz\":[%.6f,%.6f,%.6f],\"yaw\":%.6f,\"source_xy_bounds\":[%.6f,%.6f,%.6f,%.6f],\"survives\":%s,\"source_xy_polygon\":[",count++?",":"",i,(double)o->center.x,(double)o->center.y,(double)o->center.z,o->half.x,o->half.y,o->half.z,o->yaw,(x-o->half.z)/p->scale.x,(d.y-o->half.y)/p->scale.y,(x+o->half.z)/p->scale.x,(d.y+o->half.y)/p->scale.y,o->active?"true":"false");
+        for(int k=0;k<4;k++)printf("%s[%.6f,%.6f]",k?",":"",(x+o->corners[k][1])/p->scale.x,(d.y+o->corners[k][0])/p->scale.y);
+        printf("]}");
     }
     printf("],\"edges\":[");count=0;
     for(int i=group-1;i<w.count && w.objects[i].wall_group==group;i++) {

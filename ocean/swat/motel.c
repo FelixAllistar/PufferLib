@@ -1,4 +1,5 @@
 #include "motel.h"
+#include <string.h>
 #include "mission.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -142,23 +143,34 @@ int swat_motel_wall_parent(const SwatWorld* w,const SwatObject* piece) {
     }
     return -1;
 }
+static void wall_corners(const SwatObject* o,float v[4][2]) {
+    if(o->fractured){memcpy(v,o->corners,sizeof(o->corners));return;}
+    const int sign[4][2]={{-1,-1},{1,-1},{1,1},{-1,1}};
+    for(int i=0;i<4;i++){v[i][0]=sign[i][0]*o->half.y;v[i][1]=sign[i][1]*o->half.z;}
+}
 int swat_motel_wall_edges(const SwatWorld* w,const SwatObject* o,SwatMotelEdge* edges,int capacity) {
     if(!o->active || o->material!=SWAT_BRICK || swat_motel_wall_parent(w,o)<0)return 0;
-    int count=0;float c=cosf(o->yaw),s=sinf(o->yaw);
+    int count=0;float c=cosf(o->yaw),s=sinf(o->yaw),v[4][2];wall_corners(o,v);
     for(int i=o->wall_group-1;i<w->count && w->objects[i].wall_group==o->wall_group;i++) {
         const SwatObject* n=&w->objects[i];if(n->active || n->part!=SWAT_PART_SKIN)continue;
-        b3Vec3 d=b3SubPos(n->center,o->center);float y=d.y,z=s*d.x+c*d.z;
-        float ly=0,lz=0,length=0,roll=0;
-        if(fabsf(fabsf(y)-o->half.y-n->half.y)<.0001f) {
-            float lo=fmaxf(-o->half.z,z-n->half.z),hi=fminf(o->half.z,z+n->half.z);
-            length=hi-lo;lz=(hi+lo)*.5f;ly=copysignf(o->half.y,y);roll=y>0?SWAT_PI:0;
-        } else if(fabsf(fabsf(z)-o->half.z-n->half.z)<.0001f) {
-            float lo=fmaxf(-o->half.y,y-n->half.y),hi=fminf(o->half.y,y+n->half.y);
-            length=hi-lo;ly=(hi+lo)*.5f;lz=copysignf(o->half.z,z);roll=z>0?-SWAT_PI*.5f:SWAT_PI*.5f;
+        b3Vec3 d=b3SubPos(n->center,o->center);float ny=d.y,nz=s*d.x+c*d.z,u[4][2];wall_corners(n,u);
+        for(int e=0;e<4;e++) {
+            int k=(e+1)%4;float dy=v[k][0]-v[e][0],dz=v[k][1]-v[e][1],length=hypotf(dy,dz);
+            if(length<.0001f)continue;
+            float ty=dy/length,tz=dz/length;
+            for(int f=0;f<4;f++) {
+                int g=(f+1)%4;float ay=ny+u[f][0]-v[e][0],az=nz+u[f][1]-v[e][1];
+                float by=ny+u[g][0]-v[e][0],bz=nz+u[g][1]-v[e][1];
+                if(fabsf(ty*az-tz*ay)>.0001f || fabsf(ty*bz-tz*by)>.0001f)continue;
+                float a=ty*ay+tz*az,b=ty*by+tz*bz;
+                if(b>=a)continue; // Neighbor's shared boundary runs the other way.
+                float lo=fmaxf(0,b),hi=fminf(length,a);if(hi-lo<.0001f)continue;
+                float mid=(lo+hi)*.5f,ly=v[e][0]+ty*mid,lz=v[e][1]+tz*mid;
+                if(count>=capacity)return count;
+                // Strip +Y points into this survivor; +Z follows the reverse edge.
+                edges[count++]=(SwatMotelEdge){o->tag.index,i,b3OffsetPos(o->center,swat_v(s*lz,ly,c*lz)),o->yaw,atan2f(ty,-tz),hi-lo,2*o->half.x};
+            }
         }
-        if(length<.0001f)continue;
-        if(count>=capacity)return count;
-        edges[count++]=(SwatMotelEdge){o->tag.index,i,b3OffsetPos(o->center,swat_v(s*lz,ly,c*lz)),o->yaw,roll,length,2*o->half.x};
     }
     return count;
 }
@@ -186,6 +198,11 @@ static bool wall_occupied(const SwatMotelAsset* a,float depth,float x,float y) {
     }
     return false;
 }
+static float masonry_noise(int owner,int patch_x,int patch_y,int x,int y,int axis) {
+    uint32_t h=(uint32_t)owner*2246822519u^(uint32_t)patch_x*3266489917u^(uint32_t)patch_y*668265263u^
+        (uint32_t)x*374761393u^(uint32_t)y*0x9e3779b9u^(uint32_t)axis*0x85ebca6bu;
+    h=(h^(h>>13))*1274126177u;h^=h>>16;return (h%10001)/5000.0f-1;
+}
 static void sectioned_wall(SwatWorld* w,int owner) {
     const SwatMotelInstance* p=swat_motel_instance(owner-1);const SwatMotelAsset* a=swat_motel_asset(p->asset);
     float depth=p->asset==22?.06f:.09f,x[64],y[64];int nx=0,ny=0;
@@ -198,12 +215,26 @@ static void sectioned_wall(SwatWorld* w,int owner) {
         if(!wall_occupied(a,depth,(x[ix]+x[ix+1])*.5f,(y[iy]+y[iy+1])*.5f))continue;
         int columns=(int)ceilf(width/.7f),rows=(int)ceilf(height/.8f);
         for(int c=0;c<columns;c++)for(int r=0;r<rows;r++) {
-            float lx=(x[ix]+width*(c+.5f)/columns)*p->scale.x,ly=(y[iy]+height*(r+.5f)/rows)*p->scale.y;
+            float dx=width/columns,dy=height/rows,v[4][2];
+            float min_x=1e9f,max_x=-1e9f,min_y=1e9f,max_y=-1e9f;
+            const int offset[4][2]={{0,0},{0,1},{1,1},{1,0}};
+            for(int k=0;k<4;k++) {
+                int gx=c+offset[k][0],gy=r+offset[k][1];
+                // Shared vertices tile without gaps. Architectural opening/patch
+                // boundaries stay fixed; only internal fracture lines wander.
+                float px=x[ix]+gx*dx+(gx>0 && gx<columns?.20f*dx*masonry_noise(owner,ix,iy,gx,gy,0):0);
+                float py=y[iy]+gy*dy+(gy>0 && gy<rows?.16f*dy*masonry_noise(owner,ix,iy,gx,gy,1):0);
+                v[k][0]=py*p->scale.y;v[k][1]=px*p->scale.x;
+                min_x=fminf(min_x,v[k][1]);max_x=fmaxf(max_x,v[k][1]);min_y=fminf(min_y,v[k][0]);max_y=fmaxf(max_y,v[k][0]);
+            }
+            float lx=(min_x+max_x)*.5f,ly=(min_y+max_y)*.5f;
             b3Pos center=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*lx,ly,-sinf(p->yaw)*lx));
-            b3Vec3 half=swat_v(depth*p->scale.z,height*p->scale.y/(2*rows),width*p->scale.x/(2*columns));
+            b3Vec3 half=swat_v(depth*p->scale.z,(max_y-min_y)*.5f,(max_x-min_x)*.5f);
             int id=swat_world_box(w,center,half,material,swat_material(material)->fracture_health);
             SwatObject* o=&w->objects[id];o->part=SWAT_PART_SKIN;o->wall_group=first+1;
             swat_world_place(o,swat_angle(p->yaw+SWAT_PI*.5f));
+            for(int k=0;k<4;k++){v[k][0]-=ly;v[k][1]-=lx;}
+            bool valid=swat_world_fragment(o,v);assert(valid);(void)valid;
         }
     }
     assert(w->count>first);SwatObject* old=&w->objects[owner];old->wall_group=first+1;

@@ -220,8 +220,10 @@ charge. Material impact thresholds and thickness-scaled charge resistance live i
 `materials.c`, separately from ballistic resistance. These are game approximations.
 Exposed masonry and interrupted plaster patches follow surviving section/removed-neighbor pairs;
 `swat_layout_tool motel-walls` exports exact geometry for art handoffs.
-Breach edges are currently rectangular sections; irregular opening silhouettes, rubble
-and whole-building structural collapse are unfinished. Furniture remains solid
+Masonry now uses shared irregular convex sections; original wall art and exposed
+brick strips follow the same polygon boundaries as collision. Architectural
+door/window boundaries stay fixed. This is a deterministic fracture approximation;
+fine chipping, physical rubble and whole-building structural collapse are unfinished. Furniture remains solid
 behind a breach. Floors, roofs, piers and most props are still static.
 See the [dressing and breach review](art_handoffs/motel-dressing-v1/engine/README.md).
 
@@ -809,7 +811,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 12) and the same generated
+Saves require this network/replay version (currently 13) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -845,7 +847,7 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **12**; older clients and
+breach. The network geometry contract is version **13**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The motel's east wire fence has actual openings for bullets and porous sound

@@ -560,7 +560,10 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
     // Solid structural core also supplies the newly exposed breach edges.
     rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
     const uint8_t* c=swat_material(o->material)->color;
-    DrawCubeV((Vector3){0},(Vector3){2*o->half.x-.002f,2*o->half.y,2*o->half.z},(Color){c[0],c[1],c[2],255});rlPopMatrix();
+    if(o->fractured) {
+        SwatObject core=*o;core.half.x-=.001f;swat_environment_fragment_draw(&core);
+    } else DrawCubeV((Vector3){0},(Vector3){2*o->half.x-.002f,2*o->half.y,2*o->half.z},(Color){c[0],c[1],c[2],255});
+    rlPopMatrix();
     const Model* clipped=wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p);
     location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
     if(owner==13 && art->room101_ready) {

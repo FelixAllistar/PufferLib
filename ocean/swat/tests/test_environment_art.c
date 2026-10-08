@@ -260,10 +260,46 @@ static int room101_owner_pixels(SwatEnvironmentArt* art,SwatObject* o,bool cutaw
     for(int i=0;i<256*256;i++)count+=pixels[i].r!=MAGENTA.r || pixels[i].g!=MAGENTA.g || pixels[i].b!=MAGENTA.b;
     UnloadImageColors(pixels);UnloadImage(frame);UnloadRenderTexture(target);return count;
 }
+static void masonry_silhouette(SwatView* view,const char* directory) {
+    SwatObject* piece=NULL;
+    for(int i=SWAT_MOTEL_INSTANCES+1;i<sim.world.count && !piece;i++) {
+        SwatObject* o=&sim.world.objects[i];int parent=swat_motel_wall_parent(&sim.world,o);
+        if(parent<0 || swat_motel_instance(parent-1)->asset!=1 || !o->fractured || o->half.y<.2f || o->half.z<.2f)continue;
+        for(int e=0;e<4;e++)if(fabsf(fabsf(o->corners[e][0])-o->half.y)>.04f || fabsf(fabsf(o->corners[e][1])-o->half.z)>.04f)piece=o;
+    }
+    assert(piece);int checked=0,filled=0,empty=0;
+    bool prepared=view->lighting.prepared;view->lighting.prepared=false;
+    for(int side=-1;side<=1;side+=2) {
+        Vector3 center={(float)piece->center.x,(float)piece->center.y,(float)piece->center.z};
+        Camera3D camera={Vector3Add(center,(Vector3){side*2*cosf(piece->yaw),0,-side*2*sinf(piece->yaw)}),center,{0,1,0},2*fmaxf(piece->half.y,piece->half.z)+.2f,CAMERA_ORTHOGRAPHIC};
+        RenderTexture2D target=LoadRenderTexture(512,512);BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
+        assert(swat_environment_motel_draw(&view->environment,&sim.world,piece,false,false));
+        EndMode3D();EndTextureMode();Image image=LoadImageFromTexture(target.texture);ImageFlipVertical(&image);
+        Color* pixels=LoadImageColors(image);
+        for(int y=5;y<507;y+=5)for(int x=5;x<507;x+=5) {
+            bool center_hit=false,same=true;
+            const int offsets[5][2]={{0,0},{-2,0},{2,0},{0,-2},{0,2}};
+            for(int j=0;j<5;j++) {
+                Ray ray=GetScreenToWorldRayEx((Vector2){x+.5f+offsets[j][0],y+.5f+offsets[j][1]},camera,512,512);
+                bool hit=b3Shape_RayCast(piece->shape,(b3Pos){ray.position.x,ray.position.y,ray.position.z},swat_v(5*ray.direction.x,5*ray.direction.y,5*ray.direction.z)).hit;
+                if(j==0)center_hit=hit;else same &= hit==center_hit;
+            }
+            if(!same)continue; // Raster coverage within two pixels of the true boundary.
+            Color p=pixels[y*512+x];bool visible=p.r!=MAGENTA.r || p.g!=MAGENTA.g || p.b!=MAGENTA.b;
+            if(visible!=center_hit)printf("Masonry coverage mismatch side%d pixel%d,%d visible%d collision%d\n",side,x,y,visible,center_hit);
+            assert(visible==center_hit);checked++;filled+=visible;empty+=!visible;
+        }
+        char path[4096];snprintf(path,sizeof(path),"%s/masonry-fragment-%s.png",directory,side<0?"back":"front");assert(ExportImage(image,path));
+        UnloadImageColors(pixels);UnloadImage(image);UnloadRenderTexture(target);
+    }
+    view->lighting.prepared=prepared;assert(filled>1000 && empty>1000);
+    printf("PASS masonry silhouette: %d native GPU samples match exact convex collision on both faces (%d solid/%d empty)\n",checked,filled,empty);
+}
 static void room101_graphics(SwatView* view,const char* directory) {
     SwatEnvironmentArt* art=&view->environment;
     SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.hostile_fire=false;
     swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
+    masonry_silhouette(view,directory);
     Texture2D asphalt_maps[]={art->motel_asphalt.color,art->motel_asphalt.normal,art->motel_asphalt.roughness};
     const int coordinates[4][2]={{0,0},{127,311},{1023,1023},{512,512}};
     // Independent PNG16 decode retained in the asphalt handoff: GPU upload

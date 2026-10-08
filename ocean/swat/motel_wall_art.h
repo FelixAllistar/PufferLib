@@ -4,7 +4,7 @@
 #define SWAT_MOTEL_WALL_ART_H
 typedef struct SwatWallVertex {Vector3 p,n;Vector2 uv,uv2;} SwatWallVertex;
 typedef struct SwatWallMeshCache {
-    Model model;const Mesh* source;b3Pos center;b3Vec3 half;
+    Model model;const Mesh* source;b3Pos center;b3Vec3 half;bool fractured;float corners[4][2];
 } SwatWallMeshCache;
 typedef struct SwatMotelWallArt {SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3];uint64_t fence_masks[3];} SwatMotelWallArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
@@ -62,9 +62,22 @@ static int wall_clip(SwatWallVertex* vertices,int count,int axis,float edge,floa
     }
     memcpy(vertices,out,n*sizeof(*out));return n;
 }
+static int wall_clip_edge(SwatWallVertex* vertices,int count,Vector2 a,Vector2 b) {
+    SwatWallVertex out[12];int n=0;
+    for(int i=0;i<count;i++) {
+        SwatWallVertex p=vertices[i],q=vertices[(i+1)%count];
+        float pv=(b.y-a.y)*(p.p.x-a.x)-(b.x-a.x)*(p.p.y-a.y);
+        float qv=(b.y-a.y)*(q.p.x-a.x)-(b.x-a.x)*(q.p.y-a.y);
+        if(pv>=0)out[n++]=p;
+        if((pv>=0)!=(qv>=0))out[n++]=wall_lerp(p,q,pv/(pv-qv));
+    }
+    memcpy(vertices,out,n*sizeof(*out));return n;
+}
 static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const SwatObject* o,const SwatMotelInstance* p) {
-    if(cache->source==source->meshes && b3Distance(cache->center,o->center)<1e-6f && b3Length(b3Sub(cache->half,o->half))<1e-6f)return &cache->model;
+    if(cache->source==source->meshes && b3Distance(cache->center,o->center)<1e-6f && b3Length(b3Sub(cache->half,o->half))<1e-6f &&
+       cache->fractured==o->fractured && !memcmp(cache->corners,o->corners,sizeof(o->corners)))return &cache->model;
     wall_mesh_close(cache);cache->source=source->meshes;cache->center=o->center;cache->half=o->half;
+    cache->fractured=o->fractured;memcpy(cache->corners,o->corners,sizeof(o->corners));
     b3Vec3 d=b3SubPos(o->center,p->origin);float cx=(cosf(p->yaw)*d.x-sinf(p->yaw)*d.z)/p->scale.x;
     float cy=d.y/p->scale.y,hx=o->half.z/p->scale.x,hy=o->half.y/p->scale.y;
     Model* model=&cache->model;model->transform=MatrixIdentity();
@@ -84,8 +97,15 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
                 if(src->texcoords)memcpy(&v[k].uv,src->texcoords+2*at,2*sizeof(float));
                 if(src->texcoords2)memcpy(&v[k].uv2,src->texcoords2+2*at,2*sizeof(float));
             }
-            n=wall_clip(v,n,0,cx-hx,1);n=wall_clip(v,n,0,cx+hx,-1);
-            n=wall_clip(v,n,1,cy-hy,1);n=wall_clip(v,n,1,cy+hy,-1);
+            if(o->fractured)for(int e=0;e<4;e++) {
+                int next=(e+1)%4;
+                Vector2 a={cx+o->corners[e][1]/p->scale.x,cy+o->corners[e][0]/p->scale.y};
+                Vector2 b={cx+o->corners[next][1]/p->scale.x,cy+o->corners[next][0]/p->scale.y};
+                n=wall_clip_edge(v,n,a,b);
+            } else {
+                n=wall_clip(v,n,0,cx-hx,1);n=wall_clip(v,n,0,cx+hx,-1);
+                n=wall_clip(v,n,1,cy-hy,1);n=wall_clip(v,n,1,cy+hy,-1);
+            }
             for(int k=1;k<n-1;k++) {
                 int corner[]={0,k,k+1};
                 if(Vector3LengthSqr(Vector3CrossProduct(Vector3Subtract(v[k].p,v[0].p),Vector3Subtract(v[k+1].p,v[0].p)))<1e-14f)continue;

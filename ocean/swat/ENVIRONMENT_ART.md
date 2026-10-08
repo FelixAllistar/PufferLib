@@ -207,7 +207,13 @@ Each static instance has its own authoritative object and exact triangle
 collision, retaining facade openings, bathroom passages, the access ramp and
 furniture gaps. Five separate door leaves use the existing physical hinge,
 interaction, lock and breach machinery. A removed leaf hides its whole matching
-model. Static masonry and furnishings currently remain intact. Room volumes,
+model. Masonry now uses 18 cm material-aware convex sections; mounted charges
+open local routes while ordinary bullets/ram impacts leave it intact. Shared
+irregular fracture vertices tile the wall without gaps, preserving its authored
+door/window boundaries. The renderer clips original UV0/UV1/material geometry
+to each physical polygon and aligns exposed-core strips to surviving edges.
+Bathroom board and timber party walls use their own material rules. Furniture,
+piers, floors and roofs remain static. Room volumes,
 occupants, staging and extraction form a playable encounter. Planning omits the
 roof collection; shadow, officer, scope and device rendering share the instances.
 
@@ -215,8 +221,9 @@ The standard map packet still transmits object identities and bounding recipes.
 For this new mission, matching compiled placements reconstruct triangle collision
 on replicas; all instance positions, sizes, yaw and material/door flags are
 checked before any collider changes. Modified maps that no longer match retain
-the explicit box geometry they transmit. Existing missions and packet fields
-are unchanged. Both peers need a build that supports the new motel mission.
+the explicit geometry they transmit. Appended fragments transmit their convex
+boundaries. Both peers need the current version; network/replay version 13 marks
+the irregular masonry recipe change. The standard player rejects older journals.
 The world owns collision meshes and releases them after its physics world.
 
 The adapter restores original scalar roughness and metallic factors omitted by
@@ -225,8 +232,9 @@ original base colour, mipmaps and the common lighting shader. Lighting includes
 an analytic daylight environment and room reflection approximation, not captured
 scene reflections. The visible sky uses the same daylight radiance. The next
 art pass is adding metric normals/roughness to the motel's small source textures.
-Master module reuse currently retains the room-101 plaque texture/geometry and
-master facade finish, rather than the assembled example's per-room variants.
+Room plaques 101–104, reception/roadside signs, original supported room details
+and the parking asphalt now have separate integrated handoffs; the remaining
+rooms still reuse much of the master facade/interior finish.
 
 Engine validation covers all nine authored 0.6 m diameter / 1.8 m capsule
 routes against Box3D mesh collision, closed/open/breached doors, every imported

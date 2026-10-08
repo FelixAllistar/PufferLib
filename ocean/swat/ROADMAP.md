@@ -53,7 +53,8 @@ Visible occupants can cause local sector/route replanning; no hidden occupant ma
 is added. Three-officer furnished-room entry, queued execution, wedge refusal,
 four doorway rotations/both flanks and exact input replay pass on Linux/Windows.
 Bedside switches and material-aware masonry work, but light does not affect
-perception and openings remain rectangular. Production audio, room/approach art
+perception. Masonry openings now follow irregular physical polygons, with coarse
+macro-fracture still visible. Production audio, room/approach art
 and trained tactical policies are unfinished.
 
 Work order: close the scenario completion/squad gaps and integrate delivered art;
@@ -124,10 +125,27 @@ props or shadows. Compact decisive proof and the diagnostic command are retained
 in the Room 103 handoff; the artist has a bounded desk cleanup queued after the
 surroundings layout. Fence/asphalt/sign proof was shared as Slack `F0C7PCK3485`.
 
-Next: continue irregular masonry silhouettes, full scenario completion through
-different approaches, perception and level context. The artist is proposing
-surroundings placements while preserving the current entry/flank routes; the
-empty ground boundary/background is still conspicuous in approach views.
+Fifth increment: motel masonry/board sections now share deterministic oblique
+fracture vertices, preserving architectural openings and the existing object
+count. Convex collision, original-art clipping, exposed-core strips, penetration,
+support attachment and map reconstruction use the same polygon boundaries.
+16,182 intact-wall rays pass from both sides; 19,856 native Windows GPU samples
+match physical hull coverage on both fragment faces. Existing human/squad breach
+routes, material protection, late replicas and save/replay checks pass on Linux
+and Windows. Linux real UDP checks, the full Windows graphics regression and
+ordinary `./swat` capture pass. Network/replay version is 13; use fresh journals.
+`layout_tool motel-walls` format 2 exports exact source polygons and angled strips,
+byte-equivalent after JSON parsing on Linux/Windows. Native proof is retained in
+the motel-masonry engine handoff. This is coarse deterministic fracture, not
+arbitrary stress-driven fracture, small chips or dynamic rubble.
+
+Next: complete scenario playthroughs through different approaches, perception
+and level context. The artist is building two surroundings modules: reachable
+soil/gravel shoulders east X24..30 / Z-12..12 and west X-30..-24 / Z-8..8, with
+scrub confined to the outer halves. Engine integration will add separate physical
+support/solid-bank owners and verify seams/routes/replicas; final numeric IDs are
+not assigned yet. Existing ground owner 0, openings and fence-end routes remain.
+The empty ground boundary/background is still conspicuous until delivery is integrated.
 
 ## Landed: playable foundation
 

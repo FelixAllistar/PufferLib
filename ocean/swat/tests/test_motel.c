@@ -138,6 +138,32 @@ static bool wall_only(b3ShapeId shape,void* context) {
     WallQuery* q=context;SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape));
     return tag && tag->kind==SWAT_HIT_WORLD && q->world->objects[tag->index].wall_group==q->group;
 }
+static void masonry_continuity(void) {
+    swat_world_init(&world);swat_motel_build(&world);int rays=0,slanted=0;
+    for(int owner=1;owner<=SWAT_MOTEL_INSTANCES;owner++) {
+        const SwatMotelInstance* p=swat_motel_instance(owner-1);
+        if(p->asset!=1 && p->asset!=2)continue;
+        const SwatMotelAsset* asset=swat_motel_asset(p->asset);int first=world.objects[owner].wall_group-1;
+        assert(first>SWAT_MOTEL_INSTANCES);
+        if(swat_motel_wall_parent(&world,&world.objects[first])!=owner)continue; // Timber party walls have separate skin/stud layers.
+        for(int i=first;i<world.count && world.objects[i].wall_group==first+1;i++) {
+            const SwatObject* o=&world.objects[i];assert(o->fractured);
+            for(int e=0;e<4;e++){int k=(e+1)%4;slanted+=fabsf(o->corners[e][0]-o->corners[k][0])>.01f && fabsf(o->corners[e][1]-o->corners[k][1])>.01f;}
+        }
+        for(int side=-1;side<=1;side+=2)for(int x=0;x<31;x++)for(int y=0;y<29;y++) {
+            float lx=(-asset->half.x+.01f+(2*asset->half.x-.02f)*(x+.37f)/31)*p->scale.x;
+            float ly=(.01f+2.78f*(y+.29f)/29)*p->scale.y;
+            b3Vec3 normal=swat_v(sinf(p->yaw),0,cosf(p->yaw));
+            b3Pos origin=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*lx+side*.3f*normal.x,ly,-sinf(p->yaw)*lx+side*.3f*normal.z));
+            bool hit=false;
+            for(int i=first;i<world.count && world.objects[i].wall_group==first+1 && !hit;i++)
+                hit=b3Shape_RayCast(world.objects[i].shape,origin,swat_mul(normal,-side*.6f)).hit;
+            assert(hit);rays++;
+        }
+    }
+    assert(slanted>100 && rays>10000);swat_world_close(&world);
+    printf("PASS masonry continuity: %d bidirectional wall-face rays, %d oblique fracture edges, original outside boundaries\n",rays,slanted);
+}
 static void masonry_ballistics(void) {
     static SwatSim s,replica;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;
     swat_sim_init(&s,cfg,81);
@@ -163,18 +189,23 @@ static void masonry_ballistics(void) {
     assert(removed>0);
     for(int i=0;i<s.world.count;i++)surviving+=s.world.objects[i].active && s.world.objects[i].wall_group==group;
     assert(surviving>0); // A local aperture, not removal of the entire facade.
-    int exposed=0;
+    int exposed=0,oblique=0;
     for(int i=group-1;i<s.world.count && s.world.objects[i].wall_group==group;i++) {
         SwatMotelEdge edges[32];int n=swat_motel_wall_edges(&s.world,&s.world.objects[i],edges,32);
         exposed+=n;for(int k=0;k<n;k++) {
             assert(edges[k].owner==i && s.world.objects[i].active && !s.world.objects[edges[k].neighbor].active && edges[k].length>0);
+            SwatMotelEdge e=edges[k];oblique+=fabsf(sinf(e.roll))>.01f && fabsf(cosf(e.roll))>.01f;
+            b3Vec3 inward=swat_v(sinf(e.yaw)*sinf(e.roll),cosf(e.roll),cosf(e.yaw)*sinf(e.roll));
+            b3Vec3 normal=swat_v(cosf(e.yaw),0,-sinf(e.yaw));
+            b3Pos edge_probe=b3OffsetPos(e.origin,b3Add(swat_mul(normal,.3f),swat_mul(inward,.005f)));
+            assert(b3Shape_RayCast(s.world.objects[i].shape,edge_probe,swat_mul(normal,-.6f)).hit);
             int neighbor=edges[k].neighbor;s.world.objects[neighbor].active=true;
             assert(swat_motel_wall_edges(&s.world,&s.world.objects[i],edges,32)==n-1);
             s.world.objects[neighbor].active=false;
             break;
         }
     }
-    assert(exposed>0);
+    assert(exposed>0 && oblique>0);
     // Isolate the assembly clearance: bathroom fixtures behind it deliberately remain solid.
     swat_sim_spawn_actor(&s,1,SWAT_CIVILIAN,(b3Pos){-6.7f,.01f,-5},-SWAT_PI*.5f);
     assert(b3World_CastMover(s.world.id,entry,&capsule,b3SubPos(exit,entry),b3DefaultQueryFilter(),wall_only,&query)>.999f);
@@ -233,7 +264,8 @@ static void live_squad_and_evacuation(void) {
         for(int i=0;i<s.actor_count;i++)if(s.actors[i].present) {
             b3Pos p=swat_body_feet_position(&s.actors[i].controller.body);
             printf("Actor %d role%d feet %.3f %.3f %.3f\n",i,s.actors[i].role,(float)p.x,(float)p.y,(float)p.z);
-        }fflush(stdout);
+        }
+        fflush(stdout);
     }
     assert(t<2400 && s.world.objects[16].door_open);
     // The standing civilian physically fills the narrow chair/bed aisle. Clear
@@ -356,6 +388,7 @@ static void live_breach_routes(void) {
     puts("PASS motel breach movement: wedged doors prevent detours; actual squad controller crosses exterior masonry and inter-room openings after destruction without teleporting");
 }
 int main(void) {
+    masonry_continuity();
     live_fence_routes();
     fence_charge_route();
     squad_door_orders();
