@@ -809,7 +809,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 9) and the same generated
+Saves require this network/replay version (currently 11) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -845,7 +845,7 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **9**; version 8 clients and
+breach. The network geometry contract is version **11**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The audio bank contains 45 CC0 recorded clips with 67 event/material bindings:

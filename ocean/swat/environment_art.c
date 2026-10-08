@@ -55,6 +55,7 @@ static void room101_close(SwatEnvironmentArt* art) {
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
     for(int i=0;i<3;i++) {swat_art_model_close(art->motel_numbers[i]);art->motel_numbers[i]=(Model){0};}
     swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
+    for(int i=0;i<2;i++) {swat_art_model_close(art->motel_personal[i]);art->motel_personal[i]=(Model){0};}
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
     art->room101_ready=false;
     for(int i=0;i<SWAT_ROOM101_V3_ASSETS;i++) {swat_art_model_close(art->room101_v3[i]);art->room101_v3[i]=(Model){0};}
@@ -137,6 +138,13 @@ static void room101_load(SwatEnvironmentArt* art) {
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
+    const char* personal[]={"creased_leather_wallet.glb","brass_eyeglasses.glb"};
+    for(int i=0;i<2;i++) {
+        char file[128];snprintf(file,sizeof(file),"motel_personal/%s",personal[i]);
+        if(!room101_model_load(&art->motel_personal[i],art->motel_personal_normal_scale[i],file)) {
+            swat_art_model_close(art->motel_personal[i]);art->motel_personal[i]=(Model){0};
+        }
+    }
     if(!room101_model_load(&art->motel_reception,art->motel_reception_normal_scale,"motel_reception/reception_sign.glb")) {
         swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
     }
@@ -228,12 +236,12 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     int missing=0;
     for(int i=0;i<(location ? SWAT_STOREFRONT_ASSETS : SWAT_MOTEL_ASSETS);i++) {
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
-        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":"motel_utility_v1",a->file);
+        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":"motel_fence",a->file);
         Model* model=location ? &art->storefront[i] : &art->motel[i];
         if(asset_path(path,sizeof(path),file)) *model=LoadModel(path);
-        if(!model->meshCount || model->materialCount!=a->material_count+1) { swat_art_model_close(*model); *model=(Model){0}; missing++; continue; }
-        SwatArtMaterialFactors factors[SWAT_ROOM101_MATERIALS-1];
-        int factors_count=swat_art_material_factors(path,factors,SWAT_ROOM101_MATERIALS-1);
+        if(!model->meshCount || model->materialCount!=a->material_count+1 || model->materialCount>SWAT_LOCATION_MATERIALS) { swat_art_model_close(*model); *model=(Model){0}; missing++; continue; }
+        SwatArtMaterialFactors factors[SWAT_LOCATION_MATERIALS-1];
+        int factors_count=swat_art_material_factors(path,factors,SWAT_LOCATION_MATERIALS-1);
         // Raylib 5.5 reads scalar glTF PBR factors only when an ORM texture
         // exists. Restore the catalogued original factors for scalar materials.
         for(int m=0;m<a->material_count;m++) {
@@ -494,6 +502,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
         if(lit) {
             float normal_scale=1;
             if(source==&art->motel_reception)normal_scale=art->motel_reception_normal_scale[model->meshMaterial[i]];
+            for(int n=0;n<2;n++)if(source==&art->motel_personal[n])normal_scale=art->motel_personal_normal_scale[n][model->meshMaterial[i]];
             for(int n=0;n<3;n++)if(source==&art->motel_numbers[n])normal_scale=art->motel_number_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
             if(source==&art->room101_desk)normal_scale=art->room101_desk_normal_scale[model->meshMaterial[i]];
@@ -551,6 +560,10 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
 }
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel || o->tag.index<1)return false;
+    if(o->tag.index==72 && o->active)for(int i=0;i<2;i++) {
+        SwatMotelInstance mount={.origin={.8f,.7606f,i?-2.23f:-2.03f},.scale={1,1,1},.yaw=(i?-12:8)*SWAT_RAD};
+        location_draw(art,o,&mount,&art->motel_personal[i],shadow,cutaway,false);
+    }
     if(o->tag.index==5 && o->active && art->motel_reception.meshCount) {
         SwatMotelInstance sign={.origin={-10.6f,2.4f,2.01f},.scale={1,1,1},.roof=true};
         location_draw(art,o,&sign,&art->motel_reception,shadow,cutaway,false);

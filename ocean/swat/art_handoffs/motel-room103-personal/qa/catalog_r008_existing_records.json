@@ -1,0 +1,124 @@
+[
+  {
+    "id": "env:02_household_clutter/brass_eyeglasses",
+    "name": "Oval brass glasses with bridge, lenses and folded-height arms",
+    "record_kind": "unique_design",
+    "category": "environment",
+    "subtype": "clutter",
+    "batch": "02_household_clutter",
+    "location_tags": [
+      "residential",
+      "kitchen"
+    ],
+    "material_tags": [
+      "glass"
+    ],
+    "tag_basis": "source label and filename; descriptive, not a physical-material certification",
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.12076712399721146,
+      0.012711391784250736,
+      0.12409907579421997
+    ],
+    "triangles": 1400,
+    "license": "CC0-1.0",
+    "license_provenance": "Original procedural artwork. Batch LICENSE.txt and captured library index.",
+    "source_url": "https://drive.google.com/file/d/1wOBJMhV_aYWFGa8sqGbOEfLtvFMo1j5X/view?usp=drivesdk",
+    "source_path": "02_household_clutter/household_clutter_02.blend",
+    "export_url": "https://drive.google.com/file/d/1wOBJMhV_aYWFGa8sqGbOEfLtvFMo1j5X/view?usp=drivesdk",
+    "export_path": "02_household_clutter/modules/brass_eyeglasses.glb",
+    "sha256": "67e9bdd4fa495cbe13c01d36422f17e424d7d7a57c8df1304ce022e9f0e57068",
+    "preview_url": "https://drive.google.com/file/d/1eZwNmFnZswBGishlcfeiBULQYI6X-DbH/view?usp=drivesdk",
+    "preview_local": "previews/1eZwNmFnZswBGishlcfeiBULQYI6X-DbH.jpg",
+    "preview_scope": "batch contact sheet",
+    "qa_status": "source audit passed; not re-run for this catalog",
+    "art_approval": "unknown; asset-data audit is not art acceptance",
+    "integration_state": "current public runtime export or derivative; exact source/export hash matched",
+    "collision_support": "decorative only; no independent collision, cover, interaction or AI occlusion",
+    "destruction_support": "disappears with authoritative furniture support; no independent damage/fracture",
+    "lod": "base export; no LOD inventoried for this design",
+    "source_evidence": [
+      "https://drive.google.com/file/d/1OGKApaxzZfZP_caqbiRgyKyn_xldkudu/view",
+      "02_household_clutter/manifest.json",
+      "https://github.com/FelixAllistar/PufferLib/blob/b0a02f7bf642628e816d6a1089bd2fd3ba5ef382/ocean/swat/assets/environment/prop_brass_eyeglasses.glb"
+    ],
+    "notes": [
+      "Source and export are members of the linked archive; extract locally. No new asset upload is required."
+    ],
+    "runtime_exports": [
+      {
+        "repository_path": "ocean/swat/assets/environment/prop_brass_eyeglasses.glb",
+        "public_url": "https://github.com/FelixAllistar/PufferLib/blob/b0a02f7bf642628e816d6a1089bd2fd3ba5ef382/ocean/swat/assets/environment/prop_brass_eyeglasses.glb",
+        "bytes": 84332,
+        "git_blob_sha1": "a3bfc3cbf50df846c9897fee0f6b4db94d34105d",
+        "sha256": "b01bdc73bf964942afbda4c89c55b8ffd65c9207bdcf6171b7c7acdbbdd4c0a8",
+        "sha256_evidence": "Pinned source manifest; binary not independently redownloaded/hashed for this read-only catalog",
+        "source_path": "modules/brass_eyeglasses.glb",
+        "source_sha256": "67e9bdd4fa495cbe13c01d36422f17e424d7d7a57c8df1304ce022e9f0e57068",
+        "license": "CC0-1.0",
+        "asset_id": "brass_eyeglasses"
+      }
+    ]
+  },
+  {
+    "id": "env:02_household_clutter/creased_leather_wallet",
+    "name": "Leather bifold with card edge, scuffs and stitched border",
+    "record_kind": "unique_design",
+    "category": "environment",
+    "subtype": "architecture",
+    "batch": "02_household_clutter",
+    "location_tags": [
+      "residential",
+      "kitchen"
+    ],
+    "material_tags": [
+      "unknown"
+    ],
+    "tag_basis": "source label and filename; descriptive, not a physical-material certification",
+    "units": "metres",
+    "dimensions_gltf_xyz_m": [
+      0.11400000005960464,
+      0.03627999871969223,
+      0.09804526716470718
+    ],
+    "triangles": 1428,
+    "license": "CC0-1.0",
+    "license_provenance": "Original procedural artwork. Batch LICENSE.txt and captured library index.",
+    "source_url": "https://drive.google.com/file/d/1wOBJMhV_aYWFGa8sqGbOEfLtvFMo1j5X/view?usp=drivesdk",
+    "source_path": "02_household_clutter/household_clutter_02.blend",
+    "export_url": "https://drive.google.com/file/d/1wOBJMhV_aYWFGa8sqGbOEfLtvFMo1j5X/view?usp=drivesdk",
+    "export_path": "02_household_clutter/modules/creased_leather_wallet.glb",
+    "sha256": "adb0116489a06e5892f10a9178695282645cd7c16cafa4cbcd75232dd2b1b546",
+    "preview_url": "https://drive.google.com/file/d/1eZwNmFnZswBGishlcfeiBULQYI6X-DbH/view?usp=drivesdk",
+    "preview_local": "previews/1eZwNmFnZswBGishlcfeiBULQYI6X-DbH.jpg",
+    "preview_scope": "batch contact sheet",
+    "qa_status": "source audit passed; not re-run for this catalog",
+    "art_approval": "unknown; asset-data audit is not art acceptance",
+    "integration_state": "current public runtime export or derivative; exact source/export hash matched",
+    "collision_support": "decorative only; no independent collision, cover, interaction or AI occlusion",
+    "destruction_support": "disappears with authoritative furniture support; no independent damage/fracture",
+    "lod": "base export; no LOD inventoried for this design",
+    "source_evidence": [
+      "https://drive.google.com/file/d/1OGKApaxzZfZP_caqbiRgyKyn_xldkudu/view",
+      "02_household_clutter/manifest.json",
+      "https://github.com/FelixAllistar/PufferLib/blob/b0a02f7bf642628e816d6a1089bd2fd3ba5ef382/ocean/swat/assets/environment/prop_creased_leather_wallet.glb"
+    ],
+    "notes": [
+      "Source and export are members of the linked archive; extract locally. No new asset upload is required."
+    ],
+    "runtime_exports": [
+      {
+        "repository_path": "ocean/swat/assets/environment/prop_creased_leather_wallet.glb",
+        "public_url": "https://github.com/FelixAllistar/PufferLib/blob/b0a02f7bf642628e816d6a1089bd2fd3ba5ef382/ocean/swat/assets/environment/prop_creased_leather_wallet.glb",
+        "bytes": 147420,
+        "git_blob_sha1": "705458a9c9bd5d7e4d3e5af875d296c73b89ef52",
+        "sha256": "0441f43ac18054033b15cef719e9715911c1baeabee2c65f07ca39b0cc16e62a",
+        "sha256_evidence": "Pinned source manifest; binary not independently redownloaded/hashed for this read-only catalog",
+        "source_path": "modules/creased_leather_wallet.glb",
+        "source_sha256": "adb0116489a06e5892f10a9178695282645cd7c16cafa4cbcd75232dd2b1b546",
+        "license": "CC0-1.0",
+        "asset_id": "creased_leather_wallet"
+      }
+    ]
+  }
+]

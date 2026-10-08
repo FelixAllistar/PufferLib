@@ -83,15 +83,29 @@ Runtime-only doorway/sector planning is reconstructed by input replay; it adds n
 wire fields or RL observation/action dimensions. Combat can still interrupt entry;
 this does not establish full room-search, trained behavior or scenario completion.
 
-Next: integrate the delivered east fence and Room 103 personal props. Verified
-packages are in `build/swat/review/squad-entry/` (`briar-court-east-open-run-v1`
-and `motel_room103_personal_props_reuse_v1`); all delivered hashes passed. Fence
-roots are (12.5,-.08,6/4/2), yaw +90 degrees, plus terminal at Z=0. World floor
-owner 0 has top Y=-.08. Preserve diamond-hole ballistics, solid posts/wire contact,
-open ends and the east flank. Reuse the C importer under `tools/`; no Python.
-Room 103 wallet/glasses target owner 72; the artist measured against a zero-yaw
-tray, while the actual engine tray has +90-degree yaw, so native clearance needs
-checking. Slack thread latest engine direction is `1791476854.042679`.
+Third increment: the delivered east fence uses shared original mesh geometry at
+roots (12.5,-.08,6/4/2), yaw +90 degrees, plus terminal at Z=0. Both ends remain
+open. Live character traversal, 2,400 bidirectional opening/wire rays, four solid
+posts, bullet energy and replica reconstruction pass. Mesh penetration now uses
+actual outward triangles instead of counting bounding-box air as solid material.
+Room 103's original wallet/glasses attach to desk owner 72. The location material
+loader now has enough slots for the original 12-material module (the prior eight
+slots could overwrite an adjacent row). Full Windows build and Linux/Windows
+motel, squad-entry and save/replay checks pass; Linux simulation/UDP checks pass.
+Native graphics assertions and ordinary `./swat` capture pass. Desk/tray
+clearance is 75.35/70.86 mm. Shared engine proof on Slack (`F0C7XUJML3E`); the
+artist is refining the roadside sign while the engine handles asphalt and fence
+collision/destruction. See the east-fence and Room103-personal
+art handoffs for retained source, measured placement, proof and limitations.
+
+Next: decompose the dense fence collision to avoid Box3D's 256-triangle mover
+query limit; implement material-appropriate fence severing rather than leaving
+it a permanently fixed obstacle. Integrate the received CC0 Poly Haven Clean
+Asphalt at its measured 2.1 m repeat, only on motel ground owner 0 (top Y=-.08).
+The downloaded verified candidate is under `build/swat/review/east-fence/asphalt`.
+Keep its original maps/provenance once, check 16-bit decode, linear normal and
+roughness channels, planar tangent orientation and walking/grazing appearance.
+Then continue irregular breach silhouettes and scenario/perception acceptance.
 
 ## Landed: playable foundation
 

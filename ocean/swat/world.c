@@ -233,6 +233,21 @@ int swat_world_room(const SwatWorld* w,b3Pos p) {
     return -1;
 }
 
+typedef struct MeshExit { b3Vec3 entry,direction; float distance; } MeshExit;
+static bool mesh_exit_triangle(b3Vec3 a,b3Vec3 b,b3Vec3 c,int triangle,void* context) {
+    (void)triangle;MeshExit* q=context;
+    b3Vec3 e1=b3Sub(b,a),e2=b3Sub(c,a),p=b3Cross(q->direction,e2);
+    float det=b3Dot(e1,p);
+    // Only an outward face closes the material entered by the original ray.
+    if(det>=-1e-10f)return true;
+    b3Vec3 t=b3Sub(q->entry,a);float u=b3Dot(t,p)/det;
+    if(u<-.00001f || u>1.00001f)return true;
+    b3Vec3 r=b3Cross(t,e1);float v=b3Dot(q->direction,r)/det;
+    if(v<-.00001f || u+v>1.00001f)return true;
+    float distance=b3Dot(e2,r)/det;
+    if(distance>.00001f && distance<q->distance)q->distance=distance;
+    return true;
+}
 float swat_world_exit_distance(const SwatObject* o,b3Pos entry,b3Vec3 d) {
     b3Quat q=b3MulQuat(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3MakeQuatFromAxisAngle(swat_v(0,0,1),o->pitch));
     b3Vec3 rel=b3InvRotateVector(q,b3SubPos(entry,o->center));
@@ -255,7 +270,19 @@ float swat_world_exit_distance(const SwatObject* o,b3Pos entry,b3Vec3 d) {
         float distance = ((v[i] > 0 ? half[i] : -half[i])-p[i])/v[i];
         if (distance >= -0.001f) exit = fminf(exit,fmaxf(0,distance));
     }
-    return exit == 1e6f ? 0 : exit;
+    if(exit==1e6f)return 0;
+    if(B3_IS_NON_NULL(o->shape) && b3Shape_GetType(o->shape)==b3_meshShape) {
+        // A furniture/fence bounding box contains air. Find the first actual
+        // outward triangle through the mesh BVH, then let the next world cast
+        // encounter subsequent pieces (or a person behind an opening).
+        b3Mesh mesh=b3Shape_GetMesh(o->shape);
+        b3Vec3 end=b3Add(rel,swat_mul(direction,exit+.001f)),pad=swat_v(.001f,.001f,.001f);
+        b3AABB bounds={b3Sub(b3Min(rel,end),pad),b3Add(b3Max(rel,end),pad)};
+        MeshExit query={rel,direction,exit+.002f};
+        b3QueryMesh(&mesh,bounds,mesh_exit_triangle,&query);
+        return query.distance<=exit+.001f ? query.distance : 0; // Open/non-manifold surfaces conservatively stop the shot.
+    }
+    return exit;
 }
 
 static bool swat_door_overlap(b3ShapeId shape, void* context) {

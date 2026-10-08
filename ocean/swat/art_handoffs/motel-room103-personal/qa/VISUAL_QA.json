@@ -1,0 +1,21 @@
+{
+  "reviewed_images": [
+    "original_glb_reimport_detail.png",
+    "provisional_tray_clearance_top.png",
+    "provisional_tray_clearance_oblique.png"
+  ],
+  "visual_findings": [
+    "Both unchanged originals reimport with visible materials and embedded textures.",
+    "Wallet and glasses are separate, upright, and visually supported on the reference plane; 0.3mm lift is intentional.",
+    "Top and oblique previews show visible gaps between tray, glasses and wallet.",
+    "Wallet retains original stylized thick profile, raised scuff geometry and card edge. Glasses retain original open-arm profile. No aesthetic remodel was made."
+  ],
+  "limits": [
+    "Source/Blender visual check only, not native engine capture.",
+    "Tray zero-yaw and unit-scale assumptions require engine confirmation.",
+    "Preview support is illustrative, not the actual desktop footprint.",
+    "No collision, loot, navigation, behavior or support-destruction test was run."
+  ],
+  "render_engine": "Blender Cycles CPU; no denoiser available; source materials unchanged",
+  "approval": "provisional placement proposal only"
+}

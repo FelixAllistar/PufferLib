@@ -20,6 +20,7 @@ struct SwatMotelWallArt;
 #define SWAT_ROOM101_V3_ASSETS 12
 #define SWAT_ROOM101_V4_ASSETS 8
 #define SWAT_ROOM101_MATERIALS 8
+#define SWAT_LOCATION_MATERIALS 16
 
 typedef struct SwatEnvironmentArt {
     bool initialized;
@@ -37,10 +38,12 @@ typedef struct SwatEnvironmentArt {
     Model motel_dressing[SWAT_MOTEL_DRESSING_ASSETS];
     float motel_dressing_normal_scale[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
     int motel_dressing_occlusion_uv[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
-    int motel_occlusion_uv[SWAT_MOTEL_ASSETS][SWAT_ROOM101_MATERIALS];
+    int motel_occlusion_uv[SWAT_MOTEL_ASSETS][SWAT_LOCATION_MATERIALS];
     Model motel_numbers[3]; // Rooms 102–104; 101 keeps its accepted v3 asset.
     float motel_number_normal_scale[3][SWAT_ROOM101_MATERIALS];
     Model motel_reception;
+    Model motel_personal[2]; // Original Room 103 wallet/glasses, owned by desk 72.
+    float motel_personal_normal_scale[2][SWAT_ROOM101_MATERIALS];
     float motel_reception_normal_scale[SWAT_ROOM101_MATERIALS];
     Model room101[SWAT_ROOM101_ASSETS];
     float room101_normal_scale[SWAT_ROOM101_ASSETS][SWAT_ROOM101_MATERIALS];

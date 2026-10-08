@@ -1,0 +1,381 @@
+{
+  "schema": "briar_east_open_run_v1",
+  "units": "metres",
+  "coordinates": "engine/glTF right-handed Y up; GLB already converted. Quaternion xyzw rotates +local X toward -world Z.",
+  "placement_status": "candidate; engine implementation and playtest pending",
+  "approved_run": "engine1791474528.653899",
+  "target_envelope_m": [
+    [
+      12.4,
+      -0.08,
+      -0.1
+    ],
+    [
+      12.6,
+      1.6,
+      6.1
+    ]
+  ],
+  "actual_bounds_m": [
+    [
+      12.4650002,
+      -0.08,
+      -0.037
+    ],
+    [
+      12.5570002,
+      1.545,
+      6.0370002
+    ]
+  ],
+  "instances": [
+    {
+      "id": "east_chainlink_panel_2m_1",
+      "asset": "assets/chainlink_panel_2m.glb",
+      "translation_engine_m": [
+        12.5,
+        -0.08,
+        6
+      ],
+      "rotation_engine_quaternion_xyzw": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "yaw_engine_degrees": 90,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "local_gltf_bounds_m": [
+        [
+          -0.037,
+          0.0,
+          -0.035
+        ],
+        [
+          1.9999998,
+          1.625,
+          0.057
+        ]
+      ],
+      "world_engine_bounds_m": [
+        [
+          12.4650002,
+          -0.08,
+          4.0
+        ],
+        [
+          12.5570002,
+          1.545,
+          6.0370002
+        ]
+      ],
+      "component_world_bounds_m": {
+        "post_and_cap": [
+          [
+            12.4650002,
+            -0.08,
+            5.9629998
+          ],
+          [
+            12.5570002,
+            1.545,
+            6.0370002
+          ]
+        ],
+        "rails": [
+          [
+            12.4820004,
+            0.038,
+            4.0
+          ],
+          [
+            12.5179996,
+            1.4371192,
+            5.9720001
+          ]
+        ],
+        "tension_ties": [
+          [
+            12.479126,
+            1.3930664,
+            4.046
+          ],
+          [
+            12.5218744,
+            1.4519335,
+            5.9039998
+          ]
+        ],
+        "woven_chainmesh": [
+          [
+            12.4886007,
+            0.0775955,
+            4.0175958
+          ],
+          [
+            12.5113945,
+            1.382405,
+            5.9574041
+          ]
+        ]
+      },
+      "triangles": 4188
+    },
+    {
+      "id": "east_chainlink_panel_2m_2",
+      "asset": "assets/chainlink_panel_2m.glb",
+      "translation_engine_m": [
+        12.5,
+        -0.08,
+        4
+      ],
+      "rotation_engine_quaternion_xyzw": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "yaw_engine_degrees": 90,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "local_gltf_bounds_m": [
+        [
+          -0.037,
+          0.0,
+          -0.035
+        ],
+        [
+          1.9999998,
+          1.625,
+          0.057
+        ]
+      ],
+      "world_engine_bounds_m": [
+        [
+          12.4650002,
+          -0.08,
+          2.0000002
+        ],
+        [
+          12.5570002,
+          1.545,
+          4.0370002
+        ]
+      ],
+      "component_world_bounds_m": {
+        "post_and_cap": [
+          [
+            12.4650002,
+            -0.08,
+            3.9630001
+          ],
+          [
+            12.5570002,
+            1.545,
+            4.0370002
+          ]
+        ],
+        "rails": [
+          [
+            12.4820004,
+            0.038,
+            2.0000002
+          ],
+          [
+            12.5179996,
+            1.4371192,
+            3.9719999
+          ]
+        ],
+        "tension_ties": [
+          [
+            12.479126,
+            1.3930664,
+            2.046
+          ],
+          [
+            12.5218744,
+            1.4519335,
+            3.904
+          ]
+        ],
+        "woven_chainmesh": [
+          [
+            12.4886007,
+            0.0775955,
+            2.0175958
+          ],
+          [
+            12.5113945,
+            1.382405,
+            3.9574041
+          ]
+        ]
+      },
+      "triangles": 4188
+    },
+    {
+      "id": "east_chainlink_panel_2m_3",
+      "asset": "assets/chainlink_panel_2m.glb",
+      "translation_engine_m": [
+        12.5,
+        -0.08,
+        2
+      ],
+      "rotation_engine_quaternion_xyzw": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "yaw_engine_degrees": 90,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "local_gltf_bounds_m": [
+        [
+          -0.037,
+          0.0,
+          -0.035
+        ],
+        [
+          1.9999998,
+          1.625,
+          0.057
+        ]
+      ],
+      "world_engine_bounds_m": [
+        [
+          12.4650002,
+          -0.08,
+          2e-07
+        ],
+        [
+          12.5570002,
+          1.545,
+          2.0369999
+        ]
+      ],
+      "component_world_bounds_m": {
+        "post_and_cap": [
+          [
+            12.4650002,
+            -0.08,
+            1.9630001
+          ],
+          [
+            12.5570002,
+            1.545,
+            2.0369999
+          ]
+        ],
+        "rails": [
+          [
+            12.4820004,
+            0.038,
+            2e-07
+          ],
+          [
+            12.5179996,
+            1.4371192,
+            1.972
+          ]
+        ],
+        "tension_ties": [
+          [
+            12.479126,
+            1.3930664,
+            0.046
+          ],
+          [
+            12.5218744,
+            1.4519335,
+            1.904
+          ]
+        ],
+        "woven_chainmesh": [
+          [
+            12.4886007,
+            0.0775955,
+            0.0175958
+          ],
+          [
+            12.5113945,
+            1.382405,
+            1.9574043
+          ]
+        ]
+      },
+      "triangles": 4188
+    },
+    {
+      "id": "east_chainlink_terminal_post_4",
+      "asset": "assets/chainlink_terminal_post.glb",
+      "translation_engine_m": [
+        12.5,
+        -0.08,
+        0
+      ],
+      "rotation_engine_quaternion_xyzw": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "yaw_engine_degrees": 90,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "local_gltf_bounds_m": [
+        [
+          -0.037,
+          0.0,
+          -0.035
+        ],
+        [
+          0.037,
+          1.625,
+          0.057
+        ]
+      ],
+      "world_engine_bounds_m": [
+        [
+          12.4650002,
+          -0.08,
+          -0.037
+        ],
+        [
+          12.5570002,
+          1.545,
+          0.037
+        ]
+      ],
+      "component_world_bounds_m": {
+        "post_and_cap": [
+          [
+            12.4650002,
+            -0.08,
+            -0.037
+          ],
+          [
+            12.5570002,
+            1.545,
+            0.037
+          ]
+        ]
+      },
+      "triangles": 232
+    }
+  ]
+}

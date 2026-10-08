@@ -1,0 +1,7 @@
+Batch 07: Exterior boundaries and entries
+Original geometry, procedural texture artwork, previews, source scripts and metadata
+are dedicated to the public domain under CC0 1.0 Universal.
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+No third-party models, texture images, logos, trademarks or reference photography
+are included. Blender and Python dependencies retain their own licenses.
+Provided without warranty; no game compatibility, performance or physics guarantee.

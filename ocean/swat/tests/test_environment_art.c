@@ -379,7 +379,7 @@ static void room101_graphics(SwatView* view,const char* directory) {
     SwatObject* desk_owner=&sim.world.objects[24];assert(room101_owner_pixels(art,desk_owner,false)>50);
     desk_owner->active=false;assert(!room101_owner_pixels(art,desk_owner,false));desk_owner->active=true;
     puts("PASS desk W2: 544 triangles, ridge removal with original authority, 0.3 normal scale, matched engine captures and support removal");
-    for(int i=SWAT_MOTEL_BASE_ASSETS;i<SWAT_MOTEL_ASSETS;i++) {
+    for(int i=SWAT_MOTEL_BASE_ASSETS;i<42;i++) {
         Model model=art->motel[i];assert(model.meshCount);
         for(int m=0;m<model.meshCount;m++)assert(model.meshes[m].texcoords2 && model.meshes[m].vboId[5]);
         for(int m=1;m<model.materialCount;m++)assert(art->motel_occlusion_uv[i][m]==1);
@@ -398,6 +398,39 @@ static void room101_graphics(SwatView* view,const char* directory) {
         snprintf(path,sizeof(path),"%s/utility-%s.png",directory,utility_names[i]);assert(ExportImage(room,path));UnloadImage(room);
     }
     puts("PASS utility props: original metre-scale meshes, second UV buffers/material binding and per-instance removal");
+    Camera3D additions[]={
+        {{6,1.64f,11},{8,1,0},{0,1,0},68,CAMERA_PERSPECTIVE},
+        {{10.5f,1.5f,4.5f},{12.5f,.85f,3},{0,1,0},58,CAMERA_PERSPECTIVE},
+        {{11.4f,.35f,7},{12.5f,.7f,2},{0,1,0},58,CAMERA_PERSPECTIVE},
+        {{1.3f,1.30f,-1.7f},{.65f,.78f,-2.15f},{0,1,0},40,CAMERA_PERSPECTIVE},
+        {{1.5f,1.62f,-.6f},{.6f,.85f,-2.3f},{0,1,0},62,CAMERA_PERSPECTIVE}};
+    const char* addition_names[]={"east-court","fence-detail","fence-grazing","room103-personal-detail","room103-personal-room"};
+    for(int i=0;i<5;i++) {
+        room=room101_capture_size(view,additions[i],true,1440,810);
+        snprintf(path,sizeof(path),"%s/%s.png",directory,addition_names[i]);assert(ExportImage(room,path));UnloadImage(room);
+    }
+    const int personal_triangles[]={1428,1400};
+    for(int i=0;i<2;i++) {
+        Model model=art->motel_personal[i];assert(model.meshCount);int triangles=0;
+        for(int m=0;m<model.meshCount;m++)triangles+=model.meshes[m].triangleCount;
+        assert(triangles==personal_triangles[i]);
+        BoundingBox bounds=GetModelBoundingBox(model);
+        assert(fabsf(bounds.min.y)<1e-5f && bounds.max.x<.065f && bounds.min.x>-.065f);
+        float yaw=(i?-12:8)*SWAT_RAD,minimum=100,maximum=-100;
+        for(int m=0;m<model.meshCount;m++)for(int v=0;v<model.meshes[m].vertexCount;v++) {
+            float* p=&model.meshes[m].vertices[3*v];
+            float x=.8f+cosf(yaw)*p[0]+sinf(yaw)*p[2];minimum=fminf(minimum,x);maximum=fmaxf(maximum,x);
+        }
+        // Tray is really +90 degrees: its local Z supplies the east edge.
+        BoundingBox tray=GetModelBoundingBox(art->motel_dressing[3]);
+        float clearance=minimum-(.51f+tray.max.z);
+        assert(clearance>.065f && maximum<.925f);
+        printf("Room103 prop%d: tray clearance %.5fm, desktop edge %.5fm\n",i,clearance,.925f-maximum);
+    }
+    SwatObject* personal_owner=&sim.world.objects[72];
+    assert(room101_owner_pixels(art,personal_owner,false)>50);
+    personal_owner->active=false;assert(!room101_owner_pixels(art,personal_owner,false));personal_owner->active=true;
+    puts("PASS east fence and Room 103: native context/detail captures, original personal prop scale/topology");
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {
         Model model=art->motel_dressing[i];assert(model.meshCount);
         for(int m=1;m<model.materialCount;m++)assert(art->motel_dressing_occlusion_uv[i][m]==1);

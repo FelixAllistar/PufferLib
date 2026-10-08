@@ -1,0 +1,15 @@
+{
+  "scope": "provisional source art placement, Room103 only",
+  "owner_proposed": 72,
+  "desktop_y_m": 0.7603,
+  "minimum_support_gap_m": 0.00029997081756594213,
+  "pair_z_aabb_separation_m": 0.07634377479553223,
+  "tray_reference_assumptions": "unchanged source LOD0, unit scale, yaw0, center(.51,.7603,-2.25)",
+  "tray_x_separation_m": {
+    "creased_leather_wallet.glb": 0.03724700212478638,
+    "brass_eyeglasses.glb": 0.032765984535217285
+  },
+  "native_clearance": "pending",
+  "all_original_binary_checks_pass": true,
+  "combined_triangles": 2828
+}

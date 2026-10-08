@@ -1,0 +1,66 @@
+[
+  {
+    "file": "brass_eyeglasses.glb",
+    "sha256": "67e9bdd4fa495cbe13c01d36422f17e424d7d7a57c8df1304ce022e9f0e57068",
+    "byte_identical_to_original_archive": true,
+    "valid_glb_header": true,
+    "nodes": [
+      {
+        "extras": {
+          "asset_id": "brass_eyeglasses",
+          "batch": "02_household_clutter",
+          "license": "CC0-1.0",
+          "units": "metres",
+          "canonical_front": "-Y",
+          "render_only": true,
+          "collision_recommendation": "none",
+          "description": "Oval brass glasses with bridge, lenses and folded-height arms"
+        },
+        "mesh": 0,
+        "name": "HC02_brass_eyeglasses"
+      }
+    ],
+    "mesh_count": 1,
+    "materials": [
+      "HC02_brass",
+      "HC02_glass",
+      "HC02_bakelite"
+    ],
+    "embedded_images": 2,
+    "external_uris": [],
+    "triangles": 1400
+  },
+  {
+    "file": "creased_leather_wallet.glb",
+    "sha256": "adb0116489a06e5892f10a9178695282645cd7c16cafa4cbcd75232dd2b1b546",
+    "byte_identical_to_original_archive": true,
+    "valid_glb_header": true,
+    "nodes": [
+      {
+        "extras": {
+          "asset_id": "creased_leather_wallet",
+          "batch": "02_household_clutter",
+          "license": "CC0-1.0",
+          "units": "metres",
+          "canonical_front": "-Y",
+          "render_only": true,
+          "collision_recommendation": "none",
+          "description": "Leather bifold with card edge, scuffs and stitched border"
+        },
+        "mesh": 0,
+        "name": "HC02_creased_leather_wallet"
+      }
+    ],
+    "mesh_count": 1,
+    "materials": [
+      "HC02_leather",
+      "HC02_dark",
+      "HC02_paper",
+      "HC02_wood_light",
+      "HC02_wood"
+    ],
+    "embedded_images": 4,
+    "external_uris": [],
+    "triangles": 1428
+  }
+]

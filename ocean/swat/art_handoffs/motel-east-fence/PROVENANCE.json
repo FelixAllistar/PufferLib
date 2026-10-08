@@ -1,0 +1,195 @@
+{
+  "source_url": "https://drive.google.com/file/d/1RvCJMtCBe8XZdEj6CMxXK8mjW_Uwuzjf/view",
+  "source_archive": "exterior-boundaries-batch-07.tar.xz",
+  "source_blend_member": "07_exterior_boundaries/exterior_boundaries.blend",
+  "source_generator_member": "07_exterior_boundaries/build_exterior_boundaries.py",
+  "catalog_basis": "r008",
+  "license": "CC0-1.0",
+  "source_assets_unchanged": true,
+  "assets": [
+    {
+      "id": "eb07_chainlink_panel_2m",
+      "name": "chainlink_panel_2m",
+      "title": "Chain-link panel \u00b7 2 m",
+      "file": "assets/chainlink_panel_2m.glb",
+      "triangles": 4188,
+      "material_count": 3,
+      "mesh_objects": 1,
+      "mesh_vertices": 2752,
+      "dimensions_m_source_xyz": [
+        2.037,
+        0.092,
+        1.625
+      ],
+      "dimensions_m_gltf_xyz": [
+        2.037,
+        1.625,
+        0.092
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.037,
+          -0.057,
+          0.0
+        ],
+        [
+          2.0,
+          0.035,
+          1.625
+        ]
+      ],
+      "bounds_m_gltf_xyz": [
+        [
+          -0.037,
+          0.0,
+          -0.035
+        ],
+        [
+          2.0,
+          1.625,
+          0.057
+        ]
+      ],
+      "pivot": "Left post ground centre; run +X. Includes left post only.",
+      "connection_points": [
+        {
+          "name": "start",
+          "position_source_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "position_gltf_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source_xyz": [
+            -1,
+            0,
+            0
+          ],
+          "outward_gltf_xyz": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "end",
+          "position_source_xyz_m": [
+            2,
+            0,
+            0
+          ],
+          "position_gltf_xyz_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source_xyz": [
+            1,
+            0,
+            0
+          ],
+          "outward_gltf_xyz": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "mounting": "ground/underside",
+      "editable_groups": {
+        "chain_panel": [
+          "post_and_cap",
+          "rails",
+          "tension_ties",
+          "woven_chainmesh"
+        ]
+      },
+      "bytes": 847480,
+      "sha256": "73e9a9a121831af518c971a1eab956487d4b7d91814a45ef9c52e32fe24fbb82",
+      "collision": "Render-only; no runtime collider, breakability or navigation claim."
+    },
+    {
+      "id": "eb07_chainlink_terminal_post",
+      "name": "chainlink_terminal_post",
+      "title": "Chain-link end post",
+      "file": "assets/chainlink_terminal_post.glb",
+      "triangles": 232,
+      "material_count": 2,
+      "mesh_objects": 1,
+      "mesh_vertices": 128,
+      "dimensions_m_source_xyz": [
+        0.074,
+        0.092,
+        1.625
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.074,
+        1.625,
+        0.092
+      ],
+      "bounds_m_source_xyz": [
+        [
+          -0.037,
+          -0.057,
+          0.0
+        ],
+        [
+          0.037,
+          0.035,
+          1.625
+        ]
+      ],
+      "bounds_m_gltf_xyz": [
+        [
+          -0.037,
+          0.0,
+          -0.035
+        ],
+        [
+          0.037,
+          1.625,
+          0.057
+        ]
+      ],
+      "pivot": "Post centre at ground. Add once at a chain run free end.",
+      "connection_points": [
+        {
+          "name": "post",
+          "position_source_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "position_gltf_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source_xyz": [
+            1,
+            0,
+            0
+          ],
+          "outward_gltf_xyz": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "mounting": "ground/underside",
+      "editable_groups": {
+        "terminal_post": [
+          "post_and_cap"
+        ]
+      },
+      "bytes": 420928,
+      "sha256": "198ca4b75c6fee4e26576c961ecc37b276eb17cb57f7113bb592b85b5ca69a84",
+      "collision": "Render-only; no runtime collider, breakability or navigation claim."
+    }
+  ]
+}

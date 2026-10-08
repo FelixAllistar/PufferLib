@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "motel_data.h"
 #include "motel_utility_data.h"
+#include "motel_fence_data.h"
 // Floor-level dressing stays outside the established door and capsule routes.
 static const SwatMotelInstance utility_instances[]={
 {40,{-4.55f,.008f,-.65f},{1,1,1},0,SWAT_WOOD,false,false},
@@ -13,9 +14,13 @@ static const SwatMotelInstance utility_instances[]={
 {40,{3.45f,.008f,-.65f},{1,1,1},0,SWAT_WOOD,false,false},
 {41,{0.30f,.008f,-3.30f},{1,1,1},0,SWAT_WOOD,false,false},
 {40,{7.45f,.008f,-.65f},{1,1,1},0,SWAT_WOOD,false,false},
-{41,{4.30f,.008f,-3.30f},{1,1,1},0,SWAT_WOOD,false,false}
+{41,{4.30f,.008f,-3.30f},{1,1,1},0,SWAT_WOOD,false,false},
+{42,{12.5f,-.08f,6},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false},
+{42,{12.5f,-.08f,4},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false},
+{42,{12.5f,-.08f,2},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false},
+{43,{12.5f,-.08f,0},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}
 };
-const SwatMotelAsset* swat_motel_asset(int index) { return index<0 || index>=SWAT_MOTEL_ASSETS?NULL:index<SWAT_MOTEL_BASE_ASSETS?&motel_assets[index]:&utility_assets[index-SWAT_MOTEL_BASE_ASSETS]; }
+const SwatMotelAsset* swat_motel_asset(int index) { return index<0 || index>=SWAT_MOTEL_ASSETS?NULL:index<SWAT_MOTEL_BASE_ASSETS?&motel_assets[index]:index<42?&utility_assets[index-SWAT_MOTEL_BASE_ASSETS]:&fence_assets[index-42]; }
 const SwatMotelInstance* swat_motel_instance(int index) { return index<0 || index>=SWAT_MOTEL_INSTANCES?NULL:index<SWAT_MOTEL_BASE_INSTANCES?&motel_instances[index]:&utility_instances[index-SWAT_MOTEL_BASE_INSTANCES]; }
 static void recipe(int i,b3Pos* center,b3Vec3* half,float* yaw) {
     const SwatMotelInstance* p=swat_motel_instance(i); const SwatMotelAsset* a=swat_motel_asset(p->asset);
@@ -31,8 +36,8 @@ static void recipe(int i,b3Pos* center,b3Vec3* half,float* yaw) {
 bool swat_motel_bind_collision(SwatWorld* w) {
     // Canonical prefix remains stable; appended wall fragments use their explicit
     // wire geometry. Also retain the original map without utility props.
-    if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1) return false;
-    int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:SWAT_MOTEL_INSTANCES;
+    if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
+    int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];

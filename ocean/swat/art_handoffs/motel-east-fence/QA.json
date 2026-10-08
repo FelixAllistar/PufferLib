@@ -1,0 +1,101 @@
+{
+  "status": "PASS",
+  "world_engine_bounds_m": [
+    [
+      12.4650002,
+      -0.08,
+      -0.037
+    ],
+    [
+      12.5570002,
+      1.545,
+      6.0370002
+    ]
+  ],
+  "triangles": 12796,
+  "instances": 4,
+  "panels": 3,
+  "terminals": 1,
+  "ground_owner_y_m": 0,
+  "root_y_m": -0.08,
+  "visible_top_y_m": 1.545,
+  "both_flanks_open": true,
+  "colliders_supplied": false,
+  "tests": {
+    "original_sha256_matches": true,
+    "fresh_GLB_import": true,
+    "positive_unit_scale": true,
+    "all_panels_snap_2m": true,
+    "wire_actual_geometry": true,
+    "no_alpha_blend": true,
+    "no_gate_or_return": true
+  },
+  "verification_boundary": "Offline source and fresh GLB reimport only; receiving engine must verify movement, visibility and ballistics.",
+  "independent_export_reimport": {
+    "status": "PASS",
+    "mesh_objects": 4,
+    "triangles": 12796,
+    "bounds_engine_m": [
+      [
+        12.465,
+        -0.08,
+        -0.037
+      ],
+      [
+        12.557,
+        1.545,
+        6.037
+      ]
+    ],
+    "all_images_packed": true
+  },
+  "material_audit": [
+    {
+      "asset": "chainlink_terminal_post.glb",
+      "name": "EB07_galvanized",
+      "alphaMode": "OPAQUE",
+      "baseColorAlpha": 1
+    },
+    {
+      "asset": "chainlink_terminal_post.glb",
+      "name": "EB07_rust",
+      "alphaMode": "OPAQUE",
+      "baseColorAlpha": 1
+    },
+    {
+      "asset": "chainlink_panel_2m.glb",
+      "name": "EB07_galvanized",
+      "alphaMode": "OPAQUE",
+      "baseColorAlpha": 1
+    },
+    {
+      "asset": "chainlink_panel_2m.glb",
+      "name": "EB07_rust",
+      "alphaMode": "OPAQUE",
+      "baseColorAlpha": 1
+    },
+    {
+      "asset": "chainlink_panel_2m.glb",
+      "name": "EB07_iron",
+      "alphaMode": "OPAQUE",
+      "baseColorAlpha": 1
+    }
+  ],
+  "primitive_counts": [
+    {
+      "asset": "chainlink_terminal_post.glb",
+      "primitives": 2
+    },
+    {
+      "asset": "chainlink_panel_2m.glb",
+      "primitives": 3
+    }
+  ],
+  "visual_review": {
+    "status": "PASS",
+    "01_context_open_ends.png": "Three aligned bays, four posts; both flanks open; schematic X8 wall separate.",
+    "02_wire_and_posts.png": "Actual diamond holes, thin woven wires and joined rails visible; no opaque backing.",
+    "03_top_clearance.png": "Straight narrow run, no returns, separated reference wall.",
+    "limits": "Neutral offline 8-sample render, not engine proof; some render grain. Current reception camera excludes this perimeter."
+  }
+}

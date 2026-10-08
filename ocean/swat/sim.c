@@ -313,7 +313,8 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
         if(a->arsenal.active==0 && swat_launcher_kind(a->arsenal.primary)>=0) break;
         SwatObject* object = &s->world.objects[hit.index];
         float thickness = swat_world_exit_distance(object,hit.point,direction);
-        float cost = swat_material_resistance(object->material)*fmaxf(thickness,0.01f);
+        bool mesh=B3_IS_NON_NULL(object->shape) && b3Shape_GetType(object->shape)==b3_meshShape;
+        float cost = swat_material_resistance(object->material)*fmaxf(thickness,mesh?.001f:.01f);
         if (swat_world_impact(&s->world,hit.index,shot.damage*(energy/shot.energy)*(object->door && a->arsenal.active==0 && a->arsenal.primary==6 ? 3 : 1))) {
             s->events.destroyed++;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);

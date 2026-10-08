@@ -1,0 +1,161 @@
+{
+  "all_unchanged": true,
+  "files": [
+    {
+      "file": "source/build_clutter.py",
+      "sha256": "1148c179c7a8fd20d68b9bef7940135d30bdb358b4feefd8a96a1a3895b11aae",
+      "original_archive_member": "02_household_clutter/build_clutter.py",
+      "byte_identical": true
+    },
+    {
+      "file": "source/manifest.json",
+      "sha256": "b6d68cddd66916da9f02958ef61656464f6ab9290d1bb89a760fa6d7c65d8a91",
+      "original_archive_member": "02_household_clutter/manifest.json",
+      "byte_identical": true
+    },
+    {
+      "file": "source/household_clutter_02.blend",
+      "sha256": "86f729e2d5e3b15ce3723a6f20ab2f51a35c756cb691e1b25dae589e605e6af2",
+      "original_archive_member": "02_household_clutter/household_clutter_02.blend",
+      "byte_identical": true
+    },
+    {
+      "file": "source/LICENSE.txt",
+      "sha256": "f26e4507daa86f1a1ed8a2c666d18599cd4358447f6a2faadad054c30f5b9d5c",
+      "original_archive_member": "02_household_clutter/LICENSE.txt",
+      "byte_identical": true
+    },
+    {
+      "file": "source/README.md",
+      "sha256": "458ecde446fd723ea060ca1513d245b00799f5b1469677be361887bbe554935d",
+      "original_archive_member": "02_household_clutter/README.md",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/ceramic.png",
+      "sha256": "c7f8a120b5f5728bed2b56238e9d14fbd31e660f6bf76844238249dfa3ef581a",
+      "original_archive_member": "02_household_clutter/textures/ceramic.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/fabric.png",
+      "sha256": "814a05b64be04318c9513cc005b47c7ea7552a0e7838f49c160db15e9d521434",
+      "original_archive_member": "02_household_clutter/textures/fabric.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/rust.png",
+      "sha256": "e2552f251d2095fcdd74c737613883ff01e3d3c35ef6d1439e1ae93bfc345f00",
+      "original_archive_member": "02_household_clutter/textures/rust.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/steel.png",
+      "sha256": "28af0464c9eaae67230b359a7c22f008181d44fd2730974067b0acf51e11ec8d",
+      "original_archive_member": "02_household_clutter/textures/steel.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/red.png",
+      "sha256": "0042b1ed290fdb5f59c6a84c3f8e16d0ce86bb78683b636fd9f97a49ecce6312",
+      "original_archive_member": "02_household_clutter/textures/red.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/soap.png",
+      "sha256": "336cd596c45c21f2c62dfc12aafa3f4f8d78b8f03dbfabfe67d4bf4c2fa86400",
+      "original_archive_member": "02_household_clutter/textures/soap.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/teal.png",
+      "sha256": "a62201ccbc8c1878298037a5c7ecdaf7035f1c13854cefddcf49ca957dc0c739",
+      "original_archive_member": "02_household_clutter/textures/teal.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/wood_light.png",
+      "sha256": "f741aaf339dd4b3f23200b793ed40f5663e1c589050054d106b78c8fbf4ace98",
+      "original_archive_member": "02_household_clutter/textures/wood_light.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/mustard.png",
+      "sha256": "c3157fe26d566ff30c93160f4e70d5801264d69a95a04865767ab715b28c9eb3",
+      "original_archive_member": "02_household_clutter/textures/mustard.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/blue.png",
+      "sha256": "011092ba9180d0689f8c4cb74dd78798826f176c6274a1bf69ab9ea8d490c354",
+      "original_archive_member": "02_household_clutter/textures/blue.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/paper_clean.png",
+      "sha256": "fc614fa5848626dcc33348420acdba352f3cbbe4122dcd914484eea724704d43",
+      "original_archive_member": "02_household_clutter/textures/paper_clean.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/leather.png",
+      "sha256": "80b52b9bb9a982e4bb781a4446329197a71816c5563b306b8a115d706d39b6a4",
+      "original_archive_member": "02_household_clutter/textures/leather.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/aged_steel.png",
+      "sha256": "7485f1030aaf6f7010c2811cc9dd7c29042a0da6d5bbf8ea45d72bf2bb17a934",
+      "original_archive_member": "02_household_clutter/textures/aged_steel.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/wood.png",
+      "sha256": "cc68753fff56f31e31490eea591c6dc18146b3f7ef6755d2b5703fe29d64ec21",
+      "original_archive_member": "02_household_clutter/textures/wood.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/brass.png",
+      "sha256": "eb854d975abc90a3bdfb950753cfef30c71ac916504e4c2a4d96659d51e1074b",
+      "original_archive_member": "02_household_clutter/textures/brass.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/bakelite.png",
+      "sha256": "6fdf9ff7976c2b59be5326e93b26b17c551c26c09db25474de99df25627434f0",
+      "original_archive_member": "02_household_clutter/textures/bakelite.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/cream.png",
+      "sha256": "c0613fe47808ba8d6ce7ce642fcd8f3a92c2cb2f8f46c505a83a2e8f36e8050c",
+      "original_archive_member": "02_household_clutter/textures/cream.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/paper.png",
+      "sha256": "bac2f51685768562a6a4fd8ad3df88314859389b7670ccb505b3b5f9b2197e88",
+      "original_archive_member": "02_household_clutter/textures/paper.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/rubber.png",
+      "sha256": "b800b0e9c81b9da2cff5a11534490cc7fe1dcb5eb9a15f98c478b3fe04d66359",
+      "original_archive_member": "02_household_clutter/textures/rubber.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/olive.png",
+      "sha256": "cd54d3bb3d8584739999c817aac51db800eaa06ee7376057cdfbaa90b6f7cdf3",
+      "original_archive_member": "02_household_clutter/textures/olive.png",
+      "byte_identical": true
+    },
+    {
+      "file": "source/textures/black.png",
+      "sha256": "89b9afbc7c67ee6f8b1ff9d2992e90dbc57c56793b93a518aca2479cfdce5426",
+      "original_archive_member": "02_household_clutter/textures/black.png",
+      "byte_identical": true
+    }
+  ]
+}
