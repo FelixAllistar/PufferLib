@@ -1,0 +1,57 @@
+{
+  "baseline_catalog_hash_matches": true,
+  "preserved_runtime_geometry": {
+    "MC15_steel": {
+      "positions_normals_uv_triangles_exact": true,
+      "triangle_count": 88,
+      "canonical_sha256": "389734c13ac4c230fe565a5bb598a28ece9c1c564690cba2fc4c5561d178b495"
+    },
+    "MC15_concrete": {
+      "positions_normals_uv_triangles_exact": true,
+      "triangle_count": 44,
+      "canonical_sha256": "ab3c84abfd214aade46eeee93d5dddd65d53cd924073dff704d20f2a71a93313"
+    },
+    "MC15_teal": {
+      "positions_normals_uv_triangles_exact": true,
+      "triangle_count": 44,
+      "canonical_sha256": "bbc8f8949273702c523bffdb920470360239bd3c4ef8a55784e2a55c4be7ffb6"
+    },
+    "MC15_ochre": {
+      "positions_normals_uv_triangles_exact": true,
+      "triangle_count": 88,
+      "canonical_sha256": "3766b134addc54fc4cbe2fa0266f30ede8da9d313c17e5677e87154dabbcde41"
+    },
+    "MC15_cream_lower_board_and_edge_wear": {
+      "original_triangle_subset_exact": true,
+      "triangle_count": 51
+    }
+  },
+  "all_opaque": true,
+  "native_gltf_2_without_required_extensions": true,
+  "all_primitives_TEXCOORD_0_finite": true,
+  "triangles": 319,
+  "baseline_triangles": 3075,
+  "geometry_delta_triangles": -2756,
+  "bounds_Yup_m": [
+    [
+      -1.600000023841858,
+      0.0,
+      -0.3499999940395355
+    ],
+    [
+      1.600000023841858,
+      4.112499713897705,
+      0.3499999940395355
+    ]
+  ],
+  "dimensions_Yup_m": [
+    3.200000047683716,
+    4.112499713897705,
+    0.699999988079071
+  ],
+  "embedded_images": 7,
+  "runtime_bytes": 380492,
+  "runtime_sha256": "90751c47351f7e171f2f9123726d4582853e51bb90db22f92b4b6806f21b650c",
+  "collision": "none authored; engine must retain original collision and binding",
+  "AO": "No AO image/UV1 claimed or introduced; source material maps retained, new artwork uses native baseColorTexture TEXCOORD_0"
+}

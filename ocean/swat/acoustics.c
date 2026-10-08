@@ -197,6 +197,11 @@ static void swat_acoustic_transmit(const SwatAcousticScene* scene, b3Pos from, b
     for(int word=0;word<(SWAT_MAX_OBJECTS+63)/64;word++) while(objects[word]) {
         int i=word*64+swat_acoustic_first_bit(objects[word]); objects[word]&=objects[word]-1;
         const SwatObject* o=&scene->world->objects[i];
+        // Open fence infill is acoustically porous. Its spatial group bounds
+        // contain mostly air, so applying solid-slab steel loss is invalid.
+        // Posts retain their own narrow obstruction; infill diffraction is
+        // below this three-band approximation's resolution.
+        if(o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL)continue;
         float thickness=swat_acoustic_thickness(o,scene->c[i],scene->s[i],from,to);
         if(thickness<=0) continue;
         const SwatMaterialDef* material=swat_material(o->material);

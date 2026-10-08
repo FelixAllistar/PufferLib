@@ -9,6 +9,45 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int component_root(int* roots,int i) {
+    while(roots[i]!=i){roots[i]=roots[roots[i]];i=roots[i];}return i;
+}
+static void fence_parts(float (*v)[3],size_t nv,const unsigned* indices,size_t ni) {
+    int* roots=malloc(nv*sizeof(int));int* component=malloc(nv*sizeof(int));assert(roots && component);
+    for(size_t i=0;i<nv;i++){roots[i]=(int)i;component[i]=-1;}
+    // Weld only coincident positions, including duplicates at material/normal seams.
+    for(size_t i=0;i<nv;i++)for(size_t j=0;j<i;j++)if(fabsf(v[i][0]-v[j][0])<1e-6f && fabsf(v[i][1]-v[j][1])<1e-6f && fabsf(v[i][2]-v[j][2])<1e-6f) {
+        roots[component_root(roots,(int)i)]=component_root(roots,(int)j);break;
+    }
+    for(size_t t=0;t<ni;t+=3)for(int j=1;j<3;j++)roots[component_root(roots,indices[t+j])]=component_root(roots,indices[t]);
+    typedef struct Piece {float lo[3],hi[3];int triangles,kind,bx,by,group;} Piece;
+    Piece pieces[1024]={0},groups[64]={0};int count=0,ng=0;
+    for(size_t t=0;t<ni;t+=3) {
+        int root=component_root(roots,indices[t]),id=component[root];
+        if(id<0){assert(count<1024);id=component[root]=count++;for(int k=0;k<3;k++){pieces[id].lo[k]=INFINITY;pieces[id].hi[k]=-INFINITY;}}
+        Piece* p=&pieces[id];p->triangles++;
+        for(int j=0;j<3;j++)for(int k=0;k<3;k++){p->lo[k]=fminf(p->lo[k],v[indices[t+j]][k]);p->hi[k]=fmaxf(p->hi[k],v[indices[t+j]][k]);}
+    }
+    for(int i=0;i<count;i++) {
+        Piece* p=&pieces[i];float x=(p->lo[0]+p->hi[0])*.5f,y=(p->lo[1]+p->hi[1])*.5f;
+        p->kind=p->hi[0]<.041f?2:p->lo[1]>.145f && p->hi[1]<1.47f && p->hi[0]-p->lo[0]<.20f && p->hi[1]-p->lo[1]<.20f?0:1;
+        p->bx=p->kind==0?(int)floorf(x/.35f):0;p->by=p->kind==0?(int)floorf(y/.35f):0;
+        int g=0;for(;g<ng;g++)if(groups[g].kind==p->kind && groups[g].bx==p->bx && groups[g].by==p->by && groups[g].triangles+p->triangles<=240)break;
+        if(g==ng){assert(ng<64);groups[ng++]=*p;groups[g].triangles=0;}
+        p->group=g;Piece* q=&groups[g];q->triangles+=p->triangles;
+        for(int k=0;k<3;k++){q->lo[k]=fminf(q->lo[k],p->lo[k]);q->hi[k]=fmaxf(q->hi[k],p->hi[k]);}
+        assert(q->triangles<=240);
+    }
+    assert(groups[0].kind==2);
+    puts("static const unsigned char fence_triangle_parts[]={");
+    for(size_t t=0;t<ni;t+=3)printf("%d,%s",pieces[component[component_root(roots,indices[t])]].group,t%96==93?"\n":"");
+    puts("\n};\nstatic const SwatMotelFencePart fence_parts[]={");
+    const char* kinds[]={"SWAT_PART_FENCE_WIRE","SWAT_PART_FENCE_RAIL","SWAT_PART_FENCE_POST"};
+    for(int g=0;g<ng;g++){Piece* p=&groups[g];printf("{{%.9ef,%.9ef,%.9ef},{%.9ef,%.9ef,%.9ef},%d,%s},\n",(p->lo[0]+p->hi[0])*.5f,(p->lo[1]+p->hi[1])*.5f,(p->lo[2]+p->hi[2])*.5f,fmaxf(.001f,(p->hi[0]-p->lo[0])*.5f),fmaxf(.001f,(p->hi[1]-p->lo[1])*.5f),fmaxf(.001f,(p->hi[2]-p->lo[2])*.5f),p->triangles,kinds[p->kind]);}
+    puts("};");fprintf(stderr,"Fence: %d closed components, %d spatial groups (<=240 triangles each)\n",count,ng);
+    free(roots);free(component);
+}
+
 int main(int argc,char** argv) {
     bool fence=argc==2 && !strcmp(argv[1],"--fence");
     assert(argc==1 || fence);
@@ -53,6 +92,7 @@ int main(int argc,char** argv) {
         printf("};\nstatic const SwatMotelMaterial %s_materials_%d[]={",prefix,a);
         for(size_t i=0;i<data->materials_count;i++)printf("{%.9ef,%.9ef},",data->materials[i].pbr_metallic_roughness.roughness_factor,data->materials[i].pbr_metallic_roughness.metallic_factor);
         puts("};");counts[a][0]=nv;counts[a][1]=ni/3;materials[a]=data->materials_count;
+        if(fence && a==0)fence_parts(vertices,nv,indices,ni);
         free(vertices);free(indices);cgltf_free(data);
     }
     printf("static const SwatMotelAsset %s_assets[]={\n",prefix);

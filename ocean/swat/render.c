@@ -154,7 +154,7 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
             }
         }
     }
-    if (!o->active) return;
+    if (!o->active && !swat_motel_fence_proxy(world,o)) return;
     bool cutaway=view->planning && !view->plan_preview;
     bool imported=swat_environment_motel_draw(&view->environment,world,o,false,cutaway) ||
         swat_environment_storefront_draw(&view->environment,world,o,false,cutaway);
@@ -182,7 +182,8 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
     }
     if(!o->door && o->breach_owner>=0) {
         b3Vec3 local=b3InvRotateVector(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3SubPos(o->breach_position,o->center));
-        DrawCube((Vector3){local.x,local.y,local.z},.045f,.18f,.22f,swat_gold);
+        bool fence=o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL;
+        DrawCube((Vector3){local.x,local.y,local.z},fence?.22f:.045f,.18f,fence?.045f:.22f,swat_gold);
     }
     rlPopMatrix();
 }
@@ -239,7 +240,7 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
     SwatView* view=context;view->environment.shadow_room=view->lighting.shadow_room;
     for(int i=0;i<sim->world.count;i++) {
         const SwatObject* o=&sim->world.objects[i];
-        if(!o->active || o->material==SWAT_GLASS) continue;
+        if((!o->active && !swat_motel_fence_proxy(&sim->world,o)) || o->material==SWAT_GLASS) continue;
         if(view->lighting.shadow_room>=0 && !swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],
             (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
         if(!swat_lighting_face_intersects(&view->lighting,(Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
@@ -284,7 +285,7 @@ static void swat_draw_contact_scene(void* context,const SwatSim* sim,bool cutawa
     }
     // Contact detail is local. Avoid a second full-location/character draw.
     for(int i=0;i<sim->world.count;i++) {
-        const SwatObject* o=&sim->world.objects[i];if(!o->active || o->material==SWAT_GLASS)continue;
+        const SwatObject* o=&sim->world.objects[i];if((!o->active && !swat_motel_fence_proxy(&sim->world,o)) || o->material==SWAT_GLASS)continue;
         Vector3 p={(float)o->center.x,(float)o->center.y,(float)o->center.z};
         float radius=b3Length(o->half)+.5f; // Include trim beyond the collider.
         if(Vector3DistanceSqr(p,view->lighting.contact_eye)>(radius+10)*(radius+10))continue;

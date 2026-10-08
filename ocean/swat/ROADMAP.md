@@ -68,8 +68,8 @@ and motel controller checks pass; the full Windows tool build, complete environm
 graphics regression and ordinary `./swat play --mission motel --capture ...` pass.
 Native proof and compact editable sources are under the guest-folder, room-numbers
 and reception art handoffs. Shared the review on Slack (`F0C7N974YQ5`). The artist
-is preparing an open-ended east perimeter fence and Room 103 variation; these are
-not integrated yet. No claim of learned tactical behavior or a finished slice.
+subsequently delivered the east perimeter fence and Room 103 variation, integrated
+in the third increment below. No claim of learned tactical behavior or a finished slice.
 
 Alternative-route regression: with all doors wedged, the normal squad controller
 remains blocked until destruction opens an exterior reception wall or guest-room
@@ -98,14 +98,30 @@ artist is refining the roadside sign while the engine handles asphalt and fence
 collision/destruction. See the east-fence and Room103-personal
 art handoffs for retained source, measured placement, proof and limitations.
 
-Next: decompose the dense fence collision to avoid Box3D's 256-triangle mover
-query limit; implement material-appropriate fence severing rather than leaving
-it a permanently fixed obstacle. Integrate the received CC0 Poly Haven Clean
-Asphalt at its measured 2.1 m repeat, only on motel ground owner 0 (top Y=-.08).
-The downloaded verified candidate is under `build/swat/review/east-fence/asphalt`.
-Keep its original maps/provenance once, check 16-bit decode, linear normal and
-roughness channels, planar tangent orientation and walking/grazing appearance.
-Then continue irregular breach silhouettes and scenario/perception acceptance.
+Fourth increment: original fence components are grouped into 29 shared collision
+meshes per bay, each at most 240 triangles. Actual-controller charge placement,
+interruption, consumption, retreat, detonation and crossing pass: 18 groups are
+removed, 11 survive, neighboring bays/posts remain, replica and reset agree.
+Wire/rail bounds no longer act as solid steel acoustic slabs. Rendering filters
+the original triangles into cached material batches; missing art draws surviving
+collision triangles. Canonical count is 1,044 and network/replay version is 12.
+This is an authored approximation of fastening failure, not loose-wire physics.
+Other dense room props can still reach the Box3D mover warning.
+
+CC0 Poly Haven Clean Asphalt is installed only on motel ground owner 0 at its
+measured 2.1 m repeat. Original 16-bit PNGs are retained; GPU readback matches
+independently decoded normalized samples, including the single upload row flip.
+Normal/roughness remain linear; walking/grazing native captures were reviewed.
+The roadside sign now uses original painted lettering (319 instead of 3,075
+triangles), preserving bounds, owner and collision. Native full graphics checks,
+motel/controller and replay/save checks and ordinary `./swat` capture pass.
+Sources, licensing and compact proof live in the asphalt, roadside and east-fence
+art handoffs. Review logs are in `build/swat/review/fence-destruction`.
+
+Next: diagnose the detached-looking eyeglass shadows with matched lighting
+captures; continue irregular masonry silhouettes, full scenario completion
+through different approaches, perception and level context. The empty ground
+boundary/background is still conspicuous in approach views.
 
 ## Landed: playable foundation
 

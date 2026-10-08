@@ -1,0 +1,26 @@
+[
+  {
+    "channel": "Diffuse",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/clean_asphalt/clean_asphalt_diff_1k.png",
+    "md5": "4e453946e65d04a45012ae4cb7472ce9",
+    "size": 5618915,
+    "sha256": "57cea7a4dc688aa9764d64450997124edf188c802a94d2b773441618ec3cab19",
+    "local": "source/clean_asphalt_diff_1k.png"
+  },
+  {
+    "channel": "nor_gl",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/clean_asphalt/clean_asphalt_nor_gl_1k.png",
+    "md5": "2609fb18d22b915d5ba6dee13fcae1c7",
+    "size": 5632375,
+    "sha256": "5d5f512a8d90fa4c43f52f22c1904a845aefddb162b03d2547f0c60175b17125",
+    "local": "source/clean_asphalt_nor_gl_1k.png"
+  },
+  {
+    "channel": "Rough",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/clean_asphalt/clean_asphalt_rough_1k.png",
+    "md5": "a6b14fa39340820d707401d377b58e7d",
+    "size": 1878547,
+    "sha256": "aff9bbdf84f878887e3b259bcb46e38135eb3416e56d83da5d02b123dade1911",
+    "local": "source/clean_asphalt_rough_1k.png"
+  }
+]

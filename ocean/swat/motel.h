@@ -18,6 +18,11 @@ typedef struct SwatMotelInstance {
     int asset; b3Pos origin; b3Vec3 scale; float yaw;
     SwatMaterial material; bool door,roof;
 } SwatMotelInstance;
+typedef struct SwatMotelFencePart {b3Vec3 center,half;int triangles;SwatPart part;} SwatMotelFencePart;
+int swat_motel_fence_part_count(void);
+int swat_motel_fence_triangle_part(int triangle);
+int swat_motel_fence_parent(const SwatWorld*,const SwatObject*);
+bool swat_motel_fence_proxy(const SwatWorld*,const SwatObject*);
 const SwatMotelAsset* swat_motel_asset(int index);
 const SwatMotelInstance* swat_motel_instance(int index);
 // Small visual fixtures inherit a real support; they add no hidden colliders.

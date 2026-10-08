@@ -1,0 +1,18 @@
+{
+ "original_blend": "environment_realism_review/briar_court_101_candidate_v2/pinned_input/motor_court_motel.blend",
+ "original_blend_sha256": "ed6f103f58b7a87c7604c6b66795250be4e82ddcbc1b3ff3a485850cb6bb2b5f",
+ "original_archive_url": "https://drive.google.com/file/d/1MceTtpBriTUP1-0nvkMC58f8iZG4INVX/view?usp=drivesdk",
+ "catalog": "swat_asset_catalog_revisions/r008_lamp_desk_maintenance/catalog.json",
+ "baseline_verification": "Export from pinned original source reproduces catalog GLB SHA256 exactly.",
+ "baseline_glb_sha256": "588f6b571e3874b37597692c3597de05fcf9c364a64e32fc22d9e0480bd22170",
+ "font_source": "motel_reception_sign_v1/fonts/DejaVuSansCondensed-Bold.ttf",
+ "palette_source": "Median sRGB pixels of original GLB embedded MC15_teal, MC15_cream, MC15_red textures",
+ "palette_sRGB_8bit": {"teal":[25,66,63],"cream":[194,189,159],"red":[119,35,20]},
+ "latest_actual_engine_reference": "review_fence_room103/east-court.png",
+ "latest_engine_reference_source": "attachments/c6b1ecd8-d5bb-4a3c-a09c-f2f8684cdaa8/motel-east-fence-native-review.tar.gz",
+ "engine_camera_metadata": "Not provided; representative parking camera only",
+ "external_downloads": false,
+ "original_source_modified": false,
+ "engine_state_modified": false,
+ "uploads": false
+}

@@ -6,7 +6,7 @@ typedef struct SwatWallVertex {Vector3 p,n;Vector2 uv,uv2;} SwatWallVertex;
 typedef struct SwatWallMeshCache {
     Model model;const Mesh* source;b3Pos center;b3Vec3 half;
 } SwatWallMeshCache;
-typedef struct SwatMotelWallArt {SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2];} SwatMotelWallArt;
+typedef struct SwatMotelWallArt {SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3];uint64_t fence_masks[3];} SwatMotelWallArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
     for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
     MemFree(cache->model.meshes);MemFree(cache->model.meshMaterial);memset(cache,0,sizeof(*cache));
@@ -14,7 +14,39 @@ static void wall_mesh_close(SwatWallMeshCache* cache) {
 static void wall_art_close(SwatEnvironmentArt* art) {
     if(!art->motel_wall_art)return;
     for(int i=0;i<SWAT_MAX_OBJECTS;i++)for(int j=0;j<2;j++)wall_mesh_close(&art->motel_wall_art->pieces[i][j]);
+    for(int i=0;i<3;i++)wall_mesh_close(&art->motel_wall_art->fences[i]);
     free(art->motel_wall_art);art->motel_wall_art=NULL;
+}
+static const Model* fence_mesh(SwatMotelWallArt* art,const Model* source,const SwatWorld* world,int owner) {
+    int count=swat_motel_fence_part_count(),first=world->objects[owner].wall_group-1;uint64_t mask=0;
+    for(int i=0;i<count;i++)if(world->objects[first+i].active)mask|=UINT64_C(1)<<i;
+    if(mask==(count==64?UINT64_MAX:(UINT64_C(1)<<count)-1))return source;
+    SwatWallMeshCache* cache=&art->fences[owner-155];
+    if(cache->source==source->meshes && art->fence_masks[owner-155]==mask)return &cache->model;
+    wall_mesh_close(cache);cache->source=source->meshes;art->fence_masks[owner-155]=mask;
+    Model* model=&cache->model;model->transform=source->transform;model->materials=source->materials;model->materialCount=source->materialCount;
+    model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
+    model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));int triangle=0;
+    for(int m=0;m<source->meshCount;m++) {
+        const Mesh* src=&source->meshes[m];Mesh mesh={0};int capacity=src->triangleCount*3;
+        mesh.vertices=MemAlloc(capacity*3*sizeof(float));mesh.normals=MemAlloc(capacity*3*sizeof(float));mesh.texcoords=MemAlloc(capacity*2*sizeof(float));
+        if(src->texcoords2)mesh.texcoords2=MemAlloc(capacity*2*sizeof(float));
+        for(int t=0;t<src->triangleCount;t++,triangle++) {
+            int part=swat_motel_fence_triangle_part(triangle);
+            if(part<0 || !(mask&(UINT64_C(1)<<part)))continue;
+            for(int j=0;j<3;j++) {
+                int at=src->indices?src->indices[t*3+j]:t*3+j,out=mesh.vertexCount++;
+                memcpy(mesh.vertices+out*3,src->vertices+at*3,3*sizeof(float));
+                memcpy(mesh.normals+out*3,src->normals+at*3,3*sizeof(float));
+                memcpy(mesh.texcoords+out*2,src->texcoords+at*2,2*sizeof(float));
+                if(src->texcoords2)memcpy(mesh.texcoords2+out*2,src->texcoords2+at*2,2*sizeof(float));
+            }
+        }
+        mesh.triangleCount=mesh.vertexCount/3;
+        if(!mesh.triangleCount){MemFree(mesh.vertices);MemFree(mesh.normals);MemFree(mesh.texcoords);MemFree(mesh.texcoords2);continue;}
+        UploadMesh(&mesh,false);model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=mesh;
+    }
+    return model;
 }
 static SwatWallVertex wall_lerp(SwatWallVertex a,SwatWallVertex b,float t) {
     return (SwatWallVertex){Vector3Lerp(a.p,b.p,t),Vector3Lerp(a.n,b.n,t),Vector2Lerp(a.uv,b.uv,t),Vector2Lerp(a.uv2,b.uv2,t)};

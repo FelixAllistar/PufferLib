@@ -1,0 +1,10 @@
+{
+ "reviewed": ["previews/front_reimport.png", "previews/front_threequarter_reimport.png", "previews/representative_parking_12m_reimport.png"],
+ "readability": "BRIAR COURT MOTEL and VACANCY readable, native opaque texture lettering; no remaining pixel-box glyphs",
+ "geometry": "Original paired poles, base, frame, board and upper-right pale wear chip retained",
+ "bounds_framing": "Complete sign visible in front and representative parking previews",
+ "palette": "Original embedded texture median sRGB colors; restrained teal, cream and red; original ochre frame retained",
+ "surface": "Sparse edge scuffs; no baked light gradient or dirt over lettering",
+ "parking_camera": "Representative 12 m forward / 12.65 m horizontal distance at 1.65 m height, 50 mm lens. Not actual engine camera.",
+ "engine_acceptance": "Pending; source GLB reimport proof only"
+}

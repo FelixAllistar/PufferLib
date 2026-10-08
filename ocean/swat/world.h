@@ -10,9 +10,11 @@ extern "C" {
 
 #define SWAT_MAX_OBJECTS 2048
 #define SWAT_MOTEL_MESH_CAPACITY 44
+#define SWAT_FENCE_PART_CAPACITY 64
 #define SWAT_MAX_ROOMS 8
 typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE,SWAT_HIT_LIGHT } SwatHitKind;
-typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT, SWAT_PART_LIGHT } SwatPart;
+typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT, SWAT_PART_LIGHT,
+    SWAT_PART_FENCE_WIRE,SWAT_PART_FENCE_RAIL,SWAT_PART_FENCE_POST } SwatPart;
 typedef struct SwatRoom {
     b3Pos center;
     b3Vec3 half;
@@ -47,6 +49,7 @@ typedef struct SwatWorld {
     bool motel,storefront;
     b3MeshData* motel_meshes[SWAT_MOTEL_MESH_CAPACITY]; // Owned static collision; released after world destruction.
     b3MeshData* storefront_meshes[40];
+    b3MeshData* fence_meshes[SWAT_FENCE_PART_CAPACITY];
     SwatObject objects[SWAT_MAX_OBJECTS];
     int count, generation;
     SwatRoom rooms[SWAT_MAX_ROOMS];

@@ -3,6 +3,7 @@
 #include "render.h"
 #include "protocol.h"
 #include "rlgl.h"
+#include "raymath.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -192,7 +193,7 @@ static void glass_graphics(SwatEnvironmentArt* art,const char* directory) {
     UnloadRenderTexture(target);swat_world_close(&world);
 }
 static void motel_piece(SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
-    if(!o->active || swat_environment_motel_draw(art,world,o,shadow,cutaway))return;
+    if((!o->active && !swat_motel_fence_proxy(world,o)) || swat_environment_motel_draw(art,world,o,shadow,cutaway))return;
     rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
     if(shadow)swat_environment_fragment_draw(o);
     else if(!swat_environment_art_draw(art,o))DrawCubeV((Vector3){0},(Vector3){2*o->half.x,2*o->half.y,2*o->half.z},GRAY);
@@ -215,7 +216,8 @@ static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int wi
     if(lit) swat_lighting_begin(light,art,&sim.world,camera.position);
     if(lit) {
         const SwatObject* floor=&sim.world.objects[0];
-        DrawCubeV((Vector3){floor->center.x,floor->center.y,floor->center.z},(Vector3){2*floor->half.x,2*floor->half.y,2*floor->half.z},(Color){110,123,125,255});
+        if(!swat_environment_motel_draw(art,&sim.world,floor,false,false))
+            DrawCubeV((Vector3){floor->center.x,floor->center.y,floor->center.z},(Vector3){2*floor->half.x,2*floor->half.y,2*floor->half.z},(Color){110,123,125,255});
     }
     for(int i=1;i<sim.world.count;i++) motel_piece(art,&sim.world,&sim.world.objects[i],false,false);
     swat_environment_art_transparent(art,&sim.world,camera.position,false);
@@ -238,6 +240,30 @@ static void room101_graphics(SwatView* view,const char* directory) {
     SwatEnvironmentArt* art=&view->environment;
     SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.hostile_fire=false;
     swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
+    Texture2D asphalt_maps[]={art->motel_asphalt.color,art->motel_asphalt.normal,art->motel_asphalt.roughness};
+    const int coordinates[4][2]={{0,0},{127,311},{1023,1023},{512,512}};
+    // Independent PNG16 decode retained in the asphalt handoff: GPU upload
+    // preserves normalized channel values, reverses rows once, never gamma-decodes data maps.
+    const int expected[3][4][3]={{{72,73,73},{65,67,68},{89,87,84},{65,66,67}},
+        {{118,126,253},{139,132,253},{125,121,250},{117,131,253}},{{167,167,167},{162,162,162},{182,182,182},{154,154,154}}};
+    for(int m=0;m<3;m++) {
+        assert(asphalt_maps[m].id && asphalt_maps[m].width==1024 && asphalt_maps[m].mipmaps==11);
+        Image image=LoadImageFromTexture(asphalt_maps[m]);assert(image.data);Color* pixels=LoadImageColors(image);
+        for(int i=0;i<4;i++) {
+            Color p=pixels[(1023-coordinates[i][1])*1024+coordinates[i][0]];
+            assert(abs(p.r-expected[m][i][0])<=1 && abs(p.g-expected[m][i][1])<=1 && abs(p.b-expected[m][i][2])<=1);
+        }
+        UnloadImageColors(pixels);UnloadImage(image);
+    }
+    assert(art->motel_asphalt.tile.x==2.1f && sim.world.objects[0].material==SWAT_CONCRETE);
+    puts("PASS asphalt: PNG16 normalized GPU samples, flipped rows, linear data maps, 2.1 m repeat and original ground physics");
+    Model roadside=art->motel_roadside;assert(roadside.meshCount==7);int roadside_triangles=0;
+    for(int i=0;i<roadside.meshCount;i++)roadside_triangles+=roadside.meshes[i].triangleCount;
+    assert(roadside_triangles==319);
+    BoundingBox roadside_bounds=GetModelBoundingBox(roadside),old_roadside_bounds=GetModelBoundingBox(art->motel[14]);
+    assert(Vector3Distance(roadside_bounds.min,old_roadside_bounds.min)<.0001f && Vector3Distance(roadside_bounds.max,old_roadside_bounds.max)<.0001f);
+    assert(room101_owner_pixels(art,&sim.world.objects[140],false)>50);
+    sim.world.objects[140].active=false;assert(!room101_owner_pixels(art,&sim.world.objects[140],false));sim.world.objects[140].active=true;
     assert(art->room101_ready);
     assert(art->room101_v3_ready && art->room101_v4_ready);
     assert(art->masonry_edge.meshCount==4);int edge_triangles=0;
@@ -384,7 +410,7 @@ static void room101_graphics(SwatView* view,const char* directory) {
         for(int m=0;m<model.meshCount;m++)assert(model.meshes[m].texcoords2 && model.meshes[m].vboId[5]);
         for(int m=1;m<model.materialCount;m++)assert(art->motel_occlusion_uv[i][m]==1);
     }
-    for(int i=SWAT_MOTEL_BASE_INSTANCES+1;i<=SWAT_MOTEL_INSTANCES;i++) {
+    for(int i=SWAT_MOTEL_BASE_INSTANCES+1;i<=SWAT_MOTEL_UTILITY_INSTANCES;i++) {
         SwatObject* o=&sim.world.objects[i];assert(room101_owner_pixels(art,o,false)>50);
         o->active=false;assert(!room101_owner_pixels(art,o,false));o->active=true;
     }
@@ -544,6 +570,27 @@ static void room101_graphics(SwatView* view,const char* directory) {
     }
     Camera3D reception={{-10.3f,1.65f,5.2f},{-10,1.65f,0},{0,1,0},65,CAMERA_PERSPECTIVE};
     room=room101_capture(view,reception,true);snprintf(path,sizeof(path),"%s/reception-approach.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    Camera3D court={{-1,1.65f,9},{-2,.5f,0},{0,1,0},68,CAMERA_PERSPECTIVE};
+    Camera3D roadside_view={{10,1.65f,18},{9.7f,2,8},{0,1,0},50,CAMERA_PERSPECTIVE};
+    room=room101_capture_size(view,roadside_view,true,1440,810);snprintf(path,sizeof(path),"%s/roadside-parking.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    Camera3D grazing={{4,.35f,7},{1,0,2},{0,1,0},68,CAMERA_PERSPECTIVE};
+    room=room101_capture_size(view,court,true,1440,810);snprintf(path,sizeof(path),"%s/asphalt-walking.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    room=room101_capture_size(view,grazing,true,1440,810);snprintf(path,sizeof(path),"%s/asphalt-grazing.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    Camera3D fence={{10.1f,1.5f,4.8f},{12.5f,.85f,3},{0,1,0},58,CAMERA_PERSPECTIVE};
+    Image intact=room101_capture_size(view,fence,true,1440,810);
+    snprintf(path,sizeof(path),"%s/fence-intact.png",directory);assert(ExportImage(intact,path));
+    SwatHit rail=swat_world_ray(&sim.world,(b3Pos){12,1.42f,3},swat_v(1,0,0),1,b3_nullBodyId);
+    assert(rail.hit && swat_world_breach(&sim.world,rail.index,rail.point)>0);
+    Image cut=room101_capture_size(view,fence,true,1440,810);
+    snprintf(path,sizeof(path),"%s/fence-cut.png",directory);assert(ExportImage(cut,path));
+    Color* p0=LoadImageColors(intact),*p1=LoadImageColors(cut);int fence_changed=0;
+    for(int i=0;i<1440*810;i++)fence_changed+=abs(p0[i].r-p1[i].r)+abs(p0[i].g-p1[i].g)+abs(p0[i].b-p1[i].b)>30;
+    assert(fence_changed>1000);UnloadImageColors(p0);UnloadImageColors(p1);UnloadImage(intact);UnloadImage(cut);
+    // Art opt-out still presents the exact surviving collision triangles.
+    Model saved_fence=art->motel[42];art->motel[42]=(Model){0};
+    room=room101_capture_size(view,fence,true,1440,810);snprintf(path,sizeof(path),"%s/fence-cut-fallback.png",directory);assert(ExportImage(room,path));UnloadImage(room);
+    art->motel[42]=saved_fence;
+    puts("PASS fence graphics: cached intact/cut material batches, surviving posts, changed shadow silhouette and exact collision-art fallback");
     swat_sim_close(&sim);
     printf("PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (%d changed pixels), three door poses and removal\n",changed);
 }
@@ -577,6 +624,8 @@ int main(int argc,char** argv) {
     assert(!view.environment.room101_desk.meshCount);
     for(int i=0;i<3;i++)assert(!view.environment.motel_numbers[i].meshCount);
     assert(!view.environment.motel_reception.meshCount);
+    assert(!view.environment.motel_roadside.meshCount);
+    assert(!view.environment.motel_asphalt.color.id && !view.environment.motel_asphalt.normal.id && !view.environment.motel_asphalt.roughness.id);
     for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) {
         const SwatMotelAsset* source=swat_storefront_asset(i);Model model=view.environment.storefront[i];
         assert(model.meshCount>0 && model.materialCount==source->material_count+1);

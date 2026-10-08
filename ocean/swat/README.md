@@ -809,7 +809,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 11) and the same generated
+Saves require this network/replay version (currently 12) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -845,8 +845,14 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **11**; older clients and
+breach. The network geometry contract is version **12**; older clients and
 journals are incompatible, so use a fresh recording for this build.
+
+The motel's east wire fence has actual openings for bullets and porous sound
+transmission. A mounted charge removes a local section of wire and light rails;
+posts and neighboring bays remain. The normal controller and replicated world
+use the resulting opening. This approximates fastening failure; loose-wire
+deformation and a structural stress solver are not implemented.
 
 The audio bank contains 45 CC0 recorded clips with 67 event/material bindings:
 carbine/sidearm shots, mechanical handling, footsteps and impacts. They use the

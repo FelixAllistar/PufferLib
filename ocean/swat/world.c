@@ -24,6 +24,7 @@ void swat_world_close(SwatWorld* w) {
     if (B3_IS_NON_NULL(w->id)) b3DestroyWorld(w->id);
     for(int i=0;i<SWAT_MOTEL_MESH_CAPACITY;i++) if(w->motel_meshes[i]) b3DestroyMesh(w->motel_meshes[i]);
     for(int i=0;i<40;i++) if(w->storefront_meshes[i]) b3DestroyMesh(w->storefront_meshes[i]);
+    for(int i=0;i<SWAT_FENCE_PART_CAPACITY;i++)if(w->fence_meshes[i])b3DestroyMesh(w->fence_meshes[i]);
     memset(w,0,sizeof(*w));
 }
 
@@ -148,6 +149,10 @@ bool swat_world_impact(SwatWorld* w,int object,float damage) {
 
 static float charge_demand(const SwatObject* o) {
     const SwatMaterialDef* m=swat_material(o->material);
+    // Fence infill fails at its thin wire/rail fastenings, not across the air
+    // contained by a chunk's bounds. Posts retain their independent support.
+    if(o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL)
+        return m->charge_resistance*(o->part==SWAT_PART_FENCE_WIRE?.0025f:.003f)/m->reference_thickness;
     return m->charge_resistance*(2*o->half.x/m->reference_thickness);
 }
 
@@ -170,14 +175,16 @@ bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
 
 bool swat_world_breachable(const SwatObject* o) {
     return o->active && o->max_health>0 && charge_demand(o)<=1 && (o->door || (o->wall_group>0 &&
-        (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME)));
+        (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME || o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL)));
 }
 
 int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object])) return 0;
     SwatObject source=w->objects[object];
     if(source.door) return swat_world_damage(w,object,source.max_health) ? 1 : 0;
+    bool fence=source.part==SWAT_PART_FENCE_WIRE || source.part==SWAT_PART_FENCE_RAIL;
     b3Vec3 tangent=swat_v(sinf(source.yaw),0,cosf(source.yaw));
+    if(fence)tangent=swat_v(cosf(source.yaw),0,-sinf(source.yaw));
     // Localized game-space aperture. It crosses both wall faces and the
     // intervening stud segments, leaving the rest of the assembly intact.
     float floor_y=(float)source.center.y;
@@ -191,7 +198,7 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
         if(!swat_world_breachable(o) || o->door || o->wall_group!=source.wall_group) continue;
         b3Vec3 delta=b3SubPos(o->center,center);
         float z=fabsf(b3Dot(delta,tangent)),y=fabsf(delta.y);
-        if(z<aperture+o->half.z*.6f && y<1.10f+o->half.y*.45f)
+        if(z<aperture+(fence?o->half.x:o->half.z)*.6f && y<1.10f+o->half.y*.45f)
             removed+=swat_world_damage(w,i,o->max_health);
     }
     bool framed=false;

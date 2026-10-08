@@ -1,0 +1,17 @@
+{
+  "candidate": "roadside_sign_painted_v1",
+  "runtime": "runtime/roadside_sign.glb",
+  "engine_thread": "1791478736.549619",
+  "engine_asset": 14,
+  "engine_owner": 140,
+  "source_instance": 139,
+  "source_instance_name": "INSTANCE__roadside_sign__139",
+  "source_asset_id": "mc15_roadside_sign",
+  "root_translation_Yup_m": [9.7, -0.08, 8.0],
+  "root_yaw_Yup_rad": -0.13,
+  "root_scale": [1, 1, 1],
+  "local_dimensions_Yup_m": [3.2, 4.1125, 0.7],
+  "source_front": "-Y in Blender Z-up; +Z in glTF Y-up",
+  "integration": "Replace mesh/material resource only. Preserve existing owner/root transform/support identity. Retain original collider and floorplan. Do not regenerate collision from changed letter geometry. No new gameplay data supplied.",
+  "acceptance": "Source-art candidate only; engine trial and user art approval pending."
+}

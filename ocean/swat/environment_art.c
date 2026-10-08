@@ -49,12 +49,17 @@ static Texture2D load_surface(const char* name,bool metric) {
 }
 
 static void room101_close(SwatEnvironmentArt* art) {
+    if(art->motel_asphalt.color.id)UnloadTexture(art->motel_asphalt.color);
+    if(art->motel_asphalt.normal.id)UnloadTexture(art->motel_asphalt.normal);
+    if(art->motel_asphalt.roughness.id)UnloadTexture(art->motel_asphalt.roughness);
+    art->motel_asphalt=(SwatSurfaceMaps){0};
     wall_art_close(art);
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
     for(int i=0;i<3;i++) {swat_art_model_close(art->motel_numbers[i]);art->motel_numbers[i]=(Model){0};}
     swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
+    swat_art_model_close(art->motel_roadside);art->motel_roadside=(Model){0};
     for(int i=0;i<2;i++) {swat_art_model_close(art->motel_personal[i]);art->motel_personal[i]=(Model){0};}
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
     art->room101_ready=false;
@@ -138,6 +143,21 @@ static void room101_load(SwatEnvironmentArt* art) {
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
+    if(!room101_model_load(&art->motel_roadside,art->motel_roadside_normal_scale,"motel_roadside/roadside_sign.glb")) {
+        swat_art_model_close(art->motel_roadside);art->motel_roadside=(Model){0};
+    }
+    const char* style=getenv("SWAT_ENVIRONMENT_STYLE"),*pbr=getenv("SWAT_ENVIRONMENT_PBR");
+    if(!style || strcmp(style,"legacy")) {
+        SwatSurfaceMaps* m=&art->motel_asphalt;m->tile=(Vector2){2.1f,2.1f};
+        m->color=load_surface("motel_asphalt/clean_asphalt_diff_1k.png",true);
+        if(m->color.id && (!pbr || strcmp(pbr,"0"))) {
+            m->normal=load_surface("motel_asphalt/clean_asphalt_nor_gl_1k.png",true);
+            m->roughness=load_surface("motel_asphalt/clean_asphalt_rough_1k.png",true);
+        }
+        if(m->color.id)SetTextureFilter(m->color,TEXTURE_FILTER_ANISOTROPIC_8X);
+        if(m->normal.id)SetTextureFilter(m->normal,TEXTURE_FILTER_ANISOTROPIC_8X);
+        if(m->roughness.id)SetTextureFilter(m->roughness,TEXTURE_FILTER_ANISOTROPIC_8X);
+    }
     const char* personal[]={"creased_leather_wallet.glb","brass_eyeglasses.glb"};
     for(int i=0;i<2;i++) {
         char file[128];snprintf(file,sizeof(file),"motel_personal/%s",personal[i]);
@@ -502,6 +522,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
         if(lit) {
             float normal_scale=1;
             if(source==&art->motel_reception)normal_scale=art->motel_reception_normal_scale[model->meshMaterial[i]];
+            if(source==&art->motel_roadside)normal_scale=art->motel_roadside_normal_scale[model->meshMaterial[i]];
             for(int n=0;n<2;n++)if(source==&art->motel_personal[n])normal_scale=art->motel_personal_normal_scale[n][model->meshMaterial[i]];
             for(int n=0;n<3;n++)if(source==&art->motel_numbers[n])normal_scale=art->motel_number_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
@@ -559,7 +580,39 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
     return true;
 }
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
-    if(!world->motel || o->tag.index<1)return false;
+    if(!world->motel)return false;
+    if(o->tag.index==0) {
+        const SwatSurfaceMaps* m=&art->motel_asphalt;
+        if(!o->active || shadow || !m->color.id)return false;
+        swat_lighting_surface(art->lighting,m->normal,m->roughness,(Vector3){0},(Vector2){0},false);
+        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);
+        // Upward plane: U=+X, V=-Z, so tangent X bitangent -Z normal +Y.
+        // Source pixels are flipped once on upload; normal green stays intact.
+        textured_box(m->color,o,art->lit,(Vector2){m->tile.x,-m->tile.y},-1,true);
+        rlPopMatrix();clear_surface(art);return true;
+    }
+    if(o->tag.index<1)return false;
+    // Draw one cached material batch per bay, while collision/damage owns its
+    // smaller wire components. The inactive aggregate is only a render proxy.
+    if(swat_motel_fence_parent(world,o)>=0) {
+        if(art->motel_wall_art && art->motel[42].meshCount)return true;
+        if(!o->active || B3_IS_NULL(o->shape))return true;
+        b3Mesh mesh=b3Shape_GetMesh(o->shape);const b3Vec3* vertices=b3GetMeshVertices(mesh.data);
+        const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);const uint8_t* color=swat_material(o->material)->color;
+        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+        rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
+        for(int i=0;i<mesh.data->triangleCount;i++) {
+            b3MeshTriangle t=triangles[i];b3Vec3 a=vertices[t.index1],b=vertices[t.index2],c=vertices[t.index3];
+            b3Vec3 n=swat_normalize(b3Cross(b3Sub(b,a),b3Sub(c,a)));rlNormal3f(n.x,n.y,n.z);
+            rlVertex3f(a.x,a.y,a.z);rlVertex3f(b.x,b.y,b.z);rlVertex3f(c.x,c.y,c.z);
+        }
+        rlEnd();rlSetTexture(0);rlPopMatrix();return true;
+    }
+    if(swat_motel_fence_proxy(world,o) && art->motel_wall_art && art->motel[42].meshCount) {
+        SwatObject proxy=*o;proxy.active=true;
+        const Model* source=&art->motel[42];const Model* model=fence_mesh(art->motel_wall_art,source,world,o->tag.index);
+        return location_mesh_draw(art,&proxy,swat_motel_instance(o->tag.index-1),model,source,shadow,cutaway,false,NULL);
+    }
     if(o->tag.index==72 && o->active)for(int i=0;i<2;i++) {
         SwatMotelInstance mount={.origin={.8f,.7606f,i?-2.23f:-2.03f},.scale={1,1,1},.yaw=(i?-12:8)*SWAT_RAD};
         location_draw(art,o,&mount,&art->motel_personal[i],shadow,cutaway,false);
@@ -584,6 +637,8 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     if(o->tag.index>SWAT_MOTEL_INSTANCES)return motel_wall_draw(art,world,o,shadow,cutaway);
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
+    if(o->tag.index==140 && art->motel_roadside.meshCount)
+        return location_draw(art,o,p,&art->motel_roadside,shadow,cutaway,false);
     // Explicit source 042/066/090 ownership. Inherited GLB 101 metadata is provenance.
     for(int n=0;n<3;n++)if(o->tag.index==43+24*n && art->motel_numbers[n].meshCount)
         return location_draw(art,o,p,&art->motel_numbers[n],shadow,cutaway,false);

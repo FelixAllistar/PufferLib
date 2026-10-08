@@ -33,12 +33,69 @@ static void recipe(int i,b3Pos* center,b3Vec3* half,float* yaw) {
     *center=b3OffsetPos(p->origin,swat_v(c*local.x+s*local.z,local.y,-s*local.x+c*local.z));
     *half=swat_v(fmaxf(.001f,a->half.x*p->scale.x),fmaxf(.001f,a->half.y*p->scale.y),fmaxf(.001f,a->half.z*p->scale.z)); *yaw=p->yaw;
 }
+int swat_motel_fence_part_count(void){return (int)(sizeof(fence_parts)/sizeof(fence_parts[0]));}
+int swat_motel_fence_triangle_part(int triangle){return triangle>=0 && triangle<4188?fence_triangle_parts[triangle]:-1;}
+bool swat_motel_fence_proxy(const SwatWorld* w,const SwatObject* o) {
+    int first=o->wall_group-1;
+    return w->motel && o->tag.index>=155 && o->tag.index<=157 && first>SWAT_MOTEL_INSTANCES &&
+        first+swat_motel_fence_part_count()<=w->count && w->objects[first].part==SWAT_PART_FENCE_POST;
+}
+int swat_motel_fence_parent(const SwatWorld* w,const SwatObject* o) {
+    if(!w->motel || o->part<SWAT_PART_FENCE_WIRE || o->part>SWAT_PART_FENCE_POST)return -1;
+    for(int i=155;i<=157 && i<w->count;i++)if(w->objects[i].wall_group==o->wall_group && swat_motel_fence_proxy(w,&w->objects[i]))return i;
+    return -1;
+}
+static b3Pos fence_center(int owner,int part) {
+    const SwatMotelInstance* p=swat_motel_instance(owner-1);b3Vec3 c=fence_parts[part].center;
+    return b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*c.x+sinf(p->yaw)*c.z,c.y,-sinf(p->yaw)*c.x+cosf(p->yaw)*c.z));
+}
+static float fence_health(int part){return fence_parts[part].part==SWAT_PART_FENCE_POST?0:swat_material(SWAT_STEEL)->fracture_health;}
+static bool fence_validate(const SwatWorld* w) {
+    if(w->count<=SWAT_MOTEL_INSTANCES+1)return true; // Explicit legacy prefix has no piece records.
+    for(int owner=155;owner<=157 && owner<w->count;owner++) {
+        int first=w->objects[owner].wall_group-1;if(first<0)continue;
+        if(first<=SWAT_MOTEL_INSTANCES || first+swat_motel_fence_part_count()>w->count)return false;
+        for(int k=0;k<swat_motel_fence_part_count();k++) {
+            const SwatObject* o=&w->objects[first+k];
+            if(b3Distance(o->center,fence_center(owner,k))>1e-4f || b3Length(b3Sub(o->half,fence_parts[k].half))>1e-4f ||
+               fabsf(swat_angle(o->yaw-SWAT_PI*.5f))>1e-5f || o->pitch!=0 || o->material!=SWAT_STEEL || o->door ||
+               o->part!=fence_parts[k].part || o->max_health!=fence_health(k) || o->wall_group!=first+1)return false;
+        }
+    }
+    return true;
+}
+static void fence_bind(SwatWorld* w) {
+    if(w->count<=SWAT_MOTEL_INSTANCES+1)return;
+    const SwatMotelAsset* source=&fence_assets[0];
+    for(int owner=155;owner<=157 && owner<w->count;owner++) {
+        int first=w->objects[owner].wall_group-1;if(first<0)continue;
+        for(int k=0;k<swat_motel_fence_part_count();k++) {
+            if(!w->fence_meshes[k]) {
+                b3Vec3 vertices[720];int32_t indices[720];int n=0;
+                for(int t=0;t<source->triangle_count;t++)if(fence_triangle_parts[t]==k)for(int j=0;j<3;j++) {
+                    vertices[n]=b3Sub(b3Add(source->vertices[source->indices[t*3+j]],source->center),fence_parts[k].center);
+                    indices[n]=n;n++;
+                }
+                assert(n==fence_parts[k].triangles*3 && n<=720);
+                b3MeshDef def={.vertices=vertices,.indices=indices,.vertexCount=n,.triangleCount=n/3,.weldVertices=true,.weldTolerance=1e-6f,.identifyEdges=true};
+                w->fence_meshes[k]=b3CreateMesh(&def,NULL,0);assert(w->fence_meshes[k]);
+            }
+            SwatObject* o=&w->objects[first+k];b3DestroyShape(o->shape,false);
+            b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
+            o->shape=b3CreateMeshShape(o->body,&def,w->fence_meshes[k],swat_v(1,1,1));assert(B3_IS_NON_NULL(o->shape));
+        }
+        SwatObject* proxy=&w->objects[owner];
+        if(B3_IS_NON_NULL(proxy->body))b3DestroyBody(proxy->body);
+        proxy->body=b3_nullBodyId;proxy->shape=b3_nullShapeId;proxy->active=false;
+    }
+}
 bool swat_motel_bind_collision(SwatWorld* w) {
     // Canonical prefix remains stable; appended wall fragments use their explicit
     // wire geometry. Also retain the original map without utility props.
     if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
     int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
+    if(!fence_validate(w))return false;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];
         const SwatMotelInstance* p=swat_motel_instance(i);
@@ -71,6 +128,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
         if(first<=SWAT_MOTEL_INSTANCES || first>=w->count || w->objects[first].wall_group!=o->wall_group)continue;
         b3DestroyBody(o->body);o->body=b3_nullBodyId;o->shape=b3_nullShapeId;o->active=false;
     }
+    fence_bind(w);
     w->motel=true; return true;
 }
 
@@ -169,6 +227,14 @@ void swat_motel_build(SwatWorld* w) {
         b3DestroyBody(o->body);o->body=b3_nullBodyId;o->shape=b3_nullShapeId;o->active=false;
     }
     for(int i=1;i<=SWAT_MOTEL_INSTANCES;i++)if(w->objects[i].active && sectioned_asset(swat_motel_instance(i-1)->asset))sectioned_wall(w,i);
+    for(int owner=155;owner<=157;owner++) {
+        int first=w->count;w->objects[owner].wall_group=first+1;
+        for(int k=0;k<swat_motel_fence_part_count();k++) {
+            int id=swat_world_box(w,fence_center(owner,k),fence_parts[k].half,SWAT_STEEL,fence_health(k));
+            SwatObject* o=&w->objects[id];o->part=fence_parts[k].part;o->wall_group=first+1;swat_world_place(o,SWAT_PI*.5f);
+        }
+    }
+    assert(fence_validate(w));fence_bind(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }

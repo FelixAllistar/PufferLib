@@ -1,0 +1,58 @@
+{
+  "support_before": {
+    "mast": {
+      "vertices": 48,
+      "triangles": 88,
+      "sha256": "777322aec49f0d5ab438c31266a73a35f0fe25458bb5058bc62249e52d47712a"
+    },
+    "foundation": {
+      "vertices": 24,
+      "triangles": 44,
+      "sha256": "a93c37319f057dd6194e7a57ae7c653c5336c1a64ed15bf21cfc3538b18e5e69"
+    },
+    "face_casing": {
+      "vertices": 72,
+      "triangles": 132,
+      "sha256": "0f1e5927a8ac0a980c27192b673feffafe530558e15bae55a26983a185f60540"
+    }
+  },
+  "support_after": {
+    "mast": {
+      "vertices": 48,
+      "triangles": 88,
+      "sha256": "777322aec49f0d5ab438c31266a73a35f0fe25458bb5058bc62249e52d47712a"
+    },
+    "foundation": {
+      "vertices": 24,
+      "triangles": 44,
+      "sha256": "a93c37319f057dd6194e7a57ae7c653c5336c1a64ed15bf21cfc3538b18e5e69"
+    },
+    "face_casing": {
+      "vertices": 72,
+      "triangles": 132,
+      "sha256": "0f1e5927a8ac0a980c27192b673feffafe530558e15bae55a26983a185f60540"
+    }
+  },
+  "exact_support_hash_match": true,
+  "triangles_before": 3075,
+  "triangles_after": 319,
+  "triangles_delta": -2756,
+  "physical_letter_vertices_removed": 1840,
+  "new_planar_faces": 2,
+  "new_triangles": 4,
+  "bounds_Zup_m": [
+    [
+      -1.600000023841858,
+      -0.3499999940395355,
+      0.0
+    ],
+    [
+      1.600000023841858,
+      0.3499999940395355,
+      4.112499713897705
+    ]
+  ],
+  "geometry_rationale": "Remove disconnected box-pixel glyphs. Add two flat opaque printed artwork surfaces inside existing letter depth and casing bounds. Mast, foundation and face casing unchanged. No collision data added.",
+  "native_gltf_UV": "TEXCOORD_0; no UV1 or AO claim; original supporting UVs retained",
+  "rebuild_basis": "baseline/roadside_sign_baseline.blend plus deterministic textures"
+}

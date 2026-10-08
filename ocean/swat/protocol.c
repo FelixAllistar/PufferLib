@@ -167,7 +167,7 @@ bool swat_decode_map(SwatMap* map,const void* bytes,size_t size) {
         if(material>=SWAT_MATERIAL_COUNT || door>1 || o->half.x<=0 || o->half.y<=0 || o->half.z<=0) r.ok=false;
         o->material=(SwatMaterial)material; o->door=door!=0;
         o->closed_yaw=getf(&r,-SWAT_PI,SWAT_PI); unsigned int part=get8(&r);
-        if(part>SWAT_PART_LIGHT) r.ok=false;
+        if(part>SWAT_PART_FENCE_POST) r.ok=false;
         o->part=(SwatPart)part; o->pitch=getf(&r,-SWAT_PI,SWAT_PI);
         o->wall_group=geti(&r,0,SWAT_MAX_OBJECTS); unsigned int fractured=get8(&r);
         if(fractured>1 || (fractured && (o->door || o->part!=SWAT_PART_SKIN))) r.ok=false;

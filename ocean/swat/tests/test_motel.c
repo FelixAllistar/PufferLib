@@ -11,14 +11,14 @@ static void fence_hits(SwatWorld* w) {
         b3Vec3 direction=swat_v(side?-1:1,0,0);
         SwatHit hit=swat_world_ray(w,origin,direction,1,b3_nullBodyId);
         if(!hit.hit){openings++;continue;}
-        assert(hit.index==155 && w->objects[hit.index].material==SWAT_STEEL);
+        assert(swat_motel_fence_parent(w,&w->objects[hit.index])==155 && w->objects[hit.index].material==SWAT_STEEL);
         float thickness=swat_world_exit_distance(&w->objects[hit.index],hit.point,direction);
         assert(thickness>0 && thickness<.012f);wires++;
     }
     assert(openings>1800 && wires>50);
     for(int side=0;side<2;side++)for(int post=0;post<4;post++) {
         SwatHit hit=swat_world_ray(w,(b3Pos){side?13:12,.8f,6-2*post},swat_v(side?-1:1,0,0),1,b3_nullBodyId);
-        assert(hit.hit && hit.index==155+post);
+        assert(hit.hit && (post==3?hit.index==158:swat_motel_fence_parent(w,&w->objects[hit.index])==155+post));
         float thickness=swat_world_exit_distance(&w->objects[hit.index],hit.point,swat_v(side?-1:1,0,0));
         assert(thickness>.05f && thickness<.06f);
     }
@@ -63,6 +63,46 @@ static void live_fence_routes(void) {
     }
     swat_sim_close(&s);
     puts("PASS east fence: live standing controller stopped by wire and walks both open ends");
+}
+static void fence_charge_route(void) {
+    static SwatSim s,replica;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=12000;
+    swat_sim_init(&s,cfg,82);int parts=swat_motel_fence_part_count();assert(parts>0 && parts<=SWAT_FENCE_PART_CAPACITY);
+    for(int i=0;i<parts;i++)assert(s.world.fence_meshes[i] && s.world.fence_meshes[i]->triangleCount<=240);
+    static SwatWorld air;swat_world_init(&air);
+    SwatSoundEvent sound={.position={11.5,.8,3},.strength=1,.range=30};b3Pos listener={13.5,.8,3};
+    SwatAcousticPath reference=swat_acoustic_path(&air,&sound,listener),through=swat_acoustic_path(&s.world,&sound,listener);
+    for(int i=0;i<3;i++)assert(fabsf(reference.bands[i]-through.bands[i])<1e-6f);
+    swat_world_close(&air);
+    SwatController* c=&s.actors[0].controller;
+    b3Body_SetTransform(c->body.body,(b3Pos){11.65,-.065f+c->body.totalHeight*.5f,3},b3Quat_identity);c->yaw=0;
+    SwatInput in=swat_neutral_input();for(int i=0;i<10;i++)swat_sim_step(&s,&in);
+    b3Pos eye=swat_controller_eye(c);c->pitch=atan2f(1.42f-(float)eye.y,12.5f-(float)eye.x);s.actors[0].gear.breaching_charges=1;
+    SwatHit target=swat_context_hit(&s,0,1.7f);assert(target.hit && swat_motel_fence_parent(&s.world,&s.world.objects[target.index])==156);
+    assert(swat_world_breachable(&s.world.objects[target.index]));
+    int first=s.world.objects[156].wall_group-1;
+    for(int i=0;i<parts;i++)if(s.world.objects[first+i].part==SWAT_PART_FENCE_POST)assert(!swat_world_breachable(&s.world.objects[first+i]));
+    b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};b3Pos from={11.6,-.075f,3};
+    assert(b3World_CastMover(s.world.id,from,&capsule,swat_v(1.8f,0,0),b3DefaultQueryFilter(),NULL,NULL)<.8f);
+    in.door_tool=SWAT_PLACE_CHARGE;for(int i=0;i<30;i++)swat_sim_step(&s,&in);
+    assert(s.actors[0].gear.breaching_charges==1);
+    in=swat_neutral_input();swat_sim_step(&s,&in);
+    in.door_tool=SWAT_PLACE_CHARGE;for(int i=0;i<100;i++)swat_sim_step(&s,&in);
+    assert(s.world.objects[target.index].breach_owner==0 && s.actors[0].gear.breaching_charges==0);
+    in=swat_neutral_input();in.forward=-1;for(int i=0;i<100;i++)swat_sim_step(&s,&in);
+    in=swat_neutral_input();in.door_tool=SWAT_DETONATE_CHARGE;swat_sim_step(&s,&in);
+    int removed=0,survivors=0;for(int i=0;i<parts;i++){removed+=!s.world.objects[first+i].active;survivors+=s.world.objects[first+i].active;}
+    assert(removed>0 && survivors>0 && s.actors[0].health==100);
+    for(int owner=155;owner<=157;owner+=2)for(int i=0;i<parts;i++)assert(s.world.objects[s.world.objects[owner].wall_group-1+i].active);
+    assert(b3World_CastMover(s.world.id,from,&capsule,swat_v(1.8f,0,0),b3DefaultQueryFilter(),NULL,NULL)>.999f);
+    static SwatMap map;static SwatSnapshot snapshot;swat_capture_map(&s,1,&map);swat_capture_snapshot(&s,1,&snapshot);
+    swat_apply_map(&replica,&map);assert(replica.world.motel && swat_apply_snapshot(&replica,&snapshot));
+    assert(b3World_CastMover(replica.world.id,from,&capsule,swat_v(1.8f,0,0),b3DefaultQueryFilter(),NULL,NULL)>.999f);
+    swat_sim_close(&replica);
+    in=swat_neutral_input();in.forward=1;for(int i=0;i<160;i++)swat_sim_step(&s,&in);
+    assert(swat_body_feet_position(&c->body).x>13.5f);
+    swat_sim_reset(&s);fence_hits(&s.world);
+    printf("PASS fence charge: interrupted placement, one charge, %d removed/%d surviving groups, adjacent bays intact, live passage, late replica and reset\n",removed,survivors);
+    swat_sim_close(&s);
 }
 static void utility_hits(SwatWorld* w) {
     for(int room=0;room<4;room++) {
@@ -164,7 +204,7 @@ static void masonry_ballistics(void) {
         assert(o->material==(asset==22?SWAT_DRYWALL:SWAT_BRICK));assert(swat_world_breachable(o));assemblies++;
     }
     assert(assemblies>100 && world.count<SWAT_MAX_OBJECTS);
-    SwatObject probe=world.objects[world.count-1];probe.half.x=.09f;probe.material=SWAT_BRICK;assert(swat_world_breachable(&probe));
+    SwatObject probe=world.objects[SWAT_MOTEL_INSTANCES+1];probe.half.x=.09f;probe.material=SWAT_BRICK;assert(swat_world_breachable(&probe));
     probe.half.x=.3f;assert(!swat_world_breachable(&probe));
     probe.half.x=.1f;probe.material=SWAT_CONCRETE;assert(!swat_world_breachable(&probe));
     probe.half.x=.004f;probe.material=SWAT_STEEL;assert(!swat_world_breachable(&probe));
@@ -317,6 +357,7 @@ static void live_breach_routes(void) {
 }
 int main(void) {
     live_fence_routes();
+    fence_charge_route();
     squad_door_orders();
     live_squad_and_evacuation();
     live_breach_routes();

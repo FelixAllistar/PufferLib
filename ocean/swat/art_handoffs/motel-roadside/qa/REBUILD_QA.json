@@ -1,0 +1,11 @@
+{
+  "editable_reopen_export_byte_identical": true,
+  "runtime_sha256": "90751c47351f7e171f2f9123726d4582853e51bb90db22f92b4b6806f21b650c",
+  "texture_generation_deterministic": true,
+  "repeated_baseline_rebuild_byte_identical": true,
+  "no_external_downloads": true,
+  "Blender": "4.3.2",
+  "isolated_zip_extraction_rebuild_byte_identical": true,
+  "isolated_rebuild_validation_passed": true,
+  "isolated_root": "/tmp/roadside_portable_check/roadside_sign_v1"
+}

@@ -31,6 +31,7 @@ typedef struct SwatEnvironmentArt {
     float plaster_tile_metres;
     bool legacy_plaster;
     SwatSurfaceMaps surfaces[SWAT_SURFACE_COUNT];
+    SwatSurfaceMaps motel_asphalt;
     struct SwatLighting* lighting;
     Model door;
     Model motel[SWAT_MOTEL_ASSETS];
@@ -42,6 +43,8 @@ typedef struct SwatEnvironmentArt {
     Model motel_numbers[3]; // Rooms 102–104; 101 keeps its accepted v3 asset.
     float motel_number_normal_scale[3][SWAT_ROOM101_MATERIALS];
     Model motel_reception;
+    Model motel_roadside;
+    float motel_roadside_normal_scale[SWAT_ROOM101_MATERIALS];
     Model motel_personal[2]; // Original Room 103 wallet/glasses, owned by desk 72.
     float motel_personal_normal_scale[2][SWAT_ROOM101_MATERIALS];
     float motel_reception_normal_scale[SWAT_ROOM101_MATERIALS];
