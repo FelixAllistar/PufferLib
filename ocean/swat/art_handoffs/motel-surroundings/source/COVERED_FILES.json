@@ -1,0 +1,150 @@
+{
+  "license": "CC0-1.0",
+  "archive_prefix": "briar-court-surroundings-v1/",
+  "files": [
+    {
+      "archive": "briar-court-surroundings-runtime-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/runtime/bank_collision.glb",
+      "sha256": "65adc2d587b9884ccaef648b84283edca402dd5b891bd2ea3e1732bf3b9ca0db",
+      "size": 81684
+    },
+    {
+      "archive": "briar-court-surroundings-runtime-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/runtime/bank_render.glb",
+      "sha256": "19397610294f1122c82593460cabbedef35cb694cb896aecec99cae541a57e9b",
+      "size": 4883608
+    },
+    {
+      "archive": "briar-court-surroundings-runtime-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/runtime/five_placements_render.glb",
+      "sha256": "c9e2e7011c8fe5127d11960b9fb442ace413937f8141bef94c7a1849f42afd15",
+      "size": 5849956
+    },
+    {
+      "archive": "briar-court-surroundings-runtime-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/runtime/placement_manifest.json",
+      "sha256": "3aa9b960ff2c330502d2f393f6bc5e7118309a85ab0f4810c450c4c9f3af7d2a",
+      "size": 7706
+    },
+    {
+      "archive": "briar-court-surroundings-runtime-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/runtime/shoulder_collision.glb",
+      "sha256": "362b4f7ad3b3eb435bc9b8f3f385d025f738e07e3d68d37537ae8e502ec6e2cb",
+      "size": 7156
+    },
+    {
+      "archive": "briar-court-surroundings-runtime-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/runtime/shoulder_render.glb",
+      "sha256": "7db8e7959bf275bbab1b4fab52527ae2d96be609d90fc83253a1a43c5e79578a",
+      "size": 962048
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/build_kit.py",
+      "sha256": "f544d399ebff29c91fa92061bd6a3ed8bf057c2fd047dc111ffdc0bf31cf94ff",
+      "size": 13323
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/make_textures.py",
+      "sha256": "2afa10fdbd3e906ce2fa530aba70d35596fc151aa721b2d7f7fccf0e70b70fa5",
+      "size": 1580
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/surroundings.blend",
+      "sha256": "4cdf5b1db088e90dcd4dcdbfe3f749a3c692245a6a5e76d9a689c9c86492f0dc",
+      "size": 6115652
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/bank_soil_basecolor.png",
+      "sha256": "6a39ac7535385cb4ebe83e1aacc769811a9f65af326da6a5911598bc9042db6f",
+      "size": 184182
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/bank_soil_normal.png",
+      "sha256": "f47f8124c08b5f13b7b370d767804ac8cb827333227a8613eafc6e16687dc8ad",
+      "size": 559259
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/bank_soil_roughness.png",
+      "sha256": "10b9525f30e0d2d9c411cfb5b7a7900abc3f32827494eb2a5720a30f06168429",
+      "size": 100339
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/bark_basecolor.png",
+      "sha256": "011e38d14ac3b4924d57a2b16df5176615f3b1974e5c7b0a14ea464c4452ac54",
+      "size": 183568
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/bark_normal.png",
+      "sha256": "7a9f45979d714eac505bdc93f77873d11a8f5def594ae4ebd91ee6e29e626abe",
+      "size": 559520
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/bark_roughness.png",
+      "sha256": "dab9f45c7134e322cf5c72173a47aece5405a6fdb9da2cd6905500882ebaaca5",
+      "size": 100371
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/gravel_soil_basecolor.png",
+      "sha256": "1dc26cc19011cf57dfdad629669671752b36befb4302a8c7503a369d594828c6",
+      "size": 209537
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/gravel_soil_normal.png",
+      "sha256": "39600e5ed0c7f5b4889a5afa2e12893769dad96538c6a668457ee0a3aeafdc28",
+      "size": 559975
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/gravel_soil_roughness.png",
+      "sha256": "4c5c7d4c4bd76b0b2a2f834617ae50d481825a28969b7f471503fad14475d43f",
+      "size": 100357
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/leaf_basecolor.png",
+      "sha256": "de88b649e5b33746f1550580d6edf4a5b0e16b59e2b58a0fadc3604fbcd90634",
+      "size": 184201
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/leaf_normal.png",
+      "sha256": "996c683c926f1cb251a644231320bf36872fffa52c60ddb4ceaf99f96ce13c28",
+      "size": 559732
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/leaf_roughness.png",
+      "sha256": "ca9facc5bb875127666275c2baad7628aa3106849aff4f4447b232400f1b8371",
+      "size": 100304
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/stone_basecolor.png",
+      "sha256": "7c52bc554cbd6d940e778f0b08c0ea6ba5bc0493234e68201c09b60764bb0c82",
+      "size": 184031
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/stone_normal.png",
+      "sha256": "e7bcf59d31796242f56e5a4b493444fc411d339c21712beba3ce9da2883f31e2",
+      "size": 560025
+    },
+    {
+      "archive": "briar-court-surroundings-source-v1.tar.gz",
+      "path": "briar-court-surroundings-v1/source/textures/stone_roughness.png",
+      "sha256": "4fa8c804c529fe4d9dabf92160b8f7fc9337e8fa92540ea8d38abd6c24d45ea4",
+      "size": 100384
+    }
+  ]
+}

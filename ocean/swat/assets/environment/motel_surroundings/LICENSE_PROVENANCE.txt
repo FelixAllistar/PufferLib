@@ -1,0 +1,94 @@
+BRIAR COURT SURROUNDINGS KIT V1
+Additive license and provenance notice
+Issued: 2026-10-08
+
+1. Explicit dedication
+
+The original project art and authoring scripts identified in COVERED_FILES.json,
+generated on Felix's behalf for the Briar Court surroundings kit v1, are hereby
+dedicated to the public domain under CC0 1.0 Universal (SPDX: CC0-1.0), to the
+extent permitted by law and to the extent the affirmer holds the relevant rights.
+All such copyright and related rights are waived under CC0; where the waiver is
+ineffective, CC0's public-license fallback applies. This dedication permits use,
+copying, modification and redistribution, including commercial use, without an
+attribution requirement. It does not assert that every generated element is
+copyrightable.
+
+The complete CC0 legal instrument governs this dedication:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode.en
+Canonical identifier:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+CC0 does not grant patent or trademark rights. The work is supplied as-is,
+without warranties, subject to CC0's limitations and disclaimers. No rights
+owned by third parties are represented as transferred by this notice.
+
+2. Exact scope and archive identity
+
+This is a separate additive notice. It does not replace, repack, or change either
+original archive. The SHA-256 identities are:
+
+briar-court-surroundings-runtime-v1.tar.gz
+280d16dd474cf8f5b2152007cdf3ad2826d5b92655cc2b25cdf90a43a1ab69cf
+
+briar-court-surroundings-source-v1.tar.gz
+5fa4c009b3cd27a58d35fc41ec0d45dfc425aed8103edfb2b166e566e27da9dd
+
+COVERED_FILES.json is the exhaustive covered-file list, including archive name,
+full archive-member path, byte size and individual SHA-256. Its 24 entries cover:
+- source/build_kit.py and source/make_textures.py: original authoring code;
+- source/surroundings.blend: original editable mesh/material source;
+- source/textures/: the 15 listed original PNG maps;
+- runtime/: the five listed GLBs and placement_manifest.json.
+All these paths are beneath briar-court-surroundings-v1/ in the named archives.
+Original geometry, collision proxies, material settings, texture content and
+placement data within these files are included. The source scripts are included
+as original code; merely importing or calling a dependency does not include the
+dependency in this dedication.
+
+Files absent from COVERED_FILES.json are outside this notice. In particular,
+this notice does not license the whole game/project, game or engine code,
+previously accepted motel/sign/fence/asphalt assets, third-party reference images,
+other environment-library content, native-engine screenshots, tools, libraries,
+exporter implementations, fonts, or any outside asset. Archive names and hashes
+identify the distributions; they do not license every member of those archives.
+
+3. Authoring workflow and provenance evidence
+
+The kit was generated on Felix's behalf through original deterministic Python
+and Blender authoring. The inspected source uses seed 230808. Soil surfaces are
+constructed from numeric grids and analytic heights. Rocks are deformed primitive
+geometry; woody shrubs, opaque leaf meshes and scatter are constructed directly
+in code. There is no imported third-party model in the authoring path.
+
+make_textures.py creates five material sets (gravel_soil, bank_soil, stone, bark,
+leaf), each with base color, tangent normal and roughness maps at 512 x 512.
+Their pixels come from seeded numeric noise and periodic derivatives. All 15
+maps were regenerated in an isolated temporary directory and matched the
+archived PNGs byte for byte. No downloaded maps, scans, paid assets, external
+texture reuse, or image-generator output are inputs to this workflow.
+
+The inspected .blend contains no linked libraries, font datablocks, or text
+objects. Its 15 file-backed images are packed and correspond to the original
+map set; the additional empty Render Result viewer is not an asset input.
+All five runtime GLBs were checked for embedded images/buffers and contain no
+external image or buffer URI dependencies. Every file member of both archives
+was compared to the inspected local kit and matched byte for byte.
+
+The existing kit README and determinism report also record this procedural
+workflow and runtime reproducibility. This addendum's verification checks are
+recorded in VERIFICATION.json and blend_inspection.json. The provenance statement
+is based on the supplied authoring source, archive/file inspection and the map
+reproduction test; it is not a warranty of third-party rights clearance.
+
+4. Dependencies and limits
+
+Rebuilding uses Blender, Python, NumPy, Pillow, Blender's Python modules and its
+glTF exporter. These tools and libraries retain their own licenses; this notice
+does not relicense them, their implementations, or the glTF specification.
+They are not bundled as licensed source code by this addendum. No downloaded
+third-party content or fonts were found among the covered assets.
+
+This notice establishes licensing/provenance only. It adds no engine integration,
+collision, performance, traversal, owner-allocation or acceptance claims beyond
+the original kit's documented offline tests. It grants no rights to game code.

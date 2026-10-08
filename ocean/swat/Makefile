@@ -97,7 +97,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: locomotion-test scenarios-test motel-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: locomotion-test scenarios-test motel-test surroundings-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
@@ -131,6 +131,9 @@ frontend-test-build: ui-assets | $(BUILD)
 motel-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_motel
 	$(BUILD)/test_motel
+surroundings-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_surroundings.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_surroundings
+	ulimit -c 0; $(BUILD)/test_surroundings
 storefront-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_storefront.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_storefront
 	$(BUILD)/test_storefront

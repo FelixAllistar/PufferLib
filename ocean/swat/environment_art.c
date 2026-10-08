@@ -57,6 +57,7 @@ static void room101_close(SwatEnvironmentArt* art) {
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
     swat_art_model_close(art->motel_guest_desk);art->motel_guest_desk=(Model){0};
+    for(int i=0;i<2;i++){swat_art_model_close(art->motel_surroundings[i]);art->motel_surroundings[i]=(Model){0};}
     for(int i=0;i<SWAT_MOTEL_DRESSING_ASSETS;i++) {swat_art_model_close(art->motel_dressing[i]);art->motel_dressing[i]=(Model){0};}
     for(int i=0;i<3;i++) {swat_art_model_close(art->motel_numbers[i]);art->motel_numbers[i]=(Model){0};}
     swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
@@ -144,6 +145,10 @@ static void room101_load(SwatEnvironmentArt* art) {
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
+    const char* surroundings[]={"motel_surroundings/shoulder_render.glb","motel_surroundings/bank_render.glb"};
+    for(int i=0;i<2;i++)if(!room101_model_load(&art->motel_surroundings[i],art->motel_surroundings_normal_scale[i],surroundings[i])) {
+        swat_art_model_close(art->motel_surroundings[i]);art->motel_surroundings[i]=(Model){0};
+    }
     if(!room101_model_load(&art->motel_guest_desk,art->motel_guest_desk_normal_scale,"motel_guest_desk/desk_original_clean_strokes_v1.glb")) {
         swat_art_model_close(art->motel_guest_desk);art->motel_guest_desk=(Model){0};
     }
@@ -532,6 +537,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
             if(source==&art->room101_desk)normal_scale=art->room101_desk_normal_scale[model->meshMaterial[i]];
             if(source==&art->motel_guest_desk)normal_scale=art->motel_guest_desk_normal_scale[model->meshMaterial[i]];
+            for(int j=0;j<2;j++)if(source==&art->motel_surroundings[j])normal_scale=art->motel_surroundings_normal_scale[j][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(source==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(source==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(source==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
@@ -600,6 +606,34 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         rlPopMatrix();clear_surface(art);return true;
     }
     if(o->tag.index<1)return false;
+    int surroundings_part=swat_motel_surroundings_part(world,o);
+    if(surroundings_part>=0) {
+        SwatMotelInstance p;swat_motel_surroundings_instance(o->tag.index,&p);
+        const Model* source=&art->motel_surroundings[surroundings_part!=0];
+        if(source->meshCount && (surroundings_part==0 || art->motel_wall_art)) {
+            if(surroundings_part>=2)return true; // Rocks share their bank's cached material draw.
+            const Model* model=surroundings_part==1?bank_mesh(art->motel_wall_art,source,world,o->tag.index):source;
+            if(!model->meshCount)return true;
+            SwatObject proxy=*o;if(surroundings_part==1)proxy.active=true;
+            // Opaque thin leaves are authored double-sided; raylib does not
+            // restore that glTF flag when it loads a material.
+            rlDisableBackfaceCulling();
+            bool drawn=location_mesh_draw(art,&proxy,&p,model,source,shadow,cutaway,false,NULL);
+            rlEnableBackfaceCulling();return drawn;
+        }
+        // Missing art keeps exact closed collision visible; no bounding-box bank.
+        if(!o->active || B3_IS_NULL(o->shape))return true;
+        b3Mesh mesh=b3Shape_GetMesh(o->shape);const b3Vec3* vertices=b3GetMeshVertices(mesh.data);
+        const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);const uint8_t* color=swat_material(o->material)->color;
+        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+        rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
+        for(int i=0;i<mesh.data->triangleCount;i++) {
+            b3MeshTriangle t=triangles[i];b3Vec3 a=vertices[t.index1],b=vertices[t.index2],c=vertices[t.index3];
+            b3Vec3 n=swat_normalize(b3Cross(b3Sub(b,a),b3Sub(c,a)));rlNormal3f(n.x,n.y,n.z);
+            rlVertex3f(a.x,a.y,a.z);rlVertex3f(b.x,b.y,b.z);rlVertex3f(c.x,c.y,c.z);
+        }
+        rlEnd();rlSetTexture(0);rlPopMatrix();return true;
+    }
     // Draw one cached material batch per bay, while collision/damage owns its
     // smaller wire components. The inactive aggregate is only a render proxy.
     if(swat_motel_fence_parent(world,o)>=0) {

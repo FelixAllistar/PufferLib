@@ -6,8 +6,9 @@
 static b3Pos cell_position(const SwatNavigation* nav,int index) {
     return (b3Pos){nav->x[index],nav->height[index],nav->z[index]};
 }
-// Cover the motel reception and its west exterior approach as well as the rooms.
-static b3Pos grid_position(const SwatWorld* world,int index) { return (b3Pos){(world->motel?-20:-8)+(index%SWAT_NAV_SIDE+.5f)*.6f,0,-24+(index/SWAT_NAV_SIDE+.5f)*.6f}; }
+// Preserve the 60 cm sampling phase and cover both new +/-30 m perimeter edges.
+_Static_assert(SWAT_NAV_NODES<=UINT16_MAX,"navigation queue index capacity");
+static b3Pos grid_position(const SwatWorld* world,int index) { return (b3Pos){(world->motel?-32:-8)+(index%SWAT_NAV_SIDE+.5f)*.6f,0,-24+(index/SWAT_NAV_SIDE+.5f)*.6f}; }
 typedef struct NavQuery { const SwatWorld* world; bool blocked; } NavQuery;
 static bool obstacle(b3ShapeId shape,void* context) {
     NavQuery* query=context;

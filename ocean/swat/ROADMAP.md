@@ -86,14 +86,38 @@ guest desks now remove their seven raised scratch boxes on owners 48/72/96,
 with byte-identical retained art and unchanged support/collision. Native review
 was shared as Slack file `F0C8PNE4YGY`.
 
-Next art integration is the delivered shoulder/scrub kit (five named placements,
-ten semantic support owners, separate closed ground/rock collision, visual-only
-foliage). Both runtime/source archive hashes pass; source and runtime are staged
-under `build/swat/review/surroundings/briar-court-surroundings-v1`. The source
-links and CC0 addendum are in the art thread (delivery `1791484687.573289`, license
-file `F0C7P4168M9`). Numeric IDs, native seams/support/navigation and render bindings
-are still engine work. The artist is continuing a service/maintenance grouping;
-the repeated rocks/shrubs remain a later appearance refinement.
+The shoulder/scrub kit now has five native placements, ten separate SOIL owners
+and 65 STONE owners (1044–1118). Exact closed triangle meshes supply cover and
+support; visual foliage adds no invisible collision or acoustic occlusion. Both
+outer edges are in the 60 cm navigation grid. Linux and Windows pass 6,970 support
+rays, ten live court/shoulder crossings, six repeated seams, real squad movement,
+actual rifle-cover tests, replica reconstruction and reset/close. The native
+graphics check passes independent rock removal and exact missing-art fallback.
+The terrain is static; no crater or loose-rock simulation is claimed. Compact
+editable source and the explicit CC0 notice accompany the runtime in the repo.
+
+The expanded-level hostile completion, exact replay and save/resume also pass on
+Linux and Windows. A busy-machine UDP regression exposed an acknowledged-input
+loss: the idle timeout could replace an unconsumed queued command with neutral
+input. The timeout now expires only repeated holds after the queue drains. A
+deterministic stale-clock test fails before this fix and passes afterward; the
+full Linux/Windows UDP door-tool and scenario suites pass.
+The full environment graphics suite, full Windows tool build and final player
+rebuild pass. Ordinary `./swat play --mission motel --capture ...` launches the
+native GTX 1060 renderer and captures the deployed squad correctly. Terrain
+proof was shared as Slack file `F0C7TS1RL3G`. The furnished-room completion
+log still emits Box3D's 256-triangle contact-buffer warning; identify and split
+that existing dense collision mesh before final physical acceptance. Each new
+perimeter component is below 240 triangles.
+
+Appearance remains provisional: the first native perimeter has sparse repeated
+shrubs and rounded rocks, and the level still needs a connected wider setting.
+A separate Poly Haven scanned gravel/dirt/stone candidate has verified runtime
+hashes, unchanged geometry/collision and a matched provenance/license packet
+(`F0C7QEJ23FX`); native comparison remains pending. The delivered service trio
+(caddy, sprayer, squeegee) is the next small prop integration. Complete breach-route
+runs, broader context, material refinement and the other acceptance gaps above
+remain active work.
 
 First slice increment: Linux encounter, motel, tactical, simulation, mission,
 protocol, UDP, 3D navigation and save/replay checks pass. Native Windows encounter

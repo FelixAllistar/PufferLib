@@ -6,6 +6,8 @@
 #define SWAT_MOTEL_ASSETS SWAT_MOTEL_MESH_CAPACITY
 #define SWAT_MOTEL_UTILITY_INSTANCES 154
 #define SWAT_MOTEL_INSTANCES 158
+#define SWAT_MOTEL_SURROUNDINGS_FIRST 1044
+#define SWAT_MOTEL_SURROUNDINGS_COUNT (5*SWAT_SURROUNDINGS_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 typedef struct SwatMotelMaterial { float roughness,metalness; } SwatMotelMaterial;
@@ -23,6 +25,10 @@ int swat_motel_fence_part_count(void);
 int swat_motel_fence_triangle_part(int triangle);
 int swat_motel_fence_parent(const SwatWorld*,const SwatObject*);
 bool swat_motel_fence_proxy(const SwatWorld*,const SwatObject*);
+int swat_motel_surroundings_part(const SwatWorld*,const SwatObject*);
+const SwatMotelAsset* swat_motel_surroundings_asset(int part);
+bool swat_motel_surroundings_instance(int owner,SwatMotelInstance* out);
+int swat_motel_bank_triangle_part(int triangle);
 const SwatMotelAsset* swat_motel_asset(int index);
 const SwatMotelInstance* swat_motel_instance(int index);
 // Small visual fixtures inherit a real support; they add no hidden colliders.

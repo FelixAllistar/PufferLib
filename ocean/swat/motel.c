@@ -6,6 +6,48 @@
 #include "motel_data.h"
 #include "motel_utility_data.h"
 #include "motel_fence_data.h"
+#include "motel_surroundings_data.h"
+const SwatMotelAsset* swat_motel_surroundings_asset(int part) {return part>=0 && part<SWAT_SURROUNDINGS_PARTS?&surroundings_parts[part]:NULL;}
+int swat_motel_surroundings_part(const SwatWorld* w,const SwatObject* o) {
+    int id=o->tag.index-SWAT_MOTEL_SURROUNDINGS_FIRST;
+    return w->motel && w->count>=SWAT_MOTEL_SURROUNDINGS_FIRST+SWAT_MOTEL_SURROUNDINGS_COUNT && id>=0 && id<SWAT_MOTEL_SURROUNDINGS_COUNT ? id%SWAT_SURROUNDINGS_PARTS:-1;
+}
+bool swat_motel_surroundings_instance(int owner,SwatMotelInstance* out) {
+    int id=owner-SWAT_MOTEL_SURROUNDINGS_FIRST;if(id<0 || id>=SWAT_MOTEL_SURROUNDINGS_COUNT)return false;
+    *out=surroundings_placements[(id/SWAT_SURROUNDINGS_PARTS)*2+(id%SWAT_SURROUNDINGS_PARTS!=0)];return true;
+}
+int swat_motel_bank_triangle_part(int triangle) {return triangle>=136 && triangle<1176?surroundings_rock_triangles[triangle-136]:0;}
+static void surroundings_recipe(int id,b3Pos* center,b3Vec3* half,float* yaw) {
+    SwatMotelInstance p;bool found=swat_motel_surroundings_instance(id,&p);assert(found);(void)found;
+    const SwatMotelAsset* a=&surroundings_parts[(id-SWAT_MOTEL_SURROUNDINGS_FIRST)%SWAT_SURROUNDINGS_PARTS];
+    *center=b3OffsetPos(p.origin,swat_v(cosf(p.yaw)*a->center.x+sinf(p.yaw)*a->center.z,a->center.y,-sinf(p.yaw)*a->center.x+cosf(p.yaw)*a->center.z));
+    *half=a->half;*yaw=p.yaw;
+}
+static bool surroundings_validate(const SwatWorld* w) {
+    if(w->count<=SWAT_MOTEL_SURROUNDINGS_FIRST)return true; // Canonical legacy layout prefix.
+    if(w->count<SWAT_MOTEL_SURROUNDINGS_FIRST+SWAT_MOTEL_SURROUNDINGS_COUNT)return false;
+    for(int k=0;k<SWAT_MOTEL_SURROUNDINGS_COUNT;k++) {
+        int id=SWAT_MOTEL_SURROUNDINGS_FIRST+k,part=k%SWAT_SURROUNDINGS_PARTS;
+        const SwatObject* o=&w->objects[id];b3Pos center;b3Vec3 half;float yaw;surroundings_recipe(id,&center,&half,&yaw);
+        if(b3Distance(center,o->center)>1e-4f || b3Length(b3Sub(half,o->half))>1e-4f || fabsf(swat_angle(yaw-o->yaw))>1e-5f ||
+            o->pitch!=0 || o->door || o->fractured || o->wall_group || o->part!=SWAT_PART_SOLID || o->max_health!=0 || o->material!=(part<2?SWAT_SOIL:SWAT_STONE))return false;
+    }
+    return true;
+}
+static void surroundings_bind(SwatWorld* w) {
+    if(w->count<=SWAT_MOTEL_SURROUNDINGS_FIRST)return;
+    for(int part=0;part<SWAT_SURROUNDINGS_PARTS;part++) {
+        const SwatMotelAsset* a=&surroundings_parts[part];
+        b3MeshDef mesh={.vertices=a->vertices,.indices=a->indices,.vertexCount=a->vertex_count,.triangleCount=a->triangle_count,
+            .weldVertices=true,.weldTolerance=1e-6f,.identifyEdges=true};
+        w->surroundings_meshes[part]=b3CreateMesh(&mesh,NULL,0);assert(w->surroundings_meshes[part]);
+    }
+    for(int k=0;k<SWAT_MOTEL_SURROUNDINGS_COUNT;k++) {
+        SwatObject* o=&w->objects[SWAT_MOTEL_SURROUNDINGS_FIRST+k];b3DestroyShape(o->shape,false);
+        b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
+        o->shape=b3CreateMeshShape(o->body,&def,w->surroundings_meshes[k%SWAT_SURROUNDINGS_PARTS],swat_v(1,1,1));assert(B3_IS_NON_NULL(o->shape));
+    }
+}
 // Floor-level dressing stays outside the established door and capsule routes.
 static const SwatMotelInstance utility_instances[]={
 {40,{-4.55f,.008f,-.65f},{1,1,1},0,SWAT_WOOD,false,false},
@@ -96,7 +138,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
     int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
-    if(!fence_validate(w))return false;
+    if(!fence_validate(w) || !surroundings_validate(w))return false;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];
         const SwatMotelInstance* p=swat_motel_instance(i);
@@ -130,6 +172,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
         b3DestroyBody(o->body);o->body=b3_nullBodyId;o->shape=b3_nullShapeId;o->active=false;
     }
     fence_bind(w);
+    surroundings_bind(w);
     w->motel=true; return true;
 }
 
@@ -266,6 +309,12 @@ void swat_motel_build(SwatWorld* w) {
         }
     }
     assert(fence_validate(w));fence_bind(w);
+    assert(w->count==SWAT_MOTEL_SURROUNDINGS_FIRST);
+    for(int k=0;k<SWAT_MOTEL_SURROUNDINGS_COUNT;k++) {
+        b3Pos center;b3Vec3 half;float yaw;surroundings_recipe(w->count,&center,&half,&yaw);
+        int id=swat_world_box(w,center,half,k%SWAT_SURROUNDINGS_PARTS<2?SWAT_SOIL:SWAT_STONE,0);swat_world_place(&w->objects[id],yaw);
+    }
+    assert(surroundings_validate(w));surroundings_bind(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }

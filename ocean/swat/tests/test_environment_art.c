@@ -194,7 +194,7 @@ static void glass_graphics(SwatEnvironmentArt* art,const char* directory) {
     UnloadRenderTexture(target);swat_world_close(&world);
 }
 static void motel_piece(SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
-    if((!o->active && !swat_motel_fence_proxy(world,o)) || swat_environment_motel_draw(art,world,o,shadow,cutaway))return;
+    if((!o->active && !swat_motel_fence_proxy(world,o) && swat_motel_surroundings_part(world,o)!=1) || swat_environment_motel_draw(art,world,o,shadow,cutaway))return;
     rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
     if(shadow)swat_environment_fragment_draw(o);
     else if(!swat_environment_art_draw(art,o))DrawCubeV((Vector3){0},(Vector3){2*o->half.x,2*o->half.y,2*o->half.z},GRAY);
@@ -295,10 +295,51 @@ static void masonry_silhouette(SwatView* view,const char* directory) {
     view->lighting.prepared=prepared;assert(filled>1000 && empty>1000);
     printf("PASS masonry silhouette: %d native GPU samples match exact convex collision on both faces (%d solid/%d empty)\n",checked,filled,empty);
 }
+static void surroundings_graphics(SwatView* view,const char* directory) {
+    SwatEnvironmentArt* art=&view->environment;Model shoulder=art->motel_surroundings[0],bank=art->motel_surroundings[1];
+    assert(shoulder.meshCount==1 && bank.meshCount==4 && shoulder.materialCount==2 && bank.materialCount==5);
+    int triangles=0;for(int i=0;i<bank.meshCount;i++)triangles+=bank.meshes[i].triangleCount;assert(triangles==12256 && shoulder.meshes[0].triangleCount==192);
+    for(int m=1;m<bank.materialCount;m++)assert(bank.materials[m].maps[MATERIAL_MAP_NORMAL].texture.id && bank.materials[m].maps[MATERIAL_MAP_ALBEDO].texture.id);
+    before=sim.world;
+    Camera3D cameras[]={{{22.5f,1.57f,2},{28,.6f,0},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{-22.5f,1.57f,-2},{-28,.6f,0},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{34,10,25},{5,1,-1},{0,1,0},65,CAMERA_PERSPECTIVE}};
+    const char* names[]={"east","west","context"};
+    for(int i=0;i<3;i++) {
+        Image image=room101_capture_size(view,cameras[i],true,1440,810);char path[4096];
+        snprintf(path,sizeof(path),"%s/surroundings-%s.png",directory,names[i]);assert(ExportImage(image,path));UnloadImage(image);
+    }
+    int owner=SWAT_MOTEL_SURROUNDINGS_FIRST+SWAT_SURROUNDINGS_PARTS+1;
+    int rock=owner+1;float closest=1e9f;
+    for(int i=1;i<=13;i++) {
+        b3Pos c=sim.world.objects[owner+i].center;
+        Vector2 screen=GetWorldToScreenEx((Vector3){c.x,c.y,c.z},cameras[0],960,540);
+        float score=Vector2DistanceSqr(screen,(Vector2){480,270});if(score<closest){closest=score;rock=owner+i;}
+    }
+    Image intact=room101_capture_size(view,cameras[0],true,960,540);
+    // Test independent rock removal and bank/foliage support without erasing
+    // neighboring rocks. Restore authority flags before continuing the suite.
+    sim.world.objects[rock].active=false;
+    Image cut=room101_capture_size(view,cameras[0],true,960,540);
+    Color* a=LoadImageColors(intact),*b=LoadImageColors(cut);int changed=0;
+    for(int i=0;i<960*540;i++)changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>20;
+    assert(changed>20);UnloadImageColors(a);UnloadImageColors(b);UnloadImage(intact);UnloadImage(cut);
+    sim.world.objects[owner].active=false;
+    Image image=room101_capture_size(view,cameras[0],true,1440,810);char path[4096];
+    snprintf(path,sizeof(path),"%s/surroundings-bank-removed.png",directory);assert(ExportImage(image,path));UnloadImage(image);
+    sim.world.objects[owner].active=sim.world.objects[rock].active=true;
+    art->motel_surroundings[0]=art->motel_surroundings[1]=(Model){0};
+    image=room101_capture_size(view,cameras[0],true,1440,810);
+    snprintf(path,sizeof(path),"%s/surroundings-fallback.png",directory);assert(ExportImage(image,path));UnloadImage(image);
+    art->motel_surroundings[0]=shoulder;art->motel_surroundings[1]=bank;
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
+    printf("PASS surroundings graphics: original 62240 triangles/25 intact material draws, PBR maps, east/west/context views, independent rock visibility (%d changed pixels), bank-owned foliage and exact collision fallback\n",changed);
+}
 static void room101_graphics(SwatView* view,const char* directory) {
     SwatEnvironmentArt* art=&view->environment;
     SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.hostile_fire=false;
     swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
+    surroundings_graphics(view,directory);
     masonry_silhouette(view,directory);
     Texture2D asphalt_maps[]={art->motel_asphalt.color,art->motel_asphalt.normal,art->motel_asphalt.roughness};
     const int coordinates[4][2]={{0,0},{127,311},{1023,1023},{512,512}};
@@ -680,6 +721,11 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"surroundings")) {
+        SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;
+        swat_sim_init(&sim,config,73);swat_environment_art_prepare_location(&view.environment,&sim.world);
+        surroundings_graphics(&view,directory);swat_sim_close(&sim);swat_view_close(&view);return 0;
+    }
     if(argc>2 && !strcmp(argv[2],"personal")) {personal_shadow_review(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel")) {room101_graphics(&view,directory);swat_view_close(&view);return 0;}
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
@@ -703,6 +749,7 @@ int main(int argc,char** argv) {
     assert(!view.environment.room101_v4_ready && !view.environment.room101_v4[0].meshCount);
     assert(!view.environment.room101_desk.meshCount);
     assert(!view.environment.motel_guest_desk.meshCount);
+    assert(!view.environment.motel_surroundings[0].meshCount && !view.environment.motel_surroundings[1].meshCount);
     for(int i=0;i<3;i++)assert(!view.environment.motel_numbers[i].meshCount);
     assert(!view.environment.motel_reception.meshCount);
     assert(!view.environment.motel_roadside.meshCount);

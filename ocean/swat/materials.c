@@ -15,6 +15,7 @@ static const SwatMaterialDef definitions[SWAT_MATERIAL_COUNT]={
     {"Ceramic tile",25,{.02f,.03f,.04f},{18,28,38},.012f,{169,183,180,255},2200,.25f,.50f,.01f,2100,18,1.1f,100,60,0.15},
     {"Carpet",.1f,{.08f,.35f,.65f},{1,3,8},.012f,{108,108,94,255},200,.85f,.008f,.25f,100,90,.3f,15,0,0.005},
     {"Earth",10000,{.25f,.50f,.75f},{40,55,70},.20f,{67,83,58,255},1600,.8f,.02f,.15f,120,65,.5f,900,1000,2},
+    {"Solid rock",10000,{.02f,.03f,.05f},{40,55,70},.20f,{112,111,103,255},2700,.75f,.30f,.03f,1100,38,1,1000,1000,2},
 };
 const SwatMaterialDef* swat_material(SwatMaterial material) {
     return &definitions[material>=0 && material<SWAT_MATERIAL_COUNT ? material : SWAT_CONCRETE];
