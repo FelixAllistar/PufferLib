@@ -157,6 +157,31 @@ static void tactical_replay(const char* path) {
     swat_sim_close(&source); swat_sim_close(&playback); remove(path);
     puts("PASS tactical replay: identical autonomous NPC/squad movement, delayed queued orders and intact civilian/officer outcomes");
 }
+static void entry_replay(const char* path) {
+    static SwatSim source,playback;
+    SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;swat_config_human(&config);
+    config.hostile_fire=false;config.max_ticks=2400;
+    swat_sim_init(&source,config,177);SwatReplay writer;assert(swat_replay_record(&writer,path,&source));
+    for(int t=0;t<1500;t++) {
+        SwatInput input=swat_neutral_input();
+        input.yaw_delta=t==0 ? atan2f(-10,-3.2f)+SWAT_PI*.5f : 0;
+        input.squad_order=t==30?SWAT_ORDER_STACK:t==1000?SWAT_ORDER_CLEAR:0;
+        input.squad_queue=t==30 || t==1000;input.squad_execute=t==90 || t==1100;
+        swat_sim_step(&source,&input);assert(swat_replay_append(&writer,&input,&source));
+        if(t==35 || t==1005)for(int i=3;i<=5;i++)assert(source.actors[i].mind.pending_order==(t==35?SWAT_ORDER_STACK:SWAT_ORDER_CLEAR));
+    }
+    assert(swat_replay_close(&writer));SwatReplay reader;assert(swat_replay_open(&reader,path));
+    swat_sim_init(&playback,reader.config,reader.seed);SwatInput input;uint32_t hash;int status;
+    while((status=swat_replay_next(&reader,&input,&hash))==1) {swat_sim_step(&playback,&input);assert(swat_replay_digest(&playback)==hash);}
+    assert(status==0 && swat_replay_close(&reader));
+    for(int i=3;i<=5;i++) {
+        const SwatMind *a=&source.actors[i].mind,*b=&playback.actors[i].mind;
+        assert(a->order==SWAT_ORDER_CLEAR && a->order_door==b->order_door && a->order_yaw==b->order_yaw && a->entry_settled==b->entry_settled);
+        assert(!b3Distance(a->goal,b->goal) && !b3Distance(a->pending_goal,b->pending_goal));
+    }
+    swat_sim_close(&source);swat_sim_close(&playback);remove(path);
+    puts("PASS entry replay: 1500 native-input ticks, queued Stack/Clear execution, exact per-frame public state and reconstructed private doorway/sector planning");
+}
 static void saved_missions(const char* path) {
     static SwatSim source,restored;
     SwatConfig config=swat_default_config(); config.mission=SWAT_HOUSE; config.tactical_rules=true;
@@ -202,5 +227,5 @@ static void saved_missions(const char* path) {
     puts("PASS mission saves: atomic checkpoint, reload/loadout/squad state, retargeted physics tags, exact continuation, repeated saving and failure preserving live world");
 }
 int main(int argc,char** argv) {
-    assert(argc==2); reload_interruptions(); poses_and_range(); replay_roundtrip(argv[1]); tactical_replay(argv[1]); saved_missions(argv[1]); return 0;
+    assert(argc==2); reload_interruptions(); poses_and_range(); replay_roundtrip(argv[1]); tactical_replay(argv[1]); entry_replay(argv[1]); saved_missions(argv[1]); return 0;
 }

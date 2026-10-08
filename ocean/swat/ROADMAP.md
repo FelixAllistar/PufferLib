@@ -47,7 +47,11 @@ aisle and regroups all three bots. Local visible-body avoidance only uses suppor
 collision-checked space; narrow aisles still require their occupant to move.
 Delivered numbers 102–104, desk folders and reception sign are integrated and
 validated in the native view, including support removal and location teardown.
-Stack/Clear are still generic movement orders, not useful room-entry procedures.
+Stack/Clear now use doorway geometry: separate exterior positions with closed
+leaves blocked, then sequential far-to-near interior positions and inward facing.
+Visible occupants can cause local sector/route replanning; no hidden occupant map
+is added. Three-officer furnished-room entry, queued execution, wedge refusal,
+four doorway rotations/both flanks and exact input replay pass on Linux/Windows.
 Bedside switches and material-aware masonry work, but light does not affect
 perception and openings remain rectangular. Production audio, room/approach art
 and trained tactical policies are unfinished.
@@ -72,8 +76,22 @@ remains blocked until destruction opens an exterior reception wall or guest-room
 party wall, then physically crosses each opening. Linux and native Windows pass
 (166 ticks exterior, 34 ticks inter-room). This tests traversal of the shared
 breach result; charge placement/detonation has separate tactical/network tests.
-Next gameplay priority is genuine Stack/Clear semantics and separated squad goals;
-current single-point orders can still pile teammates together.
+Second increment: Stack/Clear and separated Move goals now pass those checks.
+Linux tactical, network, stairs/3D navigation, encounter, motel and save/replay
+regressions pass. Full native Windows build and encounter/motel/replay tests pass.
+Runtime-only doorway/sector planning is reconstructed by input replay; it adds no
+wire fields or RL observation/action dimensions. Combat can still interrupt entry;
+this does not establish full room-search, trained behavior or scenario completion.
+
+Next: integrate the delivered east fence and Room 103 personal props. Verified
+packages are in `build/swat/review/squad-entry/` (`briar-court-east-open-run-v1`
+and `motel_room103_personal_props_reuse_v1`); all delivered hashes passed. Fence
+roots are (12.5,-.08,6/4/2), yaw +90 degrees, plus terminal at Z=0. World floor
+owner 0 has top Y=-.08. Preserve diamond-hole ballistics, solid posts/wire contact,
+open ends and the east flank. Reuse the C importer under `tools/`; no Python.
+Room 103 wallet/glasses target owner 72; the artist measured against a zero-yaw
+tray, while the actual engine tray has +90-degree yaw, so native clearance needs
+checking. Slack thread latest engine direction is `1791476854.042679`.
 
 ## Landed: playable foundation
 

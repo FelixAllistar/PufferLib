@@ -746,12 +746,18 @@ identical results with a different layout model or across architectures.
 
 ## Tactical encounter rules
 
-Human house/generated play now enables three scripted squad bots in vacant
+Human tactical scenarios enable three scripted squad bots in vacant
 officer slots. Humans replace those bots when joining co-op. The legacy annex
 and policy contract keep their previous defaults. Hold **M** for floating squad
 orders; choose Gold, Red or Blue, Shift-click to queue, and press **J** to execute.
-Orders acknowledge after 18 simulation ticks. Bots route through actual static
-clearance, open/pick encountered doors and yield to nearby actors. This is an
+Orders acknowledge after 18 simulation ticks. Stack selects separate supported
+positions outside the targeted door and never opens it. Clear fills separate
+interior positions from the far flank back toward the doorway, then faces inward.
+Queued orders wait for J; an installed wedge still blocks entry. Officers choose
+another sector when a newly visible occupant blocks the planned position. Move
+also gives each selected officer a separate endpoint; empty sky is not a target.
+Bots route through static clearance and locally visible bodies, open/pick doors
+when their order allows it, and keep physical collision throughout. This is an
 initial authored tactical behavior layer; it is not a trained squad policy.
 
 **Alt+F** peeks an unlocked door to 12 degrees. **9** places a wedge, **Alt+9**

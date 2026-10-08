@@ -164,6 +164,63 @@ static void live_squad_and_evacuation(void) {
     swat_sim_close(&s);
     puts("PASS motel live route: squad opens front door and crosses furnished room; restrained civilian physically follows to staging and stays evacuated");
 }
+static void squad_door_orders(void) {
+    static SwatSim s;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;swat_config_human(&cfg);
+    cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=12000;
+    swat_sim_init(&s,cfg,81);
+    for(int i=1;i<s.actor_count;i++)if(s.actors[i].present && s.actors[i].role!=SWAT_OFFICER)s.actors[i].gear.surrendered=true;
+    SwatController* leader=&s.actors[0].controller;
+    b3Body_SetTransform(leader->body.body,(b3Pos){-3.2f,leader->body.totalHeight*.5f+.03f,2.8f},b3Quat_identity);
+    b3Body_SetLinearVelocity(leader->body.body,swat_v(0,0,0));leader->yaw=-SWAT_PI*.5f;leader->pitch=0;
+    for(int i=0;i<30;i++)swat_sim_step(&s,&(SwatInput){0});
+    SwatHit hit=swat_context_hit(&s,0,24);assert(hit.kind==SWAT_HIT_WORLD && s.world.objects[hit.index].door);
+    int door=hit.index;
+    swat_sim_step(&s,&(SwatInput){.squad_order=SWAT_ORDER_STACK});
+    for(int slot=1;slot<4;slot++)assert(s.actors[swat_player_actor(slot)].mind.pending_order==SWAT_ORDER_STACK);
+    int t;for(t=0;t<2400;t++) {
+        swat_sim_step(&s,&(SwatInput){0});int arrived=0;
+        for(int slot=1;slot<4;slot++) {
+            SwatActor* a=&s.actors[swat_player_actor(slot)];
+            arrived+=a->mind.order==SWAT_ORDER_STACK && b3Distance(swat_body_feet_position(&a->controller.body),a->mind.goal)<.6f;
+        }
+        if(arrived==3)break;
+    }
+    printf("Motel Stack after %d ticks, door open=%d\n",t,s.world.objects[door].door_open);fflush(stdout);
+    for(int slot=1;slot<4;slot++) {
+        SwatActor* a=&s.actors[swat_player_actor(slot)];b3Pos p=swat_body_feet_position(&a->controller.body);
+        printf("  officer%d %.2f %.2f goal %.2f %.2f waypoint %.2f %.2f yaw %.2f\n",slot,(float)p.x,(float)p.z,(float)a->mind.goal.x,(float)a->mind.goal.z,(float)a->mind.waypoint.x,(float)a->mind.waypoint.z,a->controller.yaw);
+        assert(p.z>.3f);
+    }fflush(stdout);
+    assert(t<2400 && !s.world.objects[door].door_open);
+    swat_sim_step(&s,&(SwatInput){.squad_order=SWAT_ORDER_CLEAR,.squad_queue=true});
+    for(int slot=1;slot<4;slot++)assert(s.actors[swat_player_actor(slot)].mind.pending_order==SWAT_ORDER_CLEAR);
+    for(t=0;t<120;t++)swat_sim_step(&s,&(SwatInput){0});
+    assert(!s.world.objects[door].door_open);
+    for(int slot=1;slot<4;slot++)assert(s.actors[swat_player_actor(slot)].mind.order==SWAT_ORDER_STACK);
+    s.world.objects[door].wedge_owner=0;s.world.generation++;
+    swat_sim_step(&s,&(SwatInput){.squad_execute=true});
+    for(t=0;t<240;t++)swat_sim_step(&s,&(SwatInput){0});
+    assert(!s.world.objects[door].door_open);
+    for(int slot=1;slot<4;slot++)assert(swat_body_feet_position(&s.actors[swat_player_actor(slot)].controller.body).z>0);
+    s.world.objects[door].wedge_owner=-1;s.world.generation++;
+    for(t=0;t<2400;t++) {
+        swat_sim_step(&s,&(SwatInput){0});int arrived=0;
+        for(int slot=1;slot<4;slot++) {
+            SwatActor* a=&s.actors[swat_player_actor(slot)];b3Pos p=swat_body_feet_position(&a->controller.body);
+            arrived+=a->mind.order==SWAT_ORDER_CLEAR && a->mind.entry_settled && p.z<-.6f &&
+                b3Distance(p,a->mind.goal)<.5f && fabsf(swat_angle(a->controller.yaw-a->mind.order_yaw))<.15f;
+        }
+        if(arrived==3)break;
+    }
+    printf("Motel Clear after %d ticks, door open=%d\n",t,s.world.objects[door].door_open);fflush(stdout);
+    for(int slot=1;slot<4;slot++) {
+        SwatActor* a=&s.actors[swat_player_actor(slot)];b3Pos p=swat_body_feet_position(&a->controller.body);
+        printf("  officer%d %.2f %.2f goal %.2f %.2f waypoint %.2f %.2f yaw %.2f\n",slot,(float)p.x,(float)p.z,(float)a->mind.goal.x,(float)a->mind.goal.z,(float)a->mind.waypoint.x,(float)a->mind.waypoint.z,a->controller.yaw);
+    }fflush(stdout);
+    assert(t<2400 && s.world.objects[door].door_open);
+    swat_sim_close(&s);
+    puts("PASS motel orders: three officers stack without opening; queued Clear waits for execute, respects wedges, then enters to separate supported positions and faces inward");
+}
 static void live_breach_routes(void) {
     static SwatSim s;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;swat_config_human(&cfg);
     cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=6000;
@@ -199,6 +256,7 @@ static void live_breach_routes(void) {
     puts("PASS motel breach movement: wedged doors prevent detours; actual squad controller crosses exterior masonry and inter-room openings after destruction without teleporting");
 }
 int main(void) {
+    squad_door_orders();
     live_squad_and_evacuation();
     live_breach_routes();
     masonry_ballistics();

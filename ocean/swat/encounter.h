@@ -12,6 +12,9 @@ typedef struct SwatMind {
     bool bot,queued;
     int team,order,pending_order,target,memory_ticks,replan_tick,command_tick,escort_owner;
     float resolve;
+    float order_yaw,pending_yaw; // Authority planning state, reconstructed by input replay.
+    int order_door,pending_door; // Zero is no doorway; world object zero is the floor.
+    bool entry_settled;
     b3Pos memory,goal,waypoint,pending_goal;
 } SwatMind;
 typedef struct SwatNavigation {

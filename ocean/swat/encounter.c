@@ -178,14 +178,67 @@ bool swat_navigation_crouch(const SwatSim* s,b3Pos position) {
     if(!s->navigation || !s->navigation->built) return false;
     int at=nearest(s->navigation,position); return at>=0 && !(s->navigation->walkable[at]&2);
 }
-bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {
+typedef struct NavPeople {b3Pos feet[SWAT_MAX_ACTORS];int count;} NavPeople;
+static bool closed_doors_clear(const SwatWorld* world,const int doors[],int count,b3Pos from,b3Pos to) {
+    for(int i=0;i<count;i++) {
+        const SwatObject* o=&world->objects[doors[i]];
+        if(from.y>o->center.y+o->half.y || from.y+1.8288f<o->center.y-o->half.y)continue;
+        b3Vec3 p=b3SubPos(from,o->center),d=b3SubPos(to,from);float c=cosf(o->yaw),s=sinf(o->yaw);
+        float origin[]={c*p.x-s*p.z,s*p.x+c*p.z},delta[]={c*d.x-s*d.z,s*d.x+c*d.z};
+        float half[]={o->half.x+.30f,o->half.z+.30f},enter=0,exit=1;
+        bool intersects=true;
+        for(int axis=0;axis<2;axis++) {
+            if(fabsf(delta[axis])<1e-7f) {if(fabsf(origin[axis])>half[axis]){intersects=false;break;}}
+            else {
+                float a=(-half[axis]-origin[axis])/delta[axis],b=(half[axis]-origin[axis])/delta[axis];
+                enter=fmaxf(enter,fminf(a,b));exit=fminf(exit,fmaxf(a,b));
+                if(exit<=enter){intersects=false;break;}
+            }
+        }
+        if(intersects)return false;
+    }
+    return true;
+}
+static bool people_clear(const NavPeople* people,b3Pos from,b3Pos to) {
+    b3Vec3 segment=b3SubPos(to,from);segment.y=0;float length=b3LengthSquared(segment);
+    for(int i=0;i<people->count;i++) {
+        b3Vec3 delta=b3SubPos(people->feet[i],from);if(fabsf(delta.y)>1)continue;delta.y=0;
+        float t=length>1e-6f?swat_clamp(b3Dot(delta,segment)/length,0,1):0;
+        if(b3LengthSquared(b3Sub(delta,swat_mul(segment,t)))<.62f*.62f) {
+            if(b3LengthSquared(delta)<.62f*.62f && b3Dot(delta,segment)<0 && b3Length(b3Sub(delta,segment))>b3Length(delta)+.02f)continue;
+            return false;
+        }
+    }
+    return true;
+}
+static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next) {
     if(!s->navigation) {
         s->navigation=calloc(1,sizeof(*s->navigation));
         if(!s->navigation) return false;
     }
     SwatNavigation* nav=s->navigation;
     if(!nav->built || nav->generation!=s->world.generation || nav->count!=s->world.count) navigation_build(s);
+    NavPeople people={0};
+    int doors[SWAT_MAX_OBJECTS],door_count=0;
+    if(actor>=0 && s->actors[actor].mind.order==SWAT_ORDER_STACK)
+        for(int i=0;i<s->world.count;i++)if(s->world.objects[i].active && s->world.objects[i].door && !s->world.objects[i].door_open)doors[door_count++]=i;
+    if(actor>=0)for(int i=0;i<s->actor_count;i++) {
+        SwatActor* other=&s->actors[i];if(i==actor || !other->present || !other->alive)continue;
+        b3Pos feet=swat_body_feet_position(&other->controller.body);
+        if(b3Distance(start,feet)<3 && swat_world_visible(&s->world,swat_controller_eye(&s->actors[actor].controller),swat_controller_eye(&other->controller)))
+            people.feet[people.count++]=feet;
+    }
     int from=nearest(nav,start),to=nearest(nav,goal); if(from<0 || to<0) return false;
+    // Dynamic occupancy is local to this route request. Never bake people into
+    // the shared static nav grid or reveal occupants behind closed cover.
+    if(!people_clear(&people,cell_position(nav,to),cell_position(nav,to))) {
+        float best=2;to=-1;
+        for(int i=0;i<SWAT_NAV_NODES;i++)if(nav->walkable[i]) {
+            b3Pos p=cell_position(nav,i);float distance=b3Distance(p,goal);
+            if(fabs(p.y-goal.y)<.65 && distance<best && people_clear(&people,p,p)) {best=distance;to=i;}
+        }
+        if(to<0)return false;
+    }
     int32_t parent[SWAT_NAV_NODES]; uint16_t queue[SWAT_NAV_NODES];
     for(int i=0;i<SWAT_NAV_NODES;i++) parent[i]=-1;
     int head=0,tail=0; queue[tail++]=(uint16_t)to; parent[to]=to;
@@ -196,13 +249,16 @@ bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {
             for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
                 int n=layer*SWAT_NAV_CELLS+cell;
                 // Reverse traversal; each edge may require a lower stance.
-                if((nav->links[n][direction^1]&(1u<<(at/SWAT_NAV_CELLS))) && parent[n]<0) { parent[n]=at; queue[tail++]=(uint16_t)n; }
+                if((nav->links[n][direction^1]&(1u<<(at/SWAT_NAV_CELLS))) && parent[n]<0 &&
+                   people_clear(&people,n==from?start:cell_position(nav,n),cell_position(nav,at)) &&
+                   closed_doors_clear(&s->world,doors,door_count,n==from?start:cell_position(nav,n),cell_position(nav,at))) { parent[n]=at; queue[tail++]=(uint16_t)n; }
             }
         }
     }
     if(parent[from]<0) return false;
     *next=cell_position(nav,from==to ? to : parent[from]); return true;
 }
+bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {return navigation_next_actor(s,-1,start,goal,next);}
 static bool actor_lane_clear(const SwatSim* s,int index,b3Pos from,b3Pos to) {
     b3Vec3 segment=b3SubPos(to,from);segment.y=0;float length2=b3LengthSquared(segment);
     for(int i=0;i<s->actor_count;i++) {
@@ -252,7 +308,7 @@ static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
     b3Pos feet=swat_body_feet_position(&a->controller.body); b3Vec3 delta=b3SubPos(goal,feet);
     if(hypotf(delta.x,delta.z)<.45f && fabsf(delta.y)<.45f) return;
     if(s->tick>=mind->replan_tick || (hypotf((float)(feet.x-mind->waypoint.x),(float)(feet.z-mind->waypoint.z))<.30f && fabs(feet.y-mind->waypoint.y)<.55)) {
-        if(!swat_navigation_next(s,feet,goal,&mind->waypoint)) return;
+        if(!navigation_next_actor(s,index,feet,goal,&mind->waypoint)) return;
         mind->replan_tick=s->tick+30;
     }
     in->crouch=swat_navigation_crouch(s,feet) || swat_navigation_crouch(s,mind->waypoint);
@@ -266,6 +322,7 @@ static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
     SwatHit ahead=swat_context_hit(s,index,1.7f);
     if(ahead.kind==SWAT_HIT_WORLD && ahead.index>=0 && s->world.objects[ahead.index].door) {
         SwatObject* door=&s->world.objects[ahead.index];
+        if(a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_STACK && !door->door_open)return;
         if(door->wedge_owner>=0) { in->forward=0; mind->replan_tick=0; return; }
         if(door->locked) { in->forward=0; if(a->role==SWAT_OFFICER) in->door_tool=SWAT_LOCKPICK; return; }
         if(!door->door_open) { in->forward=0; in->interact=!a->last_interact; }
@@ -300,6 +357,67 @@ const char* swat_squad_order_name(int order) {
     static const char* names[]={"","Fall in","Hold","Move","Stack","Clear","Pick lock","Wedge","Restrain","Search","Cover"};
     return names[order>=0 && order<SWAT_SQUAD_ORDERS ? order : 0];
 }
+static bool order_support(const SwatWorld* world,b3Pos* point) {
+    NavFloors floors={0};
+    b3World_CastRay(world->id,b3OffsetPos(*point,swat_v(0,.5f,0)),swat_v(0,-1,0),b3DefaultQueryFilter(),floor_hit,&floors);
+    float best=.4572f,support=0;
+    for(int i=0;i<floors.count;i++)if(fabsf(floors.y[i]-(float)point->y)<best) {
+        best=fabsf(floors.y[i]-(float)point->y);support=floors.y[i];
+    }
+    if(best==.4572f)return false;
+    point->y=support+.015f;
+    return nav_clear(world,*point,1.8288f);
+}
+static bool order_separated(b3Pos point,const b3Pos assigned[],int count) {
+    for(int i=0;i<count;i++)if(b3Distance(point,assigned[i])<.9f)return false;
+    return true;
+}
+// Use the targeted doorway's frame and actual supported clearance, never hidden
+// occupants or a scripted room route. Each officer reserves a separate endpoint.
+static bool order_position(const SwatSim* s,int actor,SwatHit hit,b3Pos source,int order,int rank,
+                           const b3Pos assigned[],int count,b3Pos* goal,float* yaw) {
+    if(hit.kind!=SWAT_HIT_WORLD || hit.index<0)return false;
+    const SwatObject* object=&s->world.objects[hit.index];
+    bool entry=object->door && (order==SWAT_ORDER_STACK || order==SWAT_ORDER_CLEAR);
+    b3Pos center=hit.point; b3Vec3 normal=swat_normalize(swat_v((float)(source.x-center.x),0,(float)(source.z-center.z)));
+    if(entry) {
+        center=b3OffsetPos(object->hinge,swat_v(sinf(object->closed_yaw)*object->half.z,-object->half.y,cosf(object->closed_yaw)*object->half.z));
+        normal=swat_v(cosf(object->closed_yaw),0,-sinf(object->closed_yaw));
+        if(b3Dot(normal,b3SubPos(source,center))<0)normal=swat_mul(normal,-1);
+    } else {
+        if(hit.normal.y<.5f) {center=b3OffsetPos(center,swat_mul(hit.normal,.6f));center.y=source.y;}
+    }
+    b3Vec3 right=swat_v(-normal.z,0,normal.x);bool found=false;float best=1e9f;
+    b3Pos portal=b3OffsetPos(center,swat_mul(normal,order==SWAT_ORDER_CLEAR?-.45f:.75f));
+    if(entry && !order_support(&s->world,&portal))return false;
+    float entry_side=-1,span=0;
+    if(entry && order==SWAT_ORDER_CLEAR)for(int side=-1;side<=1;side+=2)for(int reach=1;reach<=5;reach++) {
+        b3Pos probe=b3OffsetPos(center,swat_add(swat_mul(normal,-1.1f),swat_mul(right,side*reach*.55f)));
+        if(reach*.55f>span && order_support(&s->world,&probe) && nav_edge(&s->world,portal,probe,1.8288f)) {span=reach*.55f;entry_side=(float)side;}
+    }
+    for(int depth=0;depth<7;depth++)for(int side=-5;side<=5;side++) {
+        float lateral=side*.55f,forward=depth*.4f;
+        if(entry && order==SWAT_ORDER_STACK) {
+            if(fabsf(lateral)<object->half.z+.30f)continue;
+            forward=.75f+depth*.25f;
+        } else if(entry)forward=-(1.1f+depth*.4f);
+        else forward=(depth-3)*.4f;
+        b3Pos candidate=b3OffsetPos(center,swat_add(swat_mul(normal,forward),swat_mul(right,lateral)));
+        if(!order_support(&s->world,&candidate) || !order_separated(candidate,assigned,count) ||
+           !actor_lane_clear(s,actor,candidate,candidate))continue;
+        b3Pos path_start=entry?portal:center;path_start.y=candidate.y;
+        if(!nav_edge(&s->world,path_start,candidate,1.8288f))continue;
+        float preference=entry && order==SWAT_ORDER_CLEAR ? entry_side*(2-rank)*1.1f : (rank&1?1:-1)*(.55f+.4f*(rank/2));
+        float score=entry ? fabsf(lateral-preference)+.4f*fabsf(forward-(order==SWAT_ORDER_CLEAR?-1.65f:.8f)) : b3Distance(candidate,center);
+        if(score<best) {best=score;*goal=candidate;found=true;}
+    }
+    if(found) {
+        b3Vec3 facing=entry && order==SWAT_ORDER_CLEAR ? swat_mul(normal,-1) : b3SubPos(center,*goal);
+        if(!entry)facing=swat_mul(normal,-1);
+        *yaw=atan2f(facing.z,facing.x);
+    }
+    return found;
+}
 void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
     if(!s->config.tactical_rules) return;
     int leader=s->commander_actor; if(leader<0 || leader>=s->actor_count || !s->actors[leader].alive) return;
@@ -313,16 +431,22 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
         // Preserve the targeted floor; navigation resolves its support height.
         if(hit.kind==SWAT_HIT_WORLD && hit.normal.y<.5f) goal.y=eye.y-source->controller.eye_height;
         swat_sound_emit(&s->sounds,s->tick,leader,SWAT_SOUND_COMMAND,eye,1,20);
+        b3Pos assigned[SWAT_MAX_PLAYERS];int count=0;
         for(int i=0;i<s->actor_count;i++) {
             SwatActor* a=&s->actors[i]; if(!a->present || !a->alive || !a->mind.bot || a->role!=SWAT_OFFICER || (in->squad_team && in->squad_team!=a->mind.team)) continue;
-            a->mind.pending_order=in->squad_order; a->mind.pending_goal=goal;
-            a->mind.queued=in->squad_queue; a->mind.command_tick=s->tick+18; // Radio acknowledgement delay.
+            b3Pos destination=goal;float yaw=source->controller.yaw;
+            bool position=in->squad_order==SWAT_ORDER_STACK || in->squad_order==SWAT_ORDER_CLEAR || in->squad_order==SWAT_ORDER_MOVE;
+            if(position && !order_position(s,i,hit,swat_body_feet_position(&source->controller.body),in->squad_order,count,assigned,count,&destination,&yaw))continue;
+            a->mind.pending_order=in->squad_order;a->mind.pending_goal=destination;a->mind.pending_yaw=yaw;
+            a->mind.pending_door=hit.kind==SWAT_HIT_WORLD && hit.index>0 && s->world.objects[hit.index].door ? hit.index : 0;
+            a->mind.queued=in->squad_queue; a->mind.command_tick=s->tick+18+(in->squad_order==SWAT_ORDER_CLEAR?count*18:0);
+            if(count<SWAT_MAX_PLAYERS)assigned[count++]=destination;
         }
     }
     for(int i=0;i<s->actor_count;i++) {
         SwatMind* mind=&s->actors[i].mind;
         if(!mind->pending_order || mind->command_tick>s->tick || (mind->queued && !in->squad_execute)) continue;
-        mind->order=mind->pending_order; mind->goal=mind->pending_goal; mind->pending_order=0; mind->queued=false; mind->replan_tick=0;
+        mind->order=mind->pending_order; mind->goal=mind->pending_goal;mind->order_yaw=mind->pending_yaw;mind->order_door=mind->pending_door;mind->entry_settled=false; mind->pending_order=0; mind->queued=false; mind->replan_tick=0;
         swat_sound_emit(&s->sounds,s->tick,i,SWAT_SOUND_COMMAND,swat_controller_eye(&s->actors[i].controller),.5f,12);
     }
 }
@@ -367,7 +491,41 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
                     goal=b3OffsetPos(goal,swat_v(-1.2f,(float)0,(float)(i-4)*1.0f)); move_to(s,i,goal,in);
                 }
             } else if(mind->order!=SWAT_ORDER_HOLD && mind->order!=SWAT_ORDER_COVER) {
+                // Fill the far sector first. A narrow door is a physical queue,
+                // not three independent walkers racing toward its center.
+                bool entry_wait=false;
+                if(mind->order==SWAT_ORDER_CLEAR && mind->order_door>0)for(int j=0;j<i;j++) {
+                    const SwatActor* peer=&s->actors[j];if(!peer->present || !peer->alive || !peer->mind.bot)continue;
+                    entry_wait|=(peer->mind.pending_order==SWAT_ORDER_CLEAR && peer->mind.pending_door==mind->order_door) ||
+                        (peer->mind.order==SWAT_ORDER_CLEAR && peer->mind.order_door==mind->order_door && !peer->mind.entry_settled);
+                }
+                if(entry_wait)continue;
+                // A newly visible occupant can occupy a planned sector. Pick
+                // another supported position inside the same doorway instead
+                // of trying to push through that person or consulting hidden AI.
+                if(mind->order==SWAT_ORDER_CLEAR && mind->order_door>0 && mind->order_door<s->world.count &&
+                   s->tick>=mind->replan_tick && !actor_lane_clear(s,i,mind->goal,mind->goal)) {
+                    const SwatObject* door=&s->world.objects[mind->order_door];
+                    b3Pos center=b3OffsetPos(door->hinge,swat_v(sinf(door->closed_yaw)*door->half.z,-door->half.y,cosf(door->closed_yaw)*door->half.z));
+                    b3Pos outside=b3OffsetPos(center,b3SubPos(center,mind->goal)),assigned[SWAT_MAX_PLAYERS];int count=0;
+                    for(int j=0;j<s->actor_count && count<SWAT_MAX_PLAYERS;j++) {
+                        SwatActor* peer=&s->actors[j];
+                        if(j==i || !peer->present || !peer->alive || !peer->mind.bot)continue;
+                        if(peer->mind.pending_order==SWAT_ORDER_CLEAR && peer->mind.pending_door==mind->order_door)assigned[count++]=peer->mind.pending_goal;
+                        else if(peer->mind.order==SWAT_ORDER_CLEAR && peer->mind.order_door==mind->order_door)assigned[count++]=peer->mind.goal;
+                    }
+                    SwatHit hit={.kind=SWAT_HIT_WORLD,.index=mind->order_door,.point=center};
+                    order_position(s,i,hit,outside,SWAT_ORDER_CLEAR,i-3,assigned,count,&mind->goal,&mind->order_yaw);
+                }
                 move_to(s,i,mind->goal,in);
+                if(mind->order==SWAT_ORDER_STACK || mind->order==SWAT_ORDER_CLEAR || mind->order==SWAT_ORDER_MOVE) {
+                    b3Pos feet=swat_body_feet_position(&a->controller.body);
+                    if(b3Distance(feet,mind->goal)<.45f) {
+                        mind->entry_settled=true;
+                        in->forward=0;in->yaw_delta=swat_clamp(swat_angle(mind->order_yaw-a->controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
+                        in->pitch_delta=swat_clamp(-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD);
+                    }
+                }
                 SwatContext c=swat_context(s,i);
                 if(mind->order==SWAT_ORDER_PICK && c.action==SWAT_CONTEXT_LOCKED && c.ready) in->door_tool=SWAT_LOCKPICK;
                 if(mind->order==SWAT_ORDER_WEDGE && c.hit.kind==SWAT_HIT_WORLD && c.ready) in->door_tool=SWAT_WEDGE;

@@ -129,7 +129,7 @@ if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = server ]; then
 fi
 
 if [ "$SWAT_TARGET" = all ]; then
-for check in scenarios locomotion; do
+for check in scenarios locomotion foundation; do
     "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_$check.c" \
         "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_$check.exe"
 done

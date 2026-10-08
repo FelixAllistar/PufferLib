@@ -141,6 +141,44 @@ static void scenario_completion(void) {
     swat_sim_close(&sim);
     puts("PASS tactical completion: shared human defaults, motel squad, persistent civilian harm, evidence/evacuation/regroup gates, formation-sized staging, casualties and exact replicated debrief");
 }
+static void rotated_entry_planning(void) {
+    for(int orientation=0;orientation<4;orientation++)for(int mirror=-1;mirror<=1;mirror+=2) {
+        fixture();place_actor(1,(b3Pos){10,0,10});place_actor(2,(b3Pos){10,0,8});
+        float yaw=orientation*SWAT_PI*.5f;b3Vec3 normal=swat_v(cosf(yaw),0,-sinf(yaw)),side=swat_v(sinf(yaw),0,cosf(yaw));
+        place_actor(0,b3OffsetPos((b3Pos){0},swat_mul(normal,-3)));
+        sim.actors[0].controller.yaw=atan2f(normal.z,normal.x);sim.actors[0].controller.pitch=0;
+        int id=swat_world_box(&sim.world,(b3Pos){0,1.1f,0},swat_v(.04f,1.1f,.55f),SWAT_WOOD,120);
+        SwatObject* door=&sim.world.objects[id];door->door=true;door->closed_yaw=yaw;
+        door->hinge=b3OffsetPos(door->center,swat_mul(side,-.55f));swat_world_place(door,yaw);
+        // Mirror the available interior flank and rotate the complete doorway.
+        for(int wall=0;wall<2;wall++) {
+            b3Pos center=b3OffsetPos((b3Pos){0,1.5f,0},swat_add(swat_mul(normal,2),swat_mul(side,mirror*(wall?3.2f:-.8f))));
+            int w=swat_world_box(&sim.world,center,swat_v(2,1.5f,.1f),SWAT_CONCRETE,0);swat_world_place(&sim.world.objects[w],yaw);
+        }
+        for(int slot=1;slot<4;slot++) {
+            assert(swat_sim_set_player(&sim,slot,true));int actor=swat_player_actor(slot);
+            place_actor(actor,b3OffsetPos((b3Pos){0},swat_add(swat_mul(normal,-5),swat_mul(side,(slot-2)*1.1f))));
+            sim.actors[actor].mind.bot=true;
+        }
+        SwatInput inputs[SWAT_MAX_ACTORS]={0};inputs[0].squad_order=SWAT_ORDER_CLEAR;inputs[0].squad_queue=true;
+        swat_encounter_orders(&sim,inputs);
+        for(int slot=1;slot<4;slot++) {
+            SwatMind* mind=&sim.actors[swat_player_actor(slot)].mind;
+            assert(mind->pending_order==SWAT_ORDER_CLEAR && mind->pending_door==id && mind->queued);
+            assert(b3Dot(normal,b3SubPos(mind->pending_goal,(b3Pos){0}))>.8f);
+            assert(fabsf(swat_angle(mind->pending_yaw-atan2f(normal.z,normal.x)))<1e-5f);
+            for(int other=1;other<slot;other++)assert(b3Distance(mind->pending_goal,sim.actors[swat_player_actor(other)].mind.pending_goal)>=.9f);
+        }
+        assert(mirror*b3Dot(side,b3SubPos(sim.actors[3].mind.pending_goal,(b3Pos){0}))>1.6f);
+        // Pointing into empty sky cannot turn a Move command into a trip to (0,0,0).
+        for(int slot=1;slot<4;slot++)sim.actors[swat_player_actor(slot)].mind.pending_order=0;
+        inputs[0].squad_order=0;swat_encounter_orders(&sim,inputs);sim.actors[0].controller.pitch=SWAT_PI*.5f;
+        inputs[0].squad_order=SWAT_ORDER_MOVE;swat_encounter_orders(&sim,inputs);
+        for(int slot=1;slot<4;slot++)assert(!sim.actors[swat_player_actor(slot)].mind.pending_order);
+        swat_sim_close(&sim);
+    }
+    puts("PASS entry planning: four doorway rotations and both interior flanks, separate supported sectors, inward facing, queued ownership and empty-target rejection");
+}
 static void local_body_avoidance(void) {
     fixture();sim.config.mission=SWAT_HOUSE;
     sim.actors[1].gear.surrendered=true;sim.actors[2].gear.surrendered=true;
@@ -159,4 +197,4 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
-int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); perception_evidence_roe(); scenario_completion(); local_body_avoidance(); return 0; }
+int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); perception_evidence_roe(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }
