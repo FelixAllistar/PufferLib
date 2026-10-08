@@ -359,6 +359,17 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
     a->last_interact = in->interact;
     if(!in->interact) { a->gear.cuff_ticks=0; a->gear.cuff_target=-1; return; }
     if(!pressed && !a->gear.cuff_ticks) { a->gear.cuff_target=-1; return; }
+    if(pressed) {
+        SwatContext context=swat_context(s,actor);
+        if(context.action==SWAT_CONTEXT_LIGHT) {
+            a->gear.cuff_ticks=0;a->gear.cuff_target=-1;
+            if(context.ready) {
+                s->world.room_light_off_mask^=1u<<context.hit.index;
+                swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,context.hit.point,.12f,3);
+            }
+            return;
+        }
+    }
     if(pressed && (swat_device_recover(s,actor) || swat_collect_evidence(s,actor))) return;
     SwatHit hit = s->config.mission==SWAT_ANNEX ?
         swat_world_ray(&s->world,swat_controller_eye(&a->controller),

@@ -298,7 +298,7 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
         SwatContext context=swat_context(sim,app->actor);
         bool use=IsKeyDown(KEY_F) || (!app->wait_for_release && IsMouseButtonDown(MOUSE_BUTTON_MIDDLE));
         bool door=context.hit.kind==SWAT_HIT_WORLD && context.action!=SWAT_CONTEXT_NONE && context.action!=SWAT_CONTEXT_WALL && context.action!=SWAT_CONTEXT_CHARGE && context.hit.distance<=2.2f;
-        bool physical=door || context.action==SWAT_CONTEXT_EVIDENCE || context.action==SWAT_CONTEXT_SECURED || context.action==SWAT_CONTEXT_DEVICE;
+        bool physical=door || context.action==SWAT_CONTEXT_EVIDENCE || context.action==SWAT_CONTEXT_SECURED || context.action==SWAT_CONTEXT_DEVICE || context.action==SWAT_CONTEXT_LIGHT;
         in.interact=use && physical; in.peek=equipment_modifier;
         in.command|=use && !physical;
         bool right=!app->wait_for_release && IsMouseButtonDown(MOUSE_BUTTON_RIGHT);

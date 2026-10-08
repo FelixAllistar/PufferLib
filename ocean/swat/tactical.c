@@ -1,4 +1,5 @@
 #include "sim.h"
+#include "motel.h"
 #include <string.h>
 
 static bool clear_to(const SwatSim* s,b3Pos from,b3Pos to,int target) {
@@ -37,6 +38,22 @@ SwatHit swat_context_hit(const SwatSim* s,int actor,float range) {
 SwatContext swat_context(const SwatSim* s,int actor) {
     SwatContext out={.hit={.index=-1}};
     if(actor<0 || actor>=s->actor_count || !s->actors[actor].present) return out;
+    if(s->world.motel) {
+        const SwatController* c=&s->actors[actor].controller;
+        b3Pos eye=swat_controller_eye(c);b3Vec3 aim=swat_controller_aim(c);
+        for(int room=1;room<=4;room++) {
+            b3Pos button;if(!swat_motel_lamp_switch(&s->world,room,&button))continue;
+            b3Vec3 delta=b3SubPos(button,eye);float distance=b3Length(delta),along=b3Dot(delta,aim);
+            // Small, distance-limited tolerance around the actual button. Cover
+            // and people always block use, including from behind its thin wall.
+            float tolerance=fminf(.06f,fmaxf(.025f,along*.035f));
+            if(along<=0 || distance>2.2f || b3Length(b3Sub(delta,swat_mul(aim,along)))>tolerance)continue;
+            SwatHit obstruction=swat_world_ray(&s->world,eye,swat_normalize(delta),distance,c->body.body);
+            if(obstruction.hit && obstruction.distance<distance-.003f)continue;
+            out.hit=(SwatHit){.hit=true,.kind=SWAT_HIT_LIGHT,.index=room,.distance=distance,.point=button};
+            out.action=SWAT_CONTEXT_LIGHT;out.ready=distance<=1.7f;return out;
+        }
+    }
     out.hit=swat_context_hit(s,actor,9);
     if(out.hit.kind==SWAT_HIT_DEVICE && out.hit.index>=0 && out.hit.index<SWAT_MAX_DEVICES) {
         out.action=SWAT_CONTEXT_DEVICE; out.ready=out.hit.distance<2.2f && s->devices[out.hit.index].owner==actor; return out;

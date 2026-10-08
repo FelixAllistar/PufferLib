@@ -11,7 +11,7 @@ extern "C" {
 #define SWAT_MAX_OBJECTS 2048
 #define SWAT_MOTEL_MESH_CAPACITY 42
 #define SWAT_MAX_ROOMS 8
-typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE } SwatHitKind;
+typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE,SWAT_HIT_LIGHT } SwatHitKind;
 typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT, SWAT_PART_LIGHT } SwatPart;
 typedef struct SwatRoom {
     b3Pos center;
@@ -51,6 +51,7 @@ typedef struct SwatWorld {
     int count, generation;
     SwatRoom rooms[SWAT_MAX_ROOMS];
     int room_count;
+    unsigned int room_light_off_mask; // Authoritative switches; support loss is evaluated separately.
 } SwatWorld;
 
 typedef struct SwatHit {

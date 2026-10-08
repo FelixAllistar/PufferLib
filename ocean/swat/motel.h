@@ -25,6 +25,7 @@ int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* plac
 int swat_motel_dressing_parent(int index);
 // Authored bulb anchor in a supported fixed bedside fixture (guest rooms 1..4).
 bool swat_motel_lamp(const SwatWorld*,int room,b3Pos* origin);
+bool swat_motel_lamp_switch(const SwatWorld*,int room,b3Pos* position);
 // Retired imported wall supporting this physical section, or -1.
 int swat_motel_wall_parent(const SwatWorld* world,const SwatObject* piece);
 typedef struct SwatMotelEdge {

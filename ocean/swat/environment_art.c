@@ -239,7 +239,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
     if(selected==1) {room101_load(art);motel_dressing_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
-        if(!room101_model_load(&art->masonry_edge,art->masonry_edge_normal_scale,"motel_breach_v1/masonry_edge.glb")) {
+        if(!room101_model_load(&art->masonry_edge,art->masonry_edge_normal_scale,"motel_breach/masonry_edge.glb")) {
             swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
         } else {
             BoundingBox b=GetModelBoundingBox(art->masonry_edge);

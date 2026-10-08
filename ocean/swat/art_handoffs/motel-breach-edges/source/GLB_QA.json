@@ -1,9 +1,9 @@
 {
   "file": "masonry_edge.glb",
-  "bytes": 4960336,
-  "sha256": "d2836227b66c7425270024f1a000ce1d87eeedce51417894de689a5e6fa01d35",
-  "triangles": 172,
-  "material_draws": 3,
+  "bytes": 4962664,
+  "sha256": "9a05275c1b1dd4f25530c3bb14aa557461f29814d899e9c4f7cd072df35d0533",
+  "triangles": 164,
+  "material_draws": 4,
   "native_gltf_bounds_m": [
     [
       -0.09200000017881393,
@@ -22,8 +22,7 @@
   "degenerate_geometry_triangles": 0,
   "degenerate_uv_triangles": 0,
   "geometric_edge_incidence_histogram": {
-    "2": 254,
-    "4": 2
+    "2": 246
   },
   "normal_length_range": [
     0.9999999403953552,
@@ -46,7 +45,7 @@
         }
       },
       "occlusionTexture": {
-        "index": 6,
+        "index": 9,
         "texCoord": 0,
         "strength": 1
       },
@@ -66,10 +65,16 @@
         "metallicFactor": 0,
         "metallicRoughnessTexture": {
           "index": 5
-        }
+        },
+        "baseColorFactor": [
+          0.7,
+          0.68,
+          0.62,
+          1
+        ]
       },
       "occlusionTexture": {
-        "index": 6,
+        "index": 9,
         "texCoord": 0,
         "strength": 1
       },
@@ -80,16 +85,45 @@
       "name": "ME01_fresh_plaster_break",
       "pbrMetallicRoughness": {
         "baseColorFactor": [
-          0.47999998927116394,
-          0.45500001311302185,
-          0.3930000066757202,
+          0.30000001192092896,
+          0.2800000011920929,
+          0.23499999940395355,
           1
         ],
         "metallicFactor": 0,
         "roughnessFactor": 0.9399999976158142
       },
       "occlusionTexture": {
+        "index": 9,
+        "texCoord": 0,
+        "strength": 1
+      },
+      "doubleSided": false,
+      "alphaMode": "OPAQUE"
+    },
+    {
+      "name": "ME02_weathered_plaster",
+      "normalTexture": {
         "index": 6,
+        "scale": 0.3499999940395355
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 7
+        },
+        "metallicFactor": 0,
+        "metallicRoughnessTexture": {
+          "index": 8
+        },
+        "baseColorFactor": [
+          0.49,
+          0.47,
+          0.42,
+          1
+        ]
+      },
+      "occlusionTexture": {
+        "index": 9,
         "texCoord": 0,
         "strength": 1
       },

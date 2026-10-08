@@ -3,3 +3,5 @@ Existing plaster texture derivatives: Poly Haven White Plaster 02, Rob Tuytel, C
 https://polyhaven.com/a/white_plaster_02
 https://polyhaven.com/license
 No new external download. Provenance inherited from supplied Room101 v4 SOURCE_PROVENANCE.json.
+
+ME02 v2 original plaster-island geometry and refinement scripts: dedicated to CC0-1.0.

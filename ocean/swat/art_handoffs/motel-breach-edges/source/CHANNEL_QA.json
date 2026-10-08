@@ -170,6 +170,80 @@
           255
         ]
       }
+    },
+    {
+      "name": "ME02_weathered_plaster",
+      "metallic_effective": 0,
+      "opaque": true,
+      "single_sided": true,
+      "basecolor": {
+        "texCoord": 0,
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "min_RGB": [
+          176,
+          173,
+          167
+        ],
+        "max_RGB": [
+          231,
+          225,
+          212
+        ]
+      },
+      "roughmetal": {
+        "texCoord": 0,
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "min_RGB": [
+          255,
+          186,
+          255
+        ],
+        "max_RGB": [
+          255,
+          221,
+          255
+        ]
+      },
+      "normal": {
+        "texCoord": 0,
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "min_RGB": [
+          36,
+          35,
+          201
+        ],
+        "max_RGB": [
+          215,
+          206,
+          255
+        ]
+      },
+      "AO": {
+        "texCoord": 0,
+        "dimensions": [
+          4,
+          4
+        ],
+        "min_RGB": [
+          255,
+          255,
+          255
+        ],
+        "max_RGB": [
+          255,
+          255,
+          255
+        ]
+      }
     }
   ],
   "AO": "neutral white separate RGB; UV0; no lighting baked",

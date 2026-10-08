@@ -599,6 +599,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         halves[i]=(Vector3){r->half.x,r->half.y,r->half.z}; origins[i]=room_light_origin(world,i);
         if(world->motel && i>=1 && i<=4)directions[i]=(Vector3){0,-.9396926f,.3420201f};
         b3Pos bulb;room_power[i]=!world->motel || i<1 || i>4 || swat_motel_lamp(world,i,&bulb) ? 1 : 0;
+        if(world->room_light_off_mask&(1u<<i))room_power[i]=0;
     }
     SwatLightingProgram* programs[]={&light->batch,&light->mesh};
     for(int i=0;i<2;i++) {

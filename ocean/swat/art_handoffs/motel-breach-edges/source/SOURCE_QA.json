@@ -1,11 +1,11 @@
 {
   "boundary_edges": 0,
   "nonmanifold_source_edges": 0,
-  "signed_volume_m3": 0.007573701726359265,
+  "signed_volume_m3": 0.007535975150986924,
   "mesh_objects": 1,
-  "triangles": 172,
+  "triangles": 164,
   "source_reopened": true,
-  "packed_images": 6,
+  "packed_images": 9,
   "preview_helpers_absent": true,
   "rigid_bodies_absent": true
 }

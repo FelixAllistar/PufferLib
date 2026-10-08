@@ -1,0 +1,69 @@
+2026-10-08: patchy masonry edge v2 and bedside switches
+
+
+test-tactical.log
+PASS physical materials: mass, receiving-surface bounce, thin-wall collision and material impact event
+PASS optiwand: automatic closed-door insertion, independent lens rotation, body/fire lock and collision-limited corner reach
+PASS throws: finite inventory, held-key edge, action recovery, no staging refill and hand clearance
+PASS effects: flash occlusion/compliance, gas wall/destruction boundaries, masks, taser cover/range/recovery and zero damage
+PASS door tools: locked latch, held/aborted quiet pick, fire/movement isolation, closed-door charge mounting, finite stock, owner remote, material occlusion/injury, no refill and mounted/spent replication
+PASS tactical protocol: flight, inventory, inputs, replica body isolation and every truncated packet rejected
+PASS contextual use: narrow aim tolerance, larger misses rejected, intact-wall blocking, forward-only compliance, close cuff reach, look-away interruption and authority held-target isolation
+PASS tactical tools: held-action isolation, persistent/recoverable wedge, physical peek, inspection-before-disarm, trap exposure, finite and occluded spray
+PASS light switches: all four mounts, press/release, narrow targeting, reach, real cover, destroyed support, late-join snapshot, invalid state rejection and reset
+
+test-motel.log
+PASS masonry: 504 pieces/953 objects, all weapon profiles stopped, civilian protected, ram resisted, localized charge aperture/capsule/replica, strength and thickness limits
+PASS motel: nine capsule routes, five functional hinged/breachable doors, original mesh openings, exact network collision reconstruction, reset, attached dressing, breach capsule/LOS/nav and replicated destruction
+
+test-sim.log
+PASS movement normalization, sprint/ADS/stance gates, stamina, edge-triggered jump
+PASS stand blockage, crouch traversal, blocked stand-up, clearance recovery
+PASS lean moves real hit geometry and eye, clamps at cover, and recenters
+PASS leaned head blocks stand-up under offset overhang and clears after recentering
+PASS semi/auto/safe, fire cadence, tactical/empty reload conservation, cancellation, equip and obstruction gates
+PASS nearest-cover damage, collider removal, thickness/energy penetration and fresh sensor geometry
+PASS door interaction edge, physical opening and muzzle-wall firing prevention
+PASS opening/closing doors stop for actors and resume after obstruction clears
+PASS guard respects occlusion and reaction time, fires through shared weapons, loses sight behind cover
+PASS eight randomized live-fire missions: open door, traverse, engage armed target, protect civilian, extract
+PASS co-op: all living officers extract, teammate survival, squad wipe, shared civilian failure and guard engages a remote officer
+PASS exact timeout and full character/weapon/scene reset
+
+test-protocol.log
+PASS protocol: explicit portable encoding, all truncations, NaN/trailing bytes, no partial mutation, exact replica pose/lean/crouch and destruction
+
+test-net.log
+PASS real UDP: two distinct officers, server-side firing/ammo/destruction, both replicas and duplicate-free sound events
+PASS real UDP: independent movement, exact replicated poses, shared door collision and late-join damage baseline
+PASS real UDP: leader authority, reset epochs/stale inputs, four-player limit, terminal-state connections and disconnect slot cleanup
+PASS real UDP house: fragmented full map/snapshots, authority kit/tool input, wounds, cuffs and destroyed faces at late join
+PASS real UDP tactical: leader sniper assignment, authoritative canister flight/ammunition and active gas cloud at late join
+PASS real UDP door tools: interrupted/finished remote pick, finite mounted charge, owner-only detonation, rejoin baseline and shared breach collision
+PASS real UDP generated houses: leader-only scenario changes, epoch cleanup, exact token/seed/model metadata and generated-map late join
+PASS real UDP: listen host uses the same authority and closes joining clients cleanly
+
+test-foundation.log
+PASS staged reloads: every interruption tick, all profiles, pooled/retained magazines, resume and conservation
+PASS poses/range: ADS alignment, high/low ready, raise-before-fire, replicated ramps, stairs, shallow ramp traversal and steep-slope rejection
+PASS replay: exact 240-tick state match and malformed-tail rejection
+PASS tactical replay: identical autonomous NPC/squad movement, delayed queued orders and intact civilian/officer outcomes
+PASS mission saves: atomic checkpoint, reload/loadout/squad state, retargeted physics tags, exact continuation, repeated saving and failure preserving live world
+
+after.log
+PASS v4: eight bounded replacements, original ownership/removal, opaque surfaces and immutable authority
+PASS v3 ownership: all ten replacements visible, children removed with parent, roof hidden in cutaway
+PASS desk W2: 544 triangles, ridge removal with original authority, 0.3 normal scale, matched engine captures and support removal
+PASS utility props: original metre-scale meshes, second UV buffers/material binding and per-instance removal
+PASS dressing: eight embedded PBR models, second UV AO, metre-scale supported mounts
+PASS reading lamps: supported anchors, existing room shadow slot, switches and support removal extinguish actual illumination
+PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (352983 changed pixels), three door poses and removal
+
+Full delivered SHA256SUMS verified: 48 files. All seven texture source files unchanged from v1. No supplied helper scripts executed.
+
+Windows frontend (targeted --lamps):
+GUI audio stream: active
+PASS native lamp controls: F routes to use instead of compliance, held key stays off, release/press restores light
+PASS save frontend: F5/F9 requests and restored loadout reconciliation without fresh equipment commits
+
+Normal ./swat play --mission motel --capture: native Windows player completed successfully; screenshot inspected.

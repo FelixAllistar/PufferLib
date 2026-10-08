@@ -1,0 +1,613 @@
+{
+  "report_type": "Independent read-only GLB, byte-comparison, topology and packet contract verification",
+  "candidate_sha256": "9a05275c1b1dd4f25530c3bb14aa557461f29814d899e9c4f7cd072df35d0533",
+  "baseline_sha256": "d2836227b66c7425270024f1a000ce1d87eeedce51417894de689a5e6fa01d35",
+  "scope": "Art-only local inspection; supplied native screenshots and tests are input evidence only. No native v2 engine rerun. No assets edited; only this report was written.",
+  "immutable_baseline": {
+    "files_checked": 346,
+    "mismatches": [],
+    "pass": true
+  },
+  "core_preservation": {
+    "attributes_exactly_equal": {
+      "POSITION": true,
+      "NORMAL": true,
+      "TEXCOORD_0": true,
+      "TANGENT": true
+    },
+    "indices_exactly_equal": true,
+    "resolved_material_and_embedded_maps_equal": true,
+    "material_note": "AO texture index changes 6 to 9; resolved texture bytes, sampler, UV channel, strength and all core material values are equal.",
+    "triangles": 12
+  },
+  "textures_unchanged": {
+    "neutral_ao.png": true,
+    "masonry_basecolor.png": true,
+    "white_plaster_02_restrained_basecolor.png": true,
+    "masonry_roughmetal.png": true,
+    "white_plaster_02_restrained_roughness.png": true,
+    "white_plaster_02_runtime_normal.png": true,
+    "masonry_normal_gl.png": true
+  },
+  "bounds": {
+    "native_gltf_Y_up_bounds_m": [
+      [
+        -0.09200000017881393,
+        -0.001500000013038516,
+        -0.5
+      ],
+      [
+        0.09200000017881393,
+        0.03999999910593033,
+        0.5
+      ]
+    ],
+    "approved_bounds_pass": true,
+    "identity_nodes": true,
+    "one_static_mesh": true,
+    "node_count": 1,
+    "no_animations_skins_cameras_lights": true,
+    "render_only_extras": {
+      "asset_id": "ME01",
+      "render_only": true,
+      "collision": "none",
+      "health": "none",
+      "native_gltf_contract": "X thickness +/-.092; Y -0.0015..0.04; Z edge -0.5..0.5",
+      "ownership": "Engine supporting section and absent neighbor; remove when support dies or neighbor returns."
+    }
+  },
+  "geometry": {
+    "primitives": [
+      {
+        "primitive": 0,
+        "material": "ME01_dense_cement_masonry",
+        "triangles": 12,
+        "vertices": 24,
+        "attributes": [
+          "POSITION",
+          "NORMAL",
+          "TEXCOORD_0",
+          "TANGENT"
+        ],
+        "finite": true,
+        "indices_in_range": true,
+        "min_double_geometry_area": 0.007511499603068461,
+        "min_double_uv_area": 0.00751150554513913,
+        "normal_length_minmax": [
+          1.0,
+          1.0
+        ],
+        "tangent_length_minmax": [
+          1.0,
+          1.0
+        ],
+        "normal_tangent_max_abs_dot": 0.0,
+        "tangent_w_unique": [
+          -1.0,
+          1.0
+        ],
+        "uv_bounds": [
+          [
+            -0.09049999713897705,
+            0.0
+          ],
+          [
+            0.09049999713897705,
+            1.0015000104904175
+          ]
+        ]
+      },
+      {
+        "primitive": 1,
+        "material": "ME01_existing_warm_plaster",
+        "triangles": 36,
+        "vertices": 52,
+        "attributes": [
+          "POSITION",
+          "NORMAL",
+          "TEXCOORD_0",
+          "TANGENT"
+        ],
+        "finite": true,
+        "indices_in_range": true,
+        "min_double_geometry_area": 5.3999999076126404e-05,
+        "min_double_uv_area": 5.4000028878453676e-05,
+        "normal_length_minmax": [
+          1.0,
+          1.0
+        ],
+        "tangent_length_minmax": [
+          1.0,
+          1.0
+        ],
+        "normal_tangent_max_abs_dot": 0.0,
+        "tangent_w_unique": [
+          -1.0,
+          1.0
+        ],
+        "uv_bounds": [
+          [
+            0.014000000432133675,
+            0.0
+          ],
+          [
+            0.03999999910593033,
+            1.0
+          ]
+        ]
+      },
+      {
+        "primitive": 2,
+        "material": "ME01_fresh_plaster_break",
+        "triangles": 90,
+        "vertices": 184,
+        "attributes": [
+          "POSITION",
+          "NORMAL",
+          "TEXCOORD_0",
+          "TANGENT"
+        ],
+        "finite": true,
+        "indices_in_range": true,
+        "min_double_geometry_area": 3.000006571413083e-06,
+        "min_double_uv_area": 3.0000568629340307e-06,
+        "normal_length_minmax": [
+          0.9999999705816136,
+          1.0000000703886347
+        ],
+        "tangent_length_minmax": [
+          1.0,
+          1.0
+        ],
+        "normal_tangent_max_abs_dot": 0.0,
+        "tangent_w_unique": [
+          -1.0,
+          1.0
+        ],
+        "uv_bounds": [
+          [
+            -0.09200000017881393,
+            0.0
+          ],
+          [
+            0.09200000017881393,
+            1.0
+          ]
+        ]
+      },
+      {
+        "primitive": 3,
+        "material": "ME02_weathered_plaster",
+        "triangles": 26,
+        "vertices": 38,
+        "attributes": [
+          "POSITION",
+          "NORMAL",
+          "TEXCOORD_0",
+          "TANGENT"
+        ],
+        "finite": true,
+        "indices_in_range": true,
+        "min_double_geometry_area": 5.199999469518435e-05,
+        "min_double_uv_area": 5.19999350905298e-05,
+        "normal_length_minmax": [
+          1.0,
+          1.0
+        ],
+        "tangent_length_minmax": [
+          1.0,
+          1.0
+        ],
+        "normal_tangent_max_abs_dot": 0.0,
+        "tangent_w_unique": [
+          -1.0,
+          1.0
+        ],
+        "uv_bounds": [
+          [
+            0.01899999938905239,
+            0.2569999694824219
+          ],
+          [
+            0.03999999910593033,
+            1.0
+          ]
+        ]
+      }
+    ],
+    "primitive_count": 4,
+    "triangle_count": 164,
+    "opaque_single_sided": true,
+    "degenerate_geometry_triangles": 0,
+    "degenerate_uv_triangles": 0,
+    "triangle_normal_alignment_min": 0.9999999704903172,
+    "geometric_edge_incidence_histogram": {
+      "2": 246
+    },
+    "disconnected_closed_components": [
+      {
+        "bounds": [
+          [
+            -0.09049999713897705,
+            -0.001500000013038516,
+            -0.5
+          ],
+          [
+            0.09049999713897705,
+            0.03999999910593033,
+            0.5
+          ]
+        ],
+        "triangles": 12,
+        "materials": [
+          0
+        ],
+        "signed_volume": 0.007511499603068461
+      },
+      {
+        "bounds": [
+          [
+            -0.09200000017881393,
+            0.014000000432133675,
+            -0.5
+          ],
+          [
+            -0.09049999713897705,
+            0.03999999910593033,
+            -0.36500000953674316
+          ]
+        ],
+        "triangles": 20,
+        "materials": [
+          1,
+          2
+        ],
+        "signed_volume": 3.4515064623456956e-06
+      },
+      {
+        "bounds": [
+          [
+            -0.09200000017881393,
+            0.01600000075995922,
+            0.2070000022649765
+          ],
+          [
+            -0.09049999713897705,
+            0.03999999910593033,
+            0.5
+          ]
+        ],
+        "triangles": 28,
+        "materials": [
+          1,
+          2
+        ],
+        "signed_volume": 6.228012003241732e-06
+      },
+      {
+        "bounds": [
+          [
+            0.09049999713897705,
+            0.014000000432133675,
+            -0.3370000123977661
+          ],
+          [
+            0.09200000017881393,
+            0.03999999910593033,
+            -0.15399999916553497
+          ]
+        ],
+        "triangles": 24,
+        "materials": [
+          1,
+          2
+        ],
+        "signed_volume": 4.797009827144637e-06
+      },
+      {
+        "bounds": [
+          [
+            0.09049999713897705,
+            0.027000000700354576,
+            0.414000004529953
+          ],
+          [
+            0.09200000017881393,
+            0.03999999910593033,
+            0.5
+          ]
+        ],
+        "triangles": 16,
+        "materials": [
+          1,
+          2
+        ],
+        "signed_volume": 1.0867520221840435e-06
+      },
+      {
+        "bounds": [
+          [
+            -0.09200000017881393,
+            0.01899999938905239,
+            -0.22200000286102295
+          ],
+          [
+            -0.09049999713897705,
+            0.03999999910593033,
+            0.01600000075995922
+          ]
+        ],
+        "triangles": 24,
+        "materials": [
+          2,
+          3
+        ],
+        "signed_volume": 4.579509160000579e-06
+      },
+      {
+        "bounds": [
+          [
+            0.09049999713897705,
+            0.02800000086426735,
+            -0.5
+          ],
+          [
+            0.09200000017881393,
+            0.03999999910593033,
+            -0.4480000138282776
+          ]
+        ],
+        "triangles": 16,
+        "materials": [
+          2,
+          3
+        ],
+        "signed_volume": 6.045009817774246e-07
+      },
+      {
+        "bounds": [
+          [
+            0.09049999713897705,
+            0.020999999716877937,
+            0.023000000044703484
+          ],
+          [
+            0.09200000017881393,
+            0.03999999910593033,
+            0.24300000071525574
+          ]
+        ],
+        "triangles": 24,
+        "materials": [
+          2,
+          3
+        ],
+        "signed_volume": 3.728257461771187e-06
+      }
+    ],
+    "component_count": 8,
+    "plaster_islands_excluding_core": 7,
+    "tiling_end_cross_sections": {
+      "-1": {
+        "start_cross_section": [
+          [
+            -0.092,
+            0.034
+          ],
+          [
+            -0.092,
+            0.04
+          ]
+        ],
+        "end_cross_section": [
+          [
+            -0.092,
+            0.034
+          ],
+          [
+            -0.092,
+            0.04
+          ]
+        ],
+        "matching": true
+      },
+      "1": {
+        "start_cross_section": [
+          [
+            0.092,
+            0.035
+          ],
+          [
+            0.092,
+            0.04
+          ]
+        ],
+        "end_cross_section": [
+          [
+            0.092,
+            0.035
+          ],
+          [
+            0.092,
+            0.04
+          ]
+        ],
+        "matching": true
+      }
+    },
+    "vertex_weld_component_count": 4,
+    "vertex_weld_note": "Four vertex-connected groups because the four end patches touch core corner positions. Shared-edge connectivity correctly separates eight closed surface shells: unchanged core plus seven disconnected plaster islands.",
+    "component_method": "Shared geometric edge adjacency across material primitive boundaries; vertex-only contact does not merge surface shells."
+  },
+  "packet": {
+    "bytes_equal_to_v1": true,
+    "supplied_native_packet_equal": true,
+    "sections": 24,
+    "removed_ids": [
+      503,
+      504,
+      505,
+      507,
+      508,
+      509
+    ],
+    "edge_count": 8,
+    "visible_before": 0,
+    "visible_after": 8,
+    "instances": [
+      {
+        "owner": 499,
+        "removed_neighbor": 503,
+        "max_owner_overlay_m": 0.0020001091106643804,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      },
+      {
+        "owner": 500,
+        "removed_neighbor": 504,
+        "max_owner_overlay_m": 0.0020001091106643804,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      },
+      {
+        "owner": 501,
+        "removed_neighbor": 505,
+        "max_owner_overlay_m": 0.0020001091106643804,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      },
+      {
+        "owner": 506,
+        "removed_neighbor": 505,
+        "max_owner_overlay_m": 0.0020000001788142707,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      },
+      {
+        "owner": 510,
+        "removed_neighbor": 509,
+        "max_owner_overlay_m": 0.0020000001788142707,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      },
+      {
+        "owner": 511,
+        "removed_neighbor": 507,
+        "max_owner_overlay_m": 0.0020001091103375446,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      },
+      {
+        "owner": 512,
+        "removed_neighbor": 508,
+        "max_owner_overlay_m": 0.0020001091103375446,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      },
+      {
+        "owner": 513,
+        "removed_neighbor": 509,
+        "max_owner_overlay_m": 0.0020001091103375446,
+        "owner_overlay_pass": true,
+        "states": {
+          "after_breach": true,
+          "before_breach": false,
+          "owner_removed": false,
+          "neighbor_restored": false
+        },
+        "four_states_pass": true
+      }
+    ],
+    "all_instance_contract_tests_pass": true
+  },
+  "visual_review": {
+    "status": "PASS_LOCAL_ART_COMPARISON_NATIVE_V2_PENDING",
+    "method": "All four matched Blender GLB reimport images and all three supplied native reference images inspected directly with view_image. Render comparison script inspected for same context material, transforms, camera and lighting.",
+    "reviewed_images": [
+      {
+        "file": "previews/all8_v1.png",
+        "sha256": "b6cd2848967dcbf2a9c09cb0916adb9876a15e9396f2ab2f93f9a4526e28ada9"
+      },
+      {
+        "file": "previews/all8_v2.png",
+        "sha256": "545c23575557f9753f8e77e8450bd8c58c044501f4c242e913aab1cd6f9530be"
+      },
+      {
+        "file": "previews/detail_v1.png",
+        "sha256": "f0d2f685f73ae2c863d8505b896f1f5f3da6c920138cce310c70a3a9f711e65a"
+      },
+      {
+        "file": "previews/detail_v2.png",
+        "sha256": "18fcecd3ecfaed1914af28d0f3d7440930d792ba08e0bb33850cc19bba10f848"
+      },
+      {
+        "file": "evidence/native_art_review/motel-breach-edges/engine/motel-masonry-base.png",
+        "sha256": "c3a2b9cb6c06c1d264d43ad8d305180fbdd95550704e070b704534574e6ee011"
+      },
+      {
+        "file": "evidence/native_art_review/motel-breach-edges/engine/motel-masonry-1.png",
+        "sha256": "41e61b2a54ae5c0b54580bd0cd95ae11c0ac5b14cd0dd00ced23db26a21466fd"
+      },
+      {
+        "file": "evidence/native_art_review/motel-breach-edges/engine/motel-masonry-edge-close.png",
+        "sha256": "12684491c23864adad6d68b1637b44a4950aa06ccf0e9184859ca41956e00ef5"
+      }
+    ],
+    "findings": [
+      "The v1 pale wavy border remains visually continuous; v2 interrupts it into widely separated irregular finish patches.",
+      "The unchanged masonry core and mortar indications remain continuous and straight, as required by the physical-section contract. Dark exposed core at gaps is expected and still outlines the rectangular section opening.",
+      "The two long faces have different patch arrangements and restrained warm/grey value variation. At full-wall scale the broken finish is visible without loose debris or extra geometry in the opening.",
+      "Close comparison shows genuine geometric plaster gaps, shallow thickness, and no visible holes, flipped faces or obvious UV stretching.",
+      "Matching tile ends preserve the start/end cross-sections. The repeated single-strip patch layout remains detectable on the three stacked vertical edges, consistent with the one reusable asset requirement."
+    ],
+    "caveats": [
+      "The rendered comparison uses preview context boxes and matched Blender lighting, not native engine v2 output.",
+      "Supplied native images document v1 integration and the original continuous-rim issue only; they do not validate v2 native appearance, collision, nav, ballistics or engine lifecycle.",
+      "The art refinement does not change rectangular section topology, masonry core, physical aperture or gameplay."
+    ]
+  },
+  "technical_pass": true,
+  "conclusion": "PASS: local art-only candidate and independent technical/visual review. Ready for native v2 integration review; not a native-engine certification."
+}

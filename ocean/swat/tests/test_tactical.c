@@ -1,4 +1,5 @@
 #include "protocol.h"
+#include "motel.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -288,4 +289,58 @@ static void wedges_spray_traps(void) {
     swat_sim_close(&sim);
     puts("PASS tactical tools: held-action isolation, persistent/recoverable wedge, physical peek, inspection-before-disarm, trap exposure, finite and occluded spray");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); context(); wedges_spray_traps(); return 0; }
+static void aim_at(b3Pos point) {
+    SwatController* c=&sim.actors[0].controller;
+    b3Vec3 d=b3SubPos(point,swat_controller_eye(c));
+    c->yaw=atan2f(d.z,d.x);c->pitch=atan2f(d.y,sqrtf(d.x*d.x+d.z*d.z));
+}
+static void light_switches(void) {
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=5000;
+    swat_sim_init(&sim,cfg,87);
+    SwatInput use=swat_neutral_input();use.interact=true;
+    for(int room=1;room<=4;room++) {
+        b3Pos button;assert(swat_motel_lamp_switch(&sim.world,room,&button));
+        place(0,(b3Pos){button.x,.06f,button.z+1},0);aim_at(button);
+        SwatContext c=swat_context(&sim,0);assert(c.action==SWAT_CONTEXT_LIGHT && c.ready && c.hit.index==room);
+        unsigned before=sim.world.room_light_off_mask;
+        step(use,1);assert(sim.world.room_light_off_mask==(before^(1u<<room)));
+        step(use,12);assert(sim.world.room_light_off_mask==(before^(1u<<room))); // Held F never flickers.
+        step(swat_neutral_input(),1);aim_at(button);step(use,1);
+        assert(sim.world.room_light_off_mask==before);
+        step(swat_neutral_input(),1);
+    }
+    b3Pos button;assert(swat_motel_lamp_switch(&sim.world,1,&button));
+    place(0,(b3Pos){button.x,.06f,button.z+1},0);aim_at(button);step(use,1);
+    assert(sim.world.room_light_off_mask==2);
+    static SwatMap map;static SwatSnapshot snapshot,received;static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    swat_capture_map(&sim,1,&map);swat_apply_map(&replica,&map);
+    swat_capture_snapshot(&sim,1,&snapshot);
+    size_t n=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot);
+    assert(n && swat_decode_snapshot(&received,bytes,n) && swat_apply_snapshot(&replica,&received));
+    assert(replica.world.room_light_off_mask==2);
+    received.room_light_off_mask=1u<<SWAT_MAX_ROOMS;
+    assert(!swat_apply_snapshot(&replica,&received) && replica.world.room_light_off_mask==2);
+    step(swat_neutral_input(),1);
+    place(0,(b3Pos){button.x,.06f,button.z+2},0);aim_at(button);
+    SwatContext c=swat_context(&sim,0);assert(c.action==SWAT_CONTEXT_LIGHT && !c.ready);
+    step(use,1);assert(sim.world.room_light_off_mask==2);
+    step(swat_neutral_input(),1);
+    place(0,(b3Pos){button.x,.06f,button.z+1},0);aim_at(button);
+    sim.actors[0].controller.yaw+=.2f;
+    assert(swat_context(&sim,0).action!=SWAT_CONTEXT_LIGHT);
+    place(0,(b3Pos){button.x,.06f,button.z-1},0);aim_at(button);
+    assert(swat_context(&sim,0).action!=SWAT_CONTEXT_LIGHT); // Cannot use through partition.
+    step(use,1);assert(sim.world.room_light_off_mask==2);
+    step(swat_neutral_input(),1);
+    place(0,(b3Pos){button.x,.06f,button.z+1},0);aim_at(button);
+    b3Pos eye=swat_controller_eye(&sim.actors[0].controller);
+    swat_world_box(&sim.world,b3OffsetPos(eye,swat_mul(b3SubPos(button,eye),.5f)),swat_v(.12f,.12f,.12f),SWAT_WOOD,0);
+    assert(swat_context(&sim,0).action!=SWAT_CONTEXT_LIGHT); // Intervening object blocks use too.
+    SwatMotelInstance mount;int owner=swat_motel_dressing(&sim.world,7,&mount);assert(owner>0);
+    sim.world.objects[owner].active=false;
+    assert(!swat_motel_lamp_switch(&sim.world,1,&button));
+    swat_sim_close(&sim);swat_sim_close(&replica);
+    swat_sim_init(&sim,cfg,87);assert(!sim.world.room_light_off_mask);swat_sim_close(&sim);
+    puts("PASS light switches: all four mounts, press/release, narrow targeting, reach, real cover, destroyed support, late-join snapshot, invalid state rejection and reset");
+}
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); context(); wedges_spray_traps(); light_switches(); return 0; }

@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 9
+#define SWAT_NET_VERSION 10
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_PACKET_MAX 262144
 #define SWAT_NET_SOUNDS 32
@@ -62,6 +62,7 @@ typedef struct SwatSnapshot {
     uint32_t epoch, revision, ack[SWAT_MAX_PLAYERS];
     int tick,actor_count,object_count,generation,leader_slot;
     unsigned int player_mask;
+    unsigned int room_light_off_mask;
     SwatEnd end;
     SwatEvents totals;
     SwatDebrief debrief;

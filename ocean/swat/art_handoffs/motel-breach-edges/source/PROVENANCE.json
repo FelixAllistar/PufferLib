@@ -25,5 +25,11 @@
       }
     ]
   },
-  "new_assets": "Original procedural geometry and seeded aggregate maps; CC0-1.0; no downloads"
+  "new_assets": "Original procedural disconnected plaster islands; reused existing v1 images byte-identical; no external downloads. Tints in seal_channels.py are uniform material reflectance changes, not painted lighting.",
+  "revision": "ME02 v2, one authored refinement of ME01 v1",
+  "native_feedback": {
+    "archive": "motel-next-art-review.tar.gz",
+    "sha256": "af8e5f13b2f69736b76e11f6e5de28e8d589eeebb776293cabd8cf3b7319e29f",
+    "scope": "Supplied native v1 desk, lamp and breach captures/validation. No v2 native run."
+  }
 }

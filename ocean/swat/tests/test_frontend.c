@@ -17,6 +17,7 @@
 #endif
 #include "frontend.h"
 #include "sound_view.h"
+#include "motel.h"
 #include "raygui.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -494,6 +495,39 @@ static bool run_generation(SwatFrontend* app,SwatView* view,SwatSim* sim,const c
     return true;
 }
 
+static bool run_lamps(SwatFrontend* app,SwatView* view,SwatSim* sim) {
+    swat_frontend_set_screen(app,SWAT_SCREEN_MAIN);
+#if defined(_WIN32)
+    focus_test_window();
+#endif
+    app->quit=false;app->networked=false;app->actor=0;
+    sim->config.mission=SWAT_MOTEL;swat_sim_reset(sim);
+    frames(app,view,sim,20); // Let initial loading/window activation events drain before starting play.
+#if defined(_WIN32)
+    for(int attempt=0;attempt<10 && (!IsWindowFocused() || GetForegroundWindow()!=(HWND)GetWindowHandle());attempt++) {
+        focus_test_window();frames(app,view,sim,3);
+    }
+#endif
+    CHECK(IsWindowFocused());
+    swat_frontend_set_screen(app,SWAT_SCREEN_GAME);frames(app,view,sim,3);
+    SwatController* c=&sim->actors[0].controller;b3Pos button;
+    CHECK(swat_motel_lamp_switch(&sim->world,1,&button));
+    b3Body_SetTransform(c->body.body,(b3Pos){button.x,.06f+c->body.totalHeight*.5f+.01f,button.z+1},b3Quat_identity);
+    b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0));
+    frames(app,view,sim,30); // Settle the teleported capsule before aiming at the small switch.
+    b3Vec3 d=b3SubPos(button,swat_controller_eye(c));c->yaw=atan2f(d.z,d.x);c->pitch=atan2f(d.y,hypotf(d.x,d.z));
+    CHECK(swat_context(sim,0).action==SWAT_CONTEXT_LIGHT && !sim->world.room_light_off_mask);
+    event(TEST_KEY_DOWN,KEY_F,0);
+    SwatInput in=swat_frontend_input(app,sim);CHECK(in.interact && !in.command);
+    frame(app,view,sim);CHECK(sim->world.room_light_off_mask==2);
+    frames(app,view,sim,8);CHECK(sim->world.room_light_off_mask==2);
+    event(TEST_KEY_UP,KEY_F,0);frame(app,view,sim);
+    CHECK(swat_context(sim,0).action==SWAT_CONTEXT_LIGHT && !sim->actors[0].last_interact);
+    event(TEST_KEY_DOWN,KEY_F,0);frame(app,view,sim);CHECK(!sim->world.room_light_off_mask);
+    event(TEST_KEY_UP,KEY_F,0);frame(app,view,sim);
+    puts("PASS native lamp controls: F routes to use instead of compliance, held key stays off, release/press restores light");
+    return true;
+}
 int main(int argc, char** argv) {
     if(argc<2) { fprintf(stderr,"usage: test_frontend SETTINGS_TEST_PATH [SCREENSHOT]\n"); return 2; }
     SetTraceLogLevel(LOG_WARNING);
@@ -509,10 +543,12 @@ int main(int argc, char** argv) {
     swat_sound_view_init(&test_sound);
     printf("GUI audio stream: %s\n",test_sound.initialized ? "active" : "no output device available");
     app.settings=app.saved_settings=swat_settings_defaults();
-    bool ok=run_checks(&app,&view,sim,argv[1],argc>2 ? argv[2] : NULL);
-    if(ok) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL,argc>5 ? argv[5] : NULL,argc>7 ? argv[7] : NULL,argc>8 ? argv[8] : NULL,argc>9 ? argv[9] : NULL,argc>10 ? argv[10] : NULL);
-    if(ok) ok=run_devices(&app,&view,sim);
-    if(ok) ok=run_generation(&app,&view,sim,argc>6 ? argv[6] : NULL);
+    bool lamps_only=argc==3 && !strcmp(argv[2],"--lamps");
+    bool ok=lamps_only || run_checks(&app,&view,sim,argv[1],argc>2 ? argv[2] : NULL);
+    if(ok && !lamps_only) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL,argc>5 ? argv[5] : NULL,argc>7 ? argv[7] : NULL,argc>8 ? argv[8] : NULL,argc>9 ? argv[9] : NULL,argc>10 ? argv[10] : NULL);
+    if(ok && !lamps_only) ok=run_devices(&app,&view,sim);
+    if(ok && !lamps_only) ok=run_generation(&app,&view,sim,argc>6 ? argv[6] : NULL);
+    if(ok)ok=run_lamps(&app,&view,sim);
     if(ok) {
         swat_frontend_restored(&app,sim);
         SwatInput restored_input=swat_frontend_input(&app,sim);

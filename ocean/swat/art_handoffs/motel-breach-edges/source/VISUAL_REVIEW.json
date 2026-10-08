@@ -1,22 +1,9 @@
 {
-  "reviewed": [
-    "01_glb_reimport_detail.png",
-    "02_glb_reimport_context.png",
-    "03_cut_face.png",
-    "04_packet_after_8_edges.png",
-    "04_packet_before_8_edges.png"
+  "native_supplied_captures_reviewed": 7,
+  "new_matched_render_pairs": [
+    "all8_v1.png / all8_v2.png",
+    "detail_v1.png / detail_v2.png"
   ],
-  "findings": [
-    "Single warm-grey exposed cement core with restrained mineral grain and mortar marks.",
-    "Chipped plaster edge stays in 40mm surviving-wall band, with only authorized 1.5mm cap overlap into aperture.",
-    "All eight packet instances compose a continuous left/right/top edge; no floor or rubble strip.",
-    "Matching existing plaster material removes added-white-trim appearance in contextual render.",
-    "Before condition restores all 24 sections and hides all eight strips."
-  ],
-  "limits": [
-    "Preview is a Blender reimport with simple exact-section boxes, not a native engine capture.",
-    "Repeated designed chip profile is intentionally one reusable asset, not random variants.",
-    "Engine lifecycle and physics regressions remain engine-owner integration work."
-  ],
-  "status": "VISUAL_QA_PASS"
+  "assessment": "Pale finish no longer forms an uninterrupted rim: patches have broad uneven spacing, tapered variable widths, and two quiet reflectance tones. The unchanged masonry core remains straight and section-based, with its existing course pattern. Close view shows actual plaster gaps; all-eight context shows materially less pale outline. No rubble, noisy texture or shadow painting added.",
+  "limitations": "Blender comparison lighting differs from supplied native lighting. The core remains a continuous darker section cap by design. Repeated single-strip motif may remain discernible at close range; no instance variants or engine edits introduced. Native v2 capture still required."
 }

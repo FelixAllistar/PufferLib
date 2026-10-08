@@ -25,8 +25,9 @@ The bulb anchor is local (0,.08959322,.12970687). It replaces the room's formerl
 unrepresented ceiling point light in the existing six-face shadow slot, with a
 soft-edged downward beam. This introduces no extra shadow atlas or light count.
 The shader explicitly disables its radiance if the wall support is gone, rather
-than falling back to an invisible ceiling lamp. The button remains static; no
-switch interaction is claimed. The artist corrected the exported anchor rotation; only that JSON field changed,
+than falling back to an invisible ceiling lamp. The button now supports F use; see
+[the switch integration](../../motel-reading-lamp/engine/README.md).
+The artist corrected the exported anchor rotation; only that JSON field changed,
 with binary mesh/material/image data verified identical. Direction is
 (0,-.939692624,+.342020136), matching the measured shade opening. The fixture
 casts sun/contact/other-room shadows; its own near-field shade occlusion is

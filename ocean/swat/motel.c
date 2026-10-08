@@ -227,3 +227,12 @@ bool swat_motel_lamp(const SwatWorld* w,int room,b3Pos* origin) {
     *origin=b3OffsetPos(p.origin,swat_v(.12970687f*sinf(p.yaw),.08959322f,.12970687f*cosf(p.yaw)));
     return true;
 }
+
+bool swat_motel_lamp_switch(const SwatWorld* w,int room,b3Pos* position) {
+    if(!w->motel || room<1 || room>4)return false;
+    SwatMotelInstance p;
+    if(swat_motel_dressing(w,(room-1)*SWAT_MOTEL_DRESSING_ASSETS+7,&p)<0)return false;
+    // Authored button center, transformed with the same supported mount as the lamp.
+    *position=b3OffsetPos(p.origin,swat_v(.0165f*sinf(p.yaw),-.034f,.0165f*cosf(p.yaw)));
+    return true;
+}

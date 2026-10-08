@@ -302,6 +302,7 @@ size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state) {
     Writer w={bytes,size,true}; header(&w,SWAT_MSG_SNAPSHOT,state->epoch);
     put32(&w,state->revision); put32(&w,(uint32_t)state->tick); put32(&w,(uint32_t)state->actor_count); put32(&w,(uint32_t)state->object_count);
     put32(&w,(uint32_t)state->generation); put8(&w,state->end); put8(&w,state->leader_slot); put8(&w,state->player_mask);
+    put8(&w,state->room_light_off_mask);
     for(int i=0;i<SWAT_MAX_PLAYERS;i++) put32(&w,state->ack[i]);
     putevents(&w,&state->totals);
     put32(&w,state->debrief.roe_violations); put32(&w,state->debrief.arrests); put32(&w,state->debrief.rescued); put32(&w,state->debrief.evidence); putf(&w,state->debrief.unlawful_damage);
@@ -351,6 +352,7 @@ bool swat_decode_snapshot(SwatSnapshot* state,const void* bytes,size_t size) {
     unsigned int end=get8(&r),leader=get8(&r),mask=get8(&r);
     if(end>SWAT_FALL || leader>=SWAT_MAX_PLAYERS || mask>15) r.ok=false;
     tmp.end=(SwatEnd)end; tmp.leader_slot=(int)leader; tmp.player_mask=mask;
+    tmp.room_light_off_mask=get8(&r);
     for(int i=0;i<SWAT_MAX_PLAYERS;i++) tmp.ack[i]=get32(&r);
     tmp.totals=getevents(&r); if(!r.ok) return false;
     tmp.debrief.roe_violations=geti(&r,0,1000000); tmp.debrief.arrests=geti(&r,0,SWAT_MAX_ACTORS); tmp.debrief.rescued=geti(&r,0,SWAT_MAX_ACTORS);
@@ -456,6 +458,7 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
     memset(state,0,sizeof(*state)); state->epoch=epoch; state->revision=1; state->tick=sim->tick;
     state->actor_count=sim->actor_count; state->object_count=sim->world.count;
     state->generation=sim->world.generation; state->end=sim->end; state->totals=sim->totals;
+    state->room_light_off_mask=sim->world.room_light_off_mask;
     state->debrief=sim->debrief; memcpy(state->evidence,sim->evidence,sizeof(state->evidence));
     memcpy(state->snipers,sim->snipers,sizeof(state->snipers)); state->commander_actor=sim->commander_actor;
     memcpy(state->devices,sim->devices,sizeof(state->devices));
@@ -521,6 +524,7 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
 }
 bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->object_count!=sim->world.count) return false;
+    if(state->room_light_off_mask&~((1u<<sim->world.room_count)-1u))return false;
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i]; const SwatObjectState* in=&state->objects[i];
         if(in->breach_owner>=0) {
@@ -567,6 +571,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     sim->actor_count=state->actor_count; sim->tick=state->tick; sim->end=state->end;
     sim->debrief=state->debrief; memcpy(sim->evidence,state->evidence,sizeof(sim->evidence));
     sim->totals=state->totals; sim->world.generation=state->generation;
+    sim->world.room_light_off_mask=state->room_light_off_mask;
     memcpy(sim->snipers,state->snipers,sizeof(sim->snipers)); sim->commander_actor=state->commander_actor;
     for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
         if(B3_IS_NON_NULL(sim->projectiles[i].body)) b3DestroyBody(sim->projectiles[i].body);

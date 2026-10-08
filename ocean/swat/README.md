@@ -202,7 +202,11 @@ The four guest rooms also have eight supported decorative details each: toilet
 roll holder, robe hook, ice bucket/tray, framed print, door viewer, wall bumper
 and bedside reading lamp. The lamp uses its measured bulb position and a downward
 beam in the existing room shadow slot; removing its supporting wall section
-removes the fixture and extinguishes that light. Its button is currently static.
+removes the fixture and extinguishes that light. Aim at the small button on its
+mounting plate and press **F** to switch it on/off within 1.7 m. Walls and props
+block use; holding F does not repeat. Switch state is authoritative, replicated
+to late joiners and reset with the scenario. It changes illumination; NPC visual
+detection does not yet depend on room brightness.
 The viewer follows its hinged door; other details inherit their wall or desk.
 The three walls between guest rooms now use physical drywall skins and studs.
 Hold **7** to mount a charge and **K** to detonate; the resulting opening is
@@ -214,7 +218,7 @@ remain authored openings, and the original wall textures, trim and mounted props
 follow their physical sections. Concrete and substantial steel resist the current
 charge. Material impact thresholds and thickness-scaled charge resistance live in
 `materials.c`, separately from ballistic resistance. These are game approximations.
-Exposed masonry and chipped-plaster strips follow surviving section/removed-neighbor pairs;
+Exposed masonry and interrupted plaster patches follow surviving section/removed-neighbor pairs;
 `swat_layout_tool motel-walls` exports exact geometry for art handoffs.
 Breach edges are currently rectangular sections; irregular opening silhouettes, rubble
 and whole-building structural collapse are unfinished. Furniture remains solid

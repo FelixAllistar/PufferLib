@@ -1,0 +1,14 @@
+{
+  "unchanged_file_count": 346,
+  "changed_files": [],
+  "existing_texture_bytes_unchanged": {
+    "neutral_ao.png": "6e5edb15b6bed556ae7e6c4e156378ddb721f066f5f0e523a61106080ef8be08",
+    "masonry_basecolor.png": "1698e0a6a3b90b50af44be9030afade83bbdb66c6db6446a058a29ad56966d49",
+    "white_plaster_02_restrained_basecolor.png": "f419ee77ae44d4fabac8a3c1fba6376b2bc79aa815af06790fe27c58bd664167",
+    "masonry_roughmetal.png": "05f3acd5e6990e39e80b3ba5e0f9c6e521cba3e22e665041c21abb41618c9b2c",
+    "white_plaster_02_restrained_roughness.png": "54ac875abbc21081f0126adc56cdab7042106d77c233598ad8382106c39b6c76",
+    "white_plaster_02_runtime_normal.png": "f24f607486c3d2d780eeab50047cb5be7061294b7b9877ab06354db81153958a",
+    "masonry_normal_gl.png": "3bdb24a164ec593fe1fa3861cecb4b2a57be278211036a65ea719639800882e3"
+  },
+  "scope": "v1 edge package, lamp source/fix, pinned W2 and intact Room101 v4 directories; compared to local baseline. No engine files edited."
+}

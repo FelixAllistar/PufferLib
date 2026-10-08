@@ -1,0 +1,48 @@
+{
+  "scope": "Blender reimport review. Native engine v2 not run.",
+  "views": [
+    {
+      "view": "all8",
+      "camera_world_yup": [
+        -9,
+        3,
+        -11.4
+      ],
+      "target_world_yup": [
+        -6.6,
+        1.4,
+        -6
+      ],
+      "ortho_scale": 4.4,
+      "versions": [
+        "v1",
+        "v2"
+      ],
+      "same_context_material": true,
+      "same_lights": true,
+      "edge_instances": 8
+    },
+    {
+      "view": "detail",
+      "camera_world_yup": [
+        -6.4,
+        1.65,
+        -7.6
+      ],
+      "target_world_yup": [
+        -7.3,
+        1.36,
+        -6
+      ],
+      "ortho_scale": 0.92,
+      "versions": [
+        "v1",
+        "v2"
+      ],
+      "same_context_material": true,
+      "same_lights": true,
+      "edge_instances": 8
+    }
+  ],
+  "packet": "evidence/rear-wall.json"
+}

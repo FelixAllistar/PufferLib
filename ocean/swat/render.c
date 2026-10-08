@@ -52,6 +52,9 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
             if(sim->config.tactical_rules && sim->actors[context.hit.index].role==SWAT_CIVILIAN) { action="[F] Escort / hold position"; break; }
             return;
         case SWAT_CONTEXT_DEVICE: action=context.ready ? "[F] Recover device" : "Teammate device"; break;
+        case SWAT_CONTEXT_LIGHT:
+            action=!context.ready ? "Move closer to use light" :
+                (sim->world.room_light_off_mask&(1u<<context.hit.index)) ? "[F] Turn light on" : "[F] Turn light off";break;
         case SWAT_CONTEXT_EVIDENCE: action="[F] Collect weapon evidence"; break;
         default: return;
     }

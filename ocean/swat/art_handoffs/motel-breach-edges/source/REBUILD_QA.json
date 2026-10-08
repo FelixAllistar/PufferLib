@@ -1,5 +1,7 @@
 {
-  "runtime_sha256": "d2836227b66c7425270024f1a000ce1d87eeedce51417894de689a5e6fa01d35",
-  "isolated_rebuild_sha256": "d2836227b66c7425270024f1a000ce1d87eeedce51417894de689a5e6fa01d35",
-  "byte_identical": true
+  "isolated_rebuild": true,
+  "byte_identical_runtime": true,
+  "sha256": "9a05275c1b1dd4f25530c3bb14aa557461f29814d899e9c4f7cd072df35d0533",
+  "bytes": 4962664,
+  "command": "blender -b -t 4 --python build_strip.py; python seal_channels.py"
 }

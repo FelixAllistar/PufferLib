@@ -240,9 +240,9 @@ static void room101_graphics(SwatView* view,const char* directory) {
     swat_sim_init(&sim,config,73); swat_environment_art_prepare_location(art,&sim.world);
     assert(art->room101_ready);
     assert(art->room101_v3_ready && art->room101_v4_ready);
-    assert(art->masonry_edge.meshCount==3);int edge_triangles=0;
+    assert(art->masonry_edge.meshCount==4);int edge_triangles=0;
     for(int i=0;i<art->masonry_edge.meshCount;i++)edge_triangles+=art->masonry_edge.meshes[i].triangleCount;
-    assert(edge_triangles==172);
+    assert(edge_triangles==164);
     const int v4_originals[]={25,36,24,29,1,22,4,10},v4_owners[]={23,28,22,29,14,20,9,17};
     before=sim.world;
     for(int i=0;i<SWAT_ROOM101_V4_ASSETS;i++) {
@@ -404,13 +404,21 @@ static void room101_graphics(SwatView* view,const char* directory) {
     room=room101_capture(view,lamp_view,true);snprintf(path,sizeof(path),"%s/reading-lamp.png",directory);assert(ExportImage(room,path));UnloadImage(room);
     SwatMotelInstance lamp_mount;b3Pos bulb;int lamp_owner=swat_motel_dressing(&sim.world,7,&lamp_mount);
     assert(lamp_owner>0 && swat_motel_lamp(&sim.world,1,&bulb));
-    Image lamp_on=room101_capture(view,bed,true);sim.world.objects[lamp_owner].active=false;
-    assert(!swat_motel_lamp(&sim.world,1,&bulb));Image lamp_off=room101_capture(view,bed,true);
+    Image lamp_on=room101_capture(view,bed,true);sim.world.room_light_off_mask=1u<<1;
+    Image lamp_off=room101_capture(view,bed,true);
+    snprintf(path,sizeof(path),"%s/reading-lamp-room-on.png",directory);assert(ExportImage(lamp_on,path));
+    snprintf(path,sizeof(path),"%s/reading-lamp-room-off.png",directory);assert(ExportImage(lamp_off,path));
     Color* on_pixels=LoadImageColors(lamp_on);Color* off_pixels=LoadImageColors(lamp_off);int lighting_changed=0;
     for(int i=0;i<lamp_on.width*lamp_on.height;i++)lighting_changed+=abs(on_pixels[i].r-off_pixels[i].r)>12;
-    assert(lighting_changed>1000);sim.world.objects[lamp_owner].active=true;
+    assert(lighting_changed>1000);sim.world.room_light_off_mask=0;
+    sim.world.objects[lamp_owner].active=false;
+    assert(!swat_motel_lamp(&sim.world,1,&bulb));
+    Image removed=room101_capture(view,bed,true);Color* removed_pixels=LoadImageColors(removed);int removal_changed=0;
+    for(int i=0;i<lamp_on.width*lamp_on.height;i++)removal_changed+=abs(on_pixels[i].r-removed_pixels[i].r)>12;
+    assert(removal_changed>1000);sim.world.objects[lamp_owner].active=true;
+    UnloadImageColors(removed_pixels);UnloadImage(removed);
     UnloadImageColors(on_pixels);UnloadImageColors(off_pixels);UnloadImage(lamp_on);UnloadImage(lamp_off);
-    puts("PASS reading lamps: supported anchors, existing room shadow slot, and support removal extinguishes actual illumination");
+    puts("PASS reading lamps: supported anchors, existing room shadow slot, switches and support removal extinguish actual illumination");
     Camera3D holder_views[]={
         {{-5.88f,1.1f,-5.07f},{-5.48f,.72f,-5.83f},{0,1,0},65,CAMERA_PERSPECTIVE},
         {{-5.12f,1.05f,-5.38f},{-5.48f,.72f,-5.83f},{0,1,0},65,CAMERA_PERSPECTIVE}};
