@@ -177,8 +177,11 @@ void swat_server_tick(SwatNetServer* server,const SwatInput* local) {
                 if(remote->count) {
                     SwatCommand* command=&remote->queue[remote->head]; remote->held=command->input; remote->ack=command->sequence;
                     remote->head=(remote->head+1)%SWAT_INPUT_QUEUE; remote->count--;
+                } else if(enet_time_get()-remote->last_receive_ms>250) {
+                    // Expire repeated holds, never an unconsumed command. A
+                    // slow server frame must not acknowledge input it discards.
+                    remote->held=swat_neutral_input();
                 }
-                if(enet_time_get()-remote->last_receive_ms>250) remote->held=swat_neutral_input();
                 input=remote->held; remote->held.yaw_delta=remote->held.pitch_delta=0;
             }
             inputs[swat_player_actor(slot)]=input;

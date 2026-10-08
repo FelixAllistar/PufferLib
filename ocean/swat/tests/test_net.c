@@ -186,6 +186,19 @@ int main(void) {
     officer=&authority.actors[3].controller;
     b3Body_SetTransform(officer->body.body,(b3Pos){leaf->center.x-.9f,officer->body.totalHeight*.5f+.02f,leaf->center.z},b3Quat_identity);
     b3Body_SetLinearVelocity(officer->body.body,swat_v(0,0,0)); officer->yaw=officer->pitch=0;
+    // A server scheduling stall must not acknowledge and discard a queued
+    // command. Silence may expire a repeated hold only after its queue drains.
+    SwatInput pick=swat_neutral_input();pick.door_tool=SWAT_LOCKPICK;
+    assert(swat_client_input(&clients[0],&pick));start=enet_time_get();
+    SwatRemoteSlot* remote=&server.slots[clients[0].slot];
+    while(remote->received<clients[0].sequence && enet_time_get()-start<1000)idle(&server,clients,3);
+    assert(remote->received==clients[0].sequence && remote->count==1);
+    remote->last_receive_ms=enet_time_get()-1000;
+    swat_server_tick(&server,&host);
+    assert(remote->ack==clients[0].sequence && authority.actors[3].gear.door_ticks==1);
+    swat_server_tick(&server,&host);
+    assert(!authority.actors[3].gear.door_ticks);
+    puts("PASS real UDP delayed input: queued command executes once, expired repeated hold releases");
     inputs[0].door_tool=SWAT_LOCKPICK; ticks(&server,clients,inputs,3,46,&host); synchronize(&server,clients,3);
     assert(leaf->locked && authority.actors[3].gear.door_ticks>40 && replicas[1].actors[3].gear.door_ticks>40);
     inputs[0]=swat_neutral_input(); ticks(&server,clients,inputs,3,4,&host);
