@@ -195,9 +195,20 @@ static void navigation_build(SwatSim* s) {
     for(int i=0;i<s->world.count;i++) nav->object_state[i]=navigation_object_state(&s->world.objects[i]);
     nav->generation=s->world.generation; nav->count=s->world.count; nav->built_tick=s->tick; nav->built=true;
 }
-static int nearest(const SwatNavigation* nav,b3Pos point) {
+int swat_navigation_nearest(const SwatNavigation* nav,b3Pos point) {
     int best=-1; float distance=2;
-    for(int i=0;i<nav->nodes;i++) if(nav->walkable[i]) {
+    // Samples stay within 59 cm of their nominal centre (door alignment plus
+    // furniture offsets). Only nearby cells can satisfy the existing 2 m
+    // search radius. Keep layer/row/column order, including strict tie breaks.
+    int cx=(int)floor((point.x-nav->min_x)/.6),cz=(int)floor((point.z-nav->min_z)/.6);
+    int x0=cx-5,x1=cx+5,z0=cz-5,z1=cz+5;
+    if(x0<0)x0=0;
+    if(x1>=nav->width)x1=nav->width-1;
+    if(z0<0)z0=0;
+    if(z1>=nav->depth)z1=nav->depth-1;
+    for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) for(int z=z0;z<=z1;z++) for(int x=x0;x<=x1;x++) {
+        int i=layer*nav->cells+z*nav->width+x;
+        if(!nav->walkable[i])continue;
         b3Pos p=cell_position(nav,i);
         if(fabs(p.y-point.y)>.65) continue;
         float d=b3Distance(point,p); if(d<distance) { distance=d; best=i; }
@@ -206,7 +217,7 @@ static int nearest(const SwatNavigation* nav,b3Pos point) {
 }
 bool swat_navigation_crouch(const SwatSim* s,b3Pos position) {
     if(!s->navigation || !s->navigation->built) return false;
-    int at=nearest(s->navigation,position); return at>=0 && !(s->navigation->walkable[at]&2);
+    int at=swat_navigation_nearest(s->navigation,position); return at>=0 && !(s->navigation->walkable[at]&2);
 }
 typedef struct NavPeople {b3Pos feet[SWAT_MAX_ACTORS];int count;} NavPeople;
 static bool door_leaves_clear(const SwatWorld* world,const int doors[],int count,b3Pos from,b3Pos to) {
@@ -277,7 +288,7 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
         if(b3Distance(start,feet)<24 && swat_world_visible(&s->world,swat_controller_eye(&s->actors[actor].controller),swat_controller_eye(&other->controller)))
             people.feet[people.count++]=feet;
     }
-    int from=nearest(nav,start),to=nearest(nav,goal); if(from<0 || to<0) return false;
+    int from=swat_navigation_nearest(nav,start),to=swat_navigation_nearest(nav,goal); if(from<0 || to<0) return false;
     if(!door_leaves_clear(&s->world,doors,door_count,start,cell_position(nav,from))) {
         float best=2;from=-1;
         for(int i=0;i<nav->nodes;i++)if(nav->walkable[i]) {

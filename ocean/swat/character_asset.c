@@ -439,6 +439,19 @@ bool swat_character_restore_pose(SwatCharacterAsset* asset,const float* matrices
     refresh_pose(asset); return true;
 }
 SwatArtInfo swat_character_info(const SwatCharacterAsset* asset) { return asset ? asset->info : (SwatArtInfo){0}; }
+int swat_character_parent_node(const SwatCharacterAsset* asset,int node) {
+    return asset && node>=0 && node<asset->info.nodes ? asset->nodes[node].parent : -1;
+}
+bool swat_character_compose_pose(SwatCharacterAsset* asset,const float* locals,size_t count) {
+    if(!asset || !locals || count!=(size_t)asset->info.nodes*16)return false;
+    for(int i=0;i<asset->info.nodes;i++)if(!affine(locals+i*16))return false;
+    for(int k=0;k<asset->info.nodes;k++) {
+        int i=asset->order[k],parent=asset->nodes[i].parent;
+        if(parent>=0)multiply(asset->nodes[i].world,asset->nodes[parent].world,locals+i*16);
+        else memcpy(asset->nodes[i].world,locals+i*16,16*sizeof(float));
+    }
+    refresh_pose(asset);return true;
+}
 const SwatArtMesh* swat_character_mesh(const SwatCharacterAsset* asset,int index) { return asset && index>=0 && index<asset->info.meshes ? &asset->meshes[index].view : NULL; }
 const char* swat_character_clip_name(const SwatCharacterAsset* asset,int clip) { return asset && clip>=0 && clip<asset->info.clips ? asset->source->animations[clip].name : NULL; }
 double swat_character_clip_duration(const SwatCharacterAsset* asset,int clip) { return asset && clip>=0 && clip<asset->info.clips ? asset->durations[clip] : 0; }

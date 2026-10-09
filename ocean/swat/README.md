@@ -110,6 +110,14 @@ renders its live feed; `--record FILE.sgrp` includes replay digest/write cost;
 `--draw-only` excludes simulation, and `--plan` measures the cutaway. Use
 `--expanded-camera` to measure the large takeover. The compact feed uses a
 512 × 288 target; expansion restores 1024 × 576 with matching reticle proportions.
+Rendered runs also separate pose preparation, shadow refresh, scene setup,
+world geometry and weapon submission. These are CPU wall times and may include
+driver waits. Compare visible windows as well as hidden runs under similar load.
+Imported environment sources cache conservative model/mesh bounds and skip
+draws outside each current camera, including every lamp face; clipped wall and
+fence replacements retain their source bounds. This leaves visibility and
+collision rules unchanged. `test_environment_art.exe REVIEW_DIR culling`
+compares full and culled lit/depth rendering pixel for pixel, including breaches.
 Use
 `--capture FILE.png` for a final scene capture. **F3** shows FPS/frame time as
 small debug text in play.
@@ -134,6 +142,13 @@ opt-in with `SWAT_CONTACT_SHADOWS=1 ./swat` because its extra geometry pass stil
 costs too much on the GTX 1060. See the [lighting source and bake notes](assets/environment/lighting_v1/README.md).
 Original character specular/gloss maps now separate cloth, gloves and hard gear
 instead of assigning the entire body one rough finish; see [CHARACTER_ART.md](CHARACTER_ART.md).
+Third-person standing, crouching and locomotion banks crossfade over 0.22 s
+using local joint translations/scales and quaternion rotations. A reversal
+starts from the last displayed pose, and each actor owns its transition cache.
+Measured bank fits are reconciled before blending; authoritative feet, stance
+and aiming remain immediate. First-person grip/ADS/reload use their existing
+authored pose cache. The live GPU character check covers crouch reversals,
+settled endpoints, limb lengths, rigid elbow carriers and repeated camera draws.
 Frame limits are applied on change, eliminating the per-frame timer-log spam.
 
 Every room has six stable 384 px shadow views covering every direction around

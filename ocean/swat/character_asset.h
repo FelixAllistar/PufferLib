@@ -45,6 +45,10 @@ bool swat_character_finalize_pose(SwatCharacterAsset* asset);
 // Snapshot node-world matrices for reuse across camera/shadow passes.
 bool swat_character_capture_pose(const SwatCharacterAsset* asset,float* matrices,size_t count);
 bool swat_character_restore_pose(SwatCharacterAsset* asset,const float* matrices,size_t count);
+// Presentation blend support: parent indices and parent-before-child local
+// composition. Local matrices use the same column-vector convention.
+int swat_character_parent_node(const SwatCharacterAsset* asset,int node);
+bool swat_character_compose_pose(SwatCharacterAsset* asset,const float* locals,size_t count);
 // Column-major scene-space node transform after sampling; pointers stay owned.
 const float* swat_character_node_matrix(const SwatCharacterAsset* asset,int node);
 int swat_character_find_node(const SwatCharacterAsset* asset,const char* name);

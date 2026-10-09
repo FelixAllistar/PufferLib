@@ -366,36 +366,42 @@ void swat_lighting_init(SwatLighting* light) {
     TraceLog(light->enabled ? LOG_INFO : LOG_WARNING,"SWAT: %s; exposure %.2f",light->enabled ? "linear lighting + cached sun/room shadows" : "lighting unavailable, using unlit fallback",light->exposure);
 }
 
+static void mesh_uniform(int location,const void* value,int type) {
+    if(location>=0)rlSetUniform(location,value,type,1);
+}
 void swat_lighting_material_uv(SwatLighting* light,Material material,bool enabled,float normal_scale,int occlusion_uv) {
     if(!light || !light->enabled || !light->prepared) return;
     SwatLightingProgram* p=&light->mesh;
     int zero=0; Vector2 tile={0};
-    SetShaderValue(p->shader,p->environment,&zero,SHADER_UNIFORM_INT);
-    SetShaderValue(p->shader,p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
+    // Bind once for the material; Raylib's single-value helper binds again for
+    // every uniform, even though all of these values use the same program.
+    rlEnableShader(p->shader.id);
+    mesh_uniform(p->environment,&zero,SHADER_UNIFORM_INT);
+    mesh_uniform(p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
     int orm=enabled && material.maps && material.maps[MATERIAL_MAP_ROUGHNESS].texture.id;
     int spec_gloss=enabled && material.maps && material.maps[MATERIAL_MAP_SPECULAR].texture.id &&
         material.maps[MATERIAL_MAP_ROUGHNESS].texture.id && material.maps[MATERIAL_MAP_ROUGHNESS].value<0;
     int pbr=enabled && material.maps && (orm || material.maps[MATERIAL_MAP_ROUGHNESS].value>0);
-    SetShaderValue(p->shader,p->spec_gloss,&spec_gloss,SHADER_UNIFORM_INT);
-    SetShaderValue(p->shader,p->orm,&orm,SHADER_UNIFORM_INT);
+    mesh_uniform(p->spec_gloss,&spec_gloss,SHADER_UNIFORM_INT);
+    mesh_uniform(p->orm,&orm,SHADER_UNIFORM_INT);
     int normal=pbr && material.maps[MATERIAL_MAP_NORMAL].texture.id;
     if(normal && fabsf(material.maps[MATERIAL_MAP_NORMAL].value)==2) normal=2;
-    SetShaderValue(p->shader,p->pbr,&pbr,SHADER_UNIFORM_INT);
-    SetShaderValue(p->shader,p->normal_map,&normal,SHADER_UNIFORM_INT);
+    mesh_uniform(p->pbr,&pbr,SHADER_UNIFORM_INT);
+    mesh_uniform(p->normal_map,&normal,SHADER_UNIFORM_INT);
     float green=normal && material.maps[MATERIAL_MAP_NORMAL].value<0 ? -1 : 1;
-    SetShaderValue(p->shader,p->normal_green,&green,SHADER_UNIFORM_FLOAT);
-    SetShaderValue(p->shader,p->normal_scale,&normal_scale,SHADER_UNIFORM_FLOAT);
+    mesh_uniform(p->normal_green,&green,SHADER_UNIFORM_FLOAT);
+    mesh_uniform(p->normal_scale,&normal_scale,SHADER_UNIFORM_FLOAT);
     int emission=enabled && material.maps && material.maps[MATERIAL_MAP_EMISSION].texture.id;
-    SetShaderValue(p->shader,p->emission,&emission,SHADER_UNIFORM_INT);
+    mesh_uniform(p->emission,&emission,SHADER_UNIFORM_INT);
     int occlusion=enabled && material.maps && material.maps[MATERIAL_MAP_OCCLUSION].texture.id;
     float strength=occlusion?material.maps[MATERIAL_MAP_OCCLUSION].value:1;
-    SetShaderValue(p->shader,p->occlusion,&occlusion,SHADER_UNIFORM_INT);
-    SetShaderValue(p->shader,p->occlusion_strength,&strength,SHADER_UNIFORM_FLOAT);
-    SetShaderValue(p->shader,p->occlusion_uv,&occlusion_uv,SHADER_UNIFORM_INT);
-    SetShaderValue(p->shader,p->skinning,&zero,SHADER_UNIFORM_INT);
+    mesh_uniform(p->occlusion,&occlusion,SHADER_UNIFORM_INT);
+    mesh_uniform(p->occlusion_strength,&strength,SHADER_UNIFORM_FLOAT);
+    mesh_uniform(p->occlusion_uv,&occlusion_uv,SHADER_UNIFORM_INT);
+    mesh_uniform(p->skinning,&zero,SHADER_UNIFORM_INT);
     if(pbr) {
-        SetShaderValue(p->shader,p->roughness,&material.maps[MATERIAL_MAP_ROUGHNESS].value,SHADER_UNIFORM_FLOAT);
-        SetShaderValue(p->shader,p->metalness,&material.maps[MATERIAL_MAP_METALNESS].value,SHADER_UNIFORM_FLOAT);
+        mesh_uniform(p->roughness,&material.maps[MATERIAL_MAP_ROUGHNESS].value,SHADER_UNIFORM_FLOAT);
+        mesh_uniform(p->metalness,&material.maps[MATERIAL_MAP_METALNESS].value,SHADER_UNIFORM_FLOAT);
     }
 }
 

@@ -32,6 +32,53 @@ static Matrix matrix(const float* f) {
 // Column vectors: compose(a,b) applies b first, then a. Raymath's multiply
 // parameter convention is the reverse of this expression.
 static Matrix compose(Matrix a,Matrix b) { return MatrixMultiply(b,a); }
+static Matrix bank_fit(int bank) { return matrix(bank<2 ? fits[bank] : movement_fits[bank-2]); }
+// Blend local TRS, not skin palettes or world matrices: quaternion interpolation
+// preserves rigid rotations and bone lengths. Interrupted transitions start at
+// the last displayed pose. Feet/yaw still follow authority immediately.
+static bool transition(SwatCharacterRuntime* runtime,SwatCharacterActorPose* cache,
+        SwatCharacterAsset* asset,int bank,bool restart,double dt) {
+    size_t count=(size_t)swat_character_info(asset).nodes*16;
+    if(restart) {
+        SwatCharacterAsset* previous=runtime->banks[cache->bank].asset;
+        if(!previous) {cache->transition_elapsed=.22;return true;}
+        float aligned[count];
+        Matrix bridge=compose(MatrixInvert(bank_fit(bank)),bank_fit(cache->bank));
+        for(size_t i=0;i<count/16;i++) {
+            int old=swat_character_find_node(previous,swat_character_node_name(asset,(int)i));
+            Matrix world=old>=0 && (size_t)(old+1)*16<=cache->count ?
+                compose(bridge,matrix(cache->matrices+old*16)) : matrix(swat_character_node_matrix(asset,(int)i));
+            memcpy(aligned+i*16,MatrixToFloatV(world).v,16*sizeof(float));
+        }
+        if(cache->transition_count!=count) {
+            free(cache->transition_locals);cache->transition_locals=calloc(count,sizeof(float));cache->transition_count=count;
+        }
+        if(!cache->transition_locals)return false;
+        for(size_t i=0;i<count/16;i++) {
+            int parent=swat_character_parent_node(asset,(int)i);
+            Matrix local=matrix(aligned+i*16);
+            if(parent>=0)local=compose(MatrixInvert(matrix(aligned+parent*16)),local);
+            memcpy(cache->transition_locals+i*16,MatrixToFloatV(local).v,16*sizeof(float));
+        }
+        cache->transition_elapsed=0;
+    }
+    if(cache->transition_elapsed>=.22 || cache->transition_count!=count)return true;
+    cache->transition_elapsed=fmin(.22,cache->transition_elapsed+dt);
+    float t=(float)(cache->transition_elapsed/.22);t=t*t*(3-2*t);
+    float locals[count];
+    for(size_t i=0;i<count/16;i++) {
+        int parent=swat_character_parent_node(asset,(int)i);
+        Matrix target=matrix(swat_character_node_matrix(asset,(int)i));
+        if(parent>=0)target=compose(MatrixInvert(matrix(swat_character_node_matrix(asset,parent))),target);
+        Vector3 a,sa,b,sb;Quaternion qa,qb;
+        MatrixDecompose(matrix(cache->transition_locals+i*16),&a,&qa,&sa);
+        MatrixDecompose(target,&b,&qb,&sb);
+        Vector3 p=Vector3Lerp(a,b,t),scale=Vector3Lerp(sa,sb,t);
+        Matrix blended=compose(MatrixTranslate(p.x,p.y,p.z),compose(QuaternionToMatrix(QuaternionSlerp(qa,qb,t)),MatrixScale(scale.x,scale.y,scale.z)));
+        memcpy(locals+i*16,MatrixToFloatV(blended).v,16*sizeof(float));
+    }
+    return swat_character_compose_pose(asset,locals,count);
+}
 static uint64_t fingerprint(uint64_t hash,const void* bytes,size_t count) {
     const unsigned char* p=bytes; for(size_t i=0;i<count;i++) hash=(hash^p[i])*UINT64_C(1099511628211); return hash;
 }
@@ -244,9 +291,10 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         uint64_t signature=fingerprint(UINT64_C(14695981039346656037),&actor->controller,sizeof(actor->controller));
         signature=fingerprint(signature,&actor->arsenal,sizeof(actor->arsenal)); signature=fingerprint(signature,&feet,sizeof(feet)); signature=fingerprint(signature,&velocity,sizeof(velocity));
         if(cache->valid && cache->tick==sim->tick && cache->episode==sim->episode && cache->signature==signature) continue;
-        bool reset=!cache->valid || cache->episode!=sim->episode || sim->tick<=cache->tick;
+        bool reset=!cache->valid || cache->episode!=sim->episode || sim->tick<cache->tick;
+        double dt=reset ? 0 : (sim->tick-cache->tick)/60.0;
         double travel=reset ? 0 : hypot((double)feet.x-cache->feet.x,(double)feet.z-cache->feet.z);
-        if(travel>6*(sim->tick-cache->tick)/60.0+.25) travel=0; // teleport/restore, no invented travel
+        if(travel>6*dt+.25) {travel=0;reset=true;} // teleport/restore, no invented travel
         cache->distance=reset ? 0 : cache->distance+travel;
         const SwatWeapon* weapon=&actor->arsenal.slots[0]; bool reload=weapon->reload_remaining>0;
         bool moving=actor->controller.body.onGround && speed>.12f;
@@ -263,6 +311,8 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         if(cycle_metres[bank]>0) cache->phase=fmod(cache->phase+travel/cycle_metres[bank],1.0);
         double time=reload ? swat_character_reload_time(weapon) : cycle_metres[bank]>0 ? cache->phase*swat_character_clip_duration(runtime->banks[bank].asset,0) : 0;
         SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset;
+        bool changed=!reset && (bank!=cache->bank || crouch!=cache->crouching || reload!=cache->reloading);
+        if(reset)cache->transition_elapsed=.22;
         double started=GetTime();
         // Release the holding correction for the authored magazine handling;
         // short endpoint fades avoid snapping between the source and hold pose.
@@ -271,15 +321,14 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             !swat_character_support_grip(asset,grip) || !elbow_carriers(asset)) continue;
         size_t count=(size_t)swat_character_info(asset).nodes*16;
         if(cache->count!=count) {
-            free(cache->matrices); free(cache->first_person_matrices);
-            cache->matrices=calloc(count,sizeof(float)); cache->first_person_matrices=calloc(count,sizeof(float)); cache->count=count;
+            free(cache->first_person_matrices);cache->first_person_matrices=calloc(count,sizeof(float));
         }
-        if(!cache->matrices || !cache->first_person_matrices ||
+        if(!cache->first_person_matrices ||
            !swat_character_capture_pose(asset,cache->first_person_matrices,count)) continue;
         cache->first_person_inverse_gun=reload ? runtime->reload_inverse_gun :
             MatrixInvert(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)));
         Matrix heading=MatrixRotateY(-actor->controller.yaw);
-        Matrix root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(heading,matrix(bank<2 ? fits[bank] : movement_fits[bank-2])));
+        Matrix root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(heading,bank_fit(bank)));
         float turn=0;
         if(cycle_metres[bank]>0 && moving) turn=swat_angle(direction-travel_yaw[bank]);
         // Rotate only the difference from each bank's actual source travel;
@@ -323,6 +372,10 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         ok=limb(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",hand_targets[0]) && ok;
         ok=limb(asset,"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand",hand_targets[1]) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset)) continue;
+        if(!transition(runtime,cache,asset,bank,changed,dt) || !elbow_carriers(asset) || !swat_character_finalize_pose(asset))continue;
+        if(cache->count!=count) {
+            free(cache->matrices);cache->matrices=calloc(count,sizeof(float));cache->count=count;
+        }
         if(!cache->matrices || !swat_character_capture_pose(asset,cache->matrices,count)) continue;
         for(int m=0;m<view->model.meshCount;m++) {
             const SwatArtMesh* source=swat_character_mesh(asset,m); bool visible=source->visible;
@@ -333,7 +386,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             if(strstr(source->node_name,"sleeve")) visible=false;
             cache->visible[m]=(unsigned char)visible;
         }
-        cache->root=root; cache->feet=feet; cache->source_time=time; cache->bank=bank; cache->tick=sim->tick; cache->episode=sim->episode; cache->signature=signature; cache->valid=true; cache->reloading=reload;
+        cache->root=root; cache->feet=feet; cache->source_time=time; cache->bank=bank; cache->tick=sim->tick; cache->episode=sim->episode; cache->signature=signature; cache->valid=true; cache->reloading=reload;cache->crouching=crouch;
         runtime->preparations++;
         double elapsed=GetTime()-started; runtime->prepare_seconds+=elapsed; runtime->prepare_max_seconds=fmax(runtime->prepare_max_seconds,elapsed);
     }
@@ -400,6 +453,6 @@ void swat_character_runtime_close(SwatCharacterRuntime* runtime) {
     }
     if(runtime->emissive.id) UnloadTexture(runtime->emissive);
     if(runtime->orm.id) UnloadTexture(runtime->orm);
-    for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(runtime->actors[i].matrices); free(runtime->actors[i].first_person_matrices); }
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(runtime->actors[i].matrices); free(runtime->actors[i].first_person_matrices);free(runtime->actors[i].transition_locals); }
     free(runtime);
 }

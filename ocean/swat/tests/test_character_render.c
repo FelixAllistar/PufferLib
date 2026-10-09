@@ -298,6 +298,57 @@ static void backward_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighti
     assert(runtime->actors[0].bank==SWAT_CHARACTER_READY && runtime->actors[0].phase==phase);
     printf("PASS backward: local direction across yaw/diagonals, measured travel pace, stop and optional-bank fallback\n");
 }
+static Vector3 displayed_node(SwatCharacterRuntime* runtime,int actor,const char* name) {
+    SwatCharacterActorPose* pose=&runtime->actors[actor];SwatCharacterAsset* asset=runtime->banks[pose->bank].asset;
+    int at=swat_character_find_node(asset,name);assert(at>=0);
+    return Vector3Transform(point(pose->matrices+at*16,(Vector3){0}),pose->root);
+}
+static void blend_check(SwatCharacterRuntime* runtime,SwatSim* sim) {
+    if(!runtime->banks[SWAT_CHARACTER_CROUCH_READY].asset)return;
+    SwatSim* before=malloc(sizeof(*before));assert(before);
+    SwatActor* actor=&sim->actors[0];actor->controller.yaw=actor->controller.pitch=0;
+    swat_body_set_crouch(&actor->controller.body,false);actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
+    b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
+    runtime->actors[0].valid=false;sim->tick++;swat_character_runtime_prepare(runtime,sim);
+    Vector3 standing=displayed_node(runtime,0,"mixamorig:Hips"),previous=standing;
+    float maximum=0;
+    // Reverse before completion, then settle in both directions. A fresh bank
+    // switch must start from the displayed intermediate pose, not its source.
+    const bool crouch[]={true,false,true,false};const int steps[]={4,2,16,16};
+    for(int pass=0;pass<4;pass++) {
+        swat_body_set_crouch(&actor->controller.body,crouch[pass]);
+        actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
+        for(int frame=0;frame<steps[pass];frame++) {
+            sim->tick++;memcpy(before,sim,sizeof(*before));swat_character_runtime_prepare(runtime,sim);
+            assert(runtime->actors[0].valid && !memcmp(before,sim,sizeof(*before)));
+            Vector3 current=displayed_node(runtime,0,"mixamorig:Hips");
+            float jump=Vector3Distance(current,previous);maximum=fmaxf(maximum,jump);assert(jump<.09f);previous=current;
+            SwatCharacterActorPose* pose=&runtime->actors[0];SwatCharacterAsset* asset=runtime->banks[pose->bank].asset;
+            assert(swat_character_restore_pose(asset,pose->matrices,pose->count));carrier_check(asset);
+            const char* joints[][2]={{"LeftUpLeg","LeftLeg"},{"LeftLeg","LeftFoot"},{"RightUpLeg","RightLeg"},{"RightLeg","RightFoot"},
+                {"LeftArm","LeftForeArm"},{"LeftForeArm","LeftHand"},{"RightArm","RightForeArm"},{"RightForeArm","RightHand"}};
+            float lengths[8];
+            for(int j=0;j<8;j++) {
+                char a[64],b[64];snprintf(a,sizeof(a),"mixamorig:%s",joints[j][0]);snprintf(b,sizeof(b),"mixamorig:%s",joints[j][1]);
+                lengths[j]=Vector3Distance(point(swat_character_node_matrix(asset,swat_character_find_node(asset,a)),(Vector3){0}),
+                    point(swat_character_node_matrix(asset,swat_character_find_node(asset,b)),(Vector3){0}));
+            }
+            assert(swat_character_sample_pose(asset,swat_character_clip_name(asset,0),pose->source_time));
+            for(int j=0;j<8;j++) {
+                char a[64],b[64];snprintf(a,sizeof(a),"mixamorig:%s",joints[j][0]);snprintf(b,sizeof(b),"mixamorig:%s",joints[j][1]);
+                float length=Vector3Distance(point(swat_character_node_matrix(asset,swat_character_find_node(asset,a)),(Vector3){0}),
+                    point(swat_character_node_matrix(asset,swat_character_find_node(asset,b)),(Vector3){0}));
+                assert(fabsf(lengths[j]-length)<2e-5f);
+            }
+            unsigned int preparations=runtime->preparations;double elapsed=pose->transition_elapsed;
+            swat_character_runtime_prepare(runtime,sim);assert(preparations==runtime->preparations && elapsed==pose->transition_elapsed);
+        }
+        if(pass==2)assert(standing.y-previous.y>.25f);
+    }
+    assert(Vector3Distance(previous,standing)<1e-4f);
+    free(before);
+    printf("PASS skeletal blend: interrupted crouch/reverse/settle, max hip step %.4f m, rigid limb lengths/carriers, authority and repeated camera cache\n",maximum);
+}
 static void runtime_check(const char* directory,SwatLighting* light) {
 #ifdef _WIN32
     assert(!_putenv_s("SWAT_CHARACTER_ASSETS",directory));
@@ -356,11 +407,15 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
     }
     backward_check(runtime,sim,light);
+    blend_check(runtime,sim);
     for(int stance=0;stance<2;stance++) for(int angle=0;angle<4;angle++) {
         actor->controller.yaw=angle*SWAT_PI/2; actor->controller.pitch=angle==3 ? 70*SWAT_RAD : 0;
         swat_body_set_crouch(&actor->controller.body,stance!=0); sim->tick++;
         actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
         memcpy(before,sim,sizeof(*before)); swat_character_runtime_prepare(runtime,sim); assert(!memcmp(before,sim,sizeof(*before)));
+        // Endpoint contracts below check fully settled poses. Transitions have
+        // their own per-tick continuity/reversal checks.
+        sim->tick+=14;memcpy(before,sim,sizeof(*before));swat_character_runtime_prepare(runtime,sim);
         assert(runtime->actors[0].valid);
         if(movement) assert(runtime->actors[0].bank==(stance ? SWAT_CHARACTER_CROUCH_READY : SWAT_CHARACTER_READY));
         unsigned int preparations=runtime->preparations; swat_character_runtime_prepare(runtime,sim); assert(preparations==runtime->preparations);

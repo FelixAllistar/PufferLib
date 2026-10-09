@@ -57,7 +57,7 @@ int main(int argc,char** argv) {
         else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--audio|--audio-stereo] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors] [--fire] [--record FILE] [--capture PNG] [--frames 30..3600]\n"); return 1; }
     }
     if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && (draw_only || indoors || fire))) return 1;
-    SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*5,sizeof(double));
+    SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*10,sizeof(double));
     if(!sim || !measurements) { free(sim); free(measurements); return 1; }
     SwatConfig config=swat_default_config(); config.mission=mission; config.layout_seed=42;
     config.tactical_rules=true; config.squad_bots=3; config.hostile_fire=false; config.max_ticks=36000;
@@ -104,6 +104,9 @@ int main(int argc,char** argv) {
             int n=i-30; measurements[n]=tick; measurements[frames+n]=mix;
             measurements[2*frames+n]=drawing; measurements[3*frames+n]=present;
             measurements[4*frames+n]=tick+mix+drawing+present;
+            measurements[5*frames+n]=view.pose_seconds;measurements[6*frames+n]=view.shadow_seconds;
+            measurements[7*frames+n]=view.scene_seconds;measurements[8*frames+n]=view.geometry_seconds;
+            measurements[9*frames+n]=view.weapon_seconds;
         }
     }
     printf("SWAT PERF mission=%s seed=42 objects=%d actors=%d frames=%d draw_only=%d audio=%d planning=%d camera=%d expanded=%d indoors=%d shots=%d destroyed=%d init_ms=%.3f first_tick_ms=%.3f\n",
@@ -111,6 +114,11 @@ int main(int argc,char** argv) {
     report("simulation",measurements,frames); report("audio",measurements+frames,frames);
     report("draw_submit",measurements+2*frames,frames); report("present",measurements+3*frames,frames);
     report("total",measurements+4*frames,frames);
+    if(!headless) {
+        report("pose",measurements+5*frames,frames);report("shadows",measurements+6*frames,frames);
+        report("scene_setup",measurements+7*frames,frames);report("world_geometry",measurements+8*frames,frames);
+        report("weapon",measurements+9*frames,frames);
+    }
     if(view.characters) printf("character poses=%u draws=%u prepare_mean_ms=%.3f prepare_max_ms=%.3f\n",view.characters->preparations,view.characters->draws,
         view.characters->preparations ? view.characters->prepare_seconds/view.characters->preparations*1000 : 0,view.characters->prepare_max_seconds*1000);
     if(capture) { Image frame=LoadImageFromScreen(); valid=ExportImage(frame,capture) && valid; UnloadImage(frame); }

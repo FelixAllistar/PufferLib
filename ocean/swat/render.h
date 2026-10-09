@@ -30,6 +30,7 @@ typedef struct SwatView {
     SwatCharacterRuntime* characters;
     int sniper_unit;
     char session_status[128];
+    double pose_seconds,shadow_seconds,scene_seconds,geometry_seconds,weapon_seconds;
 } SwatView;
 typedef struct SwatCameraLayout {
     Rectangle panel,feed,unit[SWAT_SNIPERS],previous,next,takeover,close;

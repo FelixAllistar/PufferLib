@@ -761,6 +761,37 @@ static void room101_graphics(SwatView* view,const char* directory) {
     swat_sim_close(&sim);
     printf("PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (%d changed pixels), three door poses and removal\n",changed);
 }
+static void culling_graphics(SwatView* view,const char* directory) {
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
+    swat_sim_init(&sim,cfg,42);swat_environment_art_prepare_location(&view->environment,&sim.world);
+    struct SwatEnvironmentBounds* bounds=view->environment.bounds;assert(bounds);
+    Camera3D cameras[]={
+        {{-6,1.62f,-1},{-6,1.4f,-5},{0,1,0},75,CAMERA_PERSPECTIVE},
+        {{-10,1.62f,12},{-6,1.3f,-3},{0,1,0},75,CAMERA_PERSPECTIVE},
+        {{0,1.62f,16},{0,1.3f,-3},{0,1,0},75,CAMERA_PERSPECTIVE},
+        {{10,1.62f,12},{6,1.3f,-3},{0,1,0},75,CAMERA_PERSPECTIVE},
+        {{-6.7f,1.6f,-9.5f},{-6.7f,1.1f,-5.5f},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{0,25,12},{0,0,12},{0,0,-1},55,CAMERA_ORTHOGRAPHIC}};
+    for(int stage=0;stage<2;stage++) {
+        if(stage)assert(swat_world_breach(&sim.world,sim.world.objects[106].wall_group-1,(b3Pos){-3.9885f,1.05f,-1.17f})>4);
+        for(size_t c=0;c<sizeof(cameras)/sizeof(*cameras);c++) {
+            before=sim.world;view->environment.bounds=NULL;
+            Image full=room101_capture_size(view,cameras[c],true,640,480);
+            view->environment.bounds=bounds;Image culled=room101_capture_size(view,cameras[c],true,640,480);
+            Color* a=LoadImageColors(full),*b=LoadImageColors(culled);int changed=0;
+            for(int i=0;i<640*480;i++)changed+=memcmp(&a[i],&b[i],sizeof(Color))!=0;
+            if(changed) {
+                printf("Culling stage%d camera%zu changed%d\n",stage,c,changed);fflush(stdout);
+                assert(ExportImage(full,TextFormat("%s/cull-full.png",directory)));
+                assert(ExportImage(culled,TextFormat("%s/cull-result.png",directory)));
+            }
+            assert(!changed && !memcmp(&before,&sim.world,sizeof(before)));
+            UnloadImageColors(a);UnloadImageColors(b);UnloadImage(full);UnloadImage(culled);
+        }
+    }
+    swat_sim_close(&sim);
+    puts("PASS conservative culling: pixel-identical full/culled lit views, all shadow faces/contact depth, indoor/distant rooms/orthographic and breached geometry; immutable authority");
+}
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
@@ -768,6 +799,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"culling")) {culling_graphics(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && (!strcmp(argv[2],"surroundings") || !strcmp(argv[2],"ground"))) {
         SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;
         swat_sim_init(&sim,config,73);swat_environment_art_prepare_location(&view.environment,&sim.world);

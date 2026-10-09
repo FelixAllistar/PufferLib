@@ -38,6 +38,8 @@ void swat_encounter_inputs(struct SwatSim* sim,SwatInput inputs[]);
 void swat_encounter_orders(struct SwatSim* sim,const SwatInput inputs[]);
 void swat_encounter_step(struct SwatSim* sim);
 bool swat_navigation_crouch(const struct SwatSim* sim,b3Pos position);
+// Closest supported sample within 2 m and 65 cm height; -1 outside the grid.
+int swat_navigation_nearest(const SwatNavigation* nav,b3Pos position);
 bool swat_navigation_next(struct SwatSim* sim,b3Pos start,b3Pos goal,b3Pos* next);
 // Same planner with locally visible people included; does not move the actor.
 bool swat_navigation_next_for_actor(struct SwatSim* sim,int actor,b3Pos goal,b3Pos* next);

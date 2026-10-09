@@ -8,6 +8,57 @@
 #include <string.h>
 #include "motel_wall_art.h"
 
+typedef struct SwatEnvironmentBound {
+    const Model* source;
+    BoundingBox box;
+    BoundingBox* meshes;
+    const Mesh* source_meshes;
+    int mesh_count;
+} SwatEnvironmentBound;
+struct SwatEnvironmentBounds {
+    SwatEnvironmentBound models[256];
+    int count;
+    unsigned int tested,culled;
+};
+// Conservative source bounds also cover clipped wall/fence subsets. The
+// original sources are immutable until location unload, so destruction needs
+// no vertex rescans. Every camera/depth pass uses its own current clip matrix.
+static void clear_bounds(struct SwatEnvironmentBounds* cache) {
+    if(!cache)return;
+    for(int i=0;i<cache->count;i++)free(cache->models[i].meshes);
+    cache->count=0;
+}
+static SwatEnvironmentBound* location_bounds(const SwatEnvironmentArt* art,const Model* source) {
+    if(!art->bounds)return NULL;
+    struct SwatEnvironmentBounds* cache=art->bounds;
+    SwatEnvironmentBound* entry=NULL;
+    for(int i=0;i<cache->count;i++)if(cache->models[i].source==source) {
+        entry=&cache->models[i];
+        if(entry->source_meshes==source->meshes && entry->mesh_count==source->meshCount)return entry;
+        free(entry->meshes);break;
+    }
+    if(!entry) {
+        if(cache->count>=256)return NULL;
+        entry=&cache->models[cache->count++];
+    }
+    *entry=(SwatEnvironmentBound){.source=source,.box=GetModelBoundingBox(*source),.source_meshes=source->meshes,.mesh_count=source->meshCount};
+    entry->meshes=calloc((size_t)source->meshCount,sizeof(BoundingBox));
+    if(entry->meshes)for(int i=0;i<source->meshCount;i++)entry->meshes[i]=GetMeshBoundingBox(source->meshes[i]);
+    return entry;
+}
+static bool bounds_outside(struct SwatEnvironmentBounds* cache,BoundingBox box,Matrix clip) {
+    Vector3 center=Vector3Scale(Vector3Add(box.min,box.max),.5f),half=Vector3Scale(Vector3Subtract(box.max,box.min),.5f);
+    const float rows[4][4]={{clip.m0,clip.m4,clip.m8,clip.m12},{clip.m1,clip.m5,clip.m9,clip.m13},
+        {clip.m2,clip.m6,clip.m10,clip.m14},{clip.m3,clip.m7,clip.m11,clip.m15}};
+    cache->tested++;
+    for(int axis=0;axis<3;axis++)for(int side=-1;side<=1;side+=2) {
+        Vector3 normal={rows[3][0]+side*rows[axis][0],rows[3][1]+side*rows[axis][1],rows[3][2]+side*rows[axis][2]};
+        float distance=Vector3DotProduct(normal,center)+rows[3][3]+side*rows[axis][3];
+        float radius=fabsf(normal.x)*half.x+fabsf(normal.y)*half.y+fabsf(normal.z)*half.z;
+        if(distance+radius<-.001f){cache->culled++;return true;}
+    }
+    return false;
+}
 
 static bool prop_bounds_fit(Model model,b3Vec3 size) {
     if(!model.meshCount) return false;
@@ -259,6 +310,8 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     if(!art->initialized || (enabled && !strcmp(enabled,"0"))) return;
     int selected=world->storefront ? 2 : world->motel ? 1 : 0;
     if(art->location==selected) return;
+    if(!art->bounds)art->bounds=calloc(1,sizeof(*art->bounds));
+    clear_bounds(art->bounds);
     room101_close(art);
     for(int i=0;i<SWAT_MOTEL_ASSETS;i++) { swat_art_model_close(art->motel[i]); art->motel[i]=(Model){0}; }
     for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) { swat_art_model_close(art->storefront[i]); art->storefront[i]=(Model){0}; }
@@ -334,6 +387,7 @@ void swat_environment_art_close(SwatEnvironmentArt* art) {
     for(int i=0;i<SWAT_MOTEL_ASSETS;i++) swat_art_model_close(art->motel[i]);
     for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) swat_art_model_close(art->storefront[i]);
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) swat_art_model_close(art->props[i]);
+    clear_bounds(art->bounds);free(art->bounds);
     memset(art,0,sizeof(*art));
 }
 
@@ -513,9 +567,21 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
     Matrix scale=MatrixScale(p->scale.x,p->scale.y,p->scale.z);
     Matrix transform=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(yaw)),MatrixTranslate(origin.x,origin.y,origin.z));
     if(override)transform=*override;
+    Matrix clip=MatrixMultiply(transform,MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection()));
+    SwatEnvironmentBound* bounds=location_bounds(art,source);
+    if(bounds && bounds_outside(art->bounds,bounds->box,clip))return true;
     bool lit=!shadow && art->lighting && art->lighting->enabled && art->lighting->prepared;
     rlDrawRenderBatchActive();
     for(int i=0;i<model->meshCount;i++) {
+        if(bounds && bounds->meshes) {
+            // A ground part shares one of the immutable world-positioned
+            // source meshes. Clipped replacements keep the conservative full
+            // source bound; their VAOs never masquerade as unchanged meshes.
+            int original=model==source ? i : -1;
+            if(original<0)for(int j=0;j<source->meshCount;j++)
+                if(model->meshes[i].vaoId && model->meshes[i].vaoId==source->meshes[j].vaoId){original=j;break;}
+            if(original>=0 && bounds_outside(art->bounds,bounds->meshes[original],clip))continue;
+        }
         if(p->door && art->motel_dressing[5].meshCount) {
             BoundingBox box=GetMeshBoundingBox(model->meshes[i]);
             if(box.min.x>.50f && box.max.x<.58f && box.min.y>1.58f && box.max.y<1.62f)continue;

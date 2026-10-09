@@ -11,6 +11,9 @@ typedef enum SwatCharacterBank {
 typedef struct SwatCharacterActorPose {
     float* matrices;
     float* first_person_matrices;
+    float* transition_locals;
+    size_t transition_count;
+    double transition_elapsed;
     size_t count;
     Matrix root;
     Matrix first_person_inverse_gun;
@@ -18,7 +21,7 @@ typedef struct SwatCharacterActorPose {
     double distance,phase,source_time;
     int tick,episode,bank;
     uint64_t signature;
-    bool valid,reloading;
+    bool valid,reloading,crouching;
     unsigned char visible[SWAT_CHARACTER_MESHES];
 } SwatCharacterActorPose;
 typedef struct SwatCharacterRuntime {

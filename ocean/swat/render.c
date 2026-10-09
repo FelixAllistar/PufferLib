@@ -473,12 +473,16 @@ static void swat_draw_weapon(SwatView* view,const SwatSim* s,const SwatActor* a,
 
 void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
     if (!view->initialized) return;
+    view->pose_seconds=view->shadow_seconds=view->scene_seconds=view->geometry_seconds=view->weapon_seconds=0;
+    double measured=GetTime();
     Vector3 light_eye={11,1.6f,0};
     if(view->actor>=0 && view->actor<s->actor_count && s->actors[view->actor].present)
         light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
     swat_character_runtime_prepare(view->characters,s);
+    view->pose_seconds=GetTime()-measured;measured=GetTime();
     swat_environment_art_prepare_location(&view->environment,&s->world);
     swat_lighting_prepare_split(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene,swat_draw_shadow_actors,view);
+    view->shadow_seconds=GetTime()-measured;
     if(view->planning) { swat_draw_plan(view,s); return; }
     if(view->actor<0 || view->actor>=s->actor_count || !s->actors[view->actor].present) {
         ClearBackground((Color){25,37,47,255});
@@ -522,7 +526,9 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     camera.up=swat_vector(up); camera.fovy=fov+((a->arsenal.sight==SWAT_OPTIC ? 30 : 45)-fov)*c->ads; camera.projection=CAMERA_PERSPECTIVE;
     int width=GetScreenWidth(), height=GetScreenHeight();
     ClearBackground((Color){25,37,47,255});
+    measured=GetTime();
     swat_begin_scene(view,s,camera,width,height);
+    view->scene_seconds=GetTime()-measured;measured=GetTime();
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material != SWAT_GLASS)
         swat_draw_object(view,&s->world,&s->world.objects[i]);
     swat_draw_floors(view,s);
@@ -538,6 +544,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
+    view->geometry_seconds=GetTime()-measured;measured=GetTime();
     if (a->alive && !a->gear.inspecting) {
         // Projected magnification = tan(oldFov/2)/tan(newFov/2). The default
         // 1.7x maps 62 degrees to 38.9 degrees; the world gun stays scale one.
@@ -555,6 +562,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         BeginMode3D(camera);
         swat_lighting_begin(&view->lighting,&view->environment,&s->world,camera.position);
     }
+    view->weapon_seconds=GetTime()-measured;
     if(view->debug) {
         for(int i=0;i<s->actor_count;i++) if(s->actors[i].present && s->actors[i].alive) {
             const SwatActor* actor=&s->actors[i];
