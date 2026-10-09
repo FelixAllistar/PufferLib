@@ -5,3 +5,7 @@ https://creativecommons.org/publicdomain/zero/1.0/
 Original source pages, authors, original file hashes, selection timestamps and
 processed clip hashes are recorded in SOURCES.json. KENNEY_LICENSE.txt preserves
 the original license notice shipped with the Impact Sounds pack.
+
+Nine unchanged bfh1_*.ogg destruction clips are by rubberduck, from:
+https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+The source release is CC0-1.0; original archive and clip hashes are in SOURCES.json.

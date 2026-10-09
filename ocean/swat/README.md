@@ -1117,3 +1117,9 @@ The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native
 `wall-depth` selector compares production projection to a precision control.
+
+[Material destruction recordings](art_handoffs/audio-destruction/README.md)
+replace wood aliases on plaster/drywall and add brick, glass and metal breakage.
+Charges emit one debris source for the opening, using the ordinary occlusion
+and room processing. Original licensed clips and hashes are preserved; the
+blast and door handling still need audio polish.

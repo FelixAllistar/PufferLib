@@ -17,6 +17,7 @@ swat_needs_build() {
     [ -f "$binary" ] || return 0
     for source in ocean/swat/*.c ocean/swat/*.h ocean/swat/generated/*.h ocean/swat/vendor/*.h ocean/swat/tests/character_probe.c ocean/swat/CMakeLists.txt ocean/swat/Makefile resources/shared/Roboto-Regular.ttf ocean/swat/build-windows.sh \
                   ocean/swat/assets/environment/* \
+                  ocean/swat/assets/audio/* \
                   ocean/swat/assets/environment/materials_v1/*.png \
                   ocean/swat/assets/environment/lighting_v1/*.bin \
                   ocean/swat/assets/environment/motel_v1/*.glb \

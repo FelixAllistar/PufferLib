@@ -97,6 +97,9 @@ static void breach(SwatSim* s,int object,int owner) {
     if(!removed) return;
     door->door_open=leaf; door->breach_ticks=24; s->events.destroyed+=removed;
     swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_FLASH,origin,2.5f,80,door->material);
+    // One material debris source for the whole aperture, not one voice per
+    // removed wall fragment. It follows the same room/occlusion path as shots.
+    swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_BREAK,origin,1.2f,35,door->material);
     // Gameplay blast exposure uses the same intact-wall visibility boundary
     // as throwables. Removing the leaf opens the aperture; its frame remains.
     for(int i=0;i<s->actor_count;i++) {

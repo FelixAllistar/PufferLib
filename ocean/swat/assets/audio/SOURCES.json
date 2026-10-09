@@ -18,6 +18,14 @@
       "url": "https://opengameart.org/content/gun-reload-sounds",
       "author": "SpringySpringo",
       "description": "Airsoft mechanical handling"
+    },
+    {
+      "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+      "author": "rubberduck",
+      "license": "CC0-1.0",
+      "download_url": "https://opengameart.org/sites/default/files/sfx_breaking_and_falling.zip",
+      "archive_sha256": "e6ee04d91c5f4d30cfda1260d2c9d1faf96fda36319287215fbd07bcb1a80451",
+      "selection": "Nine original rock-breaking, glass-breaking and metal-falling clips; unchanged Ogg bytes in runtime, no duplicate archive installed."
     }
   ],
   "clips": [
@@ -380,6 +388,87 @@
       "start_seconds": 0,
       "duration_seconds": 0.31304166666666666,
       "sha256": "b339491ab9057e85bbd4875c14d55ed98e21f051e4a867379c230f74d32ece11"
+    },
+    {
+      "file": "bfh1_rock_breaking_01.ogg",
+      "source": "rubberduck/bfh1_rock_breaking_01.ogg",
+      "source_sha256": "970cac3139e1530009ca87f8ee0dd800dc4da61917a5e62bdc83d475a9bf4da7",
+      "start_seconds": 0,
+      "duration_seconds": 1.146542,
+      "sha256": "970cac3139e1530009ca87f8ee0dd800dc4da61917a5e62bdc83d475a9bf4da7",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_rock_breaking_02.ogg",
+      "source": "rubberduck/bfh1_rock_breaking_02.ogg",
+      "source_sha256": "3e06b794511f693b6aaca5eee1d47491bab74d814746a68de6c8bf4eec744ccc",
+      "start_seconds": 0,
+      "duration_seconds": 0.864625,
+      "sha256": "3e06b794511f693b6aaca5eee1d47491bab74d814746a68de6c8bf4eec744ccc",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_rock_breaking_03.ogg",
+      "source": "rubberduck/bfh1_rock_breaking_03.ogg",
+      "source_sha256": "a4f7a3ccebff4e8211b6aa146b8ff708bdea1c4e41115ab3b8a0d0c33094d6ee",
+      "start_seconds": 0,
+      "duration_seconds": 0.455479,
+      "sha256": "a4f7a3ccebff4e8211b6aa146b8ff708bdea1c4e41115ab3b8a0d0c33094d6ee",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_glass_breaking_01.ogg",
+      "source": "rubberduck/bfh1_glass_breaking_01.ogg",
+      "source_sha256": "438c45398ee77a40d5cc6ffcc59db0cdc709dc6d0521da5e2896b4afc19fcacb",
+      "start_seconds": 0,
+      "duration_seconds": 0.760833,
+      "sha256": "438c45398ee77a40d5cc6ffcc59db0cdc709dc6d0521da5e2896b4afc19fcacb",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_glass_breaking_02.ogg",
+      "source": "rubberduck/bfh1_glass_breaking_02.ogg",
+      "source_sha256": "35dcb1dc69338bad745e1cd56c676d04e4afb6687b9aa6d05ba83a255252747b",
+      "start_seconds": 0,
+      "duration_seconds": 0.388396,
+      "sha256": "35dcb1dc69338bad745e1cd56c676d04e4afb6687b9aa6d05ba83a255252747b",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_glass_breaking_03.ogg",
+      "source": "rubberduck/bfh1_glass_breaking_03.ogg",
+      "source_sha256": "065edd6caeb5846fa9cddbaeacbabcdea834e7c42182ff98297f2e49f126cc25",
+      "start_seconds": 0,
+      "duration_seconds": 0.775792,
+      "sha256": "065edd6caeb5846fa9cddbaeacbabcdea834e7c42182ff98297f2e49f126cc25",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_metal_falling_01.ogg",
+      "source": "rubberduck/bfh1_metal_falling_01.ogg",
+      "source_sha256": "7071a56807c7ccf3aa4becba09abd08df0f3e1c844b1ce47d6975dcdfe49562d",
+      "start_seconds": 0,
+      "duration_seconds": 1.160313,
+      "sha256": "7071a56807c7ccf3aa4becba09abd08df0f3e1c844b1ce47d6975dcdfe49562d",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_metal_falling_02.ogg",
+      "source": "rubberduck/bfh1_metal_falling_02.ogg",
+      "source_sha256": "e40e73a05a9b1ae7d45e24aa898bf610b32334dae80a5c00abe3e2ce0f7d207a",
+      "start_seconds": 0,
+      "duration_seconds": 0.740521,
+      "sha256": "e40e73a05a9b1ae7d45e24aa898bf610b32334dae80a5c00abe3e2ce0f7d207a",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "bfh1_metal_falling_03.ogg",
+      "source": "rubberduck/bfh1_metal_falling_03.ogg",
+      "source_sha256": "968284eeb6838bd6f41ec721a763d12eab5130b541f120aa1887008b0b1c73ae",
+      "start_seconds": 0,
+      "duration_seconds": 0.419854,
+      "sha256": "968284eeb6838bd6f41ec721a763d12eab5130b541f120aa1887008b0b1c73ae",
+      "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
     }
   ]
 }

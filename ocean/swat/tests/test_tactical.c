@@ -178,6 +178,14 @@ static void doors(void) {
     assert(size && swat_decode_command(&decoded,bytes,size));
     step(decoded.input,1);
     assert(!door->active && door->door_open && !door->locked && door->breach_owner<0 && door->breach_ticks>0);
+    int debris=0;
+    for(int i=0;i<sim.sounds.count;i++) {
+        const SwatSoundEvent* e=swat_sound_at(&sim.sounds,i);
+        if(e->tick==sim.tick && e->kind==SWAT_SOUND_BREAK && e->source_actor==0) {
+            assert(e->material==door->material && b3Distance(e->position,door->breach_position)<1e-5f);debris++;
+        }
+    }
+    assert(debris==1);
     assert(sim.actors[1].health<100 && sim.actors[1].gear.stunned_ticks>0 && sim.totals.hostile_damage>0);
     assert(sim.actors[0].health==100 && sim.actors[2].health==100 && !sim.actors[2].gear.stunned_ticks);
     // Rebuild the replica for the new wall, then verify the spent leaf/effect.
