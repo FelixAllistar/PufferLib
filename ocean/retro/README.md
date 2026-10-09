@@ -1,5 +1,10 @@
 # Retro conversion to PufferLib 5.0
 
+The new [Mario learning experiment register](EXPERIMENTS.md) tracks the
+procedural CUDA simulator, visual/TAS pretraining, demonstration resets,
+Go-Explore on CUDA and ROM backends, QD and interpretability. The first new
+implementation is [Mario Lab](../mario_lab/README.md).
+
 Conversion is in progress. The full-screen SMB1 simulator, QuickNES source,
 compiled-ROM block generator, natural-life playback helpers and practice
 controller replay are preserved from `5c` at `036cf4251`. Native FP32 training

@@ -1,0 +1,16 @@
+{"split":1,"tier":0,"deterministic":0,"episodes":64,"fpg":32,"ordinary_flag":22,"timeouts":10,"mean_frames":66.79688}
+{"split":1,"tier":0,"deterministic":1,"episodes":64,"fpg":32,"ordinary_flag":28,"timeouts":4,"mean_frames":27.00000}
+{"split":1,"tier":1,"deterministic":0,"episodes":64,"fpg":2,"ordinary_flag":47,"timeouts":15,"mean_frames":95.29688}
+{"split":1,"tier":1,"deterministic":1,"episodes":64,"fpg":4,"ordinary_flag":50,"timeouts":10,"mean_frames":69.21875}
+{"split":1,"tier":2,"deterministic":0,"episodes":64,"fpg":0,"ordinary_flag":37,"timeouts":27,"mean_frames":147.04688}
+{"split":1,"tier":2,"deterministic":1,"episodes":64,"fpg":0,"ordinary_flag":48,"timeouts":16,"mean_frames":101.56250}
+{"split":1,"tier":3,"deterministic":0,"episodes":64,"fpg":0,"ordinary_flag":17,"timeouts":47,"mean_frames":209.01562}
+{"split":1,"tier":3,"deterministic":1,"episodes":64,"fpg":0,"ordinary_flag":44,"timeouts":20,"mean_frames":164.87500}
+{"split":2,"tier":0,"deterministic":0,"episodes":64,"fpg":39,"ordinary_flag":13,"timeouts":12,"mean_frames":58.12500}
+{"split":2,"tier":0,"deterministic":1,"episodes":64,"fpg":40,"ordinary_flag":21,"timeouts":3,"mean_frames":20.29688}
+{"split":2,"tier":1,"deterministic":0,"episodes":64,"fpg":1,"ordinary_flag":49,"timeouts":14,"mean_frames":93.23438}
+{"split":2,"tier":1,"deterministic":1,"episodes":64,"fpg":1,"ordinary_flag":58,"timeouts":5,"mean_frames":38.51562}
+{"split":2,"tier":2,"deterministic":0,"episodes":64,"fpg":0,"ordinary_flag":41,"timeouts":23,"mean_frames":144.15625}
+{"split":2,"tier":2,"deterministic":1,"episodes":64,"fpg":0,"ordinary_flag":51,"timeouts":13,"mean_frames":106.54688}
+{"split":2,"tier":3,"deterministic":0,"episodes":64,"fpg":0,"ordinary_flag":23,"timeouts":41,"mean_frames":200.28125}
+{"split":2,"tier":3,"deterministic":1,"episodes":64,"fpg":0,"ordinary_flag":37,"timeouts":27,"mean_frames":163.43750}

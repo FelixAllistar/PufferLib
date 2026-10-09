@@ -1,0 +1,19 @@
+{
+  "preset": "webnav-public-page-v1",
+  "status": "native_and_browser_projection_fixtures_checked",
+  "native_validation_command": "node ocean/webnav/families/build.cjs app:record_browser --test",
+  "browser_validation_command": "bash ocean/webnav/benchmarks/run.sh test",
+  "browser_metadata_fixtures": 3,
+  "browser_regression_fixtures": 21,
+  "wf_abi": 2,
+  "metadata_version": 1,
+  "policy_vector_encodes_companion_metadata": false,
+  "original_site_workflow_parity": false,
+  "registered_training_tasks": 0,
+  "limits": [
+    "Companion metadata shares the public refs retained in the bounded WFView.",
+    "The DOM collector is not a full accessibility-tree or HTML header-association algorithm.",
+    "Column-group header inference, ambiguous header layouts and unresolved relationships report incompleteness.",
+    "The existing policy consumes WF parent hierarchy; companion table coordinates, header edges and URLs are not yet additional learned features."
+  ]
+}

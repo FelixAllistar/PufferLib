@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "audit": "saved artifacts after reconnect; rehash only, no rerun of evaluation",
+  "bundles": [
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-buttons-frozen_20261001T135148Z_c47baa70",
+      "artifacts_verified": 104,
+      "episodes": 64,
+      "replay_verified": true,
+      "clears": 7
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-buttons-greedy_20261001T134846Z_ea913de7",
+      "artifacts_verified": 50,
+      "episodes": 8,
+      "replay_verified": true,
+      "clears": 0
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-buttons_20261001T134846Z_8da5fbcc",
+      "artifacts_verified": 172,
+      "episodes": 32,
+      "replay_verified": true,
+      "clears": 10
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-old-policy_20261001T125852Z_2f5db32b",
+      "artifacts_verified": 29,
+      "episodes": 32,
+      "replay_verified": true,
+      "clears": 0
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_mixed-1-1_20261001T132707Z_3575eded",
+      "artifacts_verified": 94,
+      "episodes": 32,
+      "replay_verified": true,
+      "clears": 6
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_mixed-deterministic_20261001T133628Z_2a4636ee",
+      "artifacts_verified": 150,
+      "episodes": 8,
+      "replay_verified": true,
+      "clears": 0
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_mixed-frozen-fresh-seeds_20261001T133629Z_c15bf15f",
+      "artifacts_verified": 180,
+      "episodes": 64,
+      "replay_verified": true,
+      "clears": 8
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_tall-pipes-only_20261001T132044Z_ade41fbe",
+      "artifacts_verified": 134,
+      "episodes": 8,
+      "replay_verified": true,
+      "clears": 0
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_walkers-1-1_20261001T133304Z_ee9b8ea7",
+      "artifacts_verified": 82,
+      "episodes": 32,
+      "replay_verified": true,
+      "clears": 3
+    }
+  ],
+  "report_local_links_verified": 18
+}

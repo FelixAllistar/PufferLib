@@ -1,4 +1,4 @@
-// Incremental stock-CPU Bend family build. Usage: node .../build.cjs FAMILY [--test]
+// Incremental stock-CPU Bend build. Target: FAMILY, primitive:NAME or app:NAME.
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),cp=require('child_process');
 const root=path.resolve(__dirname,'../../..');process.chdir(root);
 // All supported family builds enter a serial, kernel-limited process scope.
@@ -9,9 +9,13 @@ if(process.env.WEBNAV_BUILD_CONFINED!=='1'){
  process.exit(result.status===null?1:result.status);
 }
 require('./resource_guard.cjs').verify();
-const [family,...flags]=process.argv.slice(2);
-if(!/^[a-z][a-z0-9_]*$/.test(family||'')||flags.some(f=>f!=='--test'))throw Error('Usage: build.cjs FAMILY [--test]');
-const src=`ocean/webnav/families/${family}`,out=`build/webnav/families/${family}`;
+const [target,...flags]=process.argv.slice(2);
+if(!/^((primitive|app):)?[a-z][a-z0-9_]*$/.test(target||'')||flags.some(f=>f!=='--test'))throw Error('Usage: build.cjs FAMILY|primitive:NAME|app:NAME [--test]');
+const primitive=target.startsWith('primitive:');
+const application=target.startsWith('app:');
+const family=target.includes(':')?target.split(':')[1]:target;
+const group=primitive?'primitives':application?'apps':'families';
+const src=`ocean/webnav/${group}/${family}`,out=`build/webnav/${group}/${family}`;
 fs.mkdirSync(out,{recursive:true});
 const lock=path.join(out,'build.lock');
 try {const fd=fs.openSync(lock,'wx');fs.writeFileSync(fd,String(process.pid));fs.closeSync(fd);}
@@ -60,7 +64,7 @@ function cIncludes(file,seen=new Set()) {
 }
 const headers=[...new Set([...localFiles(src),...localFiles('ocean/webnav/families/common')].flatMap(f=>[...cIncludes(f)]))];
 const objects=[];
-for(const name of ['bridge','family_api']){
+for(const name of (primitive||application?['bridge','api']:['bridge','family_api'])){
  const file=`${src}/${name}.c`,object=`${out}/${name}.o`;const args=[...common,`-DWF_GENERATED="${path.resolve(generated)}"`,'-c',file,'-o',object];
  const dependencies=[...cIncludes(file)];if(name==='bridge')dependencies.push(generated);
  const hash=digest(dependencies,compiler+JSON.stringify(args));
@@ -70,9 +74,13 @@ for(const name of ['bridge','family_api']){
 const library=`${out}/lib${family}.so`,linkArgs=['-shared','-Wl,--no-undefined',...objects,'-lpthread','-lm','-o',library];
 const linkHash=digest(objects,compiler+JSON.stringify(linkArgs));
 if(cache.link!==linkHash||!fs.existsSync(library)){run(cc,linkArgs);cache.link=linkHash;save();}
+const passedTests=[];
 if(flags.includes('--test')){
  const tests=fs.readdirSync(src).filter(f=>/^test.*\.c$/.test(f));if(!tests.length)throw Error(`No native tests for ${family}`);
  for(const name of tests){const file=`${src}/${name}`,binary=`${out}/${name.slice(0,-2)}`;const args=[...common,file,...objects,'-lpthread','-lm','-o',binary];const hash=digest([...cIncludes(file),...objects],compiler+JSON.stringify(args));
-  if(cache[name]!==hash||!fs.existsSync(binary)){run(cc,args);cache[name]=hash;save();}run('timeout',['-s','KILL','120s',binary]);}
+  if(cache[name]!==hash||!fs.existsSync(binary)){run(cc,args);cache[name]=hash;save();}run('timeout',['-s','KILL','120s',binary]);passedTests.push({source:file,sha256:hash});}
 }
+fs.writeFileSync(`${out}/validation.json`,JSON.stringify({target,completed_at:new Date().toISOString(),
+ compiler:version,proof_sha256:proofHash,runtime_sha256:runtimeHash,library_sha256:digest([library]),
+ native_tests:passedTests,browser_compared:false,learned_policy_evaluated:false},null,2)+'\n');
 console.log(`Built ${library}`);

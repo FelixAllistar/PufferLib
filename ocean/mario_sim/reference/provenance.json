@@ -1,0 +1,38 @@
+{
+  "rom_fingerprint": "6e01246e5d215cb3",
+  "routes": [
+    {
+      "name": "bowser_1_4",
+      "world": 1,
+      "stage": 4,
+      "encounter_actor": 45,
+      "frames": 800,
+      "sha256": "d9362e75eb4afd8f72c947d5166a275158e6bbf911cf568dea73092ccb612ba9",
+      "origin": "bounded native input search, independently replayed in unmodified reference ROM",
+      "practice_start": true,
+      "input_encoding": "one NES controller mask (A=1,B=2,Select=4,Start=8,Up=16,Down=32,Left=64,Right=128) per video frame"
+    },
+    {
+      "name": "vine_2_1",
+      "world": 2,
+      "stage": 1,
+      "encounter_actor": 47,
+      "frames": 568,
+      "sha256": "b1769f095cb2d86b4260b5a81426f63b02a64a27a2d140c1bcce3a9b945ce677",
+      "origin": "bounded native input search, independently replayed in unmodified reference ROM",
+      "practice_start": true,
+      "input_encoding": "one NES controller mask (A=1,B=2,Select=4,Start=8,Up=16,Down=32,Left=64,Right=128) per video frame"
+    },
+    {
+      "name": "powerup_1_1",
+      "world": 1,
+      "stage": 1,
+      "encounter_actor": 46,
+      "frames": 421,
+      "sha256": "49fb3fa441cad5ce48ee2a7fc2de0711291d8d67384ad0c43ca7d5dcc2dc4d2b",
+      "origin": "bounded native input search, independently replayed in unmodified reference ROM",
+      "practice_start": true,
+      "input_encoding": "one NES controller mask (A=1,B=2,Select=4,Start=8,Up=16,Down=32,Left=64,Right=128) per video frame"
+    }
+  ]
+}

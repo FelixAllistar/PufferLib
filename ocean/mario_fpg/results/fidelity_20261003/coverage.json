@@ -1,0 +1,13 @@
+{
+  "frames_with_goombas": 27528,
+  "goomba_stomps": 11,
+  "enemy_deaths": 4,
+  "one_frame_branches": 12108,
+  "persistent_trials": 1257,
+  "player_x_min": 2799,
+  "player_x_max": 3161,
+  "player_y_min": -24,
+  "player_y_max": 176,
+  "one_initial_copy_per_trial": true,
+  "native_resyncs_after_start": 0
+}

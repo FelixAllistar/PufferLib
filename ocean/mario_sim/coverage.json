@@ -1,0 +1,972 @@
+{
+  "schema": 1,
+  "date": "2026-10-03",
+  "training_hold": true,
+  "complete_game_qualified": false,
+  "inventory_sources": [
+    "https://www.nintendo.co.jp/clv/manuals/en/pdf/CLV-P-NAAAE.pdf",
+    "https://www.nintendo.com/jp/character/mario/en/history/smb/index.html",
+    "local verified ROM tables and annotated disassembly"
+  ],
+  "areas_catalogued": 34,
+  "stage_start_pointers_validated": 32,
+  "features": [
+    {
+      "id": "player_land",
+      "mechanic": "Small Mario movement, jump edges, braking and tile collision",
+      "representative": "1-1",
+      "knobs": "player position, subpixels, velocity, previous buttons",
+      "handwritten_status": "bounded_fpg_v2",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "player_forms",
+      "mechanic": "Super/Fire Mario, crouch, growth/shrink and invulnerability",
+      "representative": "1-1",
+      "knobs": "form, size, transition phase, injury timer",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "player_forms": [
+          0,
+          1,
+          2
+        ]
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "player_water",
+      "mechanic": "Swimming, water surface, bottom and currents",
+      "representative": "2-2, 7-2, 8-4",
+      "knobs": "area type, swim timer, current bounds",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "water_frames": 83984
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "goomba",
+      "mechanic": "Goombas, stomp, falling death and hard-mode substitution",
+      "representative": "1-1, 6-2",
+      "knobs": "actor state, direction, collision bits, hard mode",
+      "handwritten_status": "bounded_fpg_v2",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "6": 385877
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "6": 157044
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "green_koopa",
+      "mechanic": "Walking Koopa; shell, kick, revival and shell interactions",
+      "representative": "1-2, 3-1",
+      "knobs": "shell phase, revival timer, chain counter",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "0": 154826
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "0": 56705
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "red_koopa",
+      "mechanic": "Red Koopa ledge avoidance and shell states",
+      "representative": "1-3, 3-3",
+      "knobs": "direction, support terrain, shell state",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "3": 62110
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "3": 30222
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "buzzy_beetle",
+      "mechanic": "Buzzy Beetle and fire immunity",
+      "representative": "4-2, 6-2, second quest",
+      "knobs": "type, shell state, hard mode",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "2": 38445
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "2": 14194
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "paratroopa_jump",
+      "mechanic": "Bouncing Paratroopas and wing loss",
+      "representative": "8-3",
+      "knobs": "vertical/horizontal fractions, grounded state",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "14": 96590
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "14": 68579
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "paratroopa_vertical",
+      "mechanic": "Vertical flying Paratroopas and wing loss",
+      "representative": "1-3, 4-3",
+      "knobs": "oscillation origin, speed, phase",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "15": 11620
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "15": 5376
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "paratroopa_horizontal",
+      "mechanic": "Horizontal flying Paratroopas and wing loss",
+      "representative": "2-3/7-3 hard variants",
+      "knobs": "travel bounds, direction, phase",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "16": 852
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "16": 603
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "piranha",
+      "mechanic": "Piranha emergence, proximity suppression, retraction and collisions",
+      "representative": "1-2 onward",
+      "knobs": "pipe geometry, top/bottom Y, movement flag, timer",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "13": 209508
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "13": 35693
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "hammer_bro",
+      "mechanic": "Hammer Bro walking, jumps, facing, approach and throw selection",
+      "representative": "3-1, 5-2, 8-3",
+      "knobs": "jump/throw/interval timers, hard mode, PRNG, slot availability",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "5": 8049
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "5": 3375
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "hammer",
+      "mechanic": "Hammer attachment, release, trajectory and delayed collision box",
+      "representative": "Hammer Bro and later Bowser encounters",
+      "knobs": "misc actor slot, owner, throw phase, fractions, previous box",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "hammer_frames": 2726
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "lakitu",
+      "mechanic": "Lakitu following, acceleration and respawn",
+      "representative": "4-1, 6-1, 8-2",
+      "knobs": "frenzy timer, relative distance, speed, availability",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "17": 57202
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "17": 24330
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "spiny",
+      "mechanic": "Spiny egg flight, hatching, walking and collision immunity",
+      "representative": "Lakitu encounters",
+      "knobs": "egg state, PRNG, velocity, terrain",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "18": 76740
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "18": 48337
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "bullet_cannon",
+      "mechanic": "Cannon-spawned Bullet Bills: facing, near-player suppression, flight and stomp",
+      "representative": "5-1, 8-2, 8-3",
+      "knobs": "cannon registry, cooldowns, PRNG, actor occupancy",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "51": 62707
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "51": 47601
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "bullet_frenzy",
+      "mechanic": "Offscreen Bullet Bill frenzy and distinct interactions",
+      "representative": "5-3 and late variants",
+      "knobs": "frenzy selector, timer, PRNG, hard mode",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "8": 34972
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "8": 33973
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "fish_swimming",
+      "mechanic": "Grey/red Cheep-cheep swimming and vertical phases",
+      "representative": "2-2, 7-2, 8-4",
+      "knobs": "species, phase, speed fractions, spawn timer",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "10": 9483,
+          "11": 11936
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "10": 2422,
+          "11": 4713
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "fish_flying",
+      "mechanic": "Flying Cheep-cheep launch, trajectories and spawn zones",
+      "representative": "2-3, 7-3, 8-4",
+      "knobs": "frenzy bounds, PRNG, launch speed, slot allocation",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "20": 105606
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "20": 80903
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "blooper",
+      "mechanic": "Blooper pursuit, acceleration, descent and direction decisions",
+      "representative": "2-2, 7-2, 8-4",
+      "knobs": "player-relative position, phase, timer, hard mode, PRNG",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "7": 81632
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "7": 45464
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "podoboo",
+      "mechanic": "Lava fireball/Podoboo launch, gravity, return and relaunch",
+      "representative": "2-4, 4-4, 5-4, 6-4, 8-4",
+      "knobs": "launch timer, PRNG, gravity fractions, Y page",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "12": 137417
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "12": 117273
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "firebar_short",
+      "mechanic": "Short firebars, both directions and speed variants",
+      "representative": "1-4, 2-4/5-4, 8-4 water room",
+      "knobs": "spin accumulator, speed, direction, segment integer table",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "27": 12273,
+          "29": 101166,
+          "30": 2766
+        },
+        "unobserved_actor_ids": [
+          28
+        ],
+        "position_change_frames": {
+          "27": 0,
+          "29": 72,
+          "30": 0
+        }
+      },
+      "remaining_checks": "Target firebar ID 28 and all segment-collision/phase combinations."
+    },
+    {
+      "id": "firebar_long",
+      "mechanic": "Long firebar, duplicate slot and angle adjustments",
+      "representative": "5-4",
+      "knobs": "length, slot ownership, spin phase, previous player OAM X",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "31": 10750
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "31": 0
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "bowser",
+      "mechanic": "Bowser body/rear, jumping, fire, hammers, damage and identities",
+      "representative": "Every castle; later-world behavior variants",
+      "knobs": "world, hard mode, HP, timers, duplicate actor ownership",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "45": 23402
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "45": 7304
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "bowser_flame",
+      "mechanic": "Bowser fire breath and approach flames",
+      "representative": "Every castle",
+      "knobs": "frenzy timer, height selection, speed fraction",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "21": 7340
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "21": 6633
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "mushroom",
+      "mechanic": "Mushroom emergence, motion, collision and growth",
+      "representative": "Question/brick powerup blocks",
+      "knobs": "block contents, player form, emerge phase, actor slot",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "powerup_type": 0,
+        "powerup_presence_frames": 2197
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "flower",
+      "mechanic": "Fire Flower emergence and collection",
+      "representative": "Powerup block hit by Super/Fire Mario",
+      "knobs": "player form, emerge phase, collection state",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "powerup_type": 1,
+        "powerup_presence_frames": 2489
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "star",
+      "mechanic": "Star emergence, bouncing and invincibility effects",
+      "representative": "1-1 and other star bricks",
+      "knobs": "bounce state, invincibility timer, enemy interaction state",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "powerup_type": 2,
+        "powerup_presence_frames": 661
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "one_up",
+      "mechanic": "1-Up mushrooms, visible and hidden block conditions",
+      "representative": "1-1, 1-2, 8-2",
+      "knobs": "hidden block enable, prior coins, life counter, emerge phase",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "powerup_type": 3,
+        "powerup_presence_frames": 6386
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "player_fireball",
+      "mechanic": "Fireball creation, two-slot limit, bounce, impact and enemy damage",
+      "representative": "Fire Mario",
+      "knobs": "button edge, cooldown, projectile slots, fractions, terrain",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "player_fireball_frames": 74270
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "coins",
+      "mechanic": "Loose coins, question coins, multi-coin timing and 100-coin life",
+      "representative": "Ground, underground and bonus areas",
+      "knobs": "tile contents, coin counter, brick coin timer",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target multi-coin exhaustion and the 100-coin life rollover."
+    },
+    {
+      "id": "blocks",
+      "mechanic": "Head bumps, brick breaking, bouncing blocks and enemy effects",
+      "representative": "1-1 onward",
+      "knobs": "player size, tile identity, block slot, bounce phase",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "hidden_blocks",
+      "mechanic": "Invisible coin/1-Up blocks and activation from below",
+      "representative": "1-1, 2-1, 4-2",
+      "knobs": "tile identity, visibility, eligibility, block state",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target each hidden-block eligibility condition."
+    },
+    {
+      "id": "vine",
+      "mechanic": "Hidden beanstalk/vine growth, climbing, side switching and sky transition",
+      "representative": "2-1, 3-1, 4-2, 5-2, 6-2",
+      "knobs": "vine segments/height, climb phase, destination area",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "47": 5065
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "47": 1113
+        }
+      },
+      "remaining_checks": "Target complete climbing, side changes and sky-room entry/return."
+    },
+    {
+      "id": "spring",
+      "mechanic": "Jumpspring compression, timing and launch",
+      "representative": "2-1, 3-1, 6-3",
+      "knobs": "spring phase/timer, force, player position",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "50": 29561
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "50": 92
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "platform_vertical",
+      "mechanic": "Vertical platforms and player carry",
+      "representative": "1-3, 4-3",
+      "knobs": "bounds, velocity fractions, collision flags",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "37": 20155
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "37": 15060
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "platform_horizontal",
+      "mechanic": "Horizontal platforms and player carry",
+      "representative": "3-3",
+      "knobs": "travel phase, origin, speed, contact",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "40": 50913
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "40": 17792
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "platform_balance",
+      "mechanic": "Paired scales, ropes, load and drop",
+      "representative": "3-3, 4-3",
+      "knobs": "linked slots, rope lengths, occupied platform, fall phase",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "36": 22
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "36": 0
+        }
+      },
+      "remaining_checks": "Only brief actor presence is recorded; target both linked platforms, carrying, ropes and drops."
+    },
+    {
+      "id": "platform_drop",
+      "mechanic": "Falling platforms",
+      "representative": "3-3, 6-3",
+      "knobs": "contact trigger, fall fractions, erase bounds",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "41": 54887
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "41": 481
+        }
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "platform_lifts",
+      "mechanic": "Large/small ascending and descending lifts",
+      "representative": "1-2, 4-2, 2-4/5-4",
+      "knobs": "wrap bounds, direction, platform width, slots",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "38": 336
+        },
+        "unobserved_actor_ids": [
+          39,
+          43,
+          44
+        ],
+        "position_change_frames": {
+          "38": 313
+        }
+      },
+      "remaining_checks": "Target IDs 39, 43 and 44, wrap points and carrying."
+    },
+    {
+      "id": "platform_right",
+      "mechanic": "Player-triggered rightward bonus platforms",
+      "representative": "Sky bonus areas",
+      "knobs": "trigger state, horizontal force, exit behavior",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "needs_targeted_clips",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {},
+        "unobserved_actor_ids": [
+          42
+        ],
+        "position_change_frames": {}
+      },
+      "remaining_checks": "Target a complete sky-room platform interaction."
+    },
+    {
+      "id": "pipes",
+      "mechanic": "Vertical/sideways pipes, entry/exit, return pages and warp zones",
+      "representative": "1-1, 1-2, 4-2, 8-4",
+      "knobs": "area links, player pipe phase, parser state, return entry",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "water_hazards",
+      "mechanic": "Whirlpools, water holes, surface limits and drowning/fall outcomes",
+      "representative": "Water areas",
+      "knobs": "area mode, whirlpool registry, bounds, timer",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "water_frames": 83984
+      },
+      "remaining_checks": "Target each whirlpool/surface/exit interaction beyond ordinary water gameplay."
+    },
+    {
+      "id": "camera_parser",
+      "mechanic": "Scrolling, screen clamps, terrain residency, parsing and dynamic spawns",
+      "representative": "All areas",
+      "knobs": "camera, parser task/cursors, spawn stream offsets, active buffers",
+      "handwritten_status": "bounded_fpg_v2",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "castle_maze",
+      "mechanic": "Castle route/height checks, loops and correct pipe sequences",
+      "representative": "4-4, 7-4, 8-4",
+      "knobs": "maze counters, loop page, route history, area links",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "needs_targeted_clips",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target complete maze routes, loop failures and the 8-4 pipe sequence."
+    },
+    {
+      "id": "flagpole",
+      "mechanic": "Flag contact including FPG, descent, castle walk, fireworks and time tally",
+      "representative": "Ground stage endings",
+      "knobs": "flag state, grab phase, timers, score digits",
+      "handwritten_status": "bounded_contact_only",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "48": 37946,
+          "49": 33054
+        },
+        "unobserved_actor_ids": [
+          22
+        ],
+        "position_change_frames": {
+          "48": 1375,
+          "49": 1534
+        }
+      },
+      "remaining_checks": "Target all fireworks/time-tally outcomes and continuation to the next stage."
+    },
+    {
+      "id": "axe_bridge",
+      "mechanic": "Axe contact, bridge collapse, Bowser fall and rescue",
+      "representative": "Castle endings",
+      "knobs": "bridge offset, boss state, victory task, timers",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "sampled_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003",
+        "actor_presence_frames": {
+          "45": 23402,
+          "53": 113
+        },
+        "unobserved_actor_ids": [],
+        "position_change_frames": {
+          "45": 7304,
+          "53": 0
+        }
+      },
+      "remaining_checks": "Target every bridge, rescue and world-ending branch."
+    },
+    {
+      "id": "game_lifecycle",
+      "mechanic": "Timer expiry, death, restart/checkpoints, next stage/world, lives and second quest",
+      "representative": "All stages",
+      "knobs": "game task, timers, score/lives, checkpoint page, hard mode",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "context_cpu_cuda",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Target complete collision, phase, spawn and interaction combinations; matching sampled frames is not exhaustive qualification."
+    },
+    {
+      "id": "two_player",
+      "mechanic": "Player swapping and saved offscreen progress",
+      "representative": "Two-player mode",
+      "knobs": "current player, alternate player progress and lives",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "logic_compiled_input_adapter_incomplete",
+      "persistent_clip_status": "needs_targeted_clips",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "The current replay input adapter supplies controller one only; add controller-two input and swap coverage."
+    },
+    {
+      "id": "pause_input",
+      "mechanic": "Pause, button serialization and frame timing",
+      "representative": "All stages",
+      "knobs": "pause state, edge masks, input history, frame boundary",
+      "handwritten_status": "unqualified",
+      "logic_prototype_status": "compiled_rom_logic",
+      "persistent_clip_status": "needs_targeted_clips",
+      "interaction_qualification": "incomplete",
+      "evidence": {
+        "artifact_directory": "results/feasibility_20261003"
+      },
+      "remaining_checks": "Add explicit Start/Select and pause/resume sequences."
+    }
+  ],
+  "qualification_report": "RESULTS.md",
+  "status_meanings": {
+    "compiled_rom_logic": "Original controller code is present in the compiled reference prototype; this is independent of the hand-written simulator.",
+    "sampled_cpu_cuda": "The listed actors or states occur in exactly matched persistent CPU/CUDA replays. This is bounded evidence, not complete interaction qualification.",
+    "context_cpu_cuda": "Relevant contexts occur in matching replays; feature-specific interactions still need targeted assertions.",
+    "needs_targeted_clips": "Compiled logic exists, but this feature needs targeted clip coverage."
+  }
+}

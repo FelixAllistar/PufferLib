@@ -1,0 +1,22 @@
+{
+  "preset": "webnav-record-browser-v1",
+  "status": "generated_public_application_and_policy_interface_checked",
+  "compiler_checked": true,
+  "laws": 7,
+  "native_test_programs": 2,
+  "generated_worlds_checked": 64,
+  "validation_command": "node ocean/webnav/families/build.cjs app:record_browser --test",
+  "policy_interface_command": "bash ocean/webnav/benchmarks/run.sh test-app-policy",
+  "policy_interface_episodes": 16,
+  "policy_interface_choices": 965,
+  "response_form_composition_checked": true,
+  "registered_training_tasks": 0,
+  "original_browser_state_comparison": false,
+  "learned_success_evaluated": false,
+  "limits": [
+    "Synthetic records, list/detail/history/search/filter/sort/page and one amount-editing modal.",
+    "8..16 independently generated records; four visible rows per page; 31 ASCII characters in the search/edit transport.",
+    "No benchmark task instances, expected answers, rewards or curriculum distribution are imported.",
+    "Policy execution checks interface compatibility, not task success or WebArena coverage."
+  ]
+}

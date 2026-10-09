@@ -99,6 +99,7 @@ static int field(WFView *v,unsigned ref,const char *label,const uint32_t *value,
     WFNode *n=node(v,ref,role,WF_VISIBLE|WF_ENABLED|WF_CLICKABLE,0);
     if(!n)return -1;
     n->capacity=cap+1u;
+    n->selection_start=n->selection_end=len;
     return add_cstr(v,label,&n->name)||add_text(v,value,len,&n->value);
 }
 static int mail_thread(WFView *v,const uint32_t *r,unsigned i,unsigned mode){
@@ -149,6 +150,10 @@ static int observe(const uint32_t *r,WFView *v){
         if(r[35]>=3u&&r[35]<=4u)v->nodes[v->count-(r[35]==3u?2u:1u)].flags|=WF_FOCUSED;
     }
     if(screen==1u&&r[35]==1u){for(i=0;i<v->count;i++)if(v->nodes[i].ref==2u)v->nodes[i].flags|=WF_FOCUSED;}
+    for(i=0;i<v->count;i++)if((v->nodes[i].flags&WF_FOCUSED)&&r[45]){
+        v->nodes[i].selection_start=0;
+        v->nodes[i].selection_end=v->nodes[i].value.length;
+    }
     return v->omitted? -1:0;
 }
 static int visible_ref(const uint32_t *r,unsigned ref){

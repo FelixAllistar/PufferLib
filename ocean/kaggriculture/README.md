@@ -1,9 +1,423 @@
-# Kaggriculture on upstream PufferLib 5.0
+# Kaggriculture on PufferLib 5.0
 
-This is the training port onto upstream revision `6ffa5b10d`, not the accumulated
-5c trainer. It supports the current **2/2 controller, entity observation v3,
-policy ABI 5**: 1,424 observations, 47 heads, 1,978 action logits and the entity
-encoder with separate actor/value branches around upstream MinGRU.
+## Native baseline and selected Transformer
+
+There is one active config: `config/kaggriculture.ini`. Build with
+`bash build.sh kaggriculture`; `./puffer train` reads that config directly.
+The implementation lives in `ocean/kaggriculture_direct/`, but there is no
+second environment config or profile overlay. The old macro controller is
+retained for archived tools/checkpoints and is not executed by the new policy.
+
+Current contract: policy ABI 7 / observation version 5, 3,000 actor features
+plus 256 privileged paired-critic features. Each of 20 units chooses one of
+44 primitive commands and, when needed, a quantity from 1–20. Each of 10
+market slots chooses one of 22 commands (including NOOP) and a quantity from
+1–100. The 60 small heads produce 2,500 scores total, down from ABI 6's 29,030.
+The encoder is one stock PufferNet linear
+projection followed by upstream MinGRU. Separate nonlinear unit/market heads
+and the compact same-state paired critic remain in the native binary.
+The selected Transformer has a separate Torch BC/PPO runner, described below.
+Its `.pt` files are not compatible with the native MinGRU `.bin` loader.
+The actor never receives the appended opponent-private critic features.
+
+### PPO from the selected epoch-19 Transformer
+
+`[transformer]` pins the cash-selected BC checkpoint and its SHA-256 in the
+same `config/kaggriculture.ini`; `[transformer_ppo]` holds its PPO recipe.
+This is the epoch-19 actor that averaged $5,520 on 128 separate validation
+games, not the final epoch-30 actor. Use the Torch entry point:
+
+```bash
+# Inspect the resolved recipe without allocating a GPU or creating a run.
+python ocean/kaggriculture/run.py transformer-ppo --dry-run
+# Two complete self-play rollouts exercise critic warmup, PPO, and saving.
+python ocean/kaggriculture/run.py transformer-ppo-smoke
+# Launch the bounded initial fine-tune (new timestamped output by default).
+python ocean/kaggriculture/run.py transformer-ppo
+# Evaluate the configured epoch-19 actor on 64 maps, both seats.
+python ocean/kaggriculture/run.py transformer-eval
+```
+
+The initial budget is 1M agent steps, rounded up to complete rollouts: 16 fresh
+games per rollout, both seats sampled from the current actor, 719 turns each.
+The actor starts from epoch 19; a separate, zero-initialized paired critic warms
+up for two rollouts on actual self-play WLD returns. Its shared 128-feature
+seat scorer produces `tanh((own_score-other_score)/2)`. Only the critic receives
+the appended 256 private features. No expert-return critic fit is performed.
+
+PPO uses Adam at actor LR `3e-6` / critic LR `1e-3`, gamma 1, GAE lambda .97,
+clip .1, value clip .2, two update epochs, 960-frame optimizer minibatches,
+and 240-frame gradient microbatches. The native sampler returns each sampled
+conditional head mask. Those exact masks define the joint action likelihood,
+entropy, and teacher-to-policy KL; forced singleton heads contribute zero.
+The frozen epoch-19 anchor has KL coefficient .1. Approximate behavior-policy
+KL above .03 stops the update early. Optimizer state is separate from BC.
+Rollout and update use the same compiled, grad-enabled actor graph; rollout
+activations are discarded without backpropagation. Inference-only compilation
+introduced a BF16 likelihood mismatch, so it is not used for the acting policy.
+The trainer checks near-zero KL and zero clipping before its first update on
+each rollout. A readiness run at `1e-5` hit the KL limit after one minibatch;
+the lower initial actor rate is deliberate.
+
+Training uses current-policy self-play and fresh starts. The native MinGRU's
+historical league, replay-reset rate, Muon learning rate, and 5B-step budget do
+not apply to this Torch runner. The rule bot is used only for evaluation.
+Greedy screening runs every four rollouts, and promotion requires higher cash
+than the initial BC baseline. Final validation uses separate maps and does not
+select a checkpoint. Self-play win rate alone is not a strength metric.
+
+Each output directory contains `config.json`, `metrics.jsonl`, `latest.pt`,
+`selected.json`, evaluations, and `best.pt` if PPO beats the BC screening cash.
+`latest.pt` atomically retains actor, critic, both optimizers, counters, and RNG
+states. It resumes at a full-game boundary; bounded latest/best storage avoids
+accumulating large per-update snapshots. Original BC snapshots remain intact.
+
+```bash
+python ocean/kaggriculture/run.py transformer-ppo \
+    --resume saved/kaggriculture/transformer_v2/YOUR_RUN/latest.pt \
+    --output saved/kaggriculture/transformer_v2/YOUR_CONTINUATION \
+    --total-timesteps 2000000
+python ocean/kaggriculture/run.py transformer-eval \
+    --checkpoint saved/kaggriculture/transformer_v2/YOUR_RUN/best.pt
+```
+
+Resume preserves the recipe; only the total terminal budget may increase.
+`--games`, `--total-timesteps`, `--device`, and `--no-compile` support explicit
+small diagnostics. Smoke runs use smaller cohorts and are plumbing checks,
+not evidence that PPO improves gameplay. `./puffer train` still launches the
+native MinGRU baseline; it cannot consume a Transformer checkpoint.
+
+The rule-aware design is inspired by
+[M & M & P & Q's Final B](https://github.com/msdsm/kaggriculture-solution).
+The primitive command vocabulary returns to this project's pre-executor
+controls; it does not copy their large, flat candidate lists. Quantities are
+factorized, so this is a deliberate policy parameterization change, not an
+equivalent distribution over the old flat catalog. Fixed observation slots
+encode identity implicitly, and tile categories use compact scalar codes
+instead of one-hots. All previously exposed game fields remain available.
+Actions are primitive moves, work, inventory operations and exact-quantity
+market orders, not macro requests to a route executor. Farmer then workers
+reserve seeds and tile tasks. Market slots reserve money and inventory.
+Invalid boundary moves, unproductive care/fertilizer, conflicting tasks and
+seed overspending are masked. Overflow/final cash-out SELL and final shed DROP
+are forced with singleton masks: probability one, entropy zero and no policy
+gradient. The same conditional masks are stored during rollout and reused by
+PPO, teacher KL and evaluation. Masking is not a full forward simulator:
+an otherwise supported primitive action can still do nothing in the game.
+
+The current 1024x2 BC-start baseline uses terminal +1/0/-1 WLD, gamma 1,
+paired zero-sum value, lambda .97, PPO clip .2 and entropy .0015.
+Current-policy matches train both seats; 25% of environments use a historical
+opponent (only the live seat trains there). The pool has at most six historical
+opponents, refreshed at the checkpoint cadence, not every 500M steps.
+Scripted training opponents, opponent action noise, PBRS, auxiliary rewards
+and frozen-teacher KL are off. Teacher KL currently cannot run with a league.
+Replay resets are enabled at 10%, leaving 90% fresh starts. `root_money`
+remains visible. Optional land/crop/animal bonuses
+remain available for later experiments; adding them is no longer pure WLD.
+
+The shared config retains the user's 5B-agent-step regular-training budget,
+horizon 720, 256 agent rows
+and two full sequences per minibatch. A game has 719 action steps; Puffer's
+BF16 GAE needs a horizon divisible by eight. The 256-row vector retains
+memory headroom on the current 8GB GPU; larger shapes need separate checks.
+The user's PPO learning rate is preserved; the BC Adam rate is separate.
+Do not infer stronger play or production throughput from smoke tests.
+
+### Fresh BC: six shapes, one configuration
+
+`bc_grid.hidden_sizes = 256,512,1024` and `bc_grid.num_layers = 2,3`
+describe the requested models. The runner launches all six with CLI shape
+overrides; it does not write six INI files. Each has its own checkpoint,
+training log and provenance receipt under
+`saved/kaggriculture/compact_v7/h{hidden}_l{layers}/`.
+ABI-6 weights and datasets are incompatible and remain untouched. A fresh
+compact dataset is written to `data/kaggriculture/compact_v7/teacher.bc`.
+
+```bash
+python ocean/kaggriculture/run.py build-bc
+uv run --no-project --with numpy python ocean/kaggriculture/run.py prepare-bc
+python ocean/kaggriculture/run.py bc-grid --dry-run
+python ocean/kaggriculture/run.py bc-grid
+# After an interruption: verify/keep completed shapes and run only the rest.
+python ocean/kaggriculture/run.py bc-grid --resume
+```
+
+`--resume` does not overwrite or retrain completed models. It checks their
+checkpoint checksums, receipts, architecture, command, config, dataset and
+trainer binary before starting any remaining shape. Incomplete/mismatched
+checkpoint-receipt pairs stop the queue for inspection. New receipts also
+snapshot `default.ini` (older receipts only recorded the main config).
+An unfinished model starts fresh; this is queue resume, not optimizer/epoch
+resume. `--dry-run` only prints commands; it does not verify saved files.
+
+Each pending model first runs a short-lived CUDA check, whose output is kept
+in that model's timestamped log. This reports the actual CUDA error without
+changing the trainer or retaining a GPU context in the queue process. Check
+CUDA separately with `python ocean/kaggriculture_direct/check_cuda.py`.
+Successful `nvidia-smi` output alone is not a CUDA compute health check.
+
+Preparation re-encodes the existing, parity-checked Majkel1337 replay cache
+into factorized primitive ABI-7 labels, not old macro labels. These are not demonstrations
+from the winning Final B policy. Unsupported, masked and forced teacher
+components are ignored. Quantity labels are also ignored when their preceding
+teacher command was filtered; they never supervise an unrelated fallback.
+Original actions still advance the replay so state
+parity is preserved. Episodes cannot cross training and validation splits.
+The dataset is streamed to disk and published without replacing existing files.
+
+Fresh BC runs for 30 epochs with Adam 1e-4, epsilon 1e-5 and global gradient
+clip 5; only the best held-out-CE weights are saved. Every shape starts fresh.
+The critic is frozen during actor BC. Subsequent teacher-guided PPO uses the
+matching BC policy as its frozen reference, with the teacher's own recurrent
+state. Changing `bc_grid.output_root` starts a new version without overwriting
+models. The default selected policy is 1024×2; selecting another is explicit:
+
+```bash
+python ocean/kaggriculture/run.py train --hidden 512 --layers 3
+python ocean/kaggriculture/run.py eval --hidden 512 --layers 3
+```
+
+Evaluation starts fresh with no reset bank or opponent noise. Native eval and
+match are supported. The shared config now uses masked argmax during evaluation
+(`base.eval_greedy=1`); use `--base.eval_greedy=0` for a sampling comparison.
+Training always samples, regardless of this evaluation setting.
+The old CPU/web/Kaggle macro exporters cannot load ABI 7;
+the build rejects those paths rather than silently exporting the wrong policy.
+
+### Greedy BC diagnostics and structured Transformer comparison
+
+Held-out BC loss measures agreement with recorded teacher actions in excluded
+episodes. It is not money, production, or win rate. On the current compact
+dataset, the 30-epoch 1024x2 BC has lower loss than the 256x2 BC but worse
+closed-loop play. On 128 fresh games per seat against the built-in rule bot:
+
+| BC policy | Sampling mean terminal cash | Greedy mean terminal cash |
+| --- | ---: | ---: |
+| 1024x2 | $0 | $0 |
+| 256x2 | $292.37 | $1,155.05 |
+
+Every game starts at $3,000. Neither result establishes a productive policy.
+The rule bot also goes bankrupt: its draw/win rate is a weak strength measure.
+Native map sequences are repeatable environment-index seeds, not held-out seeds.
+One-game traces show the 1024 policy spending early on animals and hires,
+producing nothing, and later stalling on ineffective work.
+
+Reproduce the comparison without training or overwriting models:
+
+```bash
+python3 ocean/kaggriculture_direct/evaluate_bc.py --binary ./puffer \
+    --output saved/kaggriculture/diagnostics/new_comparison --games 128
+# --trace uses one environment and preserves the first game's decoded actions,
+# cash, production, inventory and positions in exclusive-created JSONL files.
+python3 ocean/kaggriculture_direct/evaluate_bc.py --binary ./puffer \
+    --output saved/kaggriculture/diagnostics/new_trace --games 1 --widths 1024 --trace
+```
+
+The experimental Torch sidecar uses the same replay split, compact labels,
+conditional support, simulator and rule bot, with a fresh independently trained
+actor. The backbone follows the winner's bootstrap dimensions: 6 pre-LN blocks,
+width 256, 8 heads, FFN 1024, no dropout, within-farm selective 2D RoPE with
+16 rotary dimensions and base 100. It adapts **our current observation**, not
+the winner's richer feature schema: 200 cell tokens, 40 unit tokens, one global
+token, 12 commodity/animal tokens and 10 market slots (263 total).
+Token adapters and shared unit/market heads replace the flat input projection
+and recurrent trunk. It emits our 44/20 unit and 22/100 market heads, not the
+winner's huge flat catalog. No macro executor, route planner, automatic seed
+purchase, private actor features, or inferred-inventory memory is added.
+Adapter version 2 preserves explicit farmer/hand roles and worker indices,
+inventory visibility/totals, and cell occupancy derived from public unit
+positions. This is essential for shared heads: adapter version 1 erased worker
+identity, making co-located identical workers indistinguishable. Its initial
+two-epoch pilot is retained separately and is not a valid final architecture
+comparison. New adapters always start fresh; old `.pt` snapshots load with their
+original adapter, never with silently expanded inputs.
+
+Torch is optional; the normal native build does not import it. Use a CUDA build
+supporting the GPU (the RTX 5060 Ti requires CUDA 12.8 or newer).
+
+```bash
+make -C ocean/kaggriculture_direct replay-bridge
+python3 ocean/kaggriculture_direct/transformer.py check \
+    --output saved/kaggriculture/transformer_v2/new_check --microbatch 128
+python3 ocean/kaggriculture_direct/transformer.py bc \
+    --output saved/kaggriculture/transformer_v2/new_bc --microbatch 240 --epochs 30 \
+    --compile --fused-adam
+```
+
+The sidecar reads the dataset and Adam settings from the **same** INI. It
+defaults to that config's 30 BC epochs, matching the recurrent BC exposure;
+`--epochs 2` is only a short screening pilot, not the winner's final fine-tuning
+recipe transplanted onto random weights. It
+accumulates a complete game's policy gradient using bounded frame microbatches,
+matching native BC's frame normalization; terminal/forced/filtered targets stay
+excluded. Held-out CE and accuracy are reported each epoch, but every epoch
+also gets greedy fresh-game cash evaluation on both seats. Epoch snapshots are
+retained separately, with data/config/source provenance. Selection uses fresh
+mean cash, with held-out CE only breaking ties. After BC finishes, the selected
+epoch is checked on a separate explicit-seed cohort (64 games per seat); this
+final cohort does not select the epoch. See `selected.json` and
+`selected_fresh_validation.json` in the run directory. `.pt` checkpoints are
+explicitly architecture-tagged and are **not** native `.bin` files. The Torch
+PPO integration above consumes the selected actor; there is no native CUDA
+Transformer network or export path. No critic is fitted during actor BC.
+
+`--compile` compiles the actor and masked loss together, retaining eager BF16
+rounding boundaries (`emulate_precision_casts=True`). Default compiler fusion
+changed gradients by about 4% on the trained checkpoint, so it is not used.
+The optimized path keeps the loss layout on the GPU and avoids padding the
+attention values from 32 to 96 channels. Full-game gradient accumulation and
+the Adam update frequency are unchanged. Compilation needs a complete Triton
+installation matching the installed Torch distribution; the first batch compiles.
+The eager path remains available by omitting `--compile`.
+
+On the RTX 5060 Ti, synchronized update benchmarks measured about 850 frames/s
+originally and 1,250 frames/s with precision-preserving compilation and 240-frame
+microbatches, including optimizer work (approximately 1.5x). A faster compiler
+setting failed the gradient tolerance and was rejected. Reproduce the benchmark
+on real teacher data, optionally checking against the original implementation:
+
+```bash
+python3 ocean/kaggriculture_direct/benchmark_transformer.py --compile --objective \
+    --fused-adam --microbatch 240 --games 10 \
+    --checkpoint saved/kaggriculture/transformer_v2/new_bc/epoch_7.pt \
+    --verify-reference 1d4f127f1
+```
+
+New epoch checkpoints atomically save Adam and random-generator states as well
+as weights. `--resume PATH --epochs 30` continues to **30 total epochs**, writing
+to a new output directory and preserving the prior cash-selected checkpoint.
+The original bootstrap snapshots contain weights only: continuing from them
+explicitly resets Adam moments while preserving the epoch/data-order schedule.
+The run receipt records that distinction; it is not an exact optimizer resume.
+
+```bash
+python3 ocean/kaggriculture_direct/transformer.py bc \
+    --resume saved/kaggriculture/transformer_v2/new_bc/epoch_7.pt \
+    --output saved/kaggriculture/transformer_v2/continued_bc --epochs 30 \
+    --compile --fused-adam --microbatch 240
+```
+
+The default 16 games per seat use exactly the first native map cohort with
+16 environment rows. For the matched native baseline use `evaluate_bc.py
+--games 16`. Separate explicit seeds can validate a selected checkpoint:
+
+```bash
+python3 ocean/kaggriculture_direct/transformer.py eval \
+    --checkpoint saved/kaggriculture/transformer_v2/new_bc/epoch_30.pt \
+    --output saved/kaggriculture/transformer_v2/new_validation --microbatch 128 \
+    --map-seed-mode explicit --eval-seed 2026100700 --eval-games 64
+```
+
+Independent tests check selective attention against a dense forward/backward
+oracle, compact-head CE, missing-unit masks, the private-feature barrier, and
+CPU prefix sampling and optimizer/RNG checkpoint continuation. CUDA checks
+qualified compiled 240-frame microbatches at about 5.35GB peak tensor memory
+on the current 8GB GPU; context/allocator
+overhead is additional. Do not run it alongside another GPU trainer.
+
+### BC-start PROTEIN sweep
+
+```bash
+python3 ocean/kaggriculture/run.py sweep --dry-run
+python3 ocean/kaggriculture/run.py sweep
+python3 ocean/kaggriculture/run.py sweep-results
+```
+
+The first screening sweep is 12 serial trials of 50M agent steps each (rounded
+down to whole 256x720 rollouts), all freshly loading the same 1024x2 BC.
+It searches Muon learning rate (1e-5–3e-3), entropy coefficient (1e-5–1e-2),
+value coefficient (.5–3), and momentum (.5–.95). Trial zero uses the current
+settings. All inherited architecture, horizon, batch, reward and discount
+search dimensions are explicitly frozen in **the same config**. This is a
+screen, not a claim that 50M predicts the best 500M+ policy. Recheck promising
+trials with longer runs, multiple training seeds and stronger opponents.
+
+`sweep.trial_timesteps` overrides the regular training budget only for sweeps.
+If changing it, also change both fixed `[sweep.train.total_timesteps]` bounds.
+The default total is 600M nominal steps, roughly 8–12 GPU-hours at the observed
+1024 throughput; this is an estimate, not a time limit. `max_suggestion_cost`
+is a PROTEIN suggestion setting, not a process timeout.
+
+The native PROTEIN search launches an environment-owned Python worker. Each
+worker waits for training to **exit and release GPU memory**, then evaluates
+128 fresh games on each seat against the fixed built-in rule bot, with 32
+environments and no resets, noise, league or teacher KL. Map sequences are
+fixed by environment indices; `sweep.eval_seed` fixes policy-sampling RNG.
+These are repeatable screening games, not held-out game seeds or an expert
+opponent ladder. The objective is the mean final cash across seats; win rate
+and draws are reported separately. Pooled self-play win rate and reset-start
+wealth do not determine rankings. A weak bot win rate is not evidence of
+strong play, and better held-out BC loss is not evidence of better game cash.
+
+Logs survive exit: each `logs/kaggriculture/sweep_*/` directory contains exact
+input arguments, `train.log`, two `eval_seat*.log` files and `result.json`
+(or `failure.json`). Native INI metric snapshots remain alongside them.
+The Python launcher also saves a timestamped sweep console log. `sweep-results`
+prints completed trials ranked by evaluated cash. Native `./puffer sweep`
+also works after rebuilding, but use the launcher to retain its console log.
+Three failed workers abort the sweep; failed evaluation never falls back to
+a training score. Completed checkpoints are never removed or overwritten.
+Checkpoint cadence 64 keeps this 12-trial screen near 3.5GB of checkpoint
+storage. Do not start a sweep alongside another GPU trainer on the 8GB box.
+Sweep optimizer state is not resumable; rerunning starts a new set of trials
+without replacing prior results.
+
+### Deliberate adaptations and remaining gaps
+
+This is not a byte-for-byte reproduction of Final B. Puffer's Muon optimizer
+and clipped squared value loss remain. The critic uses compact same-state
+summaries rather than a Transformer global token. Recurrent memory replaces
+their explicit inferred-inventory token; there is no explicit opponent
+inventory tracker. Forced sales are selected before market sampling, with
+singleton masks, rather than repairing sampled orders afterward.
+
+Fresh actor BC currently uses masked CE, not the public final-stage BC
+entropy/reference-KL objective. `run.py critic` offers frozen-actor regression
+on replay WLD returns; it is **not** the reference solution's fresh-self-play
+critic fitting and is not silently run by `bc-grid`. The BC/PPO loop can be
+repeated with newly prepared demonstrations, but public-replay downloading,
+heuristic refinement, fresh-self-play critic selection and CPU submission
+export are separate work. No final-day search controller is used.
+
+Teacher KL currently requires one live policy and one chronological pass
+per rollout (`num_policies=1`, `replay_ratio=1`); the trainer checks this.
+Joint old log probabilities are FP32 so BF16 rounding does not create
+spurious PPO ratios. Full optimizer/reference-state resume is not added:
+loading a checkpoint starts a fresh run as in the existing Puffer trainer.
+
+### Verification
+
+```bash
+make -C ocean/kaggriculture_direct test test-replay replay-bridge
+uv run --no-project --with numpy --with pytest python -m pytest -q ocean/kaggriculture_direct/tests
+bash ocean/kaggriculture_direct/build_tests.sh
+# Explicit opt-in on an idle GPU:
+./build/test_kaggriculture_direct_kernels 0
+./build/test_kaggriculture_direct_kernels 1
+```
+
+The CUDA test checks CPU/GPU prefix parity, exact unchanged-policy ratio 1,
+zero forced-action gradients, masked teacher-KL gradients against an independent
+double-precision oracle and graph-enabled sampling, with full warps and 1–20
+workers per seat. Sampler head widths are taken from the same bounded layout
+as the local prefix masks. CPU tests cover catalogs,
+private-observation isolation, spending/seeds, full games, real replay
+conversion, held-out separation and the six-model launcher.
+
+On the 8GB RTX 5060 Ti, the compact 256×2 policy has 1,602,728 parameters.
+Qualification completed 4,423,680 steps at 128 agent rows (about 3.1GiB and
+70K steps/s), then 5,898,240 steps at 256 rows (peak 5,142MiB, about 79K
+steps/s near the end). Both used horizon 720, 90% resets, paired WLD and
+teacher KL. The full-warp CUDA tests passed compute-sanitizer with graphs on
+and off. These are short throughput/correctness checks using smoke weights,
+not trained-policy strength evaluations or a guarantee for larger shapes.
+
+## Historical ABI-5 tooling (not the active configuration)
+
+Everything below describes archived macro/entity experiments. Their commands,
+profiles, dataset formats and checkpoint shapes are not compatible with the
+active direct-action setup without an explicit legacy build.
 
 ## Frozen replay ridge potential (opt-in experiment)
 

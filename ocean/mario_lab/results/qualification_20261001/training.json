@@ -1,0 +1,304 @@
+{
+  "recorded_utc": "2026-10-01T09:27:20.547292+00:00",
+  "gpu": "NVIDIA GeForce GTX 1060 3GB",
+  "precision": "float32",
+  "frames_per_decision": 1,
+  "qualification": {
+    "cpu_invariants": "passed",
+    "address_undefined_sanitizers": "passed",
+    "cpu_cuda_parity": "17 envs x 256 decisions in each of 3 cases; passed",
+    "cuda_graph_and_nondefault_stream": "passed",
+    "generated_layout_checks": 800,
+    "viewer": "compiled; headless script/trace exercised; GUI not opened"
+  },
+  "runs": [
+    {
+      "label": "flat-baseline",
+      "manifest": "logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/manifest.json",
+      "scheduled_decisions": 10485760,
+      "train_wall_seconds_including_startup": 39.455619923000995,
+      "decisions_per_wall_second_including_startup": 265760.8731142312,
+      "trainer_reported_uptime": "6.9089070233431729,13.636868845332753,20.376708312468097,27.356086134910583,30.298469305038452",
+      "training_perf_curve_binned": "0.30417505406181922,0.96889295903119177,1,1,1",
+      "overrides": {
+        "base": {
+          "run_id": "20261001T091415Z_00856c7b",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/metrics",
+          "load_model_path": "None",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 10485760,
+          "horizon": 64,
+          "minibatch_size": 4096
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 1,
+          "difficulty": 1,
+          "length": 48,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.001
+        }
+      },
+      "checkpoint_sha256": "81bd6ef93f59b30ec2a6d57b3e840217630ab7024e071c46d4b60e803ffc4aa3",
+      "checkpoint": "logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/checkpoints/mario_lab/20261001T091415Z_00856c7b/0000000010485760.bin",
+      "weights_finite": true,
+      "loss_logs_finite": true,
+      "parent": null,
+      "cuda_reload_check": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/checkpoints/mario_lab/20261001T091415Z_00856c7b/0000000010485760.bin",
+          "--headless",
+          "--base.eval_episodes=512",
+          "--env.split=1"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=1.000000 perf=1.000000 games=512 params=100928 draw=0.000000"
+      },
+      "complete_episode_panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/evaluations/20261001T092051Z_55bb4b0e/manifest.json",
+          "seed": 901,
+          "split": 1,
+          "episodes_per_family": 32,
+          "verified_action_tapes": 32,
+          "core_matches_training_snapshot": false,
+          "summaries": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 466.78125,
+              "total_frames": 14937
+            }
+          }
+        }
+      ]
+    },
+    {
+      "label": "flat-smoke",
+      "manifest": "logs/mario_lab/experiments/CUDA001_flat-smoke_20261001T091305Z_9677b8ff/manifest.json",
+      "scheduled_decisions": 1048576,
+      "train_wall_seconds_including_startup": 21.34197390100053,
+      "decisions_per_wall_second_including_startup": 49132.10019204653,
+      "trainer_reported_uptime": "1.2836260795593262,1.8911862373352051,2.8086217641830444,3.2046644687652588,3.2046644687652588",
+      "training_perf_curve_binned": "0.03125,1,0.0038759689778089523,0,0",
+      "overrides": {
+        "base": {
+          "run_id": "20261001T091305Z_9677b8ff",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-smoke_20261001T091305Z_9677b8ff/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-smoke_20261001T091305Z_9677b8ff/metrics",
+          "load_model_path": "None",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 1048576,
+          "horizon": 64,
+          "minibatch_size": 4096
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 1,
+          "difficulty": 1,
+          "length": 48,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.001
+        }
+      },
+      "checkpoint_sha256": "9a986ff055ab16c1df8ad10bafc57771865caedec2f1aa868ed7e4a53896a166",
+      "checkpoint": "logs/mario_lab/experiments/CUDA001_flat-smoke_20261001T091305Z_9677b8ff/checkpoints/mario_lab/20261001T091305Z_9677b8ff/0000000001048576.bin",
+      "weights_finite": true,
+      "loss_logs_finite": true,
+      "parent": null,
+      "cuda_reload_check": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-smoke_20261001T091305Z_9677b8ff/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-smoke_20261001T091305Z_9677b8ff/checkpoints/mario_lab/20261001T091305Z_9677b8ff/0000000001048576.bin",
+          "--headless",
+          "--base.eval_episodes=128",
+          "--env.split=1"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=0.007812 perf=0.007812 games=128 params=100928 draw=0.000000"
+      },
+      "complete_episode_panels": []
+    },
+    {
+      "label": "mixed-from-flat",
+      "manifest": "logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/manifest.json",
+      "scheduled_decisions": 10485760,
+      "train_wall_seconds_including_startup": 29.06288003300142,
+      "decisions_per_wall_second_including_startup": 360795.62617652596,
+      "trainer_reported_uptime": "3.6793983849612149,11.973118642965952,20.259128007021818,26.980931390415538,29.724968194961548",
+      "training_perf_curve_binned": "0.62902732328935107,0.69074702759583795,0.70368991114876489,0.69975176724520594,0.72000002861022949",
+      "overrides": {
+        "base": {
+          "run_id": "20261001T091823Z_559054b8",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 10485760,
+          "horizon": 64,
+          "minibatch_size": 4096
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 0,
+          "difficulty": 1,
+          "length": 64,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.001
+        }
+      },
+      "checkpoint_sha256": "3ba6a75592de5a1e097ff3106be7eb424e4658b6bb061d4f264b89b291bf65c4",
+      "checkpoint": "logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/checkpoints/mario_lab/20261001T091823Z_559054b8/0000000010485760.bin",
+      "weights_finite": true,
+      "loss_logs_finite": true,
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_flat-baseline_20261001T091415Z_00856c7b/checkpoints/mario_lab/20261001T091415Z_00856c7b/0000000010485760.bin",
+        "sha256": "81bd6ef93f59b30ec2a6d57b3e840217630ab7024e071c46d4b60e803ffc4aa3"
+      },
+      "cuda_reload_check": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/checkpoints/mario_lab/20261001T091823Z_559054b8/0000000010485760.bin",
+          "--headless",
+          "--base.eval_episodes=512",
+          "--env.split=1"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=0.714008 perf=0.714008 games=514 params=100928 draw=0.000000"
+      },
+      "complete_episode_panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/evaluations/20261001T092051Z_088c58ee/manifest.json",
+          "seed": 901,
+          "split": 1,
+          "episodes_per_family": 32,
+          "verified_action_tapes": 224,
+          "core_matches_training_snapshot": true,
+          "summaries": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 616.78125,
+              "total_frames": 19737
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 0,
+              "deaths": 32,
+              "timeouts": 0,
+              "clear_rate": 0,
+              "mean_clear_frames": 0,
+              "total_frames": 7032
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 673.90625,
+              "total_frames": 21565
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 693.09375,
+              "total_frames": 22179
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 18,
+              "deaths": 14,
+              "timeouts": 0,
+              "clear_rate": 0.5625,
+              "mean_clear_frames": 614,
+              "total_frames": 15316
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 16,
+              "deaths": 0,
+              "timeouts": 16,
+              "clear_rate": 0.5,
+              "mean_clear_frames": 1193.4375,
+              "total_frames": 57495
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 27,
+              "deaths": 1,
+              "timeouts": 4,
+              "clear_rate": 0.84375,
+              "mean_clear_frames": 975.703704,
+              "total_frames": 36253
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1422 @@
+{
+  "schema": 1,
+  "runs": [
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_measured-pipes_20261001T125850Z_b01fbb95",
+      "label": "measured-pipes",
+      "requested_decisions": 20971520,
+      "train_wall_seconds": 66.70211165999717,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T125850Z_b01fbb95/0000000020971520.bin",
+        "sha256": "34934f948170500b2829efba13071078eeda86690c95b8dd92719288419e5a8e",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a/checkpoints/mario_lab/20261001T115100Z_d911125a/0000000020971520.bin",
+        "sha256": "51eec8f105ca73620db921d8c38e453ecc7fd29c555767664bcb06e2b02d3ca8"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T125850Z_b01fbb95",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-pipes_20261001T125850Z_b01fbb95/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-pipes_20261001T125850Z_b01fbb95/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-pipes_20261001T125850Z_b01fbb95/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 20971520,
+          "horizon": 64,
+          "minibatch_size": 4096
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 3,
+          "difficulty": 2,
+          "length": 96,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.001,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "2",
+          "pipe_max_height": "4"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_measured-pipes_20261001T125850Z_b01fbb95/evaluations/20261001T130059Z_463353d6/manifest.json",
+          "status": "completed",
+          "courses": {
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 0,
+              "deaths": 0,
+              "timeouts": 32,
+              "clear_rate": 0,
+              "mean_clear_frames": 0,
+              "total_frames": 76800
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_measured-pipes-lowlr_20261001T130058Z_8095b634",
+      "label": "measured-pipes-lowlr",
+      "requested_decisions": 41943040,
+      "train_wall_seconds": 96.98119307999877,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T130058Z_8095b634/0000000041943040.bin",
+        "sha256": "149d5203a0b2e9035044991cf722f89e1557c6041defbd346430a9acb495ac9c",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a/checkpoints/mario_lab/20261001T115100Z_d911125a/0000000020971520.bin",
+        "sha256": "51eec8f105ca73620db921d8c38e453ecc7fd29c555767664bcb06e2b02d3ca8"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T130058Z_8095b634",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-pipes-lowlr_20261001T130058Z_8095b634/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-pipes-lowlr_20261001T130058Z_8095b634/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-pipes-lowlr_20261001T130058Z_8095b634/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 41943040,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "learning_rate": "0.00015",
+          "ent_coef": "0.001"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 3,
+          "difficulty": 2,
+          "length": 64,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.001,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "2",
+          "pipe_max_height": "4"
+        }
+      },
+      "panels": []
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_measured-flat-fresh_20261001T130336Z_58596acc",
+      "label": "measured-flat-fresh",
+      "requested_decisions": 10485760,
+      "train_wall_seconds": 24.271637850000843,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T130336Z_58596acc/0000000010485760.bin",
+        "sha256": "44e0d1baaee4ae2e600646b04e87bc93c3716445ef724d394c10a3bfa56850de",
+        "bytes": 403712
+      },
+      "parent": null,
+      "overrides": {
+        "base": {
+          "run_id": "20261001T130336Z_58596acc",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-flat-fresh_20261001T130336Z_58596acc/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-flat-fresh_20261001T130336Z_58596acc/metrics",
+          "load_model_path": "None",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 10485760,
+          "horizon": 64,
+          "minibatch_size": 4096
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 1,
+          "difficulty": 1,
+          "length": 48,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.001,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144"
+        }
+      },
+      "panels": []
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_symmetric-pipes_20261001T130950Z_c9935657",
+      "label": "symmetric-pipes",
+      "requested_decisions": 20971520,
+      "train_wall_seconds": 63.59840981999878,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T130950Z_c9935657/0000000020971520.bin",
+        "sha256": "0c548c901bb8cd59f74961f50ce101836225fe21dce9e50b137249624b67c54f",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a/checkpoints/mario_lab/20261001T115100Z_d911125a/0000000020971520.bin",
+        "sha256": "51eec8f105ca73620db921d8c38e453ecc7fd29c555767664bcb06e2b02d3ca8"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T130950Z_c9935657",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_symmetric-pipes_20261001T130950Z_c9935657/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_symmetric-pipes_20261001T130950Z_c9935657/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_symmetric-pipes_20261001T130950Z_c9935657/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 20971520,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "learning_rate": "0.0002",
+          "ent_coef": "0.003"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 3,
+          "difficulty": 2,
+          "length": 64,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.001,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "2",
+          "pipe_max_height": "4"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_symmetric-pipes_20261001T130950Z_c9935657/evaluations/20261001T131211Z_f3f60430/manifest.json",
+          "status": "completed",
+          "courses": {
+            "3": {
+              "type": "summary",
+              "episodes": 16,
+              "clears": 0,
+              "deaths": 0,
+              "timeouts": 16,
+              "clear_rate": 0,
+              "mean_clear_frames": 0,
+              "total_frames": 38400
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_symmetric-flat-fresh_20261001T131210Z_ed09d7ef",
+      "label": "symmetric-flat-fresh",
+      "requested_decisions": 20971520,
+      "train_wall_seconds": 98.75513906999913,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T131210Z_ed09d7ef/0000000020971520.bin",
+        "sha256": "fd9c3db7acf8e95d6eeee11ce111fd97f6bdc79bfc7f623eb2c192cfe0daec3e",
+        "bytes": 403712
+      },
+      "parent": null,
+      "overrides": {
+        "base": {
+          "run_id": "20261001T131210Z_ed09d7ef",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_symmetric-flat-fresh_20261001T131210Z_ed09d7ef/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_symmetric-flat-fresh_20261001T131210Z_ed09d7ef/metrics",
+          "load_model_path": "None",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 20971520,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "ent_coef": "0.003"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 1,
+          "difficulty": 1,
+          "length": 48,
+          "max_frames": 1200,
+          "require_pipe": 0,
+          "progress_reward": 0.01,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_symmetric-flat-fresh_20261001T131210Z_ed09d7ef/evaluations/20261001T131427Z_a95ba550/manifest.json",
+          "status": "completed",
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 300.4375,
+              "total_frames": 9614
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_low-pipes-from-flat_20261001T131425Z_f0f46d69",
+      "label": "low-pipes-from-flat",
+      "requested_decisions": 20971520,
+      "train_wall_seconds": 77.52227993999986,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T131425Z_f0f46d69/0000000020971520.bin",
+        "sha256": "21ae14d230a2772064e70c1b6eb70d2356b3cb5cc329d43241ff88cfff1eab03",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_symmetric-flat-fresh_20261001T131210Z_ed09d7ef/checkpoints/mario_lab/20261001T131210Z_ed09d7ef/0000000020971520.bin",
+        "sha256": "fd9c3db7acf8e95d6eeee11ce111fd97f6bdc79bfc7f623eb2c192cfe0daec3e"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T131425Z_f0f46d69",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_low-pipes-from-flat_20261001T131425Z_f0f46d69/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_low-pipes-from-flat_20261001T131425Z_f0f46d69/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_low-pipes-from-flat_20261001T131425Z_f0f46d69/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 20971520,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "learning_rate": "0.0005",
+          "ent_coef": "0.003"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 3,
+          "difficulty": 1,
+          "length": 48,
+          "max_frames": 1200,
+          "require_pipe": 0,
+          "progress_reward": 0.01,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "1",
+          "pipe_max_height": "2"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_low-pipes-from-flat_20261001T131425Z_f0f46d69/evaluations/20261001T131647Z_e2179c0d/manifest.json",
+          "status": "completed",
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 292.625,
+              "total_frames": 9364
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 318.96875,
+              "total_frames": 10207
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_tall-pipes_20261001T131645Z_b2731984",
+      "label": "tall-pipes",
+      "requested_decisions": 31457280,
+      "train_wall_seconds": 131.9610368700014,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T131645Z_b2731984/0000000031457280.bin",
+        "sha256": "da4772259c92b6de0a27a3b1c303ae7235a886894dcbf3bcf1e53ad2408c46ab",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_low-pipes-from-flat_20261001T131425Z_f0f46d69/checkpoints/mario_lab/20261001T131425Z_f0f46d69/0000000020971520.bin",
+        "sha256": "21ae14d230a2772064e70c1b6eb70d2356b3cb5cc329d43241ff88cfff1eab03"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T131645Z_b2731984",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_tall-pipes_20261001T131645Z_b2731984/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_tall-pipes_20261001T131645Z_b2731984/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_tall-pipes_20261001T131645Z_b2731984/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 31457280,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "learning_rate": "0.0003",
+          "ent_coef": "0.003"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 3,
+          "difficulty": 2,
+          "length": 64,
+          "max_frames": 1800,
+          "require_pipe": 0,
+          "progress_reward": 0.01,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "2",
+          "pipe_max_height": "4"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_tall-pipes_20261001T131645Z_b2731984/evaluations/20261001T132044Z_df102bda/manifest.json",
+          "status": "completed",
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 393.84375,
+              "total_frames": 12603
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 1,
+              "deaths": 31,
+              "timeouts": 0,
+              "clear_rate": 0.03125,
+              "mean_clear_frames": 391,
+              "total_frames": 4486
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 405.09375,
+              "total_frames": 12963
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 425.0625,
+              "total_frames": 13602
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 1,
+              "deaths": 31,
+              "timeouts": 0,
+              "clear_rate": 0.03125,
+              "mean_clear_frames": 391,
+              "total_frames": 4688
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 7,
+              "deaths": 0,
+              "timeouts": 25,
+              "clear_rate": 0.21875,
+              "mean_clear_frames": 604.714286,
+              "total_frames": 49233
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 19,
+              "deaths": 6,
+              "timeouts": 7,
+              "clear_rate": 0.59375,
+              "mean_clear_frames": 483.526316,
+              "total_frames": 22961
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3",
+      "label": "measured-mixed",
+      "requested_decisions": 62914560,
+      "train_wall_seconds": 221.4188995500008,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T132044Z_4ec097b3/0000000062914560.bin",
+        "sha256": "c8fd0a7188a83769e15b6ce7192b5ac021731f72d3a97a80df7d8778a82a28c2",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_tall-pipes_20261001T131645Z_b2731984/checkpoints/mario_lab/20261001T131645Z_b2731984/0000000031457280.bin",
+        "sha256": "da4772259c92b6de0a27a3b1c303ae7235a886894dcbf3bcf1e53ad2408c46ab"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T132044Z_4ec097b3",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 62914560,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "learning_rate": "0.0003",
+          "ent_coef": "0.003"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 0,
+          "difficulty": 2,
+          "length": 96,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.01,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "2",
+          "pipe_max_height": "4",
+          "stair_height": "8",
+          "mix_flat": "1",
+          "mix_gaps": "3",
+          "mix_pipes": "3",
+          "mix_stairs": "3",
+          "mix_walkers": "6",
+          "mix_underground": "1",
+          "mix_composite": "5",
+          "practice_prob": "0.2",
+          "practice_gap": "1",
+          "practice_entry": "0",
+          "practice_exit": "0",
+          "practice_route": "0",
+          "practice_frames": "600"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3/evaluations/20261001T132612Z_afe9da42/manifest.json",
+          "status": "completed",
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 601.46875,
+              "total_frames": 19247
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 31,
+              "deaths": 1,
+              "timeouts": 0,
+              "clear_rate": 0.96875,
+              "mean_clear_frames": 597.516129,
+              "total_frames": 18630
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 614.71875,
+              "total_frames": 19671
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 680.09375,
+              "total_frames": 21763
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 7,
+              "deaths": 25,
+              "timeouts": 0,
+              "clear_rate": 0.21875,
+              "mean_clear_frames": 610.142857,
+              "total_frames": 11132
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 7,
+              "deaths": 0,
+              "timeouts": 25,
+              "clear_rate": 0.21875,
+              "mean_clear_frames": 561,
+              "total_frames": 63927
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 28,
+              "deaths": 4,
+              "timeouts": 0,
+              "clear_rate": 0.875,
+              "mean_clear_frames": 612.892857,
+              "total_frames": 18435
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_measured-walkers_20261001T133020Z_3a297913",
+      "label": "measured-walkers",
+      "requested_decisions": 31457280,
+      "train_wall_seconds": 106.78525568999976,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T133020Z_3a297913/0000000031457280.bin",
+        "sha256": "a1b81743820c2d88e9957594b46ff11e25c10cefce411a589103c0ca914b8158",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3/checkpoints/mario_lab/20261001T132044Z_4ec097b3/0000000062914560.bin",
+        "sha256": "c8fd0a7188a83769e15b6ce7192b5ac021731f72d3a97a80df7d8778a82a28c2"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T133020Z_3a297913",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-walkers_20261001T133020Z_3a297913/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-walkers_20261001T133020Z_3a297913/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-walkers_20261001T133020Z_3a297913/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 31457280,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "learning_rate": "0.0002",
+          "ent_coef": "0.001"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 5,
+          "difficulty": 1,
+          "length": 64,
+          "max_frames": 1800,
+          "require_pipe": 0,
+          "progress_reward": 0.01,
+          "physics_mode": "1",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "2",
+          "pipe_max_height": "4",
+          "stair_height": "8"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_measured-walkers_20261001T133020Z_3a297913/evaluations/20261001T133304Z_aa9a04fa/manifest.json",
+          "status": "completed",
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 598.4375,
+              "total_frames": 19150
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 596.625,
+              "total_frames": 19092
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 610.4375,
+              "total_frames": 19534
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 688.0625,
+              "total_frames": 22018
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 17,
+              "deaths": 15,
+              "timeouts": 0,
+              "clear_rate": 0.53125,
+              "mean_clear_frames": 600.352941,
+              "total_frames": 14478
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 8,
+              "deaths": 0,
+              "timeouts": 24,
+              "clear_rate": 0.25,
+              "mean_clear_frames": 562.25,
+              "total_frames": 62098
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 27,
+              "deaths": 5,
+              "timeouts": 0,
+              "clear_rate": 0.84375,
+              "mean_clear_frames": 597.851852,
+              "total_frames": 17766
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/TRANSFER001_button-semantics_20261001T134625Z_744fe092",
+      "label": "button-semantics",
+      "requested_decisions": 31457280,
+      "train_wall_seconds": 74.03503374000138,
+      "last_checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T134625Z_744fe092/0000000031457280.bin",
+        "sha256": "ff305bd3133b1553161c95417bf8aa2c9fe093fa6902b009406b7c3045a365b6",
+        "bytes": 403712
+      },
+      "parent": {
+        "original": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3/checkpoints/mario_lab/20261001T132044Z_4ec097b3/0000000062914560.bin",
+        "sha256": "c8fd0a7188a83769e15b6ce7192b5ac021731f72d3a97a80df7d8778a82a28c2"
+      },
+      "overrides": {
+        "base": {
+          "run_id": "20261001T134625Z_744fe092",
+          "seed": 73,
+          "checkpoint_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_button-semantics_20261001T134625Z_744fe092/checkpoints",
+          "log_dir": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_button-semantics_20261001T134625Z_744fe092/metrics",
+          "load_model_path": "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/TRANSFER001_button-semantics_20261001T134625Z_744fe092/parent.bin",
+          "eval_episodes": 0
+        },
+        "vec": {
+          "total_agents": 128
+        },
+        "policy": {
+          "hidden_size": 64,
+          "num_layers": 2
+        },
+        "train": {
+          "total_timesteps": 31457280,
+          "horizon": 64,
+          "minibatch_size": 4096,
+          "learning_rate": "0.0002",
+          "ent_coef": "0.003"
+        },
+        "env": {
+          "seed": 73,
+          "split": 0,
+          "course": 0,
+          "difficulty": 2,
+          "length": 96,
+          "max_frames": 2400,
+          "require_pipe": 0,
+          "progress_reward": 0.01,
+          "physics_mode": "2",
+          "accel": "14",
+          "walk_accel": "10",
+          "brake_accel": "32",
+          "friction": "13",
+          "walk_speed": "384",
+          "run_speed": "640",
+          "jump_speed": "1024",
+          "gravity_hold": "32",
+          "gravity_release": "112",
+          "max_fall": "1024",
+          "hold_frames": "60",
+          "player_width": "10",
+          "player_height": "12",
+          "jump_fast_speed": "1280",
+          "jump_fast_threshold": "512",
+          "gravity_fast_hold": "40",
+          "gravity_fast_release": "144",
+          "pipe_min_height": "2",
+          "pipe_max_height": "4",
+          "stair_height": "8",
+          "mix_flat": "1",
+          "mix_gaps": "3",
+          "mix_pipes": "3",
+          "mix_stairs": "3",
+          "mix_walkers": "6",
+          "mix_underground": "1",
+          "mix_composite": "5",
+          "practice_prob": "0.2",
+          "practice_gap": "1",
+          "practice_entry": "0",
+          "practice_exit": "0",
+          "practice_route": "0",
+          "practice_frames": "600"
+        }
+      },
+      "panels": [
+        {
+          "manifest": "logs/mario_lab/experiments/TRANSFER001_button-semantics_20261001T134625Z_744fe092/evaluations/20261001T134846Z_a5c0fc6e/manifest.json",
+          "status": "completed",
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 603.1875,
+              "total_frames": 19302
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 602.375,
+              "total_frames": 19276
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 610.1875,
+              "total_frames": 19526
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 695.1875,
+              "total_frames": 22246
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 8,
+              "deaths": 24,
+              "timeouts": 0,
+              "clear_rate": 0.25,
+              "mean_clear_frames": 608,
+              "total_frames": 11005
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 5,
+              "deaths": 0,
+              "timeouts": 27,
+              "clear_rate": 0.15625,
+              "mean_clear_frames": 585.4,
+              "total_frames": 67727
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 28,
+              "deaths": 4,
+              "timeouts": 0,
+              "clear_rate": 0.875,
+              "mean_clear_frames": 607.142857,
+              "total_frames": 18042
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "transfers": [
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-old-policy_20261001T125852Z_2f5db32b",
+      "label": "corrected-old-policy",
+      "checkpoint_sha256": "51eec8f105ca73620db921d8c38e453ecc7fd29c555767664bcb06e2b02d3ca8",
+      "summary": {
+        "type": "summary",
+        "episodes": 32,
+        "clears": 0,
+        "deaths": 9,
+        "timeouts": 23,
+        "mean_clear_frames": 0,
+        "total_frames": 100571,
+        "furthest_x": 899
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 0,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 32,
+        "seed": 901,
+        "deterministic": false,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_tall-pipes-only_20261001T132044Z_ade41fbe",
+      "label": "tall-pipes-only",
+      "checkpoint_sha256": "da4772259c92b6de0a27a3b1c303ae7235a886894dcbf3bcf1e53ad2408c46ab",
+      "summary": {
+        "type": "summary",
+        "episodes": 8,
+        "clears": 0,
+        "deaths": 7,
+        "timeouts": 1,
+        "mean_clear_frames": 0,
+        "total_frames": 9606,
+        "furthest_x": 1669
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 0,
+        "unknown_cell_frames": 3088,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 8,
+        "seed": 901,
+        "deterministic": false,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_mixed-1-1_20261001T132707Z_3575eded",
+      "label": "mixed-1-1",
+      "checkpoint_sha256": "c8fd0a7188a83769e15b6ce7192b5ac021731f72d3a97a80df7d8778a82a28c2",
+      "summary": {
+        "type": "summary",
+        "episodes": 32,
+        "clears": 6,
+        "deaths": 23,
+        "timeouts": 3,
+        "mean_clear_frames": 2545.66667,
+        "total_frames": 50655,
+        "furthest_x": 3267
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 24,
+        "unknown_cell_frames": 9060,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 32,
+        "seed": 901,
+        "deterministic": false,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_walkers-1-1_20261001T133304Z_ee9b8ea7",
+      "label": "walkers-1-1",
+      "checkpoint_sha256": "a1b81743820c2d88e9957594b46ff11e25c10cefce411a589103c0ca914b8158",
+      "summary": {
+        "type": "summary",
+        "episodes": 32,
+        "clears": 3,
+        "deaths": 25,
+        "timeouts": 4,
+        "mean_clear_frames": 2678,
+        "total_frames": 47644,
+        "furthest_x": 3266
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 144,
+        "unknown_cell_frames": 11718,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 32,
+        "seed": 901,
+        "deterministic": false,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_mixed-frozen-fresh-seeds_20261001T133629Z_c15bf15f",
+      "label": "mixed-frozen-fresh-seeds",
+      "checkpoint_sha256": "c8fd0a7188a83769e15b6ce7192b5ac021731f72d3a97a80df7d8778a82a28c2",
+      "summary": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 8,
+        "deaths": 46,
+        "timeouts": 10,
+        "mean_clear_frames": 2874.875,
+        "total_frames": 107437,
+        "furthest_x": 3267
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 240,
+        "unknown_cell_frames": 24896,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 64,
+        "seed": 7109,
+        "deterministic": false,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_mixed-deterministic_20261001T133628Z_2a4636ee",
+      "label": "mixed-deterministic",
+      "checkpoint_sha256": "c8fd0a7188a83769e15b6ce7192b5ac021731f72d3a97a80df7d8778a82a28c2",
+      "summary": {
+        "type": "summary",
+        "episodes": 8,
+        "clears": 0,
+        "deaths": 0,
+        "timeouts": 8,
+        "mean_clear_frames": 0,
+        "total_frames": 32000,
+        "furthest_x": 94
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 0,
+        "unknown_cell_frames": 0,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 8,
+        "seed": 7109,
+        "deterministic": true,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-buttons_20261001T134846Z_8da5fbcc",
+      "label": "corrected-buttons",
+      "checkpoint_sha256": "ff305bd3133b1553161c95417bf8aa2c9fe093fa6902b009406b7c3045a365b6",
+      "summary": {
+        "type": "summary",
+        "episodes": 32,
+        "clears": 10,
+        "deaths": 18,
+        "timeouts": 4,
+        "mean_clear_frames": 2716.5,
+        "total_frames": 60726,
+        "furthest_x": 3267
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 240,
+        "unknown_cell_frames": 12464,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 32,
+        "seed": 901,
+        "deterministic": false,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-buttons-greedy_20261001T134846Z_ea913de7",
+      "label": "corrected-buttons-greedy",
+      "checkpoint_sha256": "ff305bd3133b1553161c95417bf8aa2c9fe093fa6902b009406b7c3045a365b6",
+      "summary": {
+        "type": "summary",
+        "episodes": 8,
+        "clears": 0,
+        "deaths": 8,
+        "timeouts": 0,
+        "mean_clear_frames": 0,
+        "total_frames": 8064,
+        "furthest_x": 2023
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 0,
+        "unknown_cell_frames": 0,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 8,
+        "seed": 7109,
+        "deterministic": true,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    },
+    {
+      "bundle": "logs/mario_lab/transfers/evaluate_corrected-buttons-frozen_20261001T135148Z_c47baa70",
+      "label": "corrected-buttons-frozen",
+      "checkpoint_sha256": "ff305bd3133b1553161c95417bf8aa2c9fe093fa6902b009406b7c3045a365b6",
+      "summary": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 7,
+        "deaths": 48,
+        "timeouts": 9,
+        "mean_clear_frames": 2511.14286,
+        "total_frames": 104594,
+        "furthest_x": 3267
+      },
+      "unsupported": {
+        "unknown_enemy_frames": 192,
+        "unknown_cell_frames": 22170,
+        "big_player_frames": 0
+      },
+      "sampling": {
+        "episodes": 64,
+        "seed": 9127,
+        "deterministic": false,
+        "idle_frames": "episode index modulo 32; included in completion time"
+      }
+    }
+  ],
+  "selection": "development; full real 1-1 fixed geometry, stochastic actions and idle start phases; no ROM weight updates",
+  "working_candidate": "logs/mario_lab/experiments/TRANSFER001_button-semantics_20261001T134625Z_744fe092",
+  "candidate_decision": "retain controller mode 2 button-semantics candidate; selection used development seed 901, then froze before fresh seed 9127; all prior candidates retained",
+  "frozen_synthetic_panel": {
+    "manifest": "logs/mario_lab/experiments/TRANSFER001_measured-mixed_20261001T132044Z_4ec097b3/evaluations/20261001T133629Z_c9b15804/manifest.json",
+    "seed": 7109,
+    "split": 2,
+    "episodes_per_family": 64,
+    "courses": {
+      "1": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 64,
+        "deaths": 0,
+        "timeouts": 0,
+        "clear_rate": 1,
+        "mean_clear_frames": 602.21875,
+        "total_frames": 38542
+      },
+      "2": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 64,
+        "deaths": 0,
+        "timeouts": 0,
+        "clear_rate": 1,
+        "mean_clear_frames": 598.96875,
+        "total_frames": 38334
+      },
+      "3": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 64,
+        "deaths": 0,
+        "timeouts": 0,
+        "clear_rate": 1,
+        "mean_clear_frames": 605.875,
+        "total_frames": 38776
+      },
+      "4": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 64,
+        "deaths": 0,
+        "timeouts": 0,
+        "clear_rate": 1,
+        "mean_clear_frames": 710.359375,
+        "total_frames": 45463
+      },
+      "5": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 14,
+        "deaths": 50,
+        "timeouts": 0,
+        "clear_rate": 0.21875,
+        "mean_clear_frames": 608.428571,
+        "total_frames": 21751
+      },
+      "6": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 19,
+        "deaths": 0,
+        "timeouts": 45,
+        "clear_rate": 0.296875,
+        "mean_clear_frames": 564.947368,
+        "total_frames": 118734
+      },
+      "7": {
+        "type": "summary",
+        "episodes": 64,
+        "clears": 51,
+        "deaths": 13,
+        "timeouts": 0,
+        "clear_rate": 0.796875,
+        "mean_clear_frames": 603.607843,
+        "total_frames": 36219
+      }
+    }
+  },
+  "selected_checkpoint_sha256": "ff305bd3133b1553161c95417bf8aa2c9fe093fa6902b009406b7c3045a365b6"
+}

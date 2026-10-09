@@ -1,0 +1,15 @@
+{
+  "runs": [
+    {
+      "backend": "cpu",
+      "checkpoint": "checkpoints/mario_sim/runtime_cpu_perf_20261003/0000000001048576.bin",
+      "sha256": "d130d88acb2bed4b1fb7fa8ec7d83f0ed3f52202d287f4e6d29afe890938be1f"
+    },
+    {
+      "backend": "gpu",
+      "checkpoint": "checkpoints/mario_sim/runtime_gpu_perf_20261003/0000000001048576.bin",
+      "sha256": "d130d88acb2bed4b1fb7fa8ec7d83f0ed3f52202d287f4e6d29afe890938be1f"
+    }
+  ],
+  "identical_checkpoints": true
+}

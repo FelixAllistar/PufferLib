@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "created_utc": "2026-10-04T00:18:53.137562+00:00",
+  "scope": "Original 1-1 underground pipe exit, natural grounded gameplay starts",
+  "status": "implemented_and_validated; long_training_not_started",
+  "bank": {
+    "schema": 1,
+    "scope": "natural_1_1_pipe_exit",
+    "scenes": 102,
+    "worlds": 1,
+    "routes": 4,
+    "seed": 73,
+    "branches_per_route": 24,
+    "ram_edits": 0,
+    "world_data_edits": 0,
+    "grounded_starts_only": true,
+    "min_x": 2585,
+    "max_x": 2666,
+    "pole_x": 3168,
+    "minimum_distance": 502,
+    "validation_cases": 306,
+    "validation_frames": 73440,
+    "teacher_successes": 1,
+    "teacher_frames": 425,
+    "teacher_min_frames": 425,
+    "teacher_max_frames": 425,
+    "cpu_rom_mismatches": 0,
+    "serialized_rom_resets_checked": 102,
+    "bank_hash": 746587982792898461
+  },
+  "cuda_rom_validation": {
+    "scope": "video_frame_clips",
+    "cases": 306,
+    "frames": 73440,
+    "failures": 0,
+    "bitwise_observations": true,
+    "source_cases": 306,
+    "source_frames": 73440,
+    "case_begin": 0,
+    "case_end": 306
+  },
+  "cpu_adapter": {
+    "teacher_successes": 2,
+    "teacher_frames": 850,
+    "reset_stream_comparisons": 4096,
+    "corrupt_tables_rejected": 6,
+    "start_guards": 3,
+    "timeout_frames": 1800,
+    "zero_bonus_ablation": true,
+    "cache_free_fallback": true,
+    "failures": 0
+  },
+  "cuda_adapter": {
+    "decisions": 33792,
+    "successes": 2,
+    "resets": 36,
+    "reward_tolerance": 1e-05,
+    "bitwise_native_states": true,
+    "bitwise_observations": true,
+    "direct_and_graph": true,
+    "failures": 0
+  },
+  "checkpoint_transfer": {
+    "checkpoint": "checkpoints/mario_fpg_time/1791066730709/0000000184549376.bin",
+    "schema": 1,
+    "scope": "natural_1_1_pipe_exit",
+    "episodes_requested": 64,
+    "episodes_run": 64,
+    "episodes_completed": 64,
+    "seed": 137,
+    "max_frames": 1800,
+    "checkpoint_fnv64": "9362079095105414609",
+    "config_fnv64": "6894839919792999637",
+    "bank_payload_fnv64": "746587982792898461",
+    "deterministic": 0,
+    "policy_inference": "shared FP32 CPU implementation with independent recurrent states",
+    "frames": 66672,
+    "native_successes": 0,
+    "rom_successes": 0,
+    "normal_flags": 38,
+    "deaths": 15,
+    "timeouts": 11,
+    "mean_success_frames": 0,
+    "mismatches": 0,
+    "ram_writes_after_reset": 0,
+    "all_episodes_run_to_terminal": true,
+    "passed": true
+  },
+  "negative_control": {
+    "mismatched_rom_snapshot_rejected": true,
+    "requested_scene": 71,
+    "substituted_scene": 72,
+    "exit_code": 1
+  },
+  "trainer_smoke": {
+    "frames": 65536,
+    "exit_code": 0,
+    "checkpoint": "build/mario_fpg_time/pipe_smoke/checkpoints/mario_fpg_time/pipe_smoke_20261003/0000000000065536.bin",
+    "excluded_from_default_checkpoint_directory": true
+  },
+  "preview": {
+    "scene": 0,
+    "neutral_frames_after_reset": 1,
+    "state_mismatches": 0,
+    "left": "original ROM rendering",
+    "right": "native geometry view"
+  },
+  "limitations": [
+    "The 184M checkpoint was trained on the previous near-flag reset bank.",
+    "Paired policies use independent recurrent states with shared FP32 CPU inference, not GPU BF16 sampling.",
+    "Zero mismatches qualify the tested trajectories, not every possible game trajectory.",
+    "The 425-frame teacher proves a successful FPG from the canonical exit; success from every reset has not been established.",
+    "Learning improvement on the new bank requires a fresh training run."
+  ],
+  "reproduce": [
+    "make -f ocean/mario_fpg_time/Makefile pipe",
+    "make -f ocean/mario_fpg_time/Makefile -j2 test transfer",
+    "CUDA_HOME=/usr/local/cuda ./build.sh mario_fpg_time build/mario_fpg_time/puffer --cu",
+    "build/mario_fpg_time/sim2rom checkpoints/mario_fpg_time/1791066730709/0000000184549376.bin config/mario_fpg_time.ini build/mario_fpg_time/pipe_transfer_184m 64 137"
+  ]
+}

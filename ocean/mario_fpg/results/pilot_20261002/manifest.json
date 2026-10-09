@@ -1,0 +1,32 @@
+{
+  "experiment": "SKILL001",
+  "run": "1790956507784",
+  "fresh": true,
+  "train_game_frames": 8388608,
+  "decisions": 8388608,
+  "native_reported_seconds": 19.31,
+  "checkpoint": "checkpoints/mario_fpg/1790956507784/0000000008388608.bin",
+  "checkpoint_sha256": "aba56ea916fc19bade825fd2df5039ae57c99ec5911b1c4f2c4abd9b22713a34",
+  "native_log": "logs/mario_fpg/1790956507784.ini",
+  "reset_bank_sha256": "32d903550391bb5ba849b2b4c75de21c984a8a223b357c0890aa134ee4bdb41b",
+  "no_bc": true,
+  "terminal_only": true,
+  "rom_training": false,
+  "reference_rom_prefix_frame": 1510,
+  "reference_teacher_frames": 100,
+  "rom_reset_panel": "One reachable reference trajectory; 8 contact starts, 24 approach starts, 32 starts spread over 33..96 remaining frames, one stair start. Repeated trials are not independent routes.",
+  "controller_mismatch_note": "8 one-frame disagreements in one failed stochastic stair-start episode at X=2853, the ROM left camera boundary; camera clamping is outside the core scope",
+  "qualification": {
+    "rom_action_branches": 15144,
+    "branch_failures": 0,
+    "positive_fpg_replay_frames": 100,
+    "positive_fpg_grab_y": 164,
+    "positive_fpg_flag_y": 48,
+    "cpu_gpu_decisions": 8704,
+    "cpu_gpu_resets": 524,
+    "cpu_gpu_successes": 311,
+    "verified_augmented_resets": 1536,
+    "asan_ubsan": "passed"
+  },
+  "all_transfer_action_tapes_verify_complete_nes_state": true
+}

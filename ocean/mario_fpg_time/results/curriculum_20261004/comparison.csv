@@ -1,0 +1,9 @@
+reference_frames,baseline_wins,baseline_episodes,trained_wins,trained_episodes
+3,13,128,128,128
+4,6,128,128,128
+6,3,128,128,128
+8,0,128,125,128
+12,0,128,118,128
+16,0,128,9,128
+24,,,2,128
+32,,,1,128

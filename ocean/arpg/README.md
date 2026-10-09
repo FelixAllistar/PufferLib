@@ -1,4 +1,48 @@
-# Hearthwild / ARPG — The Reach
+# Codex / Tibo's Takeover — ARPG
+
+## The day before cyberpunk / visual build 6
+
+Run **`./arpg`** as usual. The default CPU viewer now presents a fictional
+tech-industry satire: Tibo in a black hoodie, a bright-blue Codex robot crew,
+ordinary town/outskirts scenery and original corporate rival employees. The
+world begins with municipal infrastructure and warm everyday details; the
+long-term direction is gradual industrial takeover, described in
+[ROADMAP.md](ROADMAP.md). This is unofficial game fiction, not a statement about
+any real person's behavior or an endorsement by a depicted company.
+
+The supplied mascot's colors are the faction anchor: cyan-blue/azure panels,
+black screens and joints, acid-lime faces, yellow utility accents. Player
+machinery and HUD accents share that palette; rivals and everyday surroundings
+remain distinct. The keeper has eight real facing views, two alternating walking
+strides and a command pose. Facing persists at rest. Draws and projected shadows
+share the same source view and ground pivot.
+
+The six crew names are now **Scout, Runner, Bulwark, Courier, Borer, Forge**.
+Display names change only: the older Wisp/Fang/Aegis/Porter/Burrower/Ember class
+IDs, config keys, saves and 443-float/13-head policy ABI are unchanged. Aether is
+displayed as compute; cores as power cells; Starfire as the uplink/Overwrite
+ability. This is an art/theme pass, not a new economy or combat behavior tree.
+
+New props include park trees, benches, lamps, shelters, utility cabinets and
+modern machinery. World-coordinate-stable street paint is cosmetic, only on
+already walkable grass/sand, and does not rewrite saved terrain or create roads
+through blocked terrain. Small scenic objects are not new physical structures.
+The viewer retains a complete legacy-art fallback if any required new sheet is
+missing. No lighting/art allocation is added to headless/CUDA simulation.
+
+There are still **eight crew slots**. Hundreds of units, squad policies, civilians,
+urban collision layouts and progressive world conversion are roadmap targets,
+not claimed features of this build. No new trained checkpoint is supplied.
+
+[Asset provenance, layouts and prompts](assets/README.md).
+Visual verification uses the actual renderer without reading/writing your save:
+
+```sh
+make -C ocean/arpg viewer-test SHOT='--takeover /existing/output/directory'
+```
+
+The sections below document the retained mechanics and previous visual releases;
+older fantasy display names refer to the same underlying classes/resources.
 
 ## 5.0 conversion and dependency
 

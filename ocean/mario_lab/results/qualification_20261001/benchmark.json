@@ -1,0 +1,34 @@
+{
+  "gpu": "NVIDIA GeForce GTX 1060 3GB",
+  "envs": 4096,
+  "steps": 4096,
+  "seconds": 5.320121,
+  "decisions_per_second": 3153540,
+  "frames_per_decision": 1,
+  "warmup_steps": 64,
+  "seed": 73,
+  "split": 0,
+  "course": 0,
+  "difficulty": 1,
+  "length": 96,
+  "max_frames": 2400,
+  "observations": 1128,
+  "state_bytes": 6112,
+  "episodes_including_warmup": 21694,
+  "scripted_clears_including_warmup": 19624,
+  "includes_policy_training": false,
+  "utc": "2026-10-01T09:24:00.666746+00:00",
+  "command": [
+    "./build/mario_lab/bench_cuda",
+    "4096",
+    "4096"
+  ],
+  "binary_sha256": "5e1f97a6a81f7d0bc17d0fa6cdf88c044de3c4d3aa2f97f740eba6971ce19f06",
+  "source_sha256": {
+    "ocean/mario_lab/ml_sim.h": "d011ed09b20b66fc95c0de521945ba51ce71fc063760f28bff57fdd6b0785e60",
+    "ocean/mario_lab/mario_lab.h": "19f7c8af965069d505cf0775f8ad8e160a84de1cf2fd7ec0b1136b03fdf1d18d",
+    "ocean/mario_lab/mario_lab.cu": "5b41ade30aa473d299c0db56c1de93482447618eb23df966e4bfd3bd12fcdcca",
+    "ocean/mario_lab/tests/bench_cuda.cu": "493ec278591a4ef4ba408a6481b8d3116391efef55c8e99c9fd030c505fec808"
+  },
+  "driver": "581.63"
+}

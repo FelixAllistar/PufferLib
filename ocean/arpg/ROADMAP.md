@@ -1,10 +1,75 @@
-# Hearthwild: from frontier slice to a developed summoner factory game
+# Codex / Tibo's Takeover: the day before cyberpunk
 
-The direction: a casual summoner power fantasy with persistent industry and
-optional RTS precision. Pets do work that would otherwise require repeated
-machine placement and belt management. Buildings make durable spatial decisions
-meaningful. Combat should eventually let the player's industry fund spectacular
-overkill, not demand constant defensive chores.
+The direction: a fictional tech-industry satire and casual army-command power
+fantasy. A hoodie-wearing Tibo starts with a garage and helpful blue Codex robots;
+his automation gradually becomes a world-conquering industrial machine. Show an
+ordinary world becoming a dystopia, not an already-finished neon dystopia. This
+premise is game fiction, not a claim about the real person's behavior.
+
+The player/learned keeper makes meaningful exploration, expansion and combat
+decisions. Bots handle recurring labor. Buildings anchor durable spatial choices.
+Industry should fund spectacular combat without requiring constant repair chores.
+
+## Visual identity
+
+- The user's supplied Codex mascot sets the player-faction colors: saturated
+  cyan-blue/azure bodies, black faceplates/joints, acid-lime faces and yellow
+  utility accents. Preserve that relationship before adding surface detail.
+- Tibo's public profile avatar anchors face/hair/black hoodie. Use genuine
+  front, side and back views with stable animation scale and ground pivots.
+- Begin with warm cafés/windows, public parks, concrete barriers, delivery vans,
+  bus shelters and municipal cabinets. Expansion gradually brings server yards,
+  cabling, fenced infrastructure and automation into these ordinary places.
+- Rival factions are original peach/beige caution bureaucracy and charcoal/red
+  velocity/security caricatures. Ordinary human employees replace fantasy
+  monsters; their future tactical behavior still needs implementation.
+- Blue units and lime/yellow interactions must stand out from muted environments
+  at both action and strategic zoom. Lighting remains CPU-viewer-only.
+
+The delivered art pass changes presentation, not generator/collision/save or
+policy schemas. Streets and small scenic props are cosmetic. It does not yet
+simulate civilian life, urban buildings, occupation, or industrial transformation.
+
+## Progression target: crews become armies
+
+These are design targets, not current unit limits or delivered unlocks:
+
+| Stage | Approximate crew | New decision / earned capability |
+| --- | ---: | --- |
+| Garage experiment | 2–8 | First self-sufficient compute site and a useful scout/combat pair |
+| Local operation | 12–24 | Specialized work teams, one new material, dependable cargo routes |
+| District acquisition | 32–64 | Multiple staffed sites, squad objectives, distinct rival encounters |
+| Industrial takeover | 100–200 | Demand-driven production, remote site simulation, mobile siege teams |
+| Regional army | 300+ | Several armies with small shared policies and readable strategic command |
+
+Earn the next stage by establishing operations and completing expeditions. Avoid
+unlocking the entire arsenal after the first few passive resource increments.
+Expansion should change choices, geography and composition. Upgrades also need
+meaningful uses for old units rather than forcing replacement of an entire crew.
+
+Before raising the current eight-slot limit: separate persistent unit storage
+from the bounded training arena, replace slot-by-slot UI with squads/work areas,
+add spatial neighbor queries and budget distant simulation. Validate 24/64/256
+unit scenarios, save/reload, human overrides and moving-frame performance.
+
+## Control and training contract
+
+- No scripted player. Start with a human or RL keeper and scripted low-level bot
+  execution, all going through one command/goal interface.
+- Keep human-pinned orders authoritative; selection alone must not steal control.
+- Later, batch small shared bot policies with role/goal inputs and per-unit state.
+  Hundreds of bots do not require hundreds of independently stored networks.
+- A commander supplies squad/site goals rather than one action head per physical
+  unit. Local bot observations summarize nearby allies, rivals and work demand.
+- Keep roles scripted while building the game. Later policies can be trained on
+  these same goals, independently or together; all-at-once training is not a
+  prerequisite for shipping reliable commands or a fun progression loop.
+- Make schema changes explicit and test CPU/CUDA parity before claiming trained
+  population-scale control. No trained policy is bundled with the art pass.
+
+Next playable milestone: an excellent 15–20 minute first expedition with clear
+orders, two independent work sites, one distinctive rival site and an earned
+new capability. Controls/camera/readability precede hundreds of live units.
 
 ## Delivered in this slice
 
@@ -95,7 +160,7 @@ state on CPU, after reload, and across region transitions.
 Exit criterion: each late weapon creates a different tactical/geographic result
 and feels powerful without making the underlying simulation unreliable.
 
-## 6. Train and verify the optional brains
+## 6. Train the keeper, then introduce shared local bot policies
 
 - Train new v3 policies; do not reuse incompatible older checkpoints.
 - Add command-priority curricula and tests for changing automatic work tasks.

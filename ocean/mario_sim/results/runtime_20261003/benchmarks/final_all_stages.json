@@ -1,0 +1,1 @@
+{"agents":4096,"task":0,"frames":1048576,"seconds":15.170843,"frames_per_second":69117.8,"resets":4255,"successes":0,"observations":2048,"templates":493,"worlds":16,"generation_knobs":3,"threads":32,"resets_and_generation_included":true,"observations_included":true,"ppo_included":false,"action_source":"seeded uniform actions held for eight frames"}

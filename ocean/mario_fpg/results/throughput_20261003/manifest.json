@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-03",
+  "gpu": "NVIDIA GeForce GTX 1060 3GB",
+  "cpu": "Intel Core i5-7400, 4 cores",
+  "new_training_frames": 0,
+  "native_v2": {
+    "contract_version": 2,
+    "agents": 4096,
+    "game_frames": 8388608,
+    "seconds": 1.911088,
+    "frames_per_second": 4389440.7,
+    "observations": 448,
+    "resets_and_augmentation_included": true,
+    "ppo_included": false,
+    "action_source": "fixed per-env uniform action IDs"
+  },
+  "native_v1_control": {
+    "contract_version": 1,
+    "agents": 4096,
+    "game_frames": 8388608,
+    "seconds": 1.368051,
+    "frames_per_second": 6131796.3,
+    "observations": 448,
+    "resets_and_augmentation_included": true,
+    "ppo_included": false,
+    "action_source": "fixed per-env uniform action IDs"
+  },
+  "rom": [
+    {
+      "backend": "optimized QuickNES",
+      "cpu_threads": 1,
+      "render": false,
+      "idle_loop_skip": true,
+      "rom_blocks": true,
+      "game_frames": 12800,
+      "seconds": 0.17209,
+      "frames_per_second": 74379.7,
+      "observations": 448,
+      "resets_included": true,
+      "ppo_included": false,
+      "successful_replays": 128,
+      "checksum": -256543.622
+    },
+    {
+      "backend": "optimized QuickNES",
+      "cpu_threads": 1,
+      "render": true,
+      "idle_loop_skip": true,
+      "rom_blocks": true,
+      "game_frames": 12800,
+      "seconds": 0.332784,
+      "frames_per_second": 38463.3,
+      "observations": 448,
+      "resets_included": true,
+      "ppo_included": false,
+      "successful_replays": 128,
+      "checksum": -256543.622
+    }
+  ],
+  "native_vs_single_headless_rom_worker": 59.01396079844367,
+  "native_v2_vs_v1": 0.7158490734599257,
+  "scope": "Environment throughput, including 448-float observations and resets, excluding policy inference and PPO. GPU: 4096 generated-course environments with fixed per-environment actions. ROM: one CPU worker replaying the reachable 100-frame FPG suffix, optimized compiled instruction blocks and idle-loop skipping; both headless and rendered modes. Different workload/batch/hardware, not an end-to-end training speedup.",
+  "sources_sha256": {
+    "ocean/mario_fpg/tests/bench_cuda.cu": "0756b2cbd4d91a63189de44c50e83ac3d797f02b092c63710a70cd82be296575",
+    "build/mario_fpg/bench_rom_semantic.cpp": "cc721e9f8b31bc92f10804f4ff7b7251eecaf578ba15f4f66afe69b1de4318c7"
+  },
+  "commands": [
+    "make -C ocean/mario_fpg bench",
+    "./build/mario_fpg/bench_cuda 1",
+    "./build/mario_fpg/bench_rom_semantic"
+  ]
+}

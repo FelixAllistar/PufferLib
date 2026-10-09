@@ -1,0 +1,8 @@
+{
+  "resume_frames": 65536,
+  "resumed_agents": 2048,
+  "median_reference_frames": 16,
+  "evaluation_frozen_at_median": true,
+  "wall_seconds": 4.860200103998068,
+  "passed": true
+}

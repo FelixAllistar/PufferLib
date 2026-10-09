@@ -1,0 +1,1105 @@
+{
+  "archive_artifacts": [
+    {
+      "bytes": 933963,
+      "path": "ocean/mario_sim/results/feasibility_20261003/boundaries/case_coverage.jsonl",
+      "sha256": "f1687b97f15cb6fd59b4376be2975e486b711eca6784e1b42eda797b0edd0174"
+    },
+    {
+      "bytes": 603200,
+      "path": "ocean/mario_sim/results/feasibility_20261003/boundaries/cases.jsonl",
+      "sha256": "0b5795dd4aaa999040a2e8af665b4786e83fe2a49ac4b6212fb686fcae6a0919"
+    },
+    {
+      "bytes": 2139,
+      "path": "ocean/mario_sim/results/feasibility_20261003/boundaries/coverage.json",
+      "sha256": "8c136b1a9b9abc628d43bf3600d59842be42d5526f03ef0e8946ca0163c92f03"
+    },
+    {
+      "bytes": 226,
+      "path": "ocean/mario_sim/results/feasibility_20261003/boundaries/cpu_stdout.txt",
+      "sha256": "5b6f8180b2ea002657f30f3496d2c90fc800ce7edb94ca99c77b6b1d994863a2"
+    },
+    {
+      "bytes": 174,
+      "path": "ocean/mario_sim/results/feasibility_20261003/boundaries/cuda.json",
+      "sha256": "7a0d9cb42d49c56ac3e7150693b902f008a399c454c304fd64839e59e0dbc816"
+    },
+    {
+      "bytes": 735,
+      "path": "ocean/mario_sim/results/feasibility_20261003/boundaries/cuda_stderr.txt",
+      "sha256": "95f512fad430b558f1e1706827a2049e9aba03ec688725a941c077019416b177"
+    },
+    {
+      "bytes": 617,
+      "path": "ocean/mario_sim/results/feasibility_20261003/boundaries/summary.json",
+      "sha256": "4d35d739b8c3e99076629347b20e5a9b0db0343b1451483fbbd1a7dc951d3f20"
+    },
+    {
+      "bytes": 894,
+      "path": "ocean/mario_sim/results/feasibility_20261003/compilation/bounded_build.txt",
+      "sha256": "99a57726513e60bf4a37d3e51ef263b2552363c19b2bf1a3f8e89dc636031108"
+    },
+    {
+      "bytes": 390,
+      "path": "ocean/mario_sim/results/feasibility_20261003/compilation/cuda_range_reader_build.txt",
+      "sha256": "3cf729368ad60c1e1a357a1aa0f6cf8d5c91279223240faf5b40a4ae008e1334"
+    },
+    {
+      "bytes": 944,
+      "path": "ocean/mario_sim/results/feasibility_20261003/compilation/cuda_verification_build.txt",
+      "sha256": "6b2d2005086402b1caea0eb0d672dd5b15687d47073bc0a011ee4ed78daf6945"
+    },
+    {
+      "bytes": 21969,
+      "path": "ocean/mario_sim/results/feasibility_20261003/catalog_summary.json",
+      "sha256": "4b72a5e1ac6e8b076473a4b979fe0908b392fb911350973fca53fa5941dce935"
+    },
+    {
+      "bytes": 166,
+      "path": "ocean/mario_sim/results/feasibility_20261003/cuda_completion.json",
+      "sha256": "1460a75bf99d64b9afdfd8f50037dca3232eca7113c7a781556d423446c5ac85"
+    },
+    {
+      "bytes": 66,
+      "path": "ocean/mario_sim/results/feasibility_20261003/guards/invalid_header_output.txt",
+      "sha256": "f4dc8345dcad7361ca78798bf6948e899730805ceb409e600c3020acd0b10c3f"
+    },
+    {
+      "bytes": 252,
+      "path": "ocean/mario_sim/results/feasibility_20261003/guards/invalid_scene_reset_output.txt",
+      "sha256": "70812d2fd291bbb18f87855e2a6ae5883c2c6fc26212b70ad45a7f373aed3f5d"
+    },
+    {
+      "bytes": 307,
+      "path": "ocean/mario_sim/results/feasibility_20261003/guards/ram_mismatch_graph_output.txt",
+      "sha256": "6209b6e5c5cfb5877cae40d37e8316230ed2ba6ee157560dab20e2cd84e8d7e2"
+    },
+    {
+      "bytes": 319,
+      "path": "ocean/mario_sim/results/feasibility_20261003/guards/summary.json",
+      "sha256": "5d24efc3618b9df5004d27329411b91e1bdb676e413d077a6787395d89da53f4"
+    },
+    {
+      "bytes": 37,
+      "path": "ocean/mario_sim/results/feasibility_20261003/guards/truncated_output.txt",
+      "sha256": "1e28a048eaba2a7304f8664207de2072b3116430445edf9a7d72d106b1efd70f"
+    },
+    {
+      "bytes": 3133014,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/case_coverage.jsonl",
+      "sha256": "9f230d07ac98328e5315f996571a1d02ee6198081b3ea5b8d6dfbfef189ca492"
+    },
+    {
+      "bytes": 2045272,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/cases.jsonl",
+      "sha256": "500ce874fe5e14a3ef914bd7f6e515fc11ff8eab8a49e829e7f13e65d6520f78"
+    },
+    {
+      "bytes": 3753,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/coverage.json",
+      "sha256": "c9146d1ac9c0b0e330be341a0f06fc8b2b4e90517b6a858c849ab208e8f1dba4"
+    },
+    {
+      "bytes": 229,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/cpu_stdout.txt",
+      "sha256": "6a23358e48109ec6ef3a485cd837e800dbb184db9e0909463d639ce7cddc19de"
+    },
+    {
+      "bytes": 341,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/cuda.json",
+      "sha256": "09c670289d858df9ba09bc5b574889781e467715dfad1254fa8e904b03611234"
+    },
+    {
+      "bytes": 176,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/cuda_part_0.json",
+      "sha256": "8786c3a1f0955b3263f5646ab3c9c42e063fb3dc81a9936b0341f20252b9f85b"
+    },
+    {
+      "bytes": 1248,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/cuda_part_0_stderr.txt",
+      "sha256": "f448f018de01f2b6b79a9903e984071d22e3d409251001578322e951097c5a2b"
+    },
+    {
+      "bytes": 180,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/cuda_part_1.json",
+      "sha256": "478e21337186c0bbee629cda89a78b897411a4856f04ec41a24876e751dde77b"
+    },
+    {
+      "bytes": 1305,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/cuda_part_1_stderr.txt",
+      "sha256": "42b9b2c04f4a27d3d96ca60345657d7e22f22833085a55bdeb2efa5def349a92"
+    },
+    {
+      "bytes": 788,
+      "path": "ocean/mario_sim/results/feasibility_20261003/main/summary.json",
+      "sha256": "5fa4d401fb26d970b0663630bc157289c839aae27aed1d614a392e563414c2e0"
+    },
+    {
+      "bytes": 1456,
+      "path": "ocean/mario_sim/results/feasibility_20261003/routes.json",
+      "sha256": "58418e14a59b506f035e827b027e677a2619cdf7bf72eb446f5ec8040d131378"
+    },
+    {
+      "bytes": 20522,
+      "path": "ocean/mario_sim/results/feasibility_20261003/supplement/case_coverage.jsonl",
+      "sha256": "c1b12741c5e750a781010e9b399e0bfa3276f5fece0c8d98a02d96b27c78e70a"
+    },
+    {
+      "bytes": 12888,
+      "path": "ocean/mario_sim/results/feasibility_20261003/supplement/cases.jsonl",
+      "sha256": "652e18af262aa982bba6ef7dc9a63d76249d1aa34a7715bb6b322a05a59fd184"
+    },
+    {
+      "bytes": 1480,
+      "path": "ocean/mario_sim/results/feasibility_20261003/supplement/coverage.json",
+      "sha256": "828050cbb34c65dd0b9985f84684fd150748adb1ad8597072a0a734c135d8c94"
+    },
+    {
+      "bytes": 222,
+      "path": "ocean/mario_sim/results/feasibility_20261003/supplement/cpu_stdout.txt",
+      "sha256": "d066bb9032c5bc9ec75cc9702d62e258f73acc477a9cb05f4c1e111842e8223a"
+    },
+    {
+      "bytes": 166,
+      "path": "ocean/mario_sim/results/feasibility_20261003/supplement/cuda.json",
+      "sha256": "93548c56470bd21a63c5fcddb7104b1b1c621f9ff30ebd937df76db9d3695816"
+    },
+    {
+      "bytes": 52,
+      "path": "ocean/mario_sim/results/feasibility_20261003/supplement/cuda_stderr.txt",
+      "sha256": "c8f55d055219f4e54ca75087d58aaebdaace4255c493c1f10fa53e72940a48da"
+    },
+    {
+      "bytes": 496,
+      "path": "ocean/mario_sim/results/feasibility_20261003/supplement/summary.json",
+      "sha256": "6dc49ba0fbcb13e40211497d897faf703f2056be3d14f4846b5ac5ca65cce1e9"
+    },
+    {
+      "bytes": 240745,
+      "path": "ocean/mario_sim/results/feasibility_20261003/world/case_coverage.jsonl",
+      "sha256": "d58f9c183657028dc40f0849761476603705c2b749cf6bc4b7e5de01003cbf64"
+    },
+    {
+      "bytes": 157994,
+      "path": "ocean/mario_sim/results/feasibility_20261003/world/cases.jsonl",
+      "sha256": "42412a34511edc1ca18ed573fb647cfb12febacfeef7942b5b2bbb2d5fb49cd2"
+    },
+    {
+      "bytes": 2296,
+      "path": "ocean/mario_sim/results/feasibility_20261003/world/coverage.json",
+      "sha256": "880d7a28e3d3f2048831293c103792731ce01babdc1e8cdf12189d5d6ae22931"
+    },
+    {
+      "bytes": 226,
+      "path": "ocean/mario_sim/results/feasibility_20261003/world/cpu_stdout.txt",
+      "sha256": "4feb87fd45f18962051a5be7891adfda84b110571f907327159b43dd45777fbc"
+    },
+    {
+      "bytes": 169,
+      "path": "ocean/mario_sim/results/feasibility_20261003/world/cuda.json",
+      "sha256": "d5c3a36fa37b0fd4209c9785c7e2ee175bf65cc6729277625176405b514f22d8"
+    },
+    {
+      "bytes": 216,
+      "path": "ocean/mario_sim/results/feasibility_20261003/world/cuda_stderr.txt",
+      "sha256": "1ceaf16591131c8d5422e2d2de7f12f059108fbcf1d81894f80635461ab22a7f"
+    },
+    {
+      "bytes": 627,
+      "path": "ocean/mario_sim/results/feasibility_20261003/world/summary.json",
+      "sha256": "767f75ac08565384ff6c2161973c657ced9b1b2e5df13a3cc296ca86f79d574c"
+    }
+  ],
+  "comparison": {
+    "fields": [
+      "all 2048 RAM bytes",
+      "6502 pc/a/x/y/sp and status mask 0xcf",
+      "video-frame timestamp and count",
+      "PPU control and mask"
+    ],
+    "gpu_batch_cases": 256,
+    "gpu_frames_per_launch": 16,
+    "gpu_launch_paths": "direct and CUDA graph batches alternate by global batch index",
+    "initialization": "one complete initial-state template plus explicit parameter overrides per case",
+    "observation": "2048 floats, RAM byte / 256; exact equality on CPU and bitwise equality on CUDA",
+    "observation_is_policy_recommendation": false,
+    "reference": "local QuickNES emulator; hardware timing values include shared reference cycle table",
+    "reference_updates_during_native_replay": false
+  },
+  "compilation": {
+    "cpu": "clang++ -O1 -std=c++17",
+    "cuda_assembly": "ptxas -arch=sm_61 -O0",
+    "cuda_host": "nvcc -O1 -std=c++17, CUDA driver module loading",
+    "cuda_translation": "nvcc -G -O0 -arch=sm_61 -std=c++17 -ptx",
+    "instruction_page_bytes": 256,
+    "instruction_sites": 10701,
+    "performance_qualification": false
+  },
+  "complete_game_qualified": false,
+  "created_utc": "2026-10-03T11:24:49.962865+00:00",
+  "git_head": "6e3e0ef19279537021024641afcc884d3b2f4d15",
+  "hardware": {
+    "cuda": "12.6.85",
+    "driver": "581.63",
+    "gpu": "NVIDIA GeForce GTX 1060 3GB",
+    "gpu_memory_mib": 3072,
+    "host_compiler": "Ubuntu clang 18.1.3",
+    "platform": "Linux x86_64, WSL2"
+  },
+  "inputs": [
+    {
+      "bytes": 40976,
+      "path": "ocean/retro/roms/smb1_ntsc.nes",
+      "sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea"
+    },
+    {
+      "bytes": 751389,
+      "path": "build/mario_lab/reference/smbdis_complete.asm",
+      "sha256": "e5c17c42783f430029ab90aa37c73d51c2c320898e533b3ff196dad38c50ae42"
+    }
+  ],
+  "limits": [
+    "sampled coverage, not an exhaustive proof for arbitrary clips or interactions",
+    "complete game playthrough and every bonus/maze/ending sequence remain unverified",
+    "two-player controller adapter and explicit pause tests remain incomplete",
+    "not pixel or audio parity; original fixed HUD sprite marker timing assumption",
+    "clip import needs initial emulator state and inputs, not video pixels alone",
+    "mechanically translated ROM-dependent prototype retains register and stack semantics",
+    "some hidden history remains an opaque initial-state template",
+    "old procedural generator has not been migrated; arbitrary generated levels are unqualified",
+    "device optimization disabled; no environment throughput or training claim"
+  ],
+  "local_only_artifacts": [
+    {
+      "bytes": 2465925336,
+      "path": "build/mario_sim/qualification_v2/main/clips.bin",
+      "sha256": "7c0100714cfdee65d49f50083552515932069004b4f086b2f1cff2ce55ef5588"
+    },
+    {
+      "bytes": 35947272,
+      "path": "build/mario_sim/qualification_v2/supplement/clips.bin",
+      "sha256": "407aaa9e7d9f0e7c069f89ec4eb119bf2341fa4d2a186ef89d055a145ae5b358"
+    },
+    {
+      "bytes": 193911336,
+      "path": "build/mario_sim/qualification_v2/world/clips.bin",
+      "sha256": "6ed0f5ccf4dd370414dddf58bddd0fb580966d7719688c3a8e05f2798666a62d"
+    },
+    {
+      "bytes": 702842472,
+      "path": "build/mario_sim/qualification_v2/boundaries/clips.bin",
+      "sha256": "944c1ec5d4c9de3806b7239fda3d62a6aa2e8fbf5ada96ff0604341533573168"
+    },
+    {
+      "bytes": 40,
+      "path": "build/mario_sim/qualification_v2/guards/invalid_header.bin",
+      "sha256": "35b3a202ac6bf6d012b84217ad4dc4b65545686898ab0241f28ea707d49e8193"
+    },
+    {
+      "bytes": 35300,
+      "path": "build/mario_sim/qualification_v2/guards/truncated.bin",
+      "sha256": "64d65cb506db7d3f9cb85ff5ea3b37e49fb2d090fe984d1d84939f410da53b7e"
+    },
+    {
+      "bytes": 37368,
+      "path": "build/mario_sim/qualification_v2/guards/invalid_scene_reset.bin",
+      "sha256": "8a761b1d3b5d561824c277d33412c9edfabc7bde89dc322db49e454d7b0c30dc"
+    },
+    {
+      "bytes": 1204728,
+      "path": "build/mario_sim/qualification_v2/guards/ram_mismatch_graph.bin",
+      "sha256": "d5ee82a6b780a9181654359b2dde66285fc12801f68e5964bfc1eeffdbfcdbf1"
+    },
+    {
+      "bytes": 3765208,
+      "path": "build/mario_sim/reconstruct",
+      "sha256": "b791093db36e070cb01c6cbfa612c6dd28c8598b587d9417c9e12054a586be1d"
+    },
+    {
+      "bytes": 2346504,
+      "path": "build/mario_sim/catalog",
+      "sha256": "5a83cbb3cf02e54061e3837cbc1b9f305729e9491e38095f70a57c1218107682"
+    },
+    {
+      "bytes": 1019312,
+      "path": "build/mario_sim/verify_cuda",
+      "sha256": "c2ada826ee153171e0cf4d85101d1f56feb91be52c4b301177393220e622d310"
+    },
+    {
+      "bytes": 59564584,
+      "path": "build/mario_sim/cuda_replay.cubin",
+      "sha256": "1eab74d4ee035dd23ec9edfecf687257d7b5fdff92f1378730d09498f8264651"
+    },
+    {
+      "bytes": 26943853,
+      "path": "build/mario_sim/cuda_replay.ptx",
+      "sha256": "7ae70d627e1b5bd104275c8b8aa7c42511289b1c527455a83d4ee2d9ac85f6b4"
+    },
+    {
+      "bytes": 2000792,
+      "path": "build/mario_sim/logic_cpu.o",
+      "sha256": "553230c6f4de0044182d7997dc5804ab6b6558f5dc3c1f144efacf0323d23378"
+    },
+    {
+      "bytes": 3193529,
+      "path": "build/mario_sim/generated_logic.h",
+      "sha256": "64831ceb66c76ef54059c0ef5e4171de76c55003daa0b5975fc55433cb4f23f5"
+    },
+    {
+      "bytes": 32768,
+      "path": "build/mario_sim/generated_logic.prg.bin",
+      "sha256": "5374abb64cfb9b5d961856c60166cedc55859164cf2b8867730e144fa2bdd594"
+    },
+    {
+      "bytes": 64228,
+      "path": "build/mario_sim/generated_logic.symbols.json",
+      "sha256": "658f3137e5d3756574d03bb4fb8ca72dc9a40ef96869c6e1b2986dffc45e7906"
+    },
+    {
+      "bytes": 106199,
+      "path": "build/mario_sim/catalog.json",
+      "sha256": "289ffa0fc7314177c59419e00099e1a2d5b39607f4c0678a3c07f549775a7804"
+    },
+    {
+      "bytes": 1991324,
+      "path": "build/retro/libquicknes.a",
+      "sha256": "80930879d3ca46c4c96e32a5d645853c8fc358aa61101a7c5ae192a2dd481c67"
+    },
+    {
+      "bytes": 2798172,
+      "path": "raylib-5.5_linux_amd64/lib/libraylib.a",
+      "sha256": "3323cbf14ec6e640e19d63e230e68c3a530be3e9a9d416435eab82160e9e9ccc"
+    },
+    {
+      "bytes": 14303,
+      "path": "build/mario_sim/package_feasibility.py",
+      "sha256": "01f255df226a54dfa4af1333d92a44123bb1f29ca8851c97e6105056ab5b1959"
+    }
+  ],
+  "negative_controls": [
+    {
+      "exit_code": 2,
+      "passed": true,
+      "test": "invalid_header"
+    },
+    {
+      "exit_code": 2,
+      "passed": true,
+      "test": "truncated"
+    },
+    {
+      "exit_code": 1,
+      "passed": true,
+      "test": "ram_mismatch_graph"
+    },
+    {
+      "exit_code": 1,
+      "passed": true,
+      "test": "invalid_scene_reset"
+    }
+  ],
+  "panel_protocol": {
+    "constructed_cases": "parameter overrides or changed fixed level-data streams",
+    "independent_statistical_holdout": false,
+    "main_cuda_execution": "two clean successful processes covering [0,5632) and [5632,11396)",
+    "main_sources": "two scripted jump patterns plus ROM-replayed Bowser, vine, powerup and pipe routes",
+    "ordinary_input_branches_per_start": 16,
+    "persistent_horizon_frames": 240,
+    "stage_selection": "after 1-1, title-screen practice selector followed by ROM setup",
+    "stage_starts": 32
+  },
+  "panels": {
+    "boundaries": {
+      "cases": 3248,
+      "constructed_cases": 928,
+      "cpu_exit_code": 0,
+      "cpu_failures": 0,
+      "cuda_exit_codes": [
+        0
+      ],
+      "cuda_failures": 0,
+      "frames": 335936,
+      "source_directory": "build/mario_sim/qualification_v2/boundaries",
+      "sources": 116
+    },
+    "main": {
+      "cases": 11396,
+      "constructed_cases": 3256,
+      "cpu_exit_code": 0,
+      "cpu_failures": 0,
+      "cuda_exit_codes": [
+        0,
+        0
+      ],
+      "cuda_failures": 0,
+      "frames": 1178672,
+      "source_directory": "build/mario_sim/qualification_v2/main",
+      "sources": 407
+    },
+    "supplement": {
+      "cases": 72,
+      "constructed_cases": 72,
+      "cpu_exit_code": 0,
+      "cpu_failures": 0,
+      "cuda_exit_codes": [
+        0
+      ],
+      "cuda_failures": 0,
+      "frames": 17280,
+      "source_directory": "build/mario_sim/qualification_v2/supplement",
+      "sources": 9
+    },
+    "world": {
+      "cases": 896,
+      "constructed_cases": 896,
+      "cpu_exit_code": 0,
+      "cpu_failures": 0,
+      "cuda_exit_codes": [
+        0
+      ],
+      "cuda_failures": 0,
+      "frames": 92672,
+      "source_directory": "build/mario_sim/qualification_v2/world",
+      "sources": 32
+    }
+  },
+  "qualification_command": "make -C ocean/mario_sim qualify",
+  "qualification_output_override": "OUT=../../build/mario_sim/qualification_v2",
+  "rom_fingerprint_fnv64": "6e01246e5d215cb3",
+  "schema": 1,
+  "scope": "SMB1 CPU/CUDA video-frame reconstruction feasibility",
+  "source_status": "working tree contains uncommitted work; exact relevant file hashes recorded below",
+  "sources": [
+    {
+      "bytes": 1648,
+      "path": "config/mario_fpg.ini",
+      "sha256": "347a823d0b1f5d7efecca2d566274d93907e609c44fa92832c0b5329c536e1d6"
+    },
+    {
+      "bytes": 2753,
+      "path": "config/mario_lab.ini",
+      "sha256": "1bce27ed8cdfcb358703a7985ed77ab16f636b4d8f070e03bf0f68eb10da70ef"
+    },
+    {
+      "bytes": 9998,
+      "path": "ocean/mario_fpg/README.md",
+      "sha256": "139b2994112132a3ef777fcec3918ff7c058c4545bb9db3a62835a74b2699c75"
+    },
+    {
+      "bytes": 11562,
+      "path": "ocean/mario_fpg/RESULTS.md",
+      "sha256": "aad7a3d62e6fb9d4f1772300a8b2100f3b0fb05a74cc7aabf3a03c35a6eee457"
+    },
+    {
+      "bytes": 6737,
+      "path": "ocean/mario_fpg/reference/learned_pipe_route.actions",
+      "sha256": "10798f42a1dade79745763712f2257e077673668d7409dd47bfccdd65ff286b4"
+    },
+    {
+      "bytes": 8776,
+      "path": "ocean/mario_lab/CONTINUING_TRAINING.md",
+      "sha256": "d8b61e393102e6e5feb8f7b17e7181835cebf89ad8cfdf1cc5a73f9f90cbbdec"
+    },
+    {
+      "bytes": 8581,
+      "path": "ocean/mario_lab/CURRICULUM_RESULTS.md",
+      "sha256": "37af9f8154cb7ca12c498a3e280ec744675809d642ff8ca25cd47d56fd200b18"
+    },
+    {
+      "bytes": 5132,
+      "path": "ocean/mario_lab/FULL_LEVEL_RESULTS.md",
+      "sha256": "87d7eea2e5d9b0b50f7c5f06010522caf14c8422b04dbb2aa123c28362170f12"
+    },
+    {
+      "bytes": 18511,
+      "path": "ocean/mario_lab/README.md",
+      "sha256": "a2e5ceb5cbf3286c2f63853804b0714941b3065e405ab55a0fd0ca08e8404b34"
+    },
+    {
+      "bytes": 5864,
+      "path": "ocean/mario_lab/RESULTS.md",
+      "sha256": "159c886e5eea167d62187e4883fdee81dbc0a1567b83d727aecb290889291b42"
+    },
+    {
+      "bytes": 14657,
+      "path": "ocean/mario_lab/TRANSFER_RESULTS.md",
+      "sha256": "d58eb4780af4d5cb5653f8d6d8a0be3d23a7136f1673d34b44a52ca35d6b3199"
+    },
+    {
+      "bytes": 5290,
+      "path": "ocean/mario_sim/EXPERIMENT_AUDIT.md",
+      "sha256": "2c4fa55202fa1083a27c3f9532ea637d0805b9e18679ff47602e478f2b709c30"
+    },
+    {
+      "bytes": 4318,
+      "path": "ocean/mario_sim/Makefile",
+      "sha256": "98f5bbbccd148c0f57eda7895d2629a7b8e85ac4c7b58b1baa534b6eb21d6aef"
+    },
+    {
+      "bytes": 9994,
+      "path": "ocean/mario_sim/README.md",
+      "sha256": "bc8195d860ce0ac5b1edb9c409ce57428c3b8c8bc8d4dcdd1b78dc60e648c6e3"
+    },
+    {
+      "bytes": 6640,
+      "path": "ocean/mario_sim/RESULTS.md",
+      "sha256": "3f41c7cb95223473335299e72738f7eed2e82fa7f319ba98e0a9bad70180e0fb"
+    },
+    {
+      "bytes": 6440,
+      "path": "ocean/mario_sim/catalog.cpp",
+      "sha256": "6ab0ded800bc506f70dd6cd3293f2378562982620906ddcfa821576fb78cb711"
+    },
+    {
+      "bytes": 2965,
+      "path": "ocean/mario_sim/check_trace_guards.py",
+      "sha256": "c6c1545354ed026d3c0a8cc2cf6552edb566b649b11079d06d5bc46f3b18f2a7"
+    },
+    {
+      "bytes": 39772,
+      "path": "ocean/mario_sim/coverage.json",
+      "sha256": "af891046280810874bb994176f91998046c85f33174a7600912f52edd2b5fe87"
+    },
+    {
+      "bytes": 1271,
+      "path": "ocean/mario_sim/cuda_module.cpp",
+      "sha256": "30b605756246c2e10513c3c376c269f402c45b7697ab7c2a37327118f9138338"
+    },
+    {
+      "bytes": 157,
+      "path": "ocean/mario_sim/cuda_module.h",
+      "sha256": "3a1ab0fa0e2ccddb15f291471e96c9476c7af8c6e488e217e8b460f79419fba2"
+    },
+    {
+      "bytes": 1698,
+      "path": "ocean/mario_sim/cuda_replay.cu",
+      "sha256": "1d193e82d8612a6e993c31e08e8a180622d6fd6405b7f59a7b0323a80a339633"
+    },
+    {
+      "bytes": 261,
+      "path": "ocean/mario_sim/cuda_replay.h",
+      "sha256": "eb4d94f06a6e676337dc0d5f8216da0a10d1bc7b19ce374edfa65504ee0d189b"
+    },
+    {
+      "bytes": 1567,
+      "path": "ocean/mario_sim/debug_clip.cpp",
+      "sha256": "95eafff53133fb52e50452f8ad338b1418936b68847770d5875391b9626acdbd"
+    },
+    {
+      "bytes": 4334,
+      "path": "ocean/mario_sim/find_clip.cpp",
+      "sha256": "643739e2cf4186a8d47bade9f344822dff14ed07a09e58d8f685d9ac3caa5bcd"
+    },
+    {
+      "bytes": 13480,
+      "path": "ocean/mario_sim/generate_logic.py",
+      "sha256": "938ef41f4e8779e7abde717b326b7a90e6cf567fed04f503b5aa9c389598a6e5"
+    },
+    {
+      "bytes": 9223,
+      "path": "ocean/mario_sim/logic.h",
+      "sha256": "973eef6d4419b6fff4a953d7e5c26723e5b4a4f8a82b5a6c8d836b6f01a07be6"
+    },
+    {
+      "bytes": 174,
+      "path": "ocean/mario_sim/logic_cpu.cpp",
+      "sha256": "166272c8ff8ff5c4e679e2a95f11cb7128658a01c0ef017d5c218f659ac3f2eb"
+    },
+    {
+      "bytes": 103,
+      "path": "ocean/mario_sim/logic_cpu.h",
+      "sha256": "7fcd7e500b0ef0a07700b276f569cc34dc1cf47de8fed1005831d2fab2c61199"
+    },
+    {
+      "bytes": 931,
+      "path": "ocean/mario_sim/parameters.h",
+      "sha256": "f6aeb92cf233de03c65f2e37ea9ea76f008eb73f25f6147a725eb0a0559de89a"
+    },
+    {
+      "bytes": 16056,
+      "path": "ocean/mario_sim/reconstruct.cpp",
+      "sha256": "bdcbadf4f4eefca61979d2b8c06d99d7f378d36ff9b22cb10d0e8f1645f6a566"
+    },
+    {
+      "bytes": 2800,
+      "path": "ocean/mario_sim/reference/bowser_1_4.inputs",
+      "sha256": "d9362e75eb4afd8f72c947d5166a275158e6bbf911cf568dea73092ccb612ba9"
+    },
+    {
+      "bytes": 1388,
+      "path": "ocean/mario_sim/reference/powerup_1_1.inputs",
+      "sha256": "49fb3fa441cad5ce48ee2a7fc2de0711291d8d67384ad0c43ca7d5dcc2dc4d2b"
+    },
+    {
+      "bytes": 1456,
+      "path": "ocean/mario_sim/reference/provenance.json",
+      "sha256": "58418e14a59b506f035e827b027e677a2619cdf7bf72eb446f5ec8040d131378"
+    },
+    {
+      "bytes": 1856,
+      "path": "ocean/mario_sim/reference/vine_2_1.inputs",
+      "sha256": "b1769f095cb2d86b4260b5a81426f63b02a64a27a2d140c1bcce3a9b945ce677"
+    },
+    {
+      "bytes": 724,
+      "path": "ocean/mario_sim/rom_import.h",
+      "sha256": "5f2b2708173614a0d1f15ac921ac0a41401ec155e4f84dce9f29c1843a4f1660"
+    },
+    {
+      "bytes": 2075,
+      "path": "ocean/mario_sim/scene.h",
+      "sha256": "3e8c7492bacf4b8944062c6a8d22bec00d864f5989d9d230716886dd8f3142e4"
+    },
+    {
+      "bytes": 5416,
+      "path": "ocean/mario_sim/summarize_trace.py",
+      "sha256": "d4b836a35cd09aab753e2acd440ae302616d062b6479a3848babea144553cf6a"
+    },
+    {
+      "bytes": 555,
+      "path": "ocean/mario_sim/trace.h",
+      "sha256": "70325afe76274ee885ae9d7b50fe3a3887445c257a37847901303a561b1b5677"
+    },
+    {
+      "bytes": 5566,
+      "path": "ocean/mario_sim/verify_cuda.cu",
+      "sha256": "cb7c71216e6d269827721325394d23f9f3ebac93a3cc1324f406e5735dd01da2"
+    },
+    {
+      "bytes": 2914,
+      "path": "ocean/mario_sim/verify_logic.cpp",
+      "sha256": "73baf151596de698cf24b7ba90c811ce1259ad3b26cbdfe28ec94d910a6562c7"
+    },
+    {
+      "bytes": 2096,
+      "path": "ocean/mario_sim/world.h",
+      "sha256": "b8e0c1970c38fd7a25c8d14e9ca24ae7c81c1d4139046c7a167c8f05e2847d92"
+    },
+    {
+      "bytes": 14000,
+      "path": "ocean/retro/EXPERIMENTS.md",
+      "sha256": "96f7bc0133b6fc4fe932f9522c6df75218e6fca4521df9e12c38191fa3efc3a1"
+    },
+    {
+      "bytes": 4951,
+      "path": "ocean/retro/Makefile",
+      "sha256": "3a32828ca988084f6fa2636a99b80c8dc1b80c37524b120af920a5de31c33919"
+    },
+    {
+      "bytes": 15752,
+      "path": "ocean/retro/batch/generate_blocks.py",
+      "sha256": "50fa3c0e3110daa9277aae6e04be7e1992e291e1789f2e0f49e6b6563f8aa816"
+    },
+    {
+      "bytes": 10840,
+      "path": "ocean/retro/nes_emu/Blip_Buffer.cpp",
+      "sha256": "1f892c60c2065cff413403e60c0fa894575352ad6b9583bdaab582e9ad7ff82f"
+    },
+    {
+      "bytes": 13848,
+      "path": "ocean/retro/nes_emu/Blip_Buffer.h",
+      "sha256": "88d3b7585d93634bb8beea377d70632eaafc1dea63da7563f04d5ce722a968d8"
+    },
+    {
+      "bytes": 2314,
+      "path": "ocean/retro/nes_emu/Data_Reader.cpp",
+      "sha256": "c0e9fc311a8f764b5841b3d9fdb259b97afd1a151f1eb51e79c3c055e1a7e0db"
+    },
+    {
+      "bytes": 3452,
+      "path": "ocean/retro/nes_emu/Data_Reader.h",
+      "sha256": "2b3eb4dbc129d4b5f056c4b31980d20dfd4962e355b4031676833380c009df6f"
+    },
+    {
+      "bytes": 14559,
+      "path": "ocean/retro/nes_emu/Effects_Buffer.cpp",
+      "sha256": "b956329409dfd9eabaa8838a68f50c283fa78538d527973156a88e63f4691ab7"
+    },
+    {
+      "bytes": 3276,
+      "path": "ocean/retro/nes_emu/Effects_Buffer.h",
+      "sha256": "ec925bafacbc702f9d36654f53d57dae8d07b68aaa1d4eed977a17a744429bd8"
+    },
+    {
+      "bytes": 5770,
+      "path": "ocean/retro/nes_emu/Multi_Buffer.cpp",
+      "sha256": "ffe3657233109455fa26a62ef5d87205a748d2b77e5bb463c661d91645b86b59"
+    },
+    {
+      "bytes": 5425,
+      "path": "ocean/retro/nes_emu/Multi_Buffer.h",
+      "sha256": "c0d0af8d8c5303eccaeaeb26b8e5f15d095d44c43b5db77e24c43d7872185654"
+    },
+    {
+      "bytes": 8455,
+      "path": "ocean/retro/nes_emu/Nes_Apu.cpp",
+      "sha256": "22e497733d552f263f2d381826c23ab5553d9b58f823d4bbbb517b2c0358cf8f"
+    },
+    {
+      "bytes": 5321,
+      "path": "ocean/retro/nes_emu/Nes_Apu.h",
+      "sha256": "994b2ed3a0e3005beb6dace92ad1cfb5097b32f14cb0b98e2e364996dfb38408"
+    },
+    {
+      "bytes": 5069,
+      "path": "ocean/retro/nes_emu/Nes_Buffer.cpp",
+      "sha256": "093c88257699c1285f5957ae390c63721f3d0fb58c8b9f1d20a2d262a7e542d0"
+    },
+    {
+      "bytes": 1654,
+      "path": "ocean/retro/nes_emu/Nes_Buffer.h",
+      "sha256": "27ed3b12c09380ee131de7a19d379c743af877f593a39cc4b35113e22354c091"
+    },
+    {
+      "bytes": 2908,
+      "path": "ocean/retro/nes_emu/Nes_Cart.cpp",
+      "sha256": "f74ff16f538e25c56bdef4bd294a389667bf2c624945de9da3b51e52bc96a671"
+    },
+    {
+      "bytes": 1982,
+      "path": "ocean/retro/nes_emu/Nes_Cart.h",
+      "sha256": "77ae83f8ea4bb68c50a0a91063c294fa1b320286b120330d5c8c73fb10b05cb8"
+    },
+    {
+      "bytes": 11958,
+      "path": "ocean/retro/nes_emu/Nes_Core.cpp",
+      "sha256": "d931106c43e4c18b87d4a1418cbad97b5daedca82f20a51e4ba8de850ce8fe16"
+    },
+    {
+      "bytes": 3235,
+      "path": "ocean/retro/nes_emu/Nes_Core.h",
+      "sha256": "75dd2ffb0813adc88f834e4d20c7660e9dbab5c987f3f4a6d7a808d5cbe05498"
+    },
+    {
+      "bytes": 27179,
+      "path": "ocean/retro/nes_emu/Nes_Cpu.cpp",
+      "sha256": "c034509ab2a2a117e60429b33f74b63978fc3dbd8b7f857eda4bf3d6263a2cb5"
+    },
+    {
+      "bytes": 3756,
+      "path": "ocean/retro/nes_emu/Nes_Cpu.h",
+      "sha256": "026b6b66243b367b8305bc9a4ff4d17ccc39ae17ec56009f10d62b63d406024e"
+    },
+    {
+      "bytes": 2623,
+      "path": "ocean/retro/nes_emu/Nes_Effects_Buffer.cpp",
+      "sha256": "1469404a7ce082e91523d4a728fe39a41f3628b1ebc8a90156c4a404c89e3697"
+    },
+    {
+      "bytes": 1049,
+      "path": "ocean/retro/nes_emu/Nes_Effects_Buffer.h",
+      "sha256": "721b4f0fccb070aaa0b8f9e3655195a6b8fb2c7567cc2677a86c73f6125a77a5"
+    },
+    {
+      "bytes": 18375,
+      "path": "ocean/retro/nes_emu/Nes_Emu.cpp",
+      "sha256": "b581a28b8d59738673bfa994be8d61dab69ab4e32647c886b905c92b31835459"
+    },
+    {
+      "bytes": 11441,
+      "path": "ocean/retro/nes_emu/Nes_Emu.h",
+      "sha256": "06485a1e511ea64ae32b77c363f86944e6e28fdc3f312b292469f9c7d4b6a959"
+    },
+    {
+      "bytes": 4313,
+      "path": "ocean/retro/nes_emu/Nes_File.cpp",
+      "sha256": "40eabee0890e4f5d7212a5d0b8ca2ae810f3417913dedb5078995f3ded1839d4"
+    },
+    {
+      "bytes": 3000,
+      "path": "ocean/retro/nes_emu/Nes_File.h",
+      "sha256": "398723470b988bd9c6c4ec774031c97bb5325ecc2491839e1e94c333b52dc718"
+    },
+    {
+      "bytes": 3119,
+      "path": "ocean/retro/nes_emu/Nes_Fme7_Apu.cpp",
+      "sha256": "a512b7fd2be1d6e3b97c7e6df4966e404386ceed7105d18656a1486486008606"
+    },
+    {
+      "bytes": 2655,
+      "path": "ocean/retro/nes_emu/Nes_Fme7_Apu.h",
+      "sha256": "6cbb8a7f4c2955e1f95dc78657d1a67cbd6a01d75972fe2ffc2c998a9cdc0134"
+    },
+    {
+      "bytes": 9437,
+      "path": "ocean/retro/nes_emu/Nes_Mapper.cpp",
+      "sha256": "c8dd929984db7e6c617fd8c108724cee71e62dcf84b7809e9c632a955ac5eed5"
+    },
+    {
+      "bytes": 7447,
+      "path": "ocean/retro/nes_emu/Nes_Mapper.h",
+      "sha256": "b89e06cf033a62766bb003cdb3da919f6ad31ec63f53f5b1d8486bd0ad132d7c"
+    },
+    {
+      "bytes": 4221,
+      "path": "ocean/retro/nes_emu/Nes_Namco_Apu.cpp",
+      "sha256": "fb6cf3159e5a142154e4a1b8491e14117c0c57d0bb81ed8c3b5fad9a0986c0a7"
+    },
+    {
+      "bytes": 2108,
+      "path": "ocean/retro/nes_emu/Nes_Namco_Apu.h",
+      "sha256": "bf891d1ad58110c8a7d8fecbccc25b5e0ccf8850caecc94369d5423bb62fd6c3"
+    },
+    {
+      "bytes": 12137,
+      "path": "ocean/retro/nes_emu/Nes_Oscs.cpp",
+      "sha256": "9eb13a2cbb9b9c8907246dd9e9c33867278c81fb6c55c55b6f06b68db78a79f3"
+    },
+    {
+      "bytes": 2882,
+      "path": "ocean/retro/nes_emu/Nes_Oscs.h",
+      "sha256": "512077a3d699eff012b01c50832e11a9c7c2de7f42548a161ef1e7e5c259706c"
+    },
+    {
+      "bytes": 15265,
+      "path": "ocean/retro/nes_emu/Nes_Ppu.cpp",
+      "sha256": "007096874a78d199b2c1a6b6a38dbcbfdd9e342afc1372164edd9b9bfb641cc1"
+    },
+    {
+      "bytes": 3692,
+      "path": "ocean/retro/nes_emu/Nes_Ppu.h",
+      "sha256": "d59cad5af8651c76b03e128333e2478f57b782af4b6ae9263aaae3bef09e97dc"
+    },
+    {
+      "bytes": 2226,
+      "path": "ocean/retro/nes_emu/Nes_Ppu_Bg.h",
+      "sha256": "9f34b85edd2efa1638c13e3c884c13176a9a88034323ecd2e22e09162e8616f4"
+    },
+    {
+      "bytes": 13931,
+      "path": "ocean/retro/nes_emu/Nes_Ppu_Impl.cpp",
+      "sha256": "7496b86613652858b65bd30b5ed6db7990cacbd312aade7b4ab3816c8f35192e"
+    },
+    {
+      "bytes": 7638,
+      "path": "ocean/retro/nes_emu/Nes_Ppu_Impl.h",
+      "sha256": "e9d4a2869162614ce1bc1ebc5103e3ebc9a1ea09ab003a7c885546cb9bb7a385"
+    },
+    {
+      "bytes": 12800,
+      "path": "ocean/retro/nes_emu/Nes_Ppu_Rendering.cpp",
+      "sha256": "0f6bcf0d2d2e46120bcdf14a1de181502448267284c439e5d0f5089144fe72e5"
+    },
+    {
+      "bytes": 1481,
+      "path": "ocean/retro/nes_emu/Nes_Ppu_Rendering.h",
+      "sha256": "24715da89b9c04ed99f33ef7bb21ecbb4adf7504df15ae7e164f44291863bde7"
+    },
+    {
+      "bytes": 3455,
+      "path": "ocean/retro/nes_emu/Nes_Ppu_Sprites.h",
+      "sha256": "2d4d42d5f9ec2860bcddedc825020864419603125c75413a3e955f64bdbfa23b"
+    },
+    {
+      "bytes": 6602,
+      "path": "ocean/retro/nes_emu/Nes_State.cpp",
+      "sha256": "bd727ba3a17cda76d6b3cf7b16cf7b6ee17f45a9aafa81d5343e28e8541ecda2"
+    },
+    {
+      "bytes": 3085,
+      "path": "ocean/retro/nes_emu/Nes_State.h",
+      "sha256": "cf59cfd755b26f319355456b5e0edcf1c21a80db637b2d1693d185b26a2870d9"
+    },
+    {
+      "bytes": 4536,
+      "path": "ocean/retro/nes_emu/Nes_Vrc6_Apu.cpp",
+      "sha256": "7353e461ad97140621ba473db820cc45bbf47e11afc4143d6460ddd2d765e168"
+    },
+    {
+      "bytes": 2069,
+      "path": "ocean/retro/nes_emu/Nes_Vrc6_Apu.h",
+      "sha256": "3ac15682630b636c43c3589e08847753ca0681e00a24004a3a9b683c2c74cbec"
+    },
+    {
+      "bytes": 5398,
+      "path": "ocean/retro/nes_emu/Nes_Vrc7.cpp",
+      "sha256": "ab557f80c3a0b0ac82afa38956cb0685e8016bd16569dbd92ac65cd672afed58"
+    },
+    {
+      "bytes": 1386,
+      "path": "ocean/retro/nes_emu/Nes_Vrc7.h",
+      "sha256": "112f4cb79eb53387b4365f231cdaa3e87f29cc639e6505faa18163688818dc2e"
+    },
+    {
+      "bytes": 2456,
+      "path": "ocean/retro/nes_emu/abstract_file.cpp",
+      "sha256": "381e4a047c593c78b29c4dfe25ef18cb4da7e5040796dbf061cce6e4154608a8"
+    },
+    {
+      "bytes": 3395,
+      "path": "ocean/retro/nes_emu/abstract_file.h",
+      "sha256": "8b189a506c7668352e20d139c86c31a46ce21163ec954eaa975ba75fe6f48587"
+    },
+    {
+      "bytes": 4908,
+      "path": "ocean/retro/nes_emu/apu_state.cpp",
+      "sha256": "d7e27e9509fd4133f5ccad154a1b65a64bd63554c208a798b1bb4d1374450cb5"
+    },
+    {
+      "bytes": 1257,
+      "path": "ocean/retro/nes_emu/apu_state.h",
+      "sha256": "ebf5a0e30d575c110d55ab89f2774922002b5bd217660eb068881378294a4243"
+    },
+    {
+      "bytes": 2115,
+      "path": "ocean/retro/nes_emu/blargg_common.h",
+      "sha256": "f39b89b8ce5d81cd2a4b73cdaf7428727fc08ee183afa6cae6e1b46216bb9492"
+    },
+    {
+      "bytes": 247,
+      "path": "ocean/retro/nes_emu/blargg_config.h",
+      "sha256": "06859a542c6b3d7da5c4e76a4627000ed80da6f8a75a062f261588693d93dfe4"
+    },
+    {
+      "bytes": 3915,
+      "path": "ocean/retro/nes_emu/blargg_endian.h",
+      "sha256": "e1f6faa0baa48c5c90fba1b716ac8995586ebb8d1d6e72fa42de1e1eaf0ebf52"
+    },
+    {
+      "bytes": 1201,
+      "path": "ocean/retro/nes_emu/blargg_source.h",
+      "sha256": "f6a815c014f6b613372341151ca1fec6ba65635be2e2a21df58e5073007d6a9d"
+    },
+    {
+      "bytes": 96190,
+      "path": "ocean/retro/nes_emu/blip_kernels.h",
+      "sha256": "2a89637fa06c998307d431b48ba39b18bfe24881381b865af3f4eaf078362c75"
+    },
+    {
+      "bytes": 24189,
+      "path": "ocean/retro/nes_emu/emu2413.cpp",
+      "sha256": "788f87173df56593707cd4e08242259260545d6399613c9ea3255d7cfa3ba8b4"
+    },
+    {
+      "bytes": 4886,
+      "path": "ocean/retro/nes_emu/emu2413.h",
+      "sha256": "49958eee03112cc2ff871bb29563c87cfbf71ef9a44a05d2f0e2105cc139003e"
+    },
+    {
+      "bytes": 1676,
+      "path": "ocean/retro/nes_emu/emu2413_state.cpp",
+      "sha256": "a4d32d3bf59a452fa27c9feb090124bcfb8af0d39e51b48beadbf6cc6a41438d"
+    },
+    {
+      "bytes": 586,
+      "path": "ocean/retro/nes_emu/emu2413_state.h",
+      "sha256": "993c60f7f2c8d5c7e3f6424ed45d7d2006d8482d72831d11ade6d0e4a61eb29e"
+    },
+    {
+      "bytes": 189194,
+      "path": "ocean/retro/nes_emu/emu2413_tables.h",
+      "sha256": "8ffef49e5ff22642cef4630f9dafa3ea0ec159164b5444be103397afcf389640"
+    },
+    {
+      "bytes": 2670,
+      "path": "ocean/retro/nes_emu/nes_cpu_io.h",
+      "sha256": "52d46be8ded4974813ce1114c23d7ca0cb34686314d5cf80f11549f2b069a855"
+    },
+    {
+      "bytes": 1639,
+      "path": "ocean/retro/nes_emu/nes_data.cpp",
+      "sha256": "d1e2d82eaf59a89b6cf022e121bdb3375b515d2dc69e8f5524c1c3e18c2f7491"
+    },
+    {
+      "bytes": 4141,
+      "path": "ocean/retro/nes_emu/nes_data.h",
+      "sha256": "8070562f8537687f83b9b32527d7634cfe2207c01b8a1f941d964205aae9bf70"
+    },
+    {
+      "bytes": 14442,
+      "path": "ocean/retro/nes_emu/nes_nonlin_table.h",
+      "sha256": "97c54046ebff7b29e0a97e4a1ba048d56265ccc9684a795a5821651fcbbc78f3"
+    },
+    {
+      "bytes": 5706,
+      "path": "ocean/retro/nes_emu/nes_ntsc.cpp",
+      "sha256": "225dfa3b8bcc538442760007fa0d9e718818e256a28a34c4240b3bbfa361b9d4"
+    },
+    {
+      "bytes": 7637,
+      "path": "ocean/retro/nes_emu/nes_ntsc.h",
+      "sha256": "7e79f2c2482447bfd3f81ff2a68c44b20de1d6f482ec001e0718582fb5056d0d"
+    },
+    {
+      "bytes": 880,
+      "path": "ocean/retro/nes_emu/nes_ntsc_config.h",
+      "sha256": "2a4490c93cd4749cb8c0025c8865be962ef8a189d1c2b50e16a558ead76372be"
+    },
+    {
+      "bytes": 4590,
+      "path": "ocean/retro/nes_emu/nes_ntsc_palette_fixed.h",
+      "sha256": "21c90ef37ed4fb7223836f383d2d32ef4a42718e22a9d1ffc2537ca3cab1ef46"
+    },
+    {
+      "bytes": 3723,
+      "path": "ocean/retro/nes_emu/nes_util.cpp",
+      "sha256": "e78fec54da6fb41b3c0063077ee09bbeda18ad0cabf90c45446eb249110b9abc"
+    },
+    {
+      "bytes": 1655,
+      "path": "ocean/retro/nes_emu/nes_util.h",
+      "sha256": "fd347cce8585f3635a976c9c2c1c17857e77de8bb2bb6362bdf8774bc77df540"
+    },
+    {
+      "bytes": 48658,
+      "path": "ocean/retro/retro.h",
+      "sha256": "743e939876bb93d340ee8f183f6ea03ec3c575a8b9d88e7257699774d2f45a6e"
+    },
+    {
+      "bytes": 910,
+      "path": "ocean/retro/retro_rom_identity.h",
+      "sha256": "82813deb56df458f03fe21282362c0bf08840d4e0249c857b589da455fa78e78"
+    }
+  ],
+  "totals": {
+    "cases": 15612,
+    "constructed_cases": 5152,
+    "frames": 1624560,
+    "frames_outside_gameplay": 317216,
+    "nonidle_frame_boundaries": 2578,
+    "one_frame_cases": 8880,
+    "persistent_cases": 6732,
+    "unmodified_reference_cases": 10460
+  },
+  "training_hold": true,
+  "training_performed": false,
+  "world_data": {
+    "boundaries": {
+      "case_size": 2492,
+      "frame_size": 2068,
+      "modified_data_bytes": 0,
+      "modified_instruction_bytes": 0,
+      "prg_sha256": "5374abb64cfb9b5d961856c60166cedc55859164cf2b8867730e144fa2bdd594",
+      "scene_size": 2472,
+      "trace_version": 2
+    },
+    "main": {
+      "case_size": 2492,
+      "frame_size": 2068,
+      "modified_data_bytes": 0,
+      "modified_instruction_bytes": 0,
+      "prg_sha256": "5374abb64cfb9b5d961856c60166cedc55859164cf2b8867730e144fa2bdd594",
+      "scene_size": 2472,
+      "trace_version": 2
+    },
+    "supplement": {
+      "case_size": 2492,
+      "frame_size": 2068,
+      "modified_data_bytes": 0,
+      "modified_instruction_bytes": 0,
+      "prg_sha256": "5374abb64cfb9b5d961856c60166cedc55859164cf2b8867730e144fa2bdd594",
+      "scene_size": 2472,
+      "trace_version": 2
+    },
+    "world": {
+      "case_size": 2492,
+      "frame_size": 2068,
+      "modified_data_bytes": 257,
+      "modified_instruction_bytes": 0,
+      "prg_sha256": "f291904672f49dbc70ea4061b311ee1f52a1470f975bdc3548029f769abd4ecd",
+      "scene_size": 2472,
+      "trace_version": 2
+    }
+  }
+}

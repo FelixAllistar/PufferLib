@@ -40,7 +40,7 @@ static inline void ar_lighting_prepare(ARClient* c,ARPG* e) {
     BeginTextureMode(c->lightmap);ClearBackground(ambient[c->light_mode]);
     BeginBlendMode(BLEND_ADDITIVE);
     float strength=c->light_mode==1 ? .18f : 1;
-    Color warm=Fade((Color){255,179,92,255},strength),cool=Fade((Color){93,199,209,255},strength*.55f);
+    Color warm=Fade((Color){255,196,108,255},strength),cool=Fade(AR_BLUE,strength*.55f);
     ar_lamp(c,e->home_x-2,e->home_y-2,1,255,warm);
     if(!e->keeper_dormant)ar_lamp(c,keeper.x,keeper.y,.9f,155,warm);
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
@@ -70,19 +70,27 @@ static inline void ar_cast_shadow(ARClient* c,ARPG* e,ARDrawable d,Vector2 feet)
     if(!c->light_mode || d.kind==7 || d.kind==9)return;
     Texture2D tex=d.sprite>=16 ? c->expansion : c->atlas;
     Rectangle src=c->sprites[d.sprite>=0 && d.sprite<20 ? d.sprite : 0];
+    if(c->takeover_art){tex=c->structures.texture;src=c->structures.frame[ar_structure_frame(d.sprite)];}
     ARSpriteSheet* sheet=NULL;int frame=0;float flip=1;
     if(d.kind==8){sheet=&c->biomes;frame=d.sprite;}
     if(d.kind==10){sheet=&c->fauna;frame=d.sprite*8+1+((int)(c->nature_time*.52f+d.slot)%4);flip=cosf(c->nature_time*.7f+d.slot*.1f)+sinf(c->nature_time*.7f+d.slot*.1f)<0 ? -1 : 1;}
     if(d.kind==5) {
-        int cls=e->pets.kind[d.slot];sheet=cls<4 ? &c->companions : &c->keepers;
-        frame=(cls<4 ? cls : cls-3)*8+ar_animation_frame(c->pet_gait[d.slot],hypotf(e->pets.vx[d.slot],e->pets.vy[d.slot]),-1);
+        int cls=e->pets.kind[d.slot];
         flip=c->pet_facing[d.slot]<0 ? -1 : 1;
+        sheet=ar_actor_sheet(c,cls+1,ar_animation_frame(c->pet_gait[d.slot],hypotf(e->pets.vx[d.slot],e->pets.vy[d.slot]),-1),&frame,&flip);
     }
-    if(d.kind==6){sheet=&c->keepers;frame=ar_animation_frame(c->keeper_gait,hypotf(e->pvx,e->pvy),-1);flip=c->keeper_facing<0 ? -1 : 1;}
+    if(d.kind==6){
+        flip=c->keeper_facing<0 ? -1 : 1;
+        sheet=ar_actor_sheet(c,0,ar_animation_frame(c->keeper_gait,hypotf(e->pvx,e->pvy),e->fx_nova>0 ? .4f-e->fx_nova : -1),&frame,&flip);
+    }
     if(d.kind==4) {
-        int skin=ar_enemy_skin(c,e,d.slot);sheet=skin>=0 && c->fauna.texture.id ? &c->fauna : &c->keepers;
-        frame=(sheet==&c->fauna ? skin : 3)*8+ar_animation_frame(c->enemy_gait[d.slot],hypotf(e->enemies.vx[d.slot],e->enemies.vy[d.slot]),-1);
+        int pose=ar_animation_frame(c->enemy_gait[d.slot],hypotf(e->enemies.vx[d.slot],e->enemies.vy[d.slot]),-1);
         flip=c->enemy_facing[d.slot]<0 ? -1 : 1;
+        if(c->takeover_art)sheet=ar_actor_sheet(c,7+e->enemies.type[d.slot],pose,&frame,&flip);
+        else {
+            int skin=ar_enemy_skin(c,e,d.slot);sheet=skin>=0 && c->fauna.texture.id ? &c->fauna : &c->keepers;
+            frame=(sheet==&c->fauna ? skin : 3)*8+pose;
+        }
     }
     if(sheet && sheet->texture.id){tex=sheet->texture;src=sheet->frame[frame];}
     else sheet=NULL;

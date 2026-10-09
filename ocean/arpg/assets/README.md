@@ -1,4 +1,38 @@
-# Hearthwild sprite atlases
+# ARPG sprite atlases
+
+## Codex / Tibo's Takeover — build 6
+
+Generated/edited with the **built-in image generation tool**, not CLI fallback.
+Final PNGs retain the generated RGBA/alpha; no Python recoloring, background
+removal or sprite-sheet rewrite is used. The importer measures alpha bounds and
+stable pivots at load time. Existing Hearthwild sheets remain untouched.
+
+- [tibo-directions-v7.png](tibo-directions-v7.png): final keeper, 8 columns of facing directions × 4 rows
+  (idle, stride A, stride B, command). `tibo-directions-v6.png` is the initial
+  identity/style anchor before the terminal palette correction.
+- [takeover-bots-v6.png](takeover-bots-v6.png): Scout, Runner, Bulwark and Courier, 8 poses each.
+- [takeover-specialists-v6.png](takeover-specialists-v6.png): Borer, Forge, Caution officer and Velocity
+  marshal, 8 poses each. Only the first two robot rows receive the Codex palette.
+- [takeover-structures-v6.png](takeover-structures-v6.png): 4×4 modern structures and ordinary scenic props.
+- [takeover-districts-v6.png](takeover-districts-v6.png): 4×4 park/suburban/industrial-edge props.
+
+The keeper reference is the public avatar returned for
+[@thsottiaux](https://x.com/thsottiaux) by
+[unavatar's X resolver](https://unavatar.io/x/thsottiaux), fetched 2026-10-01.
+It is pinned at `references/tibo-profile-20261001.jpg`; the resolver may cache
+older avatars. Direct X access was unavailable, so this is not a claim that the
+image is the current live profile photo. The user's attached blue Codex mascot
+is the robot color/design reference. These references do not imply endorsement
+or grant a distribution license. The narrative and rival designs are fictional.
+
+All generation and targeted color-correction prompts are recorded verbatim in
+[takeover-prompts.json](takeover-prompts.json), with input roles and output paths.
+Discarded ivory robot drafts are not consumed by the game.
+
+[Runtime preview](takeover-runtime.png) and [direction plate](takeover-directions.png) are captures
+from the actual renderer's visual test, not generated gameplay/UI mockups. The
+runtime fixture builds two real structures and runs 60 seconds of production;
+the direction plate is an explicitly arranged art-validation view.
 
 ## Lanternlight / build 5
 

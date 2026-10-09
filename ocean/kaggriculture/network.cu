@@ -149,7 +149,7 @@ struct KagEncoderActs {
 
 void* kag_encoder_weights(void* self) {
     Encoder* enc = (Encoder*)self;
-    assert(enc->in_dim == KAG_ENTITY_OBS_SIZE);
+    assert(enc->in_dim == KAG_ENTITY_OBS_SIZE || enc->in_dim == KAG_TRAIN_OBS_SIZE);
     assert(enc->out_dim >= 8 && enc->out_dim % 8 == 0);
     KagEncoderWeights* w = (KagEncoderWeights*)calloc(1, sizeof(*w));
     w->entity[0] = {KAG_GLOBAL_FEATURES + KAG_TASK_FEATURES, 64, 64, true, sqrtf(2.0f), {}, {}};
@@ -188,7 +188,7 @@ void kag_encoder_rollout(void* w, void* a, Allocator* alloc, int rows) {
 }
 
 __global__ void kag_entity_input(precision_t* dst, const precision_t* obs, int rows, int features,
-    int entities, int offset, bool global) {
+    int entities, int offset, bool global, int obs_width) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= rows * entities * KAG_AUG_WIDTH(features)) {
         return;
@@ -200,7 +200,7 @@ __global__ void kag_entity_input(precision_t* dst, const precision_t* obs, int r
     }
     int source = global ? (f < KAG_GLOBAL_FEATURES ? f : KAG_TASK_OFFSET + f - KAG_GLOBAL_FEATURES)
                         : offset + (r % entities) * features + f;
-    dst[idx] = obs[(r / entities) * KAG_ENTITY_OBS_SIZE + source];
+    dst[idx] = obs[(r / entities) * obs_width + source];
 }
 
 __global__ void kag_fuse_entities(precision_t* dst, const precision_t* global,
@@ -232,7 +232,7 @@ Prec kag_encoder_forward(void* weights, void* activations, Prec obs, cudaStream_
     for (int i = 0; i < 4; i++) {
         kag_entity_input<<<grid_size(rows * entities[i] * KAG_AUG_WIDTH(w->entity[i].in)),
             BLOCK_SIZE, 0, stream>>>(a->entity[i].input_aug.data, obs.data, rows, w->entity[i].in,
-            entities[i], offsets[i], i == 0);
+            entities[i], offsets[i], i == 0, obs.shape[ndim(obs.shape) - 1]);
         kag_mlp_forward(&w->entity[i], &a->entity[i], stream);
     }
     kag_fuse_entities<<<grid_size(rows * KAG_AUG_WIDTH(KAG_FUSION_WIDTH)), BLOCK_SIZE, 0, stream>>>(
@@ -267,11 +267,12 @@ struct KagDecoderWeights {
     DecoderWeights base;
     KagMLPWeights branch[3];
     int hidden;
+    int critic_mode;
 };
 static_assert(offsetof(KagDecoderWeights, base) == 0, "Decoder header must be first");
 struct KagDecoderActs {
     KagMLPActs branch[3];
-    Prec out, grad_input;
+    Prec out, grad_input, observation, value_out;
 };
 
 void* kag_decoder_weights(void* self) {
@@ -282,6 +283,8 @@ void* kag_decoder_weights(void* self) {
     w->base.hidden_dim = dec->hidden_dim;
     w->base.output_dim = dec->output_dim;
     w->hidden = dec->hidden_dim;
+    w->critic_mode = kag_critic_mode;
+    assert(w->critic_mode == 0 || w->hidden >= KAG_CRITIC_FEATURES);
     int outputs[3] = {KAG_TASK_LOGITS, KAG_MARKET_LOGITS, 1};
     for (int i = 0; i < 3; i++) {
         w->branch[i] = {w->hidden, w->hidden / 2, outputs[i], false, i == 2 ? 1.0f : 0.01f, {}, {}};
@@ -305,7 +308,13 @@ void kag_decoder_acts(
     KagDecoderWeights* w = (KagDecoderWeights*)weights;
     KagDecoderActs* a = (KagDecoderActs*)activations;
     for (int i = 0; i < 3; i++) {
-        kag_mlp_acts(&w->branch[i], &a->branch[i], acts, grads, rows, true);
+        bool global = i == 2 && w->critic_mode;
+        kag_mlp_acts(&w->branch[i], &a->branch[i], acts, grads,
+            global ? 2 * rows : rows, !global);
+    }
+    if (w->critic_mode) {
+        a->value_out = {.shape = {rows, 1}};
+        alloc_register(acts, &a->value_out);
     }
     a->out = {.shape = {rows, KAG_ALL_LOGITS + 1}};
     alloc_register(acts, &a->out);
@@ -316,6 +325,46 @@ void kag_decoder_acts(
 }
 void kag_decoder_rollout(void* w, void* a, Allocator* alloc, int rows) {
     kag_decoder_acts(w, a, alloc, NULL, rows);
+}
+
+void kag_decoder_bind_observation(void* activations, Prec observation) {
+    KagDecoderActs* a = (KagDecoderActs*)activations;
+    while (ndim(observation.shape) > 2) observation = *puf_squeeze(&observation, 0);
+    a->observation = observation;
+}
+
+__global__ void kag_pack_critic(precision_t* dst, const precision_t* observation,
+    int rows, int hidden) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= 2 * rows * KAG_AUG_WIDTH(hidden)) return;
+    int pair = idx / KAG_AUG_WIDTH(hidden), feature = idx % KAG_AUG_WIDTH(hidden);
+    float value = feature == hidden ? 1.0f : 0.0f;
+    if (feature < KAG_CRITIC_FEATURES) {
+        value = to_float(observation[(pair / 2) * KAG_TRAIN_OBS_SIZE + KAG_ENTITY_OBS_SIZE
+            + (pair % 2) * KAG_CRITIC_FEATURES + feature]);
+    }
+    dst[idx] = from_float(value);
+}
+
+__global__ void kag_value_pair(precision_t* dst, const precision_t* raw,
+    int rows, int mode) {
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < rows) {
+        dst[row] = from_float(mode == 2
+            ? kag_paired_value(to_float(raw[2 * row]), to_float(raw[2 * row + 1]))
+            : to_float(raw[2 * row]));
+    }
+}
+
+__global__ void kag_value_pair_backward(precision_t* dst, const float* gradient,
+    const precision_t* values, int rows, int mode) {
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < rows) {
+        float grad = gradient[row];
+        if (mode == 2) grad *= kag_paired_value_derivative(to_float(values[row]));
+        dst[2 * row] = from_float(grad);
+        dst[2 * row + 1] = from_float(mode == 2 ? -grad : 0.0f);
+    }
 }
 
 __global__ void kag_merge_branches(precision_t* dst, const precision_t* tasks,
@@ -333,13 +382,22 @@ Prec kag_decoder_forward(void* weights, void* activations, Prec input, cudaStrea
     KagDecoderWeights* w = (KagDecoderWeights*)weights;
     KagDecoderActs* a = (KagDecoderActs*)activations;
     int rows = a->out.shape[0];
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < (w->critic_mode ? 2 : 3); i++) {
         kag_pack_aug<<<grid_size(rows * KAG_AUG_WIDTH(w->hidden)), BLOCK_SIZE, 0, stream>>>(
             a->branch[i].input_aug.data, input.data, rows, w->hidden, false);
         kag_mlp_forward(&w->branch[i], &a->branch[i], stream);
     }
+    if (w->critic_mode) {
+        assert(a->observation.shape[1] == KAG_TRAIN_OBS_SIZE);
+        kag_pack_critic<<<grid_size(2 * rows * KAG_AUG_WIDTH(w->hidden)), BLOCK_SIZE, 0, stream>>>(
+            a->branch[2].input_aug.data, a->observation.data, rows, w->hidden);
+        kag_mlp_forward(&w->branch[2], &a->branch[2], stream);
+        kag_value_pair<<<grid_size(rows), BLOCK_SIZE, 0, stream>>>(
+            a->value_out.data, a->branch[2].out.data, rows, w->critic_mode);
+    }
     kag_merge_branches<<<grid_size(rows * (KAG_ALL_LOGITS + 1)), BLOCK_SIZE, 0, stream>>>(
-        a->out.data, a->branch[0].out.data, a->branch[1].out.data, a->branch[2].out.data, rows);
+        a->out.data, a->branch[0].out.data, a->branch[1].out.data,
+        w->critic_mode ? a->value_out.data : a->branch[2].out.data, rows);
     return a->out;
 }
 
@@ -355,7 +413,7 @@ __global__ void kag_sum_branch_gradients(
     precision_t* dst, const precision_t* a, const precision_t* b, const precision_t* c, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
-        dst[idx] = from_float(to_float(a[idx]) + to_float(b[idx]) + to_float(c[idx]));
+        dst[idx] = from_float(to_float(a[idx]) + to_float(b[idx]) + (c ? to_float(c[idx]) : 0));
     }
 }
 Prec kag_decoder_backward(void* weights, void* activations, Float logits, Float logstd, Float value,
@@ -363,16 +421,21 @@ Prec kag_decoder_backward(void* weights, void* activations, Float logits, Float 
     KagDecoderWeights* w = (KagDecoderWeights*)weights;
     KagDecoderActs* a = (KagDecoderActs*)activations;
     int rows = a->out.shape[0], offset = 0;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < (w->critic_mode ? 2 : 3); i++) {
         kag_branch_gradient<<<grid_size(rows * w->branch[i].out), BLOCK_SIZE, 0, stream>>>(
             a->branch[i].grad_out.data, logits.data, value.data, rows, w->branch[i].out, offset,
             i == 2);
         kag_mlp_backward(&w->branch[i], &a->branch[i], a->branch[i].grad_out, stream);
         offset += w->branch[i].out;
     }
+    if (w->critic_mode) {
+        kag_value_pair_backward<<<grid_size(rows), BLOCK_SIZE, 0, stream>>>(
+            a->branch[2].grad_out.data, value.data, a->value_out.data, rows, w->critic_mode);
+        kag_mlp_backward(&w->branch[2], &a->branch[2], a->branch[2].grad_out, stream);
+    }
     kag_sum_branch_gradients<<<grid_size(rows * w->hidden), BLOCK_SIZE, 0, stream>>>(
         a->grad_input.data, a->branch[0].grad_input.data, a->branch[1].grad_input.data,
-        a->branch[2].grad_input.data, rows * w->hidden);
+        w->critic_mode ? NULL : a->branch[2].grad_input.data, rows * w->hidden);
     return a->grad_input;
 }
 
@@ -388,6 +451,7 @@ void create_kaggriculture_encoder(Encoder* enc) {
 }
 void create_kaggriculture_decoder(Decoder* dec) {
     dec->forward = kag_decoder_forward;
+    dec->bind_observation = kag_decoder_bind_observation;
     dec->backward = kag_decoder_backward;
     dec->reg_train = kag_decoder_acts;
     dec->reg_rollout = kag_decoder_rollout;

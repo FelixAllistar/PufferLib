@@ -1,0 +1,1 @@
+CUDA_EVAL env=mario_sim score=0.007350 perf=0.007350 games=2177 params=159808 draw=0.000000

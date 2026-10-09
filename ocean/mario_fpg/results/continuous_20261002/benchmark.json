@@ -1,0 +1,1 @@
+{"agents":4096,"game_frames":8388608,"seconds":1.341479,"frames_per_second":6253253.9,"observations":448,"resets_and_augmentation_included":true,"ppo_included":false,"action_source":"fixed per-env uniform action IDs"}

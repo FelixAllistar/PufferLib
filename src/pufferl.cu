@@ -89,6 +89,20 @@ typedef struct {
     int64_t shape[PUF_MAX_DIMS];
 } Prec;
 
+// A multi-head direct policy can accumulate hundreds of nats. BF16 rounding
+// of that sum changes PPO ratios even when the policy has not changed.
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+typedef Float LogProb;
+typedef float logprob_t;
+__host__ __device__ float logprob_to_float(logprob_t v) { return v; }
+__host__ __device__ logprob_t logprob_from_float(float v) { return v; }
+#else
+typedef Prec LogProb;
+typedef precision_t logprob_t;
+__host__ __device__ float logprob_to_float(logprob_t v) { return to_float(v); }
+__host__ __device__ logprob_t logprob_from_float(float v) { return from_float(v); }
+#endif
+
 __host__ __device__ int ndim(int64_t* shape) {
     int n = 0;
     while (n < PUF_MAX_DIMS && shape[n] != 0) {
@@ -326,6 +340,7 @@ typedef struct {
     bool reset_every_horizon;
     bool cudagraphs;
     bool profile;
+    bool eval_greedy;  // Enabled only by eval_make, never during training.
     int rank;
     int world_size;
     int gpu_id;
@@ -360,7 +375,7 @@ struct RolloutBuf {
     Prec initial_states;
     Float actions;      // (horizon, agents, num_atns) float32: large discrete IDs
     Prec values;        // (horizon, agents)
-    Prec logprobs;      // ...
+    LogProb logprobs;   // Direct-action joint probabilities retain FP32 precision.
     Prec rewards;
     Prec terminals;
     RolloutMask action_mask;  // Binary-only envs may opt into packed archival storage.
@@ -383,13 +398,14 @@ void register_rollout_buffers(RolloutBuf* bufs, Allocator* alloc,
 #endif
     bufs->action_mask = {.shape = {T, B, mask_size}};
     Prec* prec_fields[] = {
-        &bufs->observations, &bufs->values, &bufs->logprobs,
+        &bufs->observations, &bufs->values,
         &bufs->rewards, &bufs->terminals,
     };
     for (int i = 0; i < (int)(sizeof(prec_fields) / sizeof(prec_fields[0])); i++) {
         alloc_register(alloc, prec_fields[i]);
     }
     alloc_register(alloc, &bufs->actions);
+    alloc_register(alloc, &bufs->logprobs);
     alloc_register(alloc, &bufs->action_mask);
 }
 
@@ -537,7 +553,14 @@ typedef struct {
     int skip_rollout_time;
 } Profile;
 
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+#include "../ocean/kaggriculture_direct/teacher.cuh"
+#endif
+
 typedef struct PuffeRL {
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+    KagDirectTeacher teacher;
+#endif
     Policy* policies;        // [num_policies]; policies[0] trainable, rest frozen
     int num_policies;
     Weights actor_weights; // async rollout snapshot of policies[0]; unused when async=0
@@ -616,11 +639,11 @@ __global__ void sample_logits(
         int* act_sizes,            // (NUM_ATNS,)
         float* actions,            // (B, num_atns) float32 rollout store
         float* env_actions,        // (B, num_atns) env dispatch
-        precision_t* logprobs,     // (B,)
+        logprob_t* logprobs,       // (B,)
         precision_t* value_out,    // (B,)
         curandStatePhilox4_32_10_t* rng_states,
         precision_t* action_mask,  // (B, A_total); always allocated
-        int mask_stride, Env* sampling_envs, int row_start) {
+        int mask_stride, Env* sampling_envs, int row_start, bool greedy = false) {
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
     int num_atns = NUM_ATNS;
@@ -643,7 +666,7 @@ __global__ void sample_logits(
             float log_std = safe_continuous_logstd(logstd_data, h);
             float std = expf(log_std);
             float action = finite_or_clamp(
-                mean + std * curand_normal(&state), -1.0e6f, 1.0e6f);
+                greedy ? mean : mean + std * curand_normal(&state), -1.0e6f, 1.0e6f);
             // Preserve reduced-precision continuous semantics for logprob.
             precision_t stored_p = from_float(action);
             float stored = to_float(stored_p);
@@ -662,21 +685,41 @@ __global__ void sample_logits(
         int seat_row = sampling_envs->sampling_rows[row];
         Env* kag_env = sampling_envs + seat_row / 2;
         int player = seat_row % 2;
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+        unsigned char prefix_mask[KAG_DIRECT_MARKET_WIDTH];
+#else
         unsigned char prefix_mask[KG_POLICY_ACTION_MASK_SIZE];
+#endif
         KagActionMaskState prefix;
+#ifndef PUFFER_KAGGRICULTURE_DIRECT
         kag_write_mask(&kag_env->policy, &kag_env->game, player, prefix_mask);
+#endif
         kag_action_mask_begin(&prefix, &kag_env->game, &kag_env->policy, player);
 #endif
         for (int h = 0; h < num_atns; h++) {
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+            // Match the prefix row's compile-time layout, keeping the local
+            // mask/cache indexing bounded in the fused CUDA sampler.
+            int A = kag_direct_width(h);
+            static_assert(PPO_MAX_HEAD_A <= KAG_DIRECT_MARKET_WIDTH,
+                "compact sampler scratch must fit every action head");
+#else
             int A = act_sizes[h];
+#endif
 #ifdef PUFFER_KAGGRICULTURE
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+            kag_direct_mask_row(&prefix,h,prefix_mask);
+            int prefix_offset = 0;
+#else
             kag_action_mask_before(&prefix, h, prefix_mask);
+            int prefix_offset = logits_offset;
+#endif
             int active = kag_action_head_active(prefix.choices, h);
             // Unvisited heads have probability 1, zero entropy and zero PPO
             // gradient under the ordinary loss; do not consume sampling RNG.
             for (int a = 0; a < A; a++) {
                 action_mask[mask_base + logits_offset + a] = from_float(
-                    active ? prefix_mask[logits_offset + a] : a == 0);
+                    active ? prefix_mask[prefix_offset + a] : a == 0);
             }
             if (!active) {
                 actions[idx * num_atns + h] = env_actions[idx * num_atns + h] = 0;
@@ -692,10 +735,20 @@ __global__ void sample_logits(
             float eps = h == 0 ? nethack_verb_eps_load(
                 action_mask + mask_base + logits_offset, A, &inv_K) : 0.0f;
 #endif
-            float rand_val = curand_uniform(&state);
+            float rand_val = greedy ? 0.0f : curand_uniform(&state);
             float cumsum = 0.0f;
             int sampled = A - 1;
-            for (int a = 0; a < A; a++) {
+            if (greedy) {
+                float best = -INFINITY;
+                for (int a = 0; a < A; a++) {
+                    if (to_float(action_mask[mask_base + logits_offset + a]) != 0.0f
+                            && cache[a] > best) {
+                        best = cache[a];
+                        sampled = a;
+                    }
+                }
+            }
+            for (int a = 0; !greedy && a < A; a++) {
 #ifdef PUFFER_NETHACK
                 if (eps > 0.0f) {
                     cumsum += nethack_verb_eps_mix(expf(cache[a] - logsumexp),
@@ -747,7 +800,7 @@ __global__ void sample_logits(
         }
     }
 
-    logprobs[idx] = from_float(total_log_prob);
+    logprobs[idx] = logprob_from_float(total_log_prob);
     value_out[idx] = logits[logits_base + fused_cols - 1];
     rng_states[idx] = state;
 }
@@ -920,7 +973,7 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
         int sub = start + off;
         Prec obs_b  = puf_slice(rollouts.observations, t, sub, n);
         Float act_b = puf_slice(rollouts.actions,      t, sub, n);
-        Prec lp_b   = puf_slice(rollouts.logprobs,     t, sub, n);
+        LogProb lp_b = puf_slice(rollouts.logprobs,    t, sub, n);
         Prec val_b  = puf_slice(rollouts.values,       t, sub, n);
         Prec mask_b = {.data = mask_slice.data + (long)off * mask_size,
             .shape = {n, mask_size}};
@@ -958,19 +1011,20 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             act_b.data, env->actions.data + (long)sub * act_cols,
             lp_b.data, val_b.data,
             pufferl->rng_states[buf] + off,
-            mask_b.data, mask_stride, sampling_envs, sub);
+            mask_b.data, mask_stride, sampling_envs, sub, hypers->eval_greedy);
     }
     if (batch_sampling) {
         int cols = pufferl->sampling_logits.shape[1];
         Prec dec = {.data = pufferl->sampling_logits.data + (long)start * cols,
             .shape = {block_size, cols}};
         Float actions = puf_slice(rollouts.actions, t, start, block_size);
-        Prec logprobs = puf_slice(rollouts.logprobs, t, start, block_size);
+        LogProb logprobs = puf_slice(rollouts.logprobs, t, start, block_size);
         Prec values = puf_slice(rollouts.values, t, start, block_size);
         sample_logits<<<grid_size(block_size), BLOCK_SIZE, 0, stream>>>(
             dec, {}, pufferl->act_sizes, actions.data,
             env->actions.data + (long)start * act_cols, logprobs.data, values.data,
-            pufferl->rng_states[buf], mask_slice.data, mask_stride, sampling_envs, start);
+            pufferl->rng_states[buf], mask_slice.data, mask_stride, sampling_envs, start,
+            hypers->eval_greedy);
     }
 #if PUF_PACKED_MASK
     int packed = rollouts.action_mask.shape[2];
@@ -1712,6 +1766,14 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         Float grad_logstd = pufferl->is_continuous
             ? pufferl->ppo_bufs.grad_logstd : Float();
         Float grad_values = pufferl->ppo_bufs.grad_values;
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+        if (mb == 0 && hypers->reset_every_horizon && pufferl->teacher.coefficient) {
+            cudaMemsetAsync(pufferl->teacher.state.data,0,
+                numel(pufferl->teacher.state.shape)*sizeof(precision_t),stream);
+        }
+        kag_teacher_regularize(&pufferl->teacher,graph.mb_obs,graph.mb_terminals,dest_off,
+            dec,graph.mb_action_mask,grad_logits,pufferl->losses,stream);
+#endif
         arch_backward(&primary->arch, primary->weights, pufferl->train_activs,
             grad_logits, grad_logstd, grad_values, stream);
 
@@ -1905,6 +1967,14 @@ void puf_load_weights_into(Float dst, Prec params,
     int64_t nbytes = numel(dst.shape) * sizeof(float);
     FILE* fp = fopen(path, "rb");
     assert(fp && "failed to open weights for reading");
+#ifdef PUFFER_MARIO_FPG_TIME
+    if(fseek(fp,0,SEEK_END)||ftell(fp)!=nbytes) {
+        fprintf(stderr,"FPG checkpoint architecture mismatch: expected %lld bytes for the semantic encoder. "
+            "Start fresh with base.load_model_path=None; RAM policies require the archived binary.\n",(long long)nbytes);
+        fclose(fp);exit(1);
+    }
+    rewind(fp);
+#endif
 #ifdef PUFFER_SWAT
     assert(fseek(fp, 0, SEEK_END) == 0);
     assert(ftell(fp) == nbytes && "SWAT checkpoint task/architecture mismatch; use the matching config/swat.ini and rebuild puffer");
@@ -1912,6 +1982,9 @@ void puf_load_weights_into(Float dst, Prec params,
 #endif
     char* buf = (char*)malloc(nbytes);
     size_t nread = fread(buf, 1, nbytes, fp);
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+    assert(fgetc(fp) == EOF && "checkpoint shape does not match compact-policy ABI 7");
+#endif
     fclose(fp);
     assert((int64_t)nread == nbytes && "failed to read weights");
     cudaMemcpy(dst.data, buf, nbytes, cudaMemcpyHostToDevice);
@@ -1978,6 +2051,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .reset_every_horizon = puf_ini_get(ini, "base", "reset_every_horizon") != 0,
         .cudagraphs = puf_ini_get(ini, "base", "cudagraphs") >= 0,
         .profile = puf_ini_get(ini, "base", "profile") != 0,
+        .eval_greedy = false,
         .rank = ctx->rank,
         .world_size = ctx->world_size,
         .gpu_id = ctx->gpu_id,
@@ -2260,6 +2334,14 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         }
     }
 
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+    float teacher_kl = puf_ini_get(ini,"train","teacher_kl_coefficient");
+    assert(isfinite(teacher_kl) && teacher_kl >= 0);
+    assert((teacher_kl == 0 || (pufferl->num_policies == 1 && hypers.replay_ratio == 1))
+        && "recurrent teacher KL requires live-only, one chronological PPO pass");
+    kag_teacher_create(&pufferl->teacher,&primary->arch,B_TT,train_agents,
+        num_layers,hidden_size,teacher_kl,pufferl->default_stream);
+#endif
     env_start(pufferl);
 
     if (hypers.profile) {
@@ -2690,6 +2772,9 @@ typedef struct {
     float costs[TRAIN_RESULT_MAX_POINTS];
     float step_points[TRAIN_RESULT_MAX_POINTS];
 } TrainResult;
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+static_assert(sizeof(TrainResult) == 784, "update the Kag sweep worker's pipe ABI");
+#endif
 
 #define EVAL_RENDER 0
 #define EVAL_SCORE 1
@@ -2749,6 +2834,23 @@ typedef struct {
 } SweepJob;
 
 void run_sweep(Ini* ini, const char* exe_path) {
+    // Optional env-owned worker: it can let train exit before scoring on the
+    // same GPU, then return the unchanged TrainResult pipe protocol. Ordinary
+    // sweeps still spawn this binary directly.
+    Dict* sweep_options = puf_ini_section(ini, "sweep", 0);
+    DictItem* worker = dict_find(sweep_options, "worker_path");
+    const char* worker_path = worker && worker->str && strcmp(worker->str, "None")
+        ? worker->str : exe_path;
+    DictItem* trial_steps = dict_find(sweep_options, "trial_timesteps");
+    if (trial_steps) {
+        assert(trial_steps->value > 0);
+        char value[64];
+        snprintf(value, sizeof(value), "%.17g", trial_steps->value);
+        puf_ini_put(ini, "train.total_timesteps", value);
+    }
+    DictItem* failure_limit = dict_find(sweep_options, "max_failures");
+    int max_failures = failure_limit ? (int)failure_limit->value : 1000;
+    assert(max_failures > 0);
     // Build SweepSpace + param map from [sweep.<section>.<key>] sections.
     const char* goal = puf_ini_get_str(ini, "sweep", "goal");
     assert((strcmp(goal, "maximize") == 0 || strcmp(goal, "minimize") == 0)
@@ -2946,7 +3048,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
                 nkeys += ini->sections[s].size;
             }
             char** argv = (char**)calloc(nkeys + 3, sizeof(char*));
-            argv[0] = (char*)exe_path;
+            argv[0] = (char*)worker_path;
             argv[1] = (char*)"train";
             int argc = 2;
             char full_key[PUF_DICT_MAX_KEY * 2];
@@ -2975,7 +3077,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
             posix_spawn_file_actions_addclose(&actions, pipefd[0]);
             posix_spawn_file_actions_addopen(
                 &actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
-            assert(posix_spawnp(&job.pid, exe_path, &actions, NULL, argv, environ) == 0
+            assert(posix_spawnp(&job.pid, worker_path, &actions, NULL, argv, environ) == 0
                 && "posix_spawn train failed");
             posix_spawn_file_actions_destroy(&actions);
             for (int a = 2; a < argc; a++) {
@@ -3013,7 +3115,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
             fprintf(stderr, "sweep worker run=%d failed; marking sample bad\n",
                 job->run);
             protein_sweep_observe(protein, job->sample, NAN, max_cost, 1);
-            assert(++failed_workers <= 1000 && "too many failed sweep workers");
+            assert(++failed_workers < max_failures && "too many failed sweep workers; inspect trial logs");
             continue;
         }
         // points[]: learning-curve downsample, or 1 final score (e.g. selfplay).
@@ -3088,9 +3190,7 @@ static EvalResult eval_loop(Ini* ini, PuffeRL* p, int mode, int verbose,
         result.score = match ? dict_get(&el, "env/policy_0_score")
             : (m ? m->value : dict_get(&el, "env/score"));
         result.perf = dict_get(&el, "env/perf");
-        if (match) {
-            result.draw = dict_get(&el, "env/draw_rate");
-        }
+        result.draw = dict_get(&el, "env/draw_rate");
         result.games = (int)n;
         dict_clear(&el);
         return result;
@@ -3141,6 +3241,8 @@ static PuffeRL* eval_make(Ini* ini, TrainContext* ctx, int mode, int render) {
         puf_ini_put(ini, "train.horizon", "1");
     }
     PuffeRL* p = create_pufferl(ini, ctx);
+    p->hypers.eval_greedy = puf_ini_get(ini, "base", "eval_greedy") > 0;
+    if (p->hypers.eval_greedy) printf("Evaluation actions: greedy (masked argmax)\n");
     if (match) {
         char a_buf[4096], b_buf[4096];
         const char* a = puf_checkpoint_path_key(ini, "load_model_path", a_buf, sizeof(a_buf));
@@ -3239,6 +3341,18 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 #endif
     }
 
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+    if (pufferl->teacher.coefficient) {
+        const char* teacher_path = puf_ini_get_str(ini,"base","teacher_model_path");
+        if (teacher_path && strcmp(teacher_path,"None")) {
+            puf_load_weights_into(pufferl->teacher.master,pufferl->teacher.parameters,
+                pufferl->default_stream,teacher_path);
+        } else {
+            puf_copy(&pufferl->teacher.parameters,&pufferl->policies[0].param,pufferl->default_stream);
+        }
+        cudaStreamSynchronize(pufferl->default_stream);
+    }
+#endif
     Selfplay selfplay = {0};
     if (use_selfplay) {
         char initial_checkpoint[4096];
@@ -3397,6 +3511,15 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         for (int i = 0; i < LOSS_N; i++) {
             dict_set(&new_log, LOSS_NAMES[i], losses_host[i] * inv_n);
         }
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+        if (pufferl->teacher.coefficient) {
+            float teacher_stats[2];
+            cudaMemcpy(teacher_stats,pufferl->teacher.metrics.data,sizeof(teacher_stats),cudaMemcpyDeviceToHost);
+            dict_set(&new_log,"loss/teacher_kl",teacher_stats[0]/fmaxf(1,teacher_stats[1]));
+            dict_set(&new_log,"teacher/coefficient",pufferl->teacher.coefficient);
+            cudaMemset(pufferl->teacher.metrics.data,0,sizeof(teacher_stats));
+        }
+#endif
         cudaMemset(pufferl->losses, 0, NUM_LOSSES * sizeof(float));
 
         log_util(pufferl, &new_log);

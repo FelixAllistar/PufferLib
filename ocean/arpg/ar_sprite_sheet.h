@@ -93,6 +93,63 @@ static inline ARSpriteSheet ar_sheet_load(const char* path,int columns,int rows,
     return s;
 }
 
+// Eight views across, idle/two strides/command down. Import the untouched PNG;
+// alpha bounds may vary, but neither the cell center nor the ground pivot does.
+static inline void ar_sheet_measure_directions(ARSpriteSheet* s,Image image) {
+    ar_sheet_measure(s,image,8,4,0);
+    float width=image.width/8.0f,height=image.height/4.0f;
+    float sizes[8];
+    for(int dir=0;dir<8;dir++)sizes[dir]=s->frame[dir].height;
+    for(int a=0;a<8;a++)for(int b=a+1;b<8;b++)
+        if(sizes[a]>sizes[b]){float swap=sizes[a];sizes[a]=sizes[b];sizes[b]=swap;}
+    for(int row=0;row<4;row++)s->body_height[row]=fmaxf(1,(sizes[3]+sizes[4])*.5f);
+    for(int dir=0;dir<8;dir++) {
+        float ground[3];
+        for(int row=0;row<3;row++) {
+            Rectangle r=s->frame[row*8+dir];ground[row]=r.y+r.height-row*height;
+        }
+        for(int a=0;a<3;a++)for(int b=a+1;b<3;b++)
+            if(ground[a]>ground[b]){float swap=ground[a];ground[a]=ground[b];ground[b]=swap;}
+        for(int row=0;row<4;row++) {
+            int n=row*8+dir;Rectangle r=s->frame[n];
+            s->pivot[n]=(Vector2){(dir+.5f)*width-r.x,row*height+ground[1]-r.y};
+            // A planted command stance has no lifted stride foot. Generated
+            // action rows can sit higher in their cells; ground that stance
+            // without changing body scale or its horizontal cell-center pivot.
+            if(row==3)s->pivot[n].y=r.height;
+        }
+    }
+}
+
+static inline ARSpriteSheet ar_sheet_load_directions(const char* path) {
+    ARSpriteSheet s={0};Image image=LoadImage(path);
+    if(image.data) {
+        ar_sheet_measure_directions(&s,image);
+        s.texture=LoadTextureFromImage(image);SetTextureFilter(s.texture,TEXTURE_FILTER_BILINEAR);
+        UnloadImage(image);
+    }
+    return s;
+}
+
+static inline void ar_sheet_release(ARSpriteSheet* s) {
+    if(s->texture.id)UnloadTexture(s->texture);
+    *s=(ARSpriteSheet){0};
+}
+
+// Direction is in screen space, not a rotation of a flat sprite. Remember the
+// previous heading at rest. The isometric projection compresses vertical motion.
+static inline int ar_screen_direction(float vx,float vy,int previous) {
+    if(hypotf(vx,vy)<.08f)return previous;
+    float angle=atan2f(vx-vy,(vx+vy)*.5f);
+    if(angle<0)angle+=2*PI;
+    return ((int)floorf(angle/(PI*.25f)+.5f))&7;
+}
+
+static inline int ar_direction_frame(int direction,int pose) {
+    int row=pose>=5 ? 3 : pose>0 ? 1+((pose-1)&1) : 0;
+    return row*8+(direction&7);
+}
+
 static inline void ar_sheet_draw(ARSpriteSheet* s,int index,Vector2 feet,float height,float flip,Color tint) {
     if(!s->texture.id || index<0 || index>=s->columns*s->rows)return;
     Rectangle src=s->frame[index];Vector2 pivot=s->pivot[index];

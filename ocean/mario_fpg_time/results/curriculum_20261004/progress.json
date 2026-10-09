@@ -1,0 +1,1346 @@
+[
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 3,
+    "min_reference_frames": 3,
+    "max_reference_frames": 3,
+    "median_reference_frames": 3,
+    "promotions": 0,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 2048
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 1048576
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 3,
+    "min_reference_frames": 3,
+    "max_reference_frames": 3,
+    "median_reference_frames": 3,
+    "promotions": 0,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 2048
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 2097152
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 3,
+    "min_reference_frames": 3,
+    "max_reference_frames": 3,
+    "median_reference_frames": 3,
+    "promotions": 0,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 2048
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 3145728
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 3.90625,
+    "min_reference_frames": 3,
+    "max_reference_frames": 4,
+    "median_reference_frames": 4,
+    "promotions": 1856,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 192
+      },
+      {
+        "reference_frames": 4,
+        "agents": 1856
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 4194304
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 3.99854,
+    "min_reference_frames": 3,
+    "max_reference_frames": 4,
+    "median_reference_frames": 4,
+    "promotions": 2045,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 3
+      },
+      {
+        "reference_frames": 4,
+        "agents": 2045
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 5242880
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 4.00098,
+    "min_reference_frames": 4,
+    "max_reference_frames": 5,
+    "median_reference_frames": 4,
+    "promotions": 2050,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 2046
+      },
+      {
+        "reference_frames": 5,
+        "agents": 2
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 6291456
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 5.13428,
+    "min_reference_frames": 4,
+    "max_reference_frames": 6,
+    "median_reference_frames": 5,
+    "promotions": 4371,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 266
+      },
+      {
+        "reference_frames": 5,
+        "agents": 1241
+      },
+      {
+        "reference_frames": 6,
+        "agents": 541
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 7340032
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 7.7959,
+    "min_reference_frames": 5,
+    "max_reference_frames": 8,
+    "median_reference_frames": 8,
+    "promotions": 7978,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 10
+      },
+      {
+        "reference_frames": 6,
+        "agents": 194
+      },
+      {
+        "reference_frames": 8,
+        "agents": 1844
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 8388608
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 7.99902,
+    "min_reference_frames": 6,
+    "max_reference_frames": 8,
+    "median_reference_frames": 8,
+    "promotions": 8191,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 1
+      },
+      {
+        "reference_frames": 8,
+        "agents": 2047
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 9437184
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 7.99902,
+    "min_reference_frames": 6,
+    "max_reference_frames": 8,
+    "median_reference_frames": 8,
+    "promotions": 8191,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 1
+      },
+      {
+        "reference_frames": 8,
+        "agents": 2047
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 10485760
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 8.07812,
+    "min_reference_frames": 8,
+    "max_reference_frames": 12,
+    "median_reference_frames": 8,
+    "promotions": 8232,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 2008
+      },
+      {
+        "reference_frames": 12,
+        "agents": 40
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 11534336
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 12,
+    "min_reference_frames": 12,
+    "max_reference_frames": 12,
+    "median_reference_frames": 12,
+    "promotions": 10240,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 2048
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 12582912
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 14.7363,
+    "min_reference_frames": 12,
+    "max_reference_frames": 16,
+    "median_reference_frames": 16,
+    "promotions": 11641,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 647
+      },
+      {
+        "reference_frames": 16,
+        "agents": 1401
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 13631488
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 15.998,
+    "min_reference_frames": 12,
+    "max_reference_frames": 16,
+    "median_reference_frames": 16,
+    "promotions": 12287,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 1
+      },
+      {
+        "reference_frames": 16,
+        "agents": 2047
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 14680064
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 16,
+    "min_reference_frames": 16,
+    "max_reference_frames": 16,
+    "median_reference_frames": 16,
+    "promotions": 12288,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 2048
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 15728640
+  },
+  {
+    "schema": 1,
+    "agents": 2048,
+    "mean_reference_frames": 16,
+    "min_reference_frames": 16,
+    "max_reference_frames": 16,
+    "median_reference_frames": 16,
+    "promotions": 12288,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 0
+      },
+      {
+        "reference_frames": 4,
+        "agents": 0
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 2048
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ],
+    "training_frames": 16777216
+  }
+]

@@ -125,8 +125,103 @@ static void test_sheets(void) {
     for(int i=0;i<3;i++)assert(ar_animation_frame(0,0,(i+.1f)*.1f)==i+5);
 }
 
+static void test_takeover_sheets(void) {
+    const char* paths[]={"ocean/arpg/assets/tibo-directions-v7.png","ocean/arpg/assets/takeover-bots-v6.png",
+        "ocean/arpg/assets/takeover-specialists-v6.png","ocean/arpg/assets/takeover-structures-v6.png",
+        "ocean/arpg/assets/takeover-districts-v6.png"};
+    for(int sheet=0;sheet<5;sheet++) {
+        Image image=LoadImage(paths[sheet]);assert(image.data);
+        ARSpriteSheet s={0};
+        if(sheet==0)ar_sheet_measure_directions(&s,image);
+        else ar_sheet_measure(&s,image,sheet<3 ? 8 : 4,4,sheet<3);
+        Color* pixels=LoadImageColors(image);assert(pixels);
+        uint64_t hashes[32]={0};int transparent=0;
+        for(int i=0;i<image.width*image.height;i++)transparent+=pixels[i].a==0;
+        assert(transparent>image.width*image.height/5);
+        for(int i=0;i<s.columns*s.rows;i++) {
+            Rectangle r=s.frame[i];int visible=0,blue=0,lime=0,dark=0;
+            assert(r.width>10 && r.height>10 && r.x>=0 && r.y>=0 && r.x+r.width<=image.width && r.y+r.height<=image.height);
+            uint64_t hash=UINT64_C(14695981039346656037);
+            for(int y=(int)r.y;y<(int)(r.y+r.height);y++)for(int x=(int)r.x;x<(int)(r.x+r.width);x++) {
+                Color pixel=pixels[y*image.width+x];visible+=pixel.a>40;
+                if(pixel.a>180) {
+                    blue+=pixel.b>140 && pixel.b>pixel.r+40 && pixel.g>pixel.r+25;
+                    lime+=pixel.g>160 && pixel.r>65 && pixel.r<220 && pixel.b<125 && pixel.g>pixel.r+20;
+                    dark+=pixel.r<65 && pixel.g<80 && pixel.b<95;
+                }
+                hash=ar_world_hash(hash,&pixel,sizeof(pixel));
+            }
+            assert(visible>200);hashes[i]=hash;
+            if(sheet<3)assert(s.body_height[i/8]>60);
+            // Color identity is a contract, not merely a similar bot shape.
+            if(sheet==1 || (sheet==2 && i/8<2))assert(blue>visible/10 && lime>0 && dark>20);
+            if(sheet==2 && i/8>=2)assert(blue<visible/10);
+        }
+        if(sheet<3)for(int row=0;row<4;row++)for(int a=0;a<8;a++)for(int b=a+1;b<8;b++)assert(hashes[row*8+a]!=hashes[row*8+b]);
+        if(sheet==0)for(int dir=0;dir<8;dir++)for(int row=1;row<4;row++) {
+            int n=row*8+dir;
+            assert(fabsf(s.frame[n].x+s.pivot[n].x-(s.frame[dir].x+s.pivot[dir].x))<.001f);
+            if(row==3)assert(s.pivot[n].y==s.frame[n].height);
+            else assert(fabsf(s.frame[n].y+s.pivot[n].y-row*image.height/4.0f-(s.frame[dir].y+s.pivot[dir].y))<.001f);
+            assert(s.body_height[row]==s.body_height[0]);
+        }
+        UnloadImageColors(pixels);UnloadImage(image);
+    }
+    const float velocity[8][2]={{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
+    ARClient c={0};c.takeover_art=1;
+    for(int dir=0;dir<8;dir++) {
+        assert(ar_screen_direction(velocity[dir][0],velocity[dir][1],0)==dir);
+        assert(ar_screen_direction(0,0,dir)==dir);
+        c.keeper_direction=dir;
+        for(int actor=0;actor<=8;actor++)for(int pose=0;pose<8;pose++) {
+            int index=-1;float flip=-1;ARSpriteSheet* s=ar_actor_sheet(&c,actor,pose,&index,&flip);
+            assert(index>=0 && index<32);
+            if(actor==0){assert(s==&c.tibo && index==ar_direction_frame(dir,pose) && flip==1);}
+            else if(actor<=4)assert(s==&c.companions && index==(actor-1)*8+pose);
+            else assert(s==&c.keepers && index==(actor-5)*8+pose);
+        }
+    }
+    for(int sprite=0;sprite<20;sprite++)assert(ar_structure_frame(sprite)>=0 && ar_structure_frame(sprite)<16);
+}
+
 static void capture(const char* path) {
     Image screen=LoadImageFromScreen();assert(ExportImage(screen,path));UnloadImage(screen);
+}
+
+static void capture_takeover(ARPG* e,const char* dir) {
+    float obs[AR_OBS_SIZE],actions[NUM_ATNS]={0},reward=0,terminal=0;
+    e->rng=42;e->agents[0].observations=obs;e->agents[0].actions=actions;
+    e->agents[0].rewards=&reward;e->agents[0].terminals=&terminal;
+    e->cfg.max_steps=2147483647;c_reset(e);ar_world_begin(e);c_render(e);
+    ARClient* c=ar_client(e);assert(c->takeover_art);
+    assert(ar_build_at(e,0,AR_BUILD_HARVESTER,5.5f,0)>=0);
+    assert(ar_build_at(e,0,AR_BUILD_TOTEM,5,-3)>=0);
+    for(int t=0;t<3600;t++)c_step(e);
+    c->notice_time=0;memset(c->fx,0,sizeof(c->fx));
+    ARPG before=*e;SetTargetFPS(0);
+    for(int i=0;i<12;i++)c_render(e);
+    assert(!memcmp(&before,e,sizeof(before)));
+    char path[4096];snprintf(path,sizeof(path),"%s/takeover-runtime.png",dir);capture(path);
+    BeginDrawing();ClearBackground(AR_INK);
+    ar_text(c,"TIBO / EIGHT FACING VIEWS / FIXED GROUND PIVOTS",24,18,23,AR_BLUE);
+    const char* poses[]={"Idle","Stride A","Stride B","Command"};
+    const int frame[]={0,1,2,5};
+    for(int row=0;row<4;row++) {
+        ar_text(c,poses[row],24,95+row*155,17,AR_MUTED);
+        for(int dir=0;dir<8;dir++) {
+            c->keeper_direction=dir;Vector2 feet={190+dir*154.0f,145+row*155.0f};
+            DrawLine((int)feet.x-40,(int)feet.y,(int)feet.x+40,(int)feet.y,AR_LINE);
+            ar_actor(c,0,frame[row],feet,95,1,WHITE);
+        }
+    }
+    ar_text(c,"CODEX CREW / ORIGINAL RIVAL EMPLOYEES",24,666,20,AR_GOLD);
+    for(int actor=1;actor<=8;actor++) {
+        Vector2 feet={190+(actor-1)*154.0f,800};
+        ar_actor(c,actor,0,feet,82,1,WHITE);
+        ar_text(c,actor<=6 ? AR_PET_NAMES[actor-1] : actor==7 ? "Caution" : "Velocity",feet.x-35,816,14,actor<=6 ? AR_BLUE : AR_RED);
+    }
+    EndDrawing();snprintf(path,sizeof(path),"%s/takeover-directions.png",dir);capture(path);
+    puf_close(e);
 }
 
 static void capture_reach(ARPG* e,const char* dir) {
@@ -244,7 +339,9 @@ int main(int argc,char** argv) {
     test_policy();
     test_orders();
     test_sheets();
-    if(argc>2 && !strcmp(argv[1],"--lantern"))capture_lantern(&e,argv[2]);
+    test_takeover_sheets();
+    if(argc>2 && !strcmp(argv[1],"--takeover"))capture_takeover(&e,argv[2]);
+    else if(argc>2 && !strcmp(argv[1],"--lantern"))capture_lantern(&e,argv[2]);
     else if(argc>2 && !strcmp(argv[1],"--reach"))capture_reach(&e,argv[2]);
     else if(argc>1) {
         // Optional screenshot uses real production and construction; no mock HUD.

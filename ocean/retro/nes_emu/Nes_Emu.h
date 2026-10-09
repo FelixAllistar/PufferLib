@@ -213,6 +213,19 @@ public:
 	// Instruction-level differential tests/debuggers only. Advancing this CPU
 	// directly does not advance the frame scheduler; gameplay uses emulate_frame.
 	Nes_Cpu& cpu_debug() { return emu; }
+	// Read-only frame-boundary timing for independent logic reconstruction.
+	// timestamp, video frame, $2000/$2001/$2002, sprite-0 hit coordinate,
+	// sprite-0 Y/X/tile. This does not advance or synchronize either engine.
+	void frame_clock_debug(int out[12]) const {
+		out[0]=emu.nes.timestamp; out[1]=emu.nes.frame_count;
+		emu.ppu.frame_clock_debug(out+2);
+	}
+	void sprite_ram_debug(uint8_t out[256]) const { emu.ppu.sprite_ram_debug(out); }
+	void controller_shift_debug(uint8_t out[3]) const {
+		out[0]=(uint8_t)emu.joypad.w4016;
+		out[1]=(uint8_t)emu.joypad.joypad_latches[0];
+		out[2]=(uint8_t)emu.joypad.joypad_latches[1];
+	}
 	// Set a cached status-read interval for instruction-level differential
 	// tests. Not a frame advance or a gameplay API.
 	void cached_status_debug(nes_time_t until, int value, bool write_latch) {

@@ -1,0 +1,2 @@
+{"backend":"optimized QuickNES","cpu_threads":1,"render":false,"idle_loop_skip":true,"rom_blocks":true,"game_frames":12800,"seconds":0.172090,"frames_per_second":74379.7,"observations":448,"resets_included":true,"ppo_included":false,"successful_replays":128,"checksum":-256543.622}
+{"backend":"optimized QuickNES","cpu_threads":1,"render":true,"idle_loop_skip":true,"rom_blocks":true,"game_frames":12800,"seconds":0.332784,"frames_per_second":38463.3,"observations":448,"resets_included":true,"ppo_included":false,"successful_replays":128,"checksum":-256543.622}

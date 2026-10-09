@@ -1,0 +1,27 @@
+{
+  "preset": "webnav-browser-shell-v1",
+  "status": "laws_and_native_checked",
+  "registered_training_tasks": 0,
+  "compiler_checked": true,
+  "laws_checked": true,
+  "native_checked": true,
+  "laws": 12,
+  "differential_steps": 9600,
+  "validation_command": "node ocean/webnav/families/build.cjs primitive:browser --test",
+  "browser_compared": false,
+  "learner_integrated": false,
+  "history_capacity": 8,
+  "route_capacity": 32,
+  "wire_words_per_lane": 64,
+  "next_gate": "Compose with public pages and qualify against browser navigation; no browser-equivalence claim yet.",
+  "missing": [
+    "Original browser navigation comparison",
+    "Public route labels, URLs and page composition",
+    "Per-history-entry query, scroll and form state",
+    "Frames, redirects and same-document navigation; tabs compose this unit in browser_contexts",
+    "Draft and record persistence across routes",
+    "Full application integration with the separate finish/response controls"
+  ],
+  "settled_history_browser_compared": true,
+  "browser_comparison_scope": "Via browser_contexts: 3 local Chromium fixtures, 34 settled history/tab comparisons. Async timing/commit semantics and original-site workflows remain unqualified."
+}

@@ -1,0 +1,3 @@
+[retro] ROM ocean/retro/roms/smb1_ntsc.nes fingerprint=6e01246e5d215cb3 mapper=0 World/NTSC; 60.09881390 fps
+mismatch tier=3 deterministic=0 episode=16 frame=215 pre=(2853,127) screen_left=2853 action=4 x:2852/2853
+mismatch tier=3 deterministic=0 episode=16 frame=216 pre=(2853,130) screen_left=2853 action=4 x:2852/2853

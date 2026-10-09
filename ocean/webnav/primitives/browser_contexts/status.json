@@ -1,0 +1,52 @@
+{
+  "preset": "webnav-browser-contexts-v1",
+  "status": "native_public_policy_interface_and_settled_browser_checked",
+  "compiler_checked": true,
+  "laws_checked": true,
+  "native_checked": true,
+  "laws": 9,
+  "differential_steps": 32000,
+  "generated_seeds": 64,
+  "tab_capacity": 16,
+  "route_capacity": 32,
+  "history_capacity_per_tab": 8,
+  "wire_words": 2048,
+  "validation_command": "node ocean/webnav/families/build.cjs primitive:browser_contexts --test",
+  "browser_compared": true,
+  "public_wf_binding": true,
+  "learner_integrated": false,
+  "registered_training_tasks": 0,
+  "qualified_webarena_tasks": 0,
+  "source_audit": {
+    "url": "https://github.com/web-arena-x/webarena/blob/60a6ca1a5d0f1db3a74451925fcc2cd8591f9edf/browser_env/actions.py",
+    "sha256": "a0d65875640b0db61289f429ea4173da88de3aecb5aad2783e56bc3aa5da7fd9",
+    "scope": "Selected-page behavior of explicit new/focus/close actions; not the WebArena-Verified dataset pin."
+  },
+  "missing": [
+    "Binding the shared controls to the original-browser runner; address entry and application/training composition",
+    "Original-site workflow comparisons",
+    "Asynchronous browser navigation commit and timing parity",
+    "Popup initialization, frames, redirects and same-document navigation",
+    "Per-history-entry query, scroll and form-state restoration"
+  ],
+  "native_test_programs": 2,
+  "public_generated_worlds": 32,
+  "browser_fixtures": 3,
+  "browser_comparisons": 34,
+  "policy_interface_checked": true,
+  "policy_interface_episodes": 8,
+  "policy_interface_choices": 512,
+  "browser_control_binding": false,
+  "browser_comparison_scope": "Independent local Chromium documents: settled route/tab identity/selection and bounded back/forward/reload history. No async timing, pending navigation commit, original-site workflow or learned-success claim.",
+  "policy_interface_command": "bash ocean/webnav/benchmarks/run.sh test-contexts-policy",
+  "browser_validation_command": "bash ocean/webnav/benchmarks/run.sh test-browser-contexts",
+  "pending_browser_binding": {
+    "status": "implemented_resource_paused_during_qualification",
+    "rpc_checked": true,
+    "browser_fixtures_passed": 4,
+    "browser_fixtures_required": 5,
+    "limiting_resource": "128 processes/threads in the existing test cgroup",
+    "evidence": "build/webnav/benchmarks/browser-shell-resource-pause-20261007.json",
+    "runner_bound": false
+  }
+}

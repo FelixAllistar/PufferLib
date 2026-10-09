@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "native_command": "./build/mario_lab/puffer train",
+  "checks": [
+    "CPU movement/terrain/entity/RAM fixtures",
+    "ASan and UBSan",
+    "19 CPU/CUDA parity cases including full-level storage, resets and graphs",
+    "400 full-level generation/replay checks",
+    "native CUDA training with 256-frame rollouts and root-only resets",
+    "native checkpoint reload/evaluation"
+  ],
+  "runs": [
+    {
+      "run_id": "full_levels_check_20261001",
+      "frames": 1048576,
+      "config": "logs/mario_lab/native_full_levels_check/mario_lab/full_levels_check_20261001.ini",
+      "config_sha256": "e2e9cb614ecbd6388c4b0dba2a8fdda7715ef27e893e934f9d18214be8b2a670",
+      "checkpoint": "logs/mario_lab/native_full_levels_check/checkpoints/mario_lab/full_levels_check_20261001/0000000001048576.bin",
+      "checkpoint_sha256": "4bc7ae13d6b59153f2adeb3619c174d0ec29f628209d64b8881940e1fe79b89e",
+      "weights_finite": true
+    },
+    {
+      "run_id": "full_levels_terminal_check_20261001",
+      "frames": 4194304,
+      "config": "logs/mario_lab/native_full_levels_check/mario_lab/full_levels_terminal_check_20261001.ini",
+      "config_sha256": "fffec262a1478ead17a1cb52470d22df51cc98bb6a871ca4f07d5191d33dd9c3",
+      "checkpoint": "logs/mario_lab/native_full_levels_check/checkpoints/mario_lab/full_levels_terminal_check_20261001/0000000004194304.bin",
+      "checkpoint_sha256": "c33fd5dadb4208b441759e9e874ced043bbf24260060811e93742d02b33c948f",
+      "weights_finite": true
+    }
+  ],
+  "evaluation": {
+    "requested_episodes": 32,
+    "completed_vector_episodes": 256,
+    "clears": 0,
+    "purpose": "checkpoint reload smoke; not an exact episode-count panel or transfer score"
+  },
+  "legacy_parity": "legacy_parity.json",
+  "core_sha256": "7dc189e54c9a97f41715d0bc610545832fa6ebcc7c873659d43a6e90b093c4fd",
+  "trainer_sha256": "ceafd116d949c0b1d45c799aa486be6eab90266e0c907e1bb9dd2a54f54bddb1",
+  "full_config_sha256": "b2b1d9e2c2671c0bc59298289869ada1c1b17c53c815f26b6e60b190723bae66",
+  "learning_and_rom_transfer_qualified": false,
+  "benchmark": {
+    "measurement": "benchmark.json",
+    "no_concurrent_training_or_evaluation": true,
+    "config_sha256": "b2b1d9e2c2671c0bc59298289869ada1c1b17c53c815f26b6e60b190723bae66",
+    "binary_sha256": "fdda208b2e97b67847a157fc9a73cc01c57f9313ffe05eadbc4f904700e9d587"
+  }
+}

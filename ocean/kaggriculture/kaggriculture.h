@@ -3,10 +3,12 @@
 #define PUF_PACKED_MASK 1
 #include "policy.h"
 #include "potential.h"
+#include "critic.h"
+#include "opponent_noise.h"
 typedef float obs_t;
 #include "pufferenv.h"
 
-#define OBS_SIZE KAG_ENTITY_OBS_SIZE
+#define OBS_SIZE KAG_TRAIN_OBS_SIZE
 #define NUM_ATNS KAG_ACTION_HEADS
 #define ACT_SIZES KAG_ACTION_SIZES
 
@@ -21,6 +23,7 @@ struct Log {
     float terminal_cash_reward, growth_land_reward, growth_crop_reward, growth_animal_reward;
     float alive_reward, dense_quality_reward, potential_reward;
     float policy_0_score, policy_1_score, checkpoint_fraction;
+    float opponent_noise, opponent_noise_steps, checkpoint_win;
     float crop_ref_value, animal_ref_value, animal_delay, animal_seen;
     float plot2_delay, plot3_delay;
     float n;
@@ -52,6 +55,7 @@ struct Env {
     KagPolicy policy;
     int bot_policy, learner_seat;
     float reward_money;
+    int reward_win_loss_draw, critic_features;
     KGState* reset_states;
     int reset_count;
     float reset_probability;
@@ -62,13 +66,124 @@ struct Env {
     KagRewards reward[KG_NUM_PLAYERS];
     KagPotential potential;
     float potential_beta;
+    KagOpponentNoise opponent_noise;
 };
 
 KagPotential kag_frozen_potential;
 int kag_qd_metrics;
+// 0: existing recurrent scalar; 1: same-state global scalar; 2: paired global.
+int kag_critic_mode;
+// Opt-in, single fresh CPU-eval game. Never open/replace an existing trace.
+FILE* kag_trace_file;
+
+void kag_trace_step(const Env* env, const KGAction* commands, const int* before) {
+    FILE* out = kag_trace_file;
+    if (!out) return;
+    const KGState* g = &env->game;
+    fprintf(out, "{\"step\":%d,\"day\":%d,\"players\":[", g->step, g->day);
+    for (int p=0;p<2;p++) {
+        const KGPlayer* f = &g->players[p];
+        fprintf(out, "%s{\"cash_before\":%d,\"cash\":%d,\"production\":%u,"
+            "\"plants\":%u,\"animals\":%u,\"deaths\":%u,\"shed\":[",
+            p ? "," : "", before[p], f->money, g->production_units[p],
+            g->planted_crops[p], g->placed_animals[p], g->neglect_deaths[p]);
+        for (int i=0;i<12;i++) fprintf(out,"%s%d",i?",":"",f->shed[i]);
+        fprintf(out,"],\"units\":[");
+        for (int u=0;u<f->unit_count;u++) {
+            KGUnitAction a = u ? (u <= commands[p].hand_count ? commands[p].hands[u-1]
+                : (KGUnitAction){KG_OP_PASS,-1,1}) : commands[p].farmer;
+            fprintf(out,"%s{\"x\":%d,\"y\":%d,\"op\":%d,\"arg\":%d,\"n\":%d,\"held\":[",
+                u?",":"",f->units[u].x,f->units[u].y,a.op,a.arg,a.n);
+            for (int i=0;i<12;i++) fprintf(out,"%s%d",i?",":"",f->units[u].inventory[i]);
+            fprintf(out,"]}");
+        }
+        fprintf(out,"],\"market\":[");
+        for (int i=0;i<commands[p].market_count;i++) {
+            KGMarketOrder a = commands[p].market[i];
+            fprintf(out,"%s[%d,%d,%d]",i?",":"",a.op,a.item,a.n);
+        }
+        fprintf(out,"]}");
+    }
+    fprintf(out,"]}\n");
+    if (g->done) { fclose(out); kag_trace_file = NULL; }
+}
 
 void kag_configure_potential(Ini* ini, const char* mode) {
+    const char* trace = getenv("KAG_EVAL_TRACE");
+    if (trace && *trace && !kag_trace_file) {
+        assert(PUF_BACKEND == PUF_CPU && "KAG_EVAL_TRACE requires the CPU environment backend");
+        assert(!strcmp(mode,"eval") && "KAG_EVAL_TRACE is evaluation-only");
+        assert(puf_ini_get(ini,"vec","total_agents") == 1
+            && puf_ini_get(ini,"vec","num_buffers") == 1
+            && puf_ini_get(ini,"env","num_agents") == 1
+            && puf_ini_get(ini,"base","eval_agents") == 1
+            && puf_ini_get(ini,"env","reset_state_prob") == 0
+            && "trace requires one fresh CPU evaluation environment");
+        kag_trace_file = fopen(trace,"wx");
+        assert(kag_trace_file && "cannot create trace (existing files are preserved)");
+    }
+#ifdef KAG_DIRECT_POLICY
+    assert(puf_ini_get(ini,"policy","action_version") == KAG_POLICY_VERSION
+        && "config action_version does not match this compact-policy binary; rebuild kaggriculture");
+    if (strcmp(mode,"train")) dict_set(puf_ini_section(ini,"train",0),"teacher_kl_coefficient",0);
+#endif
     kag_qd_metrics = getenv("KAG_QD_METRICS") != NULL;
+    // The native CLI only accepts keys already present in its default config.
+    // Experimental run.py profiles hand off these two new settings via inherited
+    // environment variables, keeping the ordinary cash config byte-identical.
+#ifdef KAG_DIRECT_POLICY
+    // The direct ABI has one active config; stale legacy shell/profile variables must
+    // not silently change its critic, reward or opponent-noise settings.
+    const char* critic_mode = NULL;
+    const char* wld_reward = NULL;
+#else
+    const char* critic_mode = getenv("KAG_CRITIC_MODE");
+    const char* wld_reward = getenv("KAG_REWARD_WIN_LOSS_DRAW");
+#endif
+    if (critic_mode) {
+        assert(strlen(critic_mode) == 1 && critic_mode[0] >= '0' && critic_mode[0] <= '2');
+        dict_set(puf_ini_section(ini, "policy", 0), "critic_mode", critic_mode[0] - '0');
+    }
+    if (wld_reward) {
+        assert(strlen(wld_reward) == 1 && (wld_reward[0] == '0' || wld_reward[0] == '1'));
+        dict_set(puf_ini_section(ini, "env", 0), "reward_win_loss_draw", wld_reward[0] - '0');
+    }
+    const char* noise_keys[] = {"opponent_noise_initial", "opponent_noise_final",
+        "opponent_noise_decay_steps"};
+    const char* noise_vars[] = {"KAG_OPPONENT_NOISE_INITIAL", "KAG_OPPONENT_NOISE_FINAL",
+        "KAG_OPPONENT_NOISE_DECAY_STEPS"};
+    Dict* noise_env = puf_ini_section(ini, "env", 0);
+    for (int i = 0; i < 3; i++) {
+#ifdef KAG_DIRECT_POLICY
+        const char* value = NULL;
+#else
+        const char* value = getenv(noise_vars[i]);
+#endif
+        if (value) {
+            char* end;
+            double number = strtod(value, &end);
+            assert(*value && !*end && isfinite(number));
+            dict_set(noise_env, noise_keys[i], number);
+        }
+    }
+    // All native eval and match paths are noise-free, even with a training profile.
+    if (strcmp(mode, "train")) {
+        dict_set(noise_env, "opponent_noise_initial", 0);
+        dict_set(noise_env, "opponent_noise_final", 0);
+    }
+    double step_scale = puf_ini_get(ini, "vec", "total_agents")
+        * puf_ini_get(ini, "train", "gpus");
+    dict_set(noise_env, "opponent_noise_step_scale", step_scale);
+    DictItem* critic = dict_find(puf_ini_section(ini, "policy", 0), "critic_mode");
+    kag_critic_mode = critic ? (int)critic->value : 0;
+    assert(!critic || critic->value == kag_critic_mode);
+    assert(kag_critic_mode >= 0 && kag_critic_mode <= 2);
+#ifndef KAG_WITH_PAIRED_CRITIC
+    assert(kag_critic_mode == 0 && "build with KAG_WITH_PAIRED_CRITIC for the global critic");
+#endif
+    if (kag_critic_mode) {
+        assert(puf_ini_get(ini, "env", "reward_win_loss_draw") == 1);
+    }
     Dict* env = puf_ini_section(ini, "env", 0);
     DictItem* beta = dict_find(env, "potential_beta");
     if (!beta || beta->value == 0) {
@@ -129,6 +244,19 @@ KG_HD void kag_reset_episode(Env* env) {
 }
 
 void puf_init(Env* env, Dict* kwargs) {
+    const char* noise_keys[] = {"opponent_noise_initial", "opponent_noise_final",
+        "opponent_noise_decay_steps", "opponent_noise_step_scale"};
+    double noise_values[] = {0, 0, 1, 1};
+    for (int i = 0; i < 4; i++) {
+        DictItem* item = dict_find(kwargs, noise_keys[i]);
+        if (item) noise_values[i] = item->value;
+        assert(isfinite(noise_values[i]));
+    }
+    assert(noise_values[0] >= 0 && noise_values[0] <= 1);
+    assert(noise_values[1] >= 0 && noise_values[1] <= noise_values[0]);
+    assert(noise_values[2] > 0 && noise_values[3] > 0);
+    env->opponent_noise = (KagOpponentNoise){(float)noise_values[0], (float)noise_values[1],
+        noise_values[2], noise_values[3], 0, env->rng ^ 0x9e3779b9u};
     DictItem* beta = dict_find(kwargs, "potential_beta");
     env->potential_beta = beta ? beta->value : 0;
     assert(isfinite(env->potential_beta) && env->potential_beta >= 0);
@@ -140,6 +268,11 @@ void puf_init(Env* env, Dict* kwargs) {
     env->bot_policy = dict_get(kwargs, "bot_policy");
     env->learner_seat = dict_get(kwargs, "learner_seat");
     env->reward_money = dict_get(kwargs, "reward_money");
+    DictItem* wld = dict_find(kwargs, "reward_win_loss_draw");
+    env->reward_win_loss_draw = wld ? (int)wld->value : 0;
+    assert(!wld || wld->value == env->reward_win_loss_draw);
+    assert(env->reward_win_loss_draw == 0 || env->reward_win_loss_draw == 1);
+    env->critic_features = kag_critic_mode != 0;
     env->reset_probability = dict_get(kwargs, "reset_state_prob");
     const char* growth[] = {"reward_growth_land", "reward_growth_crop", "reward_growth_animal"};
     const char* targets[] = {"reward_target_plots", "reward_target_crops", "reward_target_animals"};
@@ -156,6 +289,11 @@ void puf_init(Env* env, Dict* kwargs) {
     assert(isfinite(env->alive_daily) && env->alive_daily >= 0);
     assert(isfinite(env->quality_scale) && env->quality_scale >= 0);
     assert(env->quality_idle_cost >= 0 && env->quality_idle_cost <= 1);
+    if (env->reward_win_loss_draw) {
+        assert(env->reward_money == 1 && env->potential_beta == 0);
+        assert(env->alive_daily == 0 && env->quality_scale == 0);
+        // Optional land/crop/animal growth bonuses add to terminal WLD.
+    }
     env->policy = (KagPolicy){
         .market_slots = (int)dict_get(kwargs, "market_slots"),
         .max_hands = (int)dict_get(kwargs, "max_hands"),
@@ -255,6 +393,26 @@ KG_HD void kag_observe(Env* env, bool reset) {
         kag_write_observation(
             &env->policy, &env->game, player, agent->observations);
     }
+#ifdef KAG_WITH_PAIRED_CRITIC
+    if (env->critic_features) {
+        float other[KAG_ENTITY_OBS_SIZE];
+        if (env->num_agents == 1) {
+            kag_write_observation(&env->policy, &env->game, 1 - env->learner_seat, other);
+        }
+        for (int a = 0; a < env->num_agents; a++) {
+            float* own = (float*)env->agents[a].observations;
+            const float* opponent = env->num_agents == 2
+                ? (const float*)env->agents[1 - a].observations : other;
+            kag_critic_features(own, own + KAG_ENTITY_OBS_SIZE);
+            kag_critic_features(opponent, own + KAG_ENTITY_OBS_SIZE + KAG_CRITIC_FEATURES);
+        }
+    } else {
+        for (int a = 0; a < env->num_agents; a++) {
+            memset((float*)env->agents[a].observations + KAG_ENTITY_OBS_SIZE, 0,
+                2 * KAG_CRITIC_FEATURES * sizeof(float));
+        }
+    }
+#endif
 }
 
 KG_HD int kag_reward_cap(int n, int cap) {
@@ -304,10 +462,13 @@ KG_HD void kag_apply_actions(Env* env, const KGAction* commands) {
         alive = active ? env->alive_daily * alive / (active * game->config.turns_per_day) : 0;
         float quality = env->quality_scale * (s->coverage - env->quality_idle_cost * s->idle) /
                         game->config.episode_steps;
-        float cash = game->done
-                         ? env->reward_money * (game->players[player].money - s->start_cash) /
-                               game->config.starting_money
-                         : 0;
+        float cash = 0;
+        if (game->done) {
+            cash = env->reward_win_loss_draw
+                ? kag_wld_reward(game->players[player].money, game->players[1 - player].money)
+                : env->reward_money * (game->players[player].money - s->start_cash) /
+                      game->config.starting_money;
+        }
         *agent->rewards = growth + alive;
         *agent->rewards += cash;
         *agent->rewards += quality;
@@ -337,6 +498,12 @@ KG_HD void kag_apply_actions(Env* env, const KGAction* commands) {
         log->policy_0_score += win;
         log->policy_1_score += 1 - win;
         log->checkpoint_fraction += env->tag > 0;
+        if (env->tag > 0) {
+            log->checkpoint_win += win;
+            log->opponent_noise += kag_opponent_noise_probability(&env->opponent_noise);
+            log->opponent_noise_steps += (double)env->opponent_noise.ticks
+                * env->opponent_noise.step_scale;
+        }
         log->score += money;
         log->opponent_score += opponent_money;
         log->cash_gain += gain;
@@ -400,23 +567,51 @@ KG_HD void kag_step(Env* env) {
     KGAction commands[KG_NUM_PLAYERS] = {0};
     for (int a = 0; a < env->num_agents; a++) {
         int player = env->num_agents == 2 ? a : env->learner_seat;
+        float random_actions[KAG_ACTION_HEADS];
+        const float* actions = env->agents[a].actions;
+        float noise = kag_opponent_noise_probability(&env->opponent_noise);
+        if (env->tag > 0 && kag_opponent_noise_replace(
+                &env->opponent_noise, env->agents[a].policy, noise)) {
+            kag_opponent_random_action(&env->opponent_noise, &env->policy,
+                game, player, random_actions);
+            actions = random_actions;
+        }
         kag_decode_multi_action(
-            &commands[player], env->agents[a].actions, game, player, &env->policy);
+            &commands[player], actions, game, player, &env->policy);
     }
     if (env->num_agents == 1 && env->bot_policy == 1) {
         kg_rule_action(game, 1 - env->learner_seat, &commands[1 - env->learner_seat]);
     }
+#ifndef __CUDA_ARCH__
+    int before[] = {game->players[0].money,game->players[1].money};
+#endif
     kag_apply_actions(env, commands);
+#ifndef __CUDA_ARCH__
+    if (kag_trace_file) kag_trace_step(env,commands,before);
+#endif
+    env->opponent_noise.ticks++;
     if (game->done) {
         kag_reset_episode(env);
     }
 }
 
 void puf_log(Log* log, Dict* out) {
+    // Keep fresh/reset comparisons above the dashboard's metric-row cutoff.
+    // Display priority only: these are the same metrics and normalization.
+    dict_set(out, "root_money", log->root_games ? log->root_money / log->root_games : 0);
+    dict_set(out, "reset_money", log->reset_games ? log->reset_money / log->reset_games : 0);
+    dict_set(out, "root_fraction", log->root_games);
+    dict_set(out, "reset_fraction", log->reset_games);
     dict_set(out, "perf", log->perf);
     dict_set(out, "policy_0_score", log->policy_0_score);
     dict_set(out, "policy_1_score", log->policy_1_score);
     dict_set(out, "checkpoint_fraction", log->checkpoint_fraction);
+    dict_set(out, "opponent_noise", log->checkpoint_fraction
+        ? log->opponent_noise / log->checkpoint_fraction : 0);
+    dict_set(out, "opponent_noise_steps", log->checkpoint_fraction
+        ? log->opponent_noise_steps / log->checkpoint_fraction : 0);
+    dict_set(out, "checkpoint_win_rate", log->checkpoint_fraction
+        ? log->checkpoint_win / log->checkpoint_fraction : 0);
     dict_set(out, "score", log->score);
     dict_set(out, "opponent_score", log->opponent_score);
     dict_set(out, "cash_gain", log->cash_gain);
@@ -440,10 +635,6 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "start_money", log->start_money);
     dict_set(out, "start_plots", log->start_plots);
     dict_set(out, "ending_plots", log->ending_plots);
-    dict_set(out, "reset_fraction", log->reset_games);
-    dict_set(out, "root_fraction", log->root_games);
-    dict_set(out, "root_money", log->root_games ? log->root_money / log->root_games : 0);
-    dict_set(out, "reset_money", log->reset_games ? log->reset_money / log->reset_games : 0);
     dict_set(out, "root_cash_gain", log->root_games ? log->root_cash_gain / log->root_games : 0);
     dict_set(
         out, "reset_cash_gain", log->reset_games ? log->reset_cash_gain / log->reset_games : 0);

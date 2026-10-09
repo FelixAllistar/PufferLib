@@ -1,0 +1,9 @@
+{
+  "backend": "gpu",
+  "frames": 16777216,
+  "wall_seconds": 212.71796811000058,
+  "wall_frames_per_second": 78870.70447816697,
+  "run_id": "runtime_fpg_20261003",
+  "ppo_included": true,
+  "startup_included": true
+}

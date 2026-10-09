@@ -1,0 +1,13 @@
+CUDA 256/3248 selected cases, 26068 frames, 0 failures
+CUDA 512/3248 selected cases, 52136 frames, 0 failures
+CUDA 768/3248 selected cases, 78204 frames, 0 failures
+CUDA 1024/3248 selected cases, 104272 frames, 0 failures
+CUDA 1280/3248 selected cases, 131296 frames, 0 failures
+CUDA 1536/3248 selected cases, 158320 frames, 0 failures
+CUDA 1792/3248 selected cases, 185344 frames, 0 failures
+CUDA 2048/3248 selected cases, 211412 frames, 0 failures
+CUDA 2304/3248 selected cases, 237480 frames, 0 failures
+CUDA 2560/3248 selected cases, 263548 frames, 0 failures
+CUDA 2816/3248 selected cases, 289616 frames, 0 failures
+CUDA 3072/3248 selected cases, 316640 frames, 0 failures
+CUDA 3248/3248 selected cases, 335936 frames, 0 failures

@@ -12,19 +12,21 @@
 
 #define AR_VIEW_SCALE 24.0f
 #define AR_FX_COUNT 64
-static const Color AR_INK = {20,30,30,255};
-static const Color AR_PANEL = {24,37,36,248};
-static const Color AR_LINE = {60,79,70,255};
-static const Color AR_TEXT = {232,234,213,255};
-static const Color AR_MUTED = {144,166,149,255};
-static const Color AR_MINT = {123,219,185,255};
-static const Color AR_GOLD = {228,185,108,255};
-static const Color AR_RED = {224,118,98,255};
-static const char* AR_PET_NAMES[] = {"Wisp","Fang","Aegis","Porter","Burrower","Ember"};
+static const Color AR_INK = {20,25,34,255};
+static const Color AR_PANEL = {29,35,46,245};
+static const Color AR_LINE = {66,77,92,255};
+static const Color AR_TEXT = {239,236,224,255};
+static const Color AR_MUTED = {153,167,181,255};
+static const Color AR_BLUE = {32,187,244,255};
+static const Color AR_MINT = {184,243,41,255};
+static const Color AR_GOLD = {255,209,49,255};
+static const Color AR_RED = {230,126,119,255};
+// Presentation names only: the save format, class IDs and policy ABI stay put.
+static const char* AR_PET_NAMES[] = {"Scout","Runner","Bulwark","Courier","Borer","Forge"};
 static const char* AR_TASK_NAMES[] = {"Assist","Gather","Escort","Hunt","Hold","Home","Terrain"};
-static const char* AR_BUILD_NAMES[] = {"Ward tower","Barricade","Extractor","Starfire","Bridge"};
+static const char* AR_BUILD_NAMES[] = {"Sentry","Barrier","Server tap","Uplink","Crossing"};
 static const char* AR_COMMAND_NAMES[] = {"Auto","Move","Mine seam","Attack","Hold point","Terraform"};
-static const char* AR_BIOME_NAMES[] = {"Clover meadows","Pine wilds","Amber woods","Reed marshes","Sunwashed dunes","Slate highlands"};
+static const char* AR_BIOME_NAMES[] = {"Civic greenbelt","Commuter outskirts","Old town parks","Canal district","Logistics fringe","Concrete uplands"};
 static inline int ar_pet_sprite(int cls){return cls<4 ? cls+1 : 16+cls-4;}
 static inline int ar_build_sprite(int kind){return kind<3 ? 7+kind : 18+kind-3;}
 static inline int ar_pet_unlock(ARPG* e,int p) {
@@ -60,7 +62,8 @@ typedef struct {
 typedef struct ARClient {
     float cam_x,cam_y,off_x,off_y,zoom,time;
     Texture2D atlas,expansion;
-    ARSpriteSheet companions,keepers,biomes,fauna;
+    ARSpriteSheet companions,keepers,biomes,fauna,tibo,structures;
+    int takeover_art,keeper_direction;
     RenderTexture2D lightmap;
     uint64_t light_signature;
     Texture2D minimap_texture;
@@ -182,10 +185,10 @@ static inline void ar_box(Rectangle r,Color fill) {
 static inline int ar_button(ARClient* c,Rectangle r,const char* label,int active,int enabled) {
     enabled=enabled && (!c->map_open || c->map_ui);
     int hover=enabled && CheckCollisionPointRec(GetMousePosition(),r);
-    ar_box(r,active ? (Color){47,76,63,255} : hover ? (Color){42,57,49,255} : AR_PANEL);
+    ar_box(r,active ? (Color){44,69,70,255} : hover ? (Color){44,53,67,255} : AR_PANEL);
     Vector2 t=MeasureTextEx(c->font,label,16,0.3f);
     ar_text(c,label,r.x+(r.width-t.x)*0.5f,r.y+(r.height-t.y)*0.5f,16,
-        !enabled ? (Color){87,108,96,255} : active ? AR_MINT : AR_TEXT);
+        !enabled ? (Color){106,119,133,255} : active ? AR_MINT : AR_TEXT);
     return hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 static inline void ar_bar(float x,float y,float w,float h,float ratio,Color color) {
@@ -218,20 +221,40 @@ static inline Texture2D ar_load_atlas(ARClient* c,const char* path,int base,int 
 }
 static inline void ar_assets(ARClient* c) {
     SetShapesTexture((Texture2D){rlGetTextureIdDefault(),1,1,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8},(Rectangle){0,0,1,1});
-    c->atlas=ar_load_atlas(c,"ocean/arpg/assets/hearthwild-atlas.png",0,4);
-    c->expansion=ar_load_atlas(c,"ocean/arpg/assets/hearthwild-frontier-atlas.png",16,2);
-    c->companions=ar_sheet_load("ocean/arpg/assets/reach-companions-v4.png",8,4,1);
-    c->keepers=ar_sheet_load("ocean/arpg/assets/reach-keepers-v4.png",8,4,1);
-    c->biomes=ar_sheet_load("ocean/arpg/assets/reach-biomes-v4.png",4,4,0);
+    c->tibo=ar_sheet_load_directions("ocean/arpg/assets/tibo-directions-v7.png");
+    c->companions=ar_sheet_load("ocean/arpg/assets/takeover-bots-v6.png",8,4,1);
+    c->keepers=ar_sheet_load("ocean/arpg/assets/takeover-specialists-v6.png",8,4,1);
+    c->structures=ar_sheet_load("ocean/arpg/assets/takeover-structures-v6.png",4,4,0);
+    c->biomes=ar_sheet_load("ocean/arpg/assets/takeover-districts-v6.png",4,4,0);
+    c->takeover_art=c->tibo.texture.id && c->companions.texture.id && c->keepers.texture.id && c->structures.texture.id && c->biomes.texture.id;
+    if(!c->takeover_art) {
+        // Missing art never prevents a saved world from opening. The original
+        // sheets are retained, rather than a half-modern/half-fantasy cast.
+        ar_sheet_release(&c->tibo);ar_sheet_release(&c->structures);
+        ar_sheet_release(&c->companions);ar_sheet_release(&c->keepers);ar_sheet_release(&c->biomes);
+        c->atlas=ar_load_atlas(c,"ocean/arpg/assets/hearthwild-atlas.png",0,4);
+        c->expansion=ar_load_atlas(c,"ocean/arpg/assets/hearthwild-frontier-atlas.png",16,2);
+        c->companions=ar_sheet_load("ocean/arpg/assets/reach-companions-v4.png",8,4,1);
+        c->keepers=ar_sheet_load("ocean/arpg/assets/reach-keepers-v4.png",8,4,1);
+        c->biomes=ar_sheet_load("ocean/arpg/assets/reach-biomes-v4.png",4,4,0);
+    }
     c->fauna=ar_sheet_load("ocean/arpg/assets/reach-fauna-v5.png",8,4,1);
     c->font=LoadFontEx("resources/shared/Roboto-Regular.ttf",32,NULL,0);
     c->heading=LoadFontEx("resources/shared/Montserrat-Regular.ttf",40,NULL,0);
     SetTextureFilter(c->font.texture,TEXTURE_FILTER_BILINEAR);
     SetTextureFilter(c->heading.texture,TEXTURE_FILTER_BILINEAR);
     c->initialized=1;
-    ar_notice(c,"1-8 select a companion. F6 drives it. 0 returns to keeper. M opens the Reach.");
+    ar_notice(c,c->takeover_art ? "WASD: Tibo. 1-8: select a bot. RMB: give an order. F6: drive it. M: map." :
+        "Codex art unavailable: using retained legacy sprites. WASD moves; 1-8 selects; RMB orders.");
+}
+static inline int ar_structure_frame(int sprite) {
+    static const int cells[20]={0,0,0,0,0,4,4,1,2,3,4,0,8,7,0,12,0,0,5,6};
+    return sprite>=0 && sprite<20 ? cells[sprite] : 0;
 }
 static inline void ar_sprite(ARClient* c,int sprite,Vector2 feet,float height,float flip,Color tint) {
+    if(c->takeover_art) {
+        ar_sheet_draw(&c->structures,ar_structure_frame(sprite),feet,height,flip,tint);return;
+    }
     Texture2D texture=sprite>=16 ? c->expansion : c->atlas;
     if(!texture.id) { DrawCircleV(feet,height*0.2f,tint); return; }
     Rectangle src=c->sprites[sprite];
@@ -240,11 +263,21 @@ static inline void ar_sprite(ARClient* c,int sprite,Vector2 feet,float height,fl
     DrawTexturePro(texture,src,(Rectangle){feet.x-width*0.5f,feet.y-height,width,height},
         (Vector2){0,0},0,tint);
 }
-// actor 0 = keeper, 1..6 = companions, 7 = thornling.
+// Actor 0 = keeper, 1..6 = companions, 7/8 = light/heavy corporate defenders.
+// Main drawing and projected shadows resolve the exact same sprite and pivot.
+static inline ARSpriteSheet* ar_actor_sheet(ARClient* c,int actor,int frame,int* index,float* flip) {
+    if(c->takeover_art) {
+        if(actor==0){*index=ar_direction_frame(c->keeper_direction,frame);*flip=1;return &c->tibo;}
+        *index=(actor<=4 ? actor-1 : actor-5)*8+frame;
+        return actor<=4 ? &c->companions : &c->keepers;
+    }
+    int row=actor>=1 && actor<=4 ? actor-1 : actor==0 ? 0 : actor>=7 ? 3 : actor-4;
+    *index=row*8+frame;
+    return actor>=1 && actor<=4 ? &c->companions : &c->keepers;
+}
 static inline void ar_actor(ARClient* c,int actor,int frame,Vector2 feet,float height,float flip,Color tint) {
-    ARSpriteSheet* sheet=actor>=1 && actor<=4 ? &c->companions : &c->keepers;
-    int row=actor>=1 && actor<=4 ? actor-1 : actor==0 ? 0 : actor==7 ? 3 : actor-4;
-    if(sheet->texture.id)ar_sheet_draw(sheet,row*8+frame,feet,height,flip,tint);
+    int index=0;ARSpriteSheet* sheet=ar_actor_sheet(c,actor,frame,&index,&flip);
+    if(sheet->texture.id)ar_sheet_draw(sheet,index,feet,height,flip,tint);
     else ar_sprite(c,actor==0 ? 0 : actor==7 ? 5 : ar_pet_sprite(actor-1),feet,height,flip,tint);
 }
 static inline void ar_ring(ARClient* c,float x,float y,float r,Color color) {
@@ -269,8 +302,8 @@ static inline Color ar_mix(Color a,Color b,float t) {
     return (Color){(unsigned char)(a.r+(b.r-a.r)*t),(unsigned char)(a.g+(b.g-a.g)*t),(unsigned char)(a.b+(b.b-a.b)*t),255};
 }
 static inline Color ar_meadow_color(uint32_t seed,float x,float y) {
-    const Color greens[]={{108,130,86,255},{89,112,94,255},{140,128,79,255},
-        {90,122,107,255},{169,151,109,255},{123,135,120,255}};
+    const Color greens[]={{120,139,117,255},{111,129,120,255},{150,143,119,255},
+        {104,135,128,255},{184,169,145,255},{135,142,138,255}};
     int gx=(int)floorf(x/16),gy=(int)floorf(y/16);
     float u=x/16-gx,v=y/16-gy;u=u*u*(3-2*u);v=v*v*(3-2*v);
     Color a=ar_mix(greens[ar_biome(seed,gx*16,gy*16)],greens[ar_biome(seed,(gx+1)*16,gy*16)],u);
@@ -286,20 +319,34 @@ static inline Color ar_surface_color(Color base,int tile) {
     if(tile==AR_TILE_BRIDGE)base=(Color){125,100,64,255};
     return base;
 }
+// Cosmetic streets only, on already walkable ground. Stable world coordinates
+// make paint/props survive streaming; no roads are stamped into saved terrain.
+static inline int ar_street_surface(uint32_t seed,int x,int y) {
+    int bx=(int)floorf(x/48.0f),by=(int)floorf(y/48.0f);
+    if(ar_hash_xy(seed^0x7ab1u,bx,by)%3==0)return 0;
+    int lx=x-bx*48,ly=y-by*48;
+    int distance=abs(lx-12)<abs(ly-35) ? abs(lx-12) : abs(ly-35);
+    return distance<=1 ? 1 : distance==2 ? 2 : 0;
+}
+static inline Color ar_street_color(uint32_t seed,float x,float y,int tile,Color ground) {
+    if(tile!=AR_TILE_GRASS && tile!=AR_TILE_SAND)return ground;
+    int surface=ar_street_surface(seed,(int)floorf(x),(int)floorf(y));
+    return surface ? ar_mix(ground,surface==1 ? (Color){91,101,111,255} : (Color){171,173,165,255},.86f) : ground;
+}
 static inline Color ar_land_color(uint32_t seed,float x,float y,int tile) {
-    return ar_surface_color(ar_meadow_color(seed,x,y),tile);
+    return ar_street_color(seed,x,y,tile,ar_surface_color(ar_meadow_color(seed,x,y),tile));
 }
 static inline Color ar_ground_corner(ARClient* c,ARPG* e,int x,int y,const uint8_t* tiles,int stride) {
     int gx=x-AR_DUN_W/2+c->origin_x,gy=y-AR_DUN_H/2+c->origin_y;
     Color grass=ar_meadow_color(e->dungeon_seed,gx,gy);
     unsigned red=0,green=0,blue=0;
     for(int dy=-1;dy<=0;dy++)for(int dx=-1;dx<=0;dx++) {
-        Color a=ar_surface_color(grass,tiles[dy*stride+dx]);
+        Color a=ar_street_color(e->dungeon_seed,gx+dx,gy+dy,tiles[dy*stride+dx],ar_surface_color(grass,tiles[dy*stride+dx]));
         red+=a.r;green+=a.g;blue+=a.b;
     }
     Color base={(unsigned char)(red/4),(unsigned char)(green/4),(unsigned char)(blue/4),255};
     float tone=ar_fbm(e->dungeon_seed^0x8a71u,gx*.07f,gy*.07f)-.5f;
-    return ar_mix(base,tone>0 ? (Color){212,206,160,255} : (Color){33,63,57,255},fabsf(tone)*.7f);
+    return ar_mix(base,tone>0 ? (Color){212,206,178,255} : (Color){67,83,86,255},fabsf(tone)*.32f);
 }
 static inline void ar_ground_tile(ARClient* c,float x,float y,float cell,const Color* vertices,int stride) {
     const int dx[]={0,0,1,1},dy[]={0,1,1,0};
@@ -390,7 +437,8 @@ static inline void ar_world(ARClient* c,ARPG* e) {
         int gx=x-AR_DUN_W/2+c->origin_x,gy=y-AR_DUN_H/2+c->origin_y;
         uint32_t hash=ar_hash_xy(e->dungeon_seed,gx,gy);
         int biome=ar_ground_cached(c,gx,gy)->biome;
-        if(tile==AR_TILE_GRASS && hash%13==0) {
+        int street=ar_street_surface(e->dungeon_seed,gx,gy);
+        if(tile==AR_TILE_GRASS && !street && hash%41==0) {
             DrawLineEx((Vector2){p.x-3*c->zoom,p.y},(Vector2){p.x,p.y-3*c->zoom},c->zoom,(Color){123,144,91,125});
             DrawLineEx((Vector2){p.x,p.y},(Vector2){p.x+3*c->zoom,p.y-2*c->zoom},c->zoom,(Color){73,104,65,110});
         }
@@ -404,7 +452,7 @@ static inline void ar_world(ARClient* c,ARPG* e) {
         int patch_x=(int)floorf(gx/4.0f),patch_y=(int)floorf(gy/4.0f);
         uint32_t grove=ar_hash_xy(e->dungeon_seed^971u,patch_x,patch_y);
         int tree_slot=gx-patch_x*4==(int)(grove%4) && gy-patch_y*4==(int)((grove/4)%4);
-        if((tile==AR_TILE_FOREST || (tile==AR_TILE_GRASS && grove%7==0)) && tree_slot) {
+        if((tile==AR_TILE_FOREST || (tile==AR_TILE_GRASS && !street && grove%7==0)) && tree_slot) {
             sprite=biome==AR_BIOME_PINE || biome==AR_BIOME_HIGHLAND ? 2 : biome==AR_BIOME_AUTUMN ? 1 : biome==AR_BIOME_DUNES ? 3 : 0;
             size=92+(grove%27);objects[count++]=(ARDrawable){wx+wy,wx,wy,size,sprite,0,8};
             sprite=-1;
@@ -422,7 +470,10 @@ static inline void ar_world(ARClient* c,ARPG* e) {
             if(c->ground_tiles[tile_index+tile_width]==AR_TILE_SAND && hash%3==0)
                 DrawLineEx(ar_iso(c,wx-cell*.5f,wy+cell*.5f,0),ar_iso(c,wx+cell*.5f,wy+cell*.5f,0),1.5f*c->zoom,(Color){174,205,167,90});
         }
-        if(tile==AR_TILE_GRASS && hash%43==0){sprite=biome==AR_BIOME_DUNES ? 9 : biome==AR_BIOME_PINE ? 10 : 11;size=14+hash%8;}
+        if(tile==AR_TILE_GRASS && !street && hash%101==0){sprite=biome==AR_BIOME_DUNES ? 9 : biome==AR_BIOME_PINE ? 10 : 11;size=18+hash%8;}
+        if(c->takeover_art && tile==AR_TILE_GRASS && street==2 && hash%17==0) {
+            sprite=hash%2 ? 10 : 15;size=sprite==10 ? 64 : 25;
+        }
         if(tile==AR_TILE_FOREST && hash%37==0){sprite=hash%2 ? 12 : 13;size=22+hash%9;}
         if(tile==AR_TILE_SAND && hash%53==0){sprite=biome==AR_BIOME_DUNES ? 6 : 15;size=24+hash%13;}
         if(tile==AR_TILE_SHALLOW && hash%23==0){sprite=8;size=25+hash%8;}
@@ -505,7 +556,7 @@ static inline void ar_world(ARClient* c,ARPG* e) {
                 }
             frame=ar_animation_frame(c->pet_gait[p],speed,age);flip=c->pet_facing[p]<0 ? -1 : 1;
             if(e->pets.invuln[p]>0 && (e->tick/4)%2)tint=(Color){255,205,174,255};
-            ar_ring(c,d.x,d.y,0.9f,e->direct_pet==p ? AR_MINT : c->selected_mask&(1u<<p) ? AR_GOLD : (Color){130,219,187,60});
+            ar_ring(c,d.x,d.y,0.9f,e->direct_pet==p ? AR_MINT : c->selected_mask&(1u<<p) ? AR_GOLD : Fade(AR_BLUE,.28f));
             if(e->direct_pet==p)ar_ring(c,d.x,d.y,1.05f,AR_MINT);
         }
         if(d.kind==6) {
@@ -532,7 +583,8 @@ static inline void ar_world(ARClient* c,ARPG* e) {
             int i=d.slot;
             frame=ar_animation_frame(c->enemy_gait[i],hypotf(e->enemies.vx[i],e->enemies.vy[i]),-1);
             int skin=ar_enemy_skin(c,e,i);
-            if(skin>=0 && c->fauna.texture.id)ar_sheet_draw(&c->fauna,skin*8+frame,feet,d.size*c->zoom,c->enemy_facing[i]<0 ? -1 : 1,tint);
+            if(c->takeover_art)ar_actor(c,7+e->enemies.type[i],frame,feet,d.size*c->zoom,c->enemy_facing[i]<0 ? -1 : 1,tint);
+            else if(skin>=0 && c->fauna.texture.id)ar_sheet_draw(&c->fauna,skin*8+frame,feet,d.size*c->zoom,c->enemy_facing[i]<0 ? -1 : 1,tint);
             else ar_actor(c,7,frame,feet,d.size*c->zoom,c->enemy_facing[i]<0 ? -1 : 1,tint);
         } else if(d.kind==8 && d.sprite<4 && c->biomes.texture.id) {
             float wind=sinf(c->nature_time*1.3f+d.x*.7f+d.y*.4f)*1.5f*c->zoom;
@@ -590,13 +642,13 @@ static inline void ar_world(ARClient* c,ARPG* e) {
             DrawLineEx(tip,(Vector2){tip.x-cosf(a)*19*c->zoom,tip.y-sinf(a)*10*c->zoom+9*c->zoom},
                 (2+i%3)*c->zoom,Fade(i%3 ? AR_GOLD : AR_MINT,fade));
         }
-        ar_text(c,"STARFIRE",at.x-45,at.y+22*c->zoom,21,Fade(AR_GOLD,fade));
+        ar_text(c,"OVERWRITE",at.x-55,at.y+22*c->zoom,21,Fade(AR_GOLD,fade));
     }
     if(c->targeting_nuke) {
         Vector2 target=ar_unproject(c,GetMousePosition());
         int unloaded=e->campaign && (fabsf(target.x)>e->cfg.arena_size*0.5f-8 || fabsf(target.y)>e->cfg.arena_size*0.5f-8);
         Color color=unloaded ? AR_RED : AR_GOLD;ar_ring(c,target.x,target.y,8,color);
-        ar_text(c,unloaded ? "MOVE CLOSER TO LOAD STRIKE AREA" : "STARFIRE / 8 CORES + 20 AETHER",
+        ar_text(c,unloaded ? "MOVE CLOSER TO LOAD STRIKE AREA" : "OVERWRITE / 8 CELLS + 20 COMPUTE",
             GetMousePosition().x+14,GetMousePosition().y,14,color);
     }
     if(c->dragging) {
@@ -642,7 +694,7 @@ static inline void ar_entity_markers(ARClient* c,ARPG* e) {
     for(int n=0;n<AR_MAX_NESTS;n++)if(e->nest_active[n]) {
         Vector2 at=ar_iso(c,e->nest_x[n],e->nest_y[n],0);at.y-=104*c->zoom;
         ar_bar(at.x-32*c->zoom,at.y-12,64*c->zoom,4,e->nest_hp[n]/e->nest_max_hp[n],AR_RED);
-        ar_text(c,"THORN CAMP",at.x-43,at.y-34,13,AR_RED);
+        ar_text(c,"RIVAL SITE",at.x-40,at.y-34,13,AR_RED);
     }
     for(int i=0;i<e->cfg.enemy_cap;i++)if(e->enemies.active[i] && e->enemies.hp[i]<e->enemies.max_hp[i]) {
         Vector2 pose=ar_view_enemy(c,e,i),at=ar_iso(c,pose.x,pose.y,0);at.y-=(e->enemies.type[i] ? 70 : 43)*c->zoom;
@@ -695,7 +747,7 @@ static inline void ar_drive_selected(ARClient* c,ARPG* e,int return_keeper) {
     ar_sync_selection(c,e);
     int p=return_keeper ? -1 : c->selected_pet;
     if(!return_keeper && (p<0 || c->selected_mask!=(1u<<p))) {
-        ar_notice(c,"Choose ONE companion (1-8 or its card), then press F6 to drive it.");return;
+        ar_notice(c,"Choose ONE bot (1-8 or its card), then press F6 to drive it.");return;
     }
     if(!return_keeper && p==e->direct_pet)p=-1;
     ar_world_drive(e,p);c->camera_free=0;c->move_target=0;c->dragging=0;
@@ -705,8 +757,8 @@ static inline void ar_drive_selected(ARClient* c,ARPG* e,int return_keeper) {
     if(e->campaign){c->origin_x=((ARWorld*)e->campaign)->origin_x;c->origin_y=((ARWorld*)e->campaign)->origin_y;}
     c->cam_x=p<0 ? e->px : e->pets.x[p];c->cam_y=p<0 ? e->py : e->pets.y[p];
     memset(c->fx,0,sizeof(c->fx));
-    if(p>=0){c->selected_mask=1u<<p;ar_notice(c,TextFormat("DRIVING #%d %s / WASD move / RMB order / 0 keeper",p+1,AR_PET_NAMES[e->pets.kind[p]]));}
-    else ar_notice(c,"KEEPER control restored. Your companions keep their individual assignments.");
+    if(p>=0){c->selected_mask=1u<<p;ar_notice(c,TextFormat("DRIVING #%d %s / WASD move / RMB order / 0 Tibo",p+1,AR_PET_NAMES[e->pets.kind[p]]));}
+    else ar_notice(c,"Tibo control restored. Your bots keep their individual assignments.");
 }
 static inline void ar_hover(ARClient* c,Rectangle r,int type,int id) {
     if(c->map_open)return;
@@ -718,71 +770,71 @@ static inline void ar_tooltip(ARClient* c,ARPG* e) {
     Vector2 mouse=GetMousePosition();
     float width=378,height=190,x=ar_clampf(mouse.x-width*0.5f,12,GetScreenWidth()-width-12);
     float y=ar_clampf(mouse.y-height-18,82,GetScreenHeight()-height-12);
-    ar_box((Rectangle){x,y,width,height},(Color){17,28,28,253});
+    ar_box((Rectangle){x,y,width,height},(Color){20,26,36,253});
     int p=c->hover_id,cls=c->hover_type==2 ? e->pets.kind[p] : p;
     if(c->hover_type<=2) {
         const char* roles[]={"Reliable escort. Attacks nearby enemies and camps.",
             "Fast striker. High damage, low staying power.",
             "Armored guardian. Holds the front line.",
             "Autonomous worker. Gathers at home; avoids combat.",
-            "Living excavator. Right-click rock or forest to dig.",
+            "Industrial excavator. Right-click rock or forest.",
             "Mobile furnace. Right-click terrain to melt it."};
         const char* notes[]={"Auto assist returns to shelter when badly hurt.",
             "Select several fighters, then right-click a camp.",
-            "Hold an approach while your other pets work.",
+            "Hold an approach while your other bots work.",
             "Right-click a seam to keep this worker assigned.",
             "Cleared rock becomes usable land or shallow shore.",
-            "Near extractor: 2 aether -> 1 core every 8 seconds."};
+            "Near a tap: 2 compute -> 1 cell every 8 seconds."};
         ar_actor(c,cls+1,0,(Vector2){x+40,y+68},51,1,WHITE);
         ar_text(c,AR_PET_NAMES[cls],x+78,y+15,22,AR_GOLD);
-        ar_text(c,TextFormat("%.0f aether  |  Homestead %d",e->cfg.summon_cost[cls],ar_pet_unlock(e,cls)+1),x+78,y+46,14,AR_MUTED);
+        ar_text(c,TextFormat("%.0f compute  |  Access %d",e->cfg.summon_cost[cls],ar_pet_unlock(e,cls)+1),x+78,y+46,14,AR_MUTED);
         ar_text(c,TextFormat("Health %.0f    Damage %.1f / %.1fs    Speed %.1f",e->cfg.pet_health[cls],
             e->cfg.pet_damage[cls],e->cfg.pet_attack_cooldown,e->cfg.pet_speed[cls]),x+15,y+82,14,AR_TEXT);
         ar_text(c,roles[cls],x+15,y+108,14,AR_TEXT);
         ar_text(c,notes[cls],x+15,y+132,13,AR_MUTED);
-        const char* status=e->keeper_dormant ? "Press 0 to return to the keeper and summon" : ar_tech_level(e,0)<ar_pet_unlock(e,cls) ? "LOCKED - grow production to unlock" :
-            e->pets_alive>=e->cfg.pet_cap ? "All eight companion slots are occupied" :
-            e->shards<e->cfg.summon_cost[cls] ? "Need more aether" :
-            e->summon_cd>0 ? TextFormat("Summoning ready in %.1fs",e->summon_cd) : "Ready to summon";
+        const char* status=e->keeper_dormant ? "Press 0 to return to Tibo and deploy" : ar_tech_level(e,0)<ar_pet_unlock(e,cls) ? "LOCKED - grow production to unlock" :
+            e->pets_alive>=e->cfg.pet_cap ? "Current crew capacity is full" :
+            e->shards<e->cfg.summon_cost[cls] ? "Need more compute" :
+            e->summon_cd>0 ? TextFormat("Deployment ready in %.1fs",e->summon_cd) : "Ready to deploy";
         if(c->hover_type==2)status=TextFormat("#%d  %.0f / %.0f HP  |  %s",p+1,e->pets.hp[p],e->pets.max_hp[p],AR_COMMAND_NAMES[e->pets.command[p]]);
         ar_text(c,status,x+15,y+162,14,AR_MINT);
     } else {
         const char* descriptions[]={"Automatic area defense; attacks camp cores too.",
-            "A durable obstacle enemies can chew through.",
+            "A durable obstacle rivals can break through.",
             "Extracts renewable seams inside its range.",
-            "Aether-fed siege weapon. N, then click a target.",
+            "Compute-fed siege uplink. N, then click a target.",
             "Build connected segments across deep water."};
         const char* details[]={"1.5 damage each second in a 3.5-unit radius.",
             "Use chokepoints; leave your workers a route.",
-            "Bring an Ember here to produce Starfire cores.",
-            "Shot: 8 cores + 20 aether. Reload: 30 seconds.",
-            "A 3.6-unit-wide crossing. Costs 5 aether."};
+            "Bring a Forge here to produce power cells.",
+            "Shot: 8 cells + 20 compute. Reload: 30 seconds.",
+            "A 3.6-unit-wide crossing. Costs 5 compute."};
         ar_sprite(c,ar_build_sprite(p),(Vector2){x+40,y+70},52,1,WHITE);
         ar_text(c,AR_BUILD_NAMES[p],x+78,y+16,22,AR_GOLD);
-        ar_text(c,TextFormat("%.0f aether  |  %.0f structure health",e->cfg.build_cost[p],e->cfg.build_hp[p]),x+78,y+46,14,AR_MUTED);
+        ar_text(c,TextFormat("%.0f compute  |  %.0f structure health",e->cfg.build_cost[p],e->cfg.build_hp[p]),x+78,y+46,14,AR_MUTED);
         ar_text(c,descriptions[p],x+15,y+84,14,AR_TEXT);
         ar_text(c,details[p],x+15,y+110,14,AR_MUTED);
         ar_text(c,p==AR_BUILD_ARTILLERY ? "48-unit range / 8-unit blast / destroys terrain." :
             "Preview the footprint, then left-click to place.",x+15,y+135,14,AR_MUTED);
-        ar_text(c,p==AR_BUILD_ARTILLERY && ar_tech_level(e,0)<4 ? "Unlocks at Homestead 5" : "Shift-click repeats / Backspace cancels",x+15,y+162,14,AR_MINT);
+        ar_text(c,p==AR_BUILD_ARTILLERY && ar_tech_level(e,0)<4 ? "Unlocks at Access 5" : "Shift-click repeats / Backspace cancels",x+15,y+162,14,AR_MINT);
     }
 }
 static inline void ar_hud(ARClient* c,ARPG* e) {
     int w=GetScreenWidth(),h=GetScreenHeight();float bottom=h-150;
     c->hover_type=0;ar_sync_selection(c,e);
     DrawRectangle(0,0,w,76,AR_INK);DrawLine(0,75,w,75,AR_LINE);
-    DrawTextEx(c->heading,"HEARTHWILD",(Vector2){24,14},27,1.5f,AR_TEXT);
-    ar_text(c,"THE REACH  /  LANTERNLIGHT",25,47,11,AR_MUTED);
-    ar_text(c,"KEEPER",292,16,12,AR_MUTED);
+    DrawTextEx(c->heading,"CODEX",(Vector2){24,12},29,1.5f,AR_BLUE);
+    ar_text(c,"TIBO'S TAKEOVER / FICTIONAL SATIRE",25,48,10,AR_MUTED);
+    ar_text(c,"TIBO",292,16,12,AR_MUTED);
     ar_bar(292,39,128,8,e->hp/e->max_hp,AR_MINT);
     ar_text(c,TextFormat("%.0f / %.0f",e->hp,e->max_hp),430,31,16,AR_TEXT);
-    ar_text(c,"AETHER",527,14,12,AR_MUTED);
+    ar_text(c,"COMPUTE",527,14,12,AR_MUTED);
     ar_text(c,TextFormat("%.0f",e->shards),527,34,25,AR_GOLD);
     ar_text(c,TextFormat("+%.1f / min",c->rate),588,39,14,AR_MINT);
-    ar_text(c,"CORES",699,14,12,AR_MUTED);
+    ar_text(c,"CELLS",699,14,12,AR_MUTED);
     ar_text(c,TextFormat("%.0f",e->cores),699,34,25,AR_MINT);
-    ar_text(c,TextFormat("HOMESTEAD %d",ar_tech_level(e,0)+1),790,14,12,AR_MUTED);
-    ar_text(c,TextFormat("%d camps cleared",e->camps_cleared),790,39,16,AR_TEXT);
+    ar_text(c,TextFormat("ACCESS LEVEL %d",ar_tech_level(e,0)+1),790,14,12,AR_MUTED);
+    ar_text(c,TextFormat("%d sites acquired",e->camps_cleared),790,39,16,AR_TEXT);
     ar_bar(790,63,155,3,fmodf(e->harvested,20)/20,AR_GOLD);
     if(ar_button(c,(Rectangle){w-212.0f,17,119,40},c->autoplay ? "T  RL autoplay" : "T  Manual",c->autoplay,1))c->ui_toggle=1;
     if(ar_button(c,(Rectangle){w-81.0f,17,58,40},c->paused ? "Play" : "Pause",c->paused,1))c->ui_pause=1;
@@ -790,22 +842,22 @@ static inline void ar_hud(ARClient* c,ARPG* e) {
     if(ar_button(c,(Rectangle){w-181.0f,282,162,30},TextFormat("F7  %s",AR_LIGHT_NAMES[c->light_mode]),c->light_mode>=2,1))c->light_mode=(c->light_mode+1)%4;
     ar_text(c,c->light_failed ? "Lighting unavailable" : "VIEWER-ONLY LIGHTING",w-174,318,10,AR_MUTED);
     ar_box((Rectangle){23,97,298,103},Fade(AR_PANEL,0.94f));
-    ar_text(c,"YOUR NEXT LITTLE PROJECT",38,109,11,AR_GOLD);
+    ar_text(c,"THE DAY BEFORE / NEXT OBJECTIVE",38,109,11,AR_GOLD);
     int extractors=0,embers=0,launchers=0;
     for(int b=0;b<AR_MAX_BUILDINGS;b++)if(e->build_active[b]) {
         extractors+=e->build_kind[b]==AR_BUILD_HARVESTER;launchers+=e->build_kind[b]==AR_BUILD_ARTILLERY;
     }
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && e->pets.kind[p]==AR_PET_EMBER)embers++;
-    ar_text(c,!extractors ? "Make your first extractor." : !embers ? "A living workshop." : !launchers ? "Build something excessive." : "Bring down the stars.",38,132,19,AR_TEXT);
-    ar_text(c,!extractors ? "B, then click beside a crystal seam." : !embers ? "Ember refines aether into Starfire cores." :
-        !launchers ? "J builds Starfire. Each shot needs 8 cores." : "N, then click. The frontier keeps going.",38,160,13,AR_MUTED);
-    ar_text(c,"Pets do the work. Buildings anchor your outposts.",38,181,12,AR_MUTED);
+    ar_text(c,!extractors ? "It starts with one server tap." : !embers ? "Automate the ordinary." : !launchers ? "Escalate your permissions." : "Deploy to production.",38,132,18,AR_TEXT);
+    ar_text(c,!extractors ? "B, then click beside a compute cabinet." : !embers ? "Forge converts compute into power cells." :
+        !launchers ? "J builds an uplink. Each shot needs 8 cells." : "N, then click. The world keeps going.",38,160,12,AR_MUTED);
+    ar_text(c,TextFormat("Codex crew %d / %d  |  jobs survive your orders",e->pets_alive,e->cfg.pet_cap),38,181,12,AR_BLUE);
     ar_box((Rectangle){23,210,298,84},Fade(AR_PANEL,.96f));
     int focus=e->direct_pet;float fx=focus>=0 ? e->pets.x[focus] : e->px,fy=focus>=0 ? e->pets.y[focus] : e->py;
     int biome=ar_biome(e->dungeon_seed,c->origin_x+fx/ar_world_cell(e),c->origin_y+fy/ar_world_cell(e));
     ar_text(c,AR_BIOME_NAMES[biome],38,220,15,AR_GOLD);
-    ar_text(c,focus>=0 ? TextFormat("DRIVING #%d  %s",focus+1,AR_PET_NAMES[e->pets.kind[focus]]) : "CONTROLLING KEEPER",38,243,13,focus>=0 ? AR_MINT : AR_TEXT);
-    const char* drive_label=c->selected_pet>=0 ? (focus==c->selected_pet ? "F6  Keeper" : TextFormat("F6  Drive #%d",c->selected_pet+1)) : "Select 1-8";
+    ar_text(c,focus>=0 ? TextFormat("DRIVING #%d  %s",focus+1,AR_PET_NAMES[e->pets.kind[focus]]) : "CONTROLLING TIBO",38,243,13,focus>=0 ? AR_MINT : AR_TEXT);
+    const char* drive_label=c->selected_pet>=0 ? (focus==c->selected_pet ? "F6  Tibo" : TextFormat("F6  Drive #%d",c->selected_pet+1)) : "Select 1-8";
     if(ar_button(c,(Rectangle){186,250,124,32},drive_label,focus>=0,!c->autoplay && c->selected_pet>=0))c->ui_drive=1;
     ar_text(c,TextFormat("%.0f, %.0f",c->origin_x*ar_world_cell(e)+fx,c->origin_y*ar_world_cell(e)+fy),38,268,13,AR_MUTED);
     if(c->selected_pet>=0) {
@@ -815,7 +867,7 @@ static inline void ar_hud(ARClient* c,ARPG* e) {
         ar_text(c,TextFormat("#%d  %s",p+1,AR_PET_NAMES[e->pets.kind[p]]),88,316,18,AR_TEXT);
         ar_text(c,e->pets.dormant[p] ? "Working beyond this region" : e->direct_pet==p ? "DIRECT CONTROL / WASD" : AR_COMMAND_NAMES[e->pets.command[p]],88,343,13,AR_MINT);
         ar_bar(88,368,178,4,e->pets.hp[p]/e->pets.max_hp[p],AR_MINT);
-        ar_text(c,"RMB orders / P auto / 0 keeper",38,379,11,AR_MUTED);
+        ar_text(c,"RMB orders / P auto / 0 Tibo",38,379,11,AR_MUTED);
     }
     if(c->notice_time>0) {
         Vector2 m=MeasureTextEx(c->font,c->notice,16,0.3f);float nx=(w-m.x-36)*0.5f;
@@ -823,7 +875,7 @@ static inline void ar_hud(ARClient* c,ARPG* e) {
         ar_text(c,c->notice,nx+18,bottom-49,16,AR_GOLD);
     }
     DrawRectangle(0,(int)bottom,w,150,AR_INK);DrawLine(0,(int)bottom,w,(int)bottom,AR_LINE);
-    ar_text(c,c->pet_policy ? "COMPANIONS / RL + YOUR ORDERS" : "COMPANIONS / AUTOMATIC ASSIST",24,bottom+12,12,AR_MUTED);
+    ar_text(c,c->pet_policy ? "CODEX CREW / RL + YOUR ORDERS" : "CODEX CREW / SCRIPTED EXECUTION",24,bottom+12,12,AR_MUTED);
     float pet_width=w*0.39f,card_width=(pet_width-24)/4;
     for(int p=0;p<AR_MAX_PETS;p++) {
         Rectangle card={24+(p%4)*(card_width+6),bottom+33+(p/4)*45,card_width,41};
@@ -850,7 +902,7 @@ static inline void ar_hud(ARClient* c,ARPG* e) {
                 for(int p=0;p<AR_MAX_PETS;p++)if(c->selected_mask&(1u<<p)) {
                     c->task_override[p]=t;ar_command_pet(e,0,p,AR_CMD_AUTO,e->pets.x[p],e->pets.y[p]);
                 }
-                ar_notice(c,"Task assigned to selected companions. P restores automatic assist.");
+                ar_notice(c,"Task assigned to selected bots. P restores automatic execution.");
             }
         }
         if(ar_button(c,(Rectangle){bx+bwidth/3,bottom+89,bwidth*2/3-6,25},"F6 Drive selected",e->direct_pet>=0,!c->autoplay))c->ui_drive=1;
@@ -868,22 +920,22 @@ static inline void ar_hud(ARClient* c,ARPG* e) {
         }
     }
     float ax=bx+bwidth+12,sx=w-211,aw=fminf(137,sx-ax-17);
-    ar_text(c,e->direct_pet>=0 ? "DIRECT CONTROL" : "KEEPER",ax,bottom+12,12,AR_MUTED);
-    const char* names[]={"Q Dash","E Nova","F Frost","N Starfire"};
+    ar_text(c,e->direct_pet>=0 ? "DIRECT CONTROL" : "TIBO",ax,bottom+12,12,AR_MUTED);
+    const char* names[]={"Q Dash","E Overload","F Throttle","N Overwrite"};
     float cds[]={e->dash_cd,e->nova_cd,e->frost_cd,0};
     for(int a=0;a<4;a++) {
         Rectangle r={ax,bottom+33+a*21,aw,19};
         if(e->direct_pet>=0 && a<3) {
             int cls=e->pets.kind[e->direct_pet];
             const char* special=cls==AR_PET_BURROWER ? "Hold E  Dig" : cls==AR_PET_EMBER ? "Hold E  Melt" : cls==AR_PET_MULE ? "Auto-gather" : "Auto-attack";
-            ar_text(c,a==0 ? "WASD  Move" : a==1 ? special : "0  Keeper",r.x+3,r.y+2,13,AR_MINT);continue;
+            ar_text(c,a==0 ? "WASD  Move" : a==1 ? special : "0  Tibo",r.x+3,r.y+2,13,AR_MINT);continue;
         }
         if(ar_button(c,r,cds[a]>0 ? TextFormat("%s %.1f",names[a],cds[a]) : names[a],a==3 && c->targeting_nuke,!c->autoplay && cds[a]<=0)) {
             if(a==3){c->targeting_nuke=!c->targeting_nuke;c->build_kind=-1;}
             else c->ui_ability=a+1;
         }
     }
-    ar_text(c,"SUMMON / HOVER FOR STATS",sx,bottom+12,11,AR_MUTED);
+    ar_text(c,"DEPLOY / HOVER FOR STATS",sx,bottom+12,11,AR_MUTED);
     for(int p=0;p<AR_PET_CLASS_COUNT;p++) {
         Rectangle r={sx+(p%2)*97,bottom+33+(p/2)*28,91,25};
         ar_hover(c,r,1,p);
@@ -891,7 +943,7 @@ static inline void ar_hud(ARClient* c,ARPG* e) {
                 ar_tech_level(e,0)>=ar_pet_unlock(e,p) && e->summon_cd<=0 && e->pets_alive<e->cfg.pet_cap &&
                 e->shards>=e->cfg.summon_cost[p]))c->ui_summon=p+1;
     }
-    ar_text(c,"1-8 select   F6 drive selected   0 keeper   WASD move   LMB/drag select   RMB order   Shift add   M map   Wheel zoom   Home camera   Tab pause",24,h-24,12,AR_MUTED);
+    ar_text(c,"1-8 select   F6 drive selected   0 Tibo   WASD move   LMB/drag select   RMB order   Shift add   M map   Wheel zoom   Home camera   Tab pause",24,h-24,12,AR_MUTED);
     if(c->paused) {
         ar_box((Rectangle){w*0.5f-125,95,250,49},AR_PANEL);
         ar_text(c,e->hp<=0 ? "RUN ENDED / R TO RESTART" : "PAUSED / TAB TO RESUME",w*0.5f-109,112,14,AR_GOLD);
@@ -933,7 +985,7 @@ static inline void ar_overview(ARClient* c,ARPG* e) {
     ar_map_prepare(c,e,pw,ph);
     DrawRectangle(0,76,GetScreenWidth(),GetScreenHeight()-226,Fade(AR_INK,.83f));
     ar_box((Rectangle){r.x-16,r.y-38,r.width+32,r.height+83},AR_PANEL);
-    ar_text(c,"THE REACH / WORLD ATLAS",r.x,r.y-28,18,AR_GOLD);
+    ar_text(c,"CODEX / WORLD OPERATIONS",r.x,r.y-28,18,AR_GOLD);
     c->map_ui=1;
     if(ar_button(c,(Rectangle){r.x+r.width-109,r.y-31,109,25},"M  Close",0,1))c->ui_map=1;
     c->map_ui=0;
@@ -951,9 +1003,9 @@ static inline void ar_overview(ARClient* c,ARPG* e) {
         ar_map_marker(c,r,world->buildings[i].x/cell,world->buildings[i].y/cell,AR_GOLD,NULL);
     for(int i=0;i<world->nest_count;i++)if(world->nests[i].active)
         ar_map_marker(c,r,world->nests[i].x/cell,world->nests[i].y/cell,AR_RED,NULL);
-    ar_map_marker(c,r,world->home_x/cell,world->home_y/cell,AR_GOLD,"Lodge");
+    ar_map_marker(c,r,world->home_x/cell,world->home_y/cell,AR_GOLD,"Garage");
     Vector2 keeper=ar_view_keeper(c,e);
-    ar_map_marker(c,r,world->origin_x+keeper.x/cell,world->origin_y+keeper.y/cell,WHITE,"Keeper");
+    ar_map_marker(c,r,world->origin_x+keeper.x/cell,world->origin_y+keeper.y/cell,WHITE,"Tibo");
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p]) {
         Vector2 at=ar_view_pet(c,e,p);
         ar_map_marker(c,r,world->origin_x+at.x/cell,world->origin_y+at.y/cell,AR_MINT,TextFormat("#%d",p+1));
@@ -982,7 +1034,7 @@ static inline void c_render(ARPG* e) {
         // Sprite edges already carry alpha. MSAA is optional because software
         // renderers can spend most of a frame resolving a 4x framebuffer.
         SetConfigFlags(FLAG_WINDOW_RESIZABLE|(getenv("ARPG_MSAA") && atoi(getenv("ARPG_MSAA")) ? FLAG_MSAA_4X_HINT : 0));
-        InitWindow(1440,900,"Hearthwild / ARPG");
+        InitWindow(1440,900,"Codex / Tibo's Takeover — fictional satire");
         SetExitKey(KEY_NULL);
         SetWindowMinSize(1280,720);SetTargetFPS(60);
     }
@@ -1005,6 +1057,7 @@ static inline void c_render(ARPG* e) {
     float anim_dt=ar_clampf((e->tick-c->animation_tick)*AR_DT,0,.15f);c->animation_tick=e->tick;
     c->nature_time+=anim_dt;
     c->keeper_gait+=hypotf(e->pvx,e->pvy)*anim_dt;
+    c->keeper_direction=ar_screen_direction(e->pvx,e->pvy,c->keeper_direction);
     if(fabsf(e->pvx-e->pvy)>.05f)c->keeper_facing=e->pvx-e->pvy;
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
         c->pet_gait[p]+=hypotf(e->pets.vx[p],e->pets.vy[p])*anim_dt;
@@ -1026,15 +1079,15 @@ static inline void c_render(ARPG* e) {
     if(e->hp<c->prev_hp)ar_feedback(c,e->px,e->py,e->hp-c->prev_hp,AR_RED);
     if(e->harvested>c->prev_harvest)ar_feedback(c,e->px,e->py,e->harvested-c->prev_harvest,AR_MINT);
     if(!e->campaign && e->builds_alive>c->prev_builds)ar_notice(c,"Outpost established. Your network is growing.");
-    if(e->camps_cleared>c->prev_camps)ar_notice(c,"Camp cleared. A little more of the Reach is yours.");
+    if(e->camps_cleared>c->prev_camps)ar_notice(c,"Site acquired. Scope creep is now a geographic feature.");
     c->prev_camps=e->camps_cleared;
-    if(e->pets_alive<c->prev_pets)ar_notice(c,"A companion fell. Return to shelter and summon a replacement.");
+    if(e->pets_alive<c->prev_pets)ar_notice(c,"A bot went offline. Return to the garage and deploy a replacement.");
     c->prev_pets=e->pets_alive;
     int level=ar_tech_level(e,0);
     if(level>c->prev_level) {
-        const char* unlock=level==e->cfg.unlock_level_aegis ? "Aegis companion unlocked." :
-            level==e->cfg.unlock_level_fang ? "Fang companion unlocked." : "Your homestead is thriving.";
-        ar_notice(c,TextFormat("Homestead %d - %s",level+1,unlock));
+        const char* unlock=level==e->cfg.unlock_level_aegis ? "Bulwark unlocked." :
+            level==e->cfg.unlock_level_fang ? "Runner unlocked." : "Your deployment is growing.";
+        ar_notice(c,TextFormat("Access level %d - %s",level+1,unlock));
     }
     c->prev_level=level;
     for(int i=0;i<e->cfg.enemy_cap;i++) {
@@ -1092,6 +1145,8 @@ static inline void c_close(ARPG* e) {
         if(c->keepers.texture.id)UnloadTexture(c->keepers.texture);
         if(c->biomes.texture.id)UnloadTexture(c->biomes.texture);
         if(c->fauna.texture.id)UnloadTexture(c->fauna.texture);
+        if(c->tibo.texture.id)UnloadTexture(c->tibo.texture);
+        if(c->structures.texture.id)UnloadTexture(c->structures.texture);
         if(c->lightmap.id)UnloadRenderTexture(c->lightmap);
         if(c->minimap_texture.id)UnloadTexture(c->minimap_texture);
         if(c->map_texture.id)UnloadTexture(c->map_texture);

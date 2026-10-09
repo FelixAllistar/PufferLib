@@ -1,0 +1,12 @@
+{
+  "command": [
+    "build/mario_fpg_time/puffer",
+    "train",
+    "--base.run_id=curriculum_trial_20261004",
+    "--train.total_timesteps=16777216",
+    "--base.checkpoint_interval=16"
+  ],
+  "exit_code": 0,
+  "requested_frames": 16777216,
+  "wall_seconds": 207.81198830300127
+}

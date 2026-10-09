@@ -1,5 +1,8 @@
 # Family implementation rules
 
+- Follow the standing resource instruction in `../AGENTS.md`: if system
+  resources constrain progress, pause the goal, alert the user with evidence,
+  and wait for direction. Do not introduce resource workarounds.
 - Current user coordination rule: on 2026-09-29 the user confirmed "sweep is
   dead", clearing root's build hold. Only the root integrating agent may run
   Bend, compilers, builds, tests or browsers, one family at a time under the

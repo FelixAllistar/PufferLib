@@ -1,0 +1,9 @@
+{
+  "backend": "cpu",
+  "frames": 1048576,
+  "wall_seconds": 22.22975016000055,
+  "wall_frames_per_second": 47169.94084291472,
+  "run_id": "runtime_cpu_perf_20261003",
+  "ppo_included": true,
+  "startup_included": true
+}

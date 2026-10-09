@@ -1,0 +1,65 @@
+{
+  "format": "fpg_reference_v1",
+  "created_utc": "2026-10-02T15:46:25.914440+00:00",
+  "rom_fingerprint": "6e01246e5d215cb3",
+  "rom_sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea",
+  "rom_bundled": false,
+  "ram_writes": false,
+  "prefix": {
+    "file": "learned_pipe_route.actions",
+    "encoding": "Mario Lab six-bit actions; A1 B2 Up4 Down8 Left16 Right32",
+    "source": "logs/mario_lab/transfers/evaluate_corrected-buttons-frozen_20261001T135148Z_c47baa70/episodes.jsonl",
+    "episode": 20,
+    "source_type": "learned synthetic policy, frozen evaluation on ROM",
+    "sha256": "10798f42a1dade79745763712f2257e077673668d7409dd47bfccdd65ff286b4",
+    "start_frame": 1510
+  },
+  "suffix": {
+    "file": "fpg_suffix.actions",
+    "encoding": "0..11 via fpg_buttons in fpg_core.h",
+    "source_type": "bounded simulation beam search from reachable ROM stair state; exact ROM replay checked",
+    "frames": 100,
+    "sha256": "4f8425558423237b1294227bd19f14981c3471f12f43f0133619aec243c562c0",
+    "all_controller_states_match": true,
+    "grab_y": 164,
+    "flag_y_before": 48,
+    "flag_y_after": 48,
+    "routine_after": 5,
+    "perfect_tas": false
+  },
+  "qualification": {
+    "scope": "small-player normal gameplay, natural 1-1 end section X >= 2800, through initial flag contact",
+    "tapes": [
+      {
+        "frames": 358,
+        "checks": 4296,
+        "failed": 0,
+        "fields": {},
+        "episode": 7
+      },
+      {
+        "frames": 337,
+        "checks": 4044,
+        "failed": 0,
+        "fields": {},
+        "episode": 20
+      },
+      {
+        "frames": 321,
+        "checks": 3852,
+        "failed": 0,
+        "fields": {},
+        "episode": 26
+      },
+      {
+        "frames": 246,
+        "checks": 2952,
+        "failed": 0,
+        "fields": {},
+        "episode": 41
+      }
+    ],
+    "checks": 15144,
+    "failures": 0
+  }
+}

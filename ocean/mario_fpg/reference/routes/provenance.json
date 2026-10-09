@@ -1,0 +1,27 @@
+{
+  "source_type": "earlier frozen synthetic-policy evaluation on the user ROM",
+  "ram_writes": false,
+  "routes": [
+    {
+      "episode": 7,
+      "file": "episode_7.actions",
+      "sha256": "abc206ba814f3d015b4d1e16e1768776e75197b8df1cf45d40b5112934a6751e",
+      "source": "logs/mario_lab/transfers/evaluate_corrected-buttons-frozen_20261001T135148Z_c47baa70/episodes.jsonl",
+      "encoding": "Mario Lab six-bit actions; A1 B2 Up4 Down8 Left16 Right32"
+    },
+    {
+      "episode": 26,
+      "file": "episode_26.actions",
+      "sha256": "884d171754a23e2e5616377de2445f1b77667f0a292a6b188003fee07f1c7e16",
+      "source": "logs/mario_lab/transfers/evaluate_corrected-buttons-frozen_20261001T135148Z_c47baa70/episodes.jsonl",
+      "encoding": "Mario Lab six-bit actions; A1 B2 Up4 Down8 Left16 Right32"
+    },
+    {
+      "episode": 41,
+      "file": "episode_41.actions",
+      "sha256": "7a261b7658f5e641117f39330456aefd2e0e7511e8f8019eb8eecc9d122b6962",
+      "source": "logs/mario_lab/transfers/evaluate_corrected-buttons-frozen_20261001T135148Z_c47baa70/episodes.jsonl",
+      "encoding": "Mario Lab six-bit actions; A1 B2 Up4 Down8 Left16 Right32"
+    }
+  ]
+}

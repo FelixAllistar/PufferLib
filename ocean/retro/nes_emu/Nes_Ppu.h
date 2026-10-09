@@ -43,6 +43,13 @@ public:
 	void dma_sprites( nes_time_t, void const* in );
 	
 	int burst_phase;
+	void frame_clock_debug(int out[10]) const {
+		out[0]=w2000; out[1]=w2001; out[2]=r2002;
+		out[3]=(int)sprite_hit_found; out[4]=spr_ram[0];
+		out[5]=spr_ram[3]; out[6]=spr_ram[1];
+		out[7]=open_bus; out[8]=decay_low; out[9]=decay_high;
+	}
+	void sprite_ram_debug(uint8_t out[256]) const { memcpy(out,spr_ram,256); }
 	
 private:
 	

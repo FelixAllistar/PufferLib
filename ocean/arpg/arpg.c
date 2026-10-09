@@ -1,4 +1,4 @@
-// Hearthwild viewer. Manual keeper + model pet tasks, or full policy autoplay.
+// Codex / Tibo's Takeover viewer. Manual keeper + model pet tasks, or policy autoplay.
 // Build, controls, model contract, and test commands: README.md.
 #include "arpg.h"
 #include "puffercpu.c"
@@ -338,8 +338,8 @@ static void ar_context_order(ARPG* e,ARClient* c,Vector2 mouse,int attack_move) 
         else {
             if(ar_geometry_floor(e->dungeon,e->cfg.arena_size,goal.x,goal.y)) {
                 c->move_target=1;c->move_x=goal.x;c->move_y=goal.y;
-                ar_notice(c,"Keeper destination set. WASD cancels walking; companions keep their assignments.");
-            } else ar_notice(c,"Choose reachable ground. Select a companion (1-8) to give it an order.");
+                ar_notice(c,"Tibo destination set. WASD cancels walking; bots keep their assignments.");
+            } else ar_notice(c,"Choose reachable ground. Select a bot (1-8) to give it an order.");
             return;
         }
     }
@@ -379,8 +379,8 @@ static void ar_context_order(ARPG* e,ARClient* c,Vector2 mouse,int attack_move) 
         if(command==AR_CMD_MOVE && (tile==AR_TILE_ROCK || tile==AR_TILE_DEEP))continue;
         ar_command_pet(e,0,p,command,goal.x,goal.y);issued++;
     }
-    if(issued)ar_notice(c,TextFormat("%s assigned to %d companion%s. P restores automatic assist.",AR_COMMAND_NAMES[command],issued,issued==1 ? "" : "s"));
-    else ar_notice(c,command==AR_CMD_WORK ? "Select a Burrower or Ember to work this terrain." : "Select companions first, or choose reachable ground.");
+    if(issued)ar_notice(c,TextFormat("%s assigned to %d bot%s. P restores automatic execution.",AR_COMMAND_NAMES[command],issued,issued==1 ? "" : "s"));
+    else ar_notice(c,command==AR_CMD_WORK ? "Select a Borer or Forge to work this terrain." : "Select bots first, or choose reachable ground.");
     c->build_kind=-1;c->targeting_nuke=0;ar_compute_observations(e,0);
 }
 
@@ -453,7 +453,7 @@ int main(int argc,char** argv) {
     ar_pose_reset(client,&e);
     client->autoplay=watch;client->pet_policy=net!=NULL;
     if(e.campaign)for(int p=0;p<AR_MAX_PETS;p++)client->task_override[p]=((ARWorld*)e.campaign)->task_override[p];
-    if(loaded)ar_notice(client,"Frontier restored. Your outposts, companions, and terrain changes are here.");
+    if(loaded)ar_notice(client,"World restored. Your sites, Codex crew, and terrain changes are here.");
     double accumulator=0;
     double reset_armed_until=0;
     int next_save_tick=e.tick+3600;
@@ -537,7 +537,7 @@ int main(int argc,char** argv) {
                 client->task_override[p]=-1;ar_command_pet(&e,0,p,AR_CMD_AUTO,e.pets.x[p],e.pets.y[p]);
             }
             client->pet_policy=net!=NULL;
-            ar_notice(client,net ? "Pet policy restored; manual task overrides cleared." : "Scripted companion assist restored. No RL checkpoint loaded.");
+            ar_notice(client,net ? "Bot policy restored; manual task overrides cleared." : "Scripted bot execution restored. No RL checkpoint loaded.");
         }
         Vector2 mouse=GetMousePosition();
         int in_world=ar_world_pointer(client,mouse,GetScreenWidth(),GetScreenHeight());
@@ -558,7 +558,7 @@ int main(int argc,char** argv) {
                 if(ar_binding_pressed(controls.order_focus))human_order=AR_ORDER_FOCUS;
             }
             if(ar_binding_pressed(controls.summon)) {
-                if(e.keeper_dormant)ar_notice(client,"0 returns to the keeper. Summoning and construction originate there.");
+                if(e.keeper_dormant)ar_notice(client,"0 returns to Tibo. Deployment and construction originate there.");
                 else actions[1]=(float)e.pick_class+1;
             }
             if(client->ui_summon){actions[1]=(float)client->ui_summon;e.pick_class=client->ui_summon-1;client->ui_summon=0;}
@@ -580,7 +580,7 @@ int main(int argc,char** argv) {
                 for(int p=0;p<AR_MAX_PETS;p++)if((client->selected_mask&(1u<<p)) && e.pets.active[p]) {
                     e.shards+=e.cfg.summon_cost[e.pets.kind[p]]*0.5f;ar_free_pet(&e,0,p);client->task_override[p]=-1;
                 }
-                client->selected_mask=0;ar_notice(client,"Selected summons released. Half their aether cost was returned.");
+                client->selected_mask=0;ar_notice(client,"Selected bots retired. Half their compute cost was returned.");
                 if(driver>=0 && e.direct_pet<0)ar_drive_selected(client,&e,1);
             }
             for(int g=0;g<4;g++)if(IsKeyPressed(KEY_F1+g)) {
@@ -590,10 +590,10 @@ int main(int argc,char** argv) {
             if(in_world && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 Vector2 world=ar_unproject(client,mouse);
                 if(client->targeting_nuke) {
-                    if(ar_fire_artillery(&e,0,world.x,world.y)) {client->targeting_nuke=0;ar_notice(client,"STARFIRE. A new landscape begins.");}
+                    if(ar_fire_artillery(&e,0,world.x,world.y)) {client->targeting_nuke=0;ar_notice(client,"OVERWRITE. Deploying landscape changes.");}
                     else if(e.campaign && (fabsf(world.x)>e.cfg.arena_size*0.5f-8 || fabsf(world.y)>e.cfg.arena_size*0.5f-8))
                         ar_notice(client,"Move closer to load the whole strike area. No ammunition was spent.");
-                    else ar_notice(client,"Need a ready Starfire within 48 units, 8 cores, and 20 aether.");
+                    else ar_notice(client,"Need a ready uplink within 48 units, 8 cells, and 20 compute.");
                 } else if(client->build_kind>=0) {
                     if(ar_geometry_dist2(e.px,e.py,world.x,world.y)>144)
                         ar_notice(client,"Move closer to build here (12-unit construction reach).");
@@ -602,7 +602,7 @@ int main(int argc,char** argv) {
                         if(!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_RIGHT_SHIFT))client->build_kind=-1;
                         ar_compute_observations(&e,0);
                     }
-                    else ar_notice(client,"Cannot build here: check aether, footprint, and clear ground.");
+                    else ar_notice(client,"Cannot build here: check compute, footprint, and clear ground.");
                 } else {
                     client->drag_start=mouse;client->dragging=1;
                 }
@@ -662,12 +662,12 @@ int main(int argc,char** argv) {
             if(old_driver>=0 && e.direct_pet<0)ar_drive_selected(client,&e,1);
             if(e.campaign && ((ARWorld*)e.campaign)->respawns>respawns) {
                 client->move_target=0;client->camera_free=0;
-                ar_notice(client,"Returned to your lodge. Recovery costs 5 aether; your industry remains.");
+                ar_notice(client,"Returned to your garage. Recovery costs 5 compute; your industry remains.");
             }
             if(!client->autoplay){actions[1]=0;actions[3]=0;actions[4]=0;}
             if(terminals[0]>0) {
                 if(client->autoplay){c_reset(&e);ar_reset_policy(net);}
-                else {client->paused=1;ar_notice(client,"Run complete. R starts a fresh homestead.");}
+                else {client->paused=1;ar_notice(client,"Run complete. R starts a fresh deployment.");}
                 accumulator=0;break;
             }
         }

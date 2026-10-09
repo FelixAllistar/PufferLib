@@ -1,0 +1,16 @@
+{
+  "bitwise_observations": true,
+  "case_begin": 0,
+  "case_end": 11396,
+  "cases": 11396,
+  "execution": "two contiguous batch-aligned ranges",
+  "failures": 0,
+  "frames": 1178672,
+  "scope": "video_frame_clips",
+  "shard_files": [
+    "cuda_part_0.json",
+    "cuda_part_1.json"
+  ],
+  "source_cases": 11396,
+  "source_frames": 1178672
+}

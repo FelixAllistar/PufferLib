@@ -15,6 +15,17 @@ directly for these families to bypass this protection. Older MiniWoB scripts,
 standalone browser tests, and unrelated training commands are not covered by
 this family build wrapper.
 
+Reusable units use the same entry, lock and guard:
+`node ocean/webnav/families/build.cjs primitive:browser --test` or
+`node ocean/webnav/families/build.cjs app:record_browser --test`.
+If system resources constrain progress, pause the goal, alert the user with
+the limiting resource and evidence, and wait for direction. Do not change
+limits, timeouts, implementation semantics or validation to work around the
+constraint. This standing user instruction is recorded in [../AGENTS.md](../AGENTS.md).
+Successful builds record
+source hashes and the native checks actually run in the build directory's
+`validation.json`; this receipt makes no browser or learning claim.
+
 ## Incident, 2026-09-23
 
 Before a WSL restart, click-family CPU code generation was observed using over
@@ -24,9 +35,11 @@ code generation. Following restart, journals showed an unclean shutdown; no
 saved global OOM record was found in the searched incident interval. Memory
 exhaustion is the leading hypothesis, not a proven cause of the VM failure.
 
-No compiler jobs survived the restart. The user authorized resuming with a 6 GiB cap after the initial 2 GiB
-containment check. Investigate source/compiler growth within this cap. Reduce compilation units or
-source complexity within the limit; do not raise it automatically.
+No compiler jobs survived the restart. The user authorized resuming with a
+6 GiB cap after the initial 2 GiB containment check. The current coordination
+rule supersedes the earlier instruction to work around source/compiler growth:
+if the cap constrains progress, pause the goal and alert the user. Do not raise
+it automatically.
 
 The click build subsequently completed within the cap after replacing bounded
 U32 literal dispatch with Nat dispatch in the synonym table, generator and

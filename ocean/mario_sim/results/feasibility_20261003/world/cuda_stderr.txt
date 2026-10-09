@@ -1,0 +1,4 @@
+CUDA 256/896 selected cases, 26068 frames, 0 failures
+CUDA 512/896 selected cases, 52136 frames, 0 failures
+CUDA 768/896 selected cases, 78204 frames, 0 failures
+CUDA 896/896 selected cases, 92672 frames, 0 failures

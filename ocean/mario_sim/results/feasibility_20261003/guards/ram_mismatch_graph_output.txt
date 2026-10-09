@@ -1,0 +1,4 @@
+{"scope":"video_frame_clips","cases":257,"frames":257,"failures":1,"bitwise_observations":true,"source_cases":257,"source_frames":257,"case_begin":0,"case_end":257}
+CUDA 256/257 selected cases, 256 frames, 0 failures
+CUDA case=256 frame=0 field=0 fault=0
+CUDA 257/257 selected cases, 257 frames, 1 failures

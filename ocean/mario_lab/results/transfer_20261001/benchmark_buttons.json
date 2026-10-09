@@ -1,0 +1,33 @@
+{
+  "command": [
+    "build/mario_lab/bench_cuda",
+    "4096",
+    "4096",
+    "logs/mario_lab/experiments/TRANSFER001_button-semantics_20261001T134625Z_744fe092/config/mario_lab.ini"
+  ],
+  "measurement": {
+    "gpu": "NVIDIA GeForce GTX 1060 3GB",
+    "envs": 4096,
+    "steps": 4096,
+    "seconds": 5.696623,
+    "decisions_per_second": 2945116,
+    "frames_per_decision": 1,
+    "warmup_steps": 64,
+    "seed": 73,
+    "split": 0,
+    "course": 0,
+    "difficulty": 2,
+    "length": 96,
+    "max_frames": 2400,
+    "physics_mode": 2,
+    "observations": 1128,
+    "state_bytes": 6140,
+    "episodes_including_warmup": 23394,
+    "scripted_clears_including_warmup": 21776,
+    "includes_policy_training": false
+  },
+  "config_sha256": "68cde65ac03bfbe2169d4e6e0097d9b5ddb6effda8932df2d186b8b631bbfda8",
+  "core_sha256": "6e13199e6d1db7ddc300e5b0581e1407fdf9acd95729e8d1b8a0e8afae7c4cd1",
+  "binary_sha256": "c60d48f6b58d7865ab23e67c4157f1b4867dc9194cef24a3d536abcceff3d490",
+  "concurrent_gpu_training": false
+}

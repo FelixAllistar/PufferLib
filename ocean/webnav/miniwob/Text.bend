@@ -1,5 +1,6 @@
 import Base
 import ./Widgets.bend as W
+import ../primitives/text/Model.bend as E
 
 # Text units are explicit. The current browser/ABI preset accepts ASCII;
 # Unicode grapheme navigation and IME require a separate contract.
@@ -17,18 +18,13 @@ type Edit is Data:
   SelectAll{}
 
 def length(xs: +List<U32>) -> Nat:
-  List.length(&2, U32, xs)
+  E.length(xs)
 
 def pred(n: Nat) -> Nat:
-  match n:
-    case 0n: 0n
-    case 1n+p: p
+  E.pred(n)
 
 def equal(a: +List<U32>, b: +List<U32>) -> Bool:
-  match a b:
-    case Nil{} Nil{}: True{}
-    case Con{x, xs} Con{y, ys}: U32.is_eq(x, y) && equal(xs, ys)
-    case _ _: False{}
+  E.equal(a, b)
 
 def goal(f: Field) -> +List<U32>:
   F{value, start, end, target} = f
@@ -38,42 +34,47 @@ def value(f: Field) -> +List<U32>:
   F{xs, start, end, target} = f
   xs
 
-def collapse(f: Field, +at: Nat) -> Field:
-  F{xs, start, end, target} = f
-  F{xs, at, at, target}
+# Compatibility wrapper retains the legacy constructors and private target.
+# All editing transitions delegate to the goal-free primitive.
+def from_core(f: E.Field, target: +List<U32>) -> Field:
+  E.F{xs, start, end} = f
+  F{xs, start, end, target}
 
-def replace(f: Field, +inserted: +List<U32>) -> Field:
-  F{+xs, +start, end, target} = f
-  +cursor = Nat.add(start, length(inserted))
-  F{List.append(&2, U32, List.take(&2, U32, xs, start), List.append(&2, U32, inserted, List.drop(&2, U32, xs, end))), cursor, cursor, target}
+def collapse(f: Field, at: Nat) -> Field:
+  F{xs, start, end_, target} = f
+  from_core(E.collapse(E.F{xs, start, end_}, at), target)
+
+def replace(f: Field, inserted: +List<U32>) -> Field:
+  F{xs, start, end_, target} = f
+  from_core(E.replace(E.F{xs, start, end_}, inserted), target)
 
 def range(f: Field, start: Nat, end: Nat) -> Field:
   F{xs, old_start, old_end, target} = f
-  F{xs, start, end, target}
+  from_core(E.range(E.F{xs, old_start, old_end}, start, end), target)
 
-def backspace(+f: Field) -> Field:
-  F{xs, +start, +end, target} = f
-  replace(range(f, Bool.pick(Nat, Nat.is_eq(start, end), pred(start), start), end), Nil{})
-
-def delete(+f: Field) -> Field:
-  F{+xs, +start, +end, target} = f
-  replace(range(f, start, Bool.pick(Nat, Nat.is_eq(start, end), Nat.min(length(xs), 1n+end), end)), Nil{})
-
-def left(+f: Field) -> Field:
-  F{xs, +start, end, target} = f
-  collapse(f, Bool.pick(Nat, Nat.is_eq(start, end), pred(start), start))
-
-def right(+f: Field) -> Field:
-  F{xs, start, +end, target} = f
-  collapse(f, Bool.pick(Nat, Nat.is_eq(start, end), Nat.min(length(xs), 1n+end), end))
-
-def end(+f: Field) -> Field:
+def backspace(f: Field) -> Field:
   F{xs, start, end_, target} = f
-  collapse(f, length(xs))
+  from_core(E.backspace(E.F{xs, start, end_}), target)
 
-def select_all(+f: Field) -> Field:
+def delete(f: Field) -> Field:
   F{xs, start, end_, target} = f
-  range(f, 0n, length(xs))
+  from_core(E.delete(E.F{xs, start, end_}), target)
+
+def left(f: Field) -> Field:
+  F{xs, start, end_, target} = f
+  from_core(E.left(E.F{xs, start, end_}), target)
+
+def right(f: Field) -> Field:
+  F{xs, start, end_, target} = f
+  from_core(E.right(E.F{xs, start, end_}), target)
+
+def end(f: Field) -> Field:
+  F{xs, start, end_, target} = f
+  from_core(E.end(E.F{xs, start, end_}), target)
+
+def select_all(f: Field) -> Field:
+  F{xs, start, end_, target} = f
+  from_core(E.select_all(E.F{xs, start, end_}), target)
 
 def edit(action: Edit, f: Field) -> Field:
   match action:

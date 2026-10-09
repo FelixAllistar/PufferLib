@@ -1,0 +1,380 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "observation_version": 1,
+  "architecture": {
+    "transport_values": 1461,
+    "player_fields": 64,
+    "terrain_grid": [
+      13,
+      17
+    ],
+    "terrain_channels": 12,
+    "entity_slots": 49,
+    "entity_fields": 24,
+    "conv_channels": [
+      8,
+      8
+    ],
+    "conv_strides": [
+      2,
+      1
+    ],
+    "terrain_hidden": 64,
+    "player_hidden": 32,
+    "entity_hidden": [
+      32,
+      32
+    ],
+    "pooling": [
+      "masked_max",
+      "masked_mean",
+      "count"
+    ],
+    "recurrent_hidden": 64,
+    "recurrent_layers": 2,
+    "encoder_parameters": 50352,
+    "total_parameters": 79088,
+    "viewport_pixels": [
+      256,
+      208
+    ],
+    "viewport_y": [
+      32,
+      239
+    ],
+    "HUD_fields": 0
+  },
+  "runtime": {
+    "GPU": "NVIDIA GeForce GTX 1060 3GB",
+    "precision": "BF16",
+    "agents": 4096,
+    "horizon": 32,
+    "minibatch_size": 4096,
+    "time_bonus": 0,
+    "speed_reward_code_preserved": true
+  },
+  "benchmarks": {
+    "ram_baseline": {
+      "run_id": "encoder_ram_baseline_20261008",
+      "parameters": 159808,
+      "timesteps": 1048576,
+      "learning_rate": 0.0,
+      "median_warm_steps_per_second": 113346.587624077,
+      "wall_seconds": 10.871131658554077,
+      "vram_used_GiB_including_display": 1.8746337890625,
+      "final_logged_success": 0.10839445888996124
+    },
+    "semantic_baseline": {
+      "run_id": "encoder_semantic_v1_baseline_20261008",
+      "parameters": 79088,
+      "timesteps": 1048576,
+      "learning_rate": 0.0,
+      "median_warm_steps_per_second": 83024.68715195512,
+      "wall_seconds": 12.338971853256226,
+      "vram_used_GiB_including_display": 1.7691650390625,
+      "final_logged_success": 0.10662823915481567
+    },
+    "semantic_learning": {
+      "run_id": "encoder_semantic_v1_learning_20261008",
+      "parameters": 79088,
+      "timesteps": 4194304,
+      "learning_rate": 0.001,
+      "median_warm_steps_per_second": 83316.74960497927,
+      "wall_seconds": 52.80553579330444,
+      "vram_used_GiB_including_display": 1.7691650390625,
+      "final_logged_success": 0.9212153553962708
+    }
+  },
+  "benchmark_method": "1,048,576-step fresh zero-learning runs with the same seed and training config. Reported warm SPS is the median logged SPS after the first sample. End-to-end includes simulation and PPO backward work; scenes are from the closest start.",
+  "tests": {
+    "cpu": {
+      "teacher_successes": 2,
+      "teacher_frames": 850,
+      "reset_stream_comparisons": 4096,
+      "corrupt_tables_rejected": 6,
+      "start_guards": 3,
+      "timeout_frames": 1800,
+      "zero_bonus_ablation": true,
+      "cache_free_fallback": true,
+      "failures": 0
+    },
+    "cuda": {
+      "decisions": 33792,
+      "successes": 2,
+      "resets": 36,
+      "reward_tolerance": 1e-05,
+      "bitwise_native_states": true,
+      "bitwise_observations": true,
+      "direct_and_graph": true,
+      "failures": 0
+    },
+    "curriculum_cpu": {
+      "curriculum_levels": 17,
+      "decisions": 4961,
+      "teacher_successes": 73,
+      "promotions": 16,
+      "practice_episodes": 7,
+      "checkpoint_roundtrip": true,
+      "fixed_evaluation": true,
+      "failures": 0
+    },
+    "curriculum_cuda": {
+      "decisions": 40960,
+      "successes": 227,
+      "resets": 688,
+      "teacher_agents_at_final_level": 2,
+      "bitwise_native_states": true,
+      "bitwise_curriculum": true,
+      "bitwise_observations": true,
+      "direct_and_graph": true,
+      "checkpoint_resume": true,
+      "failures": 0
+    }
+  },
+  "encoder_checks": {
+    "fp32": true,
+    "bf16": true,
+    "finite_difference_weights_and_biases": 56,
+    "all_seven_layers_checked": true,
+    "cuda_graph_forward_backward": true,
+    "full_viewport_coverage": true,
+    "entity_permutation_invariant": true,
+    "serialized_cpu_gpu_recurrence": true,
+    "native_incompatible_ram_checkpoint_rejected": true
+  },
+  "recorded_observation_frames": 1195952,
+  "recorded_observation_scope": "Decode recorded ROM states; check finiteness and positioned hammer/fireball coverage. These are not learned-policy rollouts.",
+  "policy_transfer": {
+    "baseline/3": {
+      "schema": 1,
+      "scope": "natural_1_1_starts",
+      "reference_frames": 3,
+      "eligible_starts": 1,
+      "episodes_requested": 64,
+      "episodes_run": 64,
+      "episodes_completed": 64,
+      "seed": 137,
+      "max_frames": 1800,
+      "checkpoint_fnv64": "1504105322576649204",
+      "config_fnv64": "12592980894992450806",
+      "bank_payload_fnv64": "3581233140079610737",
+      "deterministic": 0,
+      "policy_inference": "shared FP32 CPU implementation with independent recurrent states",
+      "frames": 2359,
+      "native_successes": 5,
+      "rom_successes": 5,
+      "normal_flags": 59,
+      "deaths": 0,
+      "timeouts": 0,
+      "mean_success_frames": 3,
+      "mismatches": 0,
+      "ram_writes_after_reset": 0,
+      "all_episodes_run_to_terminal": true,
+      "passed": true
+    },
+    "baseline/96": {
+      "schema": 1,
+      "scope": "natural_1_1_starts",
+      "reference_frames": 96,
+      "eligible_starts": 1,
+      "episodes_requested": 8,
+      "episodes_run": 8,
+      "episodes_completed": 8,
+      "seed": 137,
+      "max_frames": 1800,
+      "checkpoint_fnv64": "1504105322576649204",
+      "config_fnv64": "12592980894992450806",
+      "bank_payload_fnv64": "3581233140079610737",
+      "deterministic": 0,
+      "policy_inference": "shared FP32 CPU implementation with independent recurrent states",
+      "frames": 2491,
+      "native_successes": 0,
+      "rom_successes": 0,
+      "normal_flags": 8,
+      "deaths": 0,
+      "timeouts": 0,
+      "mean_success_frames": 0,
+      "mismatches": 0,
+      "ram_writes_after_reset": 0,
+      "all_episodes_run_to_terminal": true,
+      "passed": true
+    },
+    "trained/3": {
+      "schema": 1,
+      "scope": "natural_1_1_starts",
+      "reference_frames": 3,
+      "eligible_starts": 1,
+      "episodes_requested": 64,
+      "episodes_run": 64,
+      "episodes_completed": 64,
+      "seed": 137,
+      "max_frames": 1800,
+      "checkpoint_fnv64": "6948837643654057540",
+      "config_fnv64": "12592980894992450806",
+      "bank_payload_fnv64": "3581233140079610737",
+      "deterministic": 0,
+      "policy_inference": "shared FP32 CPU implementation with independent recurrent states",
+      "frames": 243,
+      "native_successes": 62,
+      "rom_successes": 62,
+      "normal_flags": 2,
+      "deaths": 0,
+      "timeouts": 0,
+      "mean_success_frames": 3,
+      "mismatches": 0,
+      "ram_writes_after_reset": 0,
+      "all_episodes_run_to_terminal": true,
+      "passed": true
+    }
+  },
+  "learning_encoder_changes": [
+    {
+      "layer": 0,
+      "changed_parameters": 608,
+      "l2_change": 1.7398163792272339
+    },
+    {
+      "layer": 1,
+      "changed_parameters": 511,
+      "l2_change": 1.5040160460228713
+    },
+    {
+      "layer": 2,
+      "changed_parameters": 11391,
+      "l2_change": 0.9791299496155006
+    },
+    {
+      "layer": 3,
+      "changed_parameters": 1536,
+      "l2_change": 2.258941340545095
+    },
+    {
+      "layer": 4,
+      "changed_parameters": 0,
+      "l2_change": 0.0
+    },
+    {
+      "layer": 5,
+      "changed_parameters": 0,
+      "l2_change": 0.0
+    },
+    {
+      "layer": 6,
+      "changed_parameters": 5150,
+      "l2_change": 1.9003394901381048
+    }
+  ],
+  "learning_curriculum": {
+    "schema": 1,
+    "agents": 4096,
+    "mean_reference_frames": 3.27026,
+    "min_reference_frames": 3,
+    "max_reference_frames": 4,
+    "median_reference_frames": 3,
+    "promotions": 1107,
+    "window": 16,
+    "confirmations": 2,
+    "threshold": 0.8,
+    "replay_fraction": 0.2,
+    "levels": [
+      {
+        "reference_frames": 3,
+        "agents": 2989
+      },
+      {
+        "reference_frames": 4,
+        "agents": 1107
+      },
+      {
+        "reference_frames": 5,
+        "agents": 0
+      },
+      {
+        "reference_frames": 6,
+        "agents": 0
+      },
+      {
+        "reference_frames": 8,
+        "agents": 0
+      },
+      {
+        "reference_frames": 12,
+        "agents": 0
+      },
+      {
+        "reference_frames": 16,
+        "agents": 0
+      },
+      {
+        "reference_frames": 24,
+        "agents": 0
+      },
+      {
+        "reference_frames": 32,
+        "agents": 0
+      },
+      {
+        "reference_frames": 48,
+        "agents": 0
+      },
+      {
+        "reference_frames": 64,
+        "agents": 0
+      },
+      {
+        "reference_frames": 96,
+        "agents": 0
+      },
+      {
+        "reference_frames": 128,
+        "agents": 0
+      },
+      {
+        "reference_frames": 192,
+        "agents": 0
+      },
+      {
+        "reference_frames": 256,
+        "agents": 0
+      },
+      {
+        "reference_frames": 320,
+        "agents": 0
+      },
+      {
+        "reference_frames": 425,
+        "agents": 0
+      }
+    ]
+  },
+  "checkpoints": {
+    "baseline": {
+      "path": "checkpoints/mario_fpg_time/encoder_semantic_v1_baseline_20261008/0000000001048576.bin",
+      "sha256": "4157e0d691a3bcdc3bacc289394fb9e92872a67c1d92c753d50f17330b4ddb80"
+    },
+    "trained": {
+      "path": "checkpoints/mario_fpg_time/encoder_semantic_v1_learning_20261008/0000000004194304.bin",
+      "sha256": "4e50b5d118d85712604294f9ee334bb12a0c339c3b2b710be3f8be1125a35de9"
+    }
+  },
+  "source_sha256": {
+    "config/mario_fpg_time.ini": "6fdb9f54cd57bae39eddadfe01bc4b15c489f67bcb573b11e6ab27c188b568e3",
+    "ocean/mario_fpg_time/policy_shape.h": "ff9f9ff9aa98bab639e2ff9d924b3dc9dda7ab64cc42df132345ed3898398e1a",
+    "ocean/mario_fpg_time/observation.h": "ef04e2c5c723f031130af7a46c18270f622f9f09794580934960f6aef59be2e7",
+    "ocean/mario_fpg_time/encoder.cu": "f35ef781be89d7b0592eeb3c7f4b821c7ef9f596272d6842d7beb6af37b4c93a",
+    "ocean/mario_fpg_time/encoder_cpu.h": "21d272ac45d5a573ad87794ebec6fca2757b5af9ea3a43f07f31e2aa051e2bc7",
+    "ocean/mario_fpg_time/policy.c": "326d0274390f415064ef80bdba2311e6b6594886b5af07f0a0bd83a254f4fd42",
+    "ocean/mario_fpg_time/mario_fpg_time.h": "e2780187f16059688abe62d2d5ccc7849b5295ae27da9d0642ea037ab822edb0",
+    "ocean/mario_fpg_time/mario_fpg_time.cu": "1b70289cb2f0bafbd8f12a818b33c54f989fb8f63060234348f8d478c2acbc21",
+    "ocean/mario_fpg_time/sim2rom.cpp": "362673200129fd549b9929470e0f8d28ffaaa88613b7286b1465666ea07e0f30",
+    "src/ocean.cu": "735f9ed747b9087c705f61f50c4ca3ebfac6fafb0bf877e478ef4a4157d3f974",
+    "src/pufferl.cu": "743c352d35fa0c9e293ad370f8a95fba08211b8d45dbf70ab30619b02734a5e9"
+  },
+  "limitations": [
+    "The 4,194,304-step learning check only establishes learning at the closest start; it does not establish progress past the previous 96-frame plateau.",
+    "The closest start has no active modeled entities, so entity-layer weights stay unchanged in this learning check; their gradients are covered separately by synthetic object cases.",
+    "ROM transfer uses shared FP32 CPU inference with independent recurrent states. GPU BF16 output comparisons are tolerance-based, not bitwise sampling-equivalence claims.",
+    "The 268,435,456-step semantic training run has not been started."
+  ]
+}

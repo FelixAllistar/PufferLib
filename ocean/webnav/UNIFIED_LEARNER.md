@@ -1,9 +1,24 @@
 # One policy across MiniWoB++
 
+Current direction (2026-10-03): extend the same learner to applications composed
+from [reusable simulator primitives](primitives/README.md). MiniWoB is a
+compatibility fixture suite; its family boundaries do not define the engine's
+components. Application state/generation stays in CPU Bend. Exploration methods
+and training distributions are user research choices. The browser, record and
+draft cores now have native checks; their application bindings remain in
+progress and have not changed this learner's ABI or task mixture.
+
 The required product is one WebNav environment, one trainer, one policy and
 one checkpoint evaluated across all 125 registered task names. Family-specific
 training adapters were diagnostic scaffolding, not this deliverable. Stop adding
 standalone learner environments or treating their task counts as unified coverage.
+
+The native consolidation now exists in
+[webnav_unified](../webnav_unified/README.md): all 125 names use one observation
+format, action catalog, optimizer and checkpoint. The initial 31,616-step run
+and matched random comparison are recorded in
+[RESULTS.json](../webnav_unified/RESULTS.json). Browser integration and the
+learned shared node architecture below remain open.
 
 ## What exists and what went wrong
 
@@ -74,6 +89,14 @@ audits are read-only; no new standalone family learner should be created.
 
 
 ## Audit findings
+
+The shared native learner now exists at `ocean/webnav_unified`, with one fixed
+public encoder/action catalog and `num_policies=1`. A 31,616-step mixed run
+completed and saved a single 1,848,896-parameter checkpoint. Native evaluation
+reuses that checkpoint across all 125 task names. This qualifies the shared
+training/dispatch path; original-browser/headed evaluation and stronger learning
+results remain required. The first flat policy is a speed/sample-efficiency
+baseline, not the final shared-node architecture. See its README and RESULTS.json.
 
 The initial shared dispatcher passed native validation on 2026-09-29 with all
 23 existing family libraries loaded together: 104 simulation lanes and 125

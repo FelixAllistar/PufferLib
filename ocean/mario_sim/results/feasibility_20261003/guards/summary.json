@@ -1,0 +1,22 @@
+[
+  {
+    "test": "invalid_header",
+    "exit_code": 2,
+    "passed": true
+  },
+  {
+    "test": "truncated",
+    "exit_code": 2,
+    "passed": true
+  },
+  {
+    "test": "ram_mismatch_graph",
+    "exit_code": 1,
+    "passed": true
+  },
+  {
+    "test": "invalid_scene_reset",
+    "exit_code": 1,
+    "passed": true
+  }
+]

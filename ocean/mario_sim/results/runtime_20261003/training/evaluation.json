@@ -1,0 +1,45 @@
+{
+  "scope": "same reset templates and world variants, new reset seed 137; stochastic policy",
+  "runs": [
+    {
+      "name": "early",
+      "checkpoint": "checkpoints/mario_sim/runtime_gpu_perf_20261003/0000000001048576.bin",
+      "command": [
+        "build/mario_sim/puffer",
+        "eval",
+        "checkpoints/mario_sim/runtime_gpu_perf_20261003/0000000001048576.bin",
+        "--headless",
+        "--base.eval_episodes=2048",
+        "--base.eval_agents=512",
+        "--env.seed=137"
+      ],
+      "wall_seconds": 12.42113184000118,
+      "env": "mario_sim",
+      "score": "0.007350",
+      "perf": "0.007350",
+      "games": "2177",
+      "params": "159808",
+      "draw": "0.000000"
+    },
+    {
+      "name": "final",
+      "checkpoint": "checkpoints/mario_sim/runtime_fpg_20261003/0000000016777216.bin",
+      "command": [
+        "build/mario_sim/puffer",
+        "eval",
+        "checkpoints/mario_sim/runtime_fpg_20261003/0000000016777216.bin",
+        "--headless",
+        "--base.eval_episodes=2048",
+        "--base.eval_agents=512",
+        "--env.seed=137"
+      ],
+      "wall_seconds": 11.693190780000805,
+      "env": "mario_sim",
+      "score": "0.006790",
+      "perf": "0.006790",
+      "games": "2062",
+      "params": "159808",
+      "draw": "0.000000"
+    }
+  ]
+}

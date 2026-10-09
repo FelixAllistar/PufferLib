@@ -1,0 +1,1747 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "protocol": {
+    "policy": "MLP/MinGRU H64 L2",
+    "agents": 128,
+    "frames_per_decision": 1,
+    "dynamics": "fixed approximate synthetic controller",
+    "development": {
+      "seed": 901,
+      "split": 1,
+      "episodes_per_family": 32,
+      "length": 64,
+      "difficulty": 1,
+      "max_frames": 2400,
+      "practice_prob": 0
+    },
+    "post_selection_test": {
+      "seed": 901,
+      "split": 2,
+      "episodes_per_family": 128,
+      "length": 64,
+      "difficulty": 1,
+      "max_frames": 2400,
+      "practice_prob": 0
+    },
+    "selection": "freeze after bounded validation rounds; no tuning on split 2",
+    "resume": "weights only; optimizer restarts"
+  },
+  "runs": [
+    {
+      "run": "logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8",
+      "requested_decisions": 10485760,
+      "scheduled_decisions": 10485760,
+      "train_wall_seconds": 29.06288003300142,
+      "frames_per_decision": 1,
+      "parent_sha256": "81bd6ef93f59b30ec2a6d57b3e840217630ab7024e071c46d4b60e803ffc4aa3",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T091823Z_559054b8/0000000010485760.bin",
+        "sha256": "3ba6a75592de5a1e097ff3106be7eb424e4658b6bb061d4f264b89b291bf65c4",
+        "bytes": 403712
+      },
+      "core_sha256": "d011ed09b20b66fc95c0de521945ba51ce71fc063760f28bff57fdd6b0785e60",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "0",
+        "difficulty": "1",
+        "length": "64",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "73",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 322,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/evaluations/20261001T092051Z_088c58ee",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": null,
+          "core_sha256": "d011ed09b20b66fc95c0de521945ba51ce71fc063760f28bff57fdd6b0785e60",
+          "core_matches_training_snapshot": true,
+          "binary_sha256": "c88a2f6e19d41e8660d971b9cac05a9913be143dbee5b7ef48d36bcc93edcaf6",
+          "checkpoint_sha256": "3ba6a75592de5a1e097ff3106be7eb424e4658b6bb061d4f264b89b291bf65c4",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 616.78125,
+              "total_frames": 19737
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 0,
+              "deaths": 32,
+              "timeouts": 0,
+              "clear_rate": 0,
+              "mean_clear_frames": 0,
+              "total_frames": 7032
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 673.90625,
+              "total_frames": 21565
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 693.09375,
+              "total_frames": 22179
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 18,
+              "deaths": 14,
+              "timeouts": 0,
+              "clear_rate": 0.5625,
+              "mean_clear_frames": 614,
+              "total_frames": 15316
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 16,
+              "deaths": 0,
+              "timeouts": 16,
+              "clear_rate": 0.5,
+              "mean_clear_frames": 1193.4375,
+              "total_frames": 57495
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 27,
+              "deaths": 1,
+              "timeouts": 4,
+              "clear_rate": 0.84375,
+              "mean_clear_frames": 975.703704,
+              "total_frames": 36253
+            }
+          }
+        },
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/evaluations/20261001T115404Z_3f8e3cfe",
+          "split": 2,
+          "seed": 901,
+          "episodes_per_family": 128,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": 2400
+          },
+          "core_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+          "core_matches_training_snapshot": false,
+          "binary_sha256": "f54513c18bb12e20201e0bf0796b6b7ed5ffb88521e9ec29aeeaf9fa26834b78",
+          "checkpoint_sha256": "3ba6a75592de5a1e097ff3106be7eb424e4658b6bb061d4f264b89b291bf65c4",
+          "replay_verified_episodes": 896,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 128,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 617.492188,
+              "total_frames": 79039
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 12,
+              "deaths": 116,
+              "timeouts": 0,
+              "clear_rate": 0.09375,
+              "mean_clear_frames": 610.416667,
+              "total_frames": 33643
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 128,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 666.132812,
+              "total_frames": 85265
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 128,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 692.523438,
+              "total_frames": 88643
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 89,
+              "deaths": 39,
+              "timeouts": 0,
+              "clear_rate": 0.6953125,
+              "mean_clear_frames": 616.831461,
+              "total_frames": 66145
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 56,
+              "deaths": 0,
+              "timeouts": 72,
+              "clear_rate": 0.4375,
+              "mean_clear_frames": 1324.73214,
+              "total_frames": 246985
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 103,
+              "deaths": 18,
+              "timeouts": 7,
+              "clear_rate": 0.8046875,
+              "mean_clear_frames": 982.796117,
+              "total_frames": 122864
+            }
+          }
+        }
+      ],
+      "validation_smoke": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_mixed-from-flat_20261001T091823Z_559054b8/checkpoints/mario_lab/20261001T091823Z_559054b8/0000000010485760.bin",
+          "--headless",
+          "--base.eval_episodes=512",
+          "--env.split=1"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=0.714008 perf=0.714008 games=514 params=100928 draw=0.000000"
+      }
+    },
+    {
+      "run": "logs/mario_lab/experiments/CUDA001_gap-root-control_20261001T105415Z_bdecbfa8",
+      "requested_decisions": 10485760,
+      "scheduled_decisions": 10485760,
+      "train_wall_seconds": 35.439975630000845,
+      "frames_per_decision": 1,
+      "parent_sha256": "3ba6a75592de5a1e097ff3106be7eb424e4658b6bb061d4f264b89b291bf65c4",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T105415Z_bdecbfa8/0000000010485760.bin",
+        "sha256": "5000621939fc40622ef56036e404db7ab1a8ad4bdd28fe75a3f07df87c58047a",
+        "bytes": 403712
+      },
+      "core_sha256": "d011ed09b20b66fc95c0de521945ba51ce71fc063760f28bff57fdd6b0785e60",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "2",
+        "difficulty": "0",
+        "length": "48",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "73",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 336,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_gap-root-control_20261001T105415Z_bdecbfa8/evaluations/20261001T111552Z_9fc16903",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": null
+          },
+          "core_sha256": "0464ac7b7de56065be746fd49701a8ad185e4e8fe813fb34c43635cbcec71cf0",
+          "core_matches_training_snapshot": false,
+          "binary_sha256": "ba111e3b24d7540efa11723f2a1fc6b5d19a541c4914d04f90f130d612f3c815",
+          "checkpoint_sha256": "5000621939fc40622ef56036e404db7ab1a8ad4bdd28fe75a3f07df87c58047a",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 541.90625,
+              "total_frames": 17341
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 15,
+              "deaths": 17,
+              "timeouts": 0,
+              "clear_rate": 0.46875,
+              "mean_clear_frames": 554.066667,
+              "total_frames": 13269
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 604.34375,
+              "total_frames": 19339
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 618.6875,
+              "total_frames": 19798
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 19,
+              "deaths": 13,
+              "timeouts": 0,
+              "clear_rate": 0.59375,
+              "mean_clear_frames": 547.578947,
+              "total_frames": 13968
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 19,
+              "deaths": 0,
+              "timeouts": 13,
+              "clear_rate": 0.59375,
+              "mean_clear_frames": 1019.68421,
+              "total_frames": 50574
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 23,
+              "deaths": 0,
+              "timeouts": 9,
+              "clear_rate": 0.71875,
+              "mean_clear_frames": 916.173913,
+              "total_frames": 42672
+            }
+          }
+        }
+      ],
+      "validation_smoke": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-root-control_20261001T105415Z_bdecbfa8/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-root-control_20261001T105415Z_bdecbfa8/checkpoints/mario_lab/20261001T105415Z_bdecbfa8/0000000010485760.bin",
+          "--headless",
+          "--base.eval_episodes=256",
+          "--env.split=1"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=0.859375 perf=0.859375 games=256 params=100928 draw=0.000000"
+      },
+      "incomplete_panels": [
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_gap-root-control_20261001T105415Z_bdecbfa8/evaluations/20261001T111128Z_1090d311",
+          "status": "failed",
+          "error": "course 1 failed with exit code 1"
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/experiments/CUDA001_gap-practice_20261001T110918Z_378c6ea8",
+      "requested_decisions": 10485760,
+      "scheduled_decisions": 10485760,
+      "train_wall_seconds": 46.15352604000145,
+      "frames_per_decision": 1,
+      "parent_sha256": "3ba6a75592de5a1e097ff3106be7eb424e4658b6bb061d4f264b89b291bf65c4",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T110918Z_378c6ea8/0000000010485760.bin",
+        "sha256": "23e29256ea2a15b0b777fce6e73da1d99d3c9d7ba5f32cd729af982d18f8ef3d",
+        "bytes": 403712
+      },
+      "core_sha256": "b83f3285816ffa324f9f5916e87edccd42d41d9dae08fa233cebc3526019e5b5",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "2",
+        "difficulty": "0",
+        "length": "48",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "73",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001",
+        "practice_prob": "0.8",
+        "practice_gap": "1",
+        "practice_entry": "0",
+        "practice_exit": "0",
+        "practice_route": "0",
+        "practice_frames": "240"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 378,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_gap-practice_20261001T110918Z_378c6ea8/evaluations/20261001T111552Z_96571c82",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": null
+          },
+          "core_sha256": "0464ac7b7de56065be746fd49701a8ad185e4e8fe813fb34c43635cbcec71cf0",
+          "core_matches_training_snapshot": false,
+          "binary_sha256": "ba111e3b24d7540efa11723f2a1fc6b5d19a541c4914d04f90f130d612f3c815",
+          "checkpoint_sha256": "23e29256ea2a15b0b777fce6e73da1d99d3c9d7ba5f32cd729af982d18f8ef3d",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 541.25,
+              "total_frames": 17320
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 15,
+              "deaths": 17,
+              "timeouts": 0,
+              "clear_rate": 0.46875,
+              "mean_clear_frames": 533.533333,
+              "total_frames": 11406
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 616.53125,
+              "total_frames": 19729
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 611.125,
+              "total_frames": 19556
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 17,
+              "deaths": 15,
+              "timeouts": 0,
+              "clear_rate": 0.53125,
+              "mean_clear_frames": 543.235294,
+              "total_frames": 13835
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 14,
+              "deaths": 0,
+              "timeouts": 18,
+              "clear_rate": 0.4375,
+              "mean_clear_frames": 1014.28571,
+              "total_frames": 57400
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 28,
+              "deaths": 3,
+              "timeouts": 1,
+              "clear_rate": 0.875,
+              "mean_clear_frames": 1007.57143,
+              "total_frames": 31953
+            }
+          }
+        }
+      ],
+      "validation_smoke": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-practice_20261001T110918Z_378c6ea8/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-practice_20261001T110918Z_378c6ea8/checkpoints/mario_lab/20261001T110918Z_378c6ea8/0000000010485760.bin",
+          "--headless",
+          "--base.eval_episodes=256",
+          "--env.split=1",
+          "--env.practice_prob=0"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=0.861004 perf=0.861004 games=259 params=100928 draw=0.000000"
+      }
+    },
+    {
+      "run": "logs/mario_lab/experiments/CUDA001_gap-reset-only_20261001T111524Z_0819f580",
+      "requested_decisions": 10485760,
+      "scheduled_decisions": 10485760,
+      "train_wall_seconds": 22.489379099999496,
+      "frames_per_decision": 1,
+      "parent_sha256": "3ba6a75592de5a1e097ff3106be7eb424e4658b6bb061d4f264b89b291bf65c4",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T111524Z_0819f580/0000000010485760.bin",
+        "sha256": "76c7f9e607752162fbe1ebbee1e9edd2062410860d023bed4bfbe0a5f0b36e8d",
+        "bytes": 403712
+      },
+      "core_sha256": "0464ac7b7de56065be746fd49701a8ad185e4e8fe813fb34c43635cbcec71cf0",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "2",
+        "difficulty": "0",
+        "length": "48",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "73",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001",
+        "practice_prob": "0.8",
+        "practice_gap": "1",
+        "practice_entry": "0",
+        "practice_exit": "0",
+        "practice_route": "0",
+        "practice_frames": "2400",
+        "practice_short_goals": "0"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 259,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_gap-reset-only_20261001T111524Z_0819f580/evaluations/20261001T112617Z_358b762a",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": null
+          },
+          "core_sha256": "0464ac7b7de56065be746fd49701a8ad185e4e8fe813fb34c43635cbcec71cf0",
+          "core_matches_training_snapshot": true,
+          "binary_sha256": "ba111e3b24d7540efa11723f2a1fc6b5d19a541c4914d04f90f130d612f3c815",
+          "checkpoint_sha256": "76c7f9e607752162fbe1ebbee1e9edd2062410860d023bed4bfbe0a5f0b36e8d",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 498.625,
+              "total_frames": 15956
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 18,
+              "deaths": 14,
+              "timeouts": 0,
+              "clear_rate": 0.5625,
+              "mean_clear_frames": 509.722222,
+              "total_frames": 13035
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 548.34375,
+              "total_frames": 17547
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 580.46875,
+              "total_frames": 18575
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 19,
+              "deaths": 13,
+              "timeouts": 0,
+              "clear_rate": 0.59375,
+              "mean_clear_frames": 510.789474,
+              "total_frames": 14015
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 19,
+              "deaths": 0,
+              "timeouts": 13,
+              "clear_rate": 0.59375,
+              "mean_clear_frames": 1211.78947,
+              "total_frames": 54224
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 22,
+              "deaths": 0,
+              "timeouts": 10,
+              "clear_rate": 0.6875,
+              "mean_clear_frames": 905.863636,
+              "total_frames": 43929
+            }
+          }
+        }
+      ],
+      "validation_smoke": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-reset-only_20261001T111524Z_0819f580/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-reset-only_20261001T111524Z_0819f580/checkpoints/mario_lab/20261001T111524Z_0819f580/0000000010485760.bin",
+          "--headless",
+          "--base.eval_episodes=256",
+          "--env.split=1",
+          "--env.practice_prob=0"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=0.814394 perf=0.814394 games=264 params=100928 draw=0.000000"
+      }
+    },
+    {
+      "run": "logs/mario_lab/experiments/CUDA001_gap-wide_20261001T112617Z_bb34632f",
+      "requested_decisions": 20971520,
+      "scheduled_decisions": 20971520,
+      "train_wall_seconds": 64.06430166000064,
+      "frames_per_decision": 1,
+      "parent_sha256": "5000621939fc40622ef56036e404db7ab1a8ad4bdd28fe75a3f07df87c58047a",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T112617Z_bb34632f/0000000020971520.bin",
+        "sha256": "e0a95712e795bd960dc59a6a8522bfed39a321976f9bd0fcd9ae183c21e8976b",
+        "bytes": 403712
+      },
+      "core_sha256": "0464ac7b7de56065be746fd49701a8ad185e4e8fe813fb34c43635cbcec71cf0",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "2",
+        "difficulty": "2",
+        "length": "64",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "73",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001",
+        "practice_prob": "0.5",
+        "practice_gap": "1",
+        "practice_entry": "0",
+        "practice_exit": "0",
+        "practice_route": "0",
+        "practice_frames": "240",
+        "practice_short_goals": "1"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 707,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_gap-wide_20261001T112617Z_bb34632f/evaluations/20261001T113034Z_c9867208",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": null
+          },
+          "core_sha256": "0464ac7b7de56065be746fd49701a8ad185e4e8fe813fb34c43635cbcec71cf0",
+          "core_matches_training_snapshot": true,
+          "binary_sha256": "ba111e3b24d7540efa11723f2a1fc6b5d19a541c4914d04f90f130d612f3c815",
+          "checkpoint_sha256": "e0a95712e795bd960dc59a6a8522bfed39a321976f9bd0fcd9ae183c21e8976b",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 468.5625,
+              "total_frames": 14994
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 30,
+              "deaths": 2,
+              "timeouts": 0,
+              "clear_rate": 0.9375,
+              "mean_clear_frames": 430.233333,
+              "total_frames": 13655
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 621.59375,
+              "total_frames": 19891
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 653.1875,
+              "total_frames": 20902
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 11,
+              "deaths": 21,
+              "timeouts": 0,
+              "clear_rate": 0.34375,
+              "mean_clear_frames": 483.545455,
+              "total_frames": 9864
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 7,
+              "deaths": 0,
+              "timeouts": 25,
+              "clear_rate": 0.21875,
+              "mean_clear_frames": 723.428571,
+              "total_frames": 65064
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 20,
+              "deaths": 2,
+              "timeouts": 10,
+              "clear_rate": 0.625,
+              "mean_clear_frames": 684.95,
+              "total_frames": 38015
+            }
+          }
+        }
+      ],
+      "validation_smoke": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-wide_20261001T112617Z_bb34632f/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_gap-wide_20261001T112617Z_bb34632f/checkpoints/mario_lab/20261001T112617Z_bb34632f/0000000020971520.bin",
+          "--headless",
+          "--base.eval_episodes=256",
+          "--env.split=1",
+          "--env.practice_prob=0"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=0.930502 perf=0.930502 games=259 params=100928 draw=0.000000"
+      }
+    },
+    {
+      "run": "logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948",
+      "requested_decisions": 20971520,
+      "scheduled_decisions": 20971520,
+      "train_wall_seconds": 51.19340237999859,
+      "frames_per_decision": 1,
+      "parent_sha256": "e0a95712e795bd960dc59a6a8522bfed39a321976f9bd0fcd9ae183c21e8976b",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T113034Z_21bd3948/0000000020971520.bin",
+        "sha256": "edd27f00682c2d1f386a1792537174603ea7cbe1aa25ce0045c3f4ee7b237a74",
+        "bytes": 403712
+      },
+      "core_sha256": "0464ac7b7de56065be746fd49701a8ad185e4e8fe813fb34c43635cbcec71cf0",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "6",
+        "difficulty": "1",
+        "length": "64",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "73",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001",
+        "practice_prob": "0.7",
+        "practice_gap": "0",
+        "practice_entry": "1",
+        "practice_exit": "1",
+        "practice_route": "2",
+        "practice_frames": "800",
+        "practice_short_goals": "1"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 581,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948/evaluations/20261001T114927Z_9f333524",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": 2400
+          },
+          "core_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+          "core_matches_training_snapshot": false,
+          "binary_sha256": "f54513c18bb12e20201e0bf0796b6b7ed5ffb88521e9ec29aeeaf9fa26834b78",
+          "checkpoint_sha256": "edd27f00682c2d1f386a1792537174603ea7cbe1aa25ce0045c3f4ee7b237a74",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 389.1875,
+              "total_frames": 12454
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 20,
+              "deaths": 12,
+              "timeouts": 0,
+              "clear_rate": 0.625,
+              "mean_clear_frames": 385.2,
+              "total_frames": 10204
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 557.4375,
+              "total_frames": 17838
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 604.59375,
+              "total_frames": 19347
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 14,
+              "deaths": 18,
+              "timeouts": 0,
+              "clear_rate": 0.4375,
+              "mean_clear_frames": 400.857143,
+              "total_frames": 9839
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 27,
+              "deaths": 0,
+              "timeouts": 5,
+              "clear_rate": 0.84375,
+              "mean_clear_frames": 606.296296,
+              "total_frames": 28370
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 31,
+              "deaths": 1,
+              "timeouts": 0,
+              "clear_rate": 0.96875,
+              "mean_clear_frames": 565.580645,
+              "total_frames": 17640
+            }
+          }
+        }
+      ],
+      "validation_smoke": {
+        "command": [
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948/bin/puffer",
+          "eval",
+          "/home/felix/puffertank/pufferlib/logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948/checkpoints/mario_lab/20261001T113034Z_21bd3948/0000000020971520.bin",
+          "--headless",
+          "--base.eval_episodes=256",
+          "--env.split=1",
+          "--env.practice_prob=0"
+        ],
+        "split": 1,
+        "sampling": "native stochastic vector evaluation; may overshoot/censor episodes, not a fixed-seed quality panel",
+        "exit_code": 0,
+        "result": "CUDA_EVAL env=mario_lab score=1.000000 perf=1.000000 games=280 params=100928 draw=0.000000"
+      }
+    },
+    {
+      "run": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-01_20261001T114948Z_b700531f",
+      "requested_decisions": 20971520,
+      "scheduled_decisions": 20971520,
+      "train_wall_seconds": 51.1513360200006,
+      "frames_per_decision": 1,
+      "parent_sha256": "edd27f00682c2d1f386a1792537174603ea7cbe1aa25ce0045c3f4ee7b237a74",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T114948Z_b700531f/0000000020971520.bin",
+        "sha256": "eed1d41bccbd598ab41346d4d758ac2084800bd639558f977d0aa085521562fc",
+        "bytes": 403712
+      },
+      "core_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "0",
+        "difficulty": "1",
+        "length": "64",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "74",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001",
+        "practice_prob": "0.35",
+        "practice_gap": "38",
+        "practice_entry": "16",
+        "practice_exit": "0",
+        "practice_route": "16",
+        "practice_frames": "800",
+        "practice_short_goals": "1",
+        "mix_flat": "10",
+        "mix_gaps": "44",
+        "mix_pipes": "10",
+        "mix_stairs": "10",
+        "mix_walkers": "61",
+        "mix_underground": "25",
+        "mix_composite": "13"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 574,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-01_20261001T114948Z_b700531f/evaluations/20261001T115046Z_c5e88f17",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": 2400
+          },
+          "core_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+          "core_matches_training_snapshot": true,
+          "binary_sha256": "f54513c18bb12e20201e0bf0796b6b7ed5ffb88521e9ec29aeeaf9fa26834b78",
+          "checkpoint_sha256": "eed1d41bccbd598ab41346d4d758ac2084800bd639558f977d0aa085521562fc",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 348.8125,
+              "total_frames": 11162
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 31,
+              "deaths": 1,
+              "timeouts": 0,
+              "clear_rate": 0.96875,
+              "mean_clear_frames": 350.967742,
+              "total_frames": 11173
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 413.125,
+              "total_frames": 13220
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 425.40625,
+              "total_frames": 13613
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 22,
+              "deaths": 10,
+              "timeouts": 0,
+              "clear_rate": 0.6875,
+              "mean_clear_frames": 383.090909,
+              "total_frames": 10742
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 586.3125,
+              "total_frames": 18762
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 31,
+              "deaths": 1,
+              "timeouts": 0,
+              "clear_rate": 0.96875,
+              "mean_clear_frames": 519.258065,
+              "total_frames": 16643
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a",
+      "requested_decisions": 20971520,
+      "scheduled_decisions": 20971520,
+      "train_wall_seconds": 51.73632738000015,
+      "frames_per_decision": 1,
+      "parent_sha256": "eed1d41bccbd598ab41346d4d758ac2084800bd639558f977d0aa085521562fc",
+      "checkpoint": {
+        "path": "checkpoints/mario_lab/20261001T115100Z_d911125a/0000000020971520.bin",
+        "sha256": "51eec8f105ca73620db921d8c38e453ecc7fd29c555767664bcb06e2b02d3ca8",
+        "bytes": 403712
+      },
+      "core_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+      "policy": {
+        "hidden_size": "64",
+        "num_layers": "2"
+      },
+      "env": {
+        "course": "0",
+        "difficulty": "1",
+        "length": "64",
+        "max_frames": "2400",
+        "require_pipe": "0",
+        "seed": "75",
+        "split": "0",
+        "completion_reward": "10",
+        "death_penalty": "1",
+        "speed_bonus": "2",
+        "progress_reward": "0.001",
+        "practice_prob": "0.35",
+        "practice_gap": "4",
+        "practice_entry": "0",
+        "practice_exit": "0",
+        "practice_route": "0",
+        "practice_frames": "800",
+        "practice_short_goals": "1",
+        "mix_flat": "10",
+        "mix_gaps": "13",
+        "mix_pipes": "10",
+        "mix_stairs": "10",
+        "mix_walkers": "39",
+        "mix_underground": "10",
+        "mix_composite": "13"
+      },
+      "finite_parameters": 100928,
+      "finite_console_loss_values": 595,
+      "loss_check_precision": "rounded native console output",
+      "evaluations": [
+        {
+          "panel": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a/evaluations/20261001T115200Z_d60bbe4a",
+          "split": 1,
+          "seed": 901,
+          "episodes_per_family": 32,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": 2400
+          },
+          "core_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+          "core_matches_training_snapshot": true,
+          "binary_sha256": "f54513c18bb12e20201e0bf0796b6b7ed5ffb88521e9ec29aeeaf9fa26834b78",
+          "checkpoint_sha256": "51eec8f105ca73620db921d8c38e453ecc7fd29c555767664bcb06e2b02d3ca8",
+          "replay_verified_episodes": 224,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 349.1875,
+              "total_frames": 11174
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 369.25,
+              "total_frames": 11816
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 380.78125,
+              "total_frames": 12185
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 384.4375,
+              "total_frames": 12302
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 24,
+              "deaths": 8,
+              "timeouts": 0,
+              "clear_rate": 0.75,
+              "mean_clear_frames": 372.083333,
+              "total_frames": 10485
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 32,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 687.53125,
+              "total_frames": 22001
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 32,
+              "clears": 31,
+              "deaths": 1,
+              "timeouts": 0,
+              "clear_rate": 0.96875,
+              "mean_clear_frames": 458.83871,
+              "total_frames": 14386
+            }
+          }
+        },
+        {
+          "panel": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a/evaluations/20261001T115403Z_390535f6",
+          "split": 2,
+          "seed": 901,
+          "episodes_per_family": 128,
+          "evaluation_overrides": {
+            "practice_prob": 0,
+            "length": 64,
+            "difficulty": 1,
+            "max_frames": 2400
+          },
+          "core_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+          "core_matches_training_snapshot": true,
+          "binary_sha256": "f54513c18bb12e20201e0bf0796b6b7ed5ffb88521e9ec29aeeaf9fa26834b78",
+          "checkpoint_sha256": "51eec8f105ca73620db921d8c38e453ecc7fd29c555767664bcb06e2b02d3ca8",
+          "replay_verified_episodes": 896,
+          "courses": {
+            "1": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 128,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 351.289062,
+              "total_frames": 44965
+            },
+            "2": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 128,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 366.765625,
+              "total_frames": 46946
+            },
+            "3": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 128,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 380.054688,
+              "total_frames": 48647
+            },
+            "4": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 128,
+              "deaths": 0,
+              "timeouts": 0,
+              "clear_rate": 1,
+              "mean_clear_frames": 385.34375,
+              "total_frames": 49324
+            },
+            "5": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 80,
+              "deaths": 48,
+              "timeouts": 0,
+              "clear_rate": 0.625,
+              "mean_clear_frames": 371.725,
+              "total_frames": 39748
+            },
+            "6": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 125,
+              "deaths": 0,
+              "timeouts": 3,
+              "clear_rate": 0.9765625,
+              "mean_clear_frames": 667.728,
+              "total_frames": 90666
+            },
+            "7": {
+              "type": "summary",
+              "episodes": 128,
+              "clears": 124,
+              "deaths": 4,
+              "timeouts": 0,
+              "clear_rate": 0.96875,
+              "mean_clear_frames": 467.048387,
+              "total_frames": 58698
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "curriculum": {
+    "schema": 1,
+    "experiment": "GEN001",
+    "status": "completed",
+    "started_utc": "2026-10-01T11:49:27.300510+00:00",
+    "initial": "logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948",
+    "requested_rounds": 2,
+    "decisions_per_round": 20971520,
+    "practice_prob": 0.35,
+    "source_sha256": "a6808d670865a22843253cfe8e6e481ab6bfb8e4b898ae575f322e3a78ada702",
+    "protocol": {
+      "length": 64,
+      "difficulty": 1,
+      "max_frames": 2400,
+      "episodes_per_family": 32,
+      "seed": 901,
+      "split": 1,
+      "practice_prob": 0
+    },
+    "selection": "maximize minimum family clear rate, then macro clear rate; validation only",
+    "rounds": [
+      {
+        "number": 1,
+        "parent": "logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948",
+        "assessment_before": {
+          "panel": "logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948/evaluations/20261001T114927Z_9f333524",
+          "rates": {
+            "1": 1,
+            "2": 0.625,
+            "3": 1,
+            "4": 1,
+            "5": 0.4375,
+            "6": 0.84375,
+            "7": 0.96875
+          },
+          "quality": [
+            0.4375,
+            0.8392857142857143
+          ],
+          "weights": {
+            "practice_gap": 38,
+            "practice_entry": 16,
+            "practice_exit": 0,
+            "practice_route": 16
+          },
+          "root_weights": {
+            "mix_flat": 10,
+            "mix_gaps": 44,
+            "mix_pipes": 10,
+            "mix_stairs": 10,
+            "mix_walkers": 61,
+            "mix_underground": 25,
+            "mix_composite": 13
+          },
+          "pipe_visits": 27,
+          "pipe_returns": 27
+        },
+        "command": [
+          "/usr/bin/python3",
+          "ocean/mario_lab/run.py",
+          "--steps",
+          "20971520",
+          "--agents",
+          "128",
+          "--hidden",
+          "64",
+          "--layers",
+          "2",
+          "--course",
+          "0",
+          "--length",
+          "64",
+          "--difficulty",
+          "1",
+          "--max-frames",
+          "2400",
+          "--parent",
+          "logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948/checkpoints/mario_lab/20261001T113034Z_21bd3948/0000000020971520.bin",
+          "--seed",
+          "74",
+          "--experiment",
+          "GEN001",
+          "--label",
+          "adaptive-01",
+          "--output",
+          "logs/mario_lab/curricula/20261001T114927Z_061910c0/training",
+          "--set",
+          "env.practice_prob=0.35",
+          "--set",
+          "env.practice_frames=800",
+          "--set",
+          "env.practice_short_goals=1",
+          "--set",
+          "env.practice_gap=38",
+          "--set",
+          "env.practice_entry=16",
+          "--set",
+          "env.practice_exit=0",
+          "--set",
+          "env.practice_route=16",
+          "--set",
+          "env.mix_flat=10",
+          "--set",
+          "env.mix_gaps=44",
+          "--set",
+          "env.mix_pipes=10",
+          "--set",
+          "env.mix_stairs=10",
+          "--set",
+          "env.mix_walkers=61",
+          "--set",
+          "env.mix_underground=25",
+          "--set",
+          "env.mix_composite=13"
+        ],
+        "practice_prob": 0.35,
+        "weights": {
+          "practice_gap": 38,
+          "practice_entry": 16,
+          "practice_exit": 0,
+          "practice_route": 16
+        },
+        "root_weights": {
+          "mix_flat": 10,
+          "mix_gaps": 44,
+          "mix_pipes": 10,
+          "mix_stairs": 10,
+          "mix_walkers": 61,
+          "mix_underground": 25,
+          "mix_composite": 13
+        },
+        "run": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-01_20261001T114948Z_b700531f",
+        "assessment_after": {
+          "panel": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-01_20261001T114948Z_b700531f/evaluations/20261001T115046Z_c5e88f17",
+          "rates": {
+            "1": 1,
+            "2": 0.96875,
+            "3": 1,
+            "4": 1,
+            "5": 0.6875,
+            "6": 1,
+            "7": 0.96875
+          },
+          "quality": [
+            0.6875,
+            0.9464285714285714
+          ],
+          "weights": {
+            "practice_gap": 4,
+            "practice_entry": 0,
+            "practice_exit": 0,
+            "practice_route": 0
+          },
+          "root_weights": {
+            "mix_flat": 10,
+            "mix_gaps": 13,
+            "mix_pipes": 10,
+            "mix_stairs": 10,
+            "mix_walkers": 39,
+            "mix_underground": 10,
+            "mix_composite": 13
+          },
+          "pipe_visits": 32,
+          "pipe_returns": 32
+        }
+      },
+      {
+        "number": 2,
+        "parent": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-01_20261001T114948Z_b700531f",
+        "assessment_before": {
+          "panel": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-01_20261001T114948Z_b700531f/evaluations/20261001T115046Z_c5e88f17",
+          "rates": {
+            "1": 1,
+            "2": 0.96875,
+            "3": 1,
+            "4": 1,
+            "5": 0.6875,
+            "6": 1,
+            "7": 0.96875
+          },
+          "quality": [
+            0.6875,
+            0.9464285714285714
+          ],
+          "weights": {
+            "practice_gap": 4,
+            "practice_entry": 0,
+            "practice_exit": 0,
+            "practice_route": 0
+          },
+          "root_weights": {
+            "mix_flat": 10,
+            "mix_gaps": 13,
+            "mix_pipes": 10,
+            "mix_stairs": 10,
+            "mix_walkers": 39,
+            "mix_underground": 10,
+            "mix_composite": 13
+          },
+          "pipe_visits": 32,
+          "pipe_returns": 32
+        },
+        "command": [
+          "/usr/bin/python3",
+          "ocean/mario_lab/run.py",
+          "--steps",
+          "20971520",
+          "--agents",
+          "128",
+          "--hidden",
+          "64",
+          "--layers",
+          "2",
+          "--course",
+          "0",
+          "--length",
+          "64",
+          "--difficulty",
+          "1",
+          "--max-frames",
+          "2400",
+          "--parent",
+          "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-01_20261001T114948Z_b700531f/checkpoints/mario_lab/20261001T114948Z_b700531f/0000000020971520.bin",
+          "--seed",
+          "75",
+          "--experiment",
+          "GEN001",
+          "--label",
+          "adaptive-02",
+          "--output",
+          "logs/mario_lab/curricula/20261001T114927Z_061910c0/training",
+          "--set",
+          "env.practice_prob=0.35",
+          "--set",
+          "env.practice_frames=800",
+          "--set",
+          "env.practice_short_goals=1",
+          "--set",
+          "env.practice_gap=4",
+          "--set",
+          "env.practice_entry=0",
+          "--set",
+          "env.practice_exit=0",
+          "--set",
+          "env.practice_route=0",
+          "--set",
+          "env.mix_flat=10",
+          "--set",
+          "env.mix_gaps=13",
+          "--set",
+          "env.mix_pipes=10",
+          "--set",
+          "env.mix_stairs=10",
+          "--set",
+          "env.mix_walkers=39",
+          "--set",
+          "env.mix_underground=10",
+          "--set",
+          "env.mix_composite=13"
+        ],
+        "practice_prob": 0.35,
+        "weights": {
+          "practice_gap": 4,
+          "practice_entry": 0,
+          "practice_exit": 0,
+          "practice_route": 0
+        },
+        "root_weights": {
+          "mix_flat": 10,
+          "mix_gaps": 13,
+          "mix_pipes": 10,
+          "mix_stairs": 10,
+          "mix_walkers": 39,
+          "mix_underground": 10,
+          "mix_composite": 13
+        },
+        "run": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a",
+        "assessment_after": {
+          "panel": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a/evaluations/20261001T115200Z_d60bbe4a",
+          "rates": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 0.75,
+            "6": 1,
+            "7": 0.96875
+          },
+          "quality": [
+            0.75,
+            0.9598214285714286
+          ],
+          "weights": {
+            "practice_gap": 0,
+            "practice_entry": 0,
+            "practice_exit": 0,
+            "practice_route": 0
+          },
+          "root_weights": {
+            "mix_flat": 10,
+            "mix_gaps": 10,
+            "mix_pipes": 10,
+            "mix_stairs": 10,
+            "mix_walkers": 33,
+            "mix_underground": 10,
+            "mix_composite": 13
+          },
+          "pipe_visits": 32,
+          "pipe_returns": 32
+        }
+      }
+    ],
+    "initial_assessment": {
+      "panel": "logs/mario_lab/experiments/CUDA001_pipe-practice_20261001T113034Z_21bd3948/evaluations/20261001T114927Z_9f333524",
+      "rates": {
+        "1": 1,
+        "2": 0.625,
+        "3": 1,
+        "4": 1,
+        "5": 0.4375,
+        "6": 0.84375,
+        "7": 0.96875
+      },
+      "quality": [
+        0.4375,
+        0.8392857142857143
+      ],
+      "weights": {
+        "practice_gap": 38,
+        "practice_entry": 16,
+        "practice_exit": 0,
+        "practice_route": 16
+      },
+      "root_weights": {
+        "mix_flat": 10,
+        "mix_gaps": 44,
+        "mix_pipes": 10,
+        "mix_stairs": 10,
+        "mix_walkers": 61,
+        "mix_underground": 25,
+        "mix_composite": 13
+      },
+      "pipe_visits": 27,
+      "pipe_returns": 27
+    },
+    "best_run": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a",
+    "best": {
+      "panel": "logs/mario_lab/curricula/20261001T114927Z_061910c0/training/GEN001_adaptive-02_20261001T115100Z_d911125a/evaluations/20261001T115200Z_d60bbe4a",
+      "rates": {
+        "1": 1,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 0.75,
+        "6": 1,
+        "7": 0.96875
+      },
+      "quality": [
+        0.75,
+        0.9598214285714286
+      ],
+      "weights": {
+        "practice_gap": 0,
+        "practice_entry": 0,
+        "practice_exit": 0,
+        "practice_route": 0
+      },
+      "root_weights": {
+        "mix_flat": 10,
+        "mix_gaps": 10,
+        "mix_pipes": 10,
+        "mix_stairs": 10,
+        "mix_walkers": 33,
+        "mix_underground": 10,
+        "mix_composite": 13
+      },
+      "pipe_visits": 32,
+      "pipe_returns": 32
+    },
+    "stop_reason": "round budget exhausted",
+    "finished_utc": "2026-10-01T11:52:14.247648+00:00"
+  },
+  "qualification": {
+    "cpu_sanitized": true,
+    "generated_layouts": 800,
+    "practice_seeded_setups": 400,
+    "cuda_parity_cases": 9,
+    "cuda_envs_per_case": 17,
+    "cuda_decisions_per_case": 256,
+    "legacy_parity": "legacy_parity.json",
+    "sanitized_policy_eval_with_practice_cap_above_root_cap": true
+  }
+}

@@ -185,9 +185,11 @@ static int terminal_view(const uint32_t *r,WFView *v){
     WFNode *n=node(v,1u,WF_PANEL,WF_ENABLED|WF_CLICKABLE|
         (r[34]?WF_FOCUSED:0u));
     if(!n||wf_text_add(v,"terminal",8u,&n->name))return -1;
+    n->capacity=128u; /* public command buffer, including its terminator */
     n=node(v,2u,WF_TEXT,0u);
     if(!n||wf_text_add(v,"user$",5u,&n->name)||
        add_units(v,r+2048u,128u,&n->value))return -1;
+    n->capacity=128u;
     n=node(v,3u,WF_TEXT,0u);
     char output[1024];if(!n||terminal_output(r,output,sizeof output)||
        wf_text_add(v,"Output",6u,&n->name)||

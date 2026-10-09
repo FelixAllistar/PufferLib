@@ -1,0 +1,130 @@
+{
+  "frames": 17280,
+  "frames_outside_gameplay": 3399,
+  "nonidle_frame_boundaries": 16,
+  "game_mode_task_changes": 96,
+  "death_routine_entries": 2,
+  "player_form_changes": 49,
+  "injury_timer_activations": 12,
+  "star_timer_activations": 1,
+  "cases": 72,
+  "actor_ids": [
+    6,
+    21,
+    40,
+    45,
+    46,
+    53
+  ],
+  "powerup_types": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "player_forms": [
+    0,
+    1,
+    2
+  ],
+  "raw_area_pointer_bytes": [
+    37,
+    96,
+    194
+  ],
+  "active_area_pointers": [
+    66,
+    96
+  ],
+  "game_engine_routines": [
+    0,
+    6,
+    8,
+    10,
+    11
+  ],
+  "game_modes_tasks": [
+    [
+      1,
+      0
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      3
+    ],
+    [
+      2,
+      0
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "actor_state_values": {
+    "6": [
+      0,
+      1,
+      4,
+      34
+    ],
+    "21": [
+      0
+    ],
+    "40": [
+      0
+    ],
+    "45": [
+      0,
+      34,
+      64
+    ],
+    "46": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      128,
+      130,
+      192,
+      194
+    ],
+    "53": [
+      0
+    ]
+  },
+  "actor_position_change_frames": {
+    "6": 7596,
+    "21": 133,
+    "40": 2482,
+    "45": 3598,
+    "46": 2149
+  },
+  "actor_state_change_frames": {
+    "6": 191,
+    "45": 14,
+    "46": 157
+  },
+  "coverage_is_exhaustive": false
+}

@@ -14,10 +14,17 @@ typedef struct {
 
 uint64_t kag_bc_source_hash(void) { return KAG_BC_SOURCE_HASH; }
 int kag_bc_abi(int field) {
-    const int values[] = {OBS_SIZE, NUM_ATNS, KAG_ALL_LOGITS, 5};
+    const int values[] = {OBS_SIZE, NUM_ATNS, KAG_ALL_LOGITS, KAG_POLICY_VERSION};
     return (unsigned)field < 4 ? values[field] : -1;
 }
-int kag_bc_executor(KagBCReplay* r) { return 2; }
+int kag_bc_executor(KagBCReplay* r) {
+    (void)r;
+#ifdef KAG_DIRECT_POLICY
+    return 0;
+#else
+    return 2;
+#endif
+}
 
 KagBCReplay* kag_bc_create(const KGConfig* config, const char* profile) {
     Ini ini = {0};
@@ -30,6 +37,9 @@ KagBCReplay* kag_bc_create(const KGConfig* config, const char* profile) {
     dict_set(d, "num_agents", 2);
     dict_set(d, "reset_state_prob", 0);
     KagBCReplay* r = (KagBCReplay*)calloc(1, sizeof(*r));
+#ifdef KAG_DIRECT_POLICY
+    kag_critic_mode = puf_ini_get(&ini,"policy","critic_mode");
+#endif
     puf_init(&r->env, d);
     KGConfig expected;
     kg_config_default(&expected);
@@ -54,6 +64,15 @@ KagBCReplay* kag_bc_create(const KGConfig* config, const char* profile) {
             h = (h ^ bytes[j]) * 1099511628211ULL;
         }
     }
+#ifdef KAG_DIRECT_POLICY
+    // Direct labels/returns have a separate policy/reward contract. Do not
+    // silently mix them with legacy cash-return datasets of identical shapes.
+    const double direct_contract[] = {KAG_POLICY_VERSION, KAG_OBSERVATION_ENTITIES,
+        r->env.reward_win_loss_draw, r->gamma, kag_critic_mode};
+    assert(r->env.reward_win_loss_draw == 1 && r->gamma == 1);
+    bytes = (const unsigned char*)direct_contract;
+    for (size_t j = 0; j < sizeof(direct_contract); j++) h = (h ^ bytes[j]) * 1099511628211ULL;
+#endif
     r->semantics_hash = h;
     for (int p = 0; p < 2; p++) {
         r->env.agents[p].rewards = r->rewards + p;
@@ -160,6 +179,9 @@ int kag_bc_effects(KagBCReplay* r, int p, const KGAction* pair,
 
 int kag_bc_view(KagBCReplay* r, int p, float* obs, unsigned char* mask) {
     if (!r || p < 0 || p >= 2 || !obs || !mask) return 0;
+#ifdef KAG_DIRECT_POLICY
+    kag_observe(&r->env,false);
+#endif
     memcpy(obs, r->obs[p], sizeof(r->obs[p]));
     memcpy(mask, r->mask[p], sizeof(r->mask[p]));
     return 1;

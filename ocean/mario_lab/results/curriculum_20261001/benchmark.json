@@ -1,0 +1,45 @@
+{
+  "command": [
+    "./build/mario_lab/bench_cuda",
+    "4096",
+    "4096"
+  ],
+  "source_sha256": {
+    "ocean/mario_lab/ml_sim.h": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+    "ocean/mario_lab/mario_lab.h": "83bd5c98a71cbd896559fadd1c22c4e84aa4d8bc28494577734433f5d3f124aa",
+    "ocean/mario_lab/mario_lab.cu": "5b41ade30aa473d299c0db56c1de93482447618eb23df966e4bfd3bd12fcdcca",
+    "ocean/mario_lab/tests/bench_cuda.cu": "493ec278591a4ef4ba408a6481b8d3116391efef55c8e99c9fd030c505fec808",
+    "build/mario_lab/bench_cuda": "61c2459bf1821c22fd3d299deddd745b3620d98c2d518da921c4595952467f69"
+  },
+  "measurement": {
+    "gpu": "NVIDIA GeForce GTX 1060 3GB",
+    "envs": 4096,
+    "steps": 4096,
+    "seconds": 5.746795,
+    "decisions_per_second": 2919404,
+    "frames_per_decision": 1,
+    "warmup_steps": 64,
+    "seed": 73,
+    "split": 0,
+    "course": 0,
+    "difficulty": 1,
+    "length": 96,
+    "max_frames": 2400,
+    "observations": 1128,
+    "state_bytes": 6128,
+    "episodes_including_warmup": 21694,
+    "scripted_clears_including_warmup": 19624,
+    "includes_policy_training": false
+  },
+  "practice_prob": 0,
+  "full_course_weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "driver": "581.63"
+}

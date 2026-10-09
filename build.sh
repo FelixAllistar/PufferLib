@@ -193,7 +193,7 @@ elif [ "$ENV" = "pokemon" ]; then
 elif [ "$ENV" = "webnav" ]; then
     SRC_DIR="ocean/$ENV"
     LINK_ARCHIVES+=("build/webnav/libwebnav.a")
-elif [ "$ENV" = "webnav_family" ] || [ "$ENV" = "webnav_forms" ] || [ "$ENV" = "webnav_navigation" ] || [ "$ENV" = "webnav_numeric" ] || [ "$ENV" = "webnav_email" ] || [ "$ENV" = "webnav_catalog" ]; then
+elif [ "$ENV" = "webnav_unified" ] || [ "$ENV" = "webnav_family" ] || [ "$ENV" = "webnav_forms" ] || [ "$ENV" = "webnav_navigation" ] || [ "$ENV" = "webnav_numeric" ] || [ "$ENV" = "webnav_email" ] || [ "$ENV" = "webnav_catalog" ]; then
     SRC_DIR="ocean/$ENV"
     # The environment loads the checked CPU Bend family DSO at runtime.
     # Compile the loader as C so its ABI is shared by the CUDA trainer and
@@ -204,7 +204,14 @@ elif [ "$ENV" = "webnav_family" ] || [ "$ENV" = "webnav_forms" ] || [ "$ENV" = "
         -o build/webnav/families/loader_train.o
     LINK_ARCHIVES+=("build/webnav/families/loader_train.o")
     EXTRA_LDFLAGS+=(-ldl)
-    if [ "$ENV" = "webnav_family" ]; then
+    if [ "$ENV" = "webnav_unified" ]; then
+        for unit in capabilities caps_basic caps_text caps_widgets caps_pointer policy semantic; do
+            ${CC:-clang} -O2 -std=c11 -Iocean/webnav/unified -c \
+                "ocean/webnav/unified/$unit.c" -o "build/webnav/families/unified_$unit.o"
+            LINK_ARCHIVES+=("build/webnav/families/unified_$unit.o")
+        done
+    fi
+    if [ "$ENV" = "webnav_family" ] || [ "$ENV" = "webnav_unified" ]; then
         ${CC:-clang} -O2 -std=c11 -Ivendor -Iocean/webnav -c \
             ocean/webnav/text_encoder.c -o build/webnav/families/text_encoder_train.o
         ${CC:-clang} -O2 -std=c11 -Ivendor -c vendor/cJSON.c \
@@ -246,6 +253,15 @@ elif [ "$ENV" = "swat" ]; then
             echo "SWAT training task: $SWAT_TRAINING_TASK (config/swat.ini)"
             ;;
     esac
+elif [ "$ENV" = "mario_sim" ] || [ "$ENV" = "mario_fpg_time" ]; then
+    SRC_DIR="ocean/$ENV"
+    if [ "${MODE:-native}" = "web" ] || [ "${MODE:-native}" = "cpu" ]; then
+        echo "Error: $ENV currently supports native C++ trainer/evaluator builds" >&2
+        exit 1
+    fi
+    make -f ocean/mario_sim/runtime.mk -j2 cpu gpu
+    LINK_ARCHIVES+=("build/mario_sim/runtime/logic_cpu.a")
+    EXTRA_LDFLAGS+=(-L/usr/local/cuda/lib64/stubs -lcuda)
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
@@ -284,6 +300,17 @@ fi
 
 # src/ocean.cu compiles only this env's custom net (PUFFER_NETHACK, PUFFER_NMMO3, …).
 EXTRA_CFLAGS+=(-DPUFFER_${ENV^^})
+if [ "$ENV" = "kaggriculture_direct" ]; then
+    echo "Use ./build.sh kaggriculture; there is one active Kaggriculture config." >&2
+    exit 1
+fi
+if [ "$ENV" = "kaggriculture" ]; then
+    EXTRA_CFLAGS+=(-DPUFFER_KAGGRICULTURE_DIRECT -DKAG_DIRECT_POLICY)
+    case "${MODE:-native}" in
+        native|profile) EXTRA_CFLAGS+=(-DKAG_WITH_PAIRED_CRITIC) ;;
+        *) echo "Use native train/eval for compact ABI 7; legacy CPU/web exporters are incompatible." >&2; exit 1 ;;
+    esac
+fi
 
 case "$ENV" in
     osrs_*)
@@ -559,6 +586,9 @@ if [ "$USE_GPU_ENV" = "1" ]; then
     fi
 else
     ENV_HEADER="$SRC_DIR/$ENV.h"
+fi
+if [ "$ENV" = "kaggriculture" ]; then
+    ENV_HEADER="ocean/kaggriculture_direct/kaggriculture_direct.h"
 fi
 mkdir -p build
 if ! grep -q 'typedef[[:space:]].*obs_t' "$ENV_HEADER" 2>/dev/null; then

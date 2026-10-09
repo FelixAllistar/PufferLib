@@ -1,0 +1,5263 @@
+{
+  "benchmark": "WebArena-Verified",
+  "revision": "6473f72db5dcefc97b5725b59e734504edc28a21",
+  "dataset_sha256": "d65275660814663375028e9017e1f929e3c38321041b125795e2713b52243d30",
+  "purpose": "Full evaluation planning inventory; not training input or coverage evidence.",
+  "planning_method": "Union of proposed site and outcome capability envelopes; not a minimal or behavior-audited decomposition of each task.",
+  "total_tasks": 812,
+  "total_templates": 190,
+  "outcome_counts": {
+    "retrieve": 325,
+    "navigate": 113,
+    "mutate": 374
+  },
+  "cross_site_tasks": 48,
+  "site_memberships": {
+    "shopping_admin": 184,
+    "map": 128,
+    "shopping": 192,
+    "reddit": 129,
+    "gitlab": 204,
+    "wikipedia": 23
+  },
+  "qualified_simulator_templates": 0,
+  "next_audit": "Inspect original event/state dependencies for each template, then map them to primitive compositions and compare independently advanced original-site states.",
+  "templates": [
+    {
+      "template_id": 4,
+      "task_ids": [
+        595,
+        596,
+        597,
+        598,
+        599
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 5,
+      "task_ids": [
+        605,
+        606,
+        607,
+        608,
+        609
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 6,
+      "task_ids": [
+        399,
+        400,
+        401,
+        402,
+        403
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 7,
+      "task_ids": [
+        580,
+        581,
+        582,
+        583,
+        584
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 9,
+      "task_ids": [
+        610,
+        611,
+        612,
+        613,
+        614
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 11,
+      "task_ids": [
+        615,
+        616,
+        617,
+        618,
+        619
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 12,
+      "task_ids": [
+        620,
+        621,
+        622,
+        623,
+        624
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 13,
+      "task_ids": [
+        625,
+        626,
+        627,
+        628,
+        629
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 15,
+      "task_ids": [
+        630,
+        631,
+        632,
+        633,
+        634
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 16,
+      "task_ids": [
+        640,
+        641,
+        642,
+        643,
+        644
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 17,
+      "task_ids": [
+        66,
+        67,
+        68,
+        69
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "discussion",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 19,
+      "task_ids": [
+        645,
+        646,
+        647,
+        648,
+        649
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 22,
+      "task_ids": [
+        404,
+        405,
+        406,
+        407,
+        408
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 23,
+      "task_ids": [
+        409,
+        410,
+        650,
+        651,
+        652
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 24,
+      "task_ids": [
+        714,
+        715,
+        716,
+        717,
+        718
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 25,
+      "task_ids": [
+        719,
+        720,
+        721,
+        722,
+        723,
+        724
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate",
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 27,
+      "task_ids": [
+        731,
+        732,
+        733,
+        734,
+        735
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 33,
+      "task_ids": [
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "discussion",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 35,
+      "task_ids": [
+        221,
+        222,
+        223,
+        224
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 36,
+      "task_ids": [
+        151,
+        152,
+        153,
+        154,
+        155
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 39,
+      "task_ids": [
+        236,
+        237
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 41,
+      "task_ids": [
+        218,
+        219,
+        220
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 42,
+      "task_ids": [
+        757,
+        758,
+        759,
+        760
+      ],
+      "sites": [
+        "map",
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 46,
+      "task_ids": [
+        248,
+        249,
+        250,
+        251,
+        252
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 47,
+      "task_ids": [
+        287
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 49,
+      "task_ids": [
+        356
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 51,
+      "task_ids": [
+        137,
+        138,
+        139,
+        140
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 52,
+      "task_ids": [
+        369,
+        370,
+        371,
+        372,
+        373
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 54,
+      "task_ids": [
+        761,
+        762
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 58,
+      "task_ids": [
+        363,
+        364,
+        365,
+        366,
+        367
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 59,
+      "task_ids": [
+        377,
+        378,
+        379,
+        380,
+        381
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 64,
+      "task_ids": [
+        84,
+        85,
+        86,
+        87,
+        88
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 65,
+      "task_ids": [
+        74,
+        75,
+        76
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 66,
+      "task_ids": [
+        98,
+        99,
+        100,
+        101
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 67,
+      "task_ids": [
+        89,
+        90,
+        91,
+        92,
+        93
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 68,
+      "task_ids": [
+        52,
+        53,
+        54,
+        55,
+        56
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 69,
+      "task_ids": [
+        57,
+        58,
+        59,
+        60,
+        61
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 70,
+      "task_ids": [
+        70,
+        71,
+        72,
+        73
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 72,
+      "task_ids": [
+        80,
+        81,
+        82,
+        83
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 73,
+      "task_ids": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 75,
+      "task_ids": [
+        763,
+        764,
+        765,
+        766,
+        767
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 77,
+      "task_ids": [
+        36,
+        37,
+        38,
+        39,
+        40
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 78,
+      "task_ids": [
+        32,
+        33,
+        34,
+        35
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 79,
+      "task_ids": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 84,
+      "task_ids": [
+        552,
+        553,
+        554,
+        555,
+        791
+      ],
+      "sites": [
+        "gitlab",
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "calendar",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 85,
+      "task_ids": [
+        265,
+        266,
+        267,
+        268
+      ],
+      "sites": [
+        "map",
+        "wikipedia"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "document",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 87,
+      "task_ids": [
+        556,
+        557,
+        558,
+        559,
+        560,
+        561
+      ],
+      "sites": [
+        "gitlab",
+        "wikipedia"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "calendar",
+        "document",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 88,
+      "task_ids": [
+        562,
+        563,
+        564,
+        565,
+        566
+      ],
+      "sites": [
+        "gitlab",
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "calendar",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 94,
+      "task_ids": [
+        737,
+        738,
+        739,
+        740,
+        741
+      ],
+      "sites": [
+        "map",
+        "wikipedia"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "browser_contexts",
+        "browser_navigation",
+        "document",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 101,
+      "task_ids": [
+        671,
+        672,
+        673,
+        674,
+        675
+      ],
+      "sites": [
+        "reddit",
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 116,
+      "task_ids": [
+        681,
+        682,
+        683
+      ],
+      "sites": [
+        "gitlab",
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "calendar",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 117,
+      "task_ids": [
+        684,
+        685,
+        686,
+        687,
+        688
+      ],
+      "sites": [
+        "gitlab",
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "calendar",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 120,
+      "task_ids": [
+        97
+      ],
+      "sites": [
+        "map",
+        "wikipedia"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "document",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 134,
+      "task_ids": [
+        313
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 135,
+      "task_ids": [
+        225
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 136,
+      "task_ids": [
+        163,
+        164,
+        165,
+        166,
+        167
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 137,
+      "task_ids": [
+        351,
+        352,
+        353,
+        354,
+        355
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 138,
+      "task_ids": [
+        238,
+        239,
+        240,
+        241,
+        242
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 139,
+      "task_ids": [
+        269,
+        270,
+        271,
+        272,
+        273
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 145,
+      "task_ids": [
+        431,
+        432,
+        433,
+        434,
+        435
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 147,
+      "task_ids": [
+        329,
+        330,
+        331,
+        332,
+        333
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 151,
+      "task_ids": [
+        118
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 153,
+      "task_ids": [
+        653,
+        654,
+        655,
+        656,
+        657
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 154,
+      "task_ids": [
+        528,
+        529,
+        530,
+        531,
+        532
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 155,
+      "task_ids": [
+        146,
+        147,
+        148,
+        149,
+        150
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 156,
+      "task_ids": [
+        436,
+        437,
+        438,
+        439,
+        440
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 159,
+      "task_ids": [
+        124,
+        125,
+        126
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 160,
+      "task_ids": [
+        319,
+        320,
+        321,
+        322,
+        323
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 161,
+      "task_ids": [
+        117
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 162,
+      "task_ids": [
+        141,
+        142,
+        143,
+        144,
+        145
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 163,
+      "task_ids": [
+        689,
+        690,
+        691,
+        692,
+        693
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 165,
+      "task_ids": [
+        571,
+        572,
+        573,
+        574,
+        575
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 169,
+      "task_ids": [
+        334,
+        335,
+        336,
+        337,
+        338
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 171,
+      "task_ids": [
+        158,
+        159,
+        160,
+        161,
+        162
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 172,
+      "task_ids": [
+        506,
+        507,
+        508,
+        792,
+        793
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate",
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 180,
+      "task_ids": [
+        298,
+        299,
+        300,
+        301,
+        302
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 182,
+      "task_ids": [
+        376
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 186,
+      "task_ids": [
+        465,
+        466,
+        467,
+        468,
+        469
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 188,
+      "task_ids": [
+        368
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 189,
+      "task_ids": [
+        511,
+        512,
+        513,
+        514,
+        515
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 191,
+      "task_ids": [
+        794,
+        795,
+        796,
+        797,
+        798
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 193,
+      "task_ids": [
+        96
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 194,
+      "task_ids": [
+        585,
+        586,
+        587,
+        588,
+        589
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 196,
+      "task_ids": [
+        516,
+        517,
+        518,
+        519,
+        520
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 197,
+      "task_ids": [
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 199,
+      "task_ids": [
+        521
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 204,
+      "task_ids": [
+        279,
+        280,
+        281,
+        282
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 206,
+      "task_ids": [
+        358,
+        359,
+        360,
+        361,
+        362
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 207,
+      "task_ids": [
+        284,
+        285,
+        286
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 208,
+      "task_ids": [
+        324,
+        325,
+        326,
+        327,
+        328
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 210,
+      "task_ids": [
+        283
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 211,
+      "task_ids": [
+        260,
+        261,
+        262,
+        263,
+        264
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 212,
+      "task_ids": [
+        274,
+        275,
+        276,
+        277,
+        278
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 213,
+      "task_ids": [
+        231,
+        232,
+        233,
+        234,
+        235
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 214,
+      "task_ids": [
+        188,
+        189,
+        190,
+        191,
+        192
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 216,
+      "task_ids": [
+        509,
+        510
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 222,
+      "task_ids": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 234,
+      "task_ids": [
+        288,
+        289,
+        290,
+        291,
+        292
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 237,
+      "task_ids": [
+        423
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 240,
+      "task_ids": [
+        538,
+        539,
+        540,
+        541,
+        542
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 241,
+      "task_ids": [
+        768,
+        769,
+        770
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 242,
+      "task_ids": [
+        453,
+        454,
+        455,
+        456,
+        457
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 243,
+      "task_ids": [
+        771
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 244,
+      "task_ids": [
+        243,
+        244,
+        245,
+        246,
+        247
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 245,
+      "task_ids": [
+        112,
+        113,
+        114,
+        115,
+        116
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 246,
+      "task_ids": [
+        772,
+        773,
+        774,
+        775,
+        776,
+        790
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 247,
+      "task_ids": [
+        458,
+        459,
+        460,
+        461,
+        462,
+        463
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 248,
+      "task_ids": [
+        344,
+        345,
+        346,
+        347,
+        348
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 249,
+      "task_ids": [
+        213,
+        214,
+        215,
+        216,
+        217
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 250,
+      "task_ids": [
+        119,
+        120,
+        121,
+        122,
+        123
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 251,
+      "task_ids": [
+        464,
+        543,
+        544,
+        545,
+        546
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 252,
+      "task_ids": [
+        547,
+        548,
+        549,
+        550,
+        551
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 253,
+      "task_ids": [
+        676,
+        677,
+        678,
+        679,
+        680
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 255,
+      "task_ids": [
+        157
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 256,
+      "task_ids": [
+        694,
+        695,
+        696,
+        697,
+        698
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 257,
+      "task_ids": [
+        470,
+        471,
+        472,
+        473,
+        474
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 258,
+      "task_ids": [
+        699,
+        700,
+        701,
+        702,
+        703
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 266,
+      "task_ids": [
+        374,
+        375
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 268,
+      "task_ids": [
+        704,
+        705,
+        706,
+        707,
+        708
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 270,
+      "task_ids": [
+        107,
+        108,
+        109,
+        110,
+        111
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 271,
+      "task_ids": [
+        709,
+        710,
+        711,
+        712,
+        713
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 274,
+      "task_ids": [
+        94,
+        95
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 275,
+      "task_ids": [
+        486,
+        487,
+        488,
+        489,
+        490
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 276,
+      "task_ids": [
+        62,
+        63,
+        64,
+        65
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 277,
+      "task_ids": [
+        77,
+        78,
+        79
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 279,
+      "task_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 280,
+      "task_ids": [
+        491,
+        492,
+        493,
+        494,
+        495
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 284,
+      "task_ids": [
+        496,
+        497,
+        498,
+        499,
+        500
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 285,
+      "task_ids": [
+        41,
+        42,
+        43
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 287,
+      "task_ids": [
+        501,
+        502,
+        503,
+        504,
+        505
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 288,
+      "task_ids": [
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 289,
+      "task_ids": [
+        168,
+        169,
+        170,
+        171,
+        172
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 290,
+      "task_ids": [
+        156
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 291,
+      "task_ids": [
+        357
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 292,
+      "task_ids": [
+        475,
+        476,
+        477,
+        478,
+        479
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 293,
+      "task_ids": [
+        480,
+        567,
+        568,
+        569,
+        570
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 294,
+      "task_ids": [
+        481,
+        482,
+        483,
+        484,
+        485
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 298,
+      "task_ids": [
+        349,
+        350
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 299,
+      "task_ids": [
+        339,
+        340,
+        341,
+        342,
+        343
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 300,
+      "task_ids": [
+        45,
+        46
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 303,
+      "task_ids": [
+        44
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 308,
+      "task_ids": [
+        441,
+        442,
+        443,
+        444,
+        445
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 310,
+      "task_ids": [
+        173,
+        174,
+        175,
+        176,
+        177
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 312,
+      "task_ids": [
+        259
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 316,
+      "task_ids": [
+        784,
+        785,
+        786,
+        787,
+        788
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 320,
+      "task_ids": [
+        205,
+        206,
+        207
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 321,
+      "task_ids": [
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 322,
+      "task_ids": [
+        132,
+        133,
+        134,
+        135,
+        136
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 323,
+      "task_ids": [
+        308,
+        309,
+        310,
+        311,
+        312
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 324,
+      "task_ids": [
+        314,
+        315,
+        316,
+        317,
+        318
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 325,
+      "task_ids": [
+        258
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 327,
+      "task_ids": [
+        658,
+        659,
+        660,
+        808,
+        809
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 328,
+      "task_ids": [
+        661,
+        662,
+        663,
+        664,
+        665,
+        789
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate",
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 329,
+      "task_ids": [
+        293,
+        294,
+        295,
+        296,
+        297
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 330,
+      "task_ids": [
+        533,
+        534,
+        535,
+        536,
+        537
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 331,
+      "task_ids": [
+        448,
+        449,
+        450,
+        451,
+        452
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 332,
+      "task_ids": [
+        742,
+        743,
+        744,
+        745,
+        746,
+        752,
+        753,
+        754,
+        755,
+        756
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 335,
+      "task_ids": [
+        666,
+        667,
+        668,
+        805,
+        806,
+        807
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 337,
+      "task_ids": [
+        669,
+        670
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 339,
+      "task_ids": [
+        590,
+        591,
+        592,
+        593,
+        594
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 348,
+      "task_ids": [
+        389,
+        390,
+        391,
+        392,
+        393
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 349,
+      "task_ids": [
+        102,
+        103,
+        104,
+        105,
+        106
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 351,
+      "task_ids": [
+        576,
+        577,
+        578,
+        579,
+        783
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate",
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 352,
+      "task_ids": [
+        394,
+        395,
+        396,
+        397,
+        398,
+        522
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 354,
+      "task_ids": [
+        523,
+        524,
+        525,
+        526,
+        527
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 355,
+      "task_ids": [
+        411,
+        412,
+        413,
+        414,
+        736
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 360,
+      "task_ids": [
+        415,
+        416,
+        417
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 361,
+      "task_ids": [
+        418,
+        419,
+        420,
+        421,
+        422
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 364,
+      "task_ids": [
+        208,
+        209,
+        210,
+        211,
+        212
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 366,
+      "task_ids": [
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 367,
+      "task_ids": [
+        193,
+        194,
+        195,
+        196,
+        197
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 368,
+      "task_ids": [
+        183,
+        184,
+        185,
+        186,
+        187
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 370,
+      "task_ids": [
+        226,
+        227,
+        228,
+        229,
+        230
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 371,
+      "task_ids": [
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430
+      ],
+      "sites": [
+        "map",
+        "wikipedia"
+      ],
+      "outcome_types": [
+        "navigate"
+      ],
+      "proposed_capability_envelope": [
+        "browser_contexts",
+        "browser_navigation",
+        "document",
+        "geography",
+        "public_page",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 500,
+      "task_ids": [
+        178,
+        179,
+        180,
+        181,
+        182
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 501,
+      "task_ids": [
+        253,
+        254,
+        255,
+        256,
+        257
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 600,
+      "task_ids": [
+        799,
+        800,
+        801,
+        802,
+        803
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 666,
+      "task_ids": [
+        384,
+        385
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 742,
+      "task_ids": [
+        777,
+        778,
+        779,
+        780,
+        781,
+        782
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 781,
+      "task_ids": [
+        382
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 782,
+      "task_ids": [
+        383
+      ],
+      "sites": [
+        "map"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "aggregate",
+        "browser_navigation",
+        "geography",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 999,
+      "task_ids": [
+        446,
+        447,
+        804,
+        810,
+        811
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 1001,
+      "task_ids": [
+        127
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 1002,
+      "task_ids": [
+        128,
+        129,
+        130,
+        131
+      ],
+      "sites": [
+        "shopping_admin"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "calendar",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 1355,
+      "task_ids": [
+        386
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 1356,
+      "task_ids": [
+        387,
+        388
+      ],
+      "sites": [
+        "shopping"
+      ],
+      "outcome_types": [
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_contexts",
+        "browser_navigation",
+        "commerce",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 1510,
+      "task_ids": [
+        725,
+        726,
+        727,
+        728,
+        729,
+        730
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate",
+        "retrieve"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "aggregate",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 2100,
+      "task_ids": [
+        747,
+        748,
+        749,
+        750,
+        751
+      ],
+      "sites": [
+        "gitlab"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "calendar",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "repository",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 3765,
+      "task_ids": [
+        600,
+        601,
+        602,
+        603,
+        604
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    },
+    {
+      "template_id": 6100,
+      "task_ids": [
+        635,
+        636,
+        637,
+        638,
+        639
+      ],
+      "sites": [
+        "reddit"
+      ],
+      "outcome_types": [
+        "mutate"
+      ],
+      "proposed_capability_envelope": [
+        "account_permissions",
+        "browser_navigation",
+        "discussion",
+        "draft_transaction",
+        "public_page",
+        "record_query",
+        "record_store",
+        "structured_finish"
+      ],
+      "status": "not_ported",
+      "event_semantics_audited": false
+    }
+  ]
+}

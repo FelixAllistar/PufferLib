@@ -1,0 +1,214 @@
+{
+  "experiment": "SKILL001",
+  "status": "complete",
+  "run": "1790959626339",
+  "fresh": false,
+  "parent_checkpoint": "checkpoints/mario_fpg/1790957064845/0000000067108864.bin",
+  "parent_checkpoint_sha256": "efb6b0a480b7aa354381b7e20f8c4ccb379362cbf34c7525c0b8b03be10b2a18",
+  "parent_lineage_frames": 67108864,
+  "planned_additional_game_frames": 268435456,
+  "planned_lineage_frames": 335544320,
+  "resume": "Weights only; optimizer, recurrent state, environment RNG, and per-environment curriculum estimates restart.",
+  "config_changes": [
+    [
+      "base",
+      "load_model_path",
+      "None",
+      "checkpoints/mario_fpg/1790957064845/0000000067108864.bin"
+    ],
+    [
+      "train",
+      "total_timesteps",
+      "67108864",
+      "268435456"
+    ]
+  ],
+  "checkpoint_directory": "checkpoints/mario_fpg/1790959626339",
+  "native_log": "logs/mario_fpg/1790959626339.ini",
+  "console_log": "build/mario_fpg/continued_20261002_console.log",
+  "rom_training": false,
+  "behavior_cloning": false,
+  "terminal_only_reward": true,
+  "reset_bank_sha256": "32d903550391bb5ba849b2b4c75de21c984a8a223b357c0890aa134ee4bdb41b",
+  "sources_sha256": {
+    "build_bank.cpp": "ba78cf3e20b56e7fde7a538b997d1b56de16402f7ec7fff696f7f39bca22d18c",
+    "eval.c": "f89631575fbebdcdc61d66d2a3f53db6b71d2c70fe4f1c83903ee04a6a34c487",
+    "fpg_config.h": "088be1754d65afd9abae72b5dbb984b07e8de53f9b75b92148d85649e223dc38",
+    "fpg_core.h": "81218dc235dd484a23fc5828d5b4a2b7eaf1a83dc0e47b9c7646a39e44b54f5c",
+    "fpg_rom.h": "ea1c21188451178ea76aea5d1825970609c393e5885675367327e59c8278c97b",
+    "fpg_task.h": "fe2bb1c4c8a2ce329a10370bd00c785d6f0bbf589eeb1142c5c9be81770acfe3",
+    "mario_fpg.c": "acea8864ef1d61814f1071a6f9cbf755119d21952ea97ff811aa5e4d98694169",
+    "mario_fpg.cu": "a28540739d846763f95be990b2a77e5a740d215dcc5f5bccbc7874e446afaa9d",
+    "mario_fpg.h": "593be66f00484812466961ac1401a0b4232eedd9506904c3632608356be19f5c",
+    "policy.c": "f2a4d86edd494a605a253971bc03daaa4ee376668173f5291f8e6432501eb269",
+    "policy.h": "7b67a1881e766fad015c455e0aef3501bc6a83dad9752faa299f9e02bc4a07f8",
+    "reference.cpp": "9016acce6a2ba1204ff1086f886dbd64d35d5fc6090a610ed54812911cbed0a4",
+    "search.h": "3741e19515025c0f686ef0b98c7fe90ef224170d0d0ff60ff8ad6a60c04b6ea7",
+    "transfer.cpp": "963d032a61384756fe12cbbe60af0bbe5fa10c832ec1ea97f371493016300b3e"
+  },
+  "training_binary_sha256": "9a0cc8b630921a89c14357ba9c8c872f07da7cdc915d38eb44e2bfe9c8b92b88",
+  "config_sha256": "54083152409a15ee1a15017808eed346cdf195bb0a9190cbbccae4746f8bb050",
+  "default_config_sha256": "1e53af29f759bb9a333bbb5d7263fe842b3057c67f2c61159c8398a56703399a",
+  "rom_panel": "One reachable reference FPG trajectory; 8 contact starts, 24 approach starts, 32 starts spread over 33..96 remaining reference frames, and one stair start. Repeated trials are not independent routes.",
+  "bank_limit": "Eight searched courses per split; phase-augmentation acceptance is conditioned on the existing suffix succeeding. This is a small, biased reset distribution.",
+  "evaluation_role": "Repeated development panels; not a sealed benchmark.",
+  "evaluations": [
+    {
+      "additional_game_frames": 67108864,
+      "lineage_game_frames": 134217728,
+      "checkpoint": "checkpoints/mario_fpg/1790959626339/0000000067108864.bin",
+      "checkpoint_sha256": "6b6859309752fd9b769f41c4a524c19abb3ad887195cb823d0245f024e1bfff3",
+      "synthetic": "after_067108864_eval.jsonl",
+      "rom_transfer": "after_067108864_transfer.jsonl",
+      "synthetic_episodes_per_panel": 64,
+      "rom_episodes_per_panel": 32,
+      "rom_action_replays_verified": 256,
+      "controller_discrepancies": 8,
+      "greedy_synthetic_fpg_by_split": [
+        [
+          43,
+          20,
+          21,
+          15
+        ],
+        [
+          54,
+          29,
+          14,
+          0
+        ]
+      ],
+      "greedy_rom_fpg": [
+        28,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "additional_game_frames": 134217728,
+      "lineage_game_frames": 201326592,
+      "checkpoint": "checkpoints/mario_fpg/1790959626339/0000000134217728.bin",
+      "checkpoint_sha256": "f42a633236b65761e6992b6f622aa89d380158bde834b84c90f505c4f51ec0cb",
+      "synthetic": "after_134217728_eval.jsonl",
+      "rom_transfer": "after_134217728_transfer.jsonl",
+      "synthetic_episodes_per_panel": 64,
+      "rom_episodes_per_panel": 32,
+      "rom_action_replays_verified": 256,
+      "controller_discrepancies": 0,
+      "greedy_synthetic_fpg_by_split": [
+        [
+          45,
+          24,
+          41,
+          60
+        ],
+        [
+          54,
+          32,
+          30,
+          56
+        ]
+      ],
+      "greedy_rom_fpg": [
+        24,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "additional_game_frames": 268435456,
+      "lineage_game_frames": 335544320,
+      "checkpoint": "checkpoints/mario_fpg/1790959626339/0000000268435456.bin",
+      "checkpoint_sha256": "84222a6b389619e0abab4fbd58f3df6680cf158622d7347d200aada37af39da4",
+      "synthetic": "continued_eval.jsonl",
+      "rom_transfer": "continued_transfer.jsonl",
+      "synthetic_episodes_per_panel": 64,
+      "rom_episodes_per_panel": 32,
+      "rom_action_replays_verified": 256,
+      "controller_discrepancies": 0,
+      "greedy_synthetic_fpg_by_split": [
+        [
+          44,
+          20,
+          39,
+          60
+        ],
+        [
+          55,
+          28,
+          28,
+          51
+        ]
+      ],
+      "greedy_rom_fpg": [
+        12,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "train_game_frames": 268435456,
+  "decisions": 268435456,
+  "lineage_game_frames": 335544320,
+  "total_experiment_compute_including_separate_pilot": 343932928,
+  "native_reported_seconds": 852.0458636283875,
+  "end_to_end_frames_per_second": 315048.1299878428,
+  "checkpoint": "checkpoints/mario_fpg/1790959626339/0000000268435456.bin",
+  "checkpoint_sha256": "84222a6b389619e0abab4fbd58f3df6680cf158622d7347d200aada37af39da4",
+  "recommended_checkpoint": "checkpoints/mario_fpg/1790959626339/0000000134217728.bin",
+  "recommended_checkpoint_sha256": "f42a633236b65761e6992b6f622aa89d380158bde834b84c90f505c4f51ec0cb",
+  "recommended_lineage_game_frames": 201326592,
+  "checkpoint_selection": "Highest sum of greedy FPG successes across the four equally weighted synthetic validation tiers (split 1), among the three checkpoints evaluated in this continuation. Validation only; ROM and split 2 are reported separately.",
+  "recommended_validation_successes": 170,
+  "validation_episodes": 256,
+  "final_validation_successes": 163,
+  "same_optimizer_and_curriculum_for_entire_continuation": true,
+  "checkpoint_count": 128,
+  "all_transfer_action_tapes_verify_complete_nes_state": true,
+  "final_controller_discrepancies": 0,
+  "earlier_controller_discrepancies": "Eight one-frame differences in two failed sampled approach trials at the 134.2m lineage checkpoint, at X=3045 near the ROM left camera boundary. Zero at 201.3m and 335.5m.",
+  "final_training_interval": {
+    "perf": 0.9267241358757019,
+    "score": 0.9267241358757019,
+    "episode_return": 0.9267241358757019,
+    "episode_length": 93.47916412353516,
+    "normal_flag": 0.04885057359933853,
+    "deaths": 0.0,
+    "timeouts": 0.024425286799669266,
+    "augmented": 0.26293104887008667,
+    "contact_success_rate": 0.8358209133148193,
+    "contact_episodes": 0.09626436978578568,
+    "approach_success_rate": 0.867132842540741,
+    "approach_episodes": 0.10272988677024841,
+    "jump_success_rate": 0.9200000166893005,
+    "jump_episodes": 0.10775861889123917,
+    "stairs_success_rate": 0.9492227435112,
+    "stairs_episodes": 0.6932471394538879,
+    "n": 1392.0
+  },
+  "native_log_archive": "native_log.ini",
+  "training_trace": "training_trace.csv",
+  "training_trace_note": "Rounded console interval snapshots, not independent evaluation trials; exact final metrics are in native_log.ini.",
+  "training_trace_rows": 1220,
+  "artifact_sha256": {
+    "after_067108864_eval.jsonl": "547f3fee1796f507b0236eb68801e454ba72f1a2a9fa9815d2c4a95b2378ebae",
+    "after_067108864_eval.log": "924813b4be2805003519b9cb48a18a70fbfe0c2b1424281890a801d33305308f",
+    "after_067108864_transfer.jsonl": "5b433b709873bf66e6bc82841dd22a78fd5e2770d7dc9e6284ba4ceac190f153",
+    "after_067108864_transfer.log": "8a41ffa724a536c31a4446c6dfa206f90bae21fe8341a5e6ecd253ef7edcd33f",
+    "after_134217728_eval.jsonl": "16625433d117d8a30387ef19c07333eb4f1b54040d63ecc3b0d87727e256ad7c",
+    "after_134217728_eval.log": "924813b4be2805003519b9cb48a18a70fbfe0c2b1424281890a801d33305308f",
+    "after_134217728_transfer.jsonl": "d16869366e4c81cdd358750a792550a38310f11453f9414eb2053fff9c57e506",
+    "after_134217728_transfer.log": "355c114408e983f5fc71c882166ddec4073e35207c414796763d3c830c3da7c8",
+    "config.ini": "54083152409a15ee1a15017808eed346cdf195bb0a9190cbbccae4746f8bb050",
+    "continued_eval.jsonl": "80e6b8ed2e82cf57460a44d8a1eee1347702e46b9dc6e141102a858d48e86718",
+    "continued_eval.log": "924813b4be2805003519b9cb48a18a70fbfe0c2b1424281890a801d33305308f",
+    "continued_transfer.jsonl": "d0f343c2c09cf38cecd968d129f76378e25c1ab1694e4c25d65ef705fece7d01",
+    "continued_transfer.log": "355c114408e983f5fc71c882166ddec4073e35207c414796763d3c830c3da7c8",
+    "default_config.ini": "1e53af29f759bb9a333bbb5d7263fe842b3057c67f2c61159c8398a56703399a",
+    "native_log.ini": "d9024b429d2f360f76318c53e663f0b2f37b35a5d5b2a86351fca596d1c80150",
+    "training_trace.csv": "f3c7735001acdde9dd0a6bb1efbc9c4cd3c071b7c0c8e5c197112d477c544d0e"
+  }
+}

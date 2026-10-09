@@ -241,3 +241,6 @@ vendor/fast-nle/
 # Abyss build artifacts
 /abyss_puffer
 /abyss_eval
+
+# Local historical submission packages, not repository source.
+/archive/

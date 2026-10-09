@@ -1,0 +1,171 @@
+{
+  "bundle": "logs/mario_lab/transfers/calibrate_symmetric-small-v3_20261001T130951Z_dc6bb44d",
+  "manifest_sha256": "1be875ef46e7720fb94a2372b78503efa0891622bf705d0f6344cd7c4a36a2af",
+  "profile_sha256": "89c79a5ee7e69a3de9f1bfde04bdb0202e578471cd3e972c329b9a39a81761c1",
+  "calibration": {
+    "legacy": {
+      "idle": {
+        "x_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "run": {
+        "x_fp": {
+          "rms_pixels": 35.835888419631196,
+          "max_abs_pixels": 58.9375
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "walk": {
+        "x_fp": {
+          "rms_pixels": 15.825446945966611,
+          "max_abs_pixels": 18.0625
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "brake": {
+        "x_fp": {
+          "rms_pixels": 21.910271246078462,
+          "max_abs_pixels": 29.875
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "reverse": {
+        "x_fp": {
+          "rms_pixels": 53.6211063202488,
+          "max_abs_pixels": 83.53125
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "jump_hold": {
+        "x_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        },
+        "feet_fp": {
+          "rms_pixels": 16.232544890246302,
+          "max_abs_pixels": 49.1875
+        }
+      },
+      "jump_tap": {
+        "x_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        },
+        "feet_fp": {
+          "rms_pixels": 3.0537863508655403,
+          "max_abs_pixels": 10.3125
+        }
+      },
+      "run_jump": {
+        "x_fp": {
+          "rms_pixels": 35.835888419631196,
+          "max_abs_pixels": 58.9375
+        },
+        "feet_fp": {
+          "rms_pixels": 23.3092481075454,
+          "max_abs_pixels": 61.6875
+        }
+      }
+    },
+    "measured": {
+      "idle": {
+        "x_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "run": {
+        "x_fp": {
+          "rms_pixels": 1.4225573993535183,
+          "max_abs_pixels": 1.75
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "walk": {
+        "x_fp": {
+          "rms_pixels": 0.1858425089122827,
+          "max_abs_pixels": 0.25
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "brake": {
+        "x_fp": {
+          "rms_pixels": 2.232658002790786,
+          "max_abs_pixels": 3.125
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "reverse": {
+        "x_fp": {
+          "rms_pixels": 3.1428266290549702,
+          "max_abs_pixels": 7.0
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      },
+      "jump_hold": {
+        "x_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        },
+        "feet_fp": {
+          "rms_pixels": 0.5354468038031138,
+          "max_abs_pixels": 2.5625
+        }
+      },
+      "jump_tap": {
+        "x_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        },
+        "feet_fp": {
+          "rms_pixels": 0.5562426993624809,
+          "max_abs_pixels": 0.625
+        }
+      },
+      "run_jump": {
+        "x_fp": {
+          "rms_pixels": 1.4225573993535183,
+          "max_abs_pixels": 1.75
+        },
+        "feet_fp": {
+          "rms_pixels": 0.0,
+          "max_abs_pixels": 0.0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "legacy_source": "logs/mario_lab/experiments/CUDA001_gap-root-control_20261001T105415Z_bdecbfa8/source/ocean/mario_lab/ml_sim.h",
+  "legacy_sha256": "d011ed09b20b66fc95c0de521945ba51ce71fc063760f28bff57fdd6b0785e60",
+  "current_sha256": "6d5a9a2843c5ccd8720bd28be1a24d574c3668459c7b516704f44f8843e8cf95",
+  "cases": 64,
+  "decisions": 32768,
+  "old_state_bytes": 6112,
+  "new_state_bytes": 6128,
+  "original_state_prefix_bit_exact": true,
+  "observations_bit_exact": true,
+  "rewards_bit_exact": true,
+  "practice_prob": 0
+}

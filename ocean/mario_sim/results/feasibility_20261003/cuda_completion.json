@@ -1,0 +1,14 @@
+{
+  "supplement": {
+    "returncode": 0
+  },
+  "world": {
+    "returncode": 0
+  },
+  "boundaries": {
+    "returncode": 0
+  },
+  "guards": {
+    "returncode": 0
+  }
+}

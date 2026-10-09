@@ -1,0 +1,494 @@
+{
+  "version": 1,
+  "purpose": "Reusable simulator behavior units; MiniWoB task names are compatibility recipes, not primitive boundaries.",
+  "runtime": "Stock CPU Bend for state, events and generation; C for transport/projection; existing C/CUDA learner.",
+  "composition": "Controls compose page views. Views bind persistent records and drafts. Routes compose workflows. Domain engines supply application-specific state.",
+  "identity": {
+    "entity_id": "Persistent within an episode; independent of row position and DOM order.",
+    "route_id": "Application-local page identity; resolved through public URLs/links.",
+    "node_ref": "Ephemeral observation/action reference; stale refs reject without mutation.",
+    "history_entry": "Route plus view query, pagination, scroll and focus state; restoration policy is versioned.",
+    "draft_id": "Editable working state; isolated from committed records until commit."
+  },
+  "layers": [
+    {
+      "name": "controls",
+      "meaning": "Observable widgets and their local input behavior; role, enabled state, focus, selection and gestures."
+    },
+    {
+      "name": "page",
+      "meaning": "Control layout, public relationships, routing, history, loading and errors."
+    },
+    {
+      "name": "data",
+      "meaning": "Persistent entities, queries, relationships, working drafts and atomic commits."
+    },
+    {
+      "name": "workflow",
+      "meaning": "Application rules and goals composed from the lower layers; no task-name dispatch in the policy."
+    }
+  ],
+  "primitives": [
+    {
+      "id": "control_activation",
+      "layer": "controls",
+      "status": "extract_from_existing",
+      "sources": [
+        "../miniwob/Widgets.bend"
+      ],
+      "operations": [
+        "activate",
+        "checkbox_toggle",
+        "radio_select",
+        "disabled_reject"
+      ]
+    },
+    {
+      "id": "text_edit",
+      "layer": "controls",
+      "status": "extracted_compatibility_checked",
+      "sources": [
+        "text/Model.bend",
+        "text/Codec.bend",
+        "../miniwob/Text.bend"
+      ],
+      "operations": [
+        "focus",
+        "insert",
+        "delete",
+        "selection",
+        "copy",
+        "paste"
+      ],
+      "limits": [
+        "The reusable Field contains no private goal. MiniWoB goal and scoring stay in the compatibility wrapper.",
+        "Transport presets still bound character repertoire and capacity."
+      ]
+    },
+    {
+      "id": "choice",
+      "layer": "controls",
+      "status": "extract_from_existing",
+      "sources": [
+        "../families/controls/Model.bend",
+        "../miniwob/autocomplete/Model.bend"
+      ],
+      "operations": [
+        "open",
+        "choose_option",
+        "dismiss",
+        "query_suggestions"
+      ]
+    },
+    {
+      "id": "menu",
+      "layer": "controls",
+      "status": "extract_from_existing",
+      "sources": [
+        "../families/menus/Model.bend",
+        "../families/panels/Model.bend"
+      ],
+      "operations": [
+        "expand",
+        "collapse",
+        "switch_panel",
+        "activate_link"
+      ]
+    },
+    {
+      "id": "calendar",
+      "layer": "controls",
+      "status": "extract_from_existing",
+      "sources": [
+        "../families/calendar/Model.bend"
+      ],
+      "operations": [
+        "change_month",
+        "choose_day",
+        "date_range"
+      ]
+    },
+    {
+      "id": "pointer_scroll",
+      "layer": "controls",
+      "status": "extract_from_existing",
+      "sources": [
+        "../families/drag/Model.bend",
+        "../families/scroll/Model.bend",
+        "../families/geometry/Model.bend"
+      ],
+      "operations": [
+        "pointer_down",
+        "pointer_move",
+        "pointer_up",
+        "scroll",
+        "hover"
+      ]
+    },
+    {
+      "id": "public_page",
+      "layer": "page",
+      "status": "versioned_native_and_browser_projection_checked",
+      "sources": [
+        "page/page.h",
+        "../benchmarks/browser_view.cjs"
+      ],
+      "limits": [
+        "Companion metadata shares retained WF public refs; unresolved or ambiguous relationships report incompleteness.",
+        "The existing policy encodes parent hierarchy; additional companion fields do not change its feature dimensions.",
+        "Browser projection fixtures are not original-site workflow parity."
+      ],
+      "operations": [
+        "role_and_label",
+        "parent_child",
+        "table_row_column",
+        "link_destination",
+        "focused_value",
+        "truncation_report"
+      ],
+      "dependencies": [
+        "control_activation",
+        "text_edit"
+      ]
+    },
+    {
+      "id": "browser_navigation",
+      "layer": "page",
+      "status": "laws_and_native_checked",
+      "sources": [
+        "browser/Model.bend",
+        "browser/Wire.bend",
+        "browser/LAWS.bend",
+        "browser/PROOF.bend"
+      ],
+      "operations": [
+        "navigate",
+        "back",
+        "forward",
+        "advance_load",
+        "retry",
+        "reload"
+      ],
+      "limits": [
+        "Eight retained history entries; one pending load; same-route navigation reloads without adding history. Tab composition lives in browser_contexts; page-state restoration remains open."
+      ]
+    },
+    {
+      "id": "browser_contexts",
+      "layer": "page",
+      "status": "native_public_policy_interface_and_settled_browser_checked",
+      "operations": [
+        "open_tab",
+        "switch_tab",
+        "close_tab",
+        "popup",
+        "frame",
+        "same_document_navigation"
+      ],
+      "sources": [
+        "browser_contexts/Model.bend",
+        "browser_contexts/Wire.bend",
+        "browser_contexts/public.h"
+      ],
+      "implemented_operations": [
+        "open_tab",
+        "switch_tab",
+        "close_tab",
+        "background_load",
+        "independent_history",
+        "public_navigation_controls"
+      ],
+      "limits": [
+        "Up to 16 tabs and 32 application routes; route zero is blank. The native public controls use unchanged WF actions.",
+        "Three independent local Chromium fixtures qualify settled tab/history behavior only; binding controls into the original-site runner remains open.",
+        "Popups, frames, redirects, same-document and per-history page state remain unqualified."
+      ]
+    },
+    {
+      "id": "record_store",
+      "layer": "data",
+      "status": "laws_and_numeric_native_checked",
+      "operations": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "foreign_key",
+        "episode_isolation"
+      ],
+      "value_types": [
+        "text",
+        "integer",
+        "fixed_point_money",
+        "date",
+        "enum",
+        "boolean",
+        "entity_reference"
+      ],
+      "sources": [
+        "records/Model.bend",
+        "records/Value.bend",
+        "records/Schema.bend"
+      ]
+    },
+    {
+      "id": "record_query",
+      "layer": "data",
+      "status": "laws_and_numeric_native_checked",
+      "dependencies": [
+        "record_store"
+      ],
+      "operations": [
+        "search",
+        "filter",
+        "stable_sort",
+        "paginate",
+        "detail",
+        "preserve_query"
+      ],
+      "sources": [
+        "records/Query.bend"
+      ]
+    },
+    {
+      "id": "aggregate",
+      "layer": "data",
+      "status": "planned",
+      "dependencies": [
+        "record_query"
+      ],
+      "operations": [
+        "count",
+        "sum",
+        "min",
+        "max",
+        "group",
+        "join",
+        "date_window",
+        "unit_conversion"
+      ]
+    },
+    {
+      "id": "draft_transaction",
+      "layer": "data",
+      "status": "single_record_laws_and_native_checked",
+      "dependencies": [
+        "record_store",
+        "text_edit"
+      ],
+      "operations": [
+        "begin",
+        "edit",
+        "validate",
+        "confirm",
+        "commit",
+        "cancel",
+        "leave_ready_for_review"
+      ],
+      "invariants": [
+        "Cancel never commits.",
+        "Draft edits do not change committed records.",
+        "Invalid commit has no partial effect.",
+        "Repeated confirmation with the same transaction ID is idempotent."
+      ],
+      "sources": [
+        "transaction/Model.bend"
+      ]
+    },
+    {
+      "id": "structured_finish",
+      "layer": "workflow",
+      "status": "native_schema_browser_fixtures_and_original_submission_checked",
+      "sources": [
+        "finish/Model.bend",
+        "finish/finish.h",
+        "finish/api.c",
+        "response_form/Model.bend",
+        "response_form/response_form.h",
+        "../benchmarks/response_rpc.c",
+        "../benchmarks/browser_response.cjs"
+      ],
+      "limits": [
+        "The response-v1 browser runner binds existing WF actions with 112 DOM and up to 16 host nodes. One scripted original-site NAVIGATE submission passes the official scorer; no learned or full-suite claim.",
+        "Transport preset: 16384 data bytes, 2048 error-detail bytes, JSON depth at most 64."
+      ],
+      "operations": [
+        "finish_navigation",
+        "finish_mutation",
+        "finish_retrieval"
+      ],
+      "value_types": [
+        "null",
+        "boolean",
+        "number",
+        "string",
+        "array",
+        "object"
+      ],
+      "invariants": [
+        "Outputs originate from policy choices and public observed data.",
+        "Simulator reward and official browser grading remain separate."
+      ]
+    },
+    {
+      "id": "account_permissions",
+      "layer": "workflow",
+      "status": "planned",
+      "dependencies": [
+        "record_store",
+        "draft_transaction"
+      ],
+      "operations": [
+        "login",
+        "role_access",
+        "invite",
+        "profile_edit",
+        "private_public"
+      ]
+    },
+    {
+      "id": "discussion",
+      "layer": "workflow",
+      "status": "planned",
+      "dependencies": [
+        "record_query",
+        "draft_transaction"
+      ],
+      "operations": [
+        "forum",
+        "thread",
+        "reply",
+        "vote",
+        "subscribe",
+        "edit_post"
+      ]
+    },
+    {
+      "id": "commerce",
+      "layer": "workflow",
+      "status": "planned",
+      "dependencies": [
+        "record_query",
+        "draft_transaction",
+        "aggregate"
+      ],
+      "operations": [
+        "product_variant",
+        "inventory",
+        "price_rule",
+        "cart",
+        "wishlist",
+        "checkout",
+        "order_state",
+        "review",
+        "report"
+      ]
+    },
+    {
+      "id": "repository",
+      "layer": "workflow",
+      "status": "planned",
+      "dependencies": [
+        "record_query",
+        "draft_transaction",
+        "account_permissions"
+      ],
+      "operations": [
+        "project",
+        "issue",
+        "label",
+        "assignee",
+        "milestone",
+        "branch",
+        "file_edit",
+        "commit",
+        "merge_request",
+        "fork"
+      ]
+    },
+    {
+      "id": "document",
+      "layer": "workflow",
+      "status": "planned",
+      "dependencies": [
+        "record_query"
+      ],
+      "operations": [
+        "section",
+        "hyperlink",
+        "table",
+        "read_extract",
+        "ordered_reference"
+      ]
+    },
+    {
+      "id": "geography",
+      "layer": "workflow",
+      "status": "planned",
+      "dependencies": [
+        "record_query",
+        "aggregate"
+      ],
+      "operations": [
+        "place_lookup",
+        "coordinates",
+        "spatial_relation",
+        "route_graph",
+        "mode",
+        "duration",
+        "distance",
+        "multi_stop_route"
+      ],
+      "limits": [
+        "A generic nearest-place query alone cannot reproduce OSRM route semantics; independent route-service qualification is required."
+      ]
+    }
+  ],
+  "generation_axes": {
+    "independent_streams": [
+      "world_entities",
+      "goal",
+      "layout",
+      "language",
+      "latency_and_failures"
+    ],
+    "world": [
+      "record_count",
+      "relationship_depth",
+      "query_result_count",
+      "page_count",
+      "branching",
+      "prerequisites",
+      "reversible_and_committed_effects"
+    ],
+    "presentation": [
+      "label",
+      "node_order",
+      "layout",
+      "distractors",
+      "accessibility",
+      "paraphrase",
+      "negation",
+      "numeric_constraints"
+    ],
+    "observation": [
+      "visible_subset",
+      "loading",
+      "recoverable_errors",
+      "remembered_public_references"
+    ],
+    "evaluation_splits": [
+      "workflow_template",
+      "entity_set",
+      "appearance",
+      "language"
+    ],
+    "constraint": "No benchmark task instances, private answers or evaluator expressions generate training worlds or goals. Exploration algorithm and curriculum distribution remain research choices."
+  },
+  "implementation_order": [
+    "Qualify composed record application",
+    "Public relationships and explicit finish/answer transport",
+    "Shared learner and browser bindings",
+    "Broader typed values and domain workflows"
+  ]
+}
