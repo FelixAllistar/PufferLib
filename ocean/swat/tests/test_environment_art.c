@@ -915,6 +915,7 @@ static void culling_graphics(SwatView* view,const char* directory) {
     swat_sim_close(&sim);
     puts("PASS conservative culling: pixel-identical full/culled lit views, all shadow faces/contact depth, indoor/distant rooms/orthographic and breached geometry; immutable authority");
 }
+#include "ground_zoning_graphics.h"
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
@@ -932,10 +933,13 @@ int main(int argc,char** argv) {
     if(argc>2 && !strcmp(argv[2],"culling")) {culling_graphics(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && !strcmp(argv[2],"mounted")) {texture_owner_graphics("motel_mounted/motel_surface_junction.glb");mounted_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"roadside")) {roadside_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
-    if(argc>2 && (!strcmp(argv[2],"surroundings") || !strcmp(argv[2],"ground"))) {
+    if(argc>2 && (!strcmp(argv[2],"surroundings") || !strcmp(argv[2],"ground") || !strcmp(argv[2],"zoning"))) {
         SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;
         swat_sim_init(&sim,config,73);swat_environment_art_prepare_location(&view.environment,&sim.world);
-        if(!strcmp(argv[2],"ground"))ground_graphics(&view,directory);else surroundings_graphics(&view,directory);swat_sim_close(&sim);swat_view_close(&view);return 0;
+        if(!strcmp(argv[2],"ground"))ground_graphics(&view,directory);
+        else if(!strcmp(argv[2],"zoning"))zoning_graphics(&view,directory);
+        else surroundings_graphics(&view,directory);
+        swat_sim_close(&sim);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;
     }
     if(argc>2 && !strcmp(argv[2],"personal")) {personal_shadow_review(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel")) {room101_graphics(&view,directory);swat_view_close(&view);return 0;}

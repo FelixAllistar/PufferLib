@@ -1,0 +1,39 @@
+{
+  "source_folder": "https://drive.google.com/drive/folders/1OBnxv8S6fH9_lnfLmV9BHq9Od80DrZdR",
+  "original_runtime_archive": "1w2jHVnI5ywXL_GWJMc6tdqswB_Y9G1n2",
+  "original_materials_1k_archive": "1RFfLKFTrfI5_Mlvb0YdNw5fYMnbhuTd1",
+  "ground_render_sha256": "4620f9e36bf4d643d46c926b95d8987fab401e2a79deca609d9eb9e3d39bf7a3",
+  "ground_collision_sha256": "b58d324b5543006c2f0b357e118ad3c7bd683b830b4d88a52d7c0af1bbd82c57",
+  "files": [
+    {
+      "path": "assets/environment/motel_zoning/LICENSE.txt",
+      "size": 636,
+      "sha256": "5ba0c89dcf28a9977ce829f0d77647e9117d7fdfa0023a45738eb1f8c49f91cc"
+    },
+    {
+      "path": "assets/environment/motel_zoning/dirt_diff_1k.png",
+      "size": 5504678,
+      "sha256": "96b3eb441121c41806a4766f37eeeeb4667af73207ccd8bfb56bbd446a221d42"
+    },
+    {
+      "path": "assets/environment/motel_zoning/dirt_nor_gl_1k.png",
+      "size": 5904305,
+      "sha256": "be315cdb7667d58df160a92be2b22423480912ac5668188f3c8360d464203f47"
+    },
+    {
+      "path": "assets/environment/motel_zoning/dirt_rough_1k.png",
+      "size": 1586570,
+      "sha256": "29f68a8972f1e69cf47e67924efe469350f953a5f707f63633a9c36cd7c63f6a"
+    },
+    {
+      "path": "assets/environment/motel_zoning/mapping.json",
+      "size": 21634,
+      "sha256": "66270837866ea205fa5b99e1f4f83ca5ce8dc653fecce3222eb777fab937eb43"
+    },
+    {
+      "path": "assets/environment/motel_zoning/zoning_mask.png",
+      "size": 6615,
+      "sha256": "b86387be2e088c0d27b1b7c495a11c56154b2f1fdc6bcf06fc687df2cef8dc2b"
+    }
+  ]
+}

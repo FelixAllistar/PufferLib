@@ -1,0 +1,1217 @@
+{
+  "schema": "briar_ground_zoning_phase_a_v1",
+  "status": "SOURCE ART ONLY; engine blend implementation and native validation pending",
+  "bounds_xz": [
+    -64,
+    64,
+    -48,
+    52
+  ],
+  "up": "+Y",
+  "size_px": [
+    512,
+    512
+  ],
+  "format": "8-bit grayscale PNG; GPU R8_UNORM",
+  "channel": "R = dirt weight byte/255; gravel weight = 1-R; no alpha or other channels",
+  "colorspace": "linear data / Non-Color; never sRGB decode",
+  "png_orientation": "column increases +X; row increases +Z; first stored PNG row is Z=-48 edge",
+  "uv_mask_top_left": [
+    "(worldX+64)/128",
+    "(worldZ+48)/100"
+  ],
+  "uv_mask_bottom_left": [
+    "(worldX+64)/128",
+    "1-(worldZ+48)/100"
+  ],
+  "pixel_center_world": [
+    "X=-64+(column+0.5)*0.25",
+    "Z=-48+(row+0.5)*0.1953125"
+  ],
+  "pixel_index_float": [
+    "column=512*u-0.5",
+    "row=512*v-0.5 (top-left convention)"
+  ],
+  "texel_size_m": [
+    0.25,
+    0.1953125
+  ],
+  "filter": "bilinear LOD 0 only; no mipmaps or anisotropic widening in this source contract",
+  "wrap": "CLAMP_TO_EDGE; outside domain MUST return weight 0 before clamp",
+  "geometry_gate": "Apply only top surfaces of eligible supports listed below. All bottom/side faces and excluded primitives keep their existing material. Use world XZ, never support-local UV normalization.",
+  "safety_guard_m": 0.31724907037885863,
+  "guard_reason": "Conservative zero collar one full texel diagonal about every forbidden rectangle/circle; bilinear LOD0 cannot reach nonzero from protected boundaries. Narrow added collar is sampling safety, not a new design zone.",
+  "transition": {
+    "width_m": 6,
+    "rule": "Linear falloff outside each polygon, max union, then eligibility/exclusions/guard; no noise",
+    "far_verge": "F core Z48..52; original 6m taper clipped at Z46; nonzero stored texel centres require Z>=46+one Z texel (first centre 46.23828125); bilinear onset is just above Z46.04296875. Deliberate clipped onset, not a six-metre transition in this 4m strip."
+  },
+  "exclusions": [
+    {
+      "id": "court",
+      "xz": [
+        -24,
+        24,
+        -24,
+        24
+      ]
+    },
+    {
+      "id": "protected",
+      "xz": [
+        -3,
+        3,
+        5,
+        48
+      ]
+    },
+    {
+      "id": "road_support_004",
+      "xz": [
+        -56,
+        56,
+        36,
+        44
+      ]
+    },
+    {
+      "id": "apron_support_006",
+      "xz": [
+        -32,
+        -30,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_007",
+      "xz": [
+        -32,
+        -30,
+        -8,
+        -6
+      ]
+    },
+    {
+      "id": "apron_support_008",
+      "xz": [
+        -32,
+        -30,
+        -6,
+        0
+      ]
+    },
+    {
+      "id": "apron_support_009",
+      "xz": [
+        -32,
+        -30,
+        0,
+        6
+      ]
+    },
+    {
+      "id": "apron_support_010",
+      "xz": [
+        -32,
+        -30,
+        6,
+        8
+      ]
+    },
+    {
+      "id": "apron_support_011",
+      "xz": [
+        -32,
+        -30,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "apron_support_014",
+      "xz": [
+        -30,
+        -29,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_015",
+      "xz": [
+        -30,
+        -29,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "apron_support_016",
+      "xz": [
+        -29,
+        -28,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_017",
+      "xz": [
+        -29,
+        -28,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "apron_support_018",
+      "xz": [
+        -28,
+        -27,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_019",
+      "xz": [
+        -28,
+        -27,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "apron_support_020",
+      "xz": [
+        -27,
+        -26,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_021",
+      "xz": [
+        -27,
+        -26,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "apron_support_022",
+      "xz": [
+        -26,
+        -25,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_023",
+      "xz": [
+        -26,
+        -25,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "apron_support_024",
+      "xz": [
+        -25,
+        -24,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_025",
+      "xz": [
+        -25,
+        -24,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "driveway_support_026",
+      "xz": [
+        -3,
+        3,
+        24,
+        36
+      ]
+    },
+    {
+      "id": "apron_support_029",
+      "xz": [
+        24,
+        25,
+        -14,
+        -12
+      ]
+    },
+    {
+      "id": "apron_support_030",
+      "xz": [
+        24,
+        25,
+        12,
+        14
+      ]
+    },
+    {
+      "id": "apron_support_032",
+      "xz": [
+        25,
+        26,
+        -14,
+        -12
+      ]
+    },
+    {
+      "id": "apron_support_033",
+      "xz": [
+        25,
+        26,
+        12,
+        14
+      ]
+    },
+    {
+      "id": "apron_support_034",
+      "xz": [
+        26,
+        27,
+        -14,
+        -12
+      ]
+    },
+    {
+      "id": "apron_support_035",
+      "xz": [
+        26,
+        27,
+        12,
+        14
+      ]
+    },
+    {
+      "id": "apron_support_036",
+      "xz": [
+        27,
+        28,
+        -14,
+        -12
+      ]
+    },
+    {
+      "id": "apron_support_037",
+      "xz": [
+        27,
+        28,
+        12,
+        14
+      ]
+    },
+    {
+      "id": "apron_support_038",
+      "xz": [
+        28,
+        29,
+        -14,
+        -12
+      ]
+    },
+    {
+      "id": "apron_support_039",
+      "xz": [
+        28,
+        29,
+        12,
+        14
+      ]
+    },
+    {
+      "id": "apron_support_040",
+      "xz": [
+        29,
+        30,
+        -14,
+        -12
+      ]
+    },
+    {
+      "id": "apron_support_041",
+      "xz": [
+        29,
+        30,
+        12,
+        14
+      ]
+    },
+    {
+      "id": "apron_support_042",
+      "xz": [
+        30,
+        32,
+        -14,
+        -12
+      ]
+    },
+    {
+      "id": "apron_support_043",
+      "xz": [
+        30,
+        32,
+        -12,
+        -10
+      ]
+    },
+    {
+      "id": "apron_support_044",
+      "xz": [
+        30,
+        32,
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "apron_support_045",
+      "xz": [
+        30,
+        32,
+        -8,
+        -6
+      ]
+    },
+    {
+      "id": "apron_support_046",
+      "xz": [
+        30,
+        32,
+        -6,
+        0
+      ]
+    },
+    {
+      "id": "apron_support_047",
+      "xz": [
+        30,
+        32,
+        0,
+        6
+      ]
+    },
+    {
+      "id": "apron_support_048",
+      "xz": [
+        30,
+        32,
+        6,
+        8
+      ]
+    },
+    {
+      "id": "apron_support_049",
+      "xz": [
+        30,
+        32,
+        8,
+        10
+      ]
+    },
+    {
+      "id": "apron_support_050",
+      "xz": [
+        30,
+        32,
+        10,
+        12
+      ]
+    },
+    {
+      "id": "apron_support_051",
+      "xz": [
+        30,
+        32,
+        12,
+        14
+      ]
+    },
+    {
+      "id": "preserved_shoulder_bank_0",
+      "xz": [
+        24,
+        30,
+        -12,
+        12
+      ]
+    },
+    {
+      "id": "preserved_shoulder_bank_1",
+      "xz": [
+        -30,
+        -24,
+        -8,
+        8
+      ]
+    }
+  ],
+  "fence_discs": {
+    "centers_xz": [
+      [
+        12.5,
+        0
+      ],
+      [
+        12.5,
+        6
+      ]
+    ],
+    "radius_m": 2
+  },
+  "supports": [
+    {
+      "index": 0,
+      "owner_inherited": 1119,
+      "semantic_name": "ground_support_000",
+      "xz": [
+        -64,
+        64,
+        -48,
+        -24
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 1,
+      "owner_inherited": 1120,
+      "semantic_name": "ground_support_001",
+      "xz": [
+        -64,
+        -32,
+        -24,
+        36
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 2,
+      "owner_inherited": 1121,
+      "semantic_name": "ground_support_002",
+      "xz": [
+        -64,
+        -56,
+        36,
+        44
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 3,
+      "owner_inherited": 1122,
+      "semantic_name": "ground_support_003",
+      "xz": [
+        -64,
+        64,
+        44,
+        52
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 4,
+      "owner_inherited": 1123,
+      "semantic_name": "road_support_004",
+      "xz": [
+        -56,
+        56,
+        36,
+        44
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 5,
+      "owner_inherited": 1124,
+      "semantic_name": "ground_support_005",
+      "xz": [
+        -32,
+        -24,
+        -24,
+        -10
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 6,
+      "owner_inherited": 1125,
+      "semantic_name": "apron_support_006",
+      "xz": [
+        -32,
+        -30,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 7,
+      "owner_inherited": 1126,
+      "semantic_name": "apron_support_007",
+      "xz": [
+        -32,
+        -30,
+        -8,
+        -6
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 8,
+      "owner_inherited": 1127,
+      "semantic_name": "apron_support_008",
+      "xz": [
+        -32,
+        -30,
+        -6,
+        0
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 9,
+      "owner_inherited": 1128,
+      "semantic_name": "apron_support_009",
+      "xz": [
+        -32,
+        -30,
+        0,
+        6
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 10,
+      "owner_inherited": 1129,
+      "semantic_name": "apron_support_010",
+      "xz": [
+        -32,
+        -30,
+        6,
+        8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 11,
+      "owner_inherited": 1130,
+      "semantic_name": "apron_support_011",
+      "xz": [
+        -32,
+        -30,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 12,
+      "owner_inherited": 1131,
+      "semantic_name": "ground_support_012",
+      "xz": [
+        -32,
+        -24,
+        10,
+        24
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 13,
+      "owner_inherited": 1132,
+      "semantic_name": "ground_support_013",
+      "xz": [
+        -32,
+        -3,
+        24,
+        36
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 14,
+      "owner_inherited": 1133,
+      "semantic_name": "apron_support_014",
+      "xz": [
+        -30,
+        -29,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 15,
+      "owner_inherited": 1134,
+      "semantic_name": "apron_support_015",
+      "xz": [
+        -30,
+        -29,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 16,
+      "owner_inherited": 1135,
+      "semantic_name": "apron_support_016",
+      "xz": [
+        -29,
+        -28,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 17,
+      "owner_inherited": 1136,
+      "semantic_name": "apron_support_017",
+      "xz": [
+        -29,
+        -28,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 18,
+      "owner_inherited": 1137,
+      "semantic_name": "apron_support_018",
+      "xz": [
+        -28,
+        -27,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 19,
+      "owner_inherited": 1138,
+      "semantic_name": "apron_support_019",
+      "xz": [
+        -28,
+        -27,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 20,
+      "owner_inherited": 1139,
+      "semantic_name": "apron_support_020",
+      "xz": [
+        -27,
+        -26,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 21,
+      "owner_inherited": 1140,
+      "semantic_name": "apron_support_021",
+      "xz": [
+        -27,
+        -26,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 22,
+      "owner_inherited": 1141,
+      "semantic_name": "apron_support_022",
+      "xz": [
+        -26,
+        -25,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 23,
+      "owner_inherited": 1142,
+      "semantic_name": "apron_support_023",
+      "xz": [
+        -26,
+        -25,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 24,
+      "owner_inherited": 1143,
+      "semantic_name": "apron_support_024",
+      "xz": [
+        -25,
+        -24,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 25,
+      "owner_inherited": 1144,
+      "semantic_name": "apron_support_025",
+      "xz": [
+        -25,
+        -24,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 26,
+      "owner_inherited": 1145,
+      "semantic_name": "driveway_support_026",
+      "xz": [
+        -3,
+        3,
+        24,
+        36
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 27,
+      "owner_inherited": 1146,
+      "semantic_name": "ground_support_027",
+      "xz": [
+        3,
+        32,
+        24,
+        36
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 28,
+      "owner_inherited": 1147,
+      "semantic_name": "ground_support_028",
+      "xz": [
+        24,
+        32,
+        -24,
+        -14
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 29,
+      "owner_inherited": 1148,
+      "semantic_name": "apron_support_029",
+      "xz": [
+        24,
+        25,
+        -14,
+        -12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 30,
+      "owner_inherited": 1149,
+      "semantic_name": "apron_support_030",
+      "xz": [
+        24,
+        25,
+        12,
+        14
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 31,
+      "owner_inherited": 1150,
+      "semantic_name": "ground_support_031",
+      "xz": [
+        24,
+        32,
+        14,
+        24
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 32,
+      "owner_inherited": 1151,
+      "semantic_name": "apron_support_032",
+      "xz": [
+        25,
+        26,
+        -14,
+        -12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 33,
+      "owner_inherited": 1152,
+      "semantic_name": "apron_support_033",
+      "xz": [
+        25,
+        26,
+        12,
+        14
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 34,
+      "owner_inherited": 1153,
+      "semantic_name": "apron_support_034",
+      "xz": [
+        26,
+        27,
+        -14,
+        -12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 35,
+      "owner_inherited": 1154,
+      "semantic_name": "apron_support_035",
+      "xz": [
+        26,
+        27,
+        12,
+        14
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 36,
+      "owner_inherited": 1155,
+      "semantic_name": "apron_support_036",
+      "xz": [
+        27,
+        28,
+        -14,
+        -12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 37,
+      "owner_inherited": 1156,
+      "semantic_name": "apron_support_037",
+      "xz": [
+        27,
+        28,
+        12,
+        14
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 38,
+      "owner_inherited": 1157,
+      "semantic_name": "apron_support_038",
+      "xz": [
+        28,
+        29,
+        -14,
+        -12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 39,
+      "owner_inherited": 1158,
+      "semantic_name": "apron_support_039",
+      "xz": [
+        28,
+        29,
+        12,
+        14
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 40,
+      "owner_inherited": 1159,
+      "semantic_name": "apron_support_040",
+      "xz": [
+        29,
+        30,
+        -14,
+        -12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 41,
+      "owner_inherited": 1160,
+      "semantic_name": "apron_support_041",
+      "xz": [
+        29,
+        30,
+        12,
+        14
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 42,
+      "owner_inherited": 1161,
+      "semantic_name": "apron_support_042",
+      "xz": [
+        30,
+        32,
+        -14,
+        -12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 43,
+      "owner_inherited": 1162,
+      "semantic_name": "apron_support_043",
+      "xz": [
+        30,
+        32,
+        -12,
+        -10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 44,
+      "owner_inherited": 1163,
+      "semantic_name": "apron_support_044",
+      "xz": [
+        30,
+        32,
+        -10,
+        -8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 45,
+      "owner_inherited": 1164,
+      "semantic_name": "apron_support_045",
+      "xz": [
+        30,
+        32,
+        -8,
+        -6
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 46,
+      "owner_inherited": 1165,
+      "semantic_name": "apron_support_046",
+      "xz": [
+        30,
+        32,
+        -6,
+        0
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 47,
+      "owner_inherited": 1166,
+      "semantic_name": "apron_support_047",
+      "xz": [
+        30,
+        32,
+        0,
+        6
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 48,
+      "owner_inherited": 1167,
+      "semantic_name": "apron_support_048",
+      "xz": [
+        30,
+        32,
+        6,
+        8
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 49,
+      "owner_inherited": 1168,
+      "semantic_name": "apron_support_049",
+      "xz": [
+        30,
+        32,
+        8,
+        10
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 50,
+      "owner_inherited": 1169,
+      "semantic_name": "apron_support_050",
+      "xz": [
+        30,
+        32,
+        10,
+        12
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 51,
+      "owner_inherited": 1170,
+      "semantic_name": "apron_support_051",
+      "xz": [
+        30,
+        32,
+        12,
+        14
+      ],
+      "eligible_top": false
+    },
+    {
+      "index": 52,
+      "owner_inherited": 1171,
+      "semantic_name": "ground_support_052",
+      "xz": [
+        32,
+        64,
+        -24,
+        36
+      ],
+      "eligible_top": true
+    },
+    {
+      "index": 53,
+      "owner_inherited": 1172,
+      "semantic_name": "ground_support_053",
+      "xz": [
+        56,
+        64,
+        36,
+        44
+      ],
+      "eligible_top": true
+    }
+  ],
+  "materials": {
+    "gravel": {
+      "asset": "gravel_ground_01",
+      "repeat_m": 2.6666666666666665,
+      "phase_origin_xz": [
+        0,
+        0
+      ],
+      "source_blender_uv": [
+        "worldX/repeat",
+        "worldZ/repeat"
+      ],
+      "gltf_exported_uv": [
+        "worldX/repeat",
+        "1-worldZ/repeat"
+      ],
+      "note": "glTF exporter flips V versus Blender UV. Reuse existing gravel TEXCOORD_0; dirt coordinates are the same world phase scaled by 4/3 (account for the 1-V offset). PNG top-left sampler texture phase equivalent to v=-worldZ/repeat modulo 1.",
+      "wrap": "REPEAT",
+      "basecolor": {
+        "path": "../source/scans/gravel_ground_01/gravel_ground_01_diff_1k.png",
+        "colorspace": "sRGB",
+        "factor_linear": [
+          0.65,
+          0.65,
+          0.65,
+          1
+        ]
+      },
+      "normal": {
+        "path": "../source/scans/gravel_ground_01/gravel_ground_01_nor_gl_1k.png",
+        "colorspace": "Non-Color",
+        "convention": "OpenGL +Y",
+        "scale": 0.65
+      },
+      "roughness": {
+        "path": "../source/scans/gravel_ground_01/gravel_ground_01_rough_1k.png",
+        "colorspace": "Non-Color",
+        "channel": "R (grayscale)",
+        "factor": 1
+      },
+      "metallic": 0,
+      "alphaMode": "OPAQUE"
+    },
+    "dirt": {
+      "asset": "dirt",
+      "repeat_m": 2.0,
+      "phase_origin_xz": [
+        0,
+        0
+      ],
+      "source_blender_uv": [
+        "worldX/repeat",
+        "worldZ/repeat"
+      ],
+      "gltf_exported_uv": [
+        "worldX/repeat",
+        "1-worldZ/repeat"
+      ],
+      "note": "glTF exporter flips V versus Blender UV. Reuse existing gravel TEXCOORD_0; dirt coordinates are the same world phase scaled by 4/3 (account for the 1-V offset). PNG top-left sampler texture phase equivalent to v=-worldZ/repeat modulo 1.",
+      "wrap": "REPEAT",
+      "basecolor": {
+        "path": "../source/scans/dirt/dirt_diff_1k.png",
+        "colorspace": "sRGB",
+        "factor_linear": [
+          1.0,
+          1.0,
+          1.0,
+          1
+        ]
+      },
+      "normal": {
+        "path": "../source/scans/dirt/dirt_nor_gl_1k.png",
+        "colorspace": "Non-Color",
+        "convention": "OpenGL +Y",
+        "scale": 0.65
+      },
+      "roughness": {
+        "path": "../source/scans/dirt/dirt_rough_1k.png",
+        "colorspace": "Non-Color",
+        "channel": "R (grayscale)",
+        "factor": 1
+      },
+      "metallic": 0,
+      "alphaMode": "OPAQUE"
+    }
+  },
+  "normal_blend": "Decode each OpenGL tangent-space normal, multiply XY by normalScale, normalize; lerp the two vectors with R and renormalize in one common world-XZ tangent basis. Engine must verify handedness against baseline. No height/displacement.",
+  "blend": "Decode sRGB base maps to linear, apply per-material baseColorFactor, then lerp. Roughness scalar lerp. Metallic 0 and opacity 1. Do not use this mask as alpha transparency.",
+  "native_tested": false
+}

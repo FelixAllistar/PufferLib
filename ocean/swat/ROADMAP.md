@@ -53,7 +53,7 @@ The slice is complete when these checks pass in the actual Windows player:
   firing, breaches, squad movement and camera feeds. Concurrent-training timings
   alone do not establish the final performance budget or accept the slice.
 
-Immediate work: material zoning/background composition, further physically
+Immediate work: background composition, further physically
 mounted/destructible props, production impact/breach audio,
 weapon/equipment completeness and squad/enemy perception/behavior. Iterate using
 actual playtest failures and the acceptance checks above. Source/runtime/licenses
@@ -77,8 +77,19 @@ the exact missing-art fallback; three model owners share their images and releas
 them safely. The hostile exterior-entry completion route passes all 9,827 ordinary
 input ticks with two arrests, three evacuations, collected weapons, squad regroup,
 exact replay, mid-run save and late replica, without contact-buffer overflows.
-The artist has delivered the next dirt/gravel zoning mask and precise sampling
-contract; renderer blending and native appearance validation remain next work.
+The delivered dirt/gravel zoning now blends all three material channels on twelve
+soil tops, with exact linear color, original metre UVs and exclusion-safe R8 LOD0
+sampling. Native production-shader checks match 39 independently calculated RGB
+channel values exactly; 27,424 protected road/drive pixels remain unchanged in a
+minified mask/control view, with 75,210 protected bilinear world probes. All four
+added textures release/reload on location changes, source material maps and world
+state stay unchanged, and the existing 740-ray/controller/squad ground checks
+pass. Only the new original 1K dirt maps and mask are added; no duplicate gravel,
+reference ground geometry or 2K runtime loads. Background/ground repetition and
+far east-wall patching visible in both zoning/control captures remain polish
+work. A compact editable zoning source handoff is requested; the complete source
+backup remains on Drive. The newly delivered two-shelf trolley is next for useful
+placement, physical collision/support and destruction integration.
 
 Current audit: human tactical scenarios now deploy three squad bots and require
 occupant security, evidence, civilian evacuation and surviving-officer regrouping.

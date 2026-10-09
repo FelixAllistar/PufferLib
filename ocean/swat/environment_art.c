@@ -8,6 +8,7 @@
 #include <string.h>
 #include "motel_wall_art.h"
 #include "art_texture_pool.h"
+#include "motel_zoning.h"
 
 typedef struct SwatEnvironmentBound {
     const Model* source;
@@ -101,6 +102,11 @@ static Texture2D load_surface(const char* name,bool metric) {
 }
 
 static void room101_close(SwatEnvironmentArt* art) {
+    if(art->motel_zoning.id)UnloadTexture(art->motel_zoning);
+    if(art->motel_dirt.color.id)UnloadTexture(art->motel_dirt.color);
+    if(art->motel_dirt.normal.id)UnloadTexture(art->motel_dirt.normal);
+    if(art->motel_dirt.roughness.id)UnloadTexture(art->motel_dirt.roughness);
+    art->motel_zoning=(Texture2D){0};art->motel_dirt=(SwatSurfaceMaps){0};
     if(art->motel_asphalt.color.id)UnloadTexture(art->motel_asphalt.color);
     if(art->motel_asphalt.normal.id)UnloadTexture(art->motel_asphalt.normal);
     if(art->motel_asphalt.roughness.id)UnloadTexture(art->motel_asphalt.roughness);
@@ -213,6 +219,31 @@ static void motel_dressing_load(SwatEnvironmentArt* art) {
     }
     if(!room101_model_load(&art->motel_ground,art->motel_ground_normal_scale,"motel_ground/connected_ground_render.glb") || art->motel_ground.meshCount!=SWAT_GROUND_PARTS) {
         swat_art_model_close(art->motel_ground);art->motel_ground=(Model){0};
+    }
+    if(art->motel_ground.meshCount) {
+        // PNG uploads preserve file row order: row zero samples V=0. The
+        // delivered mask starts at -Z, unlike metric wall texture conventions.
+        char path[4096];
+        if(asset_path(path,sizeof(path),"motel_zoning/zoning_mask.png")) {
+            Image mask=LoadImage(path);
+            if(mask.data && mask.width==512 && mask.height==512 && mask.format==PIXELFORMAT_UNCOMPRESSED_GRAYSCALE)
+                art->motel_zoning=LoadTextureFromImage(mask);
+            UnloadImage(mask);
+        }
+        if(art->motel_zoning.id) {
+            SetTextureFilter(art->motel_zoning,TEXTURE_FILTER_BILINEAR);
+            SetTextureWrap(art->motel_zoning,TEXTURE_WRAP_CLAMP);
+            art->motel_dirt.color=load_surface("motel_zoning/dirt_diff_1k.png",false);
+            art->motel_dirt.normal=load_surface("motel_zoning/dirt_nor_gl_1k.png",false);
+            art->motel_dirt.roughness=load_surface("motel_zoning/dirt_rough_1k.png",false);
+            art->motel_dirt.tile=(Vector2){2,2};
+            if(!art->motel_dirt.color.id || !art->motel_dirt.normal.id || !art->motel_dirt.roughness.id) {
+                if(art->motel_dirt.color.id)UnloadTexture(art->motel_dirt.color);
+                if(art->motel_dirt.normal.id)UnloadTexture(art->motel_dirt.normal);
+                if(art->motel_dirt.roughness.id)UnloadTexture(art->motel_dirt.roughness);
+                UnloadTexture(art->motel_zoning);art->motel_zoning=(Texture2D){0};art->motel_dirt=(SwatSurfaceMaps){0};
+            }
+        }
     }
     const char* surroundings[]={"motel_surroundings/shoulder_render.glb","motel_surroundings/bank_render.glb"};
     for(int i=0;i<2;i++)if(!room101_model_load(&art->motel_surroundings[i],art->motel_surroundings_normal_scale[i],surroundings[i])) {
@@ -603,6 +634,17 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             if(box.min.x>.50f && box.max.x<.58f && box.min.y>1.58f && box.max.y<1.62f)continue;
         }
         Material material=model->materials[model->meshMaterial[i]];
+        MaterialMap ground_maps[MATERIAL_MAP_BRDF+1];
+        int ground_part=o->tag.index-SWAT_MOTEL_GROUND_FIRST;
+        bool ground_blend=lit && source==&art->motel_ground && swat_motel_zoning_part(ground_part) &&
+            art->motel_zoning.id && art->motel_dirt.color.id && art->motel_dirt.normal.id && art->motel_dirt.roughness.id;
+        if(ground_blend) {
+            // Per-draw copies leave the source GLB and its shared map ownership
+            // untouched. Ground has neither emission nor specular-gloss art.
+            memcpy(ground_maps,material.maps,sizeof(ground_maps));material.maps=ground_maps;
+            ground_maps[MATERIAL_MAP_SPECULAR].texture=art->motel_dirt.normal;
+            ground_maps[MATERIAL_MAP_EMISSION].texture=art->motel_dirt.roughness;
+        }
         bool blend=material.maps[MATERIAL_MAP_ALBEDO].color.a<255;
         if(blend!=transparent || (shadow && blend)) continue;
         // Opaque depth passes need geometry only. Binding every full-resolution
@@ -637,6 +679,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
                 normal_scale=art->motel_dressing_normal_scale[r][model->meshMaterial[i]];
             }
             swat_lighting_material_uv(art->lighting,material,true,normal_scale,ao_uv);
+            if(ground_blend)swat_lighting_ground(art->lighting,art->motel_zoning,art->motel_dirt.color);
         }
         DrawMesh(model->meshes[i],material,transform);
     }

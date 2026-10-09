@@ -47,6 +47,7 @@ static const char* fragment_source=
     "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen,normalScale;\n"
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
+    "uniform int groundBlend;\n"
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
     "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
     "uniform int occlusionUV;uniform float occlusionStrength;uniform vec3 sunDirection,sunEnergy;uniform mat4 contactMatrix;\n"
@@ -83,8 +84,18 @@ static const char* fragment_source=
     "float k=(r+1.0)*(r+1.0)/8.0; float g=nv/(nv*(1.0-k)+k)*nl/(nl*(1.0-k)+k);"
     "vec3 f=f0+(1.0-f0)*pow(1.0-max(dot(v,h),0.0),5.0);"
     "return distribution*g*f/(4.0*nv); }\n"
+    "vec3 srgbLinear(vec3 c){return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));}\n"
     "void main(){ vec4 surface=texture(texture0,uv)*tint*colDiffuse;"
     "vec3 albedo=pow(max(surface.rgb,vec3(0.0)),vec3(2.2)); vec3 n=normalize(normal);"
+    // Ground mode aliases environmentNormal/Roughness to mask/dirt color,
+    // specularMap to dirt normal, emissionMap to dirt roughness. Their ordinary
+    // shading branches are disabled by the binding API, not by changing art.
+    "float dirtWeight=0.0;vec2 dirtUV=vec2(uv.x*4.0/3.0,1.0+(uv.y-1.0)*4.0/3.0);"
+    "if(groundBlend!=0 && n.y>0.999){vec2 maskUV=(position.xz+vec2(64.0,48.0))/vec2(128.0,100.0);"
+    "if(all(greaterThanEqual(maskUV,vec2(0.0)))&&all(lessThanEqual(maskUV,vec2(1.0))))"
+    "dirtWeight=textureLod(environmentNormalMap,maskUV,0.0).r;"
+    "albedo=srgbLinear(texture(texture0,uv).rgb)*0.65;"
+    "if(dirtWeight>0.0)albedo=mix(albedo,srgbLinear(texture(environmentRoughnessMap,dirtUV).rgb),dirtWeight); }"
     "float roughness=1.0,metalness=0.0; vec3 reflection=vec3(0.0),f0=vec3(0.04),v=normalize(camera-position);"
     // Solve the signed UV derivatives, preserving mirrored face handedness.
     // No mesh tangents are assumed for immediate boxes or the old door GLB.
@@ -96,6 +107,7 @@ static const char* fragment_source=
     "n=normalize(mat3(normalize(t),normalize(b),n)*(texture(environmentNormalMap,uv).xyz*2.0-1.0)); } } }"
     "if(usePbr!=0){ vec4 orm=useOrm!=0?texture(ormMap,uv):vec4(1.0); roughness=clamp(orm.g*roughnessFactor,0.08,1.0);"
     "metalness=clamp(orm.b*metalnessFactor,0.0,1.0); f0=mix(vec3(0.04),albedo,metalness);"
+    "if(dirtWeight>0.0)roughness=clamp(mix(orm.g*roughnessFactor,texture(emissionMap,dirtUV).r,dirtWeight),0.08,1.0);"
     "if(useSpecGloss!=0){roughness=clamp(1.0-orm.r,0.08,1.0);metalness=0.0;"
     "f0=pow(clamp(texture(specularMap,uv).rgb,0.0,1.0),vec3(2.2));}"
     "if(useNormal!=0){ vec3 t,b;"
@@ -105,7 +117,10 @@ static const char* fragment_source=
     "if(dot(t,t)>1e-12){t=normalize(t);b=cross(n,t)*(dot(cross(n,t),b)<0.0?-1.0:1.0);}"
     "else {t=vec3(0.0);b=vec3(0.0);} }"
     "else {t=normalize(tangent.xyz-n*dot(n,tangent.xyz));b=cross(n,t)*tangent.w;}"
-    "if(dot(t,t)>1e-12){vec3 mapped=texture(normalMap,uv).xyz*2.0-1.0;mapped.xy*=normalScale;mapped.y*=normalGreen;n=normalize(mat3(t,b,n)*mapped);} } }"
+    "if(dot(t,t)>1e-12){vec3 mapped=texture(normalMap,uv).xyz*2.0-1.0;mapped.xy*=normalScale;mapped.y*=normalGreen;"
+    "if(dirtWeight>0.0){vec3 dirt=texture(specularMap,dirtUV).xyz*2.0-1.0;dirt.xy*=0.65;"
+    "mapped=normalize(mix(normalize(mapped),normalize(dirt),dirtWeight));}"
+    "n=normalize(mat3(t,b,n)*mapped);} } }"
     "vec3 sun=sunDirection;"
     "float sunVisibility=visible(sunMap,sunMatrix,position,n,sun,-1); float direct=max(dot(n,sun),0.0)*sunVisibility;"
     "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
@@ -173,6 +188,7 @@ static SwatLightingProgram program(void) {
     p.environment_roughness_map=GetShaderLocation(p.shader,"environmentRoughnessMap");
     p.environment_size=GetShaderLocation(p.shader,"environmentSize");
     p.environment_tile=GetShaderLocation(p.shader,"environmentTile");
+    p.ground_blend=GetShaderLocation(p.shader,"groundBlend");
     p.camera=GetShaderLocation(p.shader,"camera");
     p.sun_matrix=GetShaderLocation(p.shader,"sunMatrix");
     for(int i=0;i<SWAT_LAMP_FACES;i++) {char name[32];snprintf(name,sizeof(name),"lampMatrix[%d]",i);p.lamp_matrix[i]=GetShaderLocation(p.shader,name);}
@@ -376,6 +392,7 @@ void swat_lighting_material_uv(SwatLighting* light,Material material,bool enable
     // Bind once for the material; Raylib's single-value helper binds again for
     // every uniform, even though all of these values use the same program.
     rlEnableShader(p->shader.id);
+    mesh_uniform(p->ground_blend,&zero,SHADER_UNIFORM_INT);
     mesh_uniform(p->environment,&zero,SHADER_UNIFORM_INT);
     mesh_uniform(p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
     int orm=enabled && material.maps && material.maps[MATERIAL_MAP_ROUGHNESS].texture.id;
@@ -405,6 +422,21 @@ void swat_lighting_material_uv(SwatLighting* light,Material material,bool enable
     }
 }
 
+void swat_lighting_ground(SwatLighting* light,Texture2D mask,Texture2D dirt_color) {
+    if(!light || !light->enabled || !light->prepared || !mask.id || !dirt_color.id)return;
+    SwatLightingProgram* p=&light->mesh;int one=1,zero=0,mslot=12,cslot=13;
+    rlEnableShader(p->shader.id);
+    mesh_uniform(p->ground_blend,&one,SHADER_UNIFORM_INT);
+    mesh_uniform(p->emission,&zero,SHADER_UNIFORM_INT);
+    mesh_uniform(p->spec_gloss,&zero,SHADER_UNIFORM_INT);
+    mesh_uniform(p->environment_normal_map,&mslot,SHADER_UNIFORM_INT);
+    mesh_uniform(p->environment_roughness_map,&cslot,SHADER_UNIFORM_INT);
+    rlActiveTextureSlot(mslot);rlEnableTexture(mask.id);
+    rlActiveTextureSlot(cslot);rlEnableTexture(dirt_color.id);
+    rlActiveTextureSlot(0);
+    light->surface_normal=light->surface_roughness=~0u;
+}
+
 void swat_lighting_material_scaled(SwatLighting* light,Material material,bool enabled,float normal_scale) {
     swat_lighting_material_uv(light,material,enabled,normal_scale,0);
 }
@@ -421,6 +453,7 @@ void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughn
     SwatLightingProgram* p=mesh ? &light->mesh : &light->batch;
     int enabled=roughness.id!=0,use_normal=enabled && normal.id!=0,zero=0,nslot=12,rslot=13;
     SetShaderValue(p->shader,p->environment,&enabled,SHADER_UNIFORM_INT);
+    SetShaderValue(p->shader,p->ground_blend,&zero,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_normal,&use_normal,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->pbr,&zero,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->spec_gloss,&zero,SHADER_UNIFORM_INT);
@@ -617,6 +650,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValue(s,p->skinning,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->emission,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->environment,&zero,SHADER_UNIFORM_INT);
+        SetShaderValue(s,p->ground_blend,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->occlusion,&zero,SHADER_UNIFORM_INT);
         int ibl=light->environment_atlas.id!=0,ibl_slot=9,contact=light->contact_ready,contact_slot=7,depth_slot=8;
         SetShaderValue(s,p->ibl,&ibl,SHADER_UNIFORM_INT);SetShaderValue(s,p->ibl_atlas,&ibl_slot,SHADER_UNIFORM_INT);

@@ -14,6 +14,7 @@ typedef struct SwatLightingProgram {
     int orm,pbr,normal_map,roughness,metalness,spec_gloss;
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
+    int ground_blend;
     int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green,normal_scale;
     int ibl,ibl_atlas,sun_direction,sun_energy,occlusion,occlusion_strength;
     int occlusion_uv;
@@ -79,6 +80,10 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art);
 // drawing the material so ordinary scene meshes retain their diffuse shading.
 void swat_lighting_material(SwatLighting* light,Material material,bool enabled);
 void swat_lighting_material_uv(SwatLighting* light,Material material,bool enabled,float normal_scale,int occlusion_uv);
+// Ground-only reuse of four inactive material/environment sampler slots keeps
+// the fragment program below the OpenGL 3.3 minimum of 16 texture units.
+// Call after material_uv; it resets with the next ordinary material binding.
+void swat_lighting_ground(SwatLighting* light,Texture2D mask,Texture2D dirt_color);
 void swat_lighting_material_scaled(SwatLighting* light,Material material,bool enabled,float normal_scale);
 // Independent R8 roughness/OpenGL normals for metric environment surfaces.
 // Mesh size/tile remap the original door's unit-space positions to metre UVs.

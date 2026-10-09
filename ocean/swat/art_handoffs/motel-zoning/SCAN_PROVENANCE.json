@@ -1,0 +1,128 @@
+{
+  "provider": "Poly Haven",
+  "license": "CC0-1.0",
+  "license_url": "https://polyhaven.com/license",
+  "downloaded_utc": "2026-10-08",
+  "files": [
+    {
+      "asset": "gravel_ground_01",
+      "resolution": "1k",
+      "channel": "Diffuse",
+      "size": 2523579,
+      "md5": "0623c95826e91134453acd905df42ca7",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gravel_ground_01/gravel_ground_01_diff_1k.png",
+      "sha256": "98de56b46955d2a196a74b5bff9fa6e72e01b8e8f047f0217b82c3361e2c9db5",
+      "path": "source/scans/gravel_ground_01/gravel_ground_01_diff_1k.png"
+    },
+    {
+      "asset": "gravel_ground_01",
+      "resolution": "1k",
+      "channel": "nor_gl",
+      "size": 2422235,
+      "md5": "08f7ae92c0e126ea2bd9bf72c34497df",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gravel_ground_01/gravel_ground_01_nor_gl_1k.png",
+      "sha256": "4e20f2dd84237fb46b3ae7005b8134ec2f8f08c6dc57c69df7c24d28df7d83b0",
+      "path": "source/scans/gravel_ground_01/gravel_ground_01_nor_gl_1k.png"
+    },
+    {
+      "asset": "gravel_ground_01",
+      "resolution": "1k",
+      "channel": "Rough",
+      "size": 588347,
+      "md5": "454efc5eb7f91dd08372a442a86381c6",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gravel_ground_01/gravel_ground_01_rough_1k.png",
+      "sha256": "88cedfeef6e57ed0a57908a6063596cc82377d39978158f8e1ee85b5c22f3c8f",
+      "path": "source/scans/gravel_ground_01/gravel_ground_01_rough_1k.png"
+    },
+    {
+      "asset": "gravel_ground_01",
+      "resolution": "2k",
+      "channel": "Diffuse",
+      "size": 10090834,
+      "md5": "0821237a54f4b6ca9272515dc4ed992d",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/gravel_ground_01/gravel_ground_01_diff_2k.png",
+      "sha256": "b5ba2a265b4412366dfeba09427a0bf351b49d14a3dcb5c3f7fc5fd4404c8b41",
+      "path": "source/scans/gravel_ground_01/gravel_ground_01_diff_2k.png"
+    },
+    {
+      "asset": "gravel_ground_01",
+      "resolution": "2k",
+      "channel": "nor_gl",
+      "size": 9684801,
+      "md5": "bb780edec3fdb78e161652f757496db4",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/gravel_ground_01/gravel_ground_01_nor_gl_2k.png",
+      "sha256": "f395e13c6952c58bde883a01a59d65834adcca976509074dc485a760863b7d2d",
+      "path": "source/scans/gravel_ground_01/gravel_ground_01_nor_gl_2k.png"
+    },
+    {
+      "asset": "gravel_ground_01",
+      "resolution": "2k",
+      "channel": "Rough",
+      "size": 2421164,
+      "md5": "312138772a4472a7bb0ea3986b166bf6",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/gravel_ground_01/gravel_ground_01_rough_2k.png",
+      "sha256": "9f7060c601c5335be696572350b1a3519cae1c9a24162cf347f221d0879c7f29",
+      "path": "source/scans/gravel_ground_01/gravel_ground_01_rough_2k.png"
+    },
+    {
+      "asset": "dirt",
+      "resolution": "1k",
+      "channel": "Diffuse",
+      "size": 5504678,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dirt/dirt_diff_1k.png",
+      "md5": "033b3aaa80b816a1a53ed211d69a3328",
+      "sha256": "96b3eb441121c41806a4766f37eeeeb4667af73207ccd8bfb56bbd446a221d42",
+      "path": "source/scans/dirt/dirt_diff_1k.png"
+    },
+    {
+      "asset": "dirt",
+      "resolution": "1k",
+      "channel": "nor_gl",
+      "size": 5904305,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dirt/dirt_nor_gl_1k.png",
+      "md5": "e1d855d9d6b1c9b39681ee4f4097303b",
+      "sha256": "be315cdb7667d58df160a92be2b22423480912ac5668188f3c8360d464203f47",
+      "path": "source/scans/dirt/dirt_nor_gl_1k.png"
+    },
+    {
+      "asset": "dirt",
+      "resolution": "1k",
+      "channel": "Rough",
+      "size": 1586570,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dirt/dirt_rough_1k.png",
+      "md5": "293473a9600f0938205a05461a4396bb",
+      "sha256": "29f68a8972f1e69cf47e67924efe469350f953a5f707f63633a9c36cd7c63f6a",
+      "path": "source/scans/dirt/dirt_rough_1k.png"
+    },
+    {
+      "asset": "dirt",
+      "resolution": "2k",
+      "channel": "Diffuse",
+      "size": 22041709,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dirt/dirt_diff_2k.png",
+      "md5": "e9dcab81dc501ab2ee3238783af014e7",
+      "sha256": "f0fee6965209d08fd073067c9c61cefc815fecdede90070b361e3f8c47c87801",
+      "path": "source/scans/dirt/dirt_diff_2k.png"
+    },
+    {
+      "asset": "dirt",
+      "resolution": "2k",
+      "channel": "nor_gl",
+      "size": 23484882,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dirt/dirt_nor_gl_2k.png",
+      "md5": "532cc425ffeef26eca43ef638ef4fb9c",
+      "sha256": "d269f7e4c8f113474735c1d9e346f48272dcb5c2cba72c3976b0181a0867d7aa",
+      "path": "source/scans/dirt/dirt_nor_gl_2k.png"
+    },
+    {
+      "asset": "dirt",
+      "resolution": "2k",
+      "channel": "Rough",
+      "size": 6297012,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dirt/dirt_rough_2k.png",
+      "md5": "f65936208f208392005031b131b86de1",
+      "sha256": "620354e281625391002fba6e9bcb1123859b434370f7ed6f046f4e8cb107f6f8",
+      "path": "source/scans/dirt/dirt_rough_2k.png"
+    }
+  ]
+}
