@@ -55,7 +55,7 @@ curriculum-test: table $(OUT)/test_curriculum_cpu $(OUT)/test_curriculum_cuda
 $(OUT)/policy.o: $(SRC)/policy.c $(SRC)/policy.h $(SRC)/encoder_cpu.h $(SRC)/policy_shape.h src/puffercpu.c
 	mkdir -p $(OUT)
 	clang -O3 -std=c11 -c $< -o $@
-$(OUT)/sim2rom: $(SRC)/sim2rom.cpp $(SRC)/rom_check.h $(SRC)/pipe_start.h $(SRC)/curriculum.h $(SRC)/policy.h $(SRC)/table.h $(SRC)/observation.h $(SRC)/policy_shape.h $(OUT)/policy.o $(CPU) build/retro/libquicknes.a
+$(OUT)/sim2rom: $(SRC)/sim2rom.cpp $(SRC)/rom_check.h $(SRC)/pipe_start.h $(SRC)/curriculum.h $(SRC)/policy.h $(SRC)/table.h $(SRC)/observation.h $(SRC)/policy_shape.h $(SRC)/game.h $(OUT)/policy.o $(CPU) build/retro/libquicknes.a
 	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(OUT)/policy.o $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
 transfer: $(OUT)/sim2rom
 

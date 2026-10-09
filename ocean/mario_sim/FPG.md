@@ -11,17 +11,14 @@ real mid-jump states from the same route. There are no synthetic RAM edits.
 The rebuilt binary and assets are available locally. From the repository root:
 
 ```sh
-# Continue the completed 268M semantic run, with a small speed bonus:
-build/mario_sim/puffer train --env.mode=fpg
-
-# Fresh run:
-build/mario_sim/puffer train --env.mode=fpg --base.load_model_path=None
+# Fresh FPG-only training, with a small speed bonus:
+./puffer train --env.mode=fpg
 
 # Resume a checkpoint produced by the semantic encoder:
-build/mario_sim/puffer train --env.mode=fpg --base.load_model_path=path/to/semantic_checkpoint.bin
+./puffer train --env.mode=fpg --base.load_model_path=path/to/semantic_checkpoint.bin --fpg.curriculum_resume=1
 
 # View a semantic policy at its saved median curriculum difficulty:
-build/mario_sim/puffer eval path/to/semantic_checkpoint.bin --env.mode=fpg
+./puffer eval path/to/semantic_checkpoint.bin --env.mode=fpg
 ```
 
 The [config](../../config/mario_sim.ini) now defaults to mixed full-game/FPG
@@ -29,9 +26,10 @@ training. The commands above explicitly select FPG-only training. `[fpg]` owns
 all practice settings. The shared policy has a 64-wide two-layer MinGRU and all
 64 controller masks; each action advances one video frame. FPG episodes allow
 1,800 frames and end on FPG success, an ordinary flag grab, death or timeout.
-The default warm start is
-`checkpoints/mario_fpg_time/1791505432976/0000000268435456.bin`, including its
-saved frontier at 96 reference frames. Each training command adds its configured
+The default starts fresh. To restore a trained semantic policy and its
+frontiers, pass its checkpoint path and `--fpg.curriculum_resume=1`. The older
+`checkpoints/mario_fpg_time/1791505432976/0000000268435456.bin` checkpoint remains
+available with its saved 96-frame frontier. Each training command adds its configured
 frame budget; optimizer state and the training step counter start fresh.
 
 **Earlier RAM-policy checkpoints have a different architecture and are rejected.**
@@ -135,72 +133,30 @@ Logs report `curriculum_frames`, `curriculum_start_frames`, `frontier_perf`,
 `frontier_fraction` and `curriculum_promotions`. The ordinary `perf` includes
 easier practice and should be read alongside difficulty. Checkpoint JSON reports
 show actor counts per band; these are not weighted by episode length.
-The broad sweep below logs these training metrics but ranks a fixed evaluation
-panel, since it also varies promotion requirements.
+The broad sweep below logs these training metrics but ranks fixed game and FPG
+evaluation panels, so easier replay cannot inflate the search score.
 
 ## Broad hyperparameter sweep
 
-From the repository root:
+The default sweep now trains the mixed task: 75% game frames and 25% FPG
+practice, with fresh weights and curriculum, both annealings off, and a 30M-frame
+budget per trial. The 17 varying parameters cover model size and PPO/Muon,
+including horizon, minibatch, learning rate, entropy, advantage settings,
+clipping, replay, momentum, and V-trace. Actor count and buffers stay fixed.
+FPG timing rewards and curriculum rules are held constant in this search.
 
 ```sh
-# Inspect the resolved ranges and budget without launching training:
 python3 ocean/mario_sim/sweep.py --dry-run
-
-# 128 fresh trials, 67,108,864 training frames each, one at a time:
+./puffer sweep
+# Alternatively, group all artifacts under a reports directory:
 python3 ocean/mario_sim/sweep.py
-
-# Optional budget overrides (steps must be a multiple of 131,072):
-python3 ocean/mario_sim/sweep.py --runs 32 --steps 134217728
-
-# Rank completed trials while a sweep is running:
-python3 ocean/mario_sim/sweep.py --summary reports/mario_sim/sweep_TIMESTAMP
 ```
 
-The [sweep profile](profiles/sweep.ini) overlays the default and Mario configs
-and uses the existing native PROTEIN search. It starts each trial with fresh
-weights and curriculum, independently of the normal continuation configuration.
-The first trial uses the profile's baseline, then PROTEIN proposes candidates.
-There are 27 varying parameters:
-
-| Group | Settings |
-| --- | --- |
-| Model and batches | Hidden width 32–256, 1–4 recurrent layers, 512–2,048 agents, horizon 16–64, minibatch 512–4,096 |
-| PPO and optimizer | Learning rate, LR annealing/floor, entropy coefficient and annealing/floor, gamma, GAE lambda, replay ratio, policy clip, value clip, value coefficient, gradient limit, momentum |
-| Timing reward | Bonus 0–0.3, target scale 0.5–1.5, slack 0–16 frames, power 0.5–2 |
-| Curriculum | Mastery window, confirmation count, promotion threshold, easier replay fraction |
-
-The full viewport, encoder branch sizes, single-frame controller actions,
-original ROM reset bank, three-frame initial band and training seed remain
-fixed. Rollout/batch dimensions are powers of two with compatible ranges.
-The largest allowed configuration was exercised on the local 3GB GPU; it can
-use the full device memory, so these bounds leave little room for concurrent GPU work.
-CUDA graph mode and synchronous execution follow the normal config.
-
-Each trial receives exactly the same training frame budget. After training
-exits, its frozen checkpoint runs 16 complete sampled episodes at each exact
-start depth `3, 8, 16, 32, 64, 80, 96, 128, 192, 256, 320, 425`, seed 137,
-with a fixed 1,800-frame cap. Both the simulator and ROM run independently.
-The search score is the fraction of the 192 episodes that actually achieve
-FPG, equally weighting the twelve starts. Incomplete or mismatched evaluations
-fail the trial. Reward scale, timing target and promotion thresholds cannot
-inflate this score. These starts come from the training bank; this measures
-the learned approach, not unseen-level generalization or a full new-game clear.
-Recheck promising candidates with more episodes and new seeds before extending
-their training.
-
-The default totals 8,589,934,592 training frames. At the earlier 83K steps/sec
-baseline that alone is about 29 hours; larger models, replay and CPU/ROM
-evaluation add time. `max_suggestion_cost` guides the search, not a time limit.
-This is a prepared long run; a dry run does not launch it. Use one training or
-sweep job at a time on the local GPU.
-
-Each sweep writes under a new `reports/mario_sim/sweep_TIMESTAMP/` directory:
-the resolved `config.ini`, parent `sweep.log`, per-trial training logs, final
-weights and curriculum sidecars, evaluation configs, episode traces, and
-`result.json` with score, parameters, checkpoint hash and complete per-depth
-results. Failed trials retain `failure.json`; three worker failures stop the
-search. Final checkpoints are retained; intermediate checkpointing is disabled
-for the sweep. The Python launcher uses only the standard library.
+See [the mixed sweep protocol and ranges](README.md#fresh-30m-step-sweep).
+Every trial is ranked using actual-ROM game progress/clears plus a fixed FPG
+panel, rather than its sampled training success rate or curriculum frontier.
+The previous FPG-only 67M setup has been replaced. Historical FPG sweep results
+remain in `results/sweep_setup_20261008/`.
 
 ## Historical RAM-policy learning trial
 

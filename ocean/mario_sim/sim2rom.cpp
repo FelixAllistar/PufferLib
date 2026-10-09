@@ -8,6 +8,7 @@
 #include "game.h"
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 
 static int choose(const float* logits,uint32_t* rng,int deterministic) {
     int best=0;for(int a=0;a<64;a++){fpt_rom_require(std::isfinite(logits[a]),"nonfinite policy output");if(logits[a]>logits[best])best=a;}
@@ -56,6 +57,8 @@ int main(int argc,char** argv) {
         unsigned wins_native=0,wins_rom=0,normal=0,deaths=0,timeouts=0,mismatches=0,episodes_run=0,completed=0;
         unsigned flag_contacts=0,fpg_contacts=0,cleared_levels=0;int furthest_x=0;
         uint64_t total_frames=0,successful_frames=0;
+        uint64_t total_progress=0,total_checkpoints=0,total_life_losses=0;
+        unsigned clear_episodes=0;double progress_fraction=0;
         SmbTaskConfig task={seed,0,horizon,SMB_TASK_FPG,0,1};uint32_t pick=smb_seed(seed,0);
         SmbGameConfig game_config;game_config.max_frames=horizon;
         if(game) {
@@ -123,18 +126,27 @@ int main(int argc,char** argv) {
             normal+=b.status==SMB_EPISODE_NORMAL_FLAG;deaths+=b.status==SMB_EPISODE_DEAD;timeouts+=b.status==SMB_EPISODE_TIMEOUT;
             if(b.status==SMB_EPISODE_SUCCESS)successful_frames+=b.frames;
             flag_contacts+=touched_flag;fpg_contacts+=touched_fpg;cleared_levels+=game?gb.clears:level_clear;furthest_x=std::max(furthest_x,max_x);
+            if(game) {
+                total_progress+=gb.progress_pixels;total_checkpoints+=gb.checkpoints;
+                total_life_losses+=gb.deaths;clear_episodes+=gb.clears>0;
+                progress_fraction+=std::min(1.0,(double)gb.progress_pixels/3400.0);
+            }
             cases<<"{\"episode\":"<<index<<",\"scene\":"<<scene<<",\"frames\":"<<b.frames<<",\"native_status\":"<<a.status
                 <<",\"rom_status\":"<<b.status<<",\"failure\":\""<<failure<<"\",\"field\":"<<bad_field
                 <<",\"start_x\":"<<start_x<<",\"max_overworld_x\":"<<max_x<<",\"final_x\":"<<fpt_x(real.ram,0)
                 <<",\"touched_flag\":"<<(touched_flag?"true":"false")<<",\"fpg\":"<<(touched_fpg?"true":"false")
-                <<",\"level_clear\":"<<(level_clear?"true":"false")<<"}\n";
+                <<",\"level_clear\":"<<(level_clear?"true":"false")
+                <<",\"progress_pixels\":"<<gb.progress_pixels<<",\"checkpoints\":"<<gb.checkpoints
+                <<",\"life_losses\":"<<gb.deaths<<",\"clears\":"<<gb.clears
+                <<",\"episode_return\":"<<b.episode_return<<"}\n";
             if(!failure.empty())break;
         }
         cases.close();fpt_rom_require(bool(cases),"cannot write transfer episodes");
         traces.close();fpt_rom_require(bool(traces),"cannot write transfer trajectories");
         bool complete=completed==(unsigned)episodes,passed=!mismatches&&complete;
         std::ofstream report(out/"summary.json");
-        report<<"{\"schema\":2,\"scope\":\""<<(all_stages?"natural_all_32_stages":new_game?"natural_1_1_new_game":"natural_1_1_starts")
+        report<<std::setprecision(12);
+        report<<"{\"schema\":3,\"scope\":\""<<(all_stages?"natural_all_32_stages":new_game?"natural_1_1_new_game":"natural_1_1_starts")
             <<"\",\"objective\":\""<<(game?"full_game":clear?"level_transition":"fpg")<<"\",\"reference_frames\":"<<reference_frames
             <<",\"eligible_starts\":"<<eligible.size()<<",\"episodes_requested\":"<<episodes
             <<",\"episodes_run\":"<<episodes_run<<",\"episodes_completed\":"<<completed<<",\"seed\":"<<seed
@@ -145,6 +157,10 @@ int main(int argc,char** argv) {
             <<",\"normal_flags\":"<<normal<<",\"deaths\":"<<deaths<<",\"timeouts\":"<<timeouts
             <<",\"flag_contacts\":"<<flag_contacts<<",\"fpg_contacts\":"<<fpg_contacts<<",\"level_clears\":"<<cleared_levels
             <<",\"furthest_overworld_x\":"<<furthest_x
+            <<",\"game_clear_episodes\":"<<clear_episodes<<",\"game_life_losses\":"<<total_life_losses
+            <<",\"game_progress_pixels\":"<<total_progress<<",\"game_checkpoints\":"<<total_checkpoints
+            <<",\"mean_progress_pixels\":"<<(episodes_run?(double)total_progress/episodes_run:0)
+            <<",\"mean_progress_fraction\":"<<(episodes_run?progress_fraction/episodes_run:0)
             <<",\"mean_success_frames\":"<<(wins_rom?(double)successful_frames/wins_rom:0)<<",\"mismatches\":"<<mismatches
             <<",\"ram_writes_after_reset\":0,\"all_episodes_run_to_terminal\":"<<(complete?"true":"false")
             <<",\"passed\":"<<(passed?"true":"false")<<"}\n";
