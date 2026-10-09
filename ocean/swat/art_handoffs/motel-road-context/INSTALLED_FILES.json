@@ -1,0 +1,43 @@
+{
+  "license": "CC0-1.0",
+  "road_triangles": 40,
+  "soft_foliage_placements": 36,
+  "world_objects": 1173,
+  "files": [
+    {
+      "path": "assets/environment/motel_road_context/road_paint.glb",
+      "bytes": 609420,
+      "sha256": "14d6c24fe5b377572df49ca9dc1a529766cd59184d983390c5345e56cb617e49"
+    },
+    {
+      "path": "assets/environment/motel_road_context/grass_tuft_low.glb",
+      "bytes": 397480,
+      "sha256": "09ca7047c5b1f142647ca4ccf07d8cae5fa98010328b208c14725f5a63e68537"
+    },
+    {
+      "path": "assets/environment/motel_road_context/dry_grass_seedheads.glb",
+      "bytes": 533808,
+      "sha256": "f6ab5989b56396343db683dd66bbbc65847ccdc30b66480d8bc265b0efc08f21"
+    },
+    {
+      "path": "assets/environment/motel_road_context/placement_manifest.json",
+      "bytes": 227937,
+      "sha256": "cdc87128173858dc9e0df5ffce1e80b7400e21b69743fb9f83d6d8821aa6d8e0"
+    },
+    {
+      "path": "art_handoffs/motel-road-context/source/roadside_candidate.blend",
+      "bytes": 9968684,
+      "sha256": "ade5f37af7dbc14b9ea5b093ae9585c1ff73413b974b5d38f9935674cfea5d5e"
+    },
+    {
+      "path": "art_handoffs/motel-road-context/source/paint_40tri_texture_wear.blend",
+      "bytes": 1102238,
+      "sha256": "a9ea7d5eac2095028cc1513ffd3ead0cfdfc82a2bbf1d05d6063a2eefe3ebc46"
+    },
+    {
+      "path": "motel_foliage_data.h",
+      "bytes": 3553,
+      "sha256": "bc32bc6d421f17bc0f5cb32534ffe1f0c6f355cfcb3d33c5253ca87e94f7fc6d"
+    }
+  ]
+}

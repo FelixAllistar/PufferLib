@@ -12,6 +12,7 @@
 #define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_GROUND_FIRST+SWAT_GROUND_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
+#define SWAT_MOTEL_FOLIAGE_INSTANCES 36
 typedef struct SwatMotelMaterial { float roughness,metalness; } SwatMotelMaterial;
 typedef struct SwatMotelAsset {
     const char* file; b3Vec3 center,half;
@@ -39,6 +40,9 @@ const SwatMotelInstance* swat_motel_instance(int index);
 // Returns the current supporting object, or -1 when that support is gone.
 int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* placement);
 int swat_motel_dressing_parent(int index);
+// Soft foliage inherits every ground piece beneath its authored footprint.
+// Returns its anchor owner, or -1 if any required support is absent.
+int swat_motel_foliage(const SwatWorld*,int index,SwatMotelInstance* placement);
 // Authored bulb anchor in a supported fixed bedside fixture (guest rooms 1..4).
 bool swat_motel_lamp(const SwatWorld*,int room,b3Pos* origin);
 bool swat_motel_lamp_switch(const SwatWorld*,int room,b3Pos* position);

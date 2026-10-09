@@ -267,10 +267,10 @@ reset/close. Native graphics validates all 54 owner bounds, original PBR maps,
 56,250 silhouette samples, independent removal and exact collision fallback.
 Actual native context was shared as Slack file F0C7RRC86ER.
 
-The road setting is still sparse, pale and bounded. Far scenery, road markings
-and near-realism dressing remain acceptance work. Slack art is continuing a
-separate coordinated gravel/stone material and collision-free shrub silhouette
-revision; chipped rock geometry requires matched new collision. The backed-up
+The road setting is still sparse and bounded. Far scenery and near-realism
+dressing remain acceptance work. The following exterior increment installs the
+coordinated gravel/stone material and collision-free shrub silhouette revision;
+chipped rock geometry requires matched new collision. The backed-up
 hose hanger and other maintenance/roadside props are queued for placement.
 Full scenario checks continue to accept lawful return fire on every hostile
 approach, rather than requiring an arrest outcome for a particular entry route.
@@ -286,6 +286,32 @@ encounter, generated two-storey movement and real-UDP regressions pass. The norm
 Windows player rebuild and ordinary `./swat` motel capture also pass on the GTX
 1060. Full-slice acceptance still needs human/co-op playtesting, finished setting
 and audio, and useful held-out trained policies.
+
+The native exterior now uses the v3 gravel/stone factors (0.65/0.78), lower
+asymmetric shrubs, the delivered 40-triangle texture-wear road markings and
+36 measured grass/seedhead placements. Original scan images, three collision
+GLBs, placements and all connected-ground BIN bytes remain exact. Collision
+importers regenerate unchanged headers. Soft grass adds no cover or obstacle;
+every footprint support must survive, including both pieces beneath W_01.
+Opaque paint belongs to the existing asphalt owner, keeps its 1 mm offset and
+receives lighting without casting shadows. The 12 m road crossing stays clear.
+
+Linux/Windows ground/controller/squad/replica tests and the new support checks
+pass. Six native road/plant views are pixel-identical with full versus culled
+geometry, including lighting/shadow passes; world authority stays unchanged.
+Native ground graphics retain the 54 owner matches, PBR maps, 56,250 ray/raster
+checks, independent removal and exact fallback. New-model texture owner/pixel
+lifetime checks pass. Packed editable sources, runtime, scoped licenses and
+native review are in the repo; full source backups remain on Drive. Native
+proof was shared on Slack as F0C80EFCE7P. Finite background edges, repetition
+and sparse vegetation remain visible. The junction box, maintenance props and
+new suitcase/bib handoffs are verified art deliveries awaiting physical placement
+and damage integration; this increment does not claim them installed.
+
+Prior crouch/locomotion transition blending, exact nearest-navigation lookup,
+conservative render culling and shared model texture storage remain in place.
+Full-slice acceptance still needs human/co-op testing, finished composition,
+production audio and useful held-out tactical policies.
 
 ## Landed: playable foundation
 

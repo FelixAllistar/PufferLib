@@ -1,0 +1,9 @@
+SPDX-License-Identifier: CC0-1.0
+Creative Commons Zero v1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+To the extent possible under law, all copyright and related or neighboring rights in the original procedural coating maps, included scripts and documentation are waived under CC0 1.0 Universal. Offered without warranty. No trademark, patent, traffic-code or native-engine suitability is asserted.
+
+The deterministic original algorithms included here generated these texture arrays specifically for this candidate. No photographs, commercial textures, road-marking decal packs, website previews or other external image inputs were used. The baseline 40-triangle geometry derives from the existing original CC0 Briar road-paint study and roadside candidate. Its original license is retained in provenance/BASELINE_LICENSE.txt.
+
+Preview-only ground context: Clean Asphalt by Dimitrios Savva / Poly Haven, https://polyhaven.com/a/clean_asphalt, CC0 per https://polyhaven.com/license. Accepted ground data and material files are unchanged; no substrate maps or geometry are part of the replacement runtime. Attribution is provenance, not a condition added to CC0.

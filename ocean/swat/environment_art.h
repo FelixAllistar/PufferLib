@@ -67,6 +67,10 @@ typedef struct SwatEnvironmentArt {
     float motel_guest_desk_normal_scale[SWAT_ROOM101_MATERIALS];
     Model motel_ground; // 54 identity, world-placed support meshes.
     float motel_ground_normal_scale[SWAT_ROOM101_MATERIALS];
+    Model motel_foliage[2]; // Soft grass/seedheads; collision remains the ground.
+    float motel_foliage_normal_scale[2][SWAT_ROOM101_MATERIALS];
+    Model motel_road_paint; // Opaque coating on existing road support 1123.
+    float motel_road_paint_normal_scale[SWAT_ROOM101_MATERIALS];
     Model motel_surroundings[2]; // Original shoulder and bank render meshes.
     float motel_surroundings_normal_scale[2][SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];

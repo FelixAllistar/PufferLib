@@ -8,6 +8,8 @@
 #include "motel_fence_data.h"
 #include "motel_surroundings_data.h"
 #include "motel_ground_data.h"
+typedef struct SwatMotelFoliage {SwatMotelInstance placement;int supports[2];} SwatMotelFoliage;
+#include "motel_foliage_data.h"
 typedef struct SwatMotelContactSource {int asset;const int32_t* indices;int triangle_count;} SwatMotelContactSource;
 #include "motel_contacts_data.h"
 static void contact_meshes_create(SwatWorld* w) {
@@ -382,6 +384,13 @@ void swat_motel_build(SwatWorld* w) {
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }
 
+int swat_motel_foliage(const SwatWorld* w,int index,SwatMotelInstance* out) {
+    if(!w->motel || index<0 || index>=SWAT_MOTEL_FOLIAGE_INSTANCES)return -1;
+    const SwatMotelFoliage* f=&motel_foliage[index];
+    for(int i=0;i<2;i++)if(f->supports[i]>=0 &&
+        (f->supports[i]>=w->count || !w->objects[f->supports[i]].active))return -1;
+    *out=f->placement;return f->supports[0];
+}
 int swat_motel_dressing_parent(int index) {
     if(index<0 || index>=SWAT_MOTEL_DRESSING_INSTANCES)return -1;
     const int owners[]={14,14,24,24,20,16,105,20,24};

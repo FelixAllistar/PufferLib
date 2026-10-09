@@ -30,5 +30,6 @@ out+='static const SwatMotelAsset surroundings_parts[]={\n'+parts.map((p,k)=>`{N
 out+='static const unsigned char surroundings_rock_triangles[]={'+mapping.join(',')+'};\n';
 const manifest=JSON.parse(fs.readFileSync(path.join(dir,'placement_manifest.json')));assert.equal(manifest.instances.length,10);
 out+='static const SwatMotelInstance surroundings_placements[]={\n'+manifest.instances.map(p=>`{${p.module==='shoulder'?0:1},{${p.translation_yup.map(f)}},{1,1,1},${f(p.rotation_y_radians)},SWAT_SOIL,false,false}`).join(',\n')+'};\n';
-fs.writeFileSync(path.join(root,'motel_surroundings_data.h'),out);
+const output=path.join(root,'motel_surroundings_data.h');
+if(!fs.existsSync(output)||fs.readFileSync(output,'utf8')!==out)fs.writeFileSync(output,out);
 console.log(JSON.stringify({sourceHashes:{shoulder:shoulder.hash,bank:bank.hash,render:render.hash},parts:parts.length,closedTriangles,placements:5,physicalComponents:75,rockRenderTrianglesMatched:mapping.length},null,2));

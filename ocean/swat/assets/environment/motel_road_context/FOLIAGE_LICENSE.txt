@@ -1,0 +1,17 @@
+SPDX-License-Identifier: CC0-1.0
+Original assembly scripts, optional distance-paint geometry and documentation in this handoff are dedicated to CC0 1.0 Universal, without warranty.
+Legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Original foliage: unchanged low grass tuft and dry grass/seedheads from yard-vegetation-batch-12.zip.
+Source: https://drive.google.com/file/d/1UAQP7or9MZx35NECGcRFnJ4CiIX6uy8o/view?usp=drivesdk
+Archive SHA256: 0588d84bfe6ccd185054fda0600e5024bf50c957bcb1e4a5876a8778331bd3a8
+Original license/generator/editable catalog and atlas: source/original_vegetation/.
+Original declaration dedicates models, textures, scripts and documentation to CC0; no third-party models, photos or proprietary assets declared. This preserves source provenance, not an independent authorship-history investigation.
+
+Original paint: briar_road_paint_study_v1 corrected off-white 1×0.10 m and yellow 3×0.12 m originals. Original source study, generators, textures and CC0 license retained in source/original_paint/. No new photograph or commercial decal pack used. SHA256 identities in runtime/placement_manifest.json and SHA256SUMS.txt.
+
+Preview-only substrate: Clean Asphalt by Dimitrios Savva / Poly Haven, CC0-1.0.
+https://polyhaven.com/a/clean_asphalt
+https://polyhaven.com/license
+Source metadata retained in source/original_paint/provenance/.
+Unchanged existing connected ground and v3 appearance shoulders are external preview dependencies, not new candidate geometry. Their verified file hashes are in qa/preview_settings.json. Their licenses remain with the existing ground and v3 appearance handoffs. No source photo or external website preview is republished here.

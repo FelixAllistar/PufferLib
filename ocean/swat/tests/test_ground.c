@@ -39,6 +39,23 @@ static void walk(float x,float z) {
 int main(void) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=120000;
     swat_sim_init(&sim,cfg,81);assert(sim.world.count==SWAT_MOTEL_OBJECTS);
+    // Grass is attached to the actual support, including footprints spanning
+    // two pieces. It adds no shape, cover, navigation obstacle or world state.
+    SwatMotelInstance plant;
+    for(int i=0;i<SWAT_MOTEL_FOLIAGE_INSTANCES;i++) {
+        int owner=swat_motel_foliage(&sim.world,i,&plant);assert(owner>=SWAT_MOTEL_GROUND_FIRST);
+        SwatHit h=ground(&sim.world,plant.origin.x,plant.origin.z);
+        assert(h.hit && h.index==owner && fabs(h.point.y-plant.origin.y)<.001f);
+        bool active=sim.world.objects[owner].active;sim.world.objects[owner].active=false;
+        assert(swat_motel_foliage(&sim.world,i,&plant)==-1);sim.world.objects[owner].active=active;
+    }
+    // W_01's root is on 1119 but its footprint also needs 1120.
+    sim.world.objects[SWAT_MOTEL_GROUND_FIRST+1].active=false;
+    assert(swat_motel_foliage(&sim.world,0,&plant)==-1);
+    sim.world.objects[SWAT_MOTEL_GROUND_FIRST+1].active=true;
+    assert(swat_motel_foliage(&sim.world,-1,&plant)==-1);
+    assert(swat_motel_foliage(&sim.world,SWAT_MOTEL_FOLIAGE_INSTANCES,&plant)==-1);
+    puts("PASS soft foliage: 36 real anchors, support removal and cross-piece footprint ownership; no added colliders");
     int rays=0;
     for(int part=0;part<SWAT_GROUND_PARTS;part++) {
         const SwatMotelAsset* a=swat_motel_ground_asset(part);const SwatObject* o=&sim.world.objects[SWAT_MOTEL_GROUND_FIRST+part];

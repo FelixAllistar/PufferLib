@@ -1,0 +1,14 @@
+{
+  "input_sha256": "bc118ef8708e3843a60b1753abdc2a9d8e9ba5a5f3ef0ae6b7f94b974cec80f3",
+  "output_sha256": "4620f9e36bf4d643d46c926b95d8987fab401e2a79deca609d9eb9e3d39bf7a3",
+  "only_json_delta": "materials[0].pbrMetallicRoughness.baseColorFactor",
+  "factor": [
+    0.65,
+    0.65,
+    0.65,
+    1
+  ],
+  "all_binary_chunks_byte_exact": true,
+  "all_other_json_values_exact": true,
+  "native_calibrated": false
+}

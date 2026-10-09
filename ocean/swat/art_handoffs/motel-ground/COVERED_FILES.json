@@ -194,8 +194,8 @@
     },
     {
       "path": "runtime/connected_ground_render.glb",
-      "bytes": 20301724,
-      "sha256": "bc118ef8708e3843a60b1753abdc2a9d8e9ba5a5f3ef0ae6b7f94b974cec80f3",
+      "bytes": 20301760,
+      "sha256": "4620f9e36bf4d643d46c926b95d8987fab401e2a79deca609d9eb9e3d39bf7a3",
       "category": "mixed original geometry + embedded third-party CC0 maps"
     },
     {
@@ -212,8 +212,8 @@
     },
     {
       "path": "source/connected_ground.blend",
-      "bytes": 19522128,
-      "sha256": "05a2a83689f902ff6df9a810a5e49742b81f236b377e614f570014c276e18c3d",
+      "bytes": 19530940,
+      "sha256": "60dd3aff33e8a7fa8adf56bd6d9f937d595fb38401e292aa2e6e8eb6ac1c9762",
       "category": "mixed original geometry + embedded third-party CC0 maps"
     },
     {

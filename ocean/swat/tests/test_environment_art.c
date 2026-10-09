@@ -761,8 +761,8 @@ static void room101_graphics(SwatView* view,const char* directory) {
     swat_sim_close(&sim);
     printf("PASS Room 101: authored PBR channels/scales, transformed trim, matched captures (%d changed pixels), three door poses and removal\n",changed);
 }
-static void texture_sharing_graphics(SwatView* view,const char* directory) {
-    char path[4096];snprintf(path,sizeof(path),"%sassets/environment/motel_room101_v4/room_floor_4x6m_008_v4.glb",GetApplicationDirectory());
+static void texture_owner_graphics(const char* asset) {
+    char path[4096];snprintf(path,sizeof(path),"%sassets/environment/%s",GetApplicationDirectory(),asset);
     Model models[3];
     for(int n=0;n<3;n++) {
         models[n]=LoadModel(path);assert(models[n].meshCount);
@@ -785,6 +785,9 @@ static void texture_sharing_graphics(SwatView* view,const char* directory) {
         if(models[2].materials[m].maps[k].texture.id==b.id)models[2].materials[m].maps[k].texture=(Texture2D){0};
     swat_art_model_close(models[2]);UnloadImage(pixels);assert(!swat_art_texture_stats().textures);
     puts("PASS texture owners: three exact image copies share once per model, idempotent registration, closing two owners retains pixels, final release frees storage");
+}
+static void texture_sharing_graphics(SwatView* view,const char* directory) {
+    texture_owner_graphics("motel_room101_v4/room_floor_4x6m_008_v4.glb");
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;swat_sim_init(&sim,cfg,42);
     Camera3D cameras[]={
         {{-6,1.62f,-1},{-6,1.4f,-5},{0,1,0},75,CAMERA_PERSPECTIVE},
@@ -795,7 +798,7 @@ static void texture_sharing_graphics(SwatView* view,const char* directory) {
     static SwatWorld empty_world;swat_environment_art_prepare_location(&view->environment,&empty_world);
     assert(!swat_art_texture_stats().textures);environment("SWAT_ART_TEXTURE_SHARING",NULL);
     swat_environment_art_prepare_location(&view->environment,&sim.world);
-    stats=swat_art_texture_stats();assert(stats.saved_bytes>0);
+    SwatArtTextureStats stats=swat_art_texture_stats();assert(stats.saved_bytes>0);
     before=sim.world;
     for(int c=0;c<3;c++) {
         Image shared=room101_capture_size(view,cameras[c],true,640,480);Color* a=LoadImageColors(full[c]),*b=LoadImageColors(shared);int changed=0;
@@ -809,6 +812,39 @@ static void texture_sharing_graphics(SwatView* view,const char* directory) {
     }
     assert(!memcmp(&before,&sim.world,sizeof(before)));swat_sim_close(&sim);
     printf("PASS shared motel textures: pixel-identical PBR indoor/distant-room renders; %.2f MiB duplicate allocation removed, %zu textures/%zu owners\n",stats.saved_bytes/1048576.0,stats.textures,stats.owners);
+}
+static void roadside_graphics(SwatView* view,const char* directory) {
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
+    swat_sim_init(&sim,cfg,42);swat_environment_art_prepare_location(&view->environment,&sim.world);
+    SwatEnvironmentArt* art=&view->environment;assert(art->motel_road_paint.meshCount==2);
+    int triangles=0;for(int i=0;i<2;i++)triangles+=art->motel_road_paint.meshes[i].triangleCount;
+    assert(triangles==40 && art->motel_foliage[0].meshCount==1 && art->motel_foliage[1].meshCount==1);
+    assert(art->motel_foliage[0].meshes[0].triangleCount==840 && art->motel_foliage[1].meshes[0].triangleCount==2294);
+    for(int i=0;i<2;i++) {
+        Material m=art->motel_road_paint.materials[art->motel_road_paint.meshMaterial[i]];
+        assert(m.maps[MATERIAL_MAP_ALBEDO].texture.id && m.maps[MATERIAL_MAP_ROUGHNESS].texture.id);
+        assert(m.maps[MATERIAL_MAP_ALBEDO].color.a==255);
+    }
+    before=sim.world;
+    Camera3D cameras[]={
+        {{0,1.65f,42},{0,1,-2},{0,1,0},70,CAMERA_PERSPECTIVE},
+        {{38,12,48},{0,0,8},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{-40,.45f,46},{-15,-.079f,40},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{-56,1.5f,-27},{-54,0,-21},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{54,1.5f,-7},{55,0,-13},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{0,1.5f,-39},{0,0,-44},{0,1,0},65,CAMERA_PERSPECTIVE}};
+    struct SwatEnvironmentBounds* bounds=art->bounds;
+    for(int c=0;c<6;c++) {
+        art->bounds=NULL;Image full=room101_capture_size(view,cameras[c],true,960,540);
+        art->bounds=bounds;Image culled=room101_capture_size(view,cameras[c],true,960,540);
+        Color* a=LoadImageColors(full),*b=LoadImageColors(culled);int changed=0;
+        for(int i=0;i<960*540;i++)changed+=memcmp(&a[i],&b[i],sizeof(Color))!=0;
+        printf("Road context camera%d culling differences%d\n",c,changed);fflush(stdout);assert(!changed);
+        assert(ExportImage(culled,TextFormat("%s/road-context-%d.png",directory,c)));
+        UnloadImageColors(a);UnloadImageColors(b);UnloadImage(full);UnloadImage(culled);
+    }
+    assert(!memcmp(&before,&sim.world,sizeof(before)));swat_sim_close(&sim);
+    puts("PASS road context: 40 opaque paint triangles, two original grass meshes, six native road/plant views with identical full/culled lighting and shadows, immutable authority");
 }
 static void culling_graphics(SwatView* view,const char* directory) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
@@ -849,7 +885,14 @@ int main(int argc,char** argv) {
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     if(argc>2 && !strcmp(argv[2],"textures")) {texture_sharing_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
+    if(argc>2 && !strcmp(argv[2],"road-textures")) {
+        texture_owner_graphics("motel_road_context/grass_tuft_low.glb");
+        texture_owner_graphics("motel_road_context/dry_grass_seedheads.glb");
+        texture_owner_graphics("motel_road_context/road_paint.glb");
+        swat_view_close(&view);return 0;
+    }
     if(argc>2 && !strcmp(argv[2],"culling")) {culling_graphics(&view,directory);swat_view_close(&view);return 0;}
+    if(argc>2 && !strcmp(argv[2],"roadside")) {roadside_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && (!strcmp(argv[2],"surroundings") || !strcmp(argv[2],"ground"))) {
         SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;
         swat_sim_init(&sim,config,73);swat_environment_art_prepare_location(&view.environment,&sim.world);

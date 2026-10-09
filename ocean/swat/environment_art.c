@@ -106,6 +106,8 @@ static void room101_close(SwatEnvironmentArt* art) {
     if(art->motel_asphalt.roughness.id)UnloadTexture(art->motel_asphalt.roughness);
     art->motel_asphalt=(SwatSurfaceMaps){0};
     swat_art_model_close(art->motel_ground);art->motel_ground=(Model){0};
+    for(int i=0;i<2;i++){swat_art_model_close(art->motel_foliage[i]);art->motel_foliage[i]=(Model){0};}
+    swat_art_model_close(art->motel_road_paint);art->motel_road_paint=(Model){0};
     wall_art_close(art);
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
@@ -199,6 +201,16 @@ static void room101_load(SwatEnvironmentArt* art) {
 }
 
 static void motel_dressing_load(SwatEnvironmentArt* art) {
+    const char* foliage[]={"grass_tuft_low.glb","dry_grass_seedheads.glb"};
+    for(int i=0;i<2;i++) {
+        char file[128];snprintf(file,sizeof(file),"motel_road_context/%s",foliage[i]);
+        if(!room101_model_load(&art->motel_foliage[i],art->motel_foliage_normal_scale[i],file)) {
+            swat_art_model_close(art->motel_foliage[i]);art->motel_foliage[i]=(Model){0};
+        }
+    }
+    if(!room101_model_load(&art->motel_road_paint,art->motel_road_paint_normal_scale,"motel_road_context/road_paint.glb")) {
+        swat_art_model_close(art->motel_road_paint);art->motel_road_paint=(Model){0};
+    }
     if(!room101_model_load(&art->motel_ground,art->motel_ground_normal_scale,"motel_ground/connected_ground_render.glb") || art->motel_ground.meshCount!=SWAT_GROUND_PARTS) {
         swat_art_model_close(art->motel_ground);art->motel_ground=(Model){0};
     }
@@ -605,6 +617,8 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
         if(lit) {
             float normal_scale=1;
             if(source==&art->motel_ground)normal_scale=art->motel_ground_normal_scale[model->meshMaterial[i]];
+            if(source==&art->motel_road_paint)normal_scale=art->motel_road_paint_normal_scale[model->meshMaterial[i]];
+            for(int n=0;n<2;n++)if(source==&art->motel_foliage[n])normal_scale=art->motel_foliage_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->motel_reception)normal_scale=art->motel_reception_normal_scale[model->meshMaterial[i]];
             if(source==&art->motel_roadside)normal_scale=art->motel_roadside_normal_scale[model->meshMaterial[i]];
             for(int n=0;n<2;n++)if(source==&art->motel_personal[n])normal_scale=art->motel_personal_normal_scale[n][model->meshMaterial[i]];
@@ -682,6 +696,21 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     if(o->tag.index<1)return false;
     int ground_part=swat_motel_ground_part(world,o);
+    if(ground_part>=0 && o->active) {
+        // Thin road paint receives lighting but never casts its own shadow.
+        // It belongs to the existing closed asphalt support, not a new collider.
+        if(ground_part==4 && !shadow && art->motel_road_paint.meshCount) {
+            SwatMotelInstance p={.scale={1,1,1}};
+            location_draw(art,o,&p,&art->motel_road_paint,shadow,cutaway,false);
+        }
+        rlDisableBackfaceCulling();
+        for(int i=0;i<SWAT_MOTEL_FOLIAGE_INSTANCES;i++) {
+            SwatMotelInstance p;
+            if(swat_motel_foliage(world,i,&p)==o->tag.index)
+                location_draw(art,o,&p,&art->motel_foliage[p.asset],shadow,cutaway,false);
+        }
+        rlEnableBackfaceCulling();
+    }
     if(ground_part>=0 && art->motel_ground.meshCount==SWAT_GROUND_PARTS) {
         const Model* source=&art->motel_ground;Model part=*source;
         part.meshCount=1;part.meshes=&source->meshes[ground_part];part.meshMaterial=&source->meshMaterial[ground_part];

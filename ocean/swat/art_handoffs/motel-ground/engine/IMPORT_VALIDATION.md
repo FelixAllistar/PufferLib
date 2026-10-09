@@ -68,3 +68,9 @@ Generated two-storey movement, encounter and real-UDP regressions also pass.
 The ordinary `./swat` native motel capture and refreshed Windows player build
 pass on the GTX 1060. This is controller QA; full-slice human/co-op acceptance
 and learned-policy quality remain separate work.
+
+2026-10-09 appearance update: the coordinated v3 gravel factor (0.65) now matches
+the adjoining shoulder. Original scan images, BIN bytes, 54 mesh/order/bindings,
+collision and placements remain unchanged. The packed editable source and active
+render hash are updated together; V3_MATERIAL_RECEIPT.json records the material
+change. Road-context validation is in ../../motel-road-context/engine/VALIDATION.md.

@@ -1,0 +1,108 @@
+{
+  "baseline_sha256": "59a7a2f5e8668ae2aad92d46a8553306d29e6bb4e0fd3bde438eb4a70b8f3d7f",
+  "candidate_sha256": "14d6c24fe5b377572df49ca9dc1a529766cd59184d983390c5345e56cb617e49",
+  "accessors": [
+    {
+      "accessor": 0,
+      "changed_uv": false,
+      "baseline_sha256": "4a731756e075320f902e0e4b14b0cb024b87c6edba190b0e13f590d91ed32fdd",
+      "candidate_sha256": "4a731756e075320f902e0e4b14b0cb024b87c6edba190b0e13f590d91ed32fdd",
+      "exact_equal": true
+    },
+    {
+      "accessor": 1,
+      "changed_uv": false,
+      "baseline_sha256": "6caabc59f50f19f37ee6daf281d47e5ccbfc490a5e3f8b5ca98d84eb222c84ed",
+      "candidate_sha256": "6caabc59f50f19f37ee6daf281d47e5ccbfc490a5e3f8b5ca98d84eb222c84ed",
+      "exact_equal": true
+    },
+    {
+      "accessor": 2,
+      "changed_uv": true,
+      "baseline_sha256": "a605f41086f108fa17d9cc0536ec0b6a6ffc215494a356cb80eb0dc30e91c0d9",
+      "candidate_sha256": "6ce2e46801b5bb55b3807e9314b225943a6ab63f8a3d9bb77051ecd075061212",
+      "exact_equal": false
+    },
+    {
+      "accessor": 3,
+      "changed_uv": false,
+      "baseline_sha256": "d326ec2be6f8e8e28c8b9b35496e360a65e1dab57f3ff3f3a752e6404a4a8783",
+      "candidate_sha256": "d326ec2be6f8e8e28c8b9b35496e360a65e1dab57f3ff3f3a752e6404a4a8783",
+      "exact_equal": true
+    },
+    {
+      "accessor": 4,
+      "changed_uv": false,
+      "baseline_sha256": "1030b09860ce293b76451a8ee0a66cf3b6c0bd4714913b07f43cd206903a777c",
+      "candidate_sha256": "1030b09860ce293b76451a8ee0a66cf3b6c0bd4714913b07f43cd206903a777c",
+      "exact_equal": true
+    },
+    {
+      "accessor": 5,
+      "changed_uv": false,
+      "baseline_sha256": "1412af103f3fc4b58e09e94fa0accb328851e2ae53dc0f517ca101ccc0952385",
+      "candidate_sha256": "1412af103f3fc4b58e09e94fa0accb328851e2ae53dc0f517ca101ccc0952385",
+      "exact_equal": true
+    },
+    {
+      "accessor": 6,
+      "changed_uv": false,
+      "baseline_sha256": "3a211be3cc3f55599344c534f9c483f3bd9f9db1413d621430b2225824d89706",
+      "candidate_sha256": "3a211be3cc3f55599344c534f9c483f3bd9f9db1413d621430b2225824d89706",
+      "exact_equal": true
+    },
+    {
+      "accessor": 7,
+      "changed_uv": false,
+      "baseline_sha256": "5ae3e5e099127e97add2c72735096ec4efdfb6c41a5c064d91d220f19544c162",
+      "candidate_sha256": "5ae3e5e099127e97add2c72735096ec4efdfb6c41a5c064d91d220f19544c162",
+      "exact_equal": true
+    },
+    {
+      "accessor": 8,
+      "changed_uv": true,
+      "baseline_sha256": "fdb730c4554825fb797a937bca0c498a8e218bfe63a8d18c708be32d8deb74a0",
+      "candidate_sha256": "ed4d831b85067858d52749136b23e48edc565814c4577ad29043264b65df528b",
+      "exact_equal": false
+    },
+    {
+      "accessor": 9,
+      "changed_uv": false,
+      "baseline_sha256": "d919dc392273a2140795eab496d46bf40e44b1e7b5a6af245df69e90a18be9c8",
+      "candidate_sha256": "d919dc392273a2140795eab496d46bf40e44b1e7b5a6af245df69e90a18be9c8",
+      "exact_equal": true
+    },
+    {
+      "accessor": 10,
+      "changed_uv": false,
+      "baseline_sha256": "fad24ed94ea72af704168dfad74675b6b3ddf39043be29f4d83fd2570af7e2da",
+      "candidate_sha256": "fad24ed94ea72af704168dfad74675b6b3ddf39043be29f4d83fd2570af7e2da",
+      "exact_equal": true
+    },
+    {
+      "accessor": 11,
+      "changed_uv": false,
+      "baseline_sha256": "c4c8651c3c20b46815acc89601bef977b441300a27a9294ddf24460e87caa20b",
+      "candidate_sha256": "c4c8651c3c20b46815acc89601bef977b441300a27a9294ddf24460e87caa20b",
+      "exact_equal": true
+    }
+  ],
+  "nodes_meshes_order_extras_scenes_exact": true,
+  "geometry_index_normal_tangent_uv1_bytes_exact": true,
+  "changed": "TEXCOORD_0, two materials, three texture images, explicit REPEAT sampler; binary view offsets repacked",
+  "triangles": 40,
+  "nodes": 2,
+  "meshes": 2,
+  "primitives": 2,
+  "materials": 2,
+  "images": 3,
+  "image_dimensions": [
+    512,
+    512
+  ],
+  "rgba8_estimate_bytes": 3145728,
+  "rgba8_mips_estimate_bytes": 4194304,
+  "physical_uv_scale": "U=X metres, V=Z metres; 1m x 1m seamless repeat; 512 texels/metre (1.953125mm per texel). Existing TEXCOORD_1 preserved unused.",
+  "alpha": "OPAQUE; all PNGs RGB, no alpha; no MASK variant",
+  "native_verified": false
+}

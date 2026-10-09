@@ -52,3 +52,11 @@ are the untouched delivered V2 records. Full source backups remain on Drive.
 
 This improves surface detail, not the repeated foliage, rounded rock silhouettes
 or incomplete wider setting. Those remain provisional.
+
+2026-10-09 appearance update: v3 uses gravel factor 0.65, stone factor 0.78 and
+lower asymmetric shrub forms within their existing envelopes. All original scan
+images and closed collision are preserved. The importer still matches all 1,040
+rock triangles and regenerates the same collision header. Packed editable source
+and current runtime/source receipts are updated. The former 1,119-object prefix
+now sits within the expanded 1,173-object ground layout. Native context and
+current checks are in ../../motel-road-context/engine/VALIDATION.md.
