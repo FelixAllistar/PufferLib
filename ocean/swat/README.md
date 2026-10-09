@@ -118,6 +118,14 @@ draws outside each current camera, including every lamp face; clipped wall and
 fence replacements retain their source bounds. This leaves visibility and
 collision rules unchanged. `test_environment_art.exe REVIEW_DIR culling`
 compares full and culled lit/depth rendering pixel for pixel, including breaches.
+Identical embedded GLB images now share GPU storage across model owners, with
+exact encoded-byte checks, matching image/sampler metadata and per-model
+release tracking. Original pixels, dimensions and PBR factors are preserved;
+clamped AO atlases stay independent. The motel comparison removes about
+246 MiB of duplicate texture allocations and passes pixel-for-pixel indoor and
+distant-room checks. `SWAT_ART_TEXTURE_SHARING=0 ./swat` disables sharing for
+comparison; `test_environment_art.exe REVIEW_DIR textures` also checks lifetime,
+idempotent registration, map overrides and complete release after model unload.
 Use
 `--capture FILE.png` for a final scene capture. **F3** shows FPS/frame time as
 small debug text in play.

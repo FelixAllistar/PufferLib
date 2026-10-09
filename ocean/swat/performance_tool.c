@@ -121,7 +121,14 @@ int main(int argc,char** argv) {
     }
     if(view.characters) printf("character poses=%u draws=%u prepare_mean_ms=%.3f prepare_max_ms=%.3f\n",view.characters->preparations,view.characters->draws,
         view.characters->preparations ? view.characters->prepare_seconds/view.characters->preparations*1000 : 0,view.characters->prepare_max_seconds*1000);
+    if(!headless) {
+        SwatArtTextureStats textures=swat_art_texture_stats();
+        printf("shared textures=%zu model_owners=%zu resident_mib=%.2f duplicate_mib_saved=%.2f\n",
+            textures.textures,textures.owners,textures.bytes/1048576.0,textures.saved_bytes/1048576.0);
+    }
     if(capture) { Image frame=LoadImageFromScreen(); valid=ExportImage(frame,capture) && valid; UnloadImage(frame); }
     if(recording.file && !swat_replay_close(&recording)) valid=false;
-    swat_sound_view_close(&sound); swat_view_close(&view); swat_sim_close(sim); free(sim); free(measurements); return valid ? 0 : 1;
+    swat_sound_view_close(&sound); swat_view_close(&view); swat_sim_close(sim); free(sim); free(measurements);
+    if(swat_art_texture_stats().textures){fprintf(stderr,"Leaked shared model textures\n");valid=false;}
+    return valid ? 0 : 1;
 }

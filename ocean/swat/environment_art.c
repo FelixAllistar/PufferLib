@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "motel_wall_art.h"
+#include "art_texture_pool.h"
 
 typedef struct SwatEnvironmentBound {
     const Model* source;
@@ -144,6 +145,7 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
             if(t->id && t->id!=rlGetTextureIdDefault()) {GenTextureMipmaps(t);SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR);SetTextureWrap(*t,TEXTURE_WRAP_REPEAT);}
         }
     }
+    swat_art_model_share_textures(*model,path);
     return true;
 }
 static void room101_load(SwatEnvironmentArt* art) {
@@ -339,9 +341,10 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             if(!location)art->motel_occlusion_uv[i][m+1]=m<factors_count?factors[m].occlusion_texcoord:0;
             for(int k=0;k<=MATERIAL_MAP_BRDF;k++) {
                 Texture2D* t=&material->maps[k].texture;
-                if(t->id && t->id!=rlGetTextureIdDefault()) { GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR); }
+                if(t->id && t->id!=rlGetTextureIdDefault()) { GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR); SetTextureWrap(*t,TEXTURE_WRAP_REPEAT); }
             }
         }
+        swat_art_model_share_textures(*model,path);
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
     if(selected==1) {room101_load(art);motel_dressing_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
@@ -368,8 +371,9 @@ void swat_art_model_close(Model model) {
             if(a==m && b>=k) break;
             if(model.materials[a].maps[b].texture.id==id) earlier=true;
         }
-        if(!earlier) UnloadTexture(model.materials[m].maps[k].texture);
+        if(!earlier && !texture_release(model.materials,model.materials[m].maps[k].texture))UnloadTexture(model.materials[m].maps[k].texture);
     }
+    texture_release_remaining(model.materials);
     // Even a failed GLB load can own Raylib's fallback material allocation.
     if(model.meshCount || model.materialCount) UnloadModel(model);
 }
