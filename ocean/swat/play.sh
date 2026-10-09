@@ -30,6 +30,7 @@ swat_needs_build() {
                   ocean/swat/assets/environment/motel_zoning/*.png \
                   ocean/swat/assets/environment/motel_road_context/*.glb \
                   ocean/swat/assets/environment/motel_mounted/*.glb \
+                  ocean/swat/assets/environment/motel_props/*.glb \
                   ocean/swat/assets/environment/motel_breach/*.glb \
                   ocean/swat/assets/environment/motel_numbers/*.glb \
                   ocean/swat/assets/environment/motel_reception/*.glb \

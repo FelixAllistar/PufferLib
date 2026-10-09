@@ -1106,3 +1106,14 @@ The graphics test executable is built by the full Windows build, or the
 `environment-art-test-build` Make target for Linux. The native check compares
 54 mesh bounds to their collision owners, validates original PBR maps and
 compares selected owner silhouettes, removal and missing-art fallback.
+
+The [service trolley integration](art_handoffs/motel-trolley/ENGINE_IMPORT.md)
+adds a parked two-shelf cart to the rear utility room. Its original open geometry
+is physical, with finite steel strength, four floor contacts, original PBR maps,
+exact art fallback and serialized removal. Existing saves retain their canonical
+prefix. `mounted-props-test` and `motel-contacts-test` also check the trolley;
+the native environment-art selector `motel-props` checks source/fallback coverage.
+The unchanged compact zoning authoring excerpt is preserved with its source
+hashes and 18 measured controls; no Python execution is required for validation.
+Distant masonry face speckling now uses a core-only depth offset; the native
+`wall-depth` selector compares production projection to a precision control.

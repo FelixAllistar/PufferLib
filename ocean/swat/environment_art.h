@@ -27,6 +27,7 @@ typedef struct SwatEnvironmentArt {
     bool initialized;
     int location; // Only the current mission's module bank resides on the GPU.
     bool lit;
+    bool wall_depth_offset; // Presentation diagnostic; normally true.
     int shadow_room; // Set by depth callbacks; -1 for sun/contact passes.
     Texture2D plaster,wood;
     float plaster_tile_metres;

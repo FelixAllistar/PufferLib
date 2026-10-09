@@ -48,6 +48,39 @@ static void synchronize(void) {
     swat_apply_map(&replica,&decoded);assert(replica.world.motel);
     swat_capture_snapshot(&sim,1,&state);assert(swat_apply_snapshot(&replica,&state));
 }
+static void trolley(void) {
+    int owner=SWAT_MOTEL_PROPS_FIRST;SwatMotelInstance p;
+    assert(swat_motel_prop(&sim.world,owner,&p));SwatObject* o=&sim.world.objects[owner];
+    assert(o->active && o->part==SWAT_PART_FIXTURE && o->material==SWAT_STEEL && o->query_mesh.data->triangleCount==2416);
+    assert(fabsf(o->max_health-600)<.001f && o->structural_thickness==.008f && o->supports[0]==127);
+    for(int i=1;i<SWAT_MAX_SUPPORTS;i++)assert(o->supports[i]==-1);
+    for(int x=-1;x<=1;x+=2)for(int z=-1;z<=1;z+=2) {
+        SwatHit h=swat_world_ray(&sim.world,point(&p,swat_v(x*.410f,.005f,z*.230f)),swat_v(0,-1,0),.01f,o->body);
+        // Ignore the cart body to query the floor under its authored wheel.
+        assert(h.hit && h.index==127 && fabsf((float)h.point.y-p.origin.y)<.001f);
+    }
+    SwatHit h=swat_world_ray(&sim.world,point(&p,swat_v(0,.45f,.34f)),swat_v(0,0,-1),.68f,b3_nullBodyId);
+    assert(!h.hit); // Open bay stays empty rather than becoming a solid box.
+    h=swat_world_ray(&sim.world,point(&p,swat_v(0,.745f,0)),swat_v(0,-1,0),.10f,b3_nullBodyId);
+    assert(h.hit && h.index==owner);
+    float thickness=swat_world_exit_distance(o,h.point,swat_v(0,-1,0));
+    assert(thickness>.0039f && thickness<.0041f); // Original separate liner, not invented sheet thickness.
+    synchronize();assert(replica.world.objects[owner].query_mesh.data->triangleCount==2416);
+    // Older version-17 maps remain exact canonical prefixes without the cart.
+    map.count=SWAT_MOTEL_PROPS_FIRST;size_t n=swat_encode_map(bytes,sizeof(bytes),&map);
+    assert(n && swat_decode_map(&decoded,bytes,n));swat_apply_map(&replica,&decoded);
+    assert(replica.world.motel && replica.world.count==SWAT_MOTEL_PROPS_FIRST);
+    assert(swat_motel_mounted(&replica.world,SWAT_MOTEL_MOUNTED_FIRST,&p));
+    synchronize();map.objects[owner].structural_thickness=.004f;swat_apply_map(&replica,&map);assert(!replica.world.motel);
+    synchronize();state.objects[127].active=false;
+    assert(!swat_apply_snapshot(&replica,&state) && replica.world.objects[127].active);
+    assert(!swat_world_impact(&sim.world,owner,34) && o->health==o->max_health);
+    assert(swat_world_impact(&sim.world,owner,10000) && !o->active && B3_IS_NULL(o->body));
+    assert(sim.world.objects[127].active && sim.world.objects[SWAT_MOTEL_MOUNTED_FIRST].active);
+    synchronize();assert(!replica.world.objects[owner].active && B3_IS_NULL(replica.world.objects[owner].body));
+    swat_sim_reset(&sim);
+    puts("PASS trolley: original sparse collision, four measured floor contacts, liner exit thickness, finite material strength, removal and late join, unchanged version-17 prefix, malformed recipe and unsupported snapshot rejection");
+}
 static void shell(SwatWorld* world,int owner) {
     SwatMotelInstance p;assert(swat_motel_mounted(world,owner,&p));SwatObject* o=&world->objects[owner];
     assert(o->active && o->part==SWAT_PART_FIXTURE && o->query_mesh.data && o->query_mesh.data->triangleCount==1464);
@@ -83,6 +116,7 @@ static void cascade(void) {
 int main(int argc,char** argv) {
     assert(argc==2);cascade();SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,81);assert(sim.world.count==SWAT_MOTEL_OBJECTS);
+    trolley();
     for(int i=0;i<SWAT_MOTEL_MOUNTED_INSTANCES;i++)shell(&sim.world,SWAT_MOTEL_MOUNTED_FIRST+i);
     synchronize();for(int i=0;i<SWAT_MOTEL_MOUNTED_INSTANCES;i++)shell(&replica.world,SWAT_MOTEL_MOUNTED_FIRST+i);
     int owner=SWAT_MOTEL_MOUNTED_FIRST;SwatMotelInstance p;assert(swat_motel_mounted(&sim.world,owner,&p));

@@ -1,0 +1,111 @@
+{
+  "source_catalog": "SWAT-asset-catalog-2026-10-08-r008-lamp-desk-maintenance.zip",
+  "recent_list": "catalog_r009_recentdeliveries_update02/INDEX.md",
+  "searched_keywords": [
+    "service cart",
+    "utility cart",
+    "linen cart",
+    "housekeeping trolley",
+    "trolley"
+  ],
+  "exact_function_match": false,
+  "related_not_duplicates": [
+    {
+      "id": "env:02_household_clutter/tissue_carton",
+      "name": "Printed blue carton with opening and folded tissue"
+    },
+    {
+      "id": "env:03_yard_utility/yu03_garden_hose_reel_cart",
+      "name": "Garden hose reel cart"
+    },
+    {
+      "id": "env:03_yard_utility/yu03_cracked_terracotta_pot",
+      "name": "Cracked terracotta pot"
+    },
+    {
+      "id": "env:03_yard_utility/yu03_folding_drying_rack",
+      "name": "Folding drying rack"
+    },
+    {
+      "id": "env:04_furniture_variants/shoe_rack_slatted",
+      "name": "Slatted shoe rack"
+    },
+    {
+      "id": "env:05_interior_fixtures/four_hook_coat_rack",
+      "name": "Four hook coat rack"
+    },
+    {
+      "id": "env:06_discarded_clutter/pizza_box_open",
+      "name": "Open pizza carton with tilted lid, greasy liner and crumbs"
+    },
+    {
+      "id": "env:06_discarded_clutter/collapsed_shipping_carton",
+      "name": "Flattened torn corrugated carton with exposed ribs and peeled tape"
+    },
+    {
+      "id": "env:06_discarded_clutter/flattened_drink_carton",
+      "name": "Crushed gable paperboard drink carton with accordion folds and original print"
+    },
+    {
+      "id": "env:11_laundry_basement/lb11_mop_wringer_cart",
+      "name": "Mop wringer cart"
+    },
+    {
+      "id": "env:13_warehouse_loading_dock/wh13_rack_upright_4m",
+      "name": "Pallet rack upright \u2022 4 m"
+    },
+    {
+      "id": "env:13_warehouse_loading_dock/wh13_rack_beam_2_7m",
+      "name": "Pallet rack beam \u2022 2.7 m"
+    },
+    {
+      "id": "env:13_warehouse_loading_dock/wh13_rack_wire_deck",
+      "name": "Wire rack deck \u2022 2.7 m"
+    },
+    {
+      "id": "env:13_warehouse_loading_dock/wh13_freight_carton_stack",
+      "name": "Mixed freight carton stack"
+    },
+    {
+      "id": "env:13_warehouse_loading_dock/wh13_warehouse_hand_truck",
+      "name": "Warehouse hand truck"
+    },
+    {
+      "id": "env:14_rundown_carnival/cv14_concession_cart",
+      "name": "Concession cart"
+    },
+    {
+      "id": "env:08_prop_lods/garden_hose_reel_cart/LOD1",
+      "name": "garden_hose_reel_cart"
+    },
+    {
+      "id": "env:08_prop_lods/garden_hose_reel_cart/LOD2",
+      "name": "garden_hose_reel_cart"
+    },
+    {
+      "id": "env:01_house/mirror_cracked",
+      "name": "mirror cracked"
+    },
+    {
+      "id": "env:15_motor_court_motel/mc15_reception_key_cubbies",
+      "name": "Sixteen-slot reception key rack"
+    },
+    {
+      "id": "env:16_neighborhood_storefronts/ns16_shutter_tracks_2m",
+      "name": "Tracks and roller box"
+    },
+    {
+      "id": "env:16_neighborhood_storefronts/ns16_striped_awning_2m",
+      "name": "Cloth awning and brackets"
+    },
+    {
+      "id": "env:17_motel_utility/mu01_luggage_rack",
+      "name": "Wooden folding-design luggage rack, static open pose, green webbing"
+    },
+    {
+      "id": "env:17_motel_utility/mu01_luggage_rack/LOD1",
+      "name": "Wooden folding-design luggage rack, static open pose, green webbing / LOD1"
+    }
+  ],
+  "decision": "New empty two-shelf steel service trolley. Distinct from existing mop wringer cart, warehouse hand truck and wooden folding luggage rack. Local deliveries checked through 2026-10-09."
+}

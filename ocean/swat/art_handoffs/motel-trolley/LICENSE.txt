@@ -1,0 +1,6 @@
+CC0 1.0 Universal
+
+The original geometry, material atlas, source scripts, Blender scene, exports and previews in this package are dedicated to the public domain under CC0 1.0 Universal, to the extent permitted by law.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+No external images, models, trademarks, or third-party asset dependencies are included. Blender and Python/Pillow are external rebuild tools, not redistributed.

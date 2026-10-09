@@ -85,11 +85,26 @@ minified mask/control view, with 75,210 protected bilinear world probes. All fou
 added textures release/reload on location changes, source material maps and world
 state stay unchanged, and the existing 740-ray/controller/squad ground checks
 pass. Only the new original 1K dirt maps and mask are added; no duplicate gravel,
-reference ground geometry or 2K runtime loads. Background/ground repetition and
-far east-wall patching visible in both zoning/control captures remain polish
-work. A compact editable zoning source handoff is requested; the complete source
-backup remains on Drive. The newly delivered two-shelf trolley is next for useful
-placement, physical collision/support and destruction integration.
+reference ground geometry or 2K runtime loads. The unchanged compact zoning
+generator/config/control-point excerpt is now preserved locally: its hashes and
+18 bilinear controls match the runtime mask, with no Python execution. Full source
+backup remains on Drive. Background/ground repetition remains polish work.
+
+Distant east-wall speckling was backing-core/face depth fighting. A core-only
+polygon offset preserves authored surfaces, physical geometry and weapon/scene
+projection. Native production-clip lit/unlit checks eliminate 340 mismatched
+face pixels at the distant camera and reset GL state after every capture.
+The two-shelf service trolley is now parked in the rear utility room, supported
+by four measured contacts on original floor triangles. Twelve bounded contact
+meshes preserve all 2,416 triangles and the open shelf bays. It has finite steel
+strength, exact missing-art fallback and serialized removal; rubber/liner physical
+response and hollow frame construction remain approximations. Native graphics
+match 152,048 ray/raster samples on five views, source and fallback. Linux/Windows
+contact checks preserve 25,983 triangles/edge flags over 23 assets with 55,200
+matched rays each, including replicas. Old version-17 prefixes remain loadable.
+The hostile exterior route still completes in 9,827 ordinary-input ticks with
+exact replay, mid-run save, fresh replica and no contact-buffer overflow.
+The artist's extinguisher and service vacuum are the next compact prop handoffs.
 
 Current audit: human tactical scenarios now deploy three squad bots and require
 occupant security, evidence, civilian evacuation and surviving-officer regrouping.

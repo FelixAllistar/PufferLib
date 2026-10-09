@@ -38,4 +38,28 @@ const mask=fs.readFileSync(path.join(runtime,'zoning_mask.png'));
 assert.equal(mask.readUInt32BE(16),512);assert.equal(mask.readUInt32BE(20),512);assert.equal(mask[24],8);assert.equal(mask[25],0);
 assert.equal(mapping.materials.dirt.repeat_m,2);assert.equal(mapping.materials.gravel.repeat_m,8/3);
 assert.equal(mapping.materials.dirt.normal.scale,.65);assert.equal(mapping.materials.gravel.normal.scale,.65);
+// The original authoring excerpt stays archival; validate its declared hashes
+// and measured control points without executing the supplied generator.
+const excerpt=path.join(root,'art_handoffs/motel-zoning/source_excerpt');
+for(const line of fs.readFileSync(path.join(excerpt,'SHA256SUMS'),'utf8').trim().split('\n')) {
+    const [digest,file]=line.split(/\s+/);assert.equal(hash(fs.readFileSync(path.join(excerpt,file))),digest);
+}
+const chunks=[];for(let at=8;at<mask.length;) {
+    const length=mask.readUInt32BE(at);if(mask.toString('ascii',at+4,at+8)==='IDAT')chunks.push(mask.subarray(at+8,at+8+length));at+=12+length;
+}
+const raw=require('node:zlib').inflateSync(Buffer.concat(chunks)),pixels=Buffer.alloc(512*512);
+function paeth(a,b,c){const p=a+b-c,da=Math.abs(p-a),db=Math.abs(p-b),dc=Math.abs(p-c);return da<=db&&da<=dc?a:db<=dc?b:c;}
+for(let y=0;y<512;y++)for(let x=0;x<512;x++) {
+    const filter=raw[y*513],a=x?pixels[y*512+x-1]:0,b=y?pixels[(y-1)*512+x]:0,c=x&&y?pixels[(y-1)*512+x-1]:0;
+    assert(filter<=4);pixels[y*512+x]=(raw[y*513+1+x]+[0,a,b,Math.floor((a+b)/2),paeth(a,b,c)][filter])&255;
+}
+const points=JSON.parse(fs.readFileSync(path.join(excerpt,'qa/control_points.json')));
+for(const point of points) {
+    const [x,z]=point.world_xz,u=(x+64)/128,v=(z+48)/100;assert.deepEqual(point.uv_top_left,[u,v]);
+    const px=Math.max(0,Math.min(511,u*512-.5)),pz=Math.max(0,Math.min(511,v*512-.5)),ix=Math.floor(px),iz=Math.floor(pz),a=px-ix,b=pz-iz;
+    const sample=(xx,zz)=>pixels[Math.min(511,zz)*512+Math.min(511,xx)]/255;
+    const weight=(sample(ix,iz)*(1-a)+sample(ix+1,iz)*a)*(1-b)+(sample(ix,iz+1)*(1-a)+sample(ix+1,iz+1)*a)*b;
+    assert(Math.abs(weight-point.weight)<1e-12);
+}
+console.log(`PASS zoning source excerpt: original hashes and ${points.length} bilinear world/UV/weight controls; no Python executed.`);
 console.log('PASS zoning import: original dirt/gravel hashes, 54 unchanged owners, 12 eligible tops, original metric factors and R8 mask; no duplicate gravel or reference geometry installed.');

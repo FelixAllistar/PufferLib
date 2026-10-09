@@ -1,0 +1,24 @@
+{
+  "clean_root": "/tmp/trolley_repro",
+  "all_runtime_and_atlas_bytes_equal": true,
+  "files": [
+    {
+      "path": "runtime/motel_service_trolley.glb",
+      "original_sha256": "6eb9331faa385853177c539b3d76cdb3d273496bc3bc3c58e626350b48219234",
+      "rebuild_sha256": "6eb9331faa385853177c539b3d76cdb3d273496bc3bc3c58e626350b48219234",
+      "byte_equal": true
+    },
+    {
+      "path": "source/trolley_atlas_512.png",
+      "original_sha256": "9c0d512e111b93a2644180a167da59f40d9709c434a838ee93b9e3a98b6e0aa1",
+      "rebuild_sha256": "9c0d512e111b93a2644180a167da59f40d9709c434a838ee93b9e3a98b6e0aa1",
+      "byte_equal": true
+    },
+    {
+      "path": "source/trolley_orm_512.png",
+      "original_sha256": "1ec61f7ecd17d9f2b58dfe89b0db69e688e7428376a5853baa278aaea817a9d7",
+      "rebuild_sha256": "1ec61f7ecd17d9f2b58dfe89b0db69e688e7428376a5853baa278aaea817a9d7",
+      "byte_equal": true
+    }
+  ]
+}

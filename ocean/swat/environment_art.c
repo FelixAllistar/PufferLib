@@ -9,6 +9,19 @@
 #include "motel_wall_art.h"
 #include "art_texture_pool.h"
 #include "motel_zoning.h"
+// OpenGL 1.1 entry points are exported by both native platform libraries. Raylib
+// has no polygon-offset wrapper; avoid platform GL headers colliding with its UI.
+#ifdef _WIN32
+#define SWAT_GL_IMPORT __declspec(dllimport)
+#define SWAT_GL_CALL __stdcall
+#else
+#define SWAT_GL_IMPORT
+#define SWAT_GL_CALL
+#endif
+SWAT_GL_IMPORT void SWAT_GL_CALL glEnable(unsigned int);
+SWAT_GL_IMPORT void SWAT_GL_CALL glDisable(unsigned int);
+SWAT_GL_IMPORT void SWAT_GL_CALL glPolygonOffset(float,float);
+#define SWAT_GL_POLYGON_OFFSET_FILL 0x8037u
 
 typedef struct SwatEnvironmentBound {
     const Model* source;
@@ -309,7 +322,7 @@ static void motel_dressing_load(SwatEnvironmentArt* art) {
 
 void swat_environment_art_init(SwatEnvironmentArt* art) {
     if(art->initialized) return;
-    art->initialized=true;art->shadow_room=-1;
+    art->initialized=true;art->shadow_room=-1;art->wall_depth_offset=true;
     const char* enabled=getenv("SWAT_ENVIRONMENT_ART");
     if(enabled && !strcmp(enabled,"0")) return;
     const char* plaster_style=getenv("SWAT_PLASTER_STYLE");
@@ -367,7 +380,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     int missing=0;
     for(int i=0;i<(location ? SWAT_STOREFRONT_ASSETS : SWAT_MOTEL_ASSETS);i++) {
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
-        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":"motel_mounted",a->file);
+        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":i==44?"motel_mounted":"motel_props",a->file);
         Model* model=location ? &art->storefront[i] : &art->motel[i];
         if(asset_path(path,sizeof(path),file)) *model=LoadModel(path);
         if(!model->meshCount || model->materialCount!=a->material_count+1 || model->materialCount>SWAT_LOCATION_MATERIALS) { swat_art_model_close(*model); *model=(Model){0}; missing++; continue; }
@@ -701,12 +714,18 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
     const SwatMotelInstance* p=swat_motel_instance(owner-1);const Model* source=motel_wall_source(art,owner);
     if(!source->meshCount)return false;
     // Solid structural core also supplies the newly exposed breach edges.
+    // At 40+ metres the normal 1 mm inset is smaller than one scene-depth
+    // quantization step. Offset only the backing core by four depth units; the
+    // authored face, scene projection, weapon depth and physical shape stay exact.
+    bool offset=!shadow && art->wall_depth_offset;
+    if(offset){rlDrawRenderBatchActive();glEnable(SWAT_GL_POLYGON_OFFSET_FILL);glPolygonOffset(0,4);}
     rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
     const uint8_t* c=swat_material(o->material)->color;
     if(o->fractured) {
         SwatObject core=*o;core.half.x-=.001f;swat_environment_fragment_draw(&core);
     } else DrawCubeV((Vector3){0},(Vector3){2*o->half.x-.002f,2*o->half.y,2*o->half.z},(Color){c[0],c[1],c[2],255});
     rlPopMatrix();
+    if(offset){rlDrawRenderBatchActive();glDisable(SWAT_GL_POLYGON_OFFSET_FILL);}
     const Model* clipped=wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p);
     location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
     if(owner==13 && art->room101_ready) {
@@ -752,7 +771,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     if(o->tag.index<1)return false;
     SwatMotelInstance mounted;
-    if(swat_motel_mounted(world,o->tag.index,&mounted)) {
+    if(swat_motel_mounted(world,o->tag.index,&mounted) || swat_motel_prop(world,o->tag.index,&mounted)) {
         if(art->motel[mounted.asset].meshCount)return location_draw(art,o,&mounted,&art->motel[mounted.asset],shadow,cutaway,false);
         return mounted_fallback(o,shadow);
     }

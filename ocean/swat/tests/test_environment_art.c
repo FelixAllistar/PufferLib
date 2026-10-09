@@ -917,6 +917,7 @@ static void culling_graphics(SwatView* view,const char* directory) {
 }
 #include "ground_zoning_graphics.h"
 #include "wall_depth_graphics.h"
+#include "motel_props_graphics.h"
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
@@ -925,6 +926,7 @@ int main(int argc,char** argv) {
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     if(argc>2 && !strcmp(argv[2],"wall-depth")) {wall_depth_graphics(&view,directory);swat_view_close(&view);return 0;}
+    if(argc>2 && !strcmp(argv[2],"motel-props")) {texture_owner_graphics("motel_props/motel_service_trolley.glb");motel_props_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"textures")) {texture_sharing_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"road-textures")) {
         texture_owner_graphics("motel_road_context/grass_tuft_low.glb");

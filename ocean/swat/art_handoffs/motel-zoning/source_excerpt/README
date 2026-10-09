@@ -1,0 +1,11 @@
+Briar Phase A source excerpt v1
+
+This is a source-only excerpt containing three unchanged files:
+  source/build_mask.py
+  source/composition_proposal.json
+  qa/control_points.json
+
+SHA256SUMS records the SHA-256 digest of each included source file.
+This excerpt does not include the complete project or its dependencies and
+makes no claim that the included generator can execute or rebuild the work.
+The generator was not executed when packaging this excerpt.

@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "source_file_id": "11pPGZtwgtEPJEGJs2SfNn2znSp7157fD",
+  "source_archive_payloads_verified": 31,
+  "files": [
+    {
+      "path": "art_handoffs/motel-trolley/LICENSE.txt",
+      "bytes": 431,
+      "sha256": "1376be1b429f6025ce5ccfacb4982beb0f14b207b4d459c2238c1845b65ee97d"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/PROVENANCE.md",
+      "bytes": 506,
+      "sha256": "50e619df098ffcf88ef7e0538f4a37c7027aa911ab05ceba0abc4f3955b69db1"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/README.md",
+      "bytes": 1506,
+      "sha256": "8037a007e55eef0b9f7962bfc04330e5e6328ff1f0a1defd9c035e49266c5df2"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/SHA256SUMS.txt",
+      "bytes": 2683,
+      "sha256": "d235e985f0a87b9374c612c5de76329d342ef019d6f847f4acdc299b230e34b3"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/manifest.json",
+      "bytes": 1106,
+      "sha256": "8eaf348d96c146358e03a1946545cc03f7b1890e81d6729562f23ce175eba3f0"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/audit.log",
+      "bytes": 3000,
+      "sha256": "071cea759062f880f5f489486b5437c0cde50d913aea13966d7f7d0ece3441cc"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/build.log",
+      "bytes": 687,
+      "sha256": "e10076b0554ed4d9a51766469dcdd6e8f891345ae32f41e1316246b58d8c0d9f"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/duplicate_check.json",
+      "bytes": 3539,
+      "sha256": "7cf47565b1985e2be7cc40e63c3e68a853cb397e1a26c74aecfdce54479555fc"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/ground_anchor_audit.json",
+      "bytes": 1975,
+      "sha256": "a21c1e31bb3045fa4ad9fa2147ba266e3303ebac60d47df89a9a5dac910e165d"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/rebuild_verification.json",
+      "bytes": 912,
+      "sha256": "cd17d178089f0353a76c2ef1c8d561dc0d7059ea307e9fcb0ec5330f2503b006"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/reimport.json",
+      "bytes": 346,
+      "sha256": "22cc3078d1f3e090bfa2d71d39843d088f79290c13f492eb32f09c9dfe32ca8f"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/render.log",
+      "bytes": 21589,
+      "sha256": "3df8da857954728660766d7d12c961d2588a594638e86bbf4613a69f764188bf"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/runtime_audit.json",
+      "bytes": 978,
+      "sha256": "7b4b4694dde8c3f9bbb455949d6aff6f78f67d1fb4c325a1ec0c57570035d18b"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/source_audit.json",
+      "bytes": 427,
+      "sha256": "97d1280a09cbf55a291dc759a827e2bc5a73523f4c3a5363899599f39570a9c8"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/source_audit.log",
+      "bytes": 128,
+      "sha256": "3d045a6a3b4545209757d4c5b62d884f6b9decb2b3e7b447766cd68c03620189"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/qa/visual_review.json",
+      "bytes": 1057,
+      "sha256": "9bfc96375806037421455557ce6f125db3b6a7ce1fca00680239df9529a0641e"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/audit_glb.py",
+      "bytes": 3614,
+      "sha256": "b27f1fd59208e7527311247931d91224a6e7853f0d89d91edaf112aaafdc8baf"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/audit_ground.py",
+      "bytes": 1207,
+      "sha256": "3e458551e574bb372af765364ddd947e86c5a92056d6b9570838a5dc1c402ad3"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/audit_source.py",
+      "bytes": 994,
+      "sha256": "247823842b228d8b15fb82b557f0539d55b84f10ed1dd4f887c18301320c3fc8"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/build_asset.py",
+      "bytes": 7291,
+      "sha256": "a64968c803a003afa81abd53c362a4e889daff7a2e148ed60e33a5e186041ba2"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/make_atlas.py",
+      "bytes": 1113,
+      "sha256": "e20a0c2cf6eaa6817d7ccdbc80ab78a904d4fbbaa00bda7a371afeddec458f18"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/package_delivery.py",
+      "bytes": 968,
+      "sha256": "a299c58457b4312063ff82ac375e72b89171a4b73e686399331d541010f2bc0b"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/rebuild.sh",
+      "bytes": 215,
+      "sha256": "089054a7ac16a1701045ff8a708b75f5b3c1749e1a06f0c685454ba94d5e093d"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/render_glb.py",
+      "bytes": 2019,
+      "sha256": "9d744dfd90e505138e7bf975d8de1652447c50fe146088e737c8abaacd03eb24"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/service_trolley.blend",
+      "bytes": 1389705,
+      "sha256": "16f8830f43317a252aeb7e2633e3f6d5c793619c78316c19314209b8c4ae90cc"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/trolley_atlas_512.png",
+      "bytes": 179786,
+      "sha256": "9c0d512e111b93a2644180a167da59f40d9709c434a838ee93b9e3a98b6e0aa1"
+    },
+    {
+      "path": "art_handoffs/motel-trolley/source/trolley_orm_512.png",
+      "bytes": 169112,
+      "sha256": "1ec61f7ecd17d9f2b58dfe89b0db69e688e7428376a5853baa278aaea817a9d7"
+    },
+    {
+      "path": "assets/environment/motel_props/LICENSE.txt",
+      "bytes": 431,
+      "sha256": "1376be1b429f6025ce5ccfacb4982beb0f14b207b4d459c2238c1845b65ee97d"
+    },
+    {
+      "path": "assets/environment/motel_props/motel_service_trolley.glb",
+      "bytes": 554812,
+      "sha256": "6eb9331faa385853177c539b3d76cdb3d273496bc3bc3c58e626350b48219234"
+    }
+  ]
+}

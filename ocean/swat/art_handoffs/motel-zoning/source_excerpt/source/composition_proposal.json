@@ -1,0 +1,212 @@
+{
+  "schema": "phase_a_approved_source_config",
+  "units": "metres",
+  "up": "+Y",
+  "frontage": "+Z; no geographic north claimed",
+  "frozen": {
+    "ground_envelope_xz": [
+      -64,
+      64,
+      -48,
+      52
+    ],
+    "owners": "54 supports: index i -> 1119+i; manifest numeric_owner is null; mapping from parent handoff",
+    "court": {
+      "owner": 0,
+      "xz": [
+        -24,
+        24,
+        -24,
+        24
+      ]
+    },
+    "road": {
+      "owner": 1123,
+      "xz": [
+        -56,
+        56,
+        36,
+        44
+      ],
+      "repeat_m": 2.1
+    },
+    "driveway_xz": [
+      -3,
+      3,
+      24,
+      36
+    ],
+    "protected_xz": [
+      -3,
+      3,
+      5,
+      48
+    ],
+    "fence_end_clearance": {
+      "radius_m": 2,
+      "centres_xz": [
+        [
+          12.5,
+          0
+        ],
+        [
+          12.5,
+          6
+        ]
+      ]
+    },
+    "existing_five_banks_shoulders": "All transforms, geometry, collision, material and support ownership unchanged",
+    "motel_sign_fence": "Unchanged"
+  },
+  "phase1": {
+    "class_": "MATERIAL-ONLY ON EXISTING GROUND, not replacement ground",
+    "eligibility": "Only non-asphalt flat ground supports outside court and all existing shoulder/apron grading; clip zones to ground_support footprints; preserve all positions and collision bytes",
+    "zones": [
+      {
+        "id": "W",
+        "polygon": [
+          [
+            -64,
+            -48
+          ],
+          [
+            -35,
+            -48
+          ],
+          [
+            -39,
+            -28
+          ],
+          [
+            -38,
+            -12
+          ],
+          [
+            -43,
+            7
+          ],
+          [
+            -39,
+            25
+          ],
+          [
+            -49,
+            32
+          ],
+          [
+            -64,
+            32
+          ]
+        ],
+        "dirt_core_weight": 0.8
+      },
+      {
+        "id": "R",
+        "polygon": [
+          [
+            -64,
+            -48
+          ],
+          [
+            64,
+            -48
+          ],
+          [
+            64,
+            -36
+          ],
+          [
+            37,
+            -33
+          ],
+          [
+            14,
+            -38
+          ],
+          [
+            -12,
+            -32
+          ],
+          [
+            -36,
+            -36
+          ],
+          [
+            -64,
+            -30
+          ]
+        ],
+        "dirt_core_weight": 0.85
+      },
+      {
+        "id": "E",
+        "polygon": [
+          [
+            43,
+            -31
+          ],
+          [
+            64,
+            -40
+          ],
+          [
+            64,
+            32
+          ],
+          [
+            50,
+            32
+          ],
+          [
+            44,
+            19
+          ],
+          [
+            48,
+            0
+          ],
+          [
+            42,
+            -14
+          ]
+        ],
+        "dirt_core_weight": 0.7
+      },
+      {
+        "id": "F",
+        "polygon": [
+          [
+            -64,
+            48
+          ],
+          [
+            64,
+            48
+          ],
+          [
+            64,
+            52
+          ],
+          [
+            -64,
+            52
+          ]
+        ],
+        "dirt_core_weight": 0.75
+      }
+    ],
+    "transition_width_m": 6,
+    "mask_rule": "Polygon cores use listed dirt weight, taper OUTSIDE each polygon across 6 m. Union by max, then hard exclusions. F zone is 4 m deep, tapers inward but clipped at Z=46 to preserve roadside gravel band. Road, court, driveway, protected corridor and existing shoulders/apron are hard zero. Zones are broad 12-40 m features, never periodic noise.",
+    "materials": "Original gravel and dirt scan channels only; no enlarged stones, painted lighting, AO, displacement or additional grass needed",
+    "repeat_m": {
+      "gravel": 2.6666666666666665,
+      "dirt": 2.0,
+      "rock": 1.8
+    },
+    "delivery_gate": "Verify native material blending support first. Prefer one shared 512x512 linear R8 control mask; blend base color/normal/roughness consistently using existing native material path. If unsupported, return for art delivery-method approval; no engine/shader changes and no silent hard-edged substitute.",
+    "geometry_delta": 0,
+    "collision_delta": 0
+  },
+  "status": "Phase A source art approved; no phase B geometry",
+  "proposal_source_sha256": "947eea3e9562fceed8fa253a8c1f55aed19e667bd4aabd9ff180801b65166888"
+}

@@ -34,6 +34,32 @@
       "path": "assets/environment/motel_zoning/zoning_mask.png",
       "size": 6615,
       "sha256": "b86387be2e088c0d27b1b7c495a11c56154b2f1fdc6bcf06fc687df2cef8dc2b"
+    },
+    {
+      "path": "art_handoffs/motel-zoning/source_excerpt/README",
+      "size": 460,
+      "sha256": "35bcde4be58deae2a0618f5f82e22af51f0bbc350778af6f19ddcc4512e8a509"
+    },
+    {
+      "path": "art_handoffs/motel-zoning/source_excerpt/SHA256SUMS",
+      "size": 275,
+      "sha256": "c08afb9fd74562d5e8809896df48505b5cc7713576006ac1222199cf98a7c7db"
+    },
+    {
+      "path": "art_handoffs/motel-zoning/source_excerpt/qa/control_points.json",
+      "size": 2342,
+      "sha256": "f5cd164315ca8479b2a5bc6b54f26d81a558f7361fcba5faca28da42acab4b73"
+    },
+    {
+      "path": "art_handoffs/motel-zoning/source_excerpt/source/build_mask.py",
+      "size": 8566,
+      "sha256": "fdcf3a7571e3e4db01800839061e1124ce954426dd579ba51549f79279fa4750"
+    },
+    {
+      "path": "art_handoffs/motel-zoning/source_excerpt/source/composition_proposal.json",
+      "size": 4473,
+      "sha256": "542a990c7a022b1abaffcb584057341cdbe0a743f0d37c0b94b7416d1fef8909"
     }
-  ]
+  ],
+  "source_excerpt_file_id": "1Jlhd8QS6ak-SMos5Z0yh-g5DnKdvusJW"
 }

@@ -1,0 +1,43 @@
+{
+  "file": "motel_service_trolley.glb",
+  "sha256": "6eb9331faa385853177c539b3d76cdb3d273496bc3bc3c58e626350b48219234",
+  "bytes": 554812,
+  "triangles": 2416,
+  "vertices": 3952,
+  "primitive_count": 1,
+  "materials": 1,
+  "alpha_mode": "OPAQUE",
+  "embedded_basecolor_images": 1,
+  "embedded_metallic_roughness_images": 1,
+  "atlas_px": [
+    512,
+    512
+  ],
+  "identity_nodes": true,
+  "coordinate_system": "metres, Y up, front +Z, ground Y=0",
+  "bounds_min_m": [
+    -0.44950002431869507,
+    0.0,
+    -0.2939999997615814
+  ],
+  "bounds_max_m": [
+    0.44950002431869507,
+    0.9239999651908875,
+    0.2939999997615814
+  ],
+  "dimensions_xyz_m": [
+    0.8990000486373901,
+    0.9239999651908875,
+    0.5879999995231628
+  ],
+  "indices_valid": true,
+  "degenerate_triangles": 0,
+  "opposed_vertex_normals": 0,
+  "maximum_normal_unit_error": 1.643335627576903e-07,
+  "out_of_range_uvs": 0,
+  "finite_accessors": true,
+  "tested_triangle_budget": [
+    1000,
+    2500
+  ]
+}

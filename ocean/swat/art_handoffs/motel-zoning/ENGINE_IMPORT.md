@@ -53,11 +53,16 @@ road/end-grade controller crossings, squad crossing, finite boundaries and wire
 reconstruction. Linux and native player builds pass. Captures/logs live under
 `build/swat/review/ground-zoning`, not in a duplicate art release. Eye and aerial
 views are native engine renders; the aerial magenta margin marks empty coverage.
-This is a material foundation: background composition, conspicuous repeat and
-far east-wall patching visible in both mask/control captures remain polish work.
+This is a material foundation: background composition and conspicuous repeat
+remain polish work. The distant east-wall depth fighting found in these captures
+is now fixed by a backing-core-only polygon offset, with native production-clip
+lit/unlit comparisons against a higher-precision control.
 
 The original artist README is retained verbatim and describes its larger source
 packet, not the minimal files installed here. Full editable zoning/Blender and
 original scan backups are in the original Phase A Drive folder linked in the
-receipt. A compact generator/config/control-point handoff has been requested
-for local source preservation. No original Python authoring code was executed.
+receipt. The unchanged compact generator/config/control-point excerpt is now in
+`source_excerpt`, from Drive file `1Jlhd8QS6ak-SMos5Z0yh-g5DnKdvusJW`.
+Its source hashes and all 18 bilinear world/UV/weight control points match the
+installed mask. It is archival source, not a complete rebuild kit. No original
+Python authoring code was executed.

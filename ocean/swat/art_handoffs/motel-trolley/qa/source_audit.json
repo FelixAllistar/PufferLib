@@ -1,0 +1,24 @@
+{
+  "editable_component_count": 68,
+  "editable_components_hidden_not_deleted": true,
+  "packed_images": [
+    {
+      "name": "trolley_atlas_512.png",
+      "size": [
+        512,
+        512
+      ],
+      "packed": true
+    },
+    {
+      "name": "trolley_orm_512.png",
+      "size": [
+        512,
+        512
+      ],
+      "packed": true
+    }
+  ],
+  "visible_runtime_triangles": 2416,
+  "identity_blender_object": true
+}

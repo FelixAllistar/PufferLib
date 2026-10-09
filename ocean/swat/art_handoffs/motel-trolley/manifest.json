@@ -1,0 +1,37 @@
+{
+  "asset_id": "motel_service_trolley_v1",
+  "display_name": "Two-shelf steel service trolley",
+  "license": "CC0-1.0",
+  "new_unique_prop_designs": 1,
+  "status": "Independent local source candidate. No world placement, collision, engine integration or acceptance inferred. No upload/post performed.",
+  "runtime": "runtime/motel_service_trolley.glb",
+  "editable_source": "source/service_trolley.blend",
+  "runtime_sha256": "6eb9331faa385853177c539b3d76cdb3d273496bc3bc3c58e626350b48219234",
+  "triangles": 2416,
+  "materials": 1,
+  "images": 2,
+  "atlas_size": [
+    512,
+    512
+  ],
+  "bounds_min_m": [
+    -0.44950002431869507,
+    0.0,
+    -0.2939999997615814
+  ],
+  "bounds_max_m": [
+    0.44950002431869507,
+    0.9239999651908875,
+    0.2939999997615814
+  ],
+  "dimensions_xyz_m": [
+    0.8990000486373901,
+    0.9239999651908875,
+    0.5879999995231628
+  ],
+  "coordinates": "Metres / Y-up GLB / +Z front / identity transforms / floor-centered root",
+  "previews": "Actual GLB freshly reimported for each render batch",
+  "collision": "none",
+  "third_party_assets": "none",
+  "fonts": "none"
+}

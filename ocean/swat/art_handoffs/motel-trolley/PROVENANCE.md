@@ -1,0 +1,2 @@
+# Provenance
+Original model and deterministic paint/rubber/steel/liner atlases authored for this delivery. No downloaded model, scan, image, logo, font or generative image dependency. Generic construction, not a branded product replica. Geometry and art dedicated CC0 1.0. Reused CC0 construction and numerical-audit helpers from the earlier service-stool delivery; all trolley geometry and both atlases rebuilt from this package's scripts. Blender/Python/Pillow remain separately licensed external tools.

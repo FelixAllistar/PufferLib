@@ -1,0 +1,89 @@
+{
+  "runtime_sha256": "6eb9331faa385853177c539b3d76cdb3d273496bc3bc3c58e626350b48219234",
+  "coordinate_system": "GLB: metres, Y up, +Z front",
+  "root_anchor_m": [
+    0,
+    0,
+    0
+  ],
+  "ground_plane_y_m": 0,
+  "below_ground_vertices": 0,
+  "four_measured_wheel_contacts": [
+    {
+      "name": "front_left",
+      "measured_center_xyz_m": [
+        -0.4100000113248825,
+        0.0,
+        0.23000000417232513
+      ],
+      "wheel_contact_bounds_min_m": [
+        -0.4320000112056732,
+        0.0,
+        0.23000000417232513
+      ],
+      "wheel_contact_bounds_max_m": [
+        -0.3880000114440918,
+        0.0,
+        0.23000000417232513
+      ],
+      "unique_contact_vertices": 2
+    },
+    {
+      "name": "front_right",
+      "measured_center_xyz_m": [
+        0.4099999815225601,
+        0.0,
+        0.23000000417232513
+      ],
+      "wheel_contact_bounds_min_m": [
+        0.3879999816417694,
+        0.0,
+        0.23000000417232513
+      ],
+      "wheel_contact_bounds_max_m": [
+        0.43199998140335083,
+        0.0,
+        0.23000000417232513
+      ],
+      "unique_contact_vertices": 2
+    },
+    {
+      "name": "rear_left",
+      "measured_center_xyz_m": [
+        -0.4100000113248825,
+        0.0,
+        -0.23000000417232513
+      ],
+      "wheel_contact_bounds_min_m": [
+        -0.4320000112056732,
+        0.0,
+        -0.23000000417232513
+      ],
+      "wheel_contact_bounds_max_m": [
+        -0.3880000114440918,
+        0.0,
+        -0.23000000417232513
+      ],
+      "unique_contact_vertices": 2
+    },
+    {
+      "name": "rear_right",
+      "measured_center_xyz_m": [
+        0.4099999815225601,
+        0.0,
+        -0.23000000417232513
+      ],
+      "wheel_contact_bounds_min_m": [
+        0.3879999816417694,
+        0.0,
+        -0.23000000417232513
+      ],
+      "wheel_contact_bounds_max_m": [
+        0.43199998140335083,
+        0.0,
+        -0.23000000417232513
+      ],
+      "unique_contact_vertices": 2
+    }
+  ]
+}

@@ -14,9 +14,15 @@ static bool same_triangle(const b3MeshData* a,int ai,const b3MeshData* b,int bi)
 }
 static void check(SwatWorld* world) {
     bool tested[SWAT_MOTEL_ASSETS]={0};int assets=0,triangles=0,rays=0;
-    for(int owner=1;owner<=SWAT_MOTEL_INSTANCES;owner++) {
+    for(int owner=1;owner<world->count;owner++) {
         SwatObject* o=&world->objects[owner];if(!o->active||!o->query_mesh.data)continue;
-        int asset=swat_motel_instance(owner-1)->asset;if(tested[asset])continue;tested[asset]=true;assets++;
+        SwatMotelInstance placement;
+        int asset;
+        if(owner<=SWAT_MOTEL_INSTANCES)asset=swat_motel_instance(owner-1)->asset;
+        else if(swat_motel_mounted(world,owner,&placement)||swat_motel_prop(world,owner,&placement))asset=placement.asset;
+        else continue;
+        if(tested[asset])continue;
+        tested[asset]=true;assets++;
         const b3MeshData* source=o->query_mesh.data;
         int count=b3Body_GetShapeCount(o->body);assert(count>1 && count<64);
         b3ShapeId shapes[64];assert(b3Body_GetShapes(o->body,shapes,64)==count);
@@ -62,7 +68,7 @@ static void check(SwatWorld* world) {
         }
         b3DestroyBody(reference_body);
     }
-    assert(assets>=21 && tested[24] && tested[40]);
+    assert(assets>=23 && tested[24] && tested[40] && tested[44] && tested[45]);
     printf("PASS motel contact partitions: %d assets, %d original triangles and edge flags preserved, %d matched full/partition rays and ballistic exit distances\n",assets,triangles,rays);
 }
 int main(void) {

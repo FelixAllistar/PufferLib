@@ -1,0 +1,22 @@
+{
+  "reviewed_by": "Build worker, personally viewed actual image pixels",
+  "runtime_sha256": "6eb9331faa385853177c539b3d76cdb3d273496bc3bc3c58e626350b48219234",
+  "views_personally_inspected": [
+    "preview/full.png",
+    "preview/close.png"
+  ],
+  "preview_source": "Freshly imported final GLB; render subject not source scene",
+  "findings": [
+    "Distinct medium-scale two-tray silhouette with clear negative space",
+    "Visible raised tray walls, liner edges and rolled lips",
+    "Continuous push handles, steel stem/fork/hub construction and four attached tires",
+    "Muted blue-green paint, subdued steel, rubber and liner response",
+    "Restrained texture wear; no logos or lettering",
+    "No observed floating parts or missing faces in inspected views"
+  ],
+  "limitations": [
+    "Static tire contact lines are not collision or physics integration",
+    "Sixteen-sided tires and angular fork silhouettes are intentional Xbox-360-style budget choices",
+    "Cycles render is a source-art preview, not native-engine appearance approval"
+  ]
+}

@@ -11,7 +11,9 @@
 #define SWAT_MOTEL_GROUND_FIRST (SWAT_MOTEL_SURROUNDINGS_FIRST+SWAT_MOTEL_SURROUNDINGS_COUNT)
 #define SWAT_MOTEL_MOUNTED_FIRST (SWAT_MOTEL_GROUND_FIRST+SWAT_GROUND_PARTS)
 #define SWAT_MOTEL_MOUNTED_INSTANCES 2
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_MOUNTED_FIRST+SWAT_MOTEL_MOUNTED_INSTANCES)
+#define SWAT_MOTEL_PROPS_FIRST (SWAT_MOTEL_MOUNTED_FIRST+SWAT_MOTEL_MOUNTED_INSTANCES)
+#define SWAT_MOTEL_PROP_INSTANCES 1
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_PROPS_FIRST+SWAT_MOTEL_PROP_INSTANCES)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -47,6 +49,8 @@ int swat_motel_dressing_parent(int index);
 int swat_motel_foliage(const SwatWorld*,int index,SwatMotelInstance* placement);
 // Physical mounted props own shell colliders and serialized support dependencies.
 bool swat_motel_mounted(const SwatWorld*,int owner,SwatMotelInstance* placement);
+// Static parked service props with real sparse collision and floor support.
+bool swat_motel_prop(const SwatWorld*,int owner,SwatMotelInstance* placement);
 // Authored bulb anchor in a supported fixed bedside fixture (guest rooms 1..4).
 bool swat_motel_lamp(const SwatWorld*,int room,b3Pos* origin);
 bool swat_motel_lamp_switch(const SwatWorld*,int room,b3Pos* position);
