@@ -1,0 +1,3 @@
+PASS full screen/partial edges, parser residency, precision, HUD independence, all projectile pools, firebar geometry, object history
+ROM trace build/mario_sim/qualification_v2/main/clips.bin: frames=1178672 types=33 hammers=2080 player_fireballs=59784 firebar_segments=565179
+ROM trace build/mario_sim/qualification_v2/supplement/clips.bin: frames=17280 types=11 hammers=6834 player_fireballs=1704 firebar_segments=0

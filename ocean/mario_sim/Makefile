@@ -19,8 +19,8 @@ $(BUILD)/catalog: catalog.cpp ../retro/retro.h ../retro/retro_rom_identity.h $(R
 	$(CXX) -O2 -std=c++17 $(INCLUDES) $< $(ROM_LIB) $(LDLIBS) -o $@
 catalog: $(BUILD)/catalog
 	cd $(ROOT) && "$(abspath $(BUILD))/catalog" "$(abspath $(BUILD))/catalog.json"
-$(BUILD)/generated_logic.h: generate_logic.py ../retro/nes_emu/Nes_Cpu.cpp $(ROOT)/build/mario_lab/reference/smbdis_complete.asm $(ROOT)/ocean/retro/roms/smb1_ntsc.nes | $(BUILD)
-	cd $(ROOT) && python3 ocean/mario_sim/generate_logic.py ocean/retro/roms/smb1_ntsc.nes build/mario_lab/reference/smbdis_complete.asm "$(abspath $@)"
+$(BUILD)/generated_logic.h: generate_logic.py ../retro/nes_emu/Nes_Cpu.cpp $(ROOT)/build/mario_sim/reference/smbdis_complete.asm $(ROOT)/ocean/retro/roms/smb1_ntsc.nes | $(BUILD)
+	cd $(ROOT) && python3 ocean/mario_sim/generate_logic.py ocean/retro/roms/smb1_ntsc.nes build/mario_sim/reference/smbdis_complete.asm "$(abspath $@)"
 $(BUILD)/logic_cpu.o: logic_cpu.cpp logic_cpu.h logic.h $(BUILD)/generated_logic.h | $(BUILD)
 	$(CXX) -O1 -std=c++17 $(INCLUDES) -c $< -o $@
 $(BUILD)/verify_logic: verify_logic.cpp logic.h logic_cpu.h rom_import.h $(ROM_HEADERS) $(BUILD)/logic_cpu.o $(ROM_LIB) | $(BUILD)

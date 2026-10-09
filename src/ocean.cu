@@ -59,8 +59,8 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #ifdef PUFFER_RETRO
 #include "../ocean/retro/retro_encoder.cu"
 #endif
-#ifdef PUFFER_MARIO_FPG_TIME
-#include "../ocean/mario_fpg_time/encoder.cu"
+#ifdef PUFFER_MARIO_SIM
+#include "../ocean/mario_sim/encoder.cu"
 #endif
 #ifdef PUFFER_POKEMON
 #include "../ocean/pokemon/pokemon_encoder.cu"
@@ -77,7 +77,7 @@ static void create_custom_encoder(Encoder* enc) {
     create_kaggriculture_encoder(enc);
 #elif defined(PUFFER_RETRO)
     create_retro_encoder(enc);
-#elif defined(PUFFER_MARIO_FPG_TIME)
+#elif defined(PUFFER_MARIO_SIM)
     create_fpt_encoder(enc);
 #elif defined(PUFFER_POKEMON)
     create_pokemon_encoder(enc);

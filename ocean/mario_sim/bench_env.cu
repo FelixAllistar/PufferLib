@@ -15,17 +15,19 @@ int main(int argc,char** argv) {
         int count=argc>1?std::stoi(argv[1]):4096,task=argc>2?std::stoi(argv[2]):1,steps=argc>3?std::stoi(argv[3]):256;
         if(count<1||count>65536||task<0||task>2||steps<16||steps%16)throw std::runtime_error("invalid benchmark parameters");
         float *obs,*actions,*rewards,*terminals;uint32_t* rng;unsigned* ticks;
-        smb_cuda_check(cudaMalloc(&obs,(size_t)count*SMB_DEBUG_OBS*sizeof(float)));
+        smb_cuda_check(cudaMalloc(&obs,(size_t)count*FPT_OBS*sizeof(float)));
         smb_cuda_check(cudaMalloc(&actions,count*sizeof(float)));smb_cuda_check(cudaMalloc(&rewards,count*sizeof(float)));
         smb_cuda_check(cudaMalloc(&terminals,count*sizeof(float)));smb_cuda_check(cudaMalloc(&rng,count*sizeof(uint32_t)));
         smb_cuda_check(cudaMalloc(&ticks,count*sizeof(unsigned)));smb_cuda_check(cudaMemset(ticks,0,count*sizeof(unsigned)));
         std::vector<uint32_t> seeds(count);for(int i=0;i<count;i++)seeds[i]=smb_seed(91,(unsigned)i);
         smb_cuda_check(cudaMemcpy(rng,seeds.data(),count*sizeof(uint32_t),cudaMemcpyHostToDevice));
-        Dict options={};dict_set(&options,"task",task);
+        Ini ini={};puf_ini_load_file(&ini,"config/mario_sim.ini");
+        Dict* configured=puf_ini_section(&ini,"env",0);dict_set_str(configured,"mode",task==0?"game":task==1?"fpg":"mixed");
+        fpt_configure(&ini,"train",nullptr);Dict options={};dict_copy(&options,configured);
         if(argc>4)dict_set_str(&options,"engine_module",argv[4]);
         Env* envs=puf_vec_create(count,&options,obs,actions,rewards,terminals);
-        smb_engine.threads=argc>5?std::stoi(argv[5]):32;
-        if(smb_engine.threads<32||smb_engine.threads>256||smb_engine.threads%32)throw std::runtime_error("invalid thread count");
+        fpt_engine.threads=argc>5?std::stoi(argv[5]):32;
+        if(fpt_engine.threads<32||fpt_engine.threads>256||fpt_engine.threads%32)throw std::runtime_error("invalid thread count");
         cudaStream_t stream;smb_cuda_check(cudaStreamCreateWithFlags(&stream,cudaStreamNonBlocking));puf_bind_stream(stream);puf_reset(envs);
         for(int i=0;i<16;i++) {
             smb_benchmark_actions<<<(count+127)/128,128,0,stream>>>(actions,rng,ticks,count);puf_step(envs);
@@ -50,7 +52,7 @@ int main(int argc,char** argv) {
                "\"generation_knobs\":%u,\"threads\":%d,\"resets_and_generation_included\":true,\"observations_included\":true,"
                "\"ppo_included\":false,\"action_source\":\"seeded uniform actions held for eight frames\"}\n",
                count,task,(unsigned long long)count*steps,ms/1000.0,(double)count*steps*1000/ms,resets,successes,
-               SMB_DEBUG_OBS,smb_host->eligible.size(),smb_host->cfg.world_count,smb_host->cfg.knobs,smb_engine.threads);
+               FPT_OBS,fpt_host->runtime_bank.size(),fpt_host->task.world_count,fpt_host->task.knobs,fpt_engine.threads);
         smb_cuda_check(cudaGraphExecDestroy(executable));smb_cuda_check(cudaGraphDestroy(graph));puf_close(envs);
         cudaEventDestroy(start);cudaEventDestroy(end);cudaStreamDestroy(stream);
         cudaFree(obs);cudaFree(actions);cudaFree(rewards);cudaFree(terminals);cudaFree(rng);cudaFree(ticks);dict_clear(&options);

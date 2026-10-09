@@ -25,10 +25,10 @@ milestone; it does not establish that a policy learned or transferred.
 
 | ID | Experiment | Main comparison | Status and dependency |
 | --- | --- | --- | --- |
-| CUDA001 | Generated 1-1-like courses with egocentric semantic observations | Train on synthetic layouts; evaluate unseen layouts and real 1-1 | Implemented; real 1-1 clears observed without ROM training; [transfer results](../mario_lab/TRANSFER_RESULTS.md) |
+| CUDA001 | Generated 1-1-like courses with egocentric semantic observations | Train on synthetic layouts; evaluate unseen layouts and real 1-1 | Implemented; real 1-1 clears observed without ROM training; [transfer results](../mario_sim/results/legacy_lab/TRANSFER_RESULTS.md) |
 | OBS001 | Structured encoder ablation | Flat MLP versus tile CNN plus entity encoder, independently trained | MLP baseline first; CNN planned |
-| GEN001 | Geometry and curriculum ablations | Fixed templates, shuffled templates, randomized dimensions, adaptive sampling | Seeded templates, authored practice starts, independent short/full goals and bounded adaptive rounds implemented; [results](../mario_lab/CURRICULUM_RESULTS.md) |
-| GEN002 | Continuous full-level randomization | Root starts on changing 256–512-tile generated worlds versus the short-course curriculum | Optional ablation, deprioritized: long empty stretches did not address the intended continuing curriculum; two smoke runs only; [continuation plan](../mario_lab/CONTINUING_TRAINING.md) |
+| GEN001 | Geometry and curriculum ablations | Fixed templates, shuffled templates, randomized dimensions, adaptive sampling | Seeded templates, authored practice starts, independent short/full goals and bounded adaptive rounds implemented; [results](../mario_sim/results/legacy_lab/CURRICULUM_RESULTS.md) |
+| GEN002 | Continuous full-level randomization | Root starts on changing 256–512-tile generated worlds versus the short-course curriculum | Optional ablation, deprioritized: long empty stretches did not address the intended continuing curriculum; two smoke runs only; [continuation plan](../mario_sim/results/legacy_lab/CONTINUING_TRAINING.md) |
 | PHY001 | Controller calibration and physics randomization | Calibrated fixed physics versus bounded parameter variation | Eight reference trajectories, optional measured profile and ROM adapter implemented; collision/entity calibration and dynamics randomization remain open |
 | VID001 | Visual pretraining from YouTube TAS footage | Temporal/self-supervised features or inferred-action imitation versus scratch | Planned; action inference and video alignment needed |
 | TAS001 | Behavior cloning from emulator movie inputs | BC initialization plus online learning versus online learning alone | Planned; verified action/state alignment required |
@@ -38,7 +38,7 @@ milestone; it does not establish that a policy learned or transferred.
 | EXP002 | Go-Explore on the real ROM | Exact emulator restoration and action-sequence branching | Explicitly included; independent of ordinary ROM PPO |
 | QD001 | MAP-Elites and CMA-MAE behavior search | Diverse behavior archive versus scalar reward/config search | Adapt Kaggriculture orchestration after CUDA001 |
 | INT001 | Concept probes and causal interventions | Paired scenarios, hidden-state probes, ablations and activation patching | Planned; can start with the surviving pixel policy |
-| SKILL001 | Precision and glitch practice, including FPG | Terminal-only reward, adaptive reset distance and subpixel variation; fidelity gate before training | V1 trained through 335.5m but failed stronger fidelity tests. V2 passes 271,490 matched ROM/CPU/CUDA frames in the final 1-1 section; no v2 training yet. [Fidelity](../mario_fpg/FIDELITY.md), [historical results](../mario_fpg/RESULTS.md) |
+| SKILL001 | Precision and glitch practice, including FPG | Terminal-only reward, adaptive reset distance and subpixel variation; fidelity gate before training | V1 trained through 335.5m but failed stronger fidelity tests. V2 passes 271,490 matched ROM/CPU/CUDA frames in the final 1-1 section; no v2 training yet. [Fidelity](../mario_sim/results/legacy_fpg/FIDELITY.md), [historical results](../mario_sim/results/legacy_fpg/RESULTS.md) |
 | PIX001 | Raw pixel plus ROM learning | Preserved full visual/emulator baseline | Optional novelty/control experiment |
 | DIST001 | Distill the surviving policy into another encoder | Successful teacher trajectories versus fresh initialization | Optional; preserve teacher provenance and recurrent history |
 | GAME001 | Extend to water, moving platforms, castle/boss and maze sections | Per-family mastery and then full-game composition | Active feasibility and coverage work, before any further training |
@@ -63,7 +63,7 @@ replace it without changing other policy architectures.
    all buttons and varied action sequences: integer state, observations,
    entities, camera, outcomes, and policy outputs. Never resync the native state
    between frames. Require the same gate on CUDA, plus reset/replay checks,
-   before training that scope. The [FPG gate](../mario_fpg/FIDELITY.md) implements
+   before training that scope. The [FPG gate](../mario_sim/results/legacy_fpg/FIDELITY.md) implements
    this for the final 1-1 section. CPU/CUDA self-agreement alone is insufficient.
 2. Measure environment throughput with observations and resets included. Measure
    PPO throughput independently. Both report decisions and simulated frames.
@@ -169,7 +169,8 @@ concept. Keep evaluation probes separate from auxiliary concept supervision.
 
 ## Run records and comparison
 
-Use [mario_lab/run.py](../mario_lab/run.py) for the initial training track. Each
+The initial Mario Lab training track has been retired; use
+[mario_sim](../mario_sim/README.md) for current training. Historically, each
 run gets a unique directory with a manifest, copied source/config inputs, binary
 identity, full command, console log, native checkpoints and the resolved run INI.
 Record the experiment ID and parent checkpoint. Preserve failed runs and label

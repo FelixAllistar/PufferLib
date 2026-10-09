@@ -253,7 +253,7 @@ elif [ "$ENV" = "swat" ]; then
             echo "SWAT training task: $SWAT_TRAINING_TASK (config/swat.ini)"
             ;;
     esac
-elif [ "$ENV" = "mario_sim" ] || [ "$ENV" = "mario_fpg_time" ]; then
+elif [ "$ENV" = "mario_sim" ]; then
     SRC_DIR="ocean/$ENV"
     if [ "${MODE:-native}" = "web" ] || [ "${MODE:-native}" = "cpu" ]; then
         echo "Error: $ENV currently supports native C++ trainer/evaluator builds" >&2

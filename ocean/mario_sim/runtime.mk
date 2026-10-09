@@ -7,7 +7,7 @@ CPU_OPT ?= -O3
 CUDA_OPT ?= -O3
 INCLUDES := -I$(RUNTIME_DIR) -I$(RUNTIME_SRC)
 GENERATOR := $(RUNTIME_SRC)/generate_runtime.py $(RUNTIME_SRC)/generate_logic.py
-GEN_INPUTS := ocean/retro/roms/smb1_ntsc.nes build/mario_lab/reference/smbdis_complete.asm
+GEN_INPUTS := ocean/retro/roms/smb1_ntsc.nes build/mario_sim/reference/smbdis_complete.asm
 $(RUNTIME_DIR)/sources.mk: $(GENERATOR) $(GEN_INPUTS)
 	mkdir -p $(RUNTIME_DIR)
 	python3 $(RUNTIME_SRC)/generate_runtime.py $(GEN_INPUTS) $(RUNTIME_DIR)

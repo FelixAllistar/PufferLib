@@ -70,7 +70,7 @@ static std::vector<Source> collect(RetroRom& rom,Nes_Emu& e,bool boundaries) {
     struct Route {int stage;const char* path;const char* name;bool ml;};
     const Route routes[]={{3,"ocean/mario_sim/reference/bowser_1_4.inputs","bowser_1_4",false},
         {4,"ocean/mario_sim/reference/vine_2_1.inputs","vine_2_1",false},
-        {0,"ocean/mario_fpg/reference/learned_pipe_route.actions","learned_1_1_pipe_route",true},
+        {0,"ocean/mario_sim/reference/learned_pipe_route.actions","learned_1_1_pipe_route",true},
         {0,"ocean/mario_sim/reference/powerup_1_1.inputs","powerup_1_1",false}};
     for(const auto& route:routes) {
         std::ifstream input(route.path);if(!input)throw std::runtime_error("missing encounter input route");
@@ -104,15 +104,15 @@ static std::vector<Source> collect_flagpole_sources(RetroRom& rom,Nes_Emu& e) {
         }
         return tape;
     };
-    auto prefix=load("ocean/mario_fpg/reference/learned_pipe_route.actions",false);
+    auto prefix=load("ocean/mario_sim/reference/learned_pipe_route.actions",false);
     if(prefix.size()<1510)throw std::runtime_error("short flagpole prefix");
-    auto suffix=load("ocean/mario_fpg/reference/fpg_suffix.actions",true);
+    auto suffix=load("ocean/mario_sim/reference/fpg_suffix.actions",true);
     std::vector<int> searched(prefix.begin(),prefix.begin()+1510);searched.insert(searched.end(),suffix.begin(),suffix.end());
     struct Route {std::string name;std::vector<int> tape;int first;};
     std::vector<Route> routes;
     routes.push_back({"flagpole_learned_20",prefix,0});
     for(int episode:{7,26,41})routes.push_back({"flagpole_learned_"+std::to_string(episode),
-        load("ocean/mario_fpg/reference/routes/episode_"+std::to_string(episode)+".actions",false),0});
+        load("ocean/mario_sim/reference/routes/episode_"+std::to_string(episode)+".actions",false),0});
     routes.push_back({"flagpole_searched",searched,1510});
     for(const auto& route:routes) {
         e.load_state(rom.starts[0]->state);

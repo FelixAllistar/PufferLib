@@ -1,0 +1,765 @@
+{
+  "schema": 1,
+  "date_utc": "2026-10-09",
+  "active_SMB_environments": [
+    "retro",
+    "mario_sim"
+  ],
+  "simulator_modes": [
+    "game",
+    "fpg",
+    "mixed"
+  ],
+  "default_frame_allocation": {
+    "game": 0.75,
+    "fpg": 0.25
+  },
+  "original_stage_starts": 32,
+  "semantic_checkpoint_ABI_unchanged": true,
+  "removed_implementations": [
+    "mario_lab",
+    "mario_fpg"
+  ],
+  "merged_implementation": "mario_fpg_time",
+  "tests": {
+    "adapter_cpu_cuda": {
+      "decisions": 147456,
+      "resets": 2813,
+      "stages": 32,
+      "modes": 3,
+      "failures": 0
+    },
+    "CPU_sections_pools_metrics_and_sidecars": {
+      "CPU_modes": true,
+      "config_sections": true,
+      "mixed_metrics": true,
+      "legacy_resume": true,
+      "failures": 0
+    },
+    "continuing_game_ROM_parity": {
+      "stages": 32,
+      "ROM_frames": 72110,
+      "clears": 1,
+      "life_losses": 96,
+      "level_transitions": 1,
+      "gameovers": 31,
+      "semantic_and_lifecycle_parity": true,
+      "failures": 0
+    },
+    "policy_ROM_parity_all_32_starts": {
+      "schema": 2,
+      "scope": "natural_all_32_stages",
+      "objective": "full_game",
+      "reference_frames": 0,
+      "eligible_starts": 32,
+      "episodes_requested": 32,
+      "episodes_run": 32,
+      "episodes_completed": 32,
+      "seed": 137,
+      "max_frames": 128,
+      "checkpoint_fnv64": "28930049270528812",
+      "config_fnv64": "12191658290373017115",
+      "bank_payload_fnv64": "0",
+      "deterministic": 0,
+      "policy_inference": "shared FP32 CPU implementation with independent recurrent states",
+      "frames": 4096,
+      "native_successes": 0,
+      "rom_successes": 0,
+      "normal_flags": 0,
+      "deaths": 0,
+      "timeouts": 32,
+      "flag_contacts": 0,
+      "fpg_contacts": 0,
+      "level_clears": 0,
+      "furthest_overworld_x": 163,
+      "mean_success_frames": 0,
+      "mismatches": 0,
+      "ram_writes_after_reset": 0,
+      "all_episodes_run_to_terminal": true,
+      "passed": true
+    },
+    "curriculum_CPU": {
+      "curriculum_levels": 17,
+      "decisions": 4961,
+      "teacher_successes": 73,
+      "promotions": 16,
+      "practice_episodes": 7,
+      "checkpoint_roundtrip": true,
+      "fixed_evaluation": true,
+      "failures": 0
+    },
+    "FPG_reward_reset_and_cache_controls": {
+      "teacher_successes": 2,
+      "teacher_frames": 850,
+      "reset_stream_comparisons": 4096,
+      "corrupt_tables_rejected": 6,
+      "start_guards": 3,
+      "timeout_frames": 1800,
+      "zero_bonus_ablation": true,
+      "cache_free_fallback": true,
+      "failures": 0
+    },
+    "encoder_FP32": {
+      "passed": true,
+      "parameters": 79088,
+      "observations": 1461,
+      "finite_difference_checks": 56,
+      "serialized_CPU_CUDA_recurrent_policy": true
+    },
+    "original_semantic_trace_observations": {
+      "passed": true,
+      "main_frames": 1178672,
+      "supplement_frames": 17280
+    },
+    "FPG_timing_table_teacher_replay": {
+      "cache_hit": false,
+      "templates": 423,
+      "covered": 423,
+      "fallback_templates": 0,
+      "teacher_successes": 423,
+      "trials": 423,
+      "successful_trials": 423,
+      "simulated_frames": 90522,
+      "seconds": 5.044,
+      "optimality_proven": false
+    },
+    "benchmark_entrypoint": {
+      "agents": 32,
+      "task": 2,
+      "frames": 1024,
+      "seconds": 0.656128,
+      "frames_per_second": 1560.7,
+      "resets": 14,
+      "successes": 5,
+      "observations": 1461,
+      "templates": 455,
+      "worlds": 1,
+      "generation_knobs": 0,
+      "threads": 32,
+      "resets_and_generation_included": true,
+      "observations_included": true,
+      "ppo_included": false,
+      "action_source": "seeded uniform actions held for eight frames"
+    },
+    "FPG_sweep_unit_tests": {
+      "passed": true,
+      "tests": 5
+    }
+  },
+  "native_training_smokes": [
+    {
+      "run": "mario_unified_smoke_20261009",
+      "frames": 262144,
+      "mode": "mixed",
+      "actors": 1024,
+      "FPG_actors": 256,
+      "game_frame_cap_for_smoke": 128,
+      "weights": {
+        "path": "checkpoints/mario_sim/mario_unified_smoke_20261009/0000000000262144.bin",
+        "bytes": 316352,
+        "sha256": "013ccaf42e057154c3d59e44f5439d2cc34c0734ae672ea115f0b6bf0a97374c"
+      },
+      "curriculum": {
+        "schema": 1,
+        "agents": 256,
+        "mean_reference_frames": 96,
+        "min_reference_frames": 96,
+        "max_reference_frames": 96,
+        "median_reference_frames": 96,
+        "promotions": 2816,
+        "window": 16,
+        "confirmations": 2,
+        "threshold": 0.8,
+        "replay_fraction": 0.2,
+        "levels": [
+          {
+            "reference_frames": 3,
+            "agents": 0
+          },
+          {
+            "reference_frames": 4,
+            "agents": 0
+          },
+          {
+            "reference_frames": 5,
+            "agents": 0
+          },
+          {
+            "reference_frames": 6,
+            "agents": 0
+          },
+          {
+            "reference_frames": 8,
+            "agents": 0
+          },
+          {
+            "reference_frames": 12,
+            "agents": 0
+          },
+          {
+            "reference_frames": 16,
+            "agents": 0
+          },
+          {
+            "reference_frames": 24,
+            "agents": 0
+          },
+          {
+            "reference_frames": 32,
+            "agents": 0
+          },
+          {
+            "reference_frames": 48,
+            "agents": 0
+          },
+          {
+            "reference_frames": 64,
+            "agents": 0
+          },
+          {
+            "reference_frames": 96,
+            "agents": 256
+          },
+          {
+            "reference_frames": 128,
+            "agents": 0
+          },
+          {
+            "reference_frames": 192,
+            "agents": 0
+          },
+          {
+            "reference_frames": 256,
+            "agents": 0
+          },
+          {
+            "reference_frames": 320,
+            "agents": 0
+          },
+          {
+            "reference_frames": 425,
+            "agents": 0
+          }
+        ]
+      }
+    },
+    {
+      "run": "mario_unified_resume_20261009",
+      "frames": 131072,
+      "mode": "mixed",
+      "actors": 1024,
+      "FPG_actors": 256,
+      "game_frame_cap_for_smoke": 128,
+      "weights": {
+        "path": "checkpoints/mario_sim/mario_unified_resume_20261009/0000000000131072.bin",
+        "bytes": 316352,
+        "sha256": "fd30e63ffd94761d711b766ac50087b287def8c8cb898196998f0f17a5492743"
+      },
+      "curriculum": {
+        "schema": 1,
+        "agents": 256,
+        "mean_reference_frames": 96,
+        "min_reference_frames": 96,
+        "max_reference_frames": 96,
+        "median_reference_frames": 96,
+        "promotions": 2816,
+        "window": 16,
+        "confirmations": 2,
+        "threshold": 0.8,
+        "replay_fraction": 0.2,
+        "levels": [
+          {
+            "reference_frames": 3,
+            "agents": 0
+          },
+          {
+            "reference_frames": 4,
+            "agents": 0
+          },
+          {
+            "reference_frames": 5,
+            "agents": 0
+          },
+          {
+            "reference_frames": 6,
+            "agents": 0
+          },
+          {
+            "reference_frames": 8,
+            "agents": 0
+          },
+          {
+            "reference_frames": 12,
+            "agents": 0
+          },
+          {
+            "reference_frames": 16,
+            "agents": 0
+          },
+          {
+            "reference_frames": 24,
+            "agents": 0
+          },
+          {
+            "reference_frames": 32,
+            "agents": 0
+          },
+          {
+            "reference_frames": 48,
+            "agents": 0
+          },
+          {
+            "reference_frames": 64,
+            "agents": 0
+          },
+          {
+            "reference_frames": 96,
+            "agents": 256
+          },
+          {
+            "reference_frames": 128,
+            "agents": 0
+          },
+          {
+            "reference_frames": 192,
+            "agents": 0
+          },
+          {
+            "reference_frames": 256,
+            "agents": 0
+          },
+          {
+            "reference_frames": 320,
+            "agents": 0
+          },
+          {
+            "reference_frames": 425,
+            "agents": 0
+          }
+        ]
+      }
+    }
+  ],
+  "migrated_FPG_sweep": {
+    "trials": 1,
+    "frames": 262144,
+    "fixed_depths": 12,
+    "episodes_per_depth": 1,
+    "completed": true,
+    "result": "ocean/mario_sim/results/consolidated_20261009/sweep_trial.json"
+  },
+  "limitations": [
+    "Bounded integration checks do not establish full-game policy competence.",
+    "Natural ROM lifecycle replay covers 32 starts, life losses, game overs and one completed level transition; final 8-4 termination also has a controller-state test, not an end-to-end winning route.",
+    "Arbitrary new level geometry is not implemented; mixed mode uses original world data."
+  ],
+  "sources": [
+    {
+      "path": "build.sh",
+      "bytes": 26626,
+      "sha256": "ed3846615be5afad0632f221e4bd99e49f3dff900946b4226b542c824ae2986e"
+    },
+    {
+      "path": "config/mario_sim.ini",
+      "bytes": 4614,
+      "sha256": "e3542c043c4f3ac4773ffd7d09033dc1ffd4e36157f5dfd9a5611e378057dca5"
+    },
+    {
+      "path": "ocean/mario_sim/bank.h",
+      "bytes": 818,
+      "sha256": "f487697b96ff0677e59d6b7335fa54c489615fb63de13c519cbbc809dfffc475"
+    },
+    {
+      "path": "ocean/mario_sim/bank_io.h",
+      "bytes": 2168,
+      "sha256": "06299c6677562e96650111e2fa86c3d014f179407b94f4f00136f4a9aeff44c2"
+    },
+    {
+      "path": "ocean/mario_sim/bench_env.cu",
+      "bytes": 4866,
+      "sha256": "c477715073eaef9dba5a1733e2fc2c59fba9001f0ed7c404df95765ca9b54339"
+    },
+    {
+      "path": "ocean/mario_sim/bench_runtime_gpu.cu",
+      "bytes": 7072,
+      "sha256": "559ad96f260a6b7848d9c16ce73147f716737a69663276fd2c65facfc2a8762b"
+    },
+    {
+      "path": "ocean/mario_sim/build_curriculum_bank.cpp",
+      "bytes": 9311,
+      "sha256": "27051bd59ade1a68f895bc8b0a0c810559fdac9bd12f720091596d494c3b9954"
+    },
+    {
+      "path": "ocean/mario_sim/build_pipe_bank.cpp",
+      "bytes": 12520,
+      "sha256": "9d3e5bf39f0b855d4a1ad4c933bc1a317b24562f15dc83d7a47d48c44f0203e4"
+    },
+    {
+      "path": "ocean/mario_sim/build_runtime_bank.cpp",
+      "bytes": 12349,
+      "sha256": "bac7684ce2aa040fac0f2b0239425d23a2d823fe9f43491d374728aa653a4f08"
+    },
+    {
+      "path": "ocean/mario_sim/build_table.cpp",
+      "bytes": 10782,
+      "sha256": "4a8aa62777583e4c14276bc5bcacb426ff4ebc6b55d8dd0ccb46276397f14fac"
+    },
+    {
+      "path": "ocean/mario_sim/catalog.cpp",
+      "bytes": 6440,
+      "sha256": "6ab0ded800bc506f70dd6cd3293f2378562982620906ddcfa821576fb78cb711"
+    },
+    {
+      "path": "ocean/mario_sim/check_trace_guards.py",
+      "bytes": 2965,
+      "sha256": "c6c1545354ed026d3c0a8cc2cf6552edb566b649b11079d06d5bc46f3b18f2a7"
+    },
+    {
+      "path": "ocean/mario_sim/cuda_module.cpp",
+      "bytes": 1271,
+      "sha256": "30b605756246c2e10513c3c376c269f402c45b7697ab7c2a37327118f9138338"
+    },
+    {
+      "path": "ocean/mario_sim/cuda_module.h",
+      "bytes": 157,
+      "sha256": "3a1ab0fa0e2ccddb15f291471e96c9476c7af8c6e488e217e8b460f79419fba2"
+    },
+    {
+      "path": "ocean/mario_sim/cuda_replay.cu",
+      "bytes": 1698,
+      "sha256": "1d193e82d8612a6e993c31e08e8a180622d6fd6405b7f59a7b0323a80a339633"
+    },
+    {
+      "path": "ocean/mario_sim/cuda_replay.h",
+      "bytes": 261,
+      "sha256": "eb4d94f06a6e676337dc0d5f8216da0a10d1bc7b19ce374edfa65504ee0d189b"
+    },
+    {
+      "path": "ocean/mario_sim/curriculum.h",
+      "bytes": 4156,
+      "sha256": "f7898a98e5141bc921bc15ec6ce66d1c694536f4594179039fd02470a6cb700d"
+    },
+    {
+      "path": "ocean/mario_sim/curriculum_state.h",
+      "bytes": 5484,
+      "sha256": "12bbac553f2c1cedcd3cd19381b1712789d35d9e82bc9a005bc615688638da3b"
+    },
+    {
+      "path": "ocean/mario_sim/debug_clip.cpp",
+      "bytes": 1567,
+      "sha256": "95eafff53133fb52e50452f8ad338b1418936b68847770d5875391b9626acdbd"
+    },
+    {
+      "path": "ocean/mario_sim/encoder.cu",
+      "bytes": 24347,
+      "sha256": "f35ef781be89d7b0592eeb3c7f4b821c7ef9f596272d6842d7beb6af37b4c93a"
+    },
+    {
+      "path": "ocean/mario_sim/encoder_cpu.h",
+      "bytes": 4055,
+      "sha256": "21d272ac45d5a573ad87794ebec6fca2757b5af9ea3a43f07f31e2aa051e2bc7"
+    },
+    {
+      "path": "ocean/mario_sim/find_clip.cpp",
+      "bytes": 4334,
+      "sha256": "643739e2cf4186a8d47bade9f344822dff14ed07a09e58d8f685d9ac3caa5bcd"
+    },
+    {
+      "path": "ocean/mario_sim/fpg.mk",
+      "bytes": 5922,
+      "sha256": "3511c2891cbe84b2db27d8858eff960eea055133197ed7b337ff7f5fd4df0394"
+    },
+    {
+      "path": "ocean/mario_sim/game.h",
+      "bytes": 2528,
+      "sha256": "0dc4449cabde5fca0d7898a209cb21b51cae41c920908b58cec3d0de7443e750"
+    },
+    {
+      "path": "ocean/mario_sim/generate_logic.py",
+      "bytes": 13528,
+      "sha256": "fbf4e45b96d91120f6edcc3423d00ead1a6ce9219a3f507f80fdaa4722c27c6f"
+    },
+    {
+      "path": "ocean/mario_sim/generate_runtime.py",
+      "bytes": 11470,
+      "sha256": "97406e284cbe9a8f2578571bacbb3150f784a33ac2411dcb1d995d67c5eb8851"
+    },
+    {
+      "path": "ocean/mario_sim/generator.h",
+      "bytes": 4136,
+      "sha256": "98e5f0f87dbcef4e505384617e90f818fd802bf34509cedb93113ff5b4a68a6d"
+    },
+    {
+      "path": "ocean/mario_sim/logic.h",
+      "bytes": 9223,
+      "sha256": "973eef6d4419b6fff4a953d7e5c26723e5b4a4f8a82b5a6c8d836b6f01a07be6"
+    },
+    {
+      "path": "ocean/mario_sim/logic_cpu.cpp",
+      "bytes": 174,
+      "sha256": "166272c8ff8ff5c4e679e2a95f11cb7128658a01c0ef017d5c218f659ac3f2eb"
+    },
+    {
+      "path": "ocean/mario_sim/logic_cpu.h",
+      "bytes": 103,
+      "sha256": "7fcd7e500b0ef0a07700b276f569cc34dc1cf47de8fed1005831d2fab2c61199"
+    },
+    {
+      "path": "ocean/mario_sim/mario_sim.cu",
+      "bytes": 9764,
+      "sha256": "bbec34716796ca95137b73863de676007b08bb42c5350b2e9c17d5b5f231a5fd"
+    },
+    {
+      "path": "ocean/mario_sim/mario_sim.h",
+      "bytes": 19141,
+      "sha256": "51ffaad1f244ae49efff5793440b87c71f2a0372848a6a4b2384cdc72d2bffa2"
+    },
+    {
+      "path": "ocean/mario_sim/observation.h",
+      "bytes": 9794,
+      "sha256": "ef502096e0a91cdafa1befd83cb37fc44b113c7251c9b8e2ead1ead91be4c001"
+    },
+    {
+      "path": "ocean/mario_sim/parameters.h",
+      "bytes": 931,
+      "sha256": "f6aeb92cf233de03c65f2e37ea9ea76f008eb73f25f6147a725eb0a0559de89a"
+    },
+    {
+      "path": "ocean/mario_sim/pipe_start.h",
+      "bytes": 1191,
+      "sha256": "e72a3dc5d37b2171460e0aa15c30a8027aa3b471c456a59abb906629461712df"
+    },
+    {
+      "path": "ocean/mario_sim/policy.c",
+      "bytes": 1526,
+      "sha256": "326d0274390f415064ef80bdba2311e6b6594886b5af07f0a0bd83a254f4fd42"
+    },
+    {
+      "path": "ocean/mario_sim/policy.h",
+      "bytes": 287,
+      "sha256": "e80eb33073abc60f9dbb275cc869b7e3e95f911ee51aa293b98a366b74467b23"
+    },
+    {
+      "path": "ocean/mario_sim/policy_shape.h",
+      "bytes": 4577,
+      "sha256": "ff9f9ff9aa98bab639e2ff9d924b3dc9dda7ab64cc42df132345ed3898398e1a"
+    },
+    {
+      "path": "ocean/mario_sim/qualify_runtime.py",
+      "bytes": 3289,
+      "sha256": "0c32fd15d1bc36d02d40c9c0363818f91750044936221a392aac865b4c479166"
+    },
+    {
+      "path": "ocean/mario_sim/reconstruct.cpp",
+      "bytes": 11288,
+      "sha256": "07bcbbfca8219584742fc654987a60fb70a77bcc2545ba64a2cf110f92b7ef8f"
+    },
+    {
+      "path": "ocean/mario_sim/reference_sources.h",
+      "bytes": 7187,
+      "sha256": "b34ff0d3372f2cd9066a5b62bd60cc63299dbd8e3ab37edf19df6c5ac16bb44f"
+    },
+    {
+      "path": "ocean/mario_sim/rom_check.h",
+      "bytes": 1828,
+      "sha256": "34cddddce20239070687a506c1539c80317b4b9d29438d1303b287f743f1c6ef"
+    },
+    {
+      "path": "ocean/mario_sim/rom_import.h",
+      "bytes": 724,
+      "sha256": "5f2b2708173614a0d1f15ac921ac0a41401ec155e4f84dce9f29c1843a4f1660"
+    },
+    {
+      "path": "ocean/mario_sim/runtime.mk",
+      "bytes": 4268,
+      "sha256": "8624ddd5d20dc147d79ef20a53805c645fc80f5f16c86b2dd9104d6f2b3f113d"
+    },
+    {
+      "path": "ocean/mario_sim/runtime_cuda.h",
+      "bytes": 1865,
+      "sha256": "9bcf94e81400ec0c7655e15c303a3e194fb259c29b7c1315dedcd31fc3c422a7"
+    },
+    {
+      "path": "ocean/mario_sim/runtime_kernel.cu",
+      "bytes": 3193,
+      "sha256": "83480a6426d4883e23b66687083a512a93882503a0c69e134c88cfabcc6652b3"
+    },
+    {
+      "path": "ocean/mario_sim/runtime_poll.h",
+      "bytes": 1421,
+      "sha256": "7550acf442db5fd056962d089f3d66e64d33066b6a761c6a7bdb835dd3a980f8"
+    },
+    {
+      "path": "ocean/mario_sim/runtime_registers.h",
+      "bytes": 2074,
+      "sha256": "98e0d587cb18b48bf0a77bef55c8929715cce2c7e1b6e823e6be744d6a1296c9"
+    },
+    {
+      "path": "ocean/mario_sim/scene.h",
+      "bytes": 2075,
+      "sha256": "3e8c7492bacf4b8944062c6a8d22bec00d864f5989d9d230716886dd8f3142e4"
+    },
+    {
+      "path": "ocean/mario_sim/sim2rom.cpp",
+      "bytes": 12693,
+      "sha256": "c4cd1d4e68f26cc36f75ded0b5afbf07f4b5d504a0e5aa04b4e0ff3c0c1d6791"
+    },
+    {
+      "path": "ocean/mario_sim/summarize_trace.py",
+      "bytes": 5416,
+      "sha256": "d4b836a35cd09aab753e2acd440ae302616d062b6479a3848babea144553cf6a"
+    },
+    {
+      "path": "ocean/mario_sim/sweep.py",
+      "bytes": 12354,
+      "sha256": "8f9597b685cb30b80825eb757fa228f48794ff7194f4908230cc2b2670e8d87f"
+    },
+    {
+      "path": "ocean/mario_sim/table.h",
+      "bytes": 2314,
+      "sha256": "43a52c5cb88cdc19c95d4a5e4659af2ec7cd79277677ac9e6ba0d4bcac5c3e4e"
+    },
+    {
+      "path": "ocean/mario_sim/task.h",
+      "bytes": 1852,
+      "sha256": "760ea388e5e80a9253e119322f7146715a479a117bbf63929541a32725e864cd"
+    },
+    {
+      "path": "ocean/mario_sim/test_bank.cpp",
+      "bytes": 2013,
+      "sha256": "f8e4c8dafdd3099b664bbe4fb50666cb52760721570bbca6cf44f060885c62fd"
+    },
+    {
+      "path": "ocean/mario_sim/test_common.h",
+      "bytes": 2442,
+      "sha256": "6e556afcf35cc7b470d434e12b5bae8feb397b0c1b9a7b57ef89418dee5c8f96"
+    },
+    {
+      "path": "ocean/mario_sim/test_cpu.cpp",
+      "bytes": 7483,
+      "sha256": "026f560344292cbbc931c21ca5f1a24962d59fda0cd18fbfc91766b089f4be2b"
+    },
+    {
+      "path": "ocean/mario_sim/test_cuda.cu",
+      "bytes": 6668,
+      "sha256": "0f9e636a53e94959e3573922d3672a5070542cf0f54560d54d996c0bf338dc03"
+    },
+    {
+      "path": "ocean/mario_sim/test_curriculum_cpu.cpp",
+      "bytes": 6291,
+      "sha256": "04596e23de3640a7af425875bde83478a801714d8b03e6ac5ab6a28cf7e3fc09"
+    },
+    {
+      "path": "ocean/mario_sim/test_curriculum_cuda.cu",
+      "bytes": 6920,
+      "sha256": "917243f3cb76372d38b79a07f863095930931b882d7f01ebb875636fed917fcf"
+    },
+    {
+      "path": "ocean/mario_sim/test_encoder.cu",
+      "bytes": 11418,
+      "sha256": "e8764892ad47c4b2e236b66548b77ff62b78bb8d82a6b662246bf11c6f128be4"
+    },
+    {
+      "path": "ocean/mario_sim/test_game_rom.cpp",
+      "bytes": 5775,
+      "sha256": "d590d20b97ebe916a7b88fabdf17b955392660cee84a9da282f65febd86e2d71"
+    },
+    {
+      "path": "ocean/mario_sim/test_modes.cpp",
+      "bytes": 2576,
+      "sha256": "4e847322508fe9cda79c40d945fa2bcbc68af2c73a384a2a6ec9b9b2a5521944"
+    },
+    {
+      "path": "ocean/mario_sim/test_observation.cpp",
+      "bytes": 9282,
+      "sha256": "a1e070de00e6c1ed5753ffcb9f9cdad362cf243af1c766ccab8e2478ce98f190"
+    },
+    {
+      "path": "ocean/mario_sim/test_runtime.cu",
+      "bytes": 8841,
+      "sha256": "68599cca46f27887cc73ddd630921153c977597b209e5f9643a5368771c614df"
+    },
+    {
+      "path": "ocean/mario_sim/test_sweep.py",
+      "bytes": 4474,
+      "sha256": "276ae3e86fd562535ab555734285b2307727bccf4df1ec812f4fc1d171dd93c8"
+    },
+    {
+      "path": "ocean/mario_sim/time_reward.h",
+      "bytes": 2072,
+      "sha256": "4bd1b18a7a8313a2f571037ec6c3151c98798606af47f6deb1649761d14cd806"
+    },
+    {
+      "path": "ocean/mario_sim/trace.h",
+      "bytes": 555,
+      "sha256": "70325afe76274ee885ae9d7b50fe3a3887445c257a37847901303a561b1b5677"
+    },
+    {
+      "path": "ocean/mario_sim/verify_cuda.cu",
+      "bytes": 5566,
+      "sha256": "cb7c71216e6d269827721325394d23f9f3ebac93a3cc1324f406e5735dd01da2"
+    },
+    {
+      "path": "ocean/mario_sim/verify_logic.cpp",
+      "bytes": 2914,
+      "sha256": "73baf151596de698cf24b7ba90c811ce1259ad3b26cbdfe28ec94d910a6562c7"
+    },
+    {
+      "path": "ocean/mario_sim/verify_runtime_cpu.cpp",
+      "bytes": 3904,
+      "sha256": "736a23dec5850ecc0f75193d247b0aaf34bc143e05b5ce277a4ba0bdd114e356"
+    },
+    {
+      "path": "ocean/mario_sim/view.h",
+      "bytes": 2756,
+      "sha256": "0884d77c6ac46847996a2da704e26427eed0b74902107760c7679285b98310bb"
+    },
+    {
+      "path": "ocean/mario_sim/world.h",
+      "bytes": 2096,
+      "sha256": "b8e0c1970c38fd7a25c8d14e9ca24ae7c81c1d4139046c7a167c8f05e2847d92"
+    },
+    {
+      "path": "src/ocean.cu",
+      "bytes": 3788,
+      "sha256": "68e7e0354746f5f523425340b09d16f55fac3fba5c66461c4fac3bbfcc44830f"
+    },
+    {
+      "path": "src/pufferl.cu",
+      "bytes": 150401,
+      "sha256": "c9a285dfcebbdfbdf7077a540096ca505d67e3faceea0607caf978ff424aafb0"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "build/mario_sim/puffer",
+      "bytes": 2011152,
+      "sha256": "ffa25a63838182e594943152eecc287cbc9afcbef32f29d53b972037c6dcc2c3"
+    },
+    {
+      "path": "build/mario_sim/runtime/logic_cpu.a",
+      "bytes": 2657522,
+      "sha256": "dd674cf8573ddc6f448af422d033edcbae1ad30313b0916a86efe5709f0c22fb"
+    },
+    {
+      "path": "build/mario_sim/runtime/cuda_replay.cubin",
+      "bytes": 8193184,
+      "sha256": "ebec2124b49dc72c74f7d7210d4c5b540740f63116707b08bd6c2714acefaa33"
+    },
+    {
+      "path": "build/mario_sim/fpg/sim2rom",
+      "bytes": 4386280,
+      "sha256": "df059ed2f5e2b9d52b634c5bdc45e1acbb80b09b03a0c8ae61e6c0f566d51fd1"
+    },
+    {
+      "path": "build/mario_sim/fpg/curriculum/bank.bin",
+      "bytes": 1088616,
+      "sha256": "b6c8bbfccc06f6346920c22d75d5a91d6a32f404fd2fc14c8bea9d074def5f35"
+    },
+    {
+      "path": "build/mario_sim/runtime/generated/bank.bin",
+      "bytes": 1754856,
+      "sha256": "f79a14a780d40a7e021a6e5762c59383578ff0fef53571f1d593abc1771b5e01"
+    }
+  ]
+}

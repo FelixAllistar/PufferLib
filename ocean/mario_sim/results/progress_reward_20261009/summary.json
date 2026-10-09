@@ -1,0 +1,47 @@
+{
+  "timestamp_utc": "2026-10-09T15:11:10.547950+00:00",
+  "defaults": {
+    "checkpoint_distance": 128,
+    "checkpoint_reward": 0.025
+  },
+  "behavior": "Reward cumulative novel rightward pixels per stage and area; retain frontiers across life losses and suppress traversal/teleport credit.",
+  "cpu_cuda_integration": {
+    "decisions": 147456,
+    "resets": 2813,
+    "stages": 32,
+    "modes": 3,
+    "failures": 0
+  },
+  "rom_comparison": {
+    "stages": 32,
+    "frames": 72110,
+    "life_losses": 96,
+    "gameovers": 31,
+    "level_transitions": 1,
+    "checkpoint_events": 177,
+    "failures": 0
+  },
+  "native_training_smoke": {
+    "frames": 8192,
+    "agents": 32,
+    "horizon": 16,
+    "game_max_frames": 128,
+    "checkpoint_distance_override": 32,
+    "positive_progress_rewards": true,
+    "backend": "CPU environment, BF16 policy"
+  },
+  "builds": [
+    "CPU environment BF16 policy (installed as ./puffer)",
+    "CUDA environment FP32 policy (build/mario_sim/puffer)"
+  ],
+  "installed_binary_sha256": "9747e9c9fff3974ac7af4f5e0c58c902909066c8a8a5253f3557b28b33ca8af6",
+  "scope": "Correctness and bounded training smoke only; no learning-performance claim. Existing training process was not restarted.",
+  "source_sha256": {
+    "ocean/mario_sim/game.h": "8a3a7935bcddca56bde7d245181659d7036c54971f739697972260b7126e2b95",
+    "ocean/mario_sim/mario_sim.h": "2daa77f3a2b5330765bf6802509571a9ff790b28fec64b0daf1f752c6d998e89",
+    "ocean/mario_sim/test_progress.cpp": "ecffe8f5be7a357c5c8eca0376bcddc4d481a2efec84158bfcabd009421e997f",
+    "ocean/mario_sim/test_runtime.cu": "19a9e0989ba1ad371a7423919d73923f1d95bc547fc3696a2f3644978f85e550",
+    "ocean/mario_sim/test_game_rom.cpp": "3c198b321cd699f00cf9d2c71e5c8abdf582e4c50aa80c15483e4ee9d1d1febb",
+    "config/mario_sim.ini": "fe85060c6e511c3ae4dc0f92993b8a8e55ff9b36f79e90d12853a647015df070"
+  }
+}

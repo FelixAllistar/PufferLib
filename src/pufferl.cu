@@ -1967,9 +1967,9 @@ void puf_load_weights_into(Float dst, Prec params,
     int64_t nbytes = numel(dst.shape) * sizeof(float);
     FILE* fp = fopen(path, "rb");
     assert(fp && "failed to open weights for reading");
-#ifdef PUFFER_MARIO_FPG_TIME
+#ifdef PUFFER_MARIO_SIM
     if(fseek(fp,0,SEEK_END)||ftell(fp)!=nbytes) {
-        fprintf(stderr,"FPG checkpoint architecture mismatch: expected %lld bytes for the semantic encoder. "
+        fprintf(stderr,"Mario semantic checkpoint architecture mismatch: expected %lld bytes for the semantic encoder. "
             "Start fresh with base.load_model_path=None; RAM policies require the archived binary.\n",(long long)nbytes);
         fclose(fp);exit(1);
     }

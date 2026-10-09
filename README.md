@@ -5,9 +5,9 @@ PufferLib is a fast and sane reinforcement learning library that can train tiny,
 
 All of our documentation is hosted at [puffer.ai](https://puffer.ai "PufferLib Documentation"). @jsuarez5341 on [Discord](https://discord.gg/puffer) for support. Post there before opening issues. We're always looking for new contributors!
 
-Local Mario work: [native simulator and qualification](ocean/mario_sim/README.md),
-and the separate [FPG backward curriculum](ocean/mario_fpg_time/README.md)
-with natural 1-1 starts, automatic difficulty progression and simulator/ROM comparison.
+Local Mario environments: [retro](ocean/retro/README.md) for ROM pixels, and
+[mario_sim](ocean/mario_sim/README.md) for CPU/CUDA simulation with a shared semantic
+policy, full-game episodes and an optional [FPG curriculum](ocean/mario_sim/FPG.md).
 
 ## Star to puff up the project!
 

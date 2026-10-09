@@ -1,0 +1,163 @@
+{
+  "runs": 128,
+  "steps_per_trial": 67108864,
+  "total_steps": 8589934592,
+  "fresh_weights": true,
+  "evaluation": {
+    "metric": "curriculum_frames",
+    "metric_distribution": "linear",
+    "goal": "maximize",
+    "max_suggestion_cost": "2400",
+    "max_runs": "128",
+    "gpus": "1",
+    "downsample": "1",
+    "prune_pareto": "1",
+    "early_stop_quantile": "0.3",
+    "worker_path": "/home/felix/puffertank/pufferlib/ocean/mario_sim/sweep.py",
+    "max_failures": "3",
+    "trainer_path": "build/mario_sim/puffer",
+    "evaluator_path": "build/mario_sim/fpg/sim2rom",
+    "eval_bank": "build/mario_sim/fpg/curriculum",
+    "eval_depths": "3,8,16,32,64,80,96,128,192,256,320,425",
+    "eval_episodes": "16",
+    "eval_seed": "137",
+    "eval_max_frames": "1800"
+  },
+  "varying_parameters": {
+    "policy.hidden_size": [
+      32.0,
+      256.0,
+      "uniform_pow2"
+    ],
+    "policy.num_layers": [
+      1.0,
+      4.0,
+      "int_uniform"
+    ],
+    "vec.total_agents": [
+      512.0,
+      2048.0,
+      "uniform_pow2"
+    ],
+    "train.horizon": [
+      16.0,
+      64.0,
+      "uniform_pow2"
+    ],
+    "train.minibatch_size": [
+      512.0,
+      4096.0,
+      "uniform_pow2"
+    ],
+    "train.learning_rate": [
+      3e-05,
+      0.003,
+      "log_normal"
+    ],
+    "train.ent_coef": [
+      0.0001,
+      0.04,
+      "log_normal"
+    ],
+    "train.gamma": [
+      0.97,
+      0.9999,
+      "logit_normal"
+    ],
+    "train.gae_lambda": [
+      0.8,
+      0.99,
+      "logit_normal"
+    ],
+    "train.replay_ratio": [
+      1.0,
+      3.0,
+      "uniform"
+    ],
+    "train.clip_coef": [
+      0.05,
+      0.3,
+      "uniform"
+    ],
+    "train.vf_clip_coef": [
+      0.05,
+      1.0,
+      "uniform"
+    ],
+    "train.vf_coef": [
+      0.1,
+      1.5,
+      "log_normal"
+    ],
+    "train.max_grad_norm": [
+      0.25,
+      2.0,
+      "log_normal"
+    ],
+    "train.momentum": [
+      0.8,
+      0.99,
+      "logit_normal"
+    ],
+    "fpg.time_bonus": [
+      0.0,
+      0.3,
+      "uniform"
+    ],
+    "fpg.time_target_scale": [
+      0.5,
+      1.5,
+      "log_normal"
+    ],
+    "fpg.time_slack_frames": [
+      0.0,
+      16.0,
+      "int_uniform"
+    ],
+    "fpg.time_power": [
+      0.5,
+      2.0,
+      "log_normal"
+    ],
+    "train.anneal_lr": [
+      0.0,
+      1.0,
+      "int_uniform"
+    ],
+    "train.min_lr_ratio": [
+      0.0,
+      0.3,
+      "uniform"
+    ],
+    "train.anneal_ent_coef": [
+      0.0,
+      1.0,
+      "int_uniform"
+    ],
+    "train.min_ent_coef_ratio": [
+      0.05,
+      0.5,
+      "uniform"
+    ],
+    "fpg.curriculum_window": [
+      8.0,
+      32.0,
+      "uniform_pow2"
+    ],
+    "fpg.curriculum_confirmations": [
+      1.0,
+      3.0,
+      "int_uniform"
+    ],
+    "fpg.curriculum_threshold": [
+      0.65,
+      0.9,
+      "uniform"
+    ],
+    "fpg.curriculum_replay": [
+      0.0,
+      0.4,
+      "uniform"
+    ]
+  }
+}
