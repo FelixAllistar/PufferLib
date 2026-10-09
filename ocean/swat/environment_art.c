@@ -336,7 +336,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     int missing=0;
     for(int i=0;i<(location ? SWAT_STOREFRONT_ASSETS : SWAT_MOTEL_ASSETS);i++) {
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
-        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":"motel_fence",a->file);
+        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":"motel_mounted",a->file);
         Model* model=location ? &art->storefront[i] : &art->motel[i];
         if(asset_path(path,sizeof(path),file)) *model=LoadModel(path);
         if(!model->meshCount || model->materialCount!=a->material_count+1 || model->materialCount>SWAT_LOCATION_MATERIALS) { swat_art_model_close(*model); *model=(Model){0}; missing++; continue; }
@@ -682,6 +682,19 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
     }
     return true;
 }
+static bool mounted_fallback(const SwatObject* o,bool shadow) {
+    if(!o->active || !o->query_mesh.data)return true;
+    b3Mesh mesh=o->query_mesh;const b3Vec3* vertices=b3GetMeshVertices(mesh.data);
+    const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);const uint8_t* color=swat_material(o->material)->color;
+    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+    rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
+    for(int i=0;i<mesh.data->triangleCount;i++) {
+        b3MeshTriangle t=triangles[i];b3Vec3 a=swat_mul(vertices[t.index1],mesh.scale.x),b=swat_mul(vertices[t.index2],mesh.scale.x),c=swat_mul(vertices[t.index3],mesh.scale.x);
+        b3Vec3 n=swat_normalize(b3Cross(b3Sub(b,a),b3Sub(c,a)));rlNormal3f(n.x,n.y,n.z);
+        rlVertex3f(a.x,a.y,a.z);rlVertex3f(b.x,b.y,b.z);rlVertex3f(c.x,c.y,c.z);
+    }
+    rlEnd();rlSetTexture(0);rlPopMatrix();return true;
+}
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel)return false;
     if(o->tag.index==0) {
@@ -695,6 +708,11 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         rlPopMatrix();clear_surface(art);return true;
     }
     if(o->tag.index<1)return false;
+    SwatMotelInstance mounted;
+    if(swat_motel_mounted(world,o->tag.index,&mounted)) {
+        if(art->motel[mounted.asset].meshCount)return location_draw(art,o,&mounted,&art->motel[mounted.asset],shadow,cutaway,false);
+        return mounted_fallback(o,shadow);
+    }
     int ground_part=swat_motel_ground_part(world,o);
     if(ground_part>=0 && o->active) {
         // Thin road paint receives lighting but never casts its own shadow.

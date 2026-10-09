@@ -1,0 +1,84 @@
+{
+  "passed": true,
+  "degenerate_triangles": 0,
+  "zero_normals": 0,
+  "nonmanifold_edges_after_position_weld": 4,
+  "welded_boundary_edges": 0,
+  "welded_loose_edges": 0,
+  "topology_note": "Exactly four 4-face edges occur after position welding at the four gasket-strip corner contacts (X +/-0.048, source Z +/-0.050 m). Separate closed strips meet there. No boundary/loose edges and no collision claim; assembly is not Boolean-unioned.",
+  "wall_min_z_m": -0.0,
+  "anchors": {
+    "wall_box_center": {
+      "gltf_position_m": [
+        0,
+        0,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_upper_left_saddle": {
+      "gltf_position_m": [
+        -0.022,
+        0.26,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_upper_right_saddle": {
+      "gltf_position_m": [
+        0.022,
+        0.26,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_lower_left_saddle": {
+      "gltf_position_m": [
+        -0.022,
+        -0.16,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_lower_right_saddle": {
+      "gltf_position_m": [
+        0.022,
+        -0.16,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "upper_conduit_rim": {
+      "gltf_position_m": [
+        0.009,
+        0.355,
+        0.027
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "lower_conduit_rim": {
+      "gltf_position_m": [
+        0.009,
+        -0.225,
+        0.027
+      ],
+      "measured_surface_distance_m": 0.0
+    }
+  },
+  "conduit_endpoint_centers_gltf_m": {
+    "upper": [
+      0,
+      0.355,
+      0.027
+    ],
+    "lower": [
+      0,
+      -0.225,
+      0.027
+    ]
+  },
+  "outer_radius_m": 0.009,
+  "inner_radius_m": 0.0078,
+  "UV_0_in_unit_square": true,
+  "collider_included": false
+}

@@ -1,0 +1,9 @@
+CC0 1.0 Universal — Public Domain Dedication
+
+To the extent possible under law, the creator of the original geometry, textures, scripts, renders and documentation in this package has waived all copyright and related or neighboring rights to this work under CC0 1.0 Universal.
+
+You may copy, modify, distribute and use the work, including commercially, without permission. No attribution is required. The work is provided without warranty. No trademark, privacy, publicity or patent rights are granted or implied.
+
+CC0 legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+No third-party artwork or fonts are bundled. Blender, Python and the rebuild dependencies remain under their own licenses and are not distributed here.

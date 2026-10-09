@@ -213,6 +213,9 @@ done
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_environment_props.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_environment_props.exe"
 
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_mounted_props.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_mounted_props.exe"
+
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_environment_art.c" \
     "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \

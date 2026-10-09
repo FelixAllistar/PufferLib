@@ -295,6 +295,44 @@ static void masonry_silhouette(SwatView* view,const char* directory) {
     view->lighting.prepared=prepared;assert(filled>1000 && empty>1000);
     printf("PASS masonry silhouette: %d native GPU samples match exact convex collision on both faces (%d solid/%d empty)\n",checked,filled,empty);
 }
+static void mounted_graphics(SwatView* view,const char* directory) {
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
+    swat_sim_init(&sim,cfg,81);SwatEnvironmentArt* art=&view->environment;swat_environment_art_prepare_location(art,&sim.world);
+    Model model=art->motel[44];assert(model.meshCount==1&&model.meshes[0].triangleCount==1464&&model.materialCount==2);
+    Material m=model.materials[1];assert(m.maps[MATERIAL_MAP_ALBEDO].texture.id&&m.maps[MATERIAL_MAP_NORMAL].texture.id&&m.maps[MATERIAL_MAP_ROUGHNESS].texture.id);
+    bool prepared=view->lighting.prepared;view->lighting.prepared=false;int checked=0,filled=0,empty=0;
+    for(int i=0;i<SWAT_MOTEL_MOUNTED_INSTANCES;i++)for(int fallback=0;fallback<2;fallback++) {
+        SwatObject* o=&sim.world.objects[SWAT_MOTEL_MOUNTED_FIRST+i];float c=cosf(o->yaw),s=sinf(o->yaw);
+        b3ShapeId shapes[8];assert(b3Body_GetShapes(o->body,shapes,8)==8);
+        art->motel[44]=fallback?(Model){0}:model;
+        Camera3D camera={{o->center.x+s,o->center.y,o->center.z+c},{o->center.x,o->center.y,o->center.z},{0,1,0},.68f,CAMERA_ORTHOGRAPHIC};
+        RenderTexture2D target=LoadRenderTexture(512,512);BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
+        assert(swat_environment_motel_draw(art,&sim.world,o,false,false));EndMode3D();EndTextureMode();
+        Image img=LoadImageFromTexture(target.texture);Color* pixels=LoadImageColors(img);
+        for(int y=4;y<508;y+=4)for(int x=4;x<508;x+=4) {
+            bool center_hit=false,same=true;const int offsets[][2]={{0,0},{-2,0},{2,0},{0,-2},{0,2}};
+            for(int j=0;j<5;j++) {
+                Ray ray=GetScreenToWorldRayEx((Vector2){x+.5f+offsets[j][0],y+.5f+offsets[j][1]},camera,512,512);
+                bool hit=false;for(int part=0;part<8;part++)hit|=b3Shape_RayCast(shapes[part],(b3Pos){ray.position.x,ray.position.y,ray.position.z},swat_mul(swat_v(ray.direction.x,ray.direction.y,ray.direction.z),1.05f)).hit;
+                if(!j)center_hit=hit;else same&=hit==center_hit;
+            }
+            if(!same)continue;
+            Color p=pixels[(511-y)*512+x];bool visible=p.r!=MAGENTA.r||p.g!=MAGENTA.g||p.b!=MAGENTA.b;
+            assert(visible==center_hit);checked++;filled+=visible;empty+=!visible;
+        }
+        char file[4096];ImageFlipVertical(&img);snprintf(file,sizeof(file),"%s/junction-%d-%s.png",directory,i,fallback?"fallback":"art");assert(ExportImage(img,file));
+        UnloadImageColors(pixels);UnloadImage(img);UnloadRenderTexture(target);
+    }
+    art->motel[44]=model;view->lighting.prepared=prepared;assert(filled>300&&empty>1000);
+    Camera3D cameras[]={{{-11.15f,1.55f,-7.5f},{-11.50f,1.35f,-6.13f},{0,1,0},65,CAMERA_PERSPECTIVE},
+        {{8.35f,1.58f,1.4f},{7.90f,1.35f,.13f},{0,1,0},65,CAMERA_PERSPECTIVE}};
+    for(int i=0;i<2;i++) {
+        Image img=room101_capture_size(view,cameras[i],true,960,540);char file[4096];snprintf(file,sizeof(file),"%s/junction-scene-%d.png",directory,i);assert(ExportImage(img,file));UnloadImage(img);
+    }
+    int owner=SWAT_MOTEL_MOUNTED_FIRST,support=sim.world.objects[owner].supports[0];assert(swat_world_damage(&sim.world,support,10000));
+    assert(!room101_owner_pixels(art,&sim.world.objects[owner],false));
+    swat_sim_close(&sim);printf("PASS mounted graphics: original PBR maps, %d stable ray/raster samples across both placements and exact missing-art fallback, native lit/shadow captures and authoritative support removal\n",checked);
+}
 static void ground_graphics(SwatView* view,const char* directory) {
     SwatEnvironmentArt* art=&view->environment;Model source=art->motel_ground;
     assert(source.meshCount==SWAT_GROUND_PARTS && source.materialCount==3);
@@ -892,6 +930,7 @@ int main(int argc,char** argv) {
         swat_view_close(&view);return 0;
     }
     if(argc>2 && !strcmp(argv[2],"culling")) {culling_graphics(&view,directory);swat_view_close(&view);return 0;}
+    if(argc>2 && !strcmp(argv[2],"mounted")) {texture_owner_graphics("motel_mounted/motel_surface_junction.glb");mounted_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"roadside")) {roadside_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && (!strcmp(argv[2],"surroundings") || !strcmp(argv[2],"ground"))) {
         SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;

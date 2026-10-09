@@ -1,0 +1,118 @@
+{
+  "id": "motel_surface_junction_v1",
+  "name": "Galvanized surface junction box with short hollow conduit and wall saddles",
+  "status": "independent source-art candidate; no user art approval or installed placement",
+  "created": "2026-10-09",
+  "license": "CC0-1.0",
+  "runtime": "runtime/motel_surface_junction.glb",
+  "editable_source": "source/junction.blend",
+  "rebuild": "source/rebuild.sh",
+  "runtime_measured": {
+    "sha256": "15b8304797c757de38ca5d1963aa8d93712b6504f817af902cd2ff8c9e0d6561",
+    "bytes": 1094020,
+    "triangles": 1464,
+    "all_nodes_identity": true,
+    "coordinate_system": "metres, Y-up; front +Z; wall Z=0",
+    "gltf_bounds_min_m": [
+      -0.05400000140070915,
+      -0.22499999403953552,
+      -0.0
+    ],
+    "gltf_bounds_max_m": [
+      0.05400000140070915,
+      0.35499998927116394,
+      0.058000002056360245
+    ],
+    "gltf_dimensions_xyz_m": [
+      0.1080000028014183,
+      0.5799999833106995,
+      0.058000002056360245
+    ],
+    "draw_calls": 1,
+    "opaque_materials": 1,
+    "embedded_images": 3,
+    "textures": "original 1024x1024 basecolor, normal and packed metallic-roughness PNG; ORM R is neutral 255",
+    "finite_values": true,
+    "index_bounds_valid": true
+  },
+  "anchors": {
+    "wall_box_center": {
+      "gltf_position_m": [
+        0,
+        0,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_upper_left_saddle": {
+      "gltf_position_m": [
+        -0.022,
+        0.26,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_upper_right_saddle": {
+      "gltf_position_m": [
+        0.022,
+        0.26,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_lower_left_saddle": {
+      "gltf_position_m": [
+        -0.022,
+        -0.16,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "wall_lower_right_saddle": {
+      "gltf_position_m": [
+        0.022,
+        -0.16,
+        0
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "upper_conduit_rim": {
+      "gltf_position_m": [
+        0.009,
+        0.355,
+        0.027
+      ],
+      "measured_surface_distance_m": 0.0
+    },
+    "lower_conduit_rim": {
+      "gltf_position_m": [
+        0.009,
+        -0.225,
+        0.027
+      ],
+      "measured_surface_distance_m": 0.0
+    }
+  },
+  "source_texture_limit_px": [
+    1024,
+    1024
+  ],
+  "collision": null,
+  "dependencies": [
+    "Blender 4.3+",
+    "Python 3",
+    "numpy",
+    "Pillow",
+    "scipy"
+  ],
+  "scope_unchanged": [
+    "installed engine assets",
+    "ground",
+    "character motion",
+    "grip"
+  ],
+  "catalog_gap_check": [
+    "catalog_r009_recent_delivery_draft/catalog.json",
+    "catalog_r009_recentdeliveries_nextdraft/RECENT_DELIVERIES.json"
+  ]
+}

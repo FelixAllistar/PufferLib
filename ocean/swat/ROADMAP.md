@@ -10,9 +10,14 @@ low-level Box3D character ancestry and owns its controller and game systems
 from here. New work belongs under `ocean/swat` and `config/swat.ini` unless it
 is deliberately a general engine improvement.
 
-## Active goal: Briar Court vertical slice (2026-10-08)
+## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
-Deliver one complete, replayable motel scenario and level. The player chooses
+Deliver a near-realistic vertical slice of the fuller tactical game, with a
+finished Briar Court level as the main proving ground and the shared range,
+building and generated scenarios supporting equipment/behavior validation.
+Use Xbox 360-era visual quality as a practical baseline: believable proportions,
+materials, lighting, composition, movement and sound with a compact asset budget.
+The player chooses
 the plan and tools; there is no required sequence of encounter triggers. Keep
 the normal branch, config and native `./swat` path. Coordinate compact art
 handoffs on Slack and integrate them here. Do not use Python for local work.
@@ -37,6 +42,43 @@ The slice is complete when these checks pass in the actual Windows player:
 - The same scenario can be completed through different approaches, replayed,
   saved/resumed and joined late in co-op. Validate geometry/authority agreement,
   bounded performance during indoor shooting/breaches and asset fallbacks.
+- Representative lethal/less-lethal weapons and entry/support tools form a
+  coherent loadout, with visible handling/reloads, useful commands and readable
+  interaction feedback. Validate roles and material response in the shared range
+  and building scenarios as well as the main level.
+- Different occupant layouts and scenario seeds remain solvable without authored
+  mission-trigger sequences. Officer/enemy policy training and held-out evaluation
+  use the ordinary Puffer/config workflow; civilians may remain basic/scripted.
+- Stable-load native playtests record frame-time distributions during indoor
+  firing, breaches, squad movement and camera feeds. Concurrent-training timings
+  alone do not establish the final performance budget or accept the slice.
+
+Immediate work: material zoning/background composition, further physically
+mounted/destructible props, production impact/breach audio,
+weapon/equipment completeness and squad/enemy perception/behavior. Iterate using
+actual playtest failures and the acceptance checks above. Source/runtime/licenses
+belong in the normal repository; complete backups remain on Drive. Avoid redundant
+local versions. The previous motel-only tracker entry was usage-limited and its
+replacement request was rejected because it remains unfinished; this roadmap is
+the current working objective, not a claim that the earlier slice was completed.
+
+Mounted-prop foundation: the delivered galvanized junction box now has two
+measured motel placements, exact hollow-shell collision and independent damage.
+Its five original fastening anchors resolve to masonry fragments; support loss
+removes art/collision together and propagates through attached children. Eight
+bounded contact meshes preserve all 1,464 triangles by using centimetre mesh
+construction and inverse shape scale. Steel strength scales by the authored
+1.2 mm saddle section; values remain game approximations. Portable map/replay
+version 17 carries support dependencies and rejects cyclic/unsupported states.
+Linux and native Windows checks cover shell thickness/open mouths, impacts,
+charge/support loss, late replicas and ordinary-input destroyed-prop save/restore.
+Native graphics match 62,396 stable ray/raster samples across both placements and
+the exact missing-art fallback; three model owners share their images and release
+them safely. The hostile exterior-entry completion route passes all 9,827 ordinary
+input ticks with two arrests, three evacuations, collected weapons, squad regroup,
+exact replay, mid-run save and late replica, without contact-buffer overflows.
+The artist has delivered the next dirt/gravel zoning mask and precise sampling
+contract; renderer blending and native appearance validation remain next work.
 
 Current audit: human tactical scenarios now deploy three squad bots and require
 occupant security, evidence, civilian evacuation and surviving-officer regrouping.

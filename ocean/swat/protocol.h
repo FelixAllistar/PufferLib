@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 16
+#define SWAT_NET_VERSION 17
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_PACKET_MAX 262144
 #define SWAT_NET_SOUNDS 32
@@ -24,6 +24,8 @@ typedef struct SwatMapObject {
     bool fractured;
     float corners[4][2];
     int wall_group;
+    int supports[SWAT_MAX_SUPPORTS];
+    float structural_thickness;
 } SwatMapObject;
 typedef struct SwatMap {
     uint32_t epoch, sound_floor;

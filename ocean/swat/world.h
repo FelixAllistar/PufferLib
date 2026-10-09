@@ -9,14 +9,15 @@ extern "C" {
 #endif
 
 #define SWAT_MAX_OBJECTS 2048
-#define SWAT_MOTEL_MESH_CAPACITY 44
+#define SWAT_MOTEL_MESH_CAPACITY 45
+#define SWAT_MAX_SUPPORTS 5
 #define SWAT_FENCE_PART_CAPACITY 64
 #define SWAT_SURROUNDINGS_PARTS 15
 #define SWAT_GROUND_PARTS 54
 #define SWAT_MAX_ROOMS 8
 typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE,SWAT_HIT_LIGHT } SwatHitKind;
 typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT, SWAT_PART_LIGHT,
-    SWAT_PART_FENCE_WIRE,SWAT_PART_FENCE_RAIL,SWAT_PART_FENCE_POST } SwatPart;
+    SWAT_PART_FENCE_WIRE,SWAT_PART_FENCE_RAIL,SWAT_PART_FENCE_POST,SWAT_PART_FIXTURE } SwatPart;
 typedef struct SwatRoom {
     b3Pos center;
     b3Vec3 half;
@@ -44,6 +45,9 @@ typedef struct SwatObject {
     bool fractured;
     float corners[4][2];
     int wall_group;
+    // Required attachment supports precede their child; -1 denotes unused slots.
+    int supports[SWAT_MAX_SUPPORTS];
+    float structural_thickness; // Fixture mounting section, metres; 0 for ordinary solids.
     b3Pos breach_position;
 } SwatObject;
 
@@ -59,6 +63,7 @@ typedef struct SwatWorld {
     int motel_contact_mesh_count;
     SwatObject objects[SWAT_MAX_OBJECTS];
     int count, generation;
+    int attachment_first; // Derived lower bound; avoids scanning ordinary walls on support loss.
     SwatRoom rooms[SWAT_MAX_ROOMS];
     int room_count;
     unsigned int room_light_off_mask; // Authoritative switches; support loss is evaluated separately.
@@ -84,6 +89,7 @@ SwatHit swat_world_sphere_cast(const SwatWorld* world, b3Pos origin,
                               b3Vec3 translation, float radius, b3BodyId ignore);
 bool swat_world_damage(SwatWorld* world, int object, float damage);
 bool swat_world_impact(SwatWorld* world,int object,float damage);
+bool swat_world_attach(SwatWorld*,int object,const int* supports,int count);
 float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 direction);
 float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);

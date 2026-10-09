@@ -125,6 +125,8 @@ size_t swat_encode_map(void* bytes,size_t size,const SwatMap* map) {
         putf(&w,o->yaw); putf(&w,o->max_health); put8(&w,o->material); put8(&w,o->door);
         putf(&w,o->closed_yaw); put8(&w,o->part); putf(&w,o->pitch);
         put32(&w,o->wall_group); put8(&w,o->fractured);
+        for(int k=0;k<SWAT_MAX_SUPPORTS;k++)put32(&w,o->supports[k]);
+        putf(&w,o->structural_thickness);
         if(o->fractured) for(int j=0;j<4;j++) for(int k=0;k<2;k++) putf(&w,o->corners[j][k]);
     }
     return w.ok ? size-w.left : 0;
@@ -167,9 +169,17 @@ bool swat_decode_map(SwatMap* map,const void* bytes,size_t size) {
         if(material>=SWAT_MATERIAL_COUNT || door>1 || o->half.x<=0 || o->half.y<=0 || o->half.z<=0) r.ok=false;
         o->material=(SwatMaterial)material; o->door=door!=0;
         o->closed_yaw=getf(&r,-SWAT_PI,SWAT_PI); unsigned int part=get8(&r);
-        if(part>SWAT_PART_FENCE_POST) r.ok=false;
+        if(part>SWAT_PART_FIXTURE) r.ok=false;
         o->part=(SwatPart)part; o->pitch=getf(&r,-SWAT_PI,SWAT_PI);
         o->wall_group=geti(&r,0,SWAT_MAX_OBJECTS); unsigned int fractured=get8(&r);
+        bool unused=false;
+        for(int k=0;k<SWAT_MAX_SUPPORTS;k++) {
+            o->supports[k]=geti(&r,-1,i-1);
+            if(o->supports[k]<0)unused=true;else if(unused)r.ok=false;
+        }
+        o->structural_thickness=getf(&r,0,1);
+        if((o->part==SWAT_PART_FIXTURE)!=(o->structural_thickness>0) ||
+           (o->part==SWAT_PART_FIXTURE && (o->door || o->supports[0]<0 || o->max_health<=0)))r.ok=false;
         if(fractured>1 || (fractured && (o->door || o->part!=SWAT_PART_SKIN))) r.ok=false;
         o->fractured=fractured!=0;
         if(o->fractured) {
@@ -451,6 +461,8 @@ void swat_capture_map(const SwatSim* sim,uint32_t epoch,SwatMap* map) {
         const SwatObject* o=&sim->world.objects[i];
         map->objects[i]=(SwatMapObject){.center=o->center,.hinge=o->hinge,.half=o->half,.yaw=swat_angle(o->yaw),.max_health=o->max_health,.closed_yaw=swat_angle(o->closed_yaw),.material=o->material,.part=o->part,.door=o->door,.pitch=o->pitch};
         map->objects[i].fractured=o->fractured; map->objects[i].wall_group=o->wall_group;
+        memcpy(map->objects[i].supports,o->supports,sizeof(o->supports));
+        map->objects[i].structural_thickness=o->structural_thickness;
         memcpy(map->objects[i].corners,o->corners,sizeof(o->corners));
     }
 }
@@ -509,6 +521,8 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
             int id=swat_world_box(&sim->world,source->center,source->half,source->material,source->max_health);
             SwatObject* o=&sim->world.objects[id]; o->hinge=source->hinge; o->yaw=source->yaw; o->door=source->door;
             o->closed_yaw=source->closed_yaw; o->part=source->part; o->pitch=source->pitch; o->wall_group=source->wall_group;
+            memcpy(o->supports,source->supports,sizeof(o->supports));o->structural_thickness=source->structural_thickness;
+            if(o->supports[0]>=0 && id<sim->world.attachment_first)sim->world.attachment_first=id;
             if(source->fractured) swat_world_fragment(o,source->corners);
             swat_world_tilt(o,o->pitch);
         }
@@ -527,6 +541,8 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->room_light_off_mask&~((1u<<sim->world.room_count)-1u))return false;
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i]; const SwatObjectState* in=&state->objects[i];
+        for(int k=0;k<SWAT_MAX_SUPPORTS;k++)if(in->active && o->supports[k]>=0 &&
+            !state->objects[o->supports[k]].active)return false;
         if(in->breach_owner>=0) {
             b3Quat rotation=b3MulQuat(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3MakeQuatFromAxisAngle(swat_v(0,0,1),o->pitch));
             b3Vec3 local=b3InvRotateVector(rotation,b3SubPos(in->breach_position,o->center));

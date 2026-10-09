@@ -72,6 +72,6 @@ int main(void) {
     swat_capture_map(&sim,1,&map);size_t size=swat_encode_map(bytes,sizeof(bytes),&map);assert(size&&swat_decode_map(&decoded,bytes,size));
     swat_apply_map(&replica,&decoded);check(&replica.world);
     swat_sim_close(&replica);assert(!replica.world.motel_contact_meshes&&!replica.world.motel_contact_mesh_count);
-    swat_sim_reset(&sim);assert(sim.world.motel_contact_mesh_count==120);swat_sim_close(&sim);assert(!sim.world.motel_contact_meshes);
+    int parts=sim.world.motel_contact_mesh_count;swat_sim_reset(&sim);assert(sim.world.motel_contact_mesh_count==parts);swat_sim_close(&sim);assert(!sim.world.motel_contact_meshes);
     puts("PASS motel contact partitions: exact encoded-map reconstruction and reset/close ownership");
 }

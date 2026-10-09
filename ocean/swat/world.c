@@ -16,6 +16,7 @@ b3SurfaceMaterial swat_physics_material(SwatMaterial material) {
 }
 void swat_world_init(SwatWorld* w) {
     memset(w,0,sizeof(*w));
+    w->attachment_first=SWAT_MAX_OBJECTS;
     b3WorldDef def = b3DefaultWorldDef();
     def.restitutionCallback=swat_bounce;
     w->id = b3CreateWorld(&def);
@@ -43,6 +44,7 @@ int swat_world_box(SwatWorld* w, b3Pos center, b3Vec3 half, SwatMaterial materia
     o->health = o->max_health = hp;
     o->active = true;
     o->breach_owner=o->wedge_owner=-1;
+    for(int i=0;i<SWAT_MAX_SUPPORTS;i++)o->supports[i]=-1;
     b3BodyDef bd = b3DefaultBodyDef();
     bd.position = center;
     o->body = b3CreateBody(w->id,&bd);
@@ -130,18 +132,41 @@ bool swat_world_visible(const SwatWorld* w,b3Pos from,b3Pos to) {
     return !c.result.hit;
 }
 
-bool swat_world_damage(SwatWorld* w, int object, float damage) {
-    if (object < 0 || object >= w->count || damage <= 0) return false;
-    SwatObject* o = &w->objects[object];
-    if (!o->active || o->max_health <= 0) return false;
-    o->health = fmaxf(0,o->health-damage);
-    if (o->health > 0) return false;
+bool swat_world_attach(SwatWorld* w,int object,const int* supports,int count) {
+    if(object<0 || object>=w->count || count<1 || count>SWAT_MAX_SUPPORTS || !supports || !w->objects[object].active)return false;
+    for(int i=0;i<count;i++) {
+        if(supports[i]<0 || supports[i]>=object || !w->objects[supports[i]].active)return false;
+        for(int j=0;j<i;j++)if(supports[j]==supports[i])return false;
+    }
+    SwatObject* o=&w->objects[object];
+    for(int i=0;i<SWAT_MAX_SUPPORTS;i++)o->supports[i]=i<count?supports[i]:-1;
+    if(object<w->attachment_first)w->attachment_first=object;
+    return true;
+}
+static void remove_object(SwatWorld* w,SwatObject* o) {
     b3DestroyBody(o->body);
     o->body = b3_nullBodyId; o->shape = b3_nullShapeId; o->active = false;
     o->locked=false; o->breach_owner=o->wedge_owner=-1;
     o->trapped=o->peek=false; o->trap_known=0;
     o->breach_ticks=48;
     w->generation++;
+}
+bool swat_world_damage(SwatWorld* w, int object, float damage) {
+    if (object < 0 || object >= w->count || damage <= 0) return false;
+    SwatObject* o = &w->objects[object];
+    if (!o->active || o->max_health <= 0) return false;
+    o->health = fmaxf(0,o->health-damage);
+    if (o->health > 0) return false;
+    remove_object(w,o);
+    // Topological owner order permits bounded, nonrecursive support propagation.
+    // A failed fastening sheds its child even when the child is indestructible.
+    int first=object+1>w->attachment_first?object+1:w->attachment_first;
+    for(int i=first;i<w->count;i++) {
+        SwatObject* child=&w->objects[i];if(!child->active || child->supports[0]<0)continue;
+        for(int k=0;k<SWAT_MAX_SUPPORTS;k++)if(child->supports[k]>=0 && !w->objects[child->supports[k]].active) {
+            child->health=0;remove_object(w,child);break;
+        }
+    }
     return true;
 }
 
@@ -149,7 +174,10 @@ bool swat_world_impact(SwatWorld* w,int object,float damage) {
     if(object<0 || object>=w->count)return false;
     // Small repeated impacts do not accumulate into a doorway through masonry.
     // Thin boards, timber and glass still use their existing damage budgets.
-    return swat_world_damage(w,object,fmaxf(0,damage-swat_material(w->objects[object].material)->impact_threshold));
+    const SwatObject* o=&w->objects[object];const SwatMaterialDef* material=swat_material(o->material);
+    float threshold=material->impact_threshold;
+    if(o->part==SWAT_PART_FIXTURE)threshold*=o->structural_thickness/material->reference_thickness;
+    return swat_world_damage(w,object,fmaxf(0,damage-threshold));
 }
 
 static float charge_demand(const SwatObject* o) {

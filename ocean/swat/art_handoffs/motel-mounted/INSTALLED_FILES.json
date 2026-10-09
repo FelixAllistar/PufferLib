@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "source_archive_payloads_verified": 25,
+  "source_file_id": "1wuzLVBq-LDzlvtffXkkDWPldOTuZwz0X",
+  "files": [
+    {
+      "path": "art_handoffs/motel-mounted/LICENSE.txt",
+      "bytes": 745,
+      "sha256": "297f45eaaa014c8eca7508d03502075351ed8d14280ce182aff25b0054c0828b"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/PROVENANCE.md",
+      "bytes": 1437,
+      "sha256": "3d4da73ffa809f3ab57158474ce5ca0753819544d3ba6370c835a295f766465b"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/README.md",
+      "bytes": 2895,
+      "sha256": "9c3b20c6c3dadcf104e031e33d0b337b414c08231098cae7610c7008226d7086"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/SOURCE_README.md",
+      "bytes": 2901,
+      "sha256": "b3cc7ba6659ba7072abb8a9b314868972c1ef9b100bac5f0002d41e1e428ba54"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/manifest.json",
+      "bytes": 2763,
+      "sha256": "0608bc992e987a707ad66c1242ae6a2327964d43ea2eb6d24bc2c6f86a673c9f"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/qa/geometry_and_anchors.json",
+      "bytes": 1835,
+      "sha256": "26aaafe7e651f45dc34acc02d2ec9a11d4f91f9d83dbc8b2889ce8f3528c0d8e"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/audit_geometry.py",
+      "bytes": 2766,
+      "sha256": "bd2d67bbc8515c285ae39b1f80ae8311483c24fdb61102010f1ad69a8d9acdbe"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/audit_glb.py",
+      "bytes": 2216,
+      "sha256": "ac1202d15472be6b0c5bb6881b31fea37aedffea653b6c6eaf847f34b9cb9e32"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/build_asset.py",
+      "bytes": 8973,
+      "sha256": "a1132d4f8f13c0d03e68309a9aa5036b093ac10513a891904ef53278589605f0"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/junction.blend",
+      "bytes": 1572549,
+      "sha256": "9e078962c8357547421a7ec609a49691612da4529eb10c8953fbabab26eff8e6"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/make_textures.py",
+      "bytes": 2492,
+      "sha256": "1226696fab7a812deed5ba8918fb765690ebb03d7403957953976931bc168eb6"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/rebuild.sh",
+      "bytes": 268,
+      "sha256": "caa65105a43042844a4639cdffe1b99875303bd24d9267888db7116a674b449b"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/textures/junction_basecolor.png",
+      "bytes": 658902,
+      "sha256": "c4315a4ef421860db2426572ed15e9883669f5c3d56218c0cf6ed7e52d50bc54"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/textures/junction_normal.png",
+      "bytes": 76640,
+      "sha256": "327f0ca5a44b7201b910b79227c620ab9527d787b26f203e5b8ed6c44b8fb711"
+    },
+    {
+      "path": "art_handoffs/motel-mounted/source/textures/junction_orm.png",
+      "bytes": 230968,
+      "sha256": "b5e5c80145e67c5d7766a91f01ab460d4c3682428397cc4f67cb39da5d83f2f3"
+    },
+    {
+      "path": "assets/environment/motel_mounted/LICENSE.txt",
+      "bytes": 745,
+      "sha256": "297f45eaaa014c8eca7508d03502075351ed8d14280ce182aff25b0054c0828b"
+    },
+    {
+      "path": "assets/environment/motel_mounted/motel_surface_junction.glb",
+      "bytes": 1094020,
+      "sha256": "15b8304797c757de38ca5d1963aa8d93712b6504f817af902cd2ff8c9e0d6561"
+    }
+  ]
+}
