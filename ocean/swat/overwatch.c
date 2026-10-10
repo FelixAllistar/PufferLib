@@ -10,15 +10,7 @@ const char* swat_sniper_status(SwatSniperStatus status) {
 // Glass is optically transparent. Visibility never penetrates opaque cover;
 // firing still uses the ordinary material/thickness/energy shot path.
 static SwatHit optical(const SwatSim* s,int actor,b3Pos origin,b3Vec3 direction,float range) {
-    SwatHit hit={0}; float travelled=0;
-    for(int pass=0;pass<8;pass++) {
-        hit=swat_world_ray(&s->world,origin,direction,range,s->actors[actor].controller.body.body);
-        if(hit.kind!=SWAT_HIT_WORLD || hit.index<0 || s->world.objects[hit.index].material!=SWAT_GLASS) break;
-        float distance=swat_world_exit_distance(&s->world.objects[hit.index],hit.point,direction)+.003f;
-        travelled+=hit.distance+distance; range-=hit.distance+distance;
-        origin=b3OffsetPos(hit.point,swat_mul(direction,distance));
-    }
-    hit.distance+=travelled; return hit;
+    return swat_world_sight_ray(&s->world,origin,direction,range,s->actors[actor].controller.body.body);
 }
 bool swat_sniper_safe(const SwatSim* s,int unit,b3Vec3 direction,float distance) {
     int actor=swat_sniper_actor(unit); if(actor<0 || !s->actors[actor].present) return false;

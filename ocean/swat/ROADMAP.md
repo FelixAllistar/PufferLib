@@ -260,6 +260,15 @@ and sills in a composite object; they remain opaque. Making those independently
 breakable requires physical/raster parts with known substrates and support,
 rather than relabeling the entire assembly as transparent glass.
 
+Overwatch now uses that same sight query, removing its separate eight-pane
+stepping cap. A physical nine-pane designation check fails against the former
+implementation and passes on Linux/Windows with the shared query; an added opaque
+steel sheet still blocks designation and no shot is issued by the test. Existing
+post/rifle selection, glass-impact shooting, hostage interlock, steady aim,
+ammunition preservation and replica checks still pass. Bullet penetration retains
+its own physical energy/traversal limits. Normal players and Puffer are rebuilt
+after this follow-up; no new window geometry or opaque-art change is claimed.
+
 Full front-door completion now has a C player-input regression starting from
 the canonical motel spawn: five compliance/cuff interactions, two collected
 weapons, three physical civilian escorts and all surviving officers regrouped.

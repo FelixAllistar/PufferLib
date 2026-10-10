@@ -26,6 +26,23 @@ static void mark(int unit,int target) {
     assert(sim.snipers[unit].target==target);
     step(swat_neutral_input(),3);
 }
+static void layered_glass(void) {
+    SwatConfig config=swat_default_config();config.mission=SWAT_HOUSE;config.hostile_fire=false;
+    swat_sim_init(&sim,config,44);assign(0,2,0);step(swat_neutral_input(),100);
+    b3Pos eye=swat_controller_eye(&sim.actors[9].controller);
+    b3Pos head=b3OffsetPos(swat_body_feet_position(&sim.actors[1].controller.body),swat_v(0,sim.actors[1].controller.body.totalHeight*.9f,0));
+    b3Vec3 delta=b3SubPos(head,eye);
+    b3Vec3 half=fabsf(delta.x)>fabsf(delta.z) ? swat_v(.003f,1,1) : swat_v(1,1,.003f);
+    // These are physical panes, not a patched sight result. Nine layers exceed
+    // the former optical traversal cap while remaining visible through glass.
+    for(int i=0;i<9;i++)swat_world_box(&sim.world,b3OffsetPos(eye,swat_mul(delta,.25f+.05f*i)),half,SWAT_GLASS,8);
+    mark(0,1);assert(sim.actors[9].arsenal.shots==0);
+    swat_world_box(&sim.world,b3OffsetPos(eye,swat_mul(delta,.70f)),half,SWAT_STEEL,0);
+    SwatInput in=swat_neutral_input();in.sniper_control=true;in.sniper_order=SWAT_SNIPER_DESIGNATE;
+    step(in,1);assert(sim.snipers[0].target==-1 && !sim.actors[9].arsenal.shots);
+    swat_sim_close(&sim);
+    puts("PASS overwatch sight: nine physical clear panes permit designation, opaque cover blocks it, no unsolicited shot");
+}
 int main(void) {
     setvbuf(stdout,NULL,_IONBF,0);
     SwatConfig config=swat_default_config(); config.mission=SWAT_HOUSE; config.hostile_fire=false; config.max_ticks=10000;
@@ -91,5 +108,6 @@ int main(void) {
     swat_sim_damage_actor(&sim,9,1,100); assign(0,2,0); assert(!sim.actors[9].alive && sim.snipers[0].post==0);
     swat_sim_close(&sim);
     puts("PASS overwatch: reposition delay, health/ammunition preservation, manual scope input, replicated rifle/state and no redeploy revival");
+    layered_glass();
     return 0;
 }
