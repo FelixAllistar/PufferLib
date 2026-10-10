@@ -335,7 +335,7 @@ static float nightstand_health(void){const SwatMaterialDef* m=swat_material(SWAT
 static void nightstand_recipe(b3Pos* center,b3Vec3* half){*center=b3OffsetPos(nightstand_instance.origin,nightstand_asset.center);*half=nightstand_asset.half;}
 static bool nightstand_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_NIGHTSTAND_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_WINDOWS_FIRST && w->count!=SWAT_MOTEL_OBJECTS)return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_NIGHTSTAND_FIRST];b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];nightstand_recipe(&center,&half);
     return floor_supports(w,&nightstand_instance,81,nightstand_feet,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(center,o->center)<1e-4f && b3Length(b3Sub(half,o->half))<1e-4f && o->yaw==0 && o->pitch==0 &&
@@ -483,13 +483,14 @@ static void panes_bind(SwatWorld* w) {
         }
     }
 }
+#include "motel_windows_impl.h"
 bool swat_motel_bind_collision(SwatWorld* w) {
     // Canonical prefix remains stable; appended wall fragments use their explicit
     // wire geometry. Also retain the original map without utility props.
     if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
     int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
-    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w) || !panes_validate(w) || !nightstand_validate(w))return false;
+    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w) || !panes_validate(w) || !nightstand_validate(w) || !windows_validate(w))return false;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];
         const SwatMotelInstance* p=swat_motel_instance(i);
@@ -534,6 +535,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     props_bind(w);
     nightstand_bind(w);
     panes_bind(w);
+    windows_bind(w);
     w->motel=true; return true;
 }
 
@@ -716,6 +718,7 @@ void swat_motel_build(SwatWorld* w) {
     w->objects[stand].part=SWAT_PART_FIXTURE;w->objects[stand].structural_thickness=.024f;
     int support=81;bool attached=swat_world_attach(w,stand,&support,1);assert(attached);(void)attached;
     assert(nightstand_validate(w));nightstand_bind(w);
+    windows_build(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }

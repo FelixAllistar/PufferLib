@@ -128,6 +128,7 @@ static void room101_close(SwatEnvironmentArt* art) {
     for(int i=0;i<2;i++){swat_art_model_close(art->motel_foliage[i]);art->motel_foliage[i]=(Model){0};}
     swat_art_model_close(art->motel_road_paint);art->motel_road_paint=(Model){0};
     wall_art_close(art);
+    for(int i=0;i<2;i++){swat_art_model_close(art->motel_windows[i]);art->motel_windows[i]=(Model){0};}
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
     swat_art_model_close(art->motel_guest_desk);art->motel_guest_desk=(Model){0};
@@ -404,6 +405,12 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
     if(selected==1) {room101_load(art);motel_dressing_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
+        for(int i=0;i<2;i++){
+            char file[256];snprintf(file,sizeof(file),"motel_windows_r1/%s",swat_motel_window_model(i)->file);
+            if(!room101_model_load(&art->motel_windows[i],art->motel_windows_normal_scale[i],file)){
+                swat_art_model_close(art->motel_windows[i]);art->motel_windows[i]=(Model){0};
+            }
+        }
         if(!room101_model_load(&art->masonry_edge,art->masonry_edge_normal_scale,"motel_breach/masonry_edge.glb")) {
             swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
         } else {
@@ -674,6 +681,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             if(source==&art->motel_ground)normal_scale=art->motel_ground_normal_scale[model->meshMaterial[i]];
             if(source==&art->motel_road_paint)normal_scale=art->motel_road_paint_normal_scale[model->meshMaterial[i]];
             for(int n=0;n<2;n++)if(source==&art->motel_foliage[n])normal_scale=art->motel_foliage_normal_scale[n][model->meshMaterial[i]];
+            for(int n=0;n<2;n++)if(source==&art->motel_windows[n])normal_scale=art->motel_windows_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->motel_reception)normal_scale=art->motel_reception_normal_scale[model->meshMaterial[i]];
             if(source==&art->motel_roadside)normal_scale=art->motel_roadside_normal_scale[model->meshMaterial[i]];
             for(int n=0;n<2;n++)if(source==&art->motel_personal[n])normal_scale=art->motel_personal_normal_scale[n][model->meshMaterial[i]];
@@ -827,6 +835,22 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         rlPopMatrix();clear_surface(art);return true;
     }
     if(o->tag.index<1)return false;
+    if(swat_motel_windows_revised(world)){
+        int bay=swat_motel_window_index(o->tag.index),parent=swat_motel_window_part_parent(world,o->tag.index);
+        if(bay>=0){
+            const Model* source=&art->motel_windows[bay?0:1];
+            if(!art->motel_wall_art || !source->meshCount)return true;
+            const Model* model=window_r1_mesh_art(art->motel_wall_art,source,world,o->tag.index);
+            // An empty survivor set is a valid rendered opening.
+            if(!model->meshCount)return true;
+            return location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),model,source,shadow,cutaway,false,NULL);
+        }
+        if(parent>=0){
+            const Model* source=&art->motel_windows[parent==6?1:0];
+            return art->motel_wall_art && source->meshCount?true:mounted_fallback(o,shadow);
+        }
+        if(o->tag.index>=SWAT_MOTEL_PANES_FIRST && o->tag.index<SWAT_MOTEL_NIGHTSTAND_FIRST)return true;
+    }
     int pane_parent=swat_motel_pane_parent(world,o),window=swat_motel_window_index(o->tag.index);
     if(pane_parent>=0) {
         if(art->motel_wall_art && window_source(art,pane_parent)->meshCount)return true;

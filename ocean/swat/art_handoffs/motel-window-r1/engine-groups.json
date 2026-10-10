@@ -1,0 +1,1181 @@
+[
+  {
+    "asset": "room_window_insert",
+    "groups": 24,
+    "triangles": 5280,
+    "groupsDetail": [
+      {
+        "index": 0,
+        "name": "timber_sill",
+        "substrate": "SWAT_WOOD",
+        "healthSection": 0.033,
+        "components": [
+          "timber_sill"
+        ],
+        "supports": []
+      },
+      {
+        "index": 1,
+        "name": "left_jamb",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "left_jamb",
+          "left_jamb_interior_stop_0",
+          "left_jamb_backing_0",
+          "left_jamb_backing_1",
+          "left_socket_backing"
+        ],
+        "supports": []
+      },
+      {
+        "index": 2,
+        "name": "left_jamb",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "left_jamb_stop_screw_0_0",
+          "left_jamb_stop_screw_0_1",
+          "left_jamb_fixing_0",
+          "left_jamb_fixing_1",
+          "left_socket_mounting_tab",
+          "left_socket_screw_0",
+          "left_socket_screw_1"
+        ],
+        "supports": [
+          1
+        ]
+      },
+      {
+        "index": 3,
+        "name": "right_jamb",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "right_jamb",
+          "right_jamb_interior_stop_0",
+          "right_jamb_backing_0",
+          "right_jamb_backing_1",
+          "right_socket_backing"
+        ],
+        "supports": []
+      },
+      {
+        "index": 4,
+        "name": "right_jamb",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "right_jamb_stop_screw_0_0",
+          "right_jamb_stop_screw_0_1",
+          "right_jamb_fixing_0",
+          "right_jamb_fixing_1",
+          "right_socket_mounting_tab",
+          "right_socket_screw_0",
+          "right_socket_screw_1"
+        ],
+        "supports": [
+          3
+        ]
+      },
+      {
+        "index": 5,
+        "name": "head_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "left_jamb_top_cap",
+          "right_jamb_top_cap",
+          "head_rail",
+          "head_rail_interior_stop_0",
+          "left_corner_cleat_1",
+          "right_corner_cleat_1"
+        ],
+        "supports": [
+          1,
+          3
+        ]
+      },
+      {
+        "index": 6,
+        "name": "bottom_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "bottom_rail",
+          "bottom_rail_interior_stop_0",
+          "left_corner_cleat_0",
+          "right_corner_cleat_0"
+        ],
+        "supports": [
+          0
+        ]
+      },
+      {
+        "index": 7,
+        "name": "bottom_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "bottom_rail_stop_screw_0_0",
+          "bottom_rail_stop_screw_0_1",
+          "left_corner_cleat_fixing_0",
+          "right_corner_cleat_fixing_0",
+          "divider_end_cleat_0",
+          "divider_end_cleat_fixing_0"
+        ],
+        "supports": [
+          6
+        ]
+      },
+      {
+        "index": 8,
+        "name": "head_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "head_rail_stop_screw_0_0",
+          "head_rail_stop_screw_0_1",
+          "left_corner_cleat_fixing_1",
+          "right_corner_cleat_fixing_1",
+          "divider_end_cleat_fixing_1"
+        ],
+        "supports": [
+          5
+        ]
+      },
+      {
+        "index": 9,
+        "name": "center_steel_divider",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.002,
+        "components": [
+          "center_steel_divider",
+          "center_steel_divider_interior_stop",
+          "divider_stop_screw_0",
+          "divider_end_cleat_1",
+          "divider_stop_screw_1"
+        ],
+        "supports": [
+          6,
+          5
+        ]
+      },
+      {
+        "index": 10,
+        "name": "room_glass_left",
+        "substrate": "SWAT_OPAQUE_GLASS",
+        "healthSection": 0.0064,
+        "components": [
+          "room_glass_left"
+        ],
+        "supports": [
+          1,
+          9,
+          6,
+          5
+        ]
+      },
+      {
+        "index": 11,
+        "name": "left_jamb",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "room_glass_left_exterior_gasket_left"
+        ],
+        "supports": [
+          1
+        ]
+      },
+      {
+        "index": 12,
+        "name": "center_steel_divider",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "room_glass_left_exterior_gasket_right",
+          "room_glass_right_exterior_gasket_left"
+        ],
+        "supports": [
+          9
+        ]
+      },
+      {
+        "index": 13,
+        "name": "bottom_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "room_glass_left_exterior_gasket_bottom",
+          "room_glass_left_setting_block_0",
+          "room_glass_left_setting_block_1",
+          "room_glass_right_exterior_gasket_bottom",
+          "room_glass_right_setting_block_0",
+          "room_glass_right_setting_block_1"
+        ],
+        "supports": [
+          6
+        ]
+      },
+      {
+        "index": 14,
+        "name": "head_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "room_glass_left_exterior_gasket_top",
+          "room_glass_right_exterior_gasket_top"
+        ],
+        "supports": [
+          5
+        ]
+      },
+      {
+        "index": 15,
+        "name": "room_glass_left",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "room_glass_left_interior_gasket_left",
+          "room_glass_left_interior_gasket_right",
+          "room_glass_left_interior_gasket_bottom",
+          "room_glass_left_interior_gasket_top"
+        ],
+        "supports": [
+          10
+        ]
+      },
+      {
+        "index": 16,
+        "name": "room_glass_right",
+        "substrate": "SWAT_OPAQUE_GLASS",
+        "healthSection": 0.0064,
+        "components": [
+          "room_glass_right"
+        ],
+        "supports": [
+          3,
+          9,
+          6,
+          5
+        ]
+      },
+      {
+        "index": 17,
+        "name": "right_jamb",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "room_glass_right_exterior_gasket_right"
+        ],
+        "supports": [
+          3
+        ]
+      },
+      {
+        "index": 18,
+        "name": "room_glass_right",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "room_glass_right_interior_gasket_left",
+          "room_glass_right_interior_gasket_right",
+          "room_glass_right_interior_gasket_bottom",
+          "room_glass_right_interior_gasket_top"
+        ],
+        "supports": [
+          16
+        ]
+      },
+      {
+        "index": 19,
+        "name": "left_rod_socket",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.002,
+        "components": [
+          "left_rod_socket"
+        ],
+        "supports": []
+      },
+      {
+        "index": 20,
+        "name": "right_rod_socket",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.002,
+        "components": [
+          "right_rod_socket"
+        ],
+        "supports": []
+      },
+      {
+        "index": 21,
+        "name": "curtain_rod",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.012,
+        "components": [
+          "curtain_rod",
+          "curtain_ring_00",
+          "curtain_ring_01",
+          "curtain_ring_02",
+          "curtain_ring_03",
+          "curtain_ring_04",
+          "curtain_ring_05",
+          "curtain_ring_06",
+          "curtain_ring_07",
+          "curtain_ring_08",
+          "curtain_ring_09"
+        ],
+        "supports": [
+          19,
+          20
+        ]
+      },
+      {
+        "index": 22,
+        "name": "left_curtain",
+        "substrate": "SWAT_CLOTH",
+        "healthSection": 0.0006,
+        "components": [
+          "left_curtain",
+          "curtain_sewn_loop_00",
+          "curtain_stitch_tab_00",
+          "curtain_sewn_loop_01",
+          "curtain_stitch_tab_01",
+          "curtain_sewn_loop_02",
+          "curtain_stitch_tab_02",
+          "curtain_sewn_loop_03",
+          "curtain_stitch_tab_03",
+          "curtain_sewn_loop_04",
+          "curtain_stitch_tab_04"
+        ],
+        "supports": [
+          21
+        ]
+      },
+      {
+        "index": 23,
+        "name": "right_curtain",
+        "substrate": "SWAT_CLOTH",
+        "healthSection": 0.0006,
+        "components": [
+          "right_curtain",
+          "curtain_sewn_loop_05",
+          "curtain_stitch_tab_05",
+          "curtain_sewn_loop_06",
+          "curtain_stitch_tab_06",
+          "curtain_sewn_loop_07",
+          "curtain_stitch_tab_07",
+          "curtain_sewn_loop_08",
+          "curtain_stitch_tab_08",
+          "curtain_sewn_loop_09",
+          "curtain_stitch_tab_09"
+        ],
+        "supports": [
+          21
+        ]
+      }
+    ],
+    "ranges": [
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "start": 0,
+        "count": 12
+      },
+      {
+        "mesh": 1,
+        "primitive": 0,
+        "start": 12,
+        "count": 12
+      },
+      {
+        "mesh": 2,
+        "primitive": 0,
+        "start": 24,
+        "count": 2224
+      },
+      {
+        "mesh": 3,
+        "primitive": 0,
+        "start": 2248,
+        "count": 880
+      },
+      {
+        "mesh": 4,
+        "primitive": 0,
+        "start": 3128,
+        "count": 1900
+      },
+      {
+        "mesh": 5,
+        "primitive": 0,
+        "start": 5028,
+        "count": 12
+      },
+      {
+        "mesh": 6,
+        "primitive": 0,
+        "start": 5040,
+        "count": 240
+      }
+    ]
+  },
+  {
+    "asset": "lobby_glazed_facade",
+    "groups": 41,
+    "triangles": 4932,
+    "groupsDetail": [
+      {
+        "index": 0,
+        "name": "teal_timber_header",
+        "substrate": "SWAT_WOOD",
+        "healthSection": 0.18,
+        "components": [
+          "teal_timber_header"
+        ],
+        "supports": []
+      },
+      {
+        "index": 1,
+        "name": "door_outer_post",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "door_outer_post",
+          "post_0_base_insert",
+          "post_0_head_insert",
+          "post_0_base_fixing_backing",
+          "post_0_head_fixing_backing"
+        ],
+        "supports": []
+      },
+      {
+        "index": 2,
+        "name": "door_glazing_post",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "door_glazing_post",
+          "door_glazing_post_interior_stop_0",
+          "post_1_base_insert",
+          "post_1_head_insert",
+          "post_1_base_fixing_backing",
+          "post_1_head_fixing_backing",
+          "left_left_rail_shear_0",
+          "left_left_rail_shear_1",
+          "left_left_rail_shear_2"
+        ],
+        "supports": []
+      },
+      {
+        "index": 3,
+        "name": "door_glazing_post",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "door_glazing_post_stop_screw_0_0",
+          "door_glazing_post_stop_screw_0_1",
+          "post_1_floor_interface_fixing",
+          "post_1_base_fixing",
+          "post_1_head_fixing",
+          "left_left_rail_joint_fixing_0",
+          "left_left_rail_joint_fixing_1",
+          "left_left_rail_joint_fixing_2"
+        ],
+        "supports": [
+          2
+        ]
+      },
+      {
+        "index": 4,
+        "name": "middle_post",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "middle_post",
+          "middle_post_interior_stop_0",
+          "middle_post_interior_stop_1",
+          "post_2_base_insert",
+          "post_2_head_insert",
+          "post_2_base_fixing_backing",
+          "post_2_head_fixing_backing",
+          "right_left_rail_shear_0",
+          "right_left_rail_shear_1",
+          "right_left_rail_shear_2"
+        ],
+        "supports": []
+      },
+      {
+        "index": 5,
+        "name": "middle_post",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "middle_post_stop_screw_0_0",
+          "middle_post_stop_screw_0_1",
+          "middle_post_stop_screw_1_0",
+          "middle_post_stop_screw_1_1",
+          "post_2_floor_interface_fixing",
+          "post_2_base_fixing",
+          "post_2_head_fixing",
+          "left_right_rail_joint_fixing_0",
+          "left_right_rail_joint_fixing_1",
+          "left_right_rail_joint_fixing_2",
+          "right_left_rail_joint_fixing_0",
+          "right_left_rail_joint_fixing_1",
+          "right_left_rail_joint_fixing_2"
+        ],
+        "supports": [
+          4
+        ]
+      },
+      {
+        "index": 6,
+        "name": "right_post",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "right_post",
+          "right_post_interior_stop_0",
+          "post_3_base_insert",
+          "post_3_head_insert",
+          "post_3_base_fixing_backing",
+          "post_3_head_fixing_backing"
+        ],
+        "supports": []
+      },
+      {
+        "index": 7,
+        "name": "right_post",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "right_post_stop_screw_0_0",
+          "right_post_stop_screw_0_1",
+          "post_3_floor_interface_fixing",
+          "post_3_base_fixing",
+          "post_3_head_fixing",
+          "right_right_rail_joint_fixing_0",
+          "right_right_rail_joint_fixing_1",
+          "right_right_rail_joint_fixing_2"
+        ],
+        "supports": [
+          6
+        ]
+      },
+      {
+        "index": 8,
+        "name": "left_base_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "left_base_rail",
+          "left_base_rail_interior_stop_0",
+          "left_right_rail_shear_0"
+        ],
+        "supports": [
+          2,
+          4
+        ]
+      },
+      {
+        "index": 9,
+        "name": "left_base_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "left_base_rail_stop_screw_0_0",
+          "left_base_rail_stop_screw_0_1"
+        ],
+        "supports": [
+          8
+        ]
+      },
+      {
+        "index": 10,
+        "name": "left_middle_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "left_middle_rail",
+          "left_middle_rail_interior_stop_0",
+          "left_middle_rail_interior_stop_1",
+          "left_right_rail_shear_1"
+        ],
+        "supports": [
+          2,
+          4
+        ]
+      },
+      {
+        "index": 11,
+        "name": "left_middle_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "left_middle_rail_stop_screw_0_0",
+          "left_middle_rail_stop_screw_0_1",
+          "left_middle_rail_stop_screw_1_0",
+          "left_middle_rail_stop_screw_1_1"
+        ],
+        "supports": [
+          10
+        ]
+      },
+      {
+        "index": 12,
+        "name": "left_head_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "left_head_rail",
+          "left_head_rail_interior_stop_0",
+          "left_right_rail_shear_2"
+        ],
+        "supports": [
+          2,
+          4
+        ]
+      },
+      {
+        "index": 13,
+        "name": "left_head_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "left_head_rail_stop_screw_0_0",
+          "left_head_rail_stop_screw_0_1"
+        ],
+        "supports": [
+          12
+        ]
+      },
+      {
+        "index": 14,
+        "name": "right_base_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "right_base_rail",
+          "right_base_rail_interior_stop_0",
+          "right_right_rail_shear_0"
+        ],
+        "supports": [
+          4,
+          6
+        ]
+      },
+      {
+        "index": 15,
+        "name": "right_base_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "right_base_rail_stop_screw_0_0",
+          "right_base_rail_stop_screw_0_1"
+        ],
+        "supports": [
+          14
+        ]
+      },
+      {
+        "index": 16,
+        "name": "right_middle_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "right_middle_rail",
+          "right_middle_rail_interior_stop_0",
+          "right_middle_rail_interior_stop_1",
+          "right_right_rail_shear_1"
+        ],
+        "supports": [
+          4,
+          6
+        ]
+      },
+      {
+        "index": 17,
+        "name": "right_middle_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "right_middle_rail_stop_screw_0_0",
+          "right_middle_rail_stop_screw_0_1",
+          "right_middle_rail_stop_screw_1_0",
+          "right_middle_rail_stop_screw_1_1"
+        ],
+        "supports": [
+          16
+        ]
+      },
+      {
+        "index": 18,
+        "name": "right_head_rail",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.002,
+        "components": [
+          "right_head_rail",
+          "right_head_rail_interior_stop_0",
+          "right_right_rail_shear_2"
+        ],
+        "supports": [
+          4,
+          6
+        ]
+      },
+      {
+        "index": 19,
+        "name": "right_head_rail",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.0013,
+        "components": [
+          "right_head_rail_stop_screw_0_0",
+          "right_head_rail_stop_screw_0_1"
+        ],
+        "supports": [
+          18
+        ]
+      },
+      {
+        "index": 20,
+        "name": "lobby_glass_left_lower",
+        "substrate": "SWAT_OPAQUE_GLASS",
+        "healthSection": 0.0064,
+        "components": [
+          "lobby_glass_left_lower"
+        ],
+        "supports": [
+          2,
+          4,
+          8,
+          10
+        ]
+      },
+      {
+        "index": 21,
+        "name": "door_glazing_post",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_left_lower_exterior_gasket_left",
+          "lobby_glass_left_upper_exterior_gasket_left"
+        ],
+        "supports": [
+          2
+        ]
+      },
+      {
+        "index": 22,
+        "name": "middle_post",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_left_lower_exterior_gasket_right",
+          "lobby_glass_left_upper_exterior_gasket_right",
+          "lobby_glass_right_lower_exterior_gasket_left",
+          "lobby_glass_right_upper_exterior_gasket_left"
+        ],
+        "supports": [
+          4
+        ]
+      },
+      {
+        "index": 23,
+        "name": "left_base_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_left_lower_exterior_gasket_bottom",
+          "lobby_glass_left_lower_setting_block_0",
+          "lobby_glass_left_lower_setting_block_1"
+        ],
+        "supports": [
+          8
+        ]
+      },
+      {
+        "index": 24,
+        "name": "left_middle_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_left_lower_exterior_gasket_top",
+          "lobby_glass_left_upper_exterior_gasket_bottom",
+          "lobby_glass_left_upper_setting_block_0",
+          "lobby_glass_left_upper_setting_block_1"
+        ],
+        "supports": [
+          10
+        ]
+      },
+      {
+        "index": 25,
+        "name": "lobby_glass_left_lower",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_left_lower_interior_gasket_left",
+          "lobby_glass_left_lower_interior_gasket_right",
+          "lobby_glass_left_lower_interior_gasket_bottom",
+          "lobby_glass_left_lower_interior_gasket_top"
+        ],
+        "supports": [
+          20
+        ]
+      },
+      {
+        "index": 26,
+        "name": "lobby_glass_left_upper",
+        "substrate": "SWAT_OPAQUE_GLASS",
+        "healthSection": 0.0064,
+        "components": [
+          "lobby_glass_left_upper"
+        ],
+        "supports": [
+          2,
+          4,
+          10,
+          12
+        ]
+      },
+      {
+        "index": 27,
+        "name": "left_head_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_left_upper_exterior_gasket_top"
+        ],
+        "supports": [
+          12
+        ]
+      },
+      {
+        "index": 28,
+        "name": "lobby_glass_left_upper",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_left_upper_interior_gasket_left",
+          "lobby_glass_left_upper_interior_gasket_right",
+          "lobby_glass_left_upper_interior_gasket_bottom",
+          "lobby_glass_left_upper_interior_gasket_top"
+        ],
+        "supports": [
+          26
+        ]
+      },
+      {
+        "index": 29,
+        "name": "lobby_glass_right_lower",
+        "substrate": "SWAT_OPAQUE_GLASS",
+        "healthSection": 0.0064,
+        "components": [
+          "lobby_glass_right_lower"
+        ],
+        "supports": [
+          4,
+          6,
+          14,
+          16
+        ]
+      },
+      {
+        "index": 30,
+        "name": "right_post",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_right_lower_exterior_gasket_right",
+          "lobby_glass_right_upper_exterior_gasket_right"
+        ],
+        "supports": [
+          6
+        ]
+      },
+      {
+        "index": 31,
+        "name": "right_base_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_right_lower_exterior_gasket_bottom",
+          "lobby_glass_right_lower_setting_block_0",
+          "lobby_glass_right_lower_setting_block_1"
+        ],
+        "supports": [
+          14
+        ]
+      },
+      {
+        "index": 32,
+        "name": "right_middle_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_right_lower_exterior_gasket_top",
+          "lobby_glass_right_upper_exterior_gasket_bottom",
+          "lobby_glass_right_upper_setting_block_0",
+          "lobby_glass_right_upper_setting_block_1"
+        ],
+        "supports": [
+          16
+        ]
+      },
+      {
+        "index": 33,
+        "name": "lobby_glass_right_lower",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_right_lower_interior_gasket_left",
+          "lobby_glass_right_lower_interior_gasket_right",
+          "lobby_glass_right_lower_interior_gasket_bottom",
+          "lobby_glass_right_lower_interior_gasket_top"
+        ],
+        "supports": [
+          29
+        ]
+      },
+      {
+        "index": 34,
+        "name": "lobby_glass_right_upper",
+        "substrate": "SWAT_OPAQUE_GLASS",
+        "healthSection": 0.0064,
+        "components": [
+          "lobby_glass_right_upper"
+        ],
+        "supports": [
+          4,
+          6,
+          16,
+          18
+        ]
+      },
+      {
+        "index": 35,
+        "name": "right_head_rail",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_right_upper_exterior_gasket_top"
+        ],
+        "supports": [
+          18
+        ]
+      },
+      {
+        "index": 36,
+        "name": "lobby_glass_right_upper",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.002,
+        "components": [
+          "lobby_glass_right_upper_interior_gasket_left",
+          "lobby_glass_right_upper_interior_gasket_right",
+          "lobby_glass_right_upper_interior_gasket_bottom",
+          "lobby_glass_right_upper_interior_gasket_top"
+        ],
+        "supports": [
+          34
+        ]
+      },
+      {
+        "index": 37,
+        "name": "door_outer_post",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.005,
+        "components": [
+          "post_0_floor_interface_fixing",
+          "post_0_base_fixing",
+          "post_0_head_fixing"
+        ],
+        "supports": [
+          1
+        ]
+      },
+      {
+        "index": 38,
+        "name": "teal_timber_header",
+        "substrate": "SWAT_STEEL",
+        "healthSection": 0.005,
+        "components": [
+          "post_0_header_fixing",
+          "post_1_header_fixing",
+          "post_2_header_fixing",
+          "post_3_header_fixing"
+        ],
+        "supports": [
+          0
+        ]
+      },
+      {
+        "index": 39,
+        "name": "teal_timber_header",
+        "substrate": "SWAT_ALUMINUM",
+        "healthSection": 0.009,
+        "components": [
+          "office_bar_00",
+          "office_bar_01",
+          "office_bar_02",
+          "office_bar_03",
+          "office_bar_04",
+          "office_bar_05",
+          "office_bar_06",
+          "office_bar_07",
+          "office_bar_08",
+          "office_bar_09",
+          "office_bar_10",
+          "office_bar_11",
+          "office_bar_12",
+          "office_bar_13",
+          "office_bar_14",
+          "office_bar_15",
+          "office_bar_16",
+          "office_bar_17",
+          "office_bar_18",
+          "office_bar_19",
+          "office_bar_20",
+          "office_bar_21",
+          "office_bar_22",
+          "office_bar_23",
+          "office_bar_24",
+          "office_bar_25",
+          "office_bar_26",
+          "office_bar_27",
+          "office_bar_28",
+          "office_bar_29",
+          "office_bar_30",
+          "office_bar_31",
+          "office_bar_32",
+          "office_bar_33",
+          "office_bar_34",
+          "office_bar_35",
+          "office_bar_36",
+          "office_bar_37",
+          "office_bar_38",
+          "office_bar_39",
+          "office_bar_40",
+          "office_bar_41",
+          "office_bar_42",
+          "office_bar_43",
+          "office_bar_44",
+          "office_bar_45",
+          "office_bar_46"
+        ],
+        "supports": [
+          0
+        ]
+      },
+      {
+        "index": 40,
+        "name": "teal_timber_header",
+        "substrate": "SWAT_RUBBER",
+        "healthSection": 0.0015,
+        "components": [
+          "office_pad_00",
+          "office_pad_01",
+          "office_pad_02",
+          "office_pad_03",
+          "office_pad_04",
+          "office_pad_05",
+          "office_pad_06",
+          "office_pad_07",
+          "office_pad_08",
+          "office_pad_09",
+          "office_pad_10",
+          "office_pad_11",
+          "office_pad_12",
+          "office_pad_13",
+          "office_pad_14",
+          "office_pad_15",
+          "office_pad_16",
+          "office_pad_17",
+          "office_pad_18",
+          "office_pad_19",
+          "office_pad_20",
+          "office_pad_21",
+          "office_pad_22",
+          "office_pad_23",
+          "office_pad_24",
+          "office_pad_25",
+          "office_pad_26",
+          "office_pad_27",
+          "office_pad_28",
+          "office_pad_29",
+          "office_pad_30",
+          "office_pad_31",
+          "office_pad_32",
+          "office_pad_33",
+          "office_pad_34",
+          "office_pad_35",
+          "office_pad_36",
+          "office_pad_37",
+          "office_pad_38",
+          "office_pad_39",
+          "office_pad_40",
+          "office_pad_41",
+          "office_pad_42",
+          "office_pad_43",
+          "office_pad_44",
+          "office_pad_45",
+          "office_pad_46"
+        ],
+        "supports": [
+          0
+        ]
+      }
+    ],
+    "ranges": [
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "start": 0,
+        "count": 12
+      },
+      {
+        "mesh": 1,
+        "primitive": 0,
+        "start": 12,
+        "count": 12
+      },
+      {
+        "mesh": 2,
+        "primitive": 0,
+        "start": 24,
+        "count": 12
+      },
+      {
+        "mesh": 3,
+        "primitive": 0,
+        "start": 36,
+        "count": 12
+      },
+      {
+        "mesh": 4,
+        "primitive": 0,
+        "start": 48,
+        "count": 2788
+      },
+      {
+        "mesh": 5,
+        "primitive": 0,
+        "start": 2836,
+        "count": 1040
+      },
+      {
+        "mesh": 6,
+        "primitive": 0,
+        "start": 3876,
+        "count": 1044
+      },
+      {
+        "mesh": 7,
+        "primitive": 0,
+        "start": 4920,
+        "count": 12
+      }
+    ]
+  }
+]

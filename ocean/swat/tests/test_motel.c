@@ -447,7 +447,10 @@ int main(void) {
     swat_apply_map(&replica,&decoded);assert(replica.world.motel && replica.world.count==server.world.count);
     utility_hits(&replica.world);
     fence_hits(&replica.world);
-    for(int i=1;i<=SWAT_MOTEL_INSTANCES;i++) if(server.world.objects[i].active && !server.world.objects[i].door) assert(b3Shape_GetType(replica.world.objects[i].shape)==b3_meshShape);
+    for(int i=1;i<=SWAT_MOTEL_INSTANCES;i++)if(server.world.objects[i].active && !server.world.objects[i].door){
+        if(swat_motel_window_index(i)>=0)assert(B3_IS_NULL(replica.world.objects[i].shape) && !b3Body_GetShapeCount(replica.world.objects[i].body));
+        else assert(b3Shape_GetType(replica.world.objects[i].shape)==b3_meshShape);
+    }
     for(int i=0;i<4;i++) {
         b3Pos p={-7.2f+4*i,1,1};SwatHit a=swat_world_ray(&server.world,p,swat_v(0,0,-1),2,b3_nullBodyId),b=swat_world_ray(&replica.world,p,swat_v(0,0,-1),2,b3_nullBodyId);
         assert(a.hit && b.hit && a.index==b.index && fabsf(a.distance-b.distance)<1e-5f);

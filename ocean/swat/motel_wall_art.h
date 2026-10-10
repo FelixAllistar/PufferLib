@@ -70,6 +70,14 @@ static const Model* window_mesh_art(SwatMotelWallArt* art,const Model* source,co
     int mask=swat_motel_pane_mask(world,owner);if(mask==3)return source;
     return filtered_mesh(&art->windows[swat_motel_window_index(owner)],source,1u|((unsigned)mask<<1),NULL,swat_motel_instance(owner-1)->asset);
 }
+static int window_room_triangle(int triangle){return swat_motel_window_model(0)->triangle_parts[triangle];}
+static int window_lobby_triangle(int triangle){return swat_motel_window_model(1)->triangle_parts[triangle];}
+static const Model* window_r1_mesh_art(SwatMotelWallArt* art,const Model* source,const SwatWorld* world,int owner){
+    int bay=swat_motel_window_index(owner),kind=bay?0:1;
+    const SwatWindowModel* m=swat_motel_window_model(kind);uint64_t mask=swat_motel_window_mask(world,owner);
+    if(mask==((UINT64_C(1)<<m->part_count)-1))return source;
+    return filtered_mesh(&art->windows[bay],source,mask,kind?window_lobby_triangle:window_room_triangle,0);
+}
 static SwatWallVertex wall_lerp(SwatWallVertex a,SwatWallVertex b,float t) {
     return (SwatWallVertex){Vector3Lerp(a.p,b.p,t),Vector3Lerp(a.n,b.n,t),Vector2Lerp(a.uv,b.uv,t),Vector2Lerp(a.uv2,b.uv2,t)};
 }

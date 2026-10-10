@@ -32,7 +32,7 @@ static inline int swat_impact_sample(const SwatSoundLog* log,int tick,b3Pos eye,
         const SwatSoundEvent* e=swat_sound_at(log,i);
         if(!swat_impact_recent(e,tick) || (e->kind==SWAT_SOUND_BREAK)!=(pass==0))continue;
         bool glass=e->material==SWAT_GLASS || e->material==SWAT_OPAQUE_GLASS;
-        bool metal=e->material==SWAT_STEEL;
+        bool metal=e->material==SWAT_STEEL || e->material==SWAT_ALUMINUM;
         bool broken=e->kind==SWAT_SOUND_BREAK,blast=false,duplicate=false;
         float lifetime=broken ? (glass?.38f:.65f) : .25f;
         for(int j=log->count-1;j>=0;j--) {
@@ -51,7 +51,7 @@ static inline int swat_impact_sample(const SwatSoundLog* log,int tick,b3Pos eye,
         static const uint8_t colors[SWAT_MATERIAL_COUNT][3]={
             {157,151,139},{211,203,182},{140,105,68},{193,217,219},{212,209,185},
             {172,111,78},{219,209,185},{190,177,132},{206,197,182},{90,83,73},
-            {128,109,81},{151,148,137},{193,217,219}};
+            {128,109,81},{151,148,137},{193,217,219},{191,199,202},{62,64,58},{146,133,105}};
         int particles=broken?8:4;
         for(int p=0;p<particles;p++) {
             bool dust=!glass && !metal && p<(broken?3:2);

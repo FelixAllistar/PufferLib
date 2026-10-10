@@ -16,7 +16,9 @@
 #define SWAT_MOTEL_PANES_FIRST (SWAT_MOTEL_PROPS_FIRST+SWAT_MOTEL_PROP_INSTANCES)
 #define SWAT_MOTEL_PANE_INSTANCES 10
 #define SWAT_MOTEL_NIGHTSTAND_FIRST (SWAT_MOTEL_PANES_FIRST+SWAT_MOTEL_PANE_INSTANCES)
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_NIGHTSTAND_FIRST+1)
+#define SWAT_MOTEL_WINDOWS_FIRST (SWAT_MOTEL_NIGHTSTAND_FIRST+1)
+#include "motel_windows_count.h"
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_WINDOWS_FIRST+SWAT_WINDOW_R1_PIECES)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -30,6 +32,19 @@ typedef struct SwatMotelInstance {
     int asset; b3Pos origin; b3Vec3 scale; float yaw;
     SwatMaterial material; bool door,roof;
 } SwatMotelInstance;
+typedef struct SwatWindowPart {
+    const char* name; b3Vec3 center,half; SwatMaterial material; float thickness; int supports[SWAT_MAX_SUPPORTS];
+} SwatWindowPart;
+typedef struct SwatWindowModel {
+    const char* file; const b3Vec3* vertices; const uint8_t* triangle_parts;
+    int triangle_count; const SwatWindowPart* parts; int part_count;
+} SwatWindowModel;
+const SwatWindowModel* swat_motel_window_model(int kind);
+bool swat_motel_windows_revised(const SwatWorld*);
+int swat_motel_window_first(int parent);
+int swat_motel_window_part_parent(const SwatWorld*,int owner);
+int swat_motel_window_find(const SwatWorld*,int parent,const char* name,SwatMaterial);
+uint64_t swat_motel_window_mask(const SwatWorld*,int parent);
 typedef struct SwatMotelFencePart {b3Vec3 center,half;int triangles;SwatPart part;} SwatMotelFencePart;
 int swat_motel_fence_part_count(void);
 int swat_motel_fence_triangle_part(int triangle);

@@ -1,0 +1,15 @@
+Briar Court separate window revision R1
+
+New original 3D geometry, procedural textures, diagram linework, metadata,
+proposal text and scripts in this packet: CC0-1.0 (public-domain dedication).
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The original Briar Court batch15 source artwork and OFFICE pixel lettering are
+separately CC0-1.0. Original batch15 files remain unchanged and are not bundled
+again here. This packet creates separately named/versioned derivatives.
+
+No external photographs, illustrations, maps or texture images are included.
+Manufacturer names and linked source documents remain those parties' material;
+this dedication does not relicense external documents or grant trademark rights.
+Referenced dimensions are factual scale context, not endorsement, certification,
+or a representation that the fictional frame is a manufacturer product.

@@ -40,7 +40,7 @@ static void walk(b3Pos target){
 int main(int argc,char** argv){
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;cfg.squad_bots=0;cfg.max_ticks=12000;
     swat_sim_init(&sim,cfg,81);int owner=SWAT_MOTEL_NIGHTSTAND_FIRST;SwatObject* o=&sim.world.objects[owner];
-    SwatMotelInstance p;assert(swat_motel_prop(&sim.world,owner,&p) && p.asset==49 && sim.world.count==1190);
+    SwatMotelInstance p;assert(swat_motel_prop(&sim.world,owner,&p) && p.asset==49 && sim.world.count==SWAT_MOTEL_OBJECTS);
     const SwatMotelAsset* source=swat_motel_asset(p.asset);assert(source->vertex_count==503 && source->triangle_count==470);
     assert(fabsf(2*o->half.x-.504564583f)<1e-6f && fabsf(2*o->half.y-.615520971f)<1e-6f && fabsf(2*o->half.z-.508716002f)<1e-6f);
     assert(o->active && o->material==SWAT_WOOD && o->part==SWAT_PART_FIXTURE && o->structural_thickness==.024f);

@@ -200,6 +200,7 @@ bool swat_world_impact(SwatWorld* w,int object,float damage) {
 
 static float charge_demand(const SwatObject* o) {
     const SwatMaterialDef* m=swat_material(o->material);
+    if(o->part==SWAT_PART_FIXTURE)return m->charge_resistance*o->structural_thickness/m->reference_thickness;
     // Fence infill fails at its thin wire/rail fastenings, not across the air
     // contained by a chunk's bounds. Posts retain their independent support.
     if(o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL)
@@ -227,7 +228,7 @@ bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
 bool swat_world_breachable(const SwatObject* o) {
     return o->active && o->max_health>0 && charge_demand(o)<=1 && (o->door || (o->wall_group>0 &&
         (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME || o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL ||
-         (o->part==SWAT_PART_FIXTURE && o->material==SWAT_OPAQUE_GLASS))));
+         o->part==SWAT_PART_FIXTURE)));
 }
 
 int swat_world_breach(SwatWorld* w,int object,b3Pos position) {

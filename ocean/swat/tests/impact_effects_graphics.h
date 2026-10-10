@@ -53,10 +53,11 @@ static void impact_effects_graphics(SwatView* view,const char* directory) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;cfg.squad_bots=0;
     swat_sim_init(&sim,cfg,81);
     const SwatMotelInstance* bay=swat_motel_instance(5);
-    b3Pos target=b3OffsetPos(bay->origin,swat_v(cosf(bay->yaw)*1.31f,1.7f,-sinf(bay->yaw)*1.31f));
+    int pane=swat_motel_window_find(&sim.world,6,"lobby_glass_right_upper",SWAT_OPAQUE_GLASS);assert(pane>=0);
+    b3Pos target=sim.world.objects[pane].center;
     b3Vec3 normal=swat_v(sinf(bay->yaw),0,cosf(bay->yaw));
     swat_sim_shoot(&sim,0,b3OffsetPos(target,swat_mul(normal,.09f)),swat_mul(normal,-1),(SwatShot){.fired=true,.damage=34,.range=.3f,.energy=6});
-    assert(!sim.world.objects[SWAT_MOTEL_PANES_FIRST+1].active);
+    assert(!sim.world.objects[pane].active);
     SwatController* c=&sim.actors[0].controller;
     b3Pos feet=b3OffsetPos(target,swat_v(normal.x*2,-1.7f,normal.z*2));
     b3Body_SetTransform(c->body.body,b3OffsetPos(feet,swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);

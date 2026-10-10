@@ -8,6 +8,17 @@ static SwatMap map,decoded;
 static SwatSnapshot snapshot;
 static unsigned char bytes[SWAT_NET_PACKET_MAX];
 static SwatReplay journal;
+// Explicitly exercise the pre-R1 map/snapshot recipe. Replays use the current recipe.
+static void legacy_world(void){
+    static SwatMap old;static SwatSnapshot snapshot;
+    swat_capture_map(&sim,1,&old);swat_capture_snapshot(&sim,1,&snapshot);
+    old.count=SWAT_MOTEL_WINDOWS_FIRST;snapshot.object_count=old.count;
+    const int parents[]={6,17,41,65,89};
+    for(int i=0;i<5;i++)snapshot.objects[parents[i]].active=true;
+    for(int i=0;i<10;i++){int id=SWAT_MOTEL_PANES_FIRST+i;snapshot.objects[id].active=true;snapshot.objects[id].health=old.objects[id].max_health;}
+    swat_apply_map(&sim,&old);assert(sim.world.motel && swat_apply_snapshot(&sim,&snapshot));
+}
+static void reset_legacy(void){swat_sim_reset(&sim);legacy_world();}
 static SwatInput look(b3Pos target) {
     SwatController* c=&sim.actors[0].controller;b3Vec3 d=b3SubPos(target,swat_controller_eye(c));SwatInput in=swat_neutral_input();
     in.yaw_delta=swat_clamp(swat_angle(atan2f(d.z,d.x)-c->yaw),-.1f,.1f);
@@ -39,7 +50,7 @@ static void sync(void) {
 static void panes(void) {
     const int parents[]={6,17,41,65,89};int rays=0;
     for(int bay=0;bay<5;bay++)for(int side=0;side<2;side++) {
-        swat_sim_reset(&sim);int parent=parents[bay];
+        reset_legacy();int parent=parents[bay];
         for(int pane=0;pane<2;pane++) {
             int id=SWAT_MOTEL_PANES_FIRST+2*bay+pane;SwatObject* o=&sim.world.objects[id];
             assert(swat_motel_pane_parent(&sim.world,o)==parent && swat_world_breachable(o));
@@ -63,7 +74,7 @@ static void panes(void) {
     }
     // Curtain folds overlap the pane proxy. A shot must encounter BOTH materials.
     for(int side=0;side<2;side++) {
-        swat_sim_reset(&sim);int id=SWAT_MOTEL_PANES_FIRST+2;
+        reset_legacy();int id=SWAT_MOTEL_PANES_FIRST+2;
         b3Pos from=point(17,-.72f,.85f,side?.15f:-.15f);b3Vec3 dir=normal(17,side);
         swat_sim_shoot(&sim,0,from,dir,(SwatShot){.fired=true,.damage=34,.range=.3f,.energy=6});
         assert(!sim.world.objects[id].active && sim.world.objects[17].active);
@@ -73,7 +84,7 @@ static void panes(void) {
     printf("PASS motel panes: %d two-face shots/exit depths, opaque intact sight, independent glass destruction, retained frames and overlapping curtains, encoded late replicas\n",rays);
 }
 static void charge(void) {
-    swat_sim_reset(&sim);int id=SWAT_MOTEL_PANES_FIRST;
+    reset_legacy();int id=SWAT_MOTEL_PANES_FIRST;
     assert(swat_world_breach(&sim.world,id,point(6,0,1.5f,0))==1);
     assert(!sim.world.objects[id].active && sim.world.objects[id+1].active && sim.world.objects[6].active);
     sync();
@@ -82,13 +93,13 @@ static void charge(void) {
     b3Capsule capsule={.center1={0,.22f,0},.center2={0,.92f,0},.radius=.2f};
     b3Pos from=point(6,0,.8f,.55f);b3Vec3 delta=normal(6,1);delta=swat_mul(delta,1.1f);
     float open=b3World_CastMover(sim.world.id,from,&capsule,delta,b3DefaultQueryFilter(),NULL,NULL);
-    swat_sim_reset(&sim);
+    reset_legacy();
     float closed=b3World_CastMover(sim.world.id,from,&capsule,delta,b3DefaultQueryFilter(),NULL,NULL);
     assert(open>.999f && closed<.6f);
     puts("PASS motel pane charge: local aperture, neighboring pane/frame retained, crouched capsule clearance above surviving lobby crossrail");
 }
 static void validation(void) {
-    swat_sim_reset(&sim);sync();int id=SWAT_MOTEL_PANES_FIRST;
+    reset_legacy();sync();int id=SWAT_MOTEL_PANES_FIRST;
     map.objects[id].material=SWAT_GLASS;swat_apply_map(&replica,&map);assert(!replica.world.motel);
     sync();map.objects[id].half.x+=.001f;swat_apply_map(&replica,&map);assert(!replica.world.motel);
     sync();map.count=id+1;swat_apply_map(&replica,&map);assert(!replica.world.motel);
@@ -98,7 +109,7 @@ static void validation(void) {
     puts("PASS motel panes: legacy aggregate prefix retained; partial recipes, changed opacity/depth and unsupported snapshots rejected");
 }
 static void live_charge(void) {
-    swat_sim_reset(&sim);SwatController* c=&sim.actors[0].controller;
+    reset_legacy();SwatController* c=&sim.actors[0].controller;
     b3Body_SetTransform(c->body.body,b3OffsetPos(point(6,0,0,1.05f),swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
     b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=-SWAT_PI*.5f;c->pitch=0;
     SwatInput input=swat_neutral_input();for(int i=0;i<10;i++)swat_sim_step(&sim,&input);
@@ -112,7 +123,7 @@ static void live_charge(void) {
     sync();puts("PASS motel panes: ordinary C4 placement, finite inventory, retreat and detonation; adjacent glass and frames retained");
 }
 static void live_penetration(void) {
-    swat_sim_reset(&sim);int id=SWAT_MOTEL_PANES_FIRST+2;
+    reset_legacy();int id=SWAT_MOTEL_PANES_FIRST+2;
     swat_sim_spawn_actor(&sim,1,SWAT_CIVILIAN,point(17,-.25f,0,.65f),0);
     b3Pos from=point(17,-.25f,.85f,-.15f);b3Vec3 direction=normal(17,0);
     assert(swat_world_sight_ray(&sim.world,from,direction,1,b3_nullBodyId).index==id);
@@ -126,12 +137,14 @@ static void replay_shooting(const char* path) {
     swat_sim_init(&sim,cfg,81);assert(swat_replay_record(&journal,path,&sim));
     walk((b3Pos){9,-.079f,8});walk((b3Pos){9,-.079f,.9f});
     b3Pos approach=point(89,-.25f,0,1.1f);approach.y=-.079f;walk(approach);
-    b3Pos target=point(89,-.25f,.85f,0);int id=SWAT_MOTEL_PANES_FIRST+8;
+    int id=swat_motel_window_find(&sim.world,89,"room_glass_left",SWAT_OPAQUE_GLASS);
+    int right=swat_motel_window_find(&sim.world,89,"room_glass_right",SWAT_OPAQUE_GLASS);assert(id>=0 && right>=0);
+    b3Pos target=sim.world.objects[id].center;
     for(int t=0;t<45;t++){SwatInput input=look(target);input.aim=true;record_step(input);}
     int t=0;for(;t<240 && sim.world.objects[id].active;t++) {
         SwatInput input=look(target);input.aim=true;input.fire=t%12==0;record_step(input);
     }
-    assert(t<240 && sim.world.objects[id+1].active && sim.world.objects[89].active);assert(swat_replay_close(&journal));
+    assert(t<240 && sim.world.objects[right].active && sim.world.objects[89].active);assert(swat_replay_close(&journal));
     uint32_t digest=swat_replay_digest(&sim);char error[256];assert(swat_replay_restore(&replica,path,error,sizeof(error)));
     assert(swat_replay_digest(&replica)==digest && replica.world.motel && !replica.world.objects[id].active);
     assert(remove(path)==0);puts("PASS motel panes: normal walking/aim/fire from canonical spawn, exact destroyed-pane replay/save restore");
@@ -139,6 +152,6 @@ static void replay_shooting(const char* path) {
 int main(int argc,char** argv) {
     assert(argc==2);
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;
-    swat_sim_init(&sim,cfg,81);assert(sim.world.count==SWAT_MOTEL_OBJECTS);
+    swat_sim_init(&sim,cfg,81);legacy_world();assert(sim.world.count==SWAT_MOTEL_WINDOWS_FIRST);
     panes();charge();validation();live_charge();live_penetration();replay_shooting(argv[1]);swat_sim_close(&replica);swat_sim_close(&sim);return 0;
 }

@@ -75,13 +75,21 @@ shared image lifetime, production lighting/shadows and authoritative removal.
 Contact checks now preserve 31,989 triangles across 27 assets, including original
 edge flags and 64,800 ray/exit comparisons per reconstructed world.
 
-The separate realistic window R1 is received and archived with its source and
-scoped license. Independent GLB inspection verifies full node transforms,
-primitive/material mappings, exact complete triangle coverage, 349 closed edge
-sets and all six 6.4 mm panes. It is not yet the installed window revision:
-continue with grouped material/support physics and matching filtered rendering,
-including the proposed 518 contacts. Keep original assets and legacy map prefixes;
-do not substitute new art over old collision or create 349 individual bodies.
+The separate realistic window R1 is installed in all four guest-room openings
+and the lobby facade. Original GLBs/maps remain unscaled. Their 349 source
+components are grouped into 137 material-specific damage objects, retaining
+all 26,052 installed triangles in 194 bounded contact shapes. Twelve opaque
+6.4 mm panes break independently; thin cloth blocks sight while bullets can
+hit a concealed actor through it. Aluminum, rubber and cloth use explicit
+editable game strengths. Failed frames/rod sockets shed dependent geometry
+and collision together. Source adjacency guides grouping, but the proposed
+518 geometric contact tolerances are not independently certified; original
+opening owners are virtual support anchors, not measured wall fasteners.
+Original source/CC0 receipts and reproducible Node grouping are retained.
+Native source/fallback rendering matches 76,770 stable collision rays across
+front/back/oblique views and independent pane/support damage. Source material
+counts, shared texture lifetime, immutable authority and production lighting
+are checked. The ordinary player, server, replay tool and Puffer use this recipe.
 
 Mounted-prop foundation: the delivered galvanized junction box now has two
 measured motel placements, exact hollow-shell collision and independent damage.
@@ -276,7 +284,7 @@ behind it. Hidden people do not erase the pane or disclose identity/body depth.
 Fresh annex training is required; shape-compatible old raw weights cannot be
 identified automatically. Movement v2 is unchanged. This handles single-material
 clear panes, not partial opacity or a material decomposition of mixed assets.
-The motel's authored windows now separate ten opaque dusty glass panes from
+The pre-R1 motel recipe separates ten opaque dusty glass panes from
 their five existing frame/curtain/sill aggregates. Each pane retains its original
 44 triangles, independent damage and physical penetration, glass audio and local
 C4 removal. Intact panes block sight; broken panes open the same physical/render
@@ -294,18 +302,19 @@ the same mesh remain hittable. Eight impacts remain the bound. Nested/overlappin
 glass and steel checks in both directions fail against the previous traversal
 and pass with the new traversal.
 
-The current motel recipe has 1,190 objects, including the appended room 104
-nightstand. The previous 1,189-object prefix retains independent panes; earlier
+The current motel recipe has 1,327 objects, including the room 104 nightstand
+and 137 appended R1 window groups. The 1,190-object prefix retains the
+nightstand and original independent panes. The previous 1,189-object prefix retains independent panes; earlier
 canonical prefixes keep original aggregate glazing. Partial pane recipes and changed opacity/depth/support
 are rejected. Wire layout remains version 17, but peers need matching builds for
-the appended opaque-glass material and current map recipe. Movement v2 and annex
+the appended glass/aluminum/rubber/cloth materials and current map recipe. Movement v2 and annex
 v3 remain unchanged. Panes use independently owned, bounded contact subsets and
 cached material batches; original material maps/UVs and Room 101 v3/v4 art survive.
 Missing art draws exact surviving mesh collision rather than aggregate boxes.
 Linux and native Windows checks cover two-face shots/exit depths, overlapping
 curtains, actor penetration, ordinary finite-inventory C4 placement/retreat,
 encoded late replicas, reset and exact normal-input destroyed-pane save/replay.
-Native graphics match 357,634 stable collision/raster samples over intact and
+Historical pre-R1 native graphics match 357,634 stable collision/raster samples over intact and
 broken source/fallback windows; both Room 101 replacement versions retain/remove
 the matching pane. Existing front/exterior/interroom completion, replay/save and
 fresh-replica checks still pass on both platforms. The normal native player,
@@ -333,8 +342,9 @@ whole-game frame-time budget. Proof is in build/swat/review/impact-effects.
 The artist's separate window construction proposal is approved and retained
 with a hash receipt: 6.4 mm glass, four lobby panes around the existing middle
 rail, explicit frame substrates/pockets, thin supported curtains clear of glazing,
-unchanged outer bounds and a 1.27 x 2.4 m lobby doorway. Actual candidate meshes
-and contact checks are being made; the proposal does not replace runtime art yet.
+unchanged outer bounds and a 1.27 x 2.4 m lobby doorway. The delivered R1 meshes now replace runtime windows with grouped physical
+parts. Geometric contact tolerances and measured wall fasteners remain future
+qualification work; do not treat the assembly rules as structural certification.
 
 Overwatch now uses that same sight query, removing its separate eight-pane
 stepping cap. A physical nine-pane designation check fails against the former

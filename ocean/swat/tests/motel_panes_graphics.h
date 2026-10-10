@@ -1,3 +1,13 @@
+// Keep this selector as a regression for the pre-R1 map recipe.
+static void pane_legacy_world(void){
+    static SwatMap map;static SwatSnapshot state;
+    swat_capture_map(&sim,1,&map);swat_capture_snapshot(&sim,1,&state);
+    map.count=SWAT_MOTEL_WINDOWS_FIRST;state.object_count=map.count;
+    const int parents[]={6,17,41,65,89};
+    for(int i=0;i<5;i++)state.objects[parents[i]].active=true;
+    for(int i=0;i<10;i++){int id=SWAT_MOTEL_PANES_FIRST+i;state.objects[id].active=true;state.objects[id].health=map.objects[id].max_health;}
+    swat_apply_map(&sim,&map);assert(sim.world.motel && swat_apply_snapshot(&sim,&state));
+}
 static bool pane_ray(int parent,Ray ray) {
     int owners[]={parent,SWAT_MOTEL_PANES_FIRST+2*swat_motel_window_index(parent),SWAT_MOTEL_PANES_FIRST+2*swat_motel_window_index(parent)+1};
     for(int i=0;i<3;i++) {
@@ -16,11 +26,11 @@ static Image pane_capture(SwatEnvironmentArt* art,int parent,Camera3D camera) {
 }
 static void motel_panes_graphics(SwatView* view,const char* directory) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;
-    swat_sim_init(&sim,cfg,81);SwatEnvironmentArt* art=&view->environment;swat_environment_art_prepare_location(art,&sim.world);
+    swat_sim_init(&sim,cfg,81);pane_legacy_world();SwatEnvironmentArt* art=&view->environment;swat_environment_art_prepare_location(art,&sim.world);
     bool prepared=view->lighting.prepared;view->lighting.prepared=false;
     bool ready=art->room101_ready;art->room101_ready=false;int checked=0,open=0,filled=0;
     for(int bay=0;bay<2;bay++)for(int stage=0;stage<3;stage++) {
-        swat_sim_reset(&sim);int parent=bay?17:6,asset=bay?10:12,first=SWAT_MOTEL_PANES_FIRST+2*bay;
+        swat_sim_reset(&sim);pane_legacy_world();int parent=bay?17:6,asset=bay?10:12,first=SWAT_MOTEL_PANES_FIRST+2*bay;
         for(int k=0;k<stage;k++)assert(swat_world_damage(&sim.world,first+k,10000));
         before=sim.world;
         Model source=art->motel[asset];
@@ -59,7 +69,7 @@ static void motel_panes_graphics(SwatView* view,const char* directory) {
             }
         }
         assert(counts[0]==44 && counts[1]==44);
-        swat_sim_reset(&sim);bool v4=art->room101_v4_ready;art->room101_v4_ready=version==1;
+        swat_sim_reset(&sim);pane_legacy_world();bool v4=art->room101_v4_ready;art->room101_v4_ready=version==1;
         const SwatObject* o=&sim.world.objects[17];Vector3 center={o->center.x,o->center.y,o->center.z};
         Camera3D camera={Vector3Add(center,(Vector3){0,0,1.5f}),center,{0,1,0},2.25f,CAMERA_ORTHOGRAPHIC};
         Image full=pane_capture(art,17,camera);assert(swat_world_damage(&sim.world,SWAT_MOTEL_PANES_FIRST+2,10000));

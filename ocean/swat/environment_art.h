@@ -37,6 +37,8 @@ typedef struct SwatEnvironmentArt {
     struct SwatLighting* lighting;
     Model door;
     Model motel[SWAT_MOTEL_ASSETS];
+    Model motel_windows[2]; // R1 room/lobby banks, shared across independent damage parts.
+    float motel_windows_normal_scale[2][SWAT_ROOM101_MATERIALS];
     struct SwatMotelWallArt* motel_wall_art;
     struct SwatEnvironmentBounds* bounds; // Presentation-only source bounds.
     Model motel_dressing[SWAT_MOTEL_DRESSING_ASSETS];

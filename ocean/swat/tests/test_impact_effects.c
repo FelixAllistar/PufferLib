@@ -66,11 +66,12 @@ int main(void) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;
     swat_sim_init(&sim,cfg,81);
     const SwatMotelInstance* bay=swat_motel_instance(5);
-    b3Pos target=b3OffsetPos(bay->origin,swat_v(cosf(bay->yaw)*1.31f,1.12f,-sinf(bay->yaw)*1.31f));
+    int pane=swat_motel_window_find(&sim.world,6,"lobby_glass_right_lower",SWAT_OPAQUE_GLASS);assert(pane>=0);
+    b3Pos target=sim.world.objects[pane].center;
     b3Vec3 normal=swat_v(sinf(bay->yaw),0,cosf(bay->yaw));
     b3Pos from=b3OffsetPos(target,swat_mul(normal,.09f));
     swat_sim_shoot(&sim,0,from,swat_mul(normal,-1),(SwatShot){.fired=true,.damage=34,.range=.3f,.energy=6});
-    assert(!sim.world.objects[SWAT_MOTEL_PANES_FIRST+1].active);
+    assert(!sim.world.objects[pane].active);
     unchanged=sim;before=sim.sounds;
     assert(swat_impact_sample(&sim.sounds,sim.tick+5,b3OffsetPos(target,swat_mul(normal,2)),swat_mul(normal,-1),particles)==8);
     assert(!memcmp(&unchanged,&sim,sizeof(sim)) && !memcmp(&before,&sim.sounds,sizeof(before)));

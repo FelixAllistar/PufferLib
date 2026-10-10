@@ -18,6 +18,9 @@ static const SwatMaterialDef definitions[SWAT_MATERIAL_COUNT]={
     {"Solid rock",10000,{.02f,.03f,.05f},{40,55,70},.20f,{112,111,103,255},2700,.75f,.30f,.03f,1100,38,1,1000,1000,2},
     // Same glass response; the frozen motel art has opaque dusty glazing.
     {"Opaque window glass",.5f,{.18f,.06f,.03f},{12,20,30},.006f,{114,145,151,255},2500,.25f,.45f,.01f,2700,12,1.1f,8,0,0.005},
+    {"Aluminum frame",18,{.03f,.04f,.05f},{16,24,32},.002f,{99,113,119,255},2700,.35f,.4f,.015f,1450,12,1,45,8,.16f},
+    {"Rubber seal",.2f,{.12f,.20f,.30f},{1,2,4},.002f,{54,55,52,255},1100,.85f,.15f,.12f,140,45,.3f,5,0,.002f},
+    {"Curtain cloth",.02f,{.12f,.40f,.65f},{.2f,.4f,.8f},.0006f,{141,127,98,255},350,.8f,.01f,.2f,100,65,.3f,160,0,.0005f},
 };
 const SwatMaterialDef* swat_material(SwatMaterial material) {
     return &definitions[material>=0 && material<SWAT_MATERIAL_COUNT ? material : SWAT_CONCRETE];

@@ -939,6 +939,7 @@ static void culling_graphics(SwatView* view,const char* directory) {
 #include "wall_core_batch_graphics.h"
 #include "motel_props_graphics.h"
 #include "motel_panes_graphics.h"
+#include "motel_windows_graphics.h"
 #include "impact_effects_graphics.h"
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
@@ -947,6 +948,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"motel-windows")) {texture_owner_graphics("motel_windows_r1/room_window_insert_realistic_r1.glb");texture_owner_graphics("motel_windows_r1/lobby_glazed_facade_realistic_r1.glb");motel_windows_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-nightstand")) {texture_owner_graphics("motel_props/painted_wooden_nightstand_floor_centered_2k.glb");motel_prop_graphics(&view,directory,4);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"impact-effects")) {impact_effects_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-panes")) {motel_panes_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
