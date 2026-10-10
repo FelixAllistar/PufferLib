@@ -55,6 +55,15 @@ SwatContext swat_context(const SwatSim* s,int actor) {
         }
     }
     out.hit=swat_context_hit(s,actor,9);
+    if(!contextual_hit(s,out.hit)) {
+        // A clear pane blocks hands/tools, but not a directed compliance call.
+        // Retain the physical context for surrendered people and every object.
+        const SwatController* c=&s->actors[actor].controller;
+        SwatHit seen=swat_world_sight_ray(&s->world,swat_controller_eye(c),swat_controller_aim(c),9,c->body.body);
+        if(seen.kind==SWAT_HIT_ACTOR && contextual_hit(s,seen) && !s->actors[seen.index].gear.surrendered) {
+            out.hit=seen;out.action=SWAT_CONTEXT_COMPLY;out.ready=true;return out;
+        }
+    }
     if(out.hit.kind==SWAT_HIT_DEVICE && out.hit.index>=0 && out.hit.index<SWAT_MAX_DEVICES) {
         out.action=SWAT_CONTEXT_DEVICE; out.ready=out.hit.distance<2.2f && s->devices[out.hit.index].owner==actor; return out;
     }

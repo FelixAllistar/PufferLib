@@ -107,6 +107,72 @@ static void place_actor(int id,b3Pos feet) {
     b3Body_SetTransform(c->body.body,b3OffsetPos(feet,swat_v(0,c->body.totalHeight*.5f+.01f,0)),b3Quat_identity);
     b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0));
 }
+static void glass_perception(void) {
+    fixture();place_actor(2,(b3Pos){0,0,6});
+    int pane=swat_world_box(&sim.world,(b3Pos){3,1.5f,0},swat_v(.003f,1.5f,2),SWAT_GLASS,8);
+    b3Pos eye=swat_controller_eye(&sim.actors[0].controller),head=swat_controller_eye(&sim.actors[1].controller);
+    SwatHit physical=swat_world_ray(&sim.world,eye,swat_v(1,0,0),9,sim.actors[0].controller.body.body);
+    SwatHit sight=swat_world_sight_ray(&sim.world,eye,swat_v(1,0,0),9,sim.actors[0].controller.body.body);
+    assert(physical.kind==SWAT_HIT_WORLD && physical.index==pane && sight.kind==SWAT_HIT_ACTOR && sight.index==1);
+    assert(!swat_world_visible(&sim.world,eye,head) && swat_world_sight_clear(&sim.world,eye,head));
+    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD) && swat_sim_actor_visible(&sim,1,0,24,60*SWAT_RAD));
+    float obs[SWAT_OBS_SIZE];swat_sim_observe(&sim,0,obs);
+    int center=SWAT_PROPRIO_SIZE+((SWAT_SENSOR_ROWS/2)*SWAT_SENSOR_COLS+SWAT_SENSOR_COLS/2)*SWAT_SENSOR_CHANNELS;
+    assert(obs[center+1]==.8f && obs[center+2]==1 && fabsf(obs[center]-physical.distance/30)<1e-5f);
+    // Seeing through a pane does not make it passable to a real officer capsule.
+    b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
+    assert(b3World_CastMover(sim.world.id,(b3Pos){2,0,0},&capsule,swat_v(2,0,0),b3DefaultQueryFilter(),NULL,NULL)<.9f);
+    SwatContext context=swat_context(&sim,0);assert(context.action==SWAT_CONTEXT_COMPLY && context.ready && context.hit.index==1);
+    static SwatMap map;static SwatSnapshot snapshot;
+    swat_capture_map(&sim,5,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,5,&snapshot);
+    assert(swat_apply_snapshot(&replica,&snapshot));
+    b3Pos replica_eye=swat_controller_eye(&replica.actors[0].controller);
+    assert(swat_world_ray(&replica.world,replica_eye,swat_v(1,0,0),9,replica.actors[0].controller.body.body).index==pane);
+    assert(swat_sim_actor_visible(&replica,0,1,24,60*SWAT_RAD));
+    sim.config.hostile_fire=true;sim.tick=36;sim.actors[1].visible_ticks=40;sim.actors[1].mind.target=0;
+    SwatInput inputs[SWAT_MAX_ACTORS];swat_sim_bot_inputs(&sim,inputs);assert(inputs[1].fire);
+    // A civilian crossing the aimed ray suppresses both kinds of NPC fire.
+    place_actor(2,(b3Pos){4.5f,0,0});
+    assert(!swat_sim_firing_line_clear(&sim,1,0,24));
+    swat_sim_bot_inputs(&sim,inputs);assert(!inputs[1].fire);
+    sim.config.tactical_rules=false;swat_sim_bot_inputs(&sim,inputs);assert(!inputs[1].fire);
+    place_actor(2,(b3Pos){0,0,6});sim.config.tactical_rules=true;
+    sim.actors[1].visible_ticks=40;sim.actors[1].mind.target=0;
+    swat_sim_bot_inputs(&sim,inputs);assert(inputs[1].fire);
+    // The bot's ordinary fire input hits and breaks physical glass before the
+    // same material-traversal path damages the observed officer behind it.
+    float health=sim.actors[0].health;
+    swat_sim_step_inputs(&sim,inputs);
+    assert(!sim.world.objects[pane].active && sim.actors[0].health<health && sim.actors[1].arsenal.shots>0);
+    swat_capture_snapshot(&sim,6,&snapshot);assert(swat_apply_snapshot(&replica,&snapshot));
+    assert(!replica.world.objects[pane].active);
+    assert(swat_world_ray(&replica.world,replica_eye,swat_v(1,0,0),9,replica.actors[0].controller.body.body).kind==SWAT_HIT_ACTOR);
+    swat_sim_close(&replica);
+    swat_sim_close(&sim);
+
+    fixture();place_actor(2,(b3Pos){0,0,6});sim.actors[1].mind.resolve=0;
+    pane=swat_world_box(&sim.world,(b3Pos){.8f,1.5f,0},swat_v(.003f,1.5f,2),SWAT_GLASS,8);
+    place_actor(1,(b3Pos){1.3f,0,0});
+    assert(swat_taser(&sim,0) && !sim.actors[1].gear.stunned_ticks && !sim.actors[1].gear.surrendered);
+    assert(sim.world.objects[pane].active && sim.actors[1].health==100);
+    // F maps a COMPLY context to command, rather than a physical interaction.
+    context=swat_context(&sim,0);assert(context.action==SWAT_CONTEXT_COMPLY);
+    SwatInput in=swat_neutral_input();in.command=true;swat_sim_step(&sim,&in);
+    assert(sim.actors[1].gear.surrendered && !sim.actors[1].gear.restrained && sim.world.objects[pane].active);
+    in.command=false;in.interact=true;
+    for(int t=0;t<120;t++)swat_sim_step(&sim,&in);
+    assert(!sim.actors[1].gear.restrained && !sim.actors[0].gear.cuff_ticks);
+    // An opaque divider still blocks optical presence, commands and aiming.
+    int wall=swat_world_box(&sim.world,(b3Pos){.6f,1.5f,0},swat_v(.1f,1.5f,2),SWAT_CONCRETE,0);
+    sim.actors[1].gear.surrendered=false;
+    assert(!swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD) && !swat_sim_firing_line_clear(&sim,0,1,24));
+    assert(swat_context(&sim,0).action!=SWAT_CONTEXT_COMPLY);(void)wall;
+    swat_sim_observe(&sim,0,obs);assert(obs[center+1]!=.8f);
+    in.interact=false;in.command=true;swat_sim_step(&sim,&in);
+    assert(!sim.actors[1].gear.surrendered);
+    swat_sim_close(&sim);
+    puts("PASS clear glass: optical NPC/policy presence, physical capsule/ballistic pane, civilian fire inhibition, directed compliance and blocked hands, opaque cover");
+}
 static void light_perception(void) {
     fixture();place_actor(1,(b3Pos){18,0,0});place_actor(2,(b3Pos){0,0,6});
     sim.actors[0].mind.bot=true;sim.actors[0].mind.order=SWAT_ORDER_HOLD;
@@ -114,6 +180,7 @@ static void light_perception(void) {
     int roof=swat_world_box(&sim.world,(b3Pos){8,3.3f,0},swat_v(20,.2f,10),SWAT_CONCRETE,200);
     int lamp=swat_world_box(&sim.world,(b3Pos){18,2.9f,0},swat_v(.2f,.05f,.2f),SWAT_STEEL,0);
     sim.world.objects[lamp].part=SWAT_PART_LIGHT;
+    int pane=swat_world_box(&sim.world,(b3Pos){6,1.5f,0},swat_v(.003f,1.5f,2),SWAT_GLASS,8);
     SwatRoomLight light=swat_world_room_light(&sim.world,0);
     assert(light.power==1 && fabsf(light.origin.y-2.84f)<1e-5f && !b3Length(light.direction));
     assert(!swat_world_room_light(&sim.world,-1).power && !swat_world_room_light(&sim.world,1).power);
@@ -125,13 +192,16 @@ static void light_perception(void) {
     sim.world.room_light_off_mask=1;
     assert(!swat_world_room_light(&sim.world,0).power && !swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
     swat_sim_bot_inputs(&sim,inputs);assert(sim.actors[0].mind.target==-1);
-    swat_sim_observe(&sim,0,obs);assert(obs[center]==1 && obs[center+1]==0 && obs[center+2]==0);
+    swat_sim_observe(&sim,0,obs);
+    assert(obs[center]<.21f && obs[center+1]==.4f && obs[center+2]==1); // Visible pane, no hidden person.
+    assert(sim.world.objects[pane].active);
     // The same switches and source produce the same perception in a late replica.
     static SwatMap map;static SwatSnapshot snapshot;
     swat_capture_map(&sim,4,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,4,&snapshot);
     assert(swat_apply_snapshot(&replica,&snapshot) && !swat_sim_actor_visible(&replica,0,1,24,60*SWAT_RAD));
     assert(swat_world_visual_range(&replica.world,swat_controller_eye(&replica.actors[1].controller),24)==12);
     swat_sim_close(&replica);
+    assert(swat_world_damage(&sim.world,pane,100));
     // Darkness never hides a nearby target or suppresses physical hearing.
     place_actor(1,(b3Pos){8,0,0});assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
     place_actor(1,(b3Pos){18,0,0});sim.actors[1].mind.memory_ticks=0;
@@ -146,8 +216,8 @@ static void light_perception(void) {
     int shade=swat_world_box(&sim.world,(b3Pos){18,2.2f,0},swat_v(.4f,.05f,.4f),SWAT_WOOD,20);
     assert(!swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
     assert(swat_world_damage(&sim.world,shade,100) && swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
-    int pane=swat_world_box(&sim.world,(b3Pos){18,2.2f,0},swat_v(.4f,.05f,.4f),SWAT_GLASS,20);
-    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));(void)pane;
+    int light_pane=swat_world_box(&sim.world,(b3Pos){18,2.2f,0},swat_v(.4f,.05f,.4f),SWAT_GLASS,20);
+    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));(void)light_pane;
     sim.world.room_light_off_mask=1;
     assert(swat_world_damage(&sim.world,roof,1000) && swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
     int wall=swat_world_box(&sim.world,(b3Pos){9,1.5f,0},swat_v(.1f,1.5f,3),SWAT_CONCRETE,0);
@@ -267,4 +337,4 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
-int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }
+int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }

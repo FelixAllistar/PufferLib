@@ -1,15 +1,15 @@
-# SWAT contract v1
+# SWAT annex contract v3
 
 This section defines the annex training/policy contract, selected by
 `env.task=annex` in `config/swat.ini` and rebuilding `puffer`. The default
 movement task uses the v2 contract below. Human house play adds kit,
 inspection, command, melee, throwable, taser, door-tool and sniper fields to the internal
-`SwatInput`, but v1's action heads and 167-float observations do not expose
+`SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
 A house/arrest/audio policy requires a new contract and corresponding training;
 network protocol v9 is separate from the RL contract version.
 
-Co-op and the shared acoustic system preserve this single-officer v1 layout.
+Co-op and the shared acoustic system preserve this single-officer layout.
 No audio cues/waveform fields have been added. The scripted guard consumes a
 separate delayed hearing API; trained listening or multi-role actors require a
 new observation contract. Network replica state includes hidden world truth
@@ -17,9 +17,17 @@ for presentation and must not be used directly as policy perception.
 
 The game runs at 60 Hz with four Box3D substeps. One agent currently controls
 the officer. A decision applies for one simulation tick. `swat.h` declares the
-native Ocean interface; `sim.h` declares `SWAT_CONTRACT_VERSION = 1`.
+native Ocean interface; `sim.h` declares `SWAT_CONTRACT_VERSION = 3`.
 Changing ordering, dimensions, semantics, reward, or task distribution requires
 an explicit contract/config revision and a checkpoint migration decision.
+
+Revision 3 (2026-10-10) preserves the 167/14/39 dimensions but changes visual
+semantics: clear glass transmits actor identity/presence, nearest physical pane
+depth remains available, and room lighting bounds distant actor detection.
+Start fresh annex training rather than continuing v1 weights. Old annex weights
+remain shape-compatible and the raw FP32 loader cannot identify their semantic
+revision; loading them is not evidence of compatible behavior. Movement v2 and
+its checkpoints are unchanged. No automatic checkpoint conversion is provided.
 
 ## Actions
 
@@ -83,7 +91,7 @@ range 30 m. Rows run top to bottom, columns left to right. Ray offset is
 
 | Channel | Value |
 | --- | --- |
-| 0 | Hit depth/30 m; 1 for no hit |
+| 0 | Nearest physical hit depth/30 m; 1 for no hit or an unseen actor without a nearer pane |
 | 1 | Semantic: 0 empty, 0.2 solid, 0.4 destructible, 0.6 door, 0.8 armed actor, 1 civilian |
 | 2 | Remaining object integrity; 1 for solid or visible actor, 0 for empty |
 
@@ -91,8 +99,14 @@ Own shapes are ignored. Actors do not expose their health through rays. Dead
 actors have disabled colliders and no longer appear in sensors. The mission
 provides extraction direction, remaining threat count, and time; this is
 explicit mission telemetry. Enemy positions, visibility through opaque cover,
-and behavior internals are not observation features. Glass currently occludes
-query visibility even though its presentation is translucent.
+and behavior internals are not observation features. Clear glass transmits sight
+but remains physical cover for movement and ballistics. When a visible actor lies
+behind glass, channels 1–2 describe that actor while channel 0 retains the nearest
+pane depth. If that actor is hidden by darkness or opaque cover, all three channels
+describe the physical pane instead. Otherwise unseen actors supply neither identity
+nor body depth. Actor detection uses the shared bounded room-source approximation,
+not renderer pixels; darkness halves maximum detection range, with close sight/FOV
+still required. Navigation, hands, bullets and nonlethal tools use physical queries.
 
 ## Reward and episode lifecycle
 

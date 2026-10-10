@@ -635,12 +635,16 @@ selects the native trainer's task with **`env.task=movement`** (default) or
 **`env.task=annex`**. Rebuild `puffer` after changing the task; the binary checks
 that its compiled contract matches the config at startup.
 
-The annex v1 interface has **167 float
+The annex v3 interface has **167 float
 observations**, **14 discrete action heads**, and **39 total logits**. The
 observation combines character/weapon state, mission telemetry, and 45 forward
 visibility rays. It does not include hidden enemy positions. Visible ray classes
 are semantic labels, not rendered RGB; human and policy physics are shared,
 while their observation modalities differ.
+Clear glass now transmits actor class/presence while ray depth retains the nearest
+physical pane for movement. Darkness can hide distant actors without hiding the
+pane. This changes annex observation semantics: start fresh annex weights; the
+raw loader checks dimensions only. Movement v2 checkpoints are unaffected.
 
 The baseline is the standard linear encoder and recurrent MinGRU policy with
 width 64 and two layers. SWAT does not use the Shenaniguns spatial encoder.

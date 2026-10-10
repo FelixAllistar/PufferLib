@@ -287,7 +287,7 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
         // Walls and reduced interior visibility hide distant occupants; the
         // shared static nav stays unchanged. Nearby collision avoidance remains.
         float distance=b3Distance(start,feet);b3Pos head=swat_controller_eye(&other->controller);
-        if(distance<24 && swat_world_visible(&s->world,swat_controller_eye(&s->actors[actor].controller),head) &&
+        if(distance<24 && swat_world_sight_clear(&s->world,swat_controller_eye(&s->actors[actor].controller),head) &&
            (distance<12 || distance<swat_world_visual_range(&s->world,head,24)))
             people.feet[people.count++]=feet;
     }
@@ -394,7 +394,7 @@ static bool actor_lane_clear(const SwatSim* s,int index,b3Pos from,b3Pos to) {
         b3Vec3 delta=b3SubPos(position,from);if(fabsf(delta.y)>1 || hypotf(delta.x,delta.z)>3)continue;
         // Local visible body avoidance only; this is not an omniscient occupancy
         // map of people in other rooms. Static geometry still owns the route.
-        if(!swat_world_visible(&s->world,swat_controller_eye(&s->actors[index].controller),swat_controller_eye(&other->controller)))continue;
+        if(!swat_world_sight_clear(&s->world,swat_controller_eye(&s->actors[index].controller),swat_controller_eye(&other->controller)))continue;
         delta.y=0;float t=length2>1e-6f ? swat_clamp(b3Dot(delta,segment)/length2,0,1) : 0;
         float distance=b3Length(b3Sub(delta,swat_mul(segment,t)));
         if(distance<.62f) {
@@ -474,9 +474,10 @@ static void face_target(SwatSim* s,int index,int target,SwatInput* in) {
     in->pitch_delta=swat_clamp(pitch-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD); in->aim=true;
     a->target_actor=target; a->visible_ticks++;
     bool threat=a->role==SWAT_SUSPECT || (s->tick-s->actors[target].last_shot_tick<120);
-    // The first ray must be that suspect: an officer or hostage crossing the muzzle inhibits the shot.
-    SwatHit hit=swat_world_ray(&s->world,swat_controller_eye(&a->controller),swat_controller_aim(&a->controller),24,a->controller.body.body);
-    in->fire=threat && s->config.hostile_fire && a->visible_ticks>36 && hit.kind==SWAT_HIT_ACTOR && hit.index==target && s->tick%18==0;
+    // Sight transmits clear panes; physical ballistics still impact those panes.
+    // An officer or hostage crossing the aimed line inhibits the shot.
+    in->fire=threat && s->config.hostile_fire && a->visible_ticks>36 &&
+        swat_sim_firing_line_clear(s,index,target,24) && s->tick%18==0;
     in->reload=!a->arsenal.slots[a->arsenal.active].chambered;
 }
 const char* swat_squad_order_name(int order) {

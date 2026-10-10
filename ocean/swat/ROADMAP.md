@@ -235,6 +235,31 @@ A fresh native headless 960-tick indoor firing diagnostic (1,179 objects, nine
 actors, 107 shots) measured simulation median 2.046 ms and p95 4.130 ms. It
 excludes rendering/audio and is not a controlled before/after speed comparison.
 
+Clear-glass sight now has its own query boundary. Tactical and ordinary NPCs
+can observe actors through `SWAT_GLASS`, while movement, hands, nonlethal tools
+and actual bullet traversal retain physical pane collisions. Directed compliance
+passes a clear pane; cuffs remain blocked. NPC fire requires the aimed optical
+ray to reach the target before another person, including in the ordinary guard
+path. Visible-body navigation awareness transmits glass without changing static
+capsule clearance. Linux/Windows checks exercise a real bot shot breaking a pane
+before damaging its target, a civilian crossing the firing line, blocked taser
+and cuffs, opaque cover, reduced light visibility and intact/broken replicas.
+All three hostile motel completion routes still pass, including every-tick
+replay, mid-save/resume, fresh replicas, legal arrests and no contact overflow.
+Normal Windows/Linux players and Puffer are rebuilt; the native player capture
+is reviewed in `build/swat/review/glass-sight`.
+
+Annex contract v3 retains 167 observations/14 action heads/39 logits, but keeps
+nearest physical pane depth while exposing a visible actor's class/presence
+behind it. Hidden people do not erase the pane or disclose identity/body depth.
+Fresh annex training is required; shape-compatible old raw weights cannot be
+identified automatically. Movement v2 is unchanged. This handles single-material
+clear panes, not partial opacity or a material decomposition of mixed assets.
+The motel's authored windows contain opaque dusty panes, curtain folds, frames
+and sills in a composite object; they remain opaque. Making those independently
+breakable requires physical/raster parts with known substrates and support,
+rather than relabeling the entire assembly as transparent glass.
+
 Full front-door completion now has a C player-input regression starting from
 the canonical motel spawn: five compliance/cuff interactions, two collected
 weapons, three physical civilian escorts and all surviving officers regrouped.

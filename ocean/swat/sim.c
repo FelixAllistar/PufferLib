@@ -334,10 +334,17 @@ bool swat_sim_actor_visible(const SwatSim* s,int observer,int target,float range
     b3Pos eye=swat_controller_eye(&a->controller),head=swat_controller_eye(&b->controller);
     b3Vec3 delta=b3SubPos(head,eye);float distance=b3Length(delta);
     if(distance>=range || b3Dot(swat_controller_aim(&a->controller),swat_normalize(delta))<cosf(half_fov))return false;
-    SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(delta),distance+.15f,a->controller.body.body);
+    SwatHit hit=swat_world_sight_ray(&s->world,eye,swat_normalize(delta),distance+.15f,a->controller.body.body);
     if(hit.kind!=SWAT_HIT_ACTOR || hit.index!=target)return false;
     if(distance<range*.5f)return true; // Below the darkest bound; no extra lighting queries.
     return distance<swat_world_visual_range(&s->world,hit.point,range);
+}
+bool swat_sim_firing_line_clear(const SwatSim* s,int observer,int target,float range) {
+    if(observer<0 || observer>=s->actor_count || target<0 || target>=s->actor_count || observer==target)return false;
+    const SwatActor* a=&s->actors[observer],*b=&s->actors[target];
+    if(!a->present || !a->alive || !b->present || !b->alive)return false;
+    SwatHit hit=swat_world_sight_ray(&s->world,swat_controller_eye(&a->controller),swat_controller_aim(&a->controller),range,a->controller.body.body);
+    return hit.kind==SWAT_HIT_ACTOR && hit.index==target;
 }
 void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     for (int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i] = swat_neutral_input();
@@ -383,7 +390,8 @@ void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
         inputs[i].yaw_delta = swat_clamp(yaw_error,-3*SWAT_RAD,3*SWAT_RAD);
         inputs[i].pitch_delta = swat_clamp(pitch-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD);
         inputs[i].aim = true;
-        inputs[i].fire = a->visible_ticks > 36 && fabsf(yaw_error) < 2*SWAT_RAD && s->tick%18 == 0;
+        inputs[i].fire = a->visible_ticks > 36 && fabsf(yaw_error) < 2*SWAT_RAD &&
+            swat_sim_firing_line_clear(s,i,target_index,26) && s->tick%18 == 0;
         inputs[i].reload = !a->arsenal.slots[a->arsenal.active].chambered;
     }
 }
@@ -509,7 +517,7 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
             b3Pos head=swat_controller_eye(&target->controller); b3Vec3 d=b3SubPos(head,eye); float distance=b3Length(d);
             bool aimed=focused.kind==SWAT_HIT_ACTOR && focused.index==i;
             if(!aimed && (distance>9 || b3Dot(swat_controller_aim(&a->controller),swat_normalize(d))<cosf(15*SWAT_RAD))) continue;
-            SwatHit hit=aimed ? focused : swat_world_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
+            SwatHit hit=aimed ? focused : swat_world_sight_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
             if(hit.kind==SWAT_HIT_ACTOR && hit.index==i &&
                 (target->role==SWAT_CIVILIAN || target->gear.stunned_ticks || target->health<40 ||
                  (s->config.tactical_rules && target->mind.resolve<.48f))) target->gear.surrendered=true;
@@ -717,16 +725,25 @@ void swat_sim_observe(const SwatSim* s, int actor, float out[SWAT_OBS_SIZE]) {
         float y = (1-(float)row/(SWAT_SENSOR_ROWS-1)*2)*tangent;
         b3Vec3 dir = swat_normalize(swat_add(forward,swat_add(swat_mul(right,x),swat_mul(up,y))));
         SwatHit hit = swat_world_ray(&s->world,eye,dir,30,c->body.body);
+        // Preserve nearest physical depth for movement. A clear pane can also
+        // expose a person's visual class/presence, without making it passable.
+        SwatHit seen=hit;
+        bool pane=hit.kind==SWAT_HIT_WORLD && hit.index>=0 && s->world.objects[hit.index].material==SWAT_GLASS;
+        if(pane)seen=swat_world_sight_ray(&s->world,eye,dir,30,c->body.body);
         int offset=SWAT_PROPRIO_SIZE+(row*SWAT_SENSOR_COLS+col)*SWAT_SENSOR_CHANNELS;
-        if(hit.kind==SWAT_HIT_ACTOR && hit.distance>=15 && hit.distance>=swat_world_visual_range(&s->world,hit.point,30)) {
-            out[offset]=1;continue; // An unseen body supplies neither identity nor privileged depth.
+        if(seen.kind==SWAT_HIT_ACTOR) {
+            bool visible=seen.distance<15 || seen.distance<swat_world_visual_range(&s->world,seen.point,30);
+            if(visible) {
+                out[offset]=hit.distance/30;
+                out[offset+1]=s->actors[seen.index].role==SWAT_CIVILIAN ? 1.0f : 0.8f;
+                out[offset+2]=1.0f;
+                continue;
+            }
+            if(!pane) { out[offset]=1;continue; } // No hidden-body identity or depth.
         }
         out[offset]=hit.distance/30;
         if (!hit.hit) continue;
-        if (hit.kind == SWAT_HIT_ACTOR) {
-            out[offset+1]=s->actors[hit.index].role==SWAT_CIVILIAN ? 1.0f : 0.8f;
-            out[offset+2]=1.0f; // visible presence, not privileged target health
-        } else if (hit.index >= 0) {
+        if (hit.index >= 0 && hit.kind==SWAT_HIT_WORLD) {
             const SwatObject* object = &s->world.objects[hit.index];
             out[offset+1]=object->door ? 0.6f : (object->max_health > 0 ? 0.4f : 0.2f);
             out[offset+2]=object->max_health > 0 ? object->health/object->max_health : 1;

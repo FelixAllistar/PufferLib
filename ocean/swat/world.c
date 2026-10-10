@@ -107,15 +107,22 @@ static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     return c->result.fraction;
 }
 
-SwatHit swat_world_ray(const SwatWorld* w, b3Pos origin, b3Vec3 direction,
-                       float range, b3BodyId ignore) {
+static SwatHit cast_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,
+                       float range,b3BodyId ignore,bool sight) {
     SwatRayContext c = {0}; c.ignore = ignore;
+    if(sight)c.optical=w;
     c.result.fraction = 1; c.result.index = -1;
     b3Vec3 translation = swat_mul(swat_normalize(direction),range);
     c.result.point = b3OffsetPos(origin,translation);
     b3World_CastRay(w->id,origin,translation,b3DefaultQueryFilter(),swat_ray_callback,&c);
     c.result.distance = c.result.fraction*range;
     return c.result;
+}
+SwatHit swat_world_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore) {
+    return cast_ray(w,origin,direction,range,ignore,false);
+}
+SwatHit swat_world_sight_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore) {
+    return cast_ray(w,origin,direction,range,ignore,true);
 }
 
 SwatHit swat_world_sphere_cast(const SwatWorld* w, b3Pos origin,
@@ -293,7 +300,7 @@ SwatRoomLight swat_world_room_light(const SwatWorld* w,int room) {
     if(w->room_light_off_mask&(1u<<room))light.power=0;
     return light;
 }
-static bool optical_clear(const SwatWorld* w,b3Pos from,b3Pos to) {
+bool swat_world_sight_clear(const SwatWorld* w,b3Pos from,b3Pos to) {
     SwatRayContext c={0};c.result.fraction=1;c.world_only=true;c.optical=w;
     b3World_CastRay(w->id,from,b3SubPos(to,from),b3DefaultQueryFilter(),swat_ray_callback,&c);
     return !c.result.hit;
@@ -302,7 +309,7 @@ float swat_world_visual_range(const SwatWorld* w,b3Pos target,float daylight_ran
     int room=swat_world_room(w,target);if(room<0)return daylight_range;
     // A roof opening restores daylight without a camera, shadow map or hidden
     // occupant state. Glass transmits this approximation; opaque cover blocks it.
-    if(optical_clear(w,target,b3OffsetPos(target,swat_v(0,64,0))))return daylight_range;
+    if(swat_world_sight_clear(w,target,b3OffsetPos(target,swat_v(0,64,0))))return daylight_range;
     SwatRoomLight light=swat_world_room_light(w,room);float exposure=0;
     if(light.power>0) {
         b3Vec3 delta=b3SubPos(target,light.origin);float d2=b3Dot(delta,delta),beam=1;
@@ -310,7 +317,7 @@ float swat_world_visual_range(const SwatWorld* w,b3Pos target,float daylight_ran
             float t=swat_clamp((b3Dot(swat_normalize(delta),light.direction)-.05f)/.30f,0,1);
             beam=t*t*(3-2*t); // Same cone and attenuation as the room shader.
         }
-        if(beam>0 && optical_clear(w,light.origin,target))exposure=light.power*beam*1.8f/(1+.18f*d2);
+        if(beam>0 && swat_world_sight_clear(w,light.origin,target))exposure=light.power*beam*1.8f/(1+.18f*d2);
     }
     // Residual ambient keeps close targets detectable. Darkness lowers range
     // continuously, to half the daylight range; it never disables hearing.

@@ -90,6 +90,9 @@ int swat_world_box(SwatWorld* world, b3Pos center, b3Vec3 half,
 void swat_world_build_range(SwatWorld* world, uint32_t* seed, bool randomize);
 SwatHit swat_world_ray(const SwatWorld* world, b3Pos origin, b3Vec3 direction,
                        float range, b3BodyId ignore);
+// Optical queries transmit clear glass; weapons/tools/movers use physical casts.
+SwatHit swat_world_sight_ray(const SwatWorld*,b3Pos,b3Vec3,float,b3BodyId ignore);
+bool swat_world_sight_clear(const SwatWorld*,b3Pos from,b3Pos to);
 SwatHit swat_world_sphere_cast(const SwatWorld* world, b3Pos origin,
                               b3Vec3 translation, float radius, b3BodyId ignore);
 bool swat_world_damage(SwatWorld* world, int object, float damage);
