@@ -1,0 +1,16 @@
+CC0 1.0 Universal dedication
+
+The original procedural furniture geometry, generated base-colour texture artwork,
+Blender source scenes, rendered previews and rebuild/validation scripts in this
+04_furniture_variants package are dedicated to the public domain under CC0 1.0.
+To the extent possible under law, the authors waive copyright and related rights.
+
+Full legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+Plain-language summary: https://creativecommons.org/publicdomain/zero/1.0/
+
+No attribution is required. Attribution, if desired: Original CC0 Secondhand Rooms
+furniture batch. No third-party asset downloads, brands or scans are included.
+Blender and its glTF exporter are separate software and retain their own licences.
+This dedication does not relicense any game engine or imply engine endorsement.
+The assets are provided without warranty, including performance or fitness for a
+particular game. Integration and physics must be tested by the receiving project.

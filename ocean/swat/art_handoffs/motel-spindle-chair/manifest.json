@@ -1,0 +1,34 @@
+{
+  "drive_file_id": "1bLVPJYNBg6KFe1RNVrnTf6RxBwBuS9It",
+  "asset_id": "chair_dining_spindle",
+  "runtime_sha256": "e4f65add0277f349fc4ede7d21d2436f918b583e5365486cc8218e007236bea4",
+  "source_bounds": [
+    [
+      -0.24705877900123596,
+      -0.23099999129772186,
+      0
+    ],
+    [
+      0.24705877900123596,
+      0.2789977788925171,
+      0.9658472537994385
+    ]
+  ],
+  "bounds_min_m": [
+    -0.24705877900123596,
+    0,
+    -0.2789977788925171
+  ],
+  "bounds_max_m": [
+    0.24705877900123596,
+    0.9658472537994385,
+    0.23099999129772186
+  ],
+  "materials": [
+    "F04_wood_walnut",
+    "F04_wood_honey",
+    "F04_wood_dark"
+  ],
+  "triangle_count": 1884,
+  "source_leg_minimum_nominal_solid_diameter_m": 0.042
+}

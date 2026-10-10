@@ -1,0 +1,143 @@
+{
+  "drive_file_id": "1bLVPJYNBg6KFe1RNVrnTf6RxBwBuS9It",
+  "archive_sha256": "4edf198912251c5f7a89cf7820db42f8f29696574200ef91f2c5bd24210e1d64",
+  "original_runtime_hashes_verified": 12,
+  "files": [
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/build_furniture.py",
+      "sha256": "56785a67a61b52ce77debf660517e55b1fe8844753e58598fef318ba93dedd7a"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/furniture_variants.blend",
+      "sha256": "161ffb40e0fd4968fcaa3bf019a8376daf7d5ee4672082aff81458324809cb52"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/make_contact_sheet.py",
+      "sha256": "9011eef8fd3233f86dd75339c961d3a7fd4b5c70b134590392b8a1505a4348b3"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/package_batch.py",
+      "sha256": "a9a311a4123035ecdf461b3a428f07ecccbd44317f7ead1eac53993d0621b837"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/qa_reimport.py",
+      "sha256": "4df1a9085870663b8497ce335153f09e5c9e2f57d1a6c26a313cfc5c146ddf0d"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/render_furniture.py",
+      "sha256": "dabc0b5a74101adb20e5184096c92b8af147502cf02113d8de087c614888e196"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/validate_furniture.py",
+      "sha256": "651cd9d99953dd6652abc4ceb30d45a64f2f537076ee2558272764779de17c2c"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/brass.png",
+      "sha256": "7e10f893200266b4be9d4bf796cde2c808207ddd8e47b2238d49225d11028221"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/cane.png",
+      "sha256": "3daf4ebaa2721c9be9a66b3c89125aa7493072d85c5b5e00a48e06e76c82b21a"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/canvas.png",
+      "sha256": "6bdffdb4a51f880815c6afee19ba2dccfae837e82d54bad40645be4ed8dd8f51"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/foam.png",
+      "sha256": "be573a455bff1570101b42944ef2eba51e784ab2644cc0f2de7b9db187f2d546"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/iron.png",
+      "sha256": "42ce82f9bdec48016e421d3ecba3b1c67f41bc8ff8390d31054e3419cfcebcf0"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/metal_cream.png",
+      "sha256": "82ffa91fd7b067abdec4dc3f4bbecfdb6158672c153f8ea8df6e1d3f0197f0ac"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/metal_sage.png",
+      "sha256": "33e3ed10872aae5dce1e2204385475b89672f797994622679acd7887321d5fa1"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/paint_putty.png",
+      "sha256": "636ae6f0b4aceca4701f1a3a48cbc23296c2515cf6107bca9667a5620cf5c8bf"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/provenance.json",
+      "sha256": "ce7337d98963864072dbecaff813e83d67b602c2f5d5a61c3e00f08a0ca38ae2"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/rust.png",
+      "sha256": "45da0665d14d075e9f7156150bc5ded029b7b50139545a6ddc225105cd15a6ab"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/steel.png",
+      "sha256": "bdaebbf5c3c12fd1a96a85cd5e94d3ea6ad75b0c7db4881bd75fc51984b38bca"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/vinyl_tobacco.png",
+      "sha256": "e48d16dd170e6e8e8b0039487e2f63af61d8f098050a2954c99df7f550664fd9"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/wood_dark.png",
+      "sha256": "4c032f869c421ae196f33e70bb63b175b686c7da97c31aaf727cf2fe7572f13f"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/wood_endgrain.png",
+      "sha256": "a268629e112b5a63ea84e4cad6a242995f4e081e014bc97d0791fa94d373accd"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/wood_honey.png",
+      "sha256": "53b31b48b10f3411a4d8d2f2286446dec34d778d3ecfc3ada544644abf7ebee1"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/wood_walnut.png",
+      "sha256": "f4b420f0bdd68b1386a5646a631b3a63a602d9a631be1d6be30e80d1ff7d1657"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/wool_faded.png",
+      "sha256": "d3392a04fa431c0c0693336a558222443b8f02743462662921031c26e73e20d8"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/wool_olive.png",
+      "sha256": "031cd0c701c1eca14b11733009a774014e5a28266fb03a8cf69517b04ac41203"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/source/textures/wool_slate.png",
+      "sha256": "7e48fe2674457ee43109d67872a34052dabc5ec89461f945418cdf01208dccf2"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/qa/reimport_report.json",
+      "sha256": "e353e6589b083d1af9ff8ac2d0c1f00e578ec1ad87691a2a43f4d8bebd096570"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/qa/validation_report.json",
+      "sha256": "8f6c5dc5ac68ee97b3645f304f48c2ca715d4b6501efb3fe1bec79e38998ab66"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/qa/visual_review.json",
+      "sha256": "069156a38c24a0aa134bfdca2384bfb36ffefed6f7a14a02fceb8e774937cd6a"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/original-LICENSE.txt",
+      "sha256": "5ab799c82556e28d2f5d4dfef1dda8da41e245d4fdf3a0ec725035923bd0128b"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/original-README.md",
+      "sha256": "6c8692b977f4ce4774690a8ae32d15dcbdf93d6aaeb58345eafdd0c5e09a7799"
+    },
+    {
+      "path": "art_handoffs/motel-spindle-chair/original-manifest.json",
+      "sha256": "c6d89d6156ab8a6116dfb47f8f399d359c3a09105123c39c0581d044700ace0a"
+    },
+    {
+      "path": "assets/environment/motel_props/chair_dining_spindle.glb",
+      "sha256": "e4f65add0277f349fc4ede7d21d2436f918b583e5365486cc8218e007236bea4"
+    },
+    {
+      "path": "assets/environment/motel_props/LICENSE-spindle-chair.txt",
+      "sha256": "5ab799c82556e28d2f5d4dfef1dda8da41e245d4fdf3a0ec725035923bd0128b"
+    }
+  ]
+}

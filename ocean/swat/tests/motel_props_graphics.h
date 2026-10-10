@@ -1,15 +1,22 @@
 // Original prop silhouettes and open spaces must agree with collision.
 static void motel_prop_graphics(SwatView* view,const char* directory,int index) {
-    const char* names[]={"trolley","extinguisher","noticeboard"};
-    const int triangles[]={2416,2412,1416},pixels[]={512,512,1024};
-    const float sizes[]={1.12f,.64f,.90f};
+    const char* names[]={"trolley","extinguisher","noticeboard","chair"};
+    const int triangles[]={2416,2412,1416,1884},pixels[]={512,512,1024,512};
+    const int meshes[]={1,1,1,3};const float sizes[]={1.12f,.64f,.90f,1.12f};
     int asset=45+index;const char* name=names[index];
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,81);SwatEnvironmentArt* art=&view->environment;
     swat_environment_art_prepare_location(art,&sim.world);before=sim.world;
-    Model source=art->motel[asset];assert(source.meshCount==1 && source.meshes[0].triangleCount==triangles[index] && source.materialCount==2);
-    Material material=source.materials[1];
-    assert(material.maps[MATERIAL_MAP_ALBEDO].texture.width==pixels[index] && material.maps[MATERIAL_MAP_ROUGHNESS].texture.width==pixels[index]);
+    Model source=art->motel[asset];assert(source.meshCount==meshes[index] && source.materialCount==meshes[index]+1);
+    int total=0;for(int m=0;m<source.meshCount;m++)total+=source.meshes[m].triangleCount;assert(total==triangles[index]);
+    for(int m=1;m<source.materialCount;m++) {
+        Material material=source.materials[m];assert(material.maps[MATERIAL_MAP_ALBEDO].texture.width==pixels[index]);
+        if(index==3) {
+            const SwatMotelMaterial* original=&swat_motel_asset(asset)->materials[m-1];
+            assert(!material.maps[MATERIAL_MAP_ROUGHNESS].texture.id && !material.maps[MATERIAL_MAP_NORMAL].texture.id);
+            assert(fabsf(material.maps[MATERIAL_MAP_ROUGHNESS].value-original->roughness)<1e-6f && fabsf(material.maps[MATERIAL_MAP_METALNESS].value-original->metalness)<1e-6f);
+        } else assert(material.maps[MATERIAL_MAP_ROUGHNESS].texture.width==pixels[index]);
+    }
     SwatObject* o=&sim.world.objects[SWAT_MOTEL_PROPS_FIRST+index];
     int parts=b3Body_GetShapeCount(o->body);b3ShapeId shapes[64];assert(parts>1 && parts<64 && b3Body_GetShapes(o->body,shapes,64)==parts);
     bool prepared=view->lighting.prepared;view->lighting.prepared=false;
@@ -44,12 +51,13 @@ static void motel_prop_graphics(SwatView* view,const char* directory,int index) 
     Camera3D camera={{-10.2f,1.5f,-7.65f},{-8.75f,.48f,-9.35f},{0,1,0},65,CAMERA_PERSPECTIVE};
     if(index==1)camera=(Camera3D){{4.85f,1.65f,1.8f},{4.20f,1.40f,.224f},{0,1,0},55,CAMERA_PERSPECTIVE};
     if(index==2)camera=(Camera3D){{-9.8f,1.65f,-1.6f},{-11.91f,1.65f,-2.60f},{0,1,0},55,CAMERA_PERSPECTIVE};
+    if(index==3)camera=(Camera3D){{-11.35f,1.15f,-5.30f},{-10.7f,.45f,-4.70f},{0,1,0},60,CAMERA_PERSPECTIVE};
     Image image=room101_capture_size(view,camera,true,1440,810);char path[4096];
     snprintf(path,sizeof(path),"%s/%s-scene.png",directory,name);assert(ExportImage(image,path));UnloadImage(image);
     assert(room101_owner_pixels(art,o,false)>100);
     assert(swat_world_damage(&sim.world,o->tag.index,10000));assert(!room101_owner_pixels(art,o,false));
     swat_sim_close(&sim);
-    printf("PASS %s graphics: %d ray/raster samples on five faces with original art and exact fallback, two %dpx PBR maps, native lighting/shadows and authoritative removal\n",name,checked,pixels[index]);
+    printf("PASS %s graphics: %d ray/raster samples on five faces with original art and exact fallback, %s %dpx original material maps, native lighting/shadows and authoritative removal\n",name,checked,index==3?"three scalar-PBR wood":"two packed-PBR",pixels[index]);
 }
 
 static void motel_props_graphics(SwatView* view,const char* directory) {

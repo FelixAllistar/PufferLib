@@ -1,0 +1,28 @@
+{
+  "coordinate_system": "Original identity glTF metre Y-up geometry; +Z front",
+  "anchors": [
+    [
+      -0.19456294178962708,
+      0,
+      0.1975308507680893
+    ],
+    [
+      -0.19456292688846588,
+      7.450580596923828e-9,
+      -0.1975308507680893
+    ],
+    [
+      0.19456294178962708,
+      0,
+      0.1975308507680893
+    ],
+    [
+      0.19456292688846588,
+      7.450580596923828e-9,
+      -0.1975308507680893
+    ]
+  ],
+  "method": "Four actual lowest source vertices, one per splayed leg; not an assumed horizontal contact patch",
+  "floor_owner": 2,
+  "floor_surface_y_m": 0.0055
+}

@@ -284,9 +284,10 @@ static void mounted_bind(SwatWorld* w) {
 static const SwatMotelInstance prop_instances[]={
     {45,{-8.75f,.0055f,-9.35f},{1,1,1},0,SWAT_STEEL,false,false},
     {46,{4.20f,1.12f,.224f},{1,1,1},0,SWAT_STEEL,false,false},
-    {47,{-11.91f,1.65f,-2.60f},{1,1,1},SWAT_PI*.5f,SWAT_WOOD,false,false}
+    {47,{-11.91f,1.65f,-2.60f},{1,1,1},SWAT_PI*.5f,SWAT_WOOD,false,false},
+    {48,{-10.70f,.0055f,-4.70f},{1,1,1},0,SWAT_WOOD,false,false}
 };
-static const float prop_thickness[]={.008f,.012f,.032f};
+static const float prop_thickness[]={.008f,.012f,.032f,.042f};
 static float prop_health(int index){const SwatMaterialDef* material=swat_material(prop_instances[index].material);return material->fracture_health*prop_thickness[index]/material->reference_thickness;}
 static void prop_recipe(int index,b3Pos* center,b3Vec3* half) {
     const SwatMotelInstance* p=&prop_instances[index];const SwatMotelAsset* a=swat_motel_asset(p->asset);
@@ -300,10 +301,12 @@ static bool prop_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_SUP
     // Resolve all measured contacts against original floor triangles, rather
     // than the bounds (the perimeter trim is 1 mm above this floor surface).
     // This also works before collider creation and after support loss.
-    const SwatObject* floor=&w->objects[127];
-    const SwatMotelInstance* base=swat_motel_instance(126);const SwatMotelAsset* source=swat_motel_asset(base->asset);
+    int floor_owner=index==3?2:127;
+    const b3Vec3* anchors=index==3?prop_chair_anchors:prop_wheel_anchors;
+    const SwatObject* floor=&w->objects[floor_owner];
+    const SwatMotelInstance* base=swat_motel_instance(floor_owner-1);const SwatMotelAsset* source=swat_motel_asset(base->asset);
     for(int i=0;i<4;i++) {
-        b3Vec3 a=prop_wheel_anchors[i];b3Pos point=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*a.x+sinf(p->yaw)*a.z,a.y,-sinf(p->yaw)*a.x+cosf(p->yaw)*a.z));
+        b3Vec3 a=anchors[i];b3Pos point=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*a.x+sinf(p->yaw)*a.z,a.y,-sinf(p->yaw)*a.x+cosf(p->yaw)*a.z));
         if(fabsf(point.x-floor->center.x)>floor->half.x || fabsf(point.z-floor->center.z)>floor->half.z)return false;
         bool supported=false;
         for(int t=0;t<source->triangle_count && !supported;t++) {
@@ -320,7 +323,7 @@ static bool prop_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_SUP
         }
         if(!supported)return false;
     }
-    supports[0]=127;return true;
+    supports[0]=floor_owner;return true;
 }
 bool swat_motel_prop(const SwatWorld* w,int owner,SwatMotelInstance* out) {
     int index=owner-SWAT_MOTEL_PROPS_FIRST;

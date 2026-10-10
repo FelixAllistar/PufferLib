@@ -129,12 +129,25 @@ replica and unsupported-state checks pass. Native source/fallback graphics match
 ownership. Contact checks now cover 25 assets, 29,811 triangles/edge flags and
 60,000 matched rays per world/replica. Full hostile completion remains 9,827
 ticks with exact replay and save/resume on both platforms. Normal players rebuilt.
+The original spindle chair now sits behind the reception counter, at real scale
+on four measured source feet touching floor 2. Nine bounded contact meshes retain
+all 1,884 faces and original edge/material flags, with all three original wood
+materials. Ordinary movement is blocked by the intact chair, clears the west
+aisle and crosses its former footprint after actual rifle damage removes it.
+Linux/Windows floor-contact, damage, legacy-prefix, replica and completion checks
+pass. Native source/fallback graphics match 151,710 stable ray/raster samples;
+texture sharing and final release pass. Contact checks cover 26 assets, 31,695
+triangles and 62,400 matched rays per world/replica. Complete hostile gameplay
+still passes in 9,827 ticks with exact replay and save/resume on both platforms.
+Its single wood response uses the source's 42 mm minimum nominal leg diameter;
+independent leg/spindle breakage remains future work. Normal players rebuilt.
 The next composition handoff groups the unchanged refuse bin, tote, wheelbarrow
 and one leaf patch; original hashes verified, world placement/contact/material
-integration still pending. The measured wheelbarrow leg gap needs a resting pose.
+integration still pending. Its measured rigid resting pose and component material
+tables have arrived; capped proxies and unknown substrates remain documented.
 Next delivered art: service vacuum, umbrella stand,
-bottle opener/cap catcher, paper-towel dispenser and first-aid cabinet. Reuse
-the existing spindle chair for reception seating if clearance/appearance pass.
+bottle opener/cap catcher, paper-towel dispenser and first-aid cabinet. Continue
+compact service composition with measured placement and actual route clearance.
 All are original source candidates; integration follows physical material,
 mounting, route clearance and shared authority checks.
 

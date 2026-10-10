@@ -1,0 +1,105 @@
+{
+  "status": "pass",
+  "asset_count": 12,
+  "total_triangles": 35116,
+  "errors": [],
+  "files": [
+    {
+      "asset_id": "wingback_armchair_worn",
+      "bytes": 1164460,
+      "sha256": "a3835e6d584cb00809183a2bd5dc2ed995e25ada09c3cbad45c060cfe48c001a",
+      "triangles": 4668,
+      "embedded_images": 4,
+      "materials": 5
+    },
+    {
+      "asset_id": "recliner_vinyl_extended",
+      "bytes": 1315152,
+      "sha256": "4aee1cd294d2f42fb7e296794375dc1a6268a4262a62d0c902f6d66aa3e86c57",
+      "triangles": 4986,
+      "embedded_images": 6,
+      "materials": 8
+    },
+    {
+      "asset_id": "chair_metal_folding",
+      "bytes": 616704,
+      "sha256": "7aa71587f7f9805ef3cbb5d7694012a191a376579cf9acde62f6826249daffed",
+      "triangles": 1202,
+      "embedded_images": 5,
+      "materials": 6
+    },
+    {
+      "asset_id": "chair_dining_spindle",
+      "bytes": 918796,
+      "sha256": "e4f65add0277f349fc4ede7d21d2436f918b583e5365486cc8218e007236bea4",
+      "triangles": 1884,
+      "embedded_images": 3,
+      "materials": 3
+    },
+    {
+      "asset_id": "table_folding_card",
+      "bytes": 836368,
+      "sha256": "febd7704462743c5157bc4e506b4b2fa51df77a31f4b1d122c224ac0ef848098",
+      "triangles": 1090,
+      "embedded_images": 5,
+      "materials": 6
+    },
+    {
+      "asset_id": "dresser_low_six_drawer",
+      "bytes": 1383244,
+      "sha256": "b4dbea1a6490ab1e6921edd562c4d771801bda4ce3123edc7d718c82c85143cf",
+      "triangles": 2186,
+      "embedded_images": 6,
+      "materials": 6
+    },
+    {
+      "asset_id": "wardrobe_panel_ajar",
+      "bytes": 1655252,
+      "sha256": "9fa1ab00bca20a06058dca468aadd735a28ef5689ff476266c41b3b8b7524b7a",
+      "triangles": 2300,
+      "embedded_images": 7,
+      "materials": 7
+    },
+    {
+      "asset_id": "shoe_rack_slatted",
+      "bytes": 730592,
+      "sha256": "d17394b6de1ed7cf0469d9e6377fd271033cc3591957069512be3d44e1e54633",
+      "triangles": 1944,
+      "embedded_images": 3,
+      "materials": 4
+    },
+    {
+      "asset_id": "laundry_hamper_woven",
+      "bytes": 1960956,
+      "sha256": "f445aee1c052cc4f13658c06ad70176c604c4527b5cd2f73c306d919d86863d0",
+      "triangles": 8146,
+      "embedded_images": 5,
+      "materials": 6
+    },
+    {
+      "asset_id": "bedframe_single_institutional",
+      "bytes": 430008,
+      "sha256": "515601eefaae54b374b900e8b5a98a8cc0b39385c2997775b4d0991b6fe7e370",
+      "triangles": 2524,
+      "embedded_images": 4,
+      "materials": 5
+    },
+    {
+      "asset_id": "shelving_steel_repaired",
+      "bytes": 866856,
+      "sha256": "751bd3e5df502252f27f1546f0dcc250dbf279ffda6c59a0f123242fdf525b9b",
+      "triangles": 1922,
+      "embedded_images": 5,
+      "materials": 6
+    },
+    {
+      "asset_id": "credenza_tambour",
+      "bytes": 1035728,
+      "sha256": "79c13fb471c8b3c4b187705892c6b393c3788087486780bcf2d9b296c7c273ae",
+      "triangles": 2264,
+      "embedded_images": 4,
+      "materials": 4
+    }
+  ],
+  "scope": "GLB data integrity; not runtime or collision certification"
+}

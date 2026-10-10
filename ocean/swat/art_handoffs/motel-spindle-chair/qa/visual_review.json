@@ -1,0 +1,40 @@
+{
+  "status": "pass",
+  "review_scope": "Actual rendered catalogue, all 12 asset thumbnails and three staged furniture views. Asset-side visual QA, not engine testing.",
+  "observations": [
+    "Twelve distinct silhouettes and constructions, with coherent muted fabric/wood/painted-steel palette.",
+    "Open wicker hamper, bare bed spring deck, open shelving and wardrobe/cabinet cavities are geometric.",
+    "All source lowest vertices now align with local Z=0. Authored X/Y body-reference pivots intentionally preserve asymmetric handles and open mechanisms.",
+    "No visible floating parts or asset-to-asset intersections in the final staging views.",
+    "Catalogue labels and dimension/triangle captions fit their panels; footer is separate."
+  ],
+  "revisions": [
+    "Corrected contact-sheet footer overlap discovered on the first full-sheet inspection.",
+    "Removed 1\u201315 mm primitive-derived ground clearances in five models, regenerated GLBs/source and refreshed affected images.",
+    "Clarified body-reference pivot policy and double-sided rendering in node metadata, manifest and README.",
+    "Added a useful coloured native-library viewport overview."
+  ],
+  "reviewed_previews": [
+    "00_contact_sheet.png",
+    "01_reading_room.png",
+    "02_bedroom_storage.png",
+    "03_utility_corner.png",
+    "bedframe_single_institutional.png",
+    "chair_dining_spindle.png",
+    "chair_metal_folding.png",
+    "credenza_tambour.png",
+    "dresser_low_six_drawer.png",
+    "laundry_hamper_woven.png",
+    "recliner_vinyl_extended.png",
+    "shelving_steel_repaired.png",
+    "shoe_rack_slatted.png",
+    "table_folding_card.png",
+    "wardrobe_panel_ajar.png",
+    "wingback_armchair_worn.png"
+  ],
+  "known_limits": [
+    "Static furniture articulation and merged loose components; no animation or runtime physics.",
+    "All exported materials are double-sided; receiving renderer should evaluate culling/performance.",
+    "Presentation floors and walls are staging only, not additional assets."
+  ]
+}

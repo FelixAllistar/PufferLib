@@ -158,6 +158,51 @@ static void noticeboard(void) {
     }
     puts("PASS noticeboard: measured wall anchors, original 32 mm wood frame exit thickness, four-shot material damage, support loss, old extinguisher prefix, malformed recipes and unsupported snapshots");
 }
+static void chair(void) {
+    int owner=SWAT_MOTEL_PROPS_FIRST+3;SwatMotelInstance p;
+    assert(swat_motel_prop(&sim.world,owner,&p));SwatObject* o=&sim.world.objects[owner];
+    assert(o->active && p.asset==48 && o->material==SWAT_WOOD && o->query_mesh.data->triangleCount==1884);
+    assert(b3Body_GetShapeCount(o->body)==9 && o->supports[0]==2);
+    assert(o->structural_thickness==.042f && fabsf(o->max_health-150*.042f/.038f)<.001f);
+    for(int k=1;k<SWAT_MAX_SUPPORTS;k++)assert(o->supports[k]==-1);
+    for(int x=-1;x<=1;x+=2)for(int z=-1;z<=1;z+=2) {
+        b3Pos contact=point(&p,swat_v(x*.19456294f,0,z*.19753085f));
+        SwatHit h=swat_world_ray(&sim.world,b3OffsetPos(contact,swat_v(0,.005f,0)),swat_v(0,-1,0),.01f,o->body);
+        assert(h.hit && h.index==2 && b3Distance(h.point,contact)<.0001f);
+    }
+    SwatHit h=swat_world_ray(&sim.world,point(&p,swat_v(0,.32f,.45f)),swat_v(0,0,-1),.9f,b3_nullBodyId);
+    assert(!h.hit); // Space between legs below the seat remains open.
+    h=swat_world_ray(&sim.world,point(&p,swat_v(0,.65f,0)),swat_v(0,-1,0),.3f,b3_nullBodyId);
+    assert(h.hit && h.index==owner && fabsf(swat_world_exit_distance(o,h.point,swat_v(0,-1,0))-.068f)<.0001f);
+    synchronize();assert(replica.world.objects[owner].query_mesh.data->triangleCount==1884);
+    map.count=owner;size_t n=swat_encode_map(bytes,sizeof(bytes),&map);
+    assert(n && swat_decode_map(&decoded,bytes,n));swat_apply_map(&replica,&decoded);
+    assert(replica.world.motel && replica.world.count==owner && !swat_motel_prop(&replica.world,owner,&p));
+    synchronize();map.objects[owner].center.z+=.1f;swat_apply_map(&replica,&map);assert(!replica.world.motel);
+    synchronize();state.objects[2].active=false;
+    assert(!swat_apply_snapshot(&replica,&state) && replica.world.objects[2].active);
+    assert(swat_motel_prop(&sim.world,owner,&p));
+    SwatController* c=&sim.actors[0].controller;
+    b3Body_SetTransform(c->body.body,b3OffsetPos((b3Pos){-11.4f,.0255f,-4.7f},swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
+    b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=0;c->pitch=0;
+    SwatInput input=swat_neutral_input();input.forward=.8f;
+    for(int tick=0;tick<200;tick++)swat_sim_step(&sim,&input);
+    b3Pos feet=swat_body_feet_position(&c->body);assert(feet.x< -11.1f && feet.y<.1f);
+    b3Body_SetTransform(c->body.body,b3OffsetPos((b3Pos){-11.5f,.0255f,-3.85f},swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
+    b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=-SWAT_PI*.5f;c->pitch=0;
+    for(int tick=0;tick<90;tick++)swat_sim_step(&sim,&input);
+    feet=swat_body_feet_position(&c->body);
+    assert(feet.z< -5 && feet.x< -11.15f && feet.y<.1f);
+    int shots=0;for(;o->active && shots<8;shots++)
+        swat_sim_shoot(&sim,0,point(&p,swat_v(0,.65f,0)),swat_v(0,-1,0),(SwatShot){.fired=true,.damage=34,.range=.3f,.energy=1});
+    assert(shots==5 && !o->active && B3_IS_NULL(o->body) && sim.world.objects[2].active);
+    b3Body_SetTransform(c->body.body,b3OffsetPos((b3Pos){-11.4f,.0255f,-4.7f},swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
+    b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=0;c->pitch=0;
+    for(int tick=0;tick<200;tick++)swat_sim_step(&sim,&input);
+    feet=swat_body_feet_position(&c->body);assert(feet.x> -10.4f && feet.y<.1f);
+    synchronize();assert(!replica.world.objects[owner].active);swat_sim_reset(&sim);
+    puts("PASS chair: four original floor contacts, open under-seat space, exact 68 mm seat exit, real controller obstruction and clear reception aisle, five-shot wood damage, legacy prefix and replica/recipe/snapshot checks");
+}
 static void shell(SwatWorld* world,int owner) {
     SwatMotelInstance p;assert(swat_motel_mounted(world,owner,&p));SwatObject* o=&world->objects[owner];
     assert(o->active && o->part==SWAT_PART_FIXTURE && o->query_mesh.data && o->query_mesh.data->triangleCount==1464);
@@ -193,7 +238,7 @@ static void cascade(void) {
 int main(int argc,char** argv) {
     assert(argc==2);cascade();SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,81);assert(sim.world.count==SWAT_MOTEL_OBJECTS);
-    trolley();extinguisher();noticeboard();
+    trolley();extinguisher();noticeboard();chair();
     for(int i=0;i<SWAT_MOTEL_MOUNTED_INSTANCES;i++)shell(&sim.world,SWAT_MOTEL_MOUNTED_FIRST+i);
     synchronize();for(int i=0;i<SWAT_MOTEL_MOUNTED_INSTANCES;i++)shell(&replica.world,SWAT_MOTEL_MOUNTED_FIRST+i);
     int owner=SWAT_MOTEL_MOUNTED_FIRST;SwatMotelInstance p;assert(swat_motel_mounted(&sim.world,owner,&p));

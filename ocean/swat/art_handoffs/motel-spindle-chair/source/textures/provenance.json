@@ -1,0 +1,222 @@
+{
+  "license": "CC0-1.0",
+  "texture_count": 18,
+  "textures": [
+    {
+      "file": "brass.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "7e10f893200266b4be9d4bf796cde2c808207ddd8e47b2238d49225d11028221"
+    },
+    {
+      "file": "cane.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "3daf4ebaa2721c9be9a66b3c89125aa7493072d85c5b5e00a48e06e76c82b21a"
+    },
+    {
+      "file": "canvas.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "6bdffdb4a51f880815c6afee19ba2dccfae837e82d54bad40645be4ed8dd8f51"
+    },
+    {
+      "file": "foam.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "be573a455bff1570101b42944ef2eba51e784ab2644cc0f2de7b9db187f2d546"
+    },
+    {
+      "file": "iron.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "42ce82f9bdec48016e421d3ecba3b1c67f41bc8ff8390d31054e3419cfcebcf0"
+    },
+    {
+      "file": "metal_cream.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "82ffa91fd7b067abdec4dc3f4bbecfdb6158672c153f8ea8df6e1d3f0197f0ac"
+    },
+    {
+      "file": "metal_sage.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "33e3ed10872aae5dce1e2204385475b89672f797994622679acd7887321d5fa1"
+    },
+    {
+      "file": "paint_putty.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "636ae6f0b4aceca4701f1a3a48cbc23296c2515cf6107bca9667a5620cf5c8bf"
+    },
+    {
+      "file": "rust.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "45da0665d14d075e9f7156150bc5ded029b7b50139545a6ddc225105cd15a6ab"
+    },
+    {
+      "file": "steel.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "bdaebbf5c3c12fd1a96a85cd5e94d3ea6ad75b0c7db4881bd75fc51984b38bca"
+    },
+    {
+      "file": "vinyl_tobacco.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "e48d16dd170e6e8e8b0039487e2f63af61d8f098050a2954c99df7f550664fd9"
+    },
+    {
+      "file": "wood_dark.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "4c032f869c421ae196f33e70bb63b175b686c7da97c31aaf727cf2fe7572f13f"
+    },
+    {
+      "file": "wood_endgrain.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "a268629e112b5a63ea84e4cad6a242995f4e081e014bc97d0791fa94d373accd"
+    },
+    {
+      "file": "wood_honey.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "53b31b48b10f3411a4d8d2f2286446dec34d778d3ecfc3ada544644abf7ebee1"
+    },
+    {
+      "file": "wood_walnut.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "f4b420f0bdd68b1386a5646a631b3a63a602d9a631be1d6be30e80d1ff7d1657"
+    },
+    {
+      "file": "wool_faded.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "d3392a04fa431c0c0693336a558222443b8f02743462662921031c26e73e20d8"
+    },
+    {
+      "file": "wool_olive.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "031cd0c701c1eca14b11733009a774014e5a28266fb03a8cf69517b04ac41203"
+    },
+    {
+      "file": "wool_slate.png",
+      "size_px": [
+        512,
+        512
+      ],
+      "color_space": "sRGB",
+      "purpose": "base_color",
+      "provenance": "Original deterministic NumPy pattern authored in build_furniture.py. No external photographs or downloads.",
+      "license": "CC0-1.0",
+      "sha256": "7e48fe2674457ee43109d67872a34052dabc5ec89461f945418cdf01208dccf2"
+    }
+  ]
+}
