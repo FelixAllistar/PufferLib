@@ -947,6 +947,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"motel-nightstand")) {texture_owner_graphics("motel_props/painted_wooden_nightstand_floor_centered_2k.glb");motel_prop_graphics(&view,directory,4);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"impact-effects")) {impact_effects_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-panes")) {motel_panes_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"room-lights")) {

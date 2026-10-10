@@ -832,7 +832,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         if(art->motel_wall_art && window_source(art,pane_parent)->meshCount)return true;
         return window_fallback(o,shadow);
     }
-    if(window>=0 && world->count==SWAT_MOTEL_OBJECTS) {
+    if(window>=0 && world->count>=SWAT_MOTEL_NIGHTSTAND_FIRST) {
         const Model* source=window_source(art,o->tag.index);
         if(!art->motel_wall_art || !source->meshCount)return window_fallback(o,shadow);
         const Model* model=window_mesh_art(art->motel_wall_art,source,world,o->tag.index);

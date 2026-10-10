@@ -62,6 +62,27 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+Room 104 now has the original CC0 Poly Haven worn wooden nightstand beside its
+bed: 470 triangles, original drawer/root transforms and 2K albedo/normal/ARM maps.
+The full 50.46 x 50.87 x 61.55 cm geometry remains unscaled, with four measured
+feet on the actual carpet, sparse leg clearance and exact missing-art collision
+fallback. Damage/removal replicate through normal maps, snapshots and replay.
+WOOD and the 24 mm health section are explicit game approximations; concealed
+construction and pull material remain unknown. Linux/Windows checks include an
+ordinary canonical-spawn room-entry/shooting save/restore. Native original/fallback
+art matches 153,932 stable collision rays and verifies source material factors,
+shared image lifetime, production lighting/shadows and authoritative removal.
+Contact checks now preserve 31,989 triangles across 27 assets, including original
+edge flags and 64,800 ray/exit comparisons per reconstructed world.
+
+The separate realistic window R1 is received and archived with its source and
+scoped license. Independent GLB inspection verifies full node transforms,
+primitive/material mappings, exact complete triangle coverage, 349 closed edge
+sets and all six 6.4 mm panes. It is not yet the installed window revision:
+continue with grouped material/support physics and matching filtered rendering,
+including the proposed 518 contacts. Keep original assets and legacy map prefixes;
+do not substitute new art over old collision or create 349 individual bodies.
+
 Mounted-prop foundation: the delivered galvanized junction box now has two
 measured motel placements, exact hollow-shell collision and independent damage.
 Its five original fastening anchors resolve to masonry fragments; support loss
@@ -273,8 +294,9 @@ the same mesh remain hittable. Eight impacts remain the bound. Nested/overlappin
 glass and steel checks in both directions fail against the previous traversal
 and pass with the new traversal.
 
-The current motel recipe has 1,189 objects. Older canonical prefixes keep their
-original aggregate glazing; partial pane recipes and changed opacity/depth/support
+The current motel recipe has 1,190 objects, including the appended room 104
+nightstand. The previous 1,189-object prefix retains independent panes; earlier
+canonical prefixes keep original aggregate glazing. Partial pane recipes and changed opacity/depth/support
 are rejected. Wire layout remains version 17, but peers need matching builds for
 the appended opaque-glass material and current map recipe. Movement v2 and annex
 v3 remain unchanged. Panes use independently owned, bounded contact subsets and

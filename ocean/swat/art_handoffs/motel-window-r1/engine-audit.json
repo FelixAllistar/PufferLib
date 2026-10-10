@@ -1,0 +1,24 @@
+{
+  "pass": true,
+  "checks": "Full node transforms, actual vertex bounds, primitive materials and indices, exact nonoverlapping full triangle coverage, 349 welded closed component edge sets, six 6.4mm pane gauges; not a structural strength certification",
+  "total": 10212,
+  "glass": 6,
+  "assets": [
+    {
+      "asset": "room_window_insert",
+      "components": 108,
+      "triangles": 5280,
+      "closedComponents": 108,
+      "meshes": 7,
+      "materials": 6
+    },
+    {
+      "asset": "lobby_glazed_facade",
+      "components": 241,
+      "triangles": 4932,
+      "closedComponents": 241,
+      "meshes": 8,
+      "materials": 5
+    }
+  ]
+}
