@@ -223,7 +223,7 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
             if(i<2) goto failed;
             swat_character_view_close(&runtime->banks[i]); continue;
         }
-        const char* required[]={"mixamorig:Hips","mixamorig:LeftUpLeg","mixamorig:LeftLeg","mixamorig:LeftFoot","mixamorig:RightUpLeg","mixamorig:RightLeg","mixamorig:RightFoot","mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand","mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand","Prop_Magazine_A","Prop_Magazine_B"};
+        const char* required[]={"mixamorig:Neck","mixamorig:Hips","mixamorig:LeftUpLeg","mixamorig:LeftLeg","mixamorig:LeftFoot","mixamorig:RightUpLeg","mixamorig:RightLeg","mixamorig:RightFoot","mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand","mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand","Prop_Magazine_A","Prop_Magazine_B"};
         bool valid=true;
         if(use_gear && (info.joints!=72 || swat_character_find_node(runtime->banks[i].asset,"Gear_Elbow_L")<0 ||
                        swat_character_find_node(runtime->banks[i].asset,"Gear_Elbow_R")<0)) valid=false;
@@ -354,13 +354,22 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         Matrix hand_targets[2]={compose(gun_delta,node(asset,"mixamorig:LeftHand")),compose(gun_delta,node(asset,"mixamorig:RightHand"))};
         // Keep torso pitch bounded; the limb solve handles remaining weapon
         // pitch/ready motion without rotating the entire body through the floor.
-        SwatPose bounded=achieved;
         float body_pitch=Clamp(asinf(Clamp(achieved.weapon_forward.y,-1,1)),-20*SWAT_RAD,20*SWAT_RAD);
-        bounded.weapon_forward=swat_direction(actor->controller.yaw,body_pitch);
+        // Carry clips lean over a lowered rifle. Aiming their torso using the
+        // rifle's inverse carry rotation puts the head through the newly raised
+        // receiver. Aim from the measured chest/shoulder frame instead: spine
+        // to neck is up, left-to-right shoulder is right. This counter-aims the
+        // locomotion turn without importing the prop's independent pitch/roll.
+        Vector3 chest_up=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:Neck")),origin(node(asset,"mixamorig:Spine2"))));
+        Vector3 chest_right=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:RightArm")),origin(node(asset,"mixamorig:LeftArm"))));
+        Vector3 chest_forward=Vector3Normalize(Vector3CrossProduct(chest_up,chest_right));
+        chest_right=Vector3CrossProduct(chest_forward,chest_up);
+        Matrix chest={.m0=chest_forward.x,.m1=chest_forward.y,.m2=chest_forward.z,
+            .m4=chest_up.x,.m5=chest_up.y,.m6=chest_up.z,.m8=chest_right.x,.m9=chest_right.y,.m10=chest_right.z,.m15=1};
+        SwatPose bounded=achieved;bounded.weapon_forward=swat_direction(actor->controller.yaw,body_pitch);
         bounded.weapon_up=swat_normalize(b3Cross(achieved.right,bounded.weapon_forward));
-        bounded.weapon_forward=swat_normalize(b3Cross(bounded.weapon_up,achieved.right));
-        Matrix torso_gun=compose(inverse_root,swat_weapon_art_transform(&bounded));
-        Matrix torso_delta=compose(torso_gun,MatrixInvert(source_gun));
+        Matrix target_chest=compose(inverse_root,swat_weapon_art_transform(&bounded));
+        Matrix torso_delta=compose(target_chest,MatrixInvert(chest));
         // Aim rotates the torso around its sampled spine joint. Translating
         // the whole upper subtree to a gun target stretches the abdomen when
         // crouch/camera height differ, even though the arm IK is length-safe.

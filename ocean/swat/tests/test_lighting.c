@@ -23,7 +23,8 @@ static void scene(const SwatSim* s,bool cutaway) {
         const SwatObject* o=&s->world.objects[i]; if(!o->active || o->part==SWAT_PART_LIGHT) continue;
         rlPushMatrix(); rlTranslatef(o->center.x,o->center.y,o->center.z);
         rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
-        DrawCubeV((Vector3){0},(Vector3){2*o->half.x,2*o->half.y,2*o->half.z},i ? GRAY : WHITE);
+        if(o->fractured)swat_environment_fragment_draw(o);
+        else DrawCubeV((Vector3){0},(Vector3){2*o->half.x,2*o->half.y,2*o->half.z},i ? GRAY : WHITE);
         rlPopMatrix();
     }
 }
@@ -106,16 +107,24 @@ static void lamp_coverage_checks(SwatLighting* light,SwatEnvironmentArt* art,con
     }
     puts("PASS lamp coverage: all six directions and face seam retain occlusion without material normal maps");
 }
-static int static_calls;
+static int static_calls,actor_calls;
 static bool fake_actor;
 static void counted_geometry(void* context,const SwatSim* s,bool cutaway) {
     (void)context;static_calls++;scene(s,cutaway);
 }
 static void test_actors(void* context,const SwatSim* s,bool cutaway) {
-    (void)context;(void)s;(void)cutaway;if(fake_actor)DrawCubeV((Vector3){0,.6f,0},(Vector3){1.2f,1.2f,1.2f},WHITE);
+    (void)context;(void)cutaway;actor_calls++;
+    if(fake_actor && s->actors[0].present) {
+        b3Pos p=b3Body_GetPosition(s->actors[0].controller.body.body);
+        DrawCubeV((Vector3){p.x,p.y,p.z},(Vector3){1.2f,1.2f,1.2f},WHITE);
+    }
 }
 static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const char* directory) {
     sim.world=(SwatWorld){0};sim.world.room_count=3;sim.world.count=6;sim.tick=100;
+    b3WorldDef world_def=b3DefaultWorldDef();b3WorldId actor_world=b3CreateWorld(&world_def);
+    b3BodyDef body_def=b3DefaultBodyDef();body_def.position=(b3Pos){0,.6f,0};
+    sim.actor_count=1;sim.actors[0]=(SwatActor){0};
+    sim.actors[0].controller.body.body=b3CreateBody(actor_world,&body_def);sim.actors[0].controller.body.totalHeight=1.2f;
     for(int r=0;r<3;r++) {
         float x=(r-1)*5;
         sim.world.rooms[r]=(SwatRoom){{x,1.5f,0},{2,1.5f,2},SWAT_DRYWALL,SWAT_CONCRETE};
@@ -132,9 +141,9 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     // camera removes perspective/specular differences and isolates shadow state.
     const Vector3 eyes[]={{5,1.6f,5},{0,1.6f,20},{-12,1.6f,20}};
     for(int i=0;i<3;i++) {
-        sim.tick+=4;static_calls=0;
+        sim.tick+=4;static_calls=actor_calls=0;
         swat_lighting_prepare_split(light,&sim,eyes[i],false,counted_geometry,test_actors,NULL);
-        assert(static_calls==1 && light->room_updates==updates); // Sun only; rooms reused.
+        assert(static_calls==0 && actor_calls==1 && light->room_updates==updates); // Cached sun geometry; empty room tiles untouched.
         Image frame=capture(light,art,camera,NULL);Color* b=LoadImageColors(frame);
         int mismatch=0;for(int p=0;p<512*512;p++)mismatch+=abs(a[p].r-b[p].r)+abs(a[p].g-b[p].g)+abs(a[p].b-b[p].b)>3;
         assert(!mismatch);UnloadImageColors(b);UnloadImage(frame);
@@ -160,18 +169,46 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     Image removed=capture(light,art,camera,NULL);Color* b=LoadImageColors(removed);int changed=0;
     for(int i=0;i<512*512;i++)changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>12;
     assert(changed>50);
-    fake_actor=true;sim.tick+=4;static_calls=0;updates=light->room_updates;
+    fake_actor=true;sim.actors[0].present=true;sim.tick+=4;static_calls=actor_calls=0;updates=light->room_updates;
+    unsigned int actor_updates=light->actor_room_updates;
     swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
-    assert(static_calls==1 && light->room_updates==updates);
+    assert(static_calls==0 && actor_calls==1+SWAT_LAMP_FACES && light->room_updates==updates && light->actor_room_updates==actor_updates+1);
     Image actor=capture(light,art,camera,NULL);Color* c=LoadImageColors(actor);changed=0;
     for(int i=0;i<512*512;i++)changed+=b[i].r+b[i].g+b[i].b>c[i].r+c[i].g+c[i].b+20;
     assert(changed>50);UnloadImageColors(c);UnloadImage(actor);
-    fake_actor=false;sim.tick+=4;
+    sim.tick+=16;static_calls=actor_calls=0;
+    swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+    // One final refresh after the blend settling interval, then full reuse.
+    assert(light->actor_room_updates==actor_updates+2);
+    sim.tick+=4;static_calls=actor_calls=0;
+    swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+    assert(static_calls==0 && actor_calls==1 && light->actor_room_updates==actor_updates+2);
+    // Leaving the room clears its former moving shadow without touching the
+    // other rooms' depth, even though the actor remains present in the scene.
+    b3Body_SetTransform(sim.actors[0].controller.body.body,(b3Pos){20,.6f,0},b3Quat_identity);sim.tick+=4;
     swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
     Image cleared=capture(light,art,camera,NULL);c=LoadImageColors(cleared);
     assert(!memcmp(b,c,512*512*sizeof(Color)));UnloadImageColors(c);UnloadImage(cleared);
+    assert(light->actor_room_updates==actor_updates+3);
+    // A partial hole changes the caster without changing center, bounds or
+    // activity. It must invalidate both static caches on this same tick.
+    Image whole=capture(light,art,camera,NULL);Color* whole_pixels=LoadImageColors(whole);
+    sim.world.objects[1].fractured=true;
+    const float corners[4][2]={{-.6f,-.6f},{-.6f,.6f},{0,.6f},{0,-.6f}};
+    memcpy(sim.world.objects[1].corners,corners,sizeof(corners));
+    static_calls=0;updates=light->room_updates;unsigned int sun_updates=light->sun_geometry_updates;
+    swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
+    assert(static_calls==1+SWAT_LAMP_FACES && light->room_updates==updates+1 && light->sun_geometry_updates==sun_updates+1);
+    Image partial=capture(light,art,camera,NULL);Color* partial_pixels=LoadImageColors(partial);int opened=0;
+    for(float z=-.3f;z<.3f;z+=.03f){
+        Vector2 p=GetWorldToScreenEx((Vector3){-5+.85f,.001f,z},camera,512,512);int at=(int)p.y*512+(int)p.x;
+        opened+=partial_pixels[at].r+partial_pixels[at].g+partial_pixels[at].b>whole_pixels[at].r+whole_pixels[at].g+whole_pixels[at].b+20;
+    }
+    printf("partial fracture shadow-open floor samples=%d\n",opened);assert(opened>10);
+    UnloadImageColors(whole_pixels);UnloadImageColors(partial_pixels);UnloadImage(whole);UnloadImage(partial);
     UnloadImageColors(a);UnloadImageColors(b);UnloadImage(original);UnloadImage(removed);
-    puts("PASS all room shadows: three lit-room shadow proofs, camera-independent tiles, local invalidation, moving silhouette with no trails");
+    fake_actor=false;sim.actor_count=0;sim.actors[0].present=false;b3DestroyWorld(actor_world);
+    puts("PASS all room shadows: camera-independent tiles, local immediate invalidation, cached sun geometry, empty/stationary room reuse, moving silhouette entry/exit with no trails");
 }
 
 static void wall_quad(float x,bool mirrored) {

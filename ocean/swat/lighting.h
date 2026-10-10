@@ -24,7 +24,7 @@ typedef struct SwatLighting {
     bool initialized,enabled,prepared;
     SwatLightingProgram batch,mesh;
     Shader sky; int sky_forward,sky_right,sky_up,sky_scale,sky_size,sky_exposure;
-    RenderTexture2D sun,lamp,lamp_static;
+    RenderTexture2D sun,sun_static,lamp,lamp_static;
     Matrix sun_matrix,lamp_matrix[SWAT_LAMP_FACES];
     Vector3 sun_direction;
     float exposure;
@@ -33,6 +33,10 @@ typedef struct SwatLighting {
     int shadow_face;
     int shadow_room,last_tick,updates,room_updates;
     uint32_t room_geometry[SWAT_MAX_ROOMS];
+    uint32_t room_actors[SWAT_MAX_ROOMS];
+    uint32_t actor_signature[SWAT_MAX_ACTORS];
+    int actor_changed_tick[SWAT_MAX_ACTORS];
+    unsigned int sun_geometry_updates,actor_room_updates;
     bool room_ready[SWAT_MAX_ROOMS],split_shadows;
     bool cutaway,lamp_shadows; // Receiving toggle for renderer diagnostics; default on.
     unsigned int surface_normal,surface_roughness;

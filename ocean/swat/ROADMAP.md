@@ -62,6 +62,33 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The indoor-lighting follow-up now caches static sun geometry separately from
+actor shadows. Empty or settled room shadow tiles retain their composited depth;
+moving actors, room entry/exit and the final 0.22-second pose blend still refresh.
+Partial fracture outlines now invalidate the sun and affected room immediately,
+even when the object's center and bounding box stay unchanged. Native graphics
+checks retain camera-independent coverage of every room, all six lamp directions,
+clean actor departure, framebuffer restoration and immutable simulation state.
+A matched 240-frame native motel indoor shooting run (30 shots, 1,327 objects,
+nine actors) measured mean shadow time of 10.667 ms before and 2.827 ms after;
+mean total time was 43.800 versus 20.048 ms, with p95 129.696 versus 31.383 ms.
+Other stage timings also changed with machine load, so these separate runs are
+diagnostics rather than a controlled attribution of the entire frame-time gain.
+Evidence is in `build/swat/review/lighting-movement/{before,after,lighting}.log`.
+
+World movement aiming now derives torso correction from the sampled chest and
+shoulder frame rather than the independently lowered rifle in carry clips.
+The authoritative rifle attachment, source-relative hand targets, two-bone arm
+IK and source first-person poses remain unchanged. Native tests cover 336 samples
+across seven banks, four phases, four headings and three pitches, retaining exact
+stock attachment and rigid gear/limb checks. Head-center clearance from the
+receiver centerline is at least 0.143 m in this skeletal regression; it is not a
+whole-mesh collision guarantee or a completed cheek-weld/grip fit. Captured forward
+and backward poses show the head beside the rifle. Existing ADS and interrupted
+crouch/reverse/reload checks pass, and the normal Windows/Linux player and Puffer
+builds are current. Native evidence and selected pose captures are in
+`build/swat/review/lighting-movement/`.
+
 Room 104 now has the original CC0 Poly Haven worn wooden nightstand beside its
 bed: 470 triangles, original drawer/root transforms and 2K albedo/normal/ARM maps.
 The full 50.46 x 50.87 x 61.55 cm geometry remains unscaled, with four measured
@@ -667,7 +694,7 @@ production audio and useful held-out tactical policies.
   [GENERATION.md](GENERATION.md).
 - Initial live environment textures/doors and six bounded decorative tabletop
   props, tied to active damage pieces/supports without new collision or LOS.
-- Initial linear-light shading, cached sun/nearest-room depth shadows and
+- Initial linear-light shading, cached sun/all-room depth shadows and
   exposure overrides; transformed primitives and imported art share shading.
   Original body specular/gloss maps and bounded room ambient occlusion now
   separate surface finishes and adjacent structural planes.

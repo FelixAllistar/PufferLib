@@ -251,6 +251,49 @@ static void ads_projection_check(SwatCharacterRuntime* runtime,SwatSim* sim,Swat
     actor->controller.pitch=actor->controller.yaw=actor->controller.recoil_pitch=actor->controller.recoil_yaw=actor->controller.lean=actor->controller.ads=0;
     printf("PASS ADS: source aperture/post centered at all eye distances, yaw, lean, recoil and pitch limits; rigid F elbow carriers\n");
 }
+static void movement_aim_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light) {
+    SwatActor* actor=&sim->actors[0];int checked=0;float minimum=100;
+    SwatSim* before=malloc(sizeof(*before));assert(before);
+    const b3Vec3 velocities[]={{0,0,0},{1,0,0},{0,0,-1},{0,0,1},{0,0,0},{1,0,0},{-1,0,0}};
+    for(int bank=0;bank<SWAT_CHARACTER_BANKS;bank++)if(runtime->banks[bank].asset)
+    for(int yaw=0;yaw<4;yaw++)for(int pitch=-1;pitch<=1;pitch++)for(int phase=0;phase<4;phase++) {
+        swat_body_set_crouch(&actor->controller.body,bank==SWAT_CHARACTER_CROUCH_READY || bank==SWAT_CHARACTER_CROUCH_WALK);
+        actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;actor->controller.body.onGround=true;
+        actor->controller.yaw=yaw*SWAT_PI*.5f;actor->controller.pitch=pitch*20*SWAT_RAD;actor->controller.ads=actor->controller.ready_blend=0;
+        actor->controller.recoil_pitch=actor->controller.recoil_yaw=0;
+        float c=cosf(actor->controller.yaw),s=sinf(actor->controller.yaw);b3Vec3 v=velocities[bank];
+        b3Body_SetLinearVelocity(actor->controller.body.body,swat_v(c*v.x-s*v.z,0,s*v.x+c*v.z));
+        runtime->actors[0].valid=false;sim->tick++;swat_character_runtime_prepare(runtime,sim);
+        runtime->actors[0].phase=phase*.25;sim->tick+=14;
+        memcpy(before,sim,sizeof(*before));swat_character_runtime_prepare(runtime,sim);assert(!memcmp(before,sim,sizeof(*before)));
+        SwatCharacterActorPose* cache=&runtime->actors[0];assert(cache->valid && cache->bank==bank);
+        SwatCharacterAsset* asset=runtime->banks[bank].asset;
+        assert(swat_character_restore_pose(asset,cache->matrices,cache->count));carrier_check(asset);
+        int head=swat_character_find_node(asset,"mixamorig:Head"),top=swat_character_find_node(asset,"mixamorig:HeadTop_End"),prop=swat_character_find_node(asset,"Prop_Rifle");
+        assert(head>=0 && top>=0 && prop>=0);
+        Vector3 a=point(cache->matrices+head*16,(Vector3){0}),b=point(cache->matrices+top*16,(Vector3){0});
+        SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);Matrix inverse=MatrixInvert(swat_weapon_art_transform(&pose));
+        Vector3 center=Vector3Transform(Vector3Transform(Vector3Scale(Vector3Add(a,b),.5f),cache->root),inverse);
+        // A head-center overlapping the receiver/barrel centerline reproduces
+        // the walking rifle-through-face bug. This is a skeletal clearance
+        // regression, not a claim of full mesh collision or cheek weld quality.
+        float gap=Vector3Distance(center,(Vector3){Clamp(center.x,.2f,.65f),.04362635f,0});
+        if(gap<=.09f)fprintf(stderr,"Head/receiver bank%d yaw%d pitch%d phase%d gap%.4f\n",bank,yaw,pitch,phase,gap);
+        assert(gap>.09f);minimum=fminf(minimum,gap);checked++;
+        Vector3 stock=Vector3Transform(point(cache->matrices+prop*16,(Vector3){.0012969123f,.4499999881f,.0226502232f}),cache->root);
+        assert(Vector3Distance(stock,(Vector3){pose.shoulder.x,pose.shoulder.y,pose.shoulder.z})<1e-4f);
+        if(!yaw && !pitch && !phase && getenv("SWAT_CHARACTER_TEST_CAPTURES")) {
+            Vector3 feet={cache->feet.x,cache->feet.y,cache->feet.z};
+            Camera3D camera={Vector3Add(feet,(Vector3){1,1.55f,2.5f}),Vector3Add(feet,(Vector3){.15f,1.1f,0}),{0,1,0},45,CAMERA_PERSPECTIVE};
+            Image image=frame(&runtime->banks[bank],light,camera,cache->root);
+            assert(ExportImage(image,TextFormat("%s/aim-bank-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),bank)));UnloadImage(image);
+        }
+    }
+    printf("PASS movement aim: %d bank/phase/yaw/pitch samples, minimum head-center receiver-line gap %.3fm, exact rifle frame, rigid carriers and immutable authority\n",checked,minimum);
+    actor->controller.pitch=actor->controller.yaw=0;b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
+    swat_body_set_crouch(&actor->controller.body,false);actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
+    free(before);
+}
 static void backward_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light) {
     SwatActor* actor=&sim->actors[0];
     swat_body_set_crouch(&actor->controller.body,false); actor->controller.body.onGround=true;
@@ -406,6 +449,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         runtime->banks[SWAT_CHARACTER_LEFT]=left;
         b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
     }
+    movement_aim_check(runtime,sim,light);
     backward_check(runtime,sim,light);
     blend_check(runtime,sim);
     for(int stance=0;stance<2;stance++) for(int angle=0;angle<4;angle++) {
