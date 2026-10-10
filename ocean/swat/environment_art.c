@@ -708,24 +708,59 @@ static const Model* motel_wall_source(const SwatEnvironmentArt* art,int owner) {
     if(art->room101_ready && owner==13)return &art->room101[0];
     return &art->motel[swat_motel_instance(owner-1)->asset];
 }
-static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,const SwatObject* o,bool shadow,bool cutaway) {
-    int owner=swat_motel_wall_parent(w,o);if(owner<0 || !art->motel_wall_art)return false;
-    if(!o->active)return true;
-    const SwatMotelInstance* p=swat_motel_instance(owner-1);const Model* source=motel_wall_source(art,owner);
-    if(!source->meshCount)return false;
-    // Solid structural core also supplies the newly exposed breach edges.
-    // At 40+ metres the normal 1 mm inset is smaller than one scene-depth
-    // quantization step. Offset only the backing core by four depth units; the
-    // authored face, scene projection, weapon depth and physical shape stay exact.
-    bool offset=!shadow && art->wall_depth_offset;
-    if(offset){rlDrawRenderBatchActive();glEnable(SWAT_GL_POLYGON_OFFSET_FILL);glPolygonOffset(0,4);}
+static void motel_wall_core(const SwatObject* o) {
     rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
     const uint8_t* c=swat_material(o->material)->color;
     if(o->fractured) {
         SwatObject core=*o;core.half.x-=.001f;swat_environment_fragment_draw(&core);
     } else DrawCubeV((Vector3){0},(Vector3){2*o->half.x-.002f,2*o->half.y,2*o->half.z},(Color){c[0],c[1],c[2],255});
     rlPopMatrix();
-    if(offset){rlDrawRenderBatchActive();glDisable(SWAT_GL_POLYGON_OFFSET_FILL);}
+}
+void swat_environment_motel_core_batch(SwatEnvironmentArt* art,bool enabled) {
+    if(art->motel_wall_art)art->motel_wall_art->core_batch_disabled=!enabled;
+}
+void swat_environment_motel_cores_end(SwatEnvironmentArt* art) {
+    if(art->motel_wall_art){art->motel_wall_art->cores_drawn=false;art->motel_wall_art->core_batch_requested=false;}
+}
+void swat_environment_motel_cores_begin(SwatEnvironmentArt* art,const SwatWorld* w) {
+    swat_environment_motel_cores_end(art);
+    if(w->motel && art->motel_wall_art && !art->motel_wall_art->core_batch_disabled)art->motel_wall_art->core_batch_requested=true;
+}
+static void motel_wall_cores_draw(const SwatEnvironmentArt* art,const SwatWorld* w) {
+    // Start at the first wall submission, after the canonical floor/furniture.
+    // Drawing before those surfaces changes equal-depth floor/wall seam pixels.
+    clear_surface(art);
+    rlDrawRenderBatchActive();
+    if(art->wall_depth_offset){glEnable(SWAT_GL_POLYGON_OFFSET_FILL);glPolygonOffset(0,4);}
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];if(!o->active)continue;
+        int owner=swat_motel_wall_parent(w,o);
+        if(owner<0 || !motel_wall_source(art,owner)->meshCount)continue;
+        motel_wall_core(o);
+    }
+    rlDrawRenderBatchActive();
+    if(art->wall_depth_offset)glDisable(SWAT_GL_POLYGON_OFFSET_FILL);
+    art->motel_wall_art->cores_drawn=true;
+}
+static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,const SwatObject* o,bool shadow,bool cutaway) {
+    int owner=swat_motel_wall_parent(w,o);if(owner<0 || !art->motel_wall_art)return false;
+    if(!o->active)return true;
+    const SwatMotelInstance* p=swat_motel_instance(owner-1);const Model* source=motel_wall_source(art,owner);
+    if(!source->meshCount)return false;
+    if(!shadow && art->motel_wall_art->core_batch_requested && !art->motel_wall_art->cores_drawn)motel_wall_cores_draw(art,w);
+    // Solid structural core also supplies the newly exposed breach edges.
+    // At 40+ metres the normal 1 mm inset is smaller than one scene-depth
+    // quantization step. Offset only the backing core by four depth units; the
+    // authored face, scene projection, weapon depth and physical shape stay exact.
+    if(shadow || !art->motel_wall_art->cores_drawn) {
+        // Untextured cores must not inherit a preceding finish's normal or
+        // roughness maps. Authored source meshes configure their own material.
+        if(!shadow)clear_surface(art);
+        bool offset=!shadow && art->wall_depth_offset;
+        if(offset){rlDrawRenderBatchActive();glEnable(SWAT_GL_POLYGON_OFFSET_FILL);glPolygonOffset(0,4);}
+        motel_wall_core(o);
+        if(offset){rlDrawRenderBatchActive();glDisable(SWAT_GL_POLYGON_OFFSET_FILL);}
+    }
     const Model* clipped=wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p);
     location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
     if(owner==13 && art->room101_ready) {

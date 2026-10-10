@@ -309,8 +309,10 @@ static void swat_begin_scene(SwatView* view,const SwatSim* sim,Camera3D camera,i
     swat_lighting_sky(&view->lighting,camera,width,height);
     BeginMode3D(camera);
     swat_lighting_begin(&view->lighting,&view->environment,&sim->world,camera.position);
+    swat_environment_motel_cores_begin(&view->environment,&sim->world);
 }
 static void swat_end_scene(SwatView* view) {
+    swat_environment_motel_cores_end(&view->environment);
     swat_lighting_end(&view->lighting,&view->environment); EndMode3D();
 }
 

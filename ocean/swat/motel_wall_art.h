@@ -6,7 +6,10 @@ typedef struct SwatWallVertex {Vector3 p,n;Vector2 uv,uv2;} SwatWallVertex;
 typedef struct SwatWallMeshCache {
     Model model;const Mesh* source;b3Pos center;b3Vec3 half;bool fractured;float corners[4][2];uint64_t mask;
 } SwatWallMeshCache;
-typedef struct SwatMotelWallArt {SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5];} SwatMotelWallArt;
+typedef struct SwatMotelWallArt {
+    SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5];
+    bool core_batch_disabled,core_batch_requested,cores_drawn;
+} SwatMotelWallArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
     for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
     MemFree(cache->model.meshes);MemFree(cache->model.meshMaterial);memset(cache,0,sizeof(*cache));

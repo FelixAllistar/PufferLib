@@ -95,6 +95,12 @@ SwatArtTextureStats swat_art_texture_stats(void);
 void swat_environment_fragment_draw(const SwatObject* object);
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o);
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
+// Lit-camera backing geometry shares one offset/batch. Depth callbacks retain
+// their own visibility filters and draw individual cores. End each camera pass.
+void swat_environment_motel_cores_begin(SwatEnvironmentArt* art,const SwatWorld* world);
+void swat_environment_motel_cores_end(SwatEnvironmentArt* art);
+// Presentation comparison only; no simulation or source geometry changes.
+void swat_environment_motel_core_batch(SwatEnvironmentArt* art,bool enabled);
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
 // Blended GLB primitives follow all opaque geometry, sorted per camera.
 void swat_environment_art_transparent(const SwatEnvironmentArt* art,const SwatWorld* world,Vector3 eye,bool cutaway);

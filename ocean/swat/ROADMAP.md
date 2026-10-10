@@ -151,8 +151,23 @@ with world drawing around 30 ms; this is a contended diagnostic, not acceptance
 of the final performance budget. Full/culled graphics checks now also include
 charged masonry and its exposed edges. Two early wall-core culling prototypes
 passed image equivalence but failed to show a controlled timing gain, including
-a synchronized GPU run; neither is shipped. Batching and renderer costs remain
-performance work.
+a synchronized GPU run; neither is shipped.
+Wall backing cores now share a camera batch, starting at the first wall after
+the canonical floors/furniture to preserve equal-depth seams. Authored faces,
+exposed masonry edges and per-face shadow/contact filters retain their existing
+draws. Untextured cores explicitly clear a preceding finish's normal/roughness
+maps; this corrects stale surface lighting on visible backing seams.
+Native graphics compare the batch with the corrected individual-core path:
+42 pixel-identical lit/unlit pairs across seven cameras, intact/breached walls
+and missing sources, with unchanged authority and clean offset state. Distant
+depth checks still remove all 337 reproduced face mismatches in each lit/unlit
+far view. A 960-frame alternating-block frozen indoor comparison measured median
+scene-plus-geometry time of 20.734 ms individually and 19.820 ms batched; overall
+timings remain noisy with large machine stalls. The separate 480-frame exterior
+comparison also favors the batch, but its much slower absolute times reinforce
+that these are machine-contended diagnostics. This is a modest submission
+improvement, not acceptance of the final game performance budget. Renderer
+batching and costs remain ongoing work.
 
 Current audit: human tactical scenarios now deploy three squad bots and require
 occupant security, evidence, civilian evacuation and surviving-officer regrouping.
