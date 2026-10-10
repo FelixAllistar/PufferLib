@@ -1,4 +1,5 @@
 #include "world.h"
+#include "motel.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,7 +84,7 @@ void swat_world_build_range(SwatWorld* w, uint32_t* seed, bool randomize) {
     swat_world_box(w,(b3Pos){3.0f,2.0f,4.8f},swat_v(1.8f,0.8f,1.0f),SWAT_CONCRETE,0);
 }
 
-typedef struct SwatRayContext { SwatHit result; b3BodyId ignore; bool world_only; } SwatRayContext;
+typedef struct SwatRayContext { SwatHit result; b3BodyId ignore; bool world_only; const SwatWorld* optical; } SwatRayContext;
 static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     float fraction, uint64_t material, int triangle, int child, void* context) {
     (void)material; (void)triangle; (void)child;
@@ -93,6 +94,8 @@ static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     SwatTag* tag = (SwatTag*)b3Body_GetUserData(body);
     if(tag && tag->kind==SWAT_HIT_PROJECTILE) return -1.0f;
     if(c->world_only && tag && tag->kind!=SWAT_HIT_WORLD) return -1.0f;
+    if(c->optical && tag && tag->kind==SWAT_HIT_WORLD && tag->index>=0 &&
+       tag->index<c->optical->count && c->optical->objects[tag->index].material==SWAT_GLASS)return -1.0f;
     if (fraction <= c->result.fraction) {
         c->result.hit = true;
         c->result.fraction = fraction;
@@ -271,6 +274,47 @@ int swat_world_room(const SwatWorld* w,b3Pos p) {
         if(fabsf(d.x)<r->half.x && fabsf(d.y)<r->half.y && fabsf(d.z)<r->half.z) return i;
     }
     return -1;
+}
+
+SwatRoomLight swat_world_room_light(const SwatWorld* w,int room) {
+    SwatRoomLight light={0};if(room<0 || room>=w->room_count)return light;
+    const SwatRoom* r=&w->rooms[room];
+    light.origin=b3OffsetPos(r->center,swat_v(0,r->half.y-.18f,0));light.power=1;
+    if(w->motel && room>=1 && room<=4) {
+        light.direction=swat_v(0,-.9396926f,.3420201f);
+        light.power=swat_motel_lamp(w,room,&light.origin)?1:0;
+    } else for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];b3Vec3 d=b3SubPos(o->center,r->center);
+        if(o->active && o->part==SWAT_PART_LIGHT && fabsf(d.x)<r->half.x &&
+           fabsf(d.y)<r->half.y && fabsf(d.z)<r->half.z) {
+            light.origin=b3OffsetPos(o->center,swat_v(0,-o->half.y-.01f,0));break;
+        }
+    }
+    if(w->room_light_off_mask&(1u<<room))light.power=0;
+    return light;
+}
+static bool optical_clear(const SwatWorld* w,b3Pos from,b3Pos to) {
+    SwatRayContext c={0};c.result.fraction=1;c.world_only=true;c.optical=w;
+    b3World_CastRay(w->id,from,b3SubPos(to,from),b3DefaultQueryFilter(),swat_ray_callback,&c);
+    return !c.result.hit;
+}
+float swat_world_visual_range(const SwatWorld* w,b3Pos target,float daylight_range) {
+    int room=swat_world_room(w,target);if(room<0)return daylight_range;
+    // A roof opening restores daylight without a camera, shadow map or hidden
+    // occupant state. Glass transmits this approximation; opaque cover blocks it.
+    if(optical_clear(w,target,b3OffsetPos(target,swat_v(0,64,0))))return daylight_range;
+    SwatRoomLight light=swat_world_room_light(w,room);float exposure=0;
+    if(light.power>0) {
+        b3Vec3 delta=b3SubPos(target,light.origin);float d2=b3Dot(delta,delta),beam=1;
+        if(b3Dot(light.direction,light.direction)>.5f) {
+            float t=swat_clamp((b3Dot(swat_normalize(delta),light.direction)-.05f)/.30f,0,1);
+            beam=t*t*(3-2*t); // Same cone and attenuation as the room shader.
+        }
+        if(beam>0 && optical_clear(w,light.origin,target))exposure=light.power*beam*1.8f/(1+.18f*d2);
+    }
+    // Residual ambient keeps close targets detectable. Darkness lowers range
+    // continuously, to half the daylight range; it never disables hearing.
+    return daylight_range*sqrtf(.25f+.75f*swat_clamp(exposure,0,1));
 }
 
 typedef struct MeshExit { b3Vec3 entry,direction; float distance; } MeshExit;

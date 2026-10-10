@@ -284,8 +284,11 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
         // Restricting this to the 3 m contact-avoidance radius made destination
         // occupancy disappear/reappear during approach, reversing routes at
         // that boundary (especially escorts joining a crowded staging area).
-        // Walls still hide occupants; the shared static nav stays unchanged.
-        if(b3Distance(start,feet)<24 && swat_world_visible(&s->world,swat_controller_eye(&s->actors[actor].controller),swat_controller_eye(&other->controller)))
+        // Walls and reduced interior visibility hide distant occupants; the
+        // shared static nav stays unchanged. Nearby collision avoidance remains.
+        float distance=b3Distance(start,feet);b3Pos head=swat_controller_eye(&other->controller);
+        if(distance<24 && swat_world_visible(&s->world,swat_controller_eye(&s->actors[actor].controller),head) &&
+           (distance<12 || distance<swat_world_visual_range(&s->world,head,24)))
             people.feet[people.count++]=feet;
     }
     int from=swat_navigation_nearest(nav,start),to=swat_navigation_nearest(nav,goal); if(from<0 || to<0) return false;
@@ -460,9 +463,7 @@ static int visible_target(SwatSim* s,int index,bool officer) {
         SwatActor* target=&s->actors[i]; if(i==index || !target->present || !target->alive) continue;
         if(officer ? target->role!=SWAT_SUSPECT || target->gear.surrendered : (target->role!=SWAT_OFFICER && target->role!=SWAT_SNIPER)) continue;
         b3Pos head=swat_controller_eye(&target->controller); b3Vec3 delta=b3SubPos(head,eye); float distance=b3Length(delta);
-        if(distance>=closest || b3Dot(swat_controller_aim(&a->controller),swat_normalize(delta))<cosf(60*SWAT_RAD)) continue;
-        SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(delta),distance+.15f,a->controller.body.body);
-        if(hit.kind==SWAT_HIT_ACTOR && hit.index==i) { best=i; closest=distance; }
+        if(distance<closest && swat_sim_actor_visible(s,index,i,24,60*SWAT_RAD)) { best=i; closest=distance; }
     }
     return best;
 }

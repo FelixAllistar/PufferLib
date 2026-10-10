@@ -400,9 +400,12 @@ int main(void) {
     fence_hits(&world);
     for(int room=1;room<=4;room++) {
         b3Pos bulb;assert(swat_motel_lamp(&world,room,&bulb));
+        SwatRoomLight source=swat_world_room_light(&world,room);
+        assert(source.power==1 && b3Distance(source.origin,bulb)<1e-6f && source.direction.y<-.9f);
+        world.room_light_off_mask=1u<<room;assert(!swat_world_room_light(&world,room).power);world.room_light_off_mask=0;
         SwatMotelInstance mount;int owner=swat_motel_dressing(&world,(room-1)*SWAT_MOTEL_DRESSING_ASSETS+7,&mount);
         assert(owner>0 && fabsf((float)(bulb.y-mount.origin.y)-.08959322f)<1e-6f);
-        world.objects[owner].active=false;assert(!swat_motel_lamp(&world,room,&bulb));world.objects[owner].active=true;
+        world.objects[owner].active=false;assert(!swat_motel_lamp(&world,room,&bulb));assert(!swat_world_room_light(&world,room).power);world.objects[owner].active=true;
     }
     for(int i=0;i<SWAT_MOTEL_DRESSING_INSTANCES;i++) {
         SwatMotelInstance mount;int owner=swat_motel_dressing(&world,i,&mount);assert(owner>0);
@@ -425,7 +428,9 @@ int main(void) {
     for(int t=0;t<60;t++)swat_world_step_doors(&world);
     assert(!swat_world_ray(&world,from,swat_v(0,0,-1),2,b3_nullBodyId).hit);
     b3Pos gallery[]={{-11.2f,-.85f,0},{6.8f,-.85f,0}}; route(gallery,2);
-    b3Pos reception[]={{-11.25f,-.85f,0},{-11.25f,4.72f,0},{-10,4.72f,0},{-10,8.6f,0}};route(reception,4);
+    // Walk the staff aisle and around the real chair, rather than requiring a
+    // capsule to pass through the newly furnished seat at (-10.70,-4.70).
+    b3Pos reception[]={{-11.25f,-.85f,0},{-11.25f,3.7f,0},{-11.35f,3.7f,0},{-11.35f,5.33f,0},{-10,5.33f,0},{-10,8.6f,0}};route(reception,6);
     b3Pos side[]={{-10,8,0},{-6.8f,8,0}};route(side,2);
     b3Pos west[]={{-14,-.6f,-.08f},{-14,3.3f,-.08f}};route(west,2);
     b3Pos ramp[]={{-10.9f,-3.01f,-.078f},{-10.9f,-1.83f,0},{-10.9f,-.8f,0}};route(ramp,3);

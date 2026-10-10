@@ -23,6 +23,11 @@ typedef struct SwatRoom {
     b3Vec3 half;
     SwatMaterial surface, floor;
 } SwatRoom;
+typedef struct SwatRoomLight {
+    b3Pos origin;
+    b3Vec3 direction; // Zero for an omnidirectional source.
+    float power;
+} SwatRoomLight;
 typedef struct SwatTag { SwatHitKind kind; int index; } SwatTag;
 typedef struct SwatObject {
     SwatTag tag;
@@ -101,6 +106,10 @@ int swat_world_breach(SwatWorld* world,int object,b3Pos position);
 int swat_world_room(const SwatWorld* world, b3Pos position);
 b3SurfaceMaterial swat_physics_material(SwatMaterial material);
 bool swat_world_visible(const SwatWorld* world,b3Pos from,b3Pos to);
+// Shared renderer/simulation source, including switches and lost supports.
+SwatRoomLight swat_world_room_light(const SwatWorld*,int room);
+// Bounded actor-detection approximation, not photometric lux or renderer pixels.
+float swat_world_visual_range(const SwatWorld*,b3Pos target,float daylight_range);
 
 #ifdef __cplusplus
 }

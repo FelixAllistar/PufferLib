@@ -42,6 +42,13 @@ it again; losing window focus automatically pauses. The pause menu also offers
 restart, settings, return to the main menu, and quit. Menu clicks and capture
 warps are discarded before accepting gameplay input.
 
+Bedside lamp switches affect distant actor detection as well as the room's
+appearance. Aim at the supported switch and press **F**. Dark interiors reduce
+NPC/policy detection range; close targets, physical cover and hearing still
+matter. Detection uses a bounded simulation approximation with lamp occlusion
+and a vertical daylight probe, rather than reading renderer pixels. Destroying
+the lamp's supporting wall removes its light too.
+
 On WSL, the launcher uses the **native Windows player** with the same Raylib
 and Box3D code. This avoids the WSLg/RDP pointer path implicated in
 [reported mouse lock and relative-motion problems](https://github.com/microsoft/wslg/issues/240).

@@ -233,6 +233,34 @@ static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int wi
     return image;
 }
 static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {return room101_capture_size(view,camera,lit,960,800);}
+static void reading_lamp_graphics(SwatView* view,const char* directory,Camera3D bed) {
+    char path[4096];SwatMotelInstance lamp_mount;b3Pos bulb;
+    int owner=swat_motel_dressing(&sim.world,7,&lamp_mount);
+    assert(owner>0 && swat_motel_lamp(&sim.world,1,&bulb));
+    before=sim.world;
+    b3Pos probe=b3OffsetPos(bulb,swat_v(0,-.35f,.125f));
+    assert(swat_world_room(&sim.world,probe)==1);
+    float lit_range=swat_world_visual_range(&sim.world,probe,24);
+    SwatRoomLight source=swat_world_room_light(&sim.world,1);
+    assert(source.power==1 && b3Distance(source.origin,bulb)<1e-6f);
+    Image on=room101_capture(view,bed,true);sim.world.room_light_off_mask=1u<<1;
+    assert(!swat_world_room_light(&sim.world,1).power);
+    float dark_range=swat_world_visual_range(&sim.world,probe,24);assert(lit_range>dark_range && dark_range==12);
+    Image off=room101_capture(view,bed,true);
+    snprintf(path,sizeof(path),"%s/reading-lamp-room-on.png",directory);assert(ExportImage(on,path));
+    snprintf(path,sizeof(path),"%s/reading-lamp-room-off.png",directory);assert(ExportImage(off,path));
+    Color* a=LoadImageColors(on);Color* b=LoadImageColors(off);int changed=0;
+    for(int i=0;i<on.width*on.height;i++)changed+=abs(a[i].r-b[i].r)>12;
+    assert(changed>1000);sim.world.room_light_off_mask=0;sim.world.objects[owner].active=false;
+    assert(!swat_motel_lamp(&sim.world,1,&bulb) && !swat_world_room_light(&sim.world,1).power);
+    assert(swat_world_visual_range(&sim.world,probe,24)==dark_range);
+    Image removed=room101_capture(view,bed,true);Color* c=LoadImageColors(removed);int removal=0;
+    for(int i=0;i<on.width*on.height;i++)removal+=abs(a[i].r-c[i].r)>12;
+    assert(removal>1000);sim.world.objects[owner].active=true;
+    UnloadImageColors(c);UnloadImage(removed);UnloadImageColors(a);UnloadImageColors(b);UnloadImage(on);UnloadImage(off);
+    assert(!memcmp(&before,&sim.world,sizeof(before)));
+    printf("PASS reading lamps: native illumination and simulation source agree on switches/support loss; visual range %.3f -> %.3f, changed pixels %d/%d, restored authority\n",lit_range,dark_range,changed,removal);
+}
 static void personal_shadow_review(SwatView* view,const char* directory) {
     SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.hostile_fire=false;
     swat_sim_init(&sim,config,73);swat_environment_art_prepare_location(&view->environment,&sim.world);
@@ -689,23 +717,7 @@ static void room101_graphics(SwatView* view,const char* directory) {
     puts("PASS dressing: nine embedded PBR models, second UV AO, metre-scale supported mounts and 432-triangle guest folder");
     Camera3D lamp_view={{-5.25f,1.48f,-3.2f},{-4.65f,1.34f,-3.83f},{0,1,0},40,CAMERA_PERSPECTIVE};
     room=room101_capture(view,lamp_view,true);snprintf(path,sizeof(path),"%s/reading-lamp.png",directory);assert(ExportImage(room,path));UnloadImage(room);
-    SwatMotelInstance lamp_mount;b3Pos bulb;int lamp_owner=swat_motel_dressing(&sim.world,7,&lamp_mount);
-    assert(lamp_owner>0 && swat_motel_lamp(&sim.world,1,&bulb));
-    Image lamp_on=room101_capture(view,bed,true);sim.world.room_light_off_mask=1u<<1;
-    Image lamp_off=room101_capture(view,bed,true);
-    snprintf(path,sizeof(path),"%s/reading-lamp-room-on.png",directory);assert(ExportImage(lamp_on,path));
-    snprintf(path,sizeof(path),"%s/reading-lamp-room-off.png",directory);assert(ExportImage(lamp_off,path));
-    Color* on_pixels=LoadImageColors(lamp_on);Color* off_pixels=LoadImageColors(lamp_off);int lighting_changed=0;
-    for(int i=0;i<lamp_on.width*lamp_on.height;i++)lighting_changed+=abs(on_pixels[i].r-off_pixels[i].r)>12;
-    assert(lighting_changed>1000);sim.world.room_light_off_mask=0;
-    sim.world.objects[lamp_owner].active=false;
-    assert(!swat_motel_lamp(&sim.world,1,&bulb));
-    Image removed=room101_capture(view,bed,true);Color* removed_pixels=LoadImageColors(removed);int removal_changed=0;
-    for(int i=0;i<lamp_on.width*lamp_on.height;i++)removal_changed+=abs(on_pixels[i].r-removed_pixels[i].r)>12;
-    assert(removal_changed>1000);sim.world.objects[lamp_owner].active=true;
-    UnloadImageColors(removed_pixels);UnloadImage(removed);
-    UnloadImageColors(on_pixels);UnloadImageColors(off_pixels);UnloadImage(lamp_on);UnloadImage(lamp_off);
-    puts("PASS reading lamps: supported anchors, existing room shadow slot, switches and support removal extinguish actual illumination");
+    reading_lamp_graphics(view,directory,bed);
     Camera3D holder_views[]={
         {{-5.88f,1.1f,-5.07f},{-5.48f,.72f,-5.83f},{0,1,0},65,CAMERA_PERSPECTIVE},
         {{-5.12f,1.05f,-5.38f},{-5.48f,.72f,-5.83f},{0,1,0},65,CAMERA_PERSPECTIVE}};
@@ -933,6 +945,12 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"room-lights")) {
+        SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
+        swat_sim_init(&sim,cfg,73);swat_environment_art_prepare_location(&view.environment,&sim.world);
+        reading_lamp_graphics(&view,directory,(Camera3D){{-7.15f,1.62f,-.67f},{-5.74f,1.05f,-2.93f},{0,1,0},59.863f,CAMERA_PERSPECTIVE});
+        swat_sim_close(&sim);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;
+    }
     if(argc>2 && !strcmp(argv[2],"wall-depth")) {wall_depth_graphics(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && !strcmp(argv[2],"wall-batch")) {wall_core_batch_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-props")) {texture_owner_graphics("motel_props/motel_service_trolley.glb");texture_owner_graphics("motel_props/motel_fire_extinguisher.glb");texture_owner_graphics("motel_props/motel_reception_noticeboard.glb");texture_owner_graphics("motel_props/chair_dining_spindle.glb");motel_props_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}

@@ -104,6 +104,7 @@ int swat_player_actor(int slot);
 bool swat_sim_set_player(SwatSim* sim, int slot, bool present);
 void swat_sim_spawn_actor(SwatSim* sim, int index, SwatRole role, b3Pos feet, float yaw);
 void swat_sim_bot_inputs(SwatSim* sim, SwatInput inputs[SWAT_MAX_ACTORS]);
+bool swat_sim_actor_visible(const SwatSim*,int observer,int target,float range,float half_fov);
 void swat_sim_step_inputs(SwatSim* sim, const SwatInput inputs[SWAT_MAX_ACTORS]);
 // Solo locomotion courses: same controller/door/physics step, no combat or
 // presentation bookkeeping. Inputs are movement plus automatic door interact.

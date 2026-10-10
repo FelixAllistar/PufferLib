@@ -107,6 +107,56 @@ static void place_actor(int id,b3Pos feet) {
     b3Body_SetTransform(c->body.body,b3OffsetPos(feet,swat_v(0,c->body.totalHeight*.5f+.01f,0)),b3Quat_identity);
     b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0));
 }
+static void light_perception(void) {
+    fixture();place_actor(1,(b3Pos){18,0,0});place_actor(2,(b3Pos){0,0,6});
+    sim.actors[0].mind.bot=true;sim.actors[0].mind.order=SWAT_ORDER_HOLD;
+    sim.world.rooms[0]=(SwatRoom){{8,1.5f,0},{20,1.5f,10},SWAT_DRYWALL,SWAT_CONCRETE};sim.world.room_count=1;
+    int roof=swat_world_box(&sim.world,(b3Pos){8,3.3f,0},swat_v(20,.2f,10),SWAT_CONCRETE,200);
+    int lamp=swat_world_box(&sim.world,(b3Pos){18,2.9f,0},swat_v(.2f,.05f,.2f),SWAT_STEEL,0);
+    sim.world.objects[lamp].part=SWAT_PART_LIGHT;
+    SwatRoomLight light=swat_world_room_light(&sim.world,0);
+    assert(light.power==1 && fabsf(light.origin.y-2.84f)<1e-5f && !b3Length(light.direction));
+    assert(!swat_world_room_light(&sim.world,-1).power && !swat_world_room_light(&sim.world,1).power);
+    SwatInput inputs[SWAT_MAX_ACTORS];float obs[SWAT_OBS_SIZE];
+    int center=SWAT_PROPRIO_SIZE+((SWAT_SENSOR_ROWS/2)*SWAT_SENSOR_COLS+SWAT_SENSOR_COLS/2)*SWAT_SENSOR_CHANNELS;
+    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
+    swat_sim_bot_inputs(&sim,inputs);assert(sim.actors[0].mind.target==1);
+    swat_sim_observe(&sim,0,obs);assert(obs[center+1]==.8f && obs[center+2]==1);
+    sim.world.room_light_off_mask=1;
+    assert(!swat_world_room_light(&sim.world,0).power && !swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
+    swat_sim_bot_inputs(&sim,inputs);assert(sim.actors[0].mind.target==-1);
+    swat_sim_observe(&sim,0,obs);assert(obs[center]==1 && obs[center+1]==0 && obs[center+2]==0);
+    // The same switches and source produce the same perception in a late replica.
+    static SwatMap map;static SwatSnapshot snapshot;
+    swat_capture_map(&sim,4,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,4,&snapshot);
+    assert(swat_apply_snapshot(&replica,&snapshot) && !swat_sim_actor_visible(&replica,0,1,24,60*SWAT_RAD));
+    assert(swat_world_visual_range(&replica.world,swat_controller_eye(&replica.actors[1].controller),24)==12);
+    swat_sim_close(&replica);
+    // Darkness never hides a nearby target or suppresses physical hearing.
+    place_actor(1,(b3Pos){8,0,0});assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
+    place_actor(1,(b3Pos){18,0,0});sim.actors[1].mind.memory_ticks=0;
+    swat_sound_emit(&sim.sounds,sim.tick,0,SWAT_SOUND_SHOT,swat_controller_eye(&sim.actors[0].controller),1,32);
+    sim.tick+=10; // Allow the existing finite-speed acoustic path to arrive.
+    swat_sim_bot_inputs(&sim,inputs);assert(sim.actors[1].mind.target==-1 && sim.actors[1].mind.memory_ticks>0);
+    // Both ordinary non-tactical NPCs and tactical NPCs use the same boundary.
+    sim.config.tactical_rules=false;sim.config.hostile_fire=true;
+    swat_sim_bot_inputs(&sim,inputs);assert(sim.actors[1].target_actor==-1 && !inputs[1].fire);
+    sim.config.tactical_rules=true;sim.config.hostile_fire=false;
+    sim.world.room_light_off_mask=0;
+    int shade=swat_world_box(&sim.world,(b3Pos){18,2.2f,0},swat_v(.4f,.05f,.4f),SWAT_WOOD,20);
+    assert(!swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
+    assert(swat_world_damage(&sim.world,shade,100) && swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
+    int pane=swat_world_box(&sim.world,(b3Pos){18,2.2f,0},swat_v(.4f,.05f,.4f),SWAT_GLASS,20);
+    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));(void)pane;
+    sim.world.room_light_off_mask=1;
+    assert(swat_world_damage(&sim.world,roof,1000) && swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
+    int wall=swat_world_box(&sim.world,(b3Pos){9,1.5f,0},swat_v(.1f,1.5f,3),SWAT_CONCRETE,0);
+    assert(!swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));(void)wall;
+    place_actor(1,(b3Pos){0,0,8});assert(!swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD));
+    assert(swat_world_visual_range(&sim.world,(b3Pos){-25,1,0},24)==24);
+    swat_sim_close(&sim);
+    puts("PASS light perception: shared source/switches, occlusion, glass transmission, roof loss, close detection, hearing, tactical/ordinary NPCs, policy visibility and late replica");
+}
 static void scenario_completion(void) {
     SwatConfig config=swat_default_config();assert(!config.tactical_rules && !config.squad_bots);
     for(int mission=0;mission<SWAT_MISSION_COUNT;mission++) {
@@ -217,4 +267,4 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
-int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }
+int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }

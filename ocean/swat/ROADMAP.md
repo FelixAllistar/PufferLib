@@ -196,8 +196,8 @@ leaves blocked, then sequential far-to-near interior positions and inward facing
 Visible occupants can cause local sector/route replanning; no hidden occupant map
 is added. Three-officer furnished-room entry, queued execution, wedge refusal,
 four doorway rotations/both flanks and exact input replay pass on Linux/Windows.
-Bedside switches and material-aware masonry work, but light does not affect
-perception. Masonry openings now follow irregular physical polygons, with coarse
+Bedside switches now affect distant actor perception through the shared physical
+light-source model described below. Masonry openings follow irregular physical polygons, with coarse
 macro-fracture still visible. Production audio, room/approach art
 and trained tactical policies are unfinished.
 
@@ -206,6 +206,34 @@ prove alternative routes with the actual controller; improve fracture silhouette
 then address perception/behavior, level composition, sound and remaining polish.
 Reorder using concrete play-test failures. Record each completed increment and
 its evidence here; a successful subsystem test is not a finished vertical slice.
+
+Room sources now have one simulation-owned descriptor shared by rendering,
+tactical/ordinary NPC detection and policy actor observations. It includes the
+same bulb/fixture origin, lamp cone, power, switches and lost motel supports.
+Opaque physical cover blocks punctual light; glass transmits the light query;
+a clear vertical sky path restores daylight. A bounded exposure approximation
+reduces distant actor detection continuously, down to half the daylight range.
+Close targets still require a real sight ray and FOV, and remain detectable;
+hearing retains its finite-speed, coarse-bearing path. Navigation excludes
+distant dark-room occupants from its visible-body occupancy list. Unseen policy
+samples disclose neither actor identity nor body depth. Observation/action shapes
+and checkpoint dimensions are unchanged; interior perception semantics change.
+This is approximate actor detection, not renderer pixel readback, photometric lux,
+night vision, flashlight handling or a trained tactical-policy claim. The vertical
+daylight probe does not yet model light arriving through every doorway/window.
+Linux/Windows encounter, motel and tactical checks cover switches, cover, glass
+light transmission, roof loss, close detection, hearing, FOV and late replicas.
+Native motel lamp captures share the correct supported source and change 217,426
+pixels on switch-off, with a measured 24 -> 12 m detection probe; lost wall
+support extinguishes both models, and capture restores authority. Complete
+hostile front/exterior/inter-room controller routes pass at 8,385/9,827/10,710
+ticks, with exact replay, mid-save/resume, fresh replicas and no contact overflow.
+The staff capsule route now goes around the chair's actual back rather than
+through its occupied seat. Normal Linux/Windows players and the ordinary Puffer
+trainer are rebuilt; no custom launcher/training wrapper or Python is introduced.
+A fresh native headless 960-tick indoor firing diagnostic (1,179 objects, nine
+actors, 107 shots) measured simulation median 2.046 ms and p95 4.130 ms. It
+excludes rendering/audio and is not a controlled before/after speed comparison.
 
 Full front-door completion now has a C player-input regression starting from
 the canonical motel spawn: five compliance/cuff interactions, two collected

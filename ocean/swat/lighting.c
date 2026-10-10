@@ -544,16 +544,8 @@ static uint32_t room_geometry_hash(const SwatWorld* world,int room) {
     return hash;
 }
 static Vector3 room_light_origin(const SwatWorld* world,int room) {
-    b3Pos bulb;if(swat_motel_lamp(world,room,&bulb))return (Vector3){bulb.x,bulb.y,bulb.z};
-    const SwatRoom* r=&world->rooms[room];
-    Vector3 origin={(float)r->center.x,(float)r->center.y+r->half.y-.18f,(float)r->center.z};
-    for(int i=0;i<world->count;i++) {
-        const SwatObject* o=&world->objects[i];
-        b3Vec3 d=b3SubPos(o->center,r->center);
-        if(o->active && o->part==SWAT_PART_LIGHT && fabsf(d.x)<r->half.x && fabsf(d.y)<r->half.y && fabsf(d.z)<r->half.z)
-            return (Vector3){(float)o->center.x,(float)o->center.y-o->half.y-.01f,(float)o->center.z};
-    }
-    return origin;
+    SwatRoomLight light=swat_world_room_light(world,room);
+    return (Vector3){light.origin.x,light.origin.y,light.origin.z};
 }
 static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context) {
     if(!light->enabled) return;
@@ -636,9 +628,8 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         const SwatRoom* r=&world->rooms[i];
         centers[i]=(Vector3){(float)r->center.x,(float)r->center.y,(float)r->center.z};
         halves[i]=(Vector3){r->half.x,r->half.y,r->half.z}; origins[i]=room_light_origin(world,i);
-        if(world->motel && i>=1 && i<=4)directions[i]=(Vector3){0,-.9396926f,.3420201f};
-        b3Pos bulb;room_power[i]=!world->motel || i<1 || i>4 || swat_motel_lamp(world,i,&bulb) ? 1 : 0;
-        if(world->room_light_off_mask&(1u<<i))room_power[i]=0;
+        SwatRoomLight source=swat_world_room_light(world,i);
+        directions[i]=(Vector3){source.direction.x,source.direction.y,source.direction.z};room_power[i]=source.power;
     }
     SwatLightingProgram* programs[]={&light->batch,&light->mesh};
     for(int i=0;i<2;i++) {
