@@ -2,6 +2,7 @@
 #include "raymath.h"
 #include "pose.h"
 #include "rlgl.h"
+#include "impact_effects_draw.h"
 #include <stdlib.h>
 #include <string.h>
 #if defined(__linux__) && !defined(PLATFORM_WEB)
@@ -410,6 +411,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
         for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,false);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world,&sim->world.objects[i]);
         swat_environment_art_transparent(&view->environment,&sim->world,camera.position,false);
+        swat_impact_draw(&sim->sounds,sim->tick,camera,&view->lighting);
         swat_end_scene(view); return;
     }
     if(actor<0 || !sim->snipers[unit].deployed || !sim->actors[actor].alive) {
@@ -432,6 +434,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
     for(int i=0;i<sim->actor_count;i++) if(sim->tick-sim->actors[i].last_shot_tick<=3)
         DrawLine3D(swat_position(sim->actors[i].tracer_start),swat_position(sim->actors[i].tracer_end),swat_gold);
     swat_environment_art_transparent(&view->environment,&sim->world,camera.position,false);
+    swat_impact_draw(&sim->sounds,sim->tick,camera,&view->lighting);
     swat_end_scene(view);
     if(a->gear.gas_ticks>0) DrawRectangle(0,0,width,height,(Color){100,125,55,(unsigned char)(a->gear.gas_ticks*.55f)});
     if(a->gear.flash_ticks>0) DrawRectangle(0,0,width,height,(Color){242,245,221,(unsigned char)(240*fminf(1,a->gear.flash_ticks/120.0f))});
@@ -546,6 +549,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
+    swat_impact_draw(&s->sounds,s->tick,camera,&view->lighting);
     view->geometry_seconds=GetTime()-measured;measured=GetTime();
     if (a->alive && !a->gear.inspecting) {
         // Projected magnification = tan(oldFov/2)/tan(newFov/2). The default

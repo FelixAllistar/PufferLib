@@ -289,6 +289,31 @@ the matching pane. Existing front/exterior/interroom completion, replay/save and
 fresh-replica checks still pass on both platforms. The normal native player,
 Linux player and Puffer are rebuilt; an actual launcher capture is reviewed.
 
+Material hit/break cues now reconstruct directly from replicated sound events:
+short glass glints, masonry dust/chips, wood splinters and metal flecks. Charges
+use their existing colocated blast/break pair for a wider puff. Main view, sniper
+and device feeds share this path. It selects at most 12 recent events/96 particles
+and 1,404 vertices (468 triangles) per view, with one batch. Depth testing hides
+cues behind cover; transparent cues do not write depth, and depth writes/culling
+are restored before further geometry. Matching impact/break pairs produce one
+cue. Actor-hit carpet placeholders are excluded. These are transient visual
+cues, not persistent colliding rubble or additional gameplay cover.
+
+Linux/native Windows checks cover every material, expiry/reset, wrapped/saturated
+event logs, prioritization, real pane-shot events, encoded snapshot equivalence,
+and unchanged authority/RNG. Native graphics check three material cues, opaque
+cover, expiry, restored depth writes, texture cleanup and a real lobby-shot view.
+Saturated-log sampling measured 11.8 microseconds on Linux and 12.0 on Windows;
+the native maximum batch measured 0.123 ms mean CPU submission over 200 draws
+on the GTX 1060 system. GPU completion is excluded: this does not establish a
+whole-game frame-time budget. Proof is in build/swat/review/impact-effects.
+
+The artist's separate window construction proposal is approved and retained
+with a hash receipt: 6.4 mm glass, four lobby panes around the existing middle
+rail, explicit frame substrates/pockets, thin supported curtains clear of glazing,
+unchanged outer bounds and a 1.27 x 2.4 m lobby doorway. Actual candidate meshes
+and contact checks are being made; the proposal does not replace runtime art yet.
+
 Overwatch now uses that same sight query, removing its separate eight-pane
 stepping cap. A physical nine-pane designation check fails against the former
 implementation and passes on Linux/Windows with the shared query; an added opaque

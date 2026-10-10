@@ -102,7 +102,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: locomotion-test scenarios-test motel-test motel-panes-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: impact-effects-test locomotion-test scenarios-test motel-test motel-panes-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
@@ -126,6 +126,9 @@ viewer: $(ENET_LIB) ui-assets | $(BUILD)
 	mv $(ROOT)/swat.launcher.tmp $(ROOT)/swat
 environment-art-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_art.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c protocol.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_environment_art
+impact-effects-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_impact_effects.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_impact_effects
+	ulimit -c 0; $(BUILD)/test_impact_effects
 weapon-art-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapon_art.c weapon_art.c character_asset.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_weapon_art
 lighting-test-build: | $(BUILD)

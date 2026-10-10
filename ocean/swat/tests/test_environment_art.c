@@ -939,6 +939,7 @@ static void culling_graphics(SwatView* view,const char* directory) {
 #include "wall_core_batch_graphics.h"
 #include "motel_props_graphics.h"
 #include "motel_panes_graphics.h"
+#include "impact_effects_graphics.h"
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
@@ -946,6 +947,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"impact-effects")) {impact_effects_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-panes")) {motel_panes_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"room-lights")) {
         SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
