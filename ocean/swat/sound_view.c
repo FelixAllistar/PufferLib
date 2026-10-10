@@ -27,11 +27,12 @@ static void recordings_open(SwatSoundView* view) {
 }
 static void recording_start(const SwatSoundView* view,const SwatSim* sim,SwatAudioVoice* voice) {
     int choices[SWAT_SOUND_CLIPS],count=0; bool sidearm=false;
+    int material=voice->event.material==SWAT_OPAQUE_GLASS?SWAT_GLASS:voice->event.material;
     int actor=voice->event.source_actor;
     if(actor>=0 && actor<sim->actor_count) sidearm=sim->actors[actor].arsenal.active==1;
     for(int i=0;i<view->clip_count;i++) {
         const SwatSoundClip* clip=&view->clips[i];
-        if(clip->kind==(int)voice->event.kind && (clip->material<0 || clip->material==(int)voice->event.material) &&
+        if(clip->kind==(int)voice->event.kind && (clip->material<0 || clip->material==material) &&
            (clip->profile<0 || clip->profile==(int)sidearm)) choices[count++]=i;
     }
     if(!count) return;

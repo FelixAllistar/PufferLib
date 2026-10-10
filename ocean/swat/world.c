@@ -84,7 +84,10 @@ void swat_world_build_range(SwatWorld* w, uint32_t* seed, bool randomize) {
     swat_world_box(w,(b3Pos){3.0f,2.0f,4.8f},swat_v(1.8f,0.8f,1.0f),SWAT_CONCRETE,0);
 }
 
-typedef struct SwatRayContext { SwatHit result; b3BodyId ignore; bool world_only; const SwatWorld* optical; } SwatRayContext;
+typedef struct SwatRayContext {
+    SwatHit result;b3BodyId ignore;bool world_only;const SwatWorld* optical;
+    const int* layers;int layer_count;
+} SwatRayContext;
 static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     float fraction, uint64_t material, int triangle, int child, void* context) {
     (void)material; (void)triangle; (void)child;
@@ -92,6 +95,7 @@ static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     b3BodyId body = b3Shape_GetBody(shape);
     if (B3_ID_EQUALS(body,c->ignore)) return -1.0f;
     SwatTag* tag = (SwatTag*)b3Body_GetUserData(body);
+    if(tag && tag->kind==SWAT_HIT_WORLD)for(int i=0;i<c->layer_count;i++)if(tag->index==c->layers[i])return -1.0f;
     if(tag && tag->kind==SWAT_HIT_PROJECTILE) return -1.0f;
     if(c->world_only && tag && tag->kind!=SWAT_HIT_WORLD) return -1.0f;
     if(c->optical && tag && tag->kind==SWAT_HIT_WORLD && tag->index>=0 &&
@@ -108,8 +112,9 @@ static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
 }
 
 static SwatHit cast_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,
-                       float range,b3BodyId ignore,bool sight) {
+                       float range,b3BodyId ignore,bool sight,const int* layers,int count) {
     SwatRayContext c = {0}; c.ignore = ignore;
+    c.layers=layers;c.layer_count=count;
     if(sight)c.optical=w;
     c.result.fraction = 1; c.result.index = -1;
     b3Vec3 translation = swat_mul(swat_normalize(direction),range);
@@ -119,10 +124,13 @@ static SwatHit cast_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,
     return c.result;
 }
 SwatHit swat_world_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore) {
-    return cast_ray(w,origin,direction,range,ignore,false);
+    return cast_ray(w,origin,direction,range,ignore,false,NULL,0);
 }
 SwatHit swat_world_sight_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore) {
-    return cast_ray(w,origin,direction,range,ignore,true);
+    return cast_ray(w,origin,direction,range,ignore,true,NULL,0);
+}
+SwatHit swat_world_layer_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore,const int* layers,int count) {
+    return cast_ray(w,origin,direction,range,ignore,false,layers,count);
 }
 
 SwatHit swat_world_sphere_cast(const SwatWorld* w, b3Pos origin,
@@ -218,7 +226,8 @@ bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
 
 bool swat_world_breachable(const SwatObject* o) {
     return o->active && o->max_health>0 && charge_demand(o)<=1 && (o->door || (o->wall_group>0 &&
-        (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME || o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL)));
+        (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME || o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL ||
+         (o->part==SWAT_PART_FIXTURE && o->material==SWAT_OPAQUE_GLASS))));
 }
 
 int swat_world_breach(SwatWorld* w,int object,b3Pos position) {

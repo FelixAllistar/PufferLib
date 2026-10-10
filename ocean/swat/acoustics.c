@@ -274,7 +274,7 @@ SwatRoomAcoustics swat_acoustic_room(const SwatWorld* w,b3Pos listener) {
     for(int i=0;i<w->count;i++) {
         const SwatObject* o=&w->objects[i];
         if(o->active && (!o->door || o->door_angle<.2f)) continue;
-        if(!o->door && o->part!=SWAT_PART_SKIN && o->material!=SWAT_GLASS) continue;
+        if(!o->door && o->part!=SWAT_PART_SKIN && o->material!=SWAT_GLASS && o->material!=SWAT_OPAQUE_GLASS) continue;
         b3Vec3 d=b3SubPos(o->door ? o->hinge : o->center,r->center);
         if(fabsf(d.x)>r->half.x+.3f || fabsf(d.z)>r->half.z+.3f) continue;
         if(o->part==SWAT_PART_SKIN) {

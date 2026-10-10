@@ -14,6 +14,9 @@ typedef struct SwatMotelFoliage {SwatMotelInstance placement;int supports[2];} S
 #include "motel_foliage_data.h"
 typedef struct SwatMotelContactSource {int asset;const int32_t* indices;int triangle_count;} SwatMotelContactSource;
 #include "motel_contacts_data.h"
+typedef struct SwatMotelPaneSource {int asset;b3Vec3 center,half;int triangles[44];} SwatMotelPaneSource;
+#include "motel_panes_data.h"
+static const int pane_parents[]={6,17,41,65,89};
 // Small bevels must survive Box3D's minimum triangle area. Build this shell in
 // centimetre units and apply the inverse shape scale; world dimensions stay exact.
 static float mesh_units(int asset){return asset>=44?100:1;}
@@ -59,7 +62,7 @@ static void contact_meshes_create(SwatWorld* w) {
 static bool contact_meshes_bind(SwatWorld* w,SwatObject* o,const SwatMotelInstance* p,const b3ShapeDef* def) {
     bool found=false;
     b3Vec3 scale=swat_mul(p->scale,1/mesh_units(p->asset));
-    for(int i=0;i<w->motel_contact_mesh_count;i++)if(motel_contact_sources[i].asset==p->asset) {
+    for(int i=0;i<(int)(sizeof(motel_contact_sources)/sizeof(motel_contact_sources[0]));i++)if(motel_contact_sources[i].asset==p->asset) {
         b3ShapeId shape=b3CreateMeshShape(o->body,def,w->motel_contact_meshes[i],scale);assert(B3_IS_NON_NULL(shape));
         if(!found)o->shape=shape;
         found=true;
@@ -349,13 +352,123 @@ static void props_bind(SwatWorld* w) {
         bool bound=contact_meshes_bind(w,o,&prop_instances[i],&def);assert(bound);(void)bound;
     }
 }
+int swat_motel_window_index(int parent) {
+    for(int i=0;i<5;i++)if(pane_parents[i]==parent)return i;
+    return -1;
+}
+int swat_motel_pane_parent(const SwatWorld* w,const SwatObject* o) {
+    int i=o->tag.index-SWAT_MOTEL_PANES_FIRST;
+    return w->motel && w->count==SWAT_MOTEL_OBJECTS && i>=0 && i<10?pane_parents[i/2]:-1;
+}
+int swat_motel_pane_mask(const SwatWorld* w,int parent) {
+    int i=swat_motel_window_index(parent);
+    if(i<0 || w->count!=SWAT_MOTEL_OBJECTS)return 3;
+    return w->objects[SWAT_MOTEL_PANES_FIRST+2*i].active | (w->objects[SWAT_MOTEL_PANES_FIRST+2*i+1].active<<1);
+}
+static int source_pane(int asset,int triangle) {
+    for(int i=0;i<4;i++)if(pane_sources[i].asset==asset)
+        for(int t=0;t<44;t++)if(pane_sources[i].triangles[t]==triangle)return i;
+    return -1;
+}
+int swat_motel_pane_triangle(int asset,b3Vec3 a,b3Vec3 b,b3Vec3 c) {
+    const SwatMotelAsset* source=swat_motel_asset(asset);b3Vec3 v[]={a,b,c};
+    for(int i=0;i<4;i++)if(pane_sources[i].asset==asset)for(int t=0;t<44;t++) {
+        int tri=pane_sources[i].triangles[t];
+        for(int shift=0;shift<3;shift++) {
+            bool same=true;
+            for(int k=0;k<3;k++)same&=b3LengthSquared(b3Sub(v[(k+shift)%3],b3Add(source->vertices[source->indices[3*tri+k]],source->center)))<4e-12f;
+            if(same)return i%2;
+        }
+    }
+    return -1;
+}
+static const SwatMotelPaneSource* pane_source(int i) {return &pane_sources[(i<2?2:0)+i%2];}
+static float pane_health(int i) {
+    const SwatMaterialDef* m=swat_material(SWAT_OPAQUE_GLASS);
+    return m->fracture_health*2*pane_source(i)->half.z/m->reference_thickness;
+}
+static void pane_recipe(int i,b3Pos* center,b3Vec3* half,float* yaw) {
+    const SwatMotelPaneSource* s=pane_source(i);const SwatMotelInstance* p=swat_motel_instance(pane_parents[i/2]-1);
+    assert(p->asset==s->asset && p->scale.x==1 && p->scale.y==1 && p->scale.z==1);
+    *center=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*s->center.x+sinf(p->yaw)*s->center.z,s->center.y,-sinf(p->yaw)*s->center.x+cosf(p->yaw)*s->center.z));
+    *half=swat_v(s->half.z,s->half.y,s->half.x);*yaw=p->yaw+SWAT_PI*.5f;
+}
+static bool panes_validate(const SwatWorld* w) {
+    if(w->count<=SWAT_MOTEL_PANES_FIRST)return true;
+    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    for(int i=0;i<10;i++) {
+        const SwatObject* o=&w->objects[SWAT_MOTEL_PANES_FIRST+i];b3Pos center;b3Vec3 half;float yaw;pane_recipe(i,&center,&half,&yaw);
+        int supports[SWAT_MAX_SUPPORTS];for(int j=0;j<SWAT_MAX_SUPPORTS;j++)supports[j]=j?-1:pane_parents[i/2];
+        if(b3Distance(center,o->center)>1e-4f || b3Length(b3Sub(half,o->half))>1e-4f || fabsf(swat_angle(o->yaw-yaw))>1e-5f ||
+           o->pitch!=0 || o->door || o->fractured || o->wall_group!=SWAT_MOTEL_PANES_FIRST+2*(i/2)+1 ||
+           o->part!=SWAT_PART_FIXTURE || o->material!=SWAT_OPAQUE_GLASS || o->max_health!=pane_health(i) ||
+           o->structural_thickness!=2*pane_source(i)->half.z || memcmp(supports,o->supports,sizeof(supports)))return false;
+    }
+    return true;
+}
+static int owned_mesh(SwatWorld* w,b3MeshData* mesh) {
+    assert(mesh);int id=w->motel_contact_mesh_count++;
+    w->motel_contact_meshes=realloc(w->motel_contact_meshes,(size_t)w->motel_contact_mesh_count*sizeof(*w->motel_contact_meshes));
+    assert(w->motel_contact_meshes);w->motel_contact_meshes[id]=mesh;return id;
+}
+static b3MeshData* window_mesh(int source_pane_id,int asset) {
+    const SwatMotelAsset* a=swat_motel_asset(asset);b3Vec3* v=malloc((size_t)a->triangle_count*3*sizeof(*v));
+    int32_t* indices=malloc((size_t)a->triangle_count*3*sizeof(*indices));assert(v && indices);int count=0;
+    for(int t=0;t<a->triangle_count;t++) {
+        int part=source_pane(asset,t);
+        if(source_pane_id<0?part>=0:part!=source_pane_id)continue;
+        for(int k=0;k<3;k++) {
+            b3Vec3 p=a->vertices[a->indices[3*t+k]];
+            if(source_pane_id>=0){p=b3Sub(b3Add(p,a->center),pane_sources[source_pane_id].center);p=swat_v(-p.z,p.y,p.x);}
+            v[3*count+k]=swat_mul(p,100);indices[3*count+k]=3*count+k;
+        }
+        count++;
+    }
+    assert(count==(source_pane_id<0?a->triangle_count-88:44));
+    b3MeshDef def={.vertices=v,.indices=indices,.vertexCount=count*3,.triangleCount=count,.weldVertices=true,.weldTolerance=.0001f,.identifyEdges=true};
+    b3MeshData* mesh=b3CreateMesh(&def,NULL,0);free(v);free(indices);return mesh;
+}
+static void panes_bind(SwatWorld* w) {
+    if(w->count!=SWAT_MOTEL_OBJECTS)return;
+    for(int kind=0;kind<2;kind++) {
+        int asset=kind?10:12;int full=owned_mesh(w,window_mesh(-1,asset));
+        b3MeshData* mesh=w->motel_contact_meshes[full];int first=w->motel_contact_mesh_count;
+        for(int start=0;start<mesh->triangleCount;start+=240) {
+            int selection[240],count=mesh->triangleCount-start;if(count>240)count=240;
+            for(int k=0;k<count;k++)selection[k]=start+k;
+            owned_mesh(w,b3CreateMeshSubset(mesh,selection,count));
+        }
+        int end=w->motel_contact_mesh_count;
+        for(int bay=kind?1:0;bay<(kind?5:1);bay++) {
+            SwatObject* o=&w->objects[pane_parents[bay]];if(!o->active)continue;
+            int count=b3Body_GetShapeCount(o->body);b3ShapeId* shapes=malloc((size_t)count*sizeof(*shapes));assert(shapes);
+            assert(b3Body_GetShapes(o->body,shapes,count)==count);
+            for(int j=0;j<count;j++)b3DestroyShape(shapes[j],false);
+            free(shapes);
+            b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
+            for(int j=first;j<end;j++) {
+                b3ShapeId shape=b3CreateMeshShape(o->body,&def,w->motel_contact_meshes[j],swat_v(.01f,.01f,.01f));assert(B3_IS_NON_NULL(shape));
+                if(j==first)o->shape=shape;
+            }
+            o->query_mesh=(b3Mesh){mesh,{.01f,.01f,.01f}};
+        }
+    }
+    for(int source=0;source<4;source++) {
+        int id=owned_mesh(w,window_mesh(source,pane_sources[source].asset));
+        for(int i=0;i<10;i++)if(pane_source(i)==&pane_sources[source]) {
+            SwatObject* o=&w->objects[SWAT_MOTEL_PANES_FIRST+i];if(!o->active)continue;
+            b3DestroyShape(o->shape,false);b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
+            o->shape=b3CreateMeshShape(o->body,&def,w->motel_contact_meshes[id],swat_v(.01f,.01f,.01f));assert(B3_IS_NON_NULL(o->shape));
+        }
+    }
+}
 bool swat_motel_bind_collision(SwatWorld* w) {
     // Canonical prefix remains stable; appended wall fragments use their explicit
     // wire geometry. Also retain the original map without utility props.
     if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
     int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
-    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w))return false;
+    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w) || !panes_validate(w))return false;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];
         const SwatMotelInstance* p=swat_motel_instance(i);
@@ -398,6 +511,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     ground_bind(w);
     mounted_bind(w);
     props_bind(w);
+    panes_bind(w);
     w->motel=true; return true;
 }
 
@@ -566,6 +680,15 @@ void swat_motel_build(SwatWorld* w) {
         bool attached=swat_world_attach(w,id,supports,count);assert(attached);(void)attached;
     }
     assert(props_validate(w));props_bind(w);
+    assert(w->count==SWAT_MOTEL_PANES_FIRST);
+    for(int i=0;i<10;i++) {
+        b3Pos center;b3Vec3 half;float yaw;pane_recipe(i,&center,&half,&yaw);
+        int id=swat_world_box(w,center,half,SWAT_OPAQUE_GLASS,pane_health(i));SwatObject* o=&w->objects[id];
+        o->part=SWAT_PART_FIXTURE;o->wall_group=SWAT_MOTEL_PANES_FIRST+2*(i/2)+1;
+        o->structural_thickness=2*pane_source(i)->half.z;swat_world_place(o,yaw);
+        int parent=pane_parents[i/2];bool attached=swat_world_attach(w,id,&parent,1);assert(attached);(void)attached;
+    }
+    assert(panes_validate(w));panes_bind(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }

@@ -255,10 +255,39 @@ behind it. Hidden people do not erase the pane or disclose identity/body depth.
 Fresh annex training is required; shape-compatible old raw weights cannot be
 identified automatically. Movement v2 is unchanged. This handles single-material
 clear panes, not partial opacity or a material decomposition of mixed assets.
-The motel's authored windows contain opaque dusty panes, curtain folds, frames
-and sills in a composite object; they remain opaque. Making those independently
-breakable requires physical/raster parts with known substrates and support,
-rather than relabeling the entire assembly as transparent glass.
+The motel's authored windows now separate ten opaque dusty glass panes from
+their five existing frame/curtain/sill aggregates. Each pane retains its original
+44 triangles, independent damage and physical penetration, glass audio and local
+C4 removal. Intact panes block sight; broken panes open the same physical/render
+gap. Unknown frame substrates and intersecting curtain proxies retain their
+existing aggregate behavior, so curtain-covered areas still block sight/movement.
+The modeled 18/25 mm pane envelopes are not verified fabrication gauges; health
+and material strengths remain game approximations. The frozen parts packet,
+hash receipt and reproducible C importer are checked in. Artist follow-up requests
+a separate glazing/curtain revision with explicit substrate/support evidence.
+
+Bullet traversal now checks an object's occupied interval before advancing to
+its exit, so overlapping glass/curtain/steel layers each consume energy. Occupied
+objects are ignored only until their next exit; later disconnected portions of
+the same mesh remain hittable. Eight impacts remain the bound. Nested/overlapping
+glass and steel checks in both directions fail against the previous traversal
+and pass with the new traversal.
+
+The current motel recipe has 1,189 objects. Older canonical prefixes keep their
+original aggregate glazing; partial pane recipes and changed opacity/depth/support
+are rejected. Wire layout remains version 17, but peers need matching builds for
+the appended opaque-glass material and current map recipe. Movement v2 and annex
+v3 remain unchanged. Panes use independently owned, bounded contact subsets and
+cached material batches; original material maps/UVs and Room 101 v3/v4 art survive.
+Missing art draws exact surviving mesh collision rather than aggregate boxes.
+Linux and native Windows checks cover two-face shots/exit depths, overlapping
+curtains, actor penetration, ordinary finite-inventory C4 placement/retreat,
+encoded late replicas, reset and exact normal-input destroyed-pane save/replay.
+Native graphics match 357,634 stable collision/raster samples over intact and
+broken source/fallback windows; both Room 101 replacement versions retain/remove
+the matching pane. Existing front/exterior/interroom completion, replay/save and
+fresh-replica checks still pass on both platforms. The normal native player,
+Linux player and Puffer are rebuilt; an actual launcher capture is reviewed.
 
 Overwatch now uses that same sight query, removing its separate eight-pane
 stepping cap. A physical nine-pane designation check fails against the former
@@ -267,7 +296,8 @@ steel sheet still blocks designation and no shot is issued by the test. Existing
 post/rifle selection, glass-impact shooting, hostage interlock, steady aim,
 ammunition preservation and replica checks still pass. Bullet penetration retains
 its own physical energy/traversal limits. Normal players and Puffer are rebuilt
-after this follow-up; no new window geometry or opaque-art change is claimed.
+after this follow-up. Clear-glass visibility remains separate from the motel's
+opaque authored panes.
 
 Full front-door completion now has a C player-input regression starting from
 the canonical motel spawn: five compliance/cuff interactions, two collected

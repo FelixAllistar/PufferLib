@@ -93,6 +93,9 @@ SwatHit swat_world_ray(const SwatWorld* world, b3Pos origin, b3Vec3 direction,
 // Optical queries transmit clear glass; weapons/tools/movers use physical casts.
 SwatHit swat_world_sight_ray(const SwatWorld*,b3Pos,b3Vec3,float,b3BodyId ignore);
 bool swat_world_sight_clear(const SwatWorld*,b3Pos from,b3Pos to);
+// Ignore only the caller's currently occupied ballistic layers. The caller
+// limits this cast to their nearest exit, then restores those objects.
+SwatHit swat_world_layer_ray(const SwatWorld*,b3Pos,b3Vec3,float,b3BodyId,const int* layers,int count);
 SwatHit swat_world_sphere_cast(const SwatWorld* world, b3Pos origin,
                               b3Vec3 translation, float radius, b3BodyId ignore);
 bool swat_world_damage(SwatWorld* world, int object, float damage);

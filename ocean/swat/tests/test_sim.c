@@ -208,6 +208,26 @@ static void test_damage_and_destruction(void) {
     puts("PASS nearest-cover damage, collider removal, thickness/energy penetration and fresh sensor geometry");
 }
 
+static void test_overlapping_materials(void) {
+    for(int reverse=0;reverse<2;reverse++)for(int overlap=0;overlap<2;overlap++)for(int steel=0;steel<2;steel++) {
+        SwatSim s;SwatConfig cfg=swat_default_config();cfg.randomize=false;cfg.hostile_fire=false;
+        swat_sim_init(&s,cfg,55);
+        b3Body_SetTransform(s.actors[1].controller.body.body,(b3Pos){reverse?14.5f:18.5f,.9f,2.9f},b3Quat_identity);
+        int wood=swat_world_box(&s.world,(b3Pos){16,1.3f,2.9f},swat_v(.1f,1,.6f),SWAT_WOOD,500);
+        float half=overlap?.04f:.009f;
+        int layer=swat_world_box(&s.world,(b3Pos){overlap?16.08f:16.02f,1.3f,2.9f},swat_v(half,1,.6f),steel?SWAT_STEEL:SWAT_GLASS,steel?0:8);
+        swat_sim_shoot(&s,0,(b3Pos){reverse?19.5f:15,1.3f,2.9f},swat_v(reverse?-1:1,0,0),test_shot(1));
+        if(steel)assert(s.actors[1].health==100 && s.world.objects[layer].active);
+        else {
+            float expected=100-34*(1-3*.2f-.5f*2*half);
+            assert(!s.world.objects[layer].active && fabsf(s.actors[1].health-expected)<.003f);
+        }
+        assert(s.world.objects[wood].active);
+        swat_sim_close(&s);
+    }
+    puts("PASS overlapping materials: nested and partially overlapping glass/steel both directions, each layer consumes energy, steel stops damage, glass breaks");
+}
+
 static void test_door_and_muzzle(void) {
     SwatSim s; SwatConfig cfg=swat_default_config(); cfg.randomize=false; cfg.hostile_fire=false;
     swat_sim_init(&s,cfg,17);
@@ -381,6 +401,7 @@ int main(void) {
     test_leaned_stand_clearance();
     test_weapons();
     test_damage_and_destruction();
+    test_overlapping_materials();
     test_door_and_muzzle();
     test_door_obstruction();
     test_guard_visibility();

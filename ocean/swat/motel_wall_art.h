@@ -7,7 +7,7 @@ typedef struct SwatWallMeshCache {
     Model model;const Mesh* source;b3Pos center;b3Vec3 half;bool fractured;float corners[4][2];uint64_t mask;
 } SwatWallMeshCache;
 typedef struct SwatMotelWallArt {
-    SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5];
+    SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5],windows[5];
     bool core_batch_disabled,core_batch_requested,cores_drawn;
 } SwatMotelWallArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
@@ -19,9 +19,10 @@ static void wall_art_close(SwatEnvironmentArt* art) {
     for(int i=0;i<SWAT_MAX_OBJECTS;i++)for(int j=0;j<2;j++)wall_mesh_close(&art->motel_wall_art->pieces[i][j]);
     for(int i=0;i<3;i++)wall_mesh_close(&art->motel_wall_art->fences[i]);
     for(int i=0;i<5;i++)wall_mesh_close(&art->motel_wall_art->banks[i]);
+    for(int i=0;i<5;i++)wall_mesh_close(&art->motel_wall_art->windows[i]);
     free(art->motel_wall_art);art->motel_wall_art=NULL;
 }
-static const Model* filtered_mesh(SwatWallMeshCache* cache,const Model* source,uint64_t mask,int (*triangle_part)(int)) {
+static const Model* filtered_mesh(SwatWallMeshCache* cache,const Model* source,uint64_t mask,int (*triangle_part)(int),int asset) {
     if(cache->source==source->meshes && cache->mask==mask)return &cache->model;
     wall_mesh_close(cache);cache->source=source->meshes;cache->mask=mask;
     Model* model=&cache->model;model->transform=source->transform;model->materials=source->materials;model->materialCount=source->materialCount;
@@ -32,13 +33,19 @@ static const Model* filtered_mesh(SwatWallMeshCache* cache,const Model* source,u
         mesh.vertices=MemAlloc(capacity*3*sizeof(float));mesh.normals=MemAlloc(capacity*3*sizeof(float));mesh.texcoords=MemAlloc(capacity*2*sizeof(float));
         if(src->texcoords2)mesh.texcoords2=MemAlloc(capacity*2*sizeof(float));
         for(int t=0;t<src->triangleCount;t++,triangle++) {
-            int part=triangle_part(triangle);
+            int part;
+            if(triangle_part)part=triangle_part(triangle);
+            else {
+                b3Vec3 v[3];
+                for(int k=0;k<3;k++){int at=src->indices?src->indices[t*3+k]:t*3+k;v[k]=swat_v(src->vertices[at*3],src->vertices[at*3+1],src->vertices[at*3+2]);}
+                part=1+swat_motel_pane_triangle(asset,v[0],v[1],v[2]);
+            }
             if(part<0 || !(mask&(UINT64_C(1)<<part)))continue;
             for(int j=0;j<3;j++) {
                 int at=src->indices?src->indices[t*3+j]:t*3+j,out=mesh.vertexCount++;
                 memcpy(mesh.vertices+out*3,src->vertices+at*3,3*sizeof(float));
-                memcpy(mesh.normals+out*3,src->normals+at*3,3*sizeof(float));
-                memcpy(mesh.texcoords+out*2,src->texcoords+at*2,2*sizeof(float));
+                if(src->normals)memcpy(mesh.normals+out*3,src->normals+at*3,3*sizeof(float));else memset(mesh.normals+out*3,0,3*sizeof(float));
+                if(src->texcoords)memcpy(mesh.texcoords+out*2,src->texcoords+at*2,2*sizeof(float));else memset(mesh.texcoords+out*2,0,2*sizeof(float));
                 if(src->texcoords2)memcpy(mesh.texcoords2+out*2,src->texcoords2+at*2,2*sizeof(float));
             }
         }
@@ -52,12 +59,16 @@ static const Model* fence_mesh(SwatMotelWallArt* art,const Model* source,const S
     int count=swat_motel_fence_part_count(),first=world->objects[owner].wall_group-1;uint64_t mask=0;
     for(int i=0;i<count;i++)if(world->objects[first+i].active)mask|=UINT64_C(1)<<i;
     if(mask==(count==64?UINT64_MAX:(UINT64_C(1)<<count)-1))return source;
-    return filtered_mesh(&art->fences[owner-155],source,mask,swat_motel_fence_triangle_part);
+    return filtered_mesh(&art->fences[owner-155],source,mask,swat_motel_fence_triangle_part,0);
 }
 static const Model* bank_mesh(SwatMotelWallArt* art,const Model* source,const SwatWorld* world,int owner) {
     uint64_t mask=0;for(int part=0;part<14;part++)if(world->objects[owner+part].active)mask|=UINT64_C(1)<<part;
     if(mask==16383)return source;
-    return filtered_mesh(&art->banks[(owner-SWAT_MOTEL_SURROUNDINGS_FIRST)/SWAT_SURROUNDINGS_PARTS],source,mask,swat_motel_bank_triangle_part);
+    return filtered_mesh(&art->banks[(owner-SWAT_MOTEL_SURROUNDINGS_FIRST)/SWAT_SURROUNDINGS_PARTS],source,mask,swat_motel_bank_triangle_part,0);
+}
+static const Model* window_mesh_art(SwatMotelWallArt* art,const Model* source,const SwatWorld* world,int owner) {
+    int mask=swat_motel_pane_mask(world,owner);if(mask==3)return source;
+    return filtered_mesh(&art->windows[swat_motel_window_index(owner)],source,1u|((unsigned)mask<<1),NULL,swat_motel_instance(owner-1)->asset);
 }
 static SwatWallVertex wall_lerp(SwatWallVertex a,SwatWallVertex b,float t) {
     return (SwatWallVertex){Vector3Lerp(a.p,b.p,t),Vector3Lerp(a.n,b.n,t),Vector2Lerp(a.uv,b.uv,t),Vector2Lerp(a.uv2,b.uv2,t)};

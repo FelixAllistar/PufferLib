@@ -792,6 +792,28 @@ static bool mounted_fallback(const SwatObject* o,bool shadow) {
     }
     rlEnd();rlSetTexture(0);rlPopMatrix();return true;
 }
+static const Model* window_source(const SwatEnvironmentArt* art,int owner) {
+    if(owner==17 && art->room101_ready) {
+        if(art->room101_v4_ready)return &art->room101_v4[7];
+        if(art->room101_v3_ready)return &art->room101_v3[0];
+    }
+    return &art->motel[swat_motel_instance(owner-1)->asset];
+}
+static bool window_fallback(const SwatObject* o,bool shadow) {
+    if(!o->active || B3_IS_NULL(o->shape))return true;
+    b3Mesh mesh=o->query_mesh.data?o->query_mesh:b3Shape_GetMesh(o->shape);
+    const b3Vec3* v=b3GetMeshVertices(mesh.data);const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);
+    const uint8_t* color=swat_material(o->material)->color;
+    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+    rlScalef(mesh.scale.x,mesh.scale.y,mesh.scale.z);rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);
+    rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
+    for(int i=0;i<mesh.data->triangleCount;i++) {
+        b3MeshTriangle t=triangles[i];b3Vec3 a=v[t.index1],b=v[t.index2],c=v[t.index3];
+        b3Vec3 n=swat_normalize(b3Cross(b3Sub(b,a),b3Sub(c,a)));rlNormal3f(n.x,n.y,n.z);
+        rlVertex3f(a.x,a.y,a.z);rlVertex3f(b.x,b.y,b.z);rlVertex3f(c.x,c.y,c.z);
+    }
+    rlEnd();rlSetTexture(0);rlPopMatrix();return true;
+}
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel)return false;
     if(o->tag.index==0) {
@@ -805,6 +827,17 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         rlPopMatrix();clear_surface(art);return true;
     }
     if(o->tag.index<1)return false;
+    int pane_parent=swat_motel_pane_parent(world,o),window=swat_motel_window_index(o->tag.index);
+    if(pane_parent>=0) {
+        if(art->motel_wall_art && window_source(art,pane_parent)->meshCount)return true;
+        return window_fallback(o,shadow);
+    }
+    if(window>=0 && world->count==SWAT_MOTEL_OBJECTS) {
+        const Model* source=window_source(art,o->tag.index);
+        if(!art->motel_wall_art || !source->meshCount)return window_fallback(o,shadow);
+        const Model* model=window_mesh_art(art->motel_wall_art,source,world,o->tag.index);
+        return location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),model,source,shadow,cutaway,false,NULL);
+    }
     SwatMotelInstance mounted;
     if(swat_motel_mounted(world,o->tag.index,&mounted) || swat_motel_prop(world,o->tag.index,&mounted)) {
         if(art->motel[mounted.asset].meshCount)return location_draw(art,o,&mounted,&art->motel[mounted.asset],shadow,cutaway,false);

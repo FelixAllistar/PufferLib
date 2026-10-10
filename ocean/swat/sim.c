@@ -293,16 +293,35 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
     a->tracer_end = b3OffsetPos(origin,swat_mul(direction,shot.range));
     a->last_shot_tick = s->tick;
     swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_SHOT,origin,3.0f,100);
-    float remaining = shot.range, energy = shot.energy;
+    float remaining = shot.range, energy = shot.energy,travelled=0;
+    int layers[8],layer_count=0,impacts=0;float exits[8];
     // Bounded material traversal. World casts, actor hits, and damage all use
     // the live Box3D scene; destroying a cell immediately removes its collider.
-    for (int pass=0;pass<8 && remaining > 0.01f;pass++) {
-        SwatHit hit = swat_world_ray(&s->world,origin,direction,remaining,a->controller.body.body);
+    // Inspect the occupied interval before advancing to its exit: overlapping
+    // panes, cloth and structural members must each consume their own material.
+    // At most eight impacts and eight exit boundaries, plus the final free ray.
+    for (int query=0;query<24 && impacts<8 && remaining > 0.01f;query++) {
+        for(int i=0;i<layer_count;) {
+            if(exits[i]<=travelled) {layer_count--;layers[i]=layers[layer_count];exits[i]=exits[layer_count];}
+            else i++;
+        }
+        float range=remaining;
+        for(int i=0;i<layer_count;i++)range=fminf(range,exits[i]-travelled);
+        SwatHit hit = swat_world_layer_ray(&s->world,origin,direction,range,a->controller.body.body,layers,layer_count);
         a->tracer_end = hit.point;
-        if (!hit.hit) break;
+        if (!hit.hit) {
+            if(!layer_count)break;
+            float advance=range+.00001f;remaining-=advance;travelled+=advance;
+            origin=b3OffsetPos(origin,swat_mul(direction,advance));
+            for(int i=0;i<layer_count;) {
+                if(exits[i]<=travelled) {layer_count--;layers[i]=layers[layer_count];exits[i]=exits[layer_count];}
+                else i++;
+            }
+            continue;
+        }
         if(hit.kind==SWAT_HIT_DEVICE) { swat_device_damage(s,hit.index,shot.damage); break; }
         SwatMaterial material=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? s->world.objects[hit.index].material : SWAT_CARPET;
-        if(pass==0) swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,0.8f,25,material);
+        if(impacts==0) swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,0.8f,25,material);
         if (hit.kind == SWAT_HIT_ACTOR) {
             SwatActor* victim = &s->actors[hit.index];
             bool less_lethal=a->arsenal.active==0 && swat_launcher_kind(a->arsenal.primary)>=0;
@@ -321,9 +340,11 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
         }
         energy -= cost;
         if (energy <= 0.01f || thickness <= 0) break;
-        float advance = hit.distance+thickness+0.003f;
-        remaining -= advance;
-        origin = b3OffsetPos(hit.point,swat_mul(direction,thickness+0.003f));
+        layers[layer_count]=hit.index;exits[layer_count++]=travelled+hit.distance+thickness;
+        impacts++;
+        float advance=hit.distance+.00001f;
+        remaining-=advance;travelled+=advance;
+        origin=b3OffsetPos(hit.point,swat_mul(direction,.00001f));
     }
 }
 

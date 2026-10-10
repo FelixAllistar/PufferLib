@@ -13,7 +13,9 @@
 #define SWAT_MOTEL_MOUNTED_INSTANCES 2
 #define SWAT_MOTEL_PROPS_FIRST (SWAT_MOTEL_MOUNTED_FIRST+SWAT_MOTEL_MOUNTED_INSTANCES)
 #define SWAT_MOTEL_PROP_INSTANCES 4
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_PROPS_FIRST+SWAT_MOTEL_PROP_INSTANCES)
+#define SWAT_MOTEL_PANES_FIRST (SWAT_MOTEL_PROPS_FIRST+SWAT_MOTEL_PROP_INSTANCES)
+#define SWAT_MOTEL_PANE_INSTANCES 10
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_PANES_FIRST+SWAT_MOTEL_PANE_INSTANCES)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -51,6 +53,13 @@ int swat_motel_foliage(const SwatWorld*,int index,SwatMotelInstance* placement);
 bool swat_motel_mounted(const SwatWorld*,int owner,SwatMotelInstance* placement);
 // Static parked service props with real sparse collision and floor support.
 bool swat_motel_prop(const SwatWorld*,int owner,SwatMotelInstance* placement);
+// Panes inherit their original assembly. Their authored envelopes are modeled
+// collision depth, not measured physical glazing gauge.
+int swat_motel_pane_parent(const SwatWorld*,const SwatObject*);
+int swat_motel_window_index(int parent);
+int swat_motel_pane_mask(const SwatWorld*,int parent);
+// Geometric source match also works with Room 101's reordered v3/v4 primitives.
+int swat_motel_pane_triangle(int asset,b3Vec3 a,b3Vec3 b,b3Vec3 c);
 // Authored bulb anchor in a supported fixed bedside fixture (guest rooms 1..4).
 bool swat_motel_lamp(const SwatWorld*,int room,b3Pos* origin);
 bool swat_motel_lamp_switch(const SwatWorld*,int room,b3Pos* position);
