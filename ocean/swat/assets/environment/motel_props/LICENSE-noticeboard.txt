@@ -1,0 +1,7 @@
+CC0 1.0 Universal dedication
+
+To the extent possible under law, the creator of this original reception noticeboard waives all copyright and related or neighboring rights in the original geometry, fictional notice wording, texture art, scripts, Blender scene, GLB, previews and documentation worldwide under CC0 1.0 Universal.
+You may copy, modify, distribute and use this original work, including commercially, without permission. No warranty is provided. No trademark rights are granted.
+Legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+EXCEPTION: The bundled unchanged DejaVu font files are third-party software under the Bitstream Vera/DejaVu license, reproduced in source/fonts/LICENSE-DejaVu.txt. They are not relicensed CC0. Blender, Python, Pillow, NumPy and the glTF specification are likewise not relicensed. Raster lettering is included in the original atlas; no font file or text mesh is embedded in the GLB.

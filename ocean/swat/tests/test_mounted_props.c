@@ -123,6 +123,41 @@ static void extinguisher(void) {
     swat_sim_reset(&sim);
     puts("PASS extinguisher: exact curved contact subsets, two measured wall anchors, original bottle exit thickness, finite steel response, damage/support/charge removal, old trolley prefix and malformed/unsupported state rejection");
 }
+static void noticeboard(void) {
+    int owner=SWAT_MOTEL_PROPS_FIRST+2;SwatMotelInstance p;
+    assert(swat_motel_prop(&sim.world,owner,&p));SwatObject* o=&sim.world.objects[owner];
+    assert(o->active && p.asset==47 && o->part==SWAT_PART_FIXTURE && o->material==SWAT_WOOD);
+    assert(o->query_mesh.data->triangleCount==1416 && b3Body_GetShapeCount(o->body)==7);
+    assert(o->structural_thickness==.032f && fabsf(o->max_health-150*.032f/.038f)<.001f);
+    b3Vec3 normal=swat_v(sinf(p.yaw),0,cosf(p.yaw));
+    for(int side=-1;side<=1;side+=2) {
+        b3Pos contact=point(&p,swat_v(side*.25f,.234f,0));
+        SwatHit h=swat_world_ray(&sim.world,b3OffsetPos(contact,swat_mul(normal,.005f)),swat_mul(normal,-1),.01f,o->body);
+        assert(h.hit && sim.world.objects[h.index].material==SWAT_BRICK && b3Distance(h.point,contact)<.0001f);
+        bool found=false;for(int k=0;k<SWAT_MAX_SUPPORTS;k++)found|=o->supports[k]==h.index;assert(found);
+    }
+    SwatHit h=swat_world_ray(&sim.world,point(&p,swat_v(.35f,0,.10f)),swat_mul(normal,-1),.12f,b3_nullBodyId);
+    assert(h.hit && h.index==owner);
+    assert(fabsf(swat_world_exit_distance(o,h.point,swat_mul(normal,-1))-.032f)<.0001f);
+    synchronize();assert(replica.world.objects[owner].query_mesh.data->triangleCount==1416);
+    map.count=owner;size_t n=swat_encode_map(bytes,sizeof(bytes),&map);
+    assert(n && swat_decode_map(&decoded,bytes,n));swat_apply_map(&replica,&decoded);
+    assert(replica.world.motel && replica.world.count==owner);
+    assert(swat_motel_prop(&replica.world,owner-1,&p) && !swat_motel_prop(&replica.world,owner,&p));
+    synchronize();map.objects[owner].material=SWAT_STEEL;swat_apply_map(&replica,&map);assert(!replica.world.motel);
+    synchronize();assert(swat_motel_prop(&sim.world,owner,&p));int support=o->supports[0];state.objects[support].active=false;
+    assert(!swat_apply_snapshot(&replica,&state) && replica.world.objects[support].active);
+    int shots=0;for(;o->active && shots<8;shots++)
+        swat_sim_shoot(&sim,0,point(&p,swat_v(.35f,0,.10f)),swat_mul(normal,-1),(SwatShot){.fired=true,.damage=34,.range=.5f,.energy=1});
+    assert(shots==4 && !o->active && B3_IS_NULL(o->body) && sim.world.objects[support].active);
+    synchronize();assert(!replica.world.objects[owner].active);swat_sim_reset(&sim);
+    for(int k=0;k<SWAT_MAX_SUPPORTS && sim.world.objects[owner].supports[k]>=0;k++) {
+        support=sim.world.objects[owner].supports[k];assert(swat_world_damage(&sim.world,support,10000));
+        assert(!sim.world.objects[owner].active && B3_IS_NULL(sim.world.objects[owner].body));
+        synchronize();assert(!replica.world.objects[owner].active);swat_sim_reset(&sim);
+    }
+    puts("PASS noticeboard: measured wall anchors, original 32 mm wood frame exit thickness, four-shot material damage, support loss, old extinguisher prefix, malformed recipes and unsupported snapshots");
+}
 static void shell(SwatWorld* world,int owner) {
     SwatMotelInstance p;assert(swat_motel_mounted(world,owner,&p));SwatObject* o=&world->objects[owner];
     assert(o->active && o->part==SWAT_PART_FIXTURE && o->query_mesh.data && o->query_mesh.data->triangleCount==1464);
@@ -158,7 +193,7 @@ static void cascade(void) {
 int main(int argc,char** argv) {
     assert(argc==2);cascade();SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,81);assert(sim.world.count==SWAT_MOTEL_OBJECTS);
-    trolley();extinguisher();
+    trolley();extinguisher();noticeboard();
     for(int i=0;i<SWAT_MOTEL_MOUNTED_INSTANCES;i++)shell(&sim.world,SWAT_MOTEL_MOUNTED_FIRST+i);
     synchronize();for(int i=0;i<SWAT_MOTEL_MOUNTED_INSTANCES;i++)shell(&replica.world,SWAT_MOTEL_MOUNTED_FIRST+i);
     int owner=SWAT_MOTEL_MOUNTED_FIRST;SwatMotelInstance p;assert(swat_motel_mounted(&sim.world,owner,&p));

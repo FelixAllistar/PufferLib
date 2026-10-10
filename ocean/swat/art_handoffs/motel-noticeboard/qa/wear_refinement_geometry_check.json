@@ -1,0 +1,6 @@
+{
+  "all_triangle_positions_and_winding_identical_to_pre_refinement": true,
+  "triangle_count": 1416,
+  "envelope_and_contact_anchors_unchanged": true,
+  "changes": "Basecolor wear and wood UV strip allocation only; original geometry retained."
+}

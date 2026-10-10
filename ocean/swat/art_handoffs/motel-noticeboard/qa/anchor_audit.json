@@ -1,0 +1,28 @@
+{
+  "method": "Barycentric containment on actual GLB rear triangles at Z=0",
+  "reference_spacing_m": 0.5,
+  "references": [
+    {
+      "reference_m": [
+        -0.25,
+        0.234,
+        0
+      ],
+      "on_actual_rear_frame_surface": true,
+      "hit_triangles": [
+        459
+      ]
+    },
+    {
+      "reference_m": [
+        0.25,
+        0.234,
+        0
+      ],
+      "on_actual_rear_frame_surface": true,
+      "hit_triangles": [
+        444
+      ]
+    }
+  ]
+}

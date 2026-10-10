@@ -1,0 +1,155 @@
+{
+  "drive_file_id": "1fcPV8QkoLECIx8iAxBZHbElYj0hsp5Xf",
+  "archive_sha256": "3c60a7827e423754da403f5e10a3040f00642eadf7d529c96806d55a20c0fd4c",
+  "original_payload_hashes_verified": 39,
+  "files": [
+    {
+      "path": "art_handoffs/motel-noticeboard/source/audit_anchors.py",
+      "sha256": "f24ebc5c204b01b4c4b98db51d76a210b0006490648be24b3d65a9acaa500611"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/audit_glb.py",
+      "sha256": "103d626e15aeb340c694195f856403f4eb265fe6fb0c1457bf0a0154ff6461e7"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/audit_source.py",
+      "sha256": "f423a0fae11a2d6b169988a3e1b84b25d692ec0755d7625d6d462f221477197f"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/build_asset.py",
+      "sha256": "bf2d85cec0ca805fe7e515873dff832f0635efb36374ce60e854e12a9aaa6048"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/canonicalize_glb.py",
+      "sha256": "22065087ff06fc2737e7b1dc6197de11531f5fd04c484fef2c66bd94805c85b8"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/fonts/DejaVuSans.ttf",
+      "sha256": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/fonts/DejaVuSerif-Bold.ttf",
+      "sha256": "aac3f559445d23f0f567a243f91f3f6ad6cb4b5cafa1521a3479fffe0637f0bd"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/fonts/LICENSE-DejaVu.txt",
+      "sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/make_atlas.py",
+      "sha256": "bbb01f3b15d977223c5b4f51b84b0fbe581a4d7c3683d03a8df2c863ea3ecb54"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/noticeboard_basecolor_1024.png",
+      "sha256": "7fbb33ec097998f4dd3643629ef76a5489cf55732641945e638a21042b32e125"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/noticeboard_orm_1024.png",
+      "sha256": "a1a22836e5bcaff3bdd1485c2e1f8d581813207eb1b934d99e74abdf941139eb"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/package_delivery.py",
+      "sha256": "d2bc3f898fc86a69234d1959e9df975d1f952a4183716e9e70e5818a861f884e"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/rebuild.sh",
+      "sha256": "e4f3b3ae040da43a7f254063154615d609c6634aeb964be9b65ebb478d78e08e"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/reception_noticeboard.blend",
+      "sha256": "6ab0fa9014db1e3d4d6c2b6941363a0304afd3d1a5b8bce0f1a3cb6d223562d4"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/source/render_glb.py",
+      "sha256": "efa2c9382dd0e07213539981536e237212512e8a6f7b7d736ba5c7d5648e21a4"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/anchor_audit.json",
+      "sha256": "e04cfbf0c9e53f713897142e781c899bbe7b97f98c58a4dd1ff80e2f508e4627"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/anchor_audit.log",
+      "sha256": "7c6273f23b343c28f46b8daeb298927de265e815605f1ab138d5d91bdb6450ff"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/audit.log",
+      "sha256": "7c6273f23b343c28f46b8daeb298927de265e815605f1ab138d5d91bdb6450ff"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/build.log",
+      "sha256": "0e3fa64ee41e314015131d9812e74aae08812f54f0f872749d71cb83e7566559"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/embedded_maps.json",
+      "sha256": "8f33e599dd82e45ad78fc152fcd8a693efd668c538e48405400212c18e4c59a6"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/mounting.json",
+      "sha256": "a4ea692de709bd31f255f2ed0899f896dca6a2a146c116ab9359efb7cfa4e229"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/rebuild.log",
+      "sha256": "5555fec4fd0dba5f4e93f40c009d95b49b09f65283ac0afa510e18bcb9860000"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/rebuild_verification.json",
+      "sha256": "a339e3ae0fab05e7a257b32462c92a63efb4232327204567700e2124588647e0"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/reimport.json",
+      "sha256": "eb1dc198835b60a5f8bb79ae753995a9871aa0b57e39a987bf617ac397350d00"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/render.log",
+      "sha256": "37a0117b5b2ebebec18f51fad0a8a86432e8f91759a28f8ee3b26a5ac602593e"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/runtime_audit.json",
+      "sha256": "9ccdbb548da315692a948e2c7d506f427f37740fd358f104979791116a1a5822"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/source_audit.json",
+      "sha256": "2c45c507dba851aa233867c02f91a287383265e78b51fdbc5bba953edfe127ee"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/source_audit.log",
+      "sha256": "e20fe1a2bfbd5e2d8ed951d0bf9afb4d87fcc65b032a44db419e74c8fbcbe651"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/visual_review.json",
+      "sha256": "0f1558d97a8479008e24e1cdabc4181eb6bd11429f89dadcdd742d3abb4f5f34"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/qa/wear_refinement_geometry_check.json",
+      "sha256": "49ceb1f82177c3c8abb31bf573f5d5772c7b188e447b3ef55f23dcbd8d9ab285"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/LICENSE.txt",
+      "sha256": "0ea52fd4aec357ee8e4d9313ba33dbf868b8c1fd0dd1bc76e89b6fed1fc73d4e"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/PROVENANCE.md",
+      "sha256": "921f133d8b44ff1d68df379704a07e8b2538af84489c24ace09fbb516e5e54aa"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/manifest.json",
+      "sha256": "136f5bf7fa2244e91898929ba1daa5b5206165071065c3c970c23c4f9af47fdc"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/SHA256SUMS.txt",
+      "sha256": "8480180e9d512a99d41cff7e5a6f780adcc3cc45b1a08b783da88025c51254e3"
+    },
+    {
+      "path": "art_handoffs/motel-noticeboard/SOURCE_README.md",
+      "sha256": "0d3b126f4188fffd376e1b5e352e903bf5f89e85743470cd03dbea5e60cfd195"
+    },
+    {
+      "path": "assets/environment/motel_props/motel_reception_noticeboard.glb",
+      "sha256": "2507c32871008779374e43405b42db9e6f2f9c3402414d302786895c14189abf"
+    },
+    {
+      "path": "assets/environment/motel_props/LICENSE-noticeboard.txt",
+      "sha256": "0ea52fd4aec357ee8e4d9313ba33dbf868b8c1fd0dd1bc76e89b6fed1fc73d4e"
+    }
+  ]
+}

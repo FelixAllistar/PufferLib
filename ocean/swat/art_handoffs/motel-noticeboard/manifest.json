@@ -1,0 +1,66 @@
+{
+  "asset": "motel_reception_noticeboard_v1",
+  "version": 1,
+  "status": "source-only unplaced; no engine changes",
+  "dimensions_m": [
+    0.72,
+    0.5,
+    0.032
+  ],
+  "runtime": {
+    "path": "runtime/motel_reception_noticeboard.glb",
+    "sha256": "2507c32871008779374e43405b42db9e6f2f9c3402414d302786895c14189abf",
+    "bytes": 1112020,
+    "triangles": 1416,
+    "vertices": 3525,
+    "mesh_count": 1,
+    "primitive_count": 1,
+    "material_count": 1,
+    "alpha_mode": "OPAQUE",
+    "coordinate_system": "metres Y-up front +Z",
+    "identity_nodes": true
+  },
+  "atlas": {
+    "layout": "one shared 1024x1024 atlas set",
+    "maps": [
+      {
+        "path": "source/noticeboard_basecolor_1024.png",
+        "sha256": "7fbb33ec097998f4dd3643629ef76a5489cf55732641945e638a21042b32e125",
+        "bytes": 927263,
+        "colorspace": "sRGB"
+      },
+      {
+        "path": "source/noticeboard_orm_1024.png",
+        "sha256": "a1a22836e5bcaff3bdd1485c2e1f8d581813207eb1b934d99e74abdf941139eb",
+        "bytes": 5362,
+        "colorspace": "Non-Color"
+      }
+    ],
+    "orm_channels": {
+      "R": "ambient occlusion constant 1",
+      "G": "roughness",
+      "B": "metallic constant 0"
+    },
+    "runtime_embedded": true,
+    "normal_map": false,
+    "reason_1024": "Minimum 20 px notice body type would become 10 px at 512, before mip filtering."
+  },
+  "licenses": {
+    "original_art": "CC0-1.0",
+    "font_software": "Bundled unchanged DejaVu fonts, Bitstream Vera/DejaVu license. See source/fonts/LICENSE-DejaVu.txt."
+  },
+  "engine_responsibility": [
+    "mounting",
+    "support",
+    "placement",
+    "collision",
+    "damage"
+  ],
+  "tools": {
+    "blender": "4.3.2",
+    "pillow": "12.3.0",
+    "numpy": "2.3.5",
+    "python": "3.12.14"
+  },
+  "revision_note": "Restrained wear refinement: exposed cork pinholes and removed-paper ghosts, lower frame corner hand wear, irregular paper-edge oxidation; geometry unchanged."
+}

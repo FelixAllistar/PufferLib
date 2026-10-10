@@ -1,0 +1,45 @@
+{
+  "coordinate_system": "GLB metres Y-up front +Z",
+  "origin": "frame rear wall-contact plane center",
+  "wall_plane_Z": 0,
+  "mount_anchor_centers_m": [
+    [
+      -0.25,
+      0.234,
+      0
+    ],
+    [
+      0.25,
+      0.234,
+      0
+    ]
+  ],
+  "mount_spacing_m": 0.5,
+  "frame_section_m": [
+    0.033,
+    0.032
+  ],
+  "backing_thickness_m": 0.006,
+  "backing_rear_recess_m": 0.0015,
+  "cork_thickness_m": 0.018,
+  "paper_thickness_m": 0.00028,
+  "pin_centers_XY_m": [
+    [
+      -0.2501160401792583,
+      0.1396209671458693
+    ],
+    [
+      -0.008768983188430604,
+      0.13456546698602695
+    ],
+    [
+      0.18505684506506895,
+      0.1516124885382859
+    ],
+    [
+      0.1892370752077901,
+      -0.08825967294044904
+    ]
+  ],
+  "support": "Reference only. Engine owns mounting, support, damage and collision. Source unplaced."
+}

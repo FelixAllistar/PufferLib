@@ -1,0 +1,44 @@
+{
+  "file": "motel_reception_noticeboard.glb",
+  "sha256": "2507c32871008779374e43405b42db9e6f2f9c3402414d302786895c14189abf",
+  "bytes": 1112020,
+  "triangles": 1416,
+  "vertices": 3525,
+  "primitive_count": 1,
+  "materials": 1,
+  "alpha_mode": "OPAQUE",
+  "embedded_basecolor_images": 1,
+  "embedded_metallic_roughness_images": 1,
+  "total_embedded_images": 2,
+  "atlas_px": [
+    1024,
+    1024
+  ],
+  "identity_nodes": true,
+  "coordinate_system": "metres, Y up, front +Z, wall Z=0",
+  "bounds_min_m": [
+    -0.36000001430511475,
+    -0.25,
+    -0.0
+  ],
+  "bounds_max_m": [
+    0.36000001430511475,
+    0.25,
+    0.03200000151991844
+  ],
+  "dimensions_xyz_m": [
+    0.7200000286102295,
+    0.5,
+    0.03200000151991844
+  ],
+  "indices_valid": true,
+  "degenerate_triangles": 0,
+  "opposed_vertex_normals": 0,
+  "maximum_normal_unit_error": 2.3010942840073767e-07,
+  "out_of_range_uvs": 0,
+  "finite_accessors": true,
+  "tested_triangle_budget": [
+    900,
+    1600
+  ]
+}

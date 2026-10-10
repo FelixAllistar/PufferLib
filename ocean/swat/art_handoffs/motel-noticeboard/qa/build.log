@@ -1,0 +1,12 @@
+Extensions: writing cache failed ([Errno 30] Read-only file system: '/home/agent/.config/blender').
+Info: Saved "reception_noticeboard.blend"
+ERROR Draco mesh compression is not available because library could not be found at /usr/bin/4.3/python/lib/python3.13/site-packages/libextern_draco.so
+19:50:37 | INFO: Starting glTF 2.0 export
+19:50:37 | INFO: Extracting primitive: Cube
+19:50:37 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+19:50:37 | INFO: Primitives created: 1
+19:50:37 | INFO: Finished glTF 2.0 export in 0.03591752052307129 s
+
+Blender 4.3.2
+
+Blender quit

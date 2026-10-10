@@ -1,0 +1,43 @@
+{
+  "runtime_sha256": "2507c32871008779374e43405b42db9e6f2f9c3402414d302786895c14189abf",
+  "preview_source": "Actual final GLB imported in a fresh Blender scene; no source scene render",
+  "reviewed_views": [
+    {
+      "file": "preview/detail.png",
+      "sha256": "d1c61c052a6e05a98f0cbd90d4859560eeafba714a720ae49be1093f01854154"
+    },
+    {
+      "file": "preview/front.png",
+      "sha256": "e19773cd4627e37b4f6980cf4c7fd674120b15ea8c7a0232b18fcae1a19de7aa"
+    },
+    {
+      "file": "preview/full.png",
+      "sha256": "4f2bcea16586d4b60a47712b9881064ea5e7147456eb88252cd06729d30fb5e1"
+    },
+    {
+      "file": "preview/rear.png",
+      "sha256": "c60843558478e2332857175b592ee8bb8466a3bd807c26d74b1c288ce95bb656"
+    }
+  ],
+  "passed": [
+    "Clear BRIAR COURT and GUEST INFORMATION conventional lettering",
+    "Restrained three-paper arrangement, four pins; no glass or text geometry",
+    "Wood grain follows all four mitred frame members",
+    "Natural paper offset/curl and restrained aging; legible close-up",
+    "Rear backing has clean recessed contact transition without coplanar black band",
+    "Full/front/detail/rear geometry looks intact with no visible missing surfaces"
+  ],
+  "defects_fixed": [
+    "Vertical wood grain orientation corrected",
+    "Rear coplanar frame/backing overlap removed by recessing backing 1.5 mm"
+  ],
+  "limitations": [
+    "Source-only; no engine placement/collision/game mip readability test",
+    "Structural mounting design remains engine-owned"
+  ],
+  "wear_refinement_review": {
+    "full_and_detail": "Inspected final actual-GLB full and detail renders after refinement. Old exposed cork punctures, faint removed-paper footprints, dark/rubbed lower frame ends and irregular thin paper-edge aging remain restrained. Headline and body text remain unobscured.",
+    "geometry": "All 1416 triangle positions and winding identical to pre-refinement; anchors and envelope unchanged.",
+    "texture_budget": "Unchanged 2 x 1024 PNG atlas set, one opaque material."
+  }
+}

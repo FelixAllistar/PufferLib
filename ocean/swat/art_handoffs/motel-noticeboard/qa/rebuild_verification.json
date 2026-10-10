@@ -1,0 +1,23 @@
+{
+  "method": "Independent atlas + Blender builds, with winding-preserving canonical triangle order. Blender source serialization is not claimed byte-identical.",
+  "files": [
+    {
+      "file": "motel_reception_noticeboard.glb",
+      "first_sha256": "2507c32871008779374e43405b42db9e6f2f9c3402414d302786895c14189abf",
+      "rebuilt_sha256": "2507c32871008779374e43405b42db9e6f2f9c3402414d302786895c14189abf",
+      "byte_identical": true
+    },
+    {
+      "file": "noticeboard_basecolor_1024.png",
+      "first_sha256": "7fbb33ec097998f4dd3643629ef76a5489cf55732641945e638a21042b32e125",
+      "rebuilt_sha256": "7fbb33ec097998f4dd3643629ef76a5489cf55732641945e638a21042b32e125",
+      "byte_identical": true
+    },
+    {
+      "file": "noticeboard_orm_1024.png",
+      "first_sha256": "a1a22836e5bcaff3bdd1485c2e1f8d581813207eb1b934d99e74abdf941139eb",
+      "rebuilt_sha256": "a1a22836e5bcaff3bdd1485c2e1f8d581813207eb1b934d99e74abdf941139eb",
+      "byte_identical": true
+    }
+  ]
+}

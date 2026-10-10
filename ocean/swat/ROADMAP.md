@@ -118,7 +118,21 @@ Full hostile completion/replay/save still passes in 9,827 ticks. The bottle
 retains its original closed outer solid and a single steel physical response;
 working discharge, pressure and separate thin-shell/rubber response remain
 unimplemented. Normal Linux/Windows players are rebuilt.
-Next delivered art: reception noticeboard, service vacuum, umbrella stand,
+The original reception noticeboard now mounts on the inside west wall at
+measured scale, with both source anchors tied to physical masonry fragments.
+Seven bounded meshes retain its 1,416 faces and source edge flags. Its wooden
+frame uses finite material strength; ordinary shooting and support loss remove
+art/collision together. Cork, paper and pins retain their authored appearance
+with whole-assembly wood response. Linux/Windows mount, damage, legacy-prefix,
+replica and unsupported-state checks pass. Native source/fallback graphics match
+156,352 stable ray/raster samples, with original 1024px maps and safe texture
+ownership. Contact checks now cover 25 assets, 29,811 triangles/edge flags and
+60,000 matched rays per world/replica. Full hostile completion remains 9,827
+ticks with exact replay and save/resume on both platforms. Normal players rebuilt.
+The next composition handoff groups the unchanged refuse bin, tote, wheelbarrow
+and one leaf patch; original hashes verified, world placement/contact/material
+integration still pending. The measured wheelbarrow leg gap needs a resting pose.
+Next delivered art: service vacuum, umbrella stand,
 bottle opener/cap catcher, paper-towel dispenser and first-aid cabinet. Reuse
 the existing spindle chair for reception seating if clearance/appearance pass.
 All are original source candidates; integration follows physical material,

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "noticeboard_basecolor_1024",
+    "sha256": "7fbb33ec097998f4dd3643629ef76a5489cf55732641945e638a21042b32e125",
+    "embedded_bytes": 927263,
+    "size_px": [
+      1024,
+      1024
+    ]
+  },
+  {
+    "name": "noticeboard_orm_1024",
+    "sha256": "a1a22836e5bcaff3bdd1485c2e1f8d581813207eb1b934d99e74abdf941139eb",
+    "embedded_bytes": 5362,
+    "size_px": [
+      1024,
+      1024
+    ]
+  }
+]

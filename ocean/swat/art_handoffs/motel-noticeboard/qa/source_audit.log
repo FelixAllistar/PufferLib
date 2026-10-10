@@ -1,0 +1,5 @@
+{'editable_component_count': 13, 'editable_collection_hidden': True, 'packed_images': [{'name': 'noticeboard_basecolor_1024.png', 'size': [1024, 1024], 'packed': True}, {'name': 'noticeboard_orm_1024.png', 'size': [1024, 1024], 'packed': True}], 'runtime_mesh_triangles': 1416, 'source_units': 'metres', 'source_coordinate_system': 'Z-up front -Y, export converts to glTF Y-up front +Z'}
+Blender 4.3.2
+Read blend: "/workspace/scratch/eac4961518d4/motel_reception_noticeboard_v1/source/reception_noticeboard.blend"
+
+Blender quit

@@ -1,0 +1,25 @@
+{
+  "editable_component_count": 13,
+  "editable_collection_hidden": true,
+  "packed_images": [
+    {
+      "name": "noticeboard_basecolor_1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "noticeboard_orm_1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    }
+  ],
+  "runtime_mesh_triangles": 1416,
+  "source_units": "metres",
+  "source_coordinate_system": "Z-up front -Y, export converts to glTF Y-up front +Z"
+}
