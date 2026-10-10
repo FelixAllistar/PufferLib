@@ -1,0 +1,44 @@
+Diagnostics 2412 0 0 0 1.731625411949267e-07
+{
+  "file": "motel_fire_extinguisher.glb",
+  "sha256": "7610e43f1e429e12ad6baeba537d3d9f65c68c81aaf2a74cb6450defc644e6ee",
+  "bytes": 474284,
+  "triangles": 2412,
+  "vertices": 3710,
+  "primitive_count": 1,
+  "materials": 1,
+  "alpha_mode": "OPAQUE",
+  "embedded_basecolor_images": 1,
+  "embedded_metallic_roughness_images": 1,
+  "atlas_px": [
+    512,
+    512
+  ],
+  "identity_nodes": true,
+  "coordinate_system": "metres, Y up, front +Z, ground Y=0",
+  "bounds_min_m": [
+    -0.13055868446826935,
+    0.0,
+    -0.1340000033378601
+  ],
+  "bounds_max_m": [
+    0.14399999380111694,
+    0.5455000400543213,
+    0.09000000357627869
+  ],
+  "dimensions_xyz_m": [
+    0.2745586782693863,
+    0.5455000400543213,
+    0.2240000069141388
+  ],
+  "indices_valid": true,
+  "degenerate_triangles": 0,
+  "opposed_vertex_normals": 0,
+  "maximum_normal_unit_error": 1.731625411949267e-07,
+  "out_of_range_uvs": 0,
+  "finite_accessors": true,
+  "tested_triangle_budget": [
+    1000,
+    2500
+  ]
+}

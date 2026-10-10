@@ -1,0 +1,135 @@
+{
+  "drive_file_id": "1XLPh3U2TobK2nJ_QmLTbYih13Rskg-lA",
+  "archive_sha256": "6ca064c3e389b64379e482eef495c28d412594fc30d7066e3e6ccb0332790f2b",
+  "original_payload_hashes_verified": 34,
+  "files": [
+    {
+      "path": "art_handoffs/motel-extinguisher/source/FONT_LICENSE.txt",
+      "sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/audit_anchors.py",
+      "sha256": "63d76e4677c9601896ba4154e9921e7ae03b4005e09fc685852a695c2021ded7"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/audit_glb.py",
+      "sha256": "e66a36da9597d52c46e781a7bf9c6a95f4a32f1ce9f0a00da0b0df01acec5487"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/audit_source.py",
+      "sha256": "650fbfb9cb014329fabc0506876bf7526ad580a2cab91939372fd565a254cf4e"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/build_asset.py",
+      "sha256": "8f81a4d3834de2a5ef8cd86138f9b579d89513e120b53e15f479886e3e104d33"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/extinguisher_atlas_512.png",
+      "sha256": "4076fa861768d7b41468587144820166658b11d60d4f487f2bfb6e500cccf069"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/extinguisher_orm_512.png",
+      "sha256": "8bc6f2e8cd7723557d97d75bdd6437367ea2074bb8fb9d5b4cbcbea6b0c9ecd3"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/fire_extinguisher.blend",
+      "sha256": "1d2d932c1a0b78c3e0fbeb3a20c8994543411dd41d0610f5d07ddde418a07586"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/make_atlas.py",
+      "sha256": "104bff880413b72196437fdebb29df5345b549e4082671a25d2cf04008b772bd"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/package_delivery.py",
+      "sha256": "2e60745d079379aec28b2dc806d33fb1868ad51e36001d8f1df87c1311d76276"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/rebuild.sh",
+      "sha256": "d0274ab7c33f439bcceaace652148b3dbdcf653a64cce973d4d83a8acc1e2cb1"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/source/render_glb.py",
+      "sha256": "f4c98f50fe8b342ff38c2211c203ccf9dc019331b8c97d4496931e7262fba28a"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/anchors.log",
+      "sha256": "fbfcad68db57d70fc723284fca92a7fd5b20b2863e8bdb8358c4ee182bef1381"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/audit.log",
+      "sha256": "fbfcad68db57d70fc723284fca92a7fd5b20b2863e8bdb8358c4ee182bef1381"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/build.log",
+      "sha256": "c5cf801d555fea4c682460822c0bd81b48095bda904e7e484e8f6e050ad9fd71"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/contact_anchors.json",
+      "sha256": "27cc2a6cea4c9256a9507541bfbd1f887594ae59480d15b521ccfd18bd583d50"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/duplicate_check.json",
+      "sha256": "b73eb6e0cf48452f30e812b81ed25bcf6ed04af43ceb71b15190e722628641ad"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/rebuild.log",
+      "sha256": "4bddca8cab9c21bdf41dfce8f2cd01a0c1a43ed650788873d285e5d86c839174"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/rebuild_verification.json",
+      "sha256": "10dfa8fcb1d0b0da85a7cae38fa2d365104c13d455b698913d97a503505c0c50"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/reimport.json",
+      "sha256": "efe9428b3a40b4f4f96b23b4a745afc156cd3cd3d7d0fe81e664b21342832354"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/render.log",
+      "sha256": "2d02dbd8d936b19077bd2591799ad56d70166a512ace5f176659658620ef1ff6"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/runtime_audit.json",
+      "sha256": "454a43934a150b6f05c3405d0a1aadeb85aab1604906a3e941f714f93f8ee6ee"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/source_audit.json",
+      "sha256": "8530b414a463f7312d382f4d49abaf9ea5d93c8d1df03588c351e26be2d90db6"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/source_audit.log",
+      "sha256": "856541472bebcfade7f0ace86019057e6789fb39e96fd4c6e00ae71bdeb81932"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/qa/visual_review.json",
+      "sha256": "384ad995f64dd2f33241f63ca8ced6b1860373de38edadaf3e823ff548162457"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/LICENSE.txt",
+      "sha256": "203b4c6f0c707b0ba3323e13b3665c0775d40856a68b6310b317ae8b563bd3c8"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/PROVENANCE.md",
+      "sha256": "59fc96f3af7c7796eb87efd302132a268c3c8e587f88257aa4e313a3e0a2c148"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/manifest.json",
+      "sha256": "1ae056b493f25a9a87625430c2d7bed11ec925d704fd5ec92f90140c623fa996"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/SHA256SUMS.txt",
+      "sha256": "c69777f056857c1fcedaf1e37b46ebdd4ef7566700d488bc1dca745a69d9f238"
+    },
+    {
+      "path": "art_handoffs/motel-extinguisher/SOURCE_README.md",
+      "sha256": "dccd4750004db0252c2e42480dacc0c9cdc1a8ba5317b7faf3bb67ef7b25b1c8"
+    },
+    {
+      "path": "assets/environment/motel_props/motel_fire_extinguisher.glb",
+      "sha256": "7610e43f1e429e12ad6baeba537d3d9f65c68c81aaf2a74cb6450defc644e6ee"
+    },
+    {
+      "path": "assets/environment/motel_props/LICENSE-extinguisher.txt",
+      "sha256": "203b4c6f0c707b0ba3323e13b3665c0775d40856a68b6310b317ae8b563bd3c8"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "subject": "Actual GLB freshly imported",
+  "runtime_sha256": "7610e43f1e429e12ad6baeba537d3d9f65c68c81aaf2a74cb6450defc644e6ee",
+  "mesh_count": 1,
+  "blender_bounds_min": [
+    -0.13055868446826935,
+    -0.09000000357627869,
+    0.0
+  ],
+  "blender_bounds_max": [
+    0.14399999380111694,
+    0.1340000033378601,
+    0.5455000400543213
+  ]
+}

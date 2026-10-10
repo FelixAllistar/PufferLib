@@ -1,0 +1,20 @@
+{
+  "inspected": [
+    "preview/full.png",
+    "preview/close.png",
+    "preview/rear.png"
+  ],
+  "source": "Fresh import of final runtime GLB, not source-scene render",
+  "runtime_sha256": "7610e43f1e429e12ad6baeba537d3d9f65c68c81aaf2a74cb6450defc644e6ee",
+  "observations": [
+    "Continuous domed steel cylinder and rolled base silhouette.",
+    "Readable curved original label, opaque gauge dial, separate fixed handle and squeeze lever, safety pull ring with pin shaft.",
+    "Retained hose reaches ferrule/nozzle; rubber atlas avoids pressure dial texture region.",
+    "Rear bracket and base ledge visible; wall-contact triangles numerically tested.",
+    "Restrained painted-metal abrasion, dark rubber and matte steel remain readable at prop scale."
+  ],
+  "limitations": [
+    "Decorative game prop; label is fictional and is not operational safety guidance or certification.",
+    "Source-art visual/numerical QA only; no engine placement, collision or user acceptance claimed."
+  ]
+}

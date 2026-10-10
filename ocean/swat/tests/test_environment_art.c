@@ -896,7 +896,12 @@ static void culling_graphics(SwatView* view,const char* directory) {
         {{-6.7f,1.6f,-9.5f},{-6.7f,1.1f,-5.5f},{0,1,0},65,CAMERA_PERSPECTIVE},
         {{0,25,12},{0,0,12},{0,0,-1},55,CAMERA_ORTHOGRAPHIC}};
     for(int stage=0;stage<2;stage++) {
-        if(stage)assert(swat_world_breach(&sim.world,sim.world.objects[106].wall_group-1,(b3Pos){-3.9885f,1.05f,-1.17f})>4);
+        if(stage) {
+            assert(swat_world_breach(&sim.world,sim.world.objects[106].wall_group-1,(b3Pos){-3.9885f,1.05f,-1.17f})>4);
+            int first=sim.world.objects[13].wall_group-1;assert(first>SWAT_MOTEL_INSTANCES);
+            b3Pos opening=sim.world.objects[first].center;opening.y=.6f;
+            assert(swat_world_breach(&sim.world,first,opening)>0);
+        }
         for(size_t c=0;c<sizeof(cameras)/sizeof(*cameras);c++) {
             before=sim.world;view->environment.bounds=NULL;
             Image full=room101_capture_size(view,cameras[c],true,640,480);
@@ -926,7 +931,7 @@ int main(int argc,char** argv) {
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     if(argc>2 && !strcmp(argv[2],"wall-depth")) {wall_depth_graphics(&view,directory);swat_view_close(&view);return 0;}
-    if(argc>2 && !strcmp(argv[2],"motel-props")) {texture_owner_graphics("motel_props/motel_service_trolley.glb");motel_props_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
+    if(argc>2 && !strcmp(argv[2],"motel-props")) {texture_owner_graphics("motel_props/motel_service_trolley.glb");texture_owner_graphics("motel_props/motel_fire_extinguisher.glb");motel_props_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"textures")) {texture_sharing_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"road-textures")) {
         texture_owner_graphics("motel_road_context/grass_tuft_low.glb");

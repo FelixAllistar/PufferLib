@@ -104,7 +104,41 @@ contact checks preserve 25,983 triangles/edge flags over 23 assets with 55,200
 matched rays each, including replicas. Old version-17 prefixes remain loadable.
 The hostile exterior route still completes in 9,827 ordinary-input ticks with
 exact replay, mid-run save, fresh replica and no contact-buffer overflow.
-The artist's extinguisher and service vacuum are the next compact prop handoffs.
+The original extinguisher is now mounted beside room 104 at measured scale,
+with both brackets tied to the actual masonry sections. Thirteen bounded
+contact meshes preserve all 2,412 triangles, including the dense curved bottle.
+Box3D's new independently owned subset operation retains source edge flags and
+material indices across contact boundaries, with a correct mesh hash; grid and
+curved-surface checks pass on Linux/Windows. Source/fallback native graphics
+match 154,496 stable ray/raster samples; source texture ownership/release checks
+pass. Damage, support/charge loss, replicas, old trolley maps and malformed
+recipes pass on both platforms. Contact checks now preserve 28,395 triangles
+and edge flags across 24 assets with 57,600 matched rays per world/replica.
+Full hostile completion/replay/save still passes in 9,827 ticks. The bottle
+retains its original closed outer solid and a single steel physical response;
+working discharge, pressure and separate thin-shell/rubber response remain
+unimplemented. Normal Linux/Windows players are rebuilt.
+Next delivered art: reception noticeboard, service vacuum, umbrella stand,
+bottle opener/cap catcher, paper-towel dispenser and first-aid cabinet. Reuse
+the existing spindle chair for reception seating if clearance/appearance pass.
+All are original source candidates; integration follows physical material,
+mounting, route clearance and shared authority checks.
+
+Destruction audio now uses nine original CC0 rock/glass/metal foley clips, rather
+than wood-breaking aliases for plaster and drywall. Brick, glass and steel have
+three recorded break variants each; charges emit one material debris source per
+aperture alongside the existing blast fallback. Production-bank Linux/Windows
+checks load all 76 variants, exercise 15 break selections, and confirm finite
+bounded directional output and expiry. Tactical tests cover the single charge
+debris event. The hostile exterior route still completes in 9,827 ordinary-input
+ticks with exact replay, mid-run save, late replica and no contact-buffer overflow.
+Native indoor shooting under concurrent training measured 49 ms mean total,
+with world drawing around 30 ms; this is a contended diagnostic, not acceptance
+of the final performance budget. Full/culled graphics checks now also include
+charged masonry and its exposed edges. Two early wall-core culling prototypes
+passed image equivalence but failed to show a controlled timing gain, including
+a synchronized GPU run; neither is shipped. Batching and renderer costs remain
+performance work.
 
 Current audit: human tactical scenarios now deploy three squad bots and require
 occupant security, evidence, civilian evacuation and surviving-officer regrouping.

@@ -1,0 +1,28 @@
+{
+  "packed_images": [
+    {
+      "name": "extinguisher_atlas_512.png",
+      "packed": true,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "extinguisher_orm_512.png",
+      "packed": true,
+      "size": [
+        512,
+        512
+      ]
+    }
+  ],
+  "editable_component_count": 32,
+  "runtime_mesh_triangles": 2412,
+  "metres": true,
+  "runtime_identity": true,
+  "editable_collection_hidden_render": true,
+  "material_count": 1,
+  "finite_vertices": true,
+  "no_runtime_modifiers": true
+}

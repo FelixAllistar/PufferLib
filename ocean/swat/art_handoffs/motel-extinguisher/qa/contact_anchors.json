@@ -1,0 +1,66 @@
+{
+  "coordinate_system": "GLTF metres Y up, front +Z",
+  "origin": "Bottom center of pressure cylinder, Y=0",
+  "wall_plane_z_m": -0.134,
+  "base_contact_vertices": [
+    [
+      0.08699999749660492,
+      0.0,
+      -0.0
+    ],
+    [
+      -0.08699999749660492,
+      0.0,
+      -1.0654427088095368e-17
+    ],
+    [
+      -1.5981640632143052e-17,
+      0.0,
+      0.08699999749660492
+    ],
+    [
+      5.327213544047684e-18,
+      0.0,
+      -0.08699999749660492
+    ]
+  ],
+  "wall_contacts": [
+    {
+      "name": "wall_mount_lower",
+      "position_gltf_m": [
+        0,
+        0.093,
+        -0.134
+      ],
+      "actual_triangle_indices": [
+        936,
+        2224
+      ],
+      "normal_gltf": [
+        0,
+        0,
+        -1
+      ]
+    },
+    {
+      "name": "wall_mount_upper",
+      "position_gltf_m": [
+        0,
+        0.345,
+        -0.134
+      ],
+      "actual_triangle_indices": [
+        982,
+        2278
+      ],
+      "normal_gltf": [
+        0,
+        0,
+        -1
+      ]
+    }
+  ],
+  "wall_clearance_min_z_m": -0.1340000033378601,
+  "all_geometry_in_front_of_wall": true,
+  "measurement": "Contacts tested against actual exported mesh triangles; base samples are actual exported vertices. These are asset-local art anchors, not installed collision."
+}

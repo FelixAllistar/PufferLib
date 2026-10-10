@@ -1,0 +1,30 @@
+{
+  "asset": "motel_fire_extinguisher",
+  "title": "Wall-bracket fire extinguisher",
+  "record_kind": "new_unique_prop_design",
+  "new_unique_design_count": 1,
+  "status": "source_only_native_integration_pending",
+  "license": "CC0-1.0 original geometry, generated textures, scripts and documentation; third-party tools/font retain own licenses",
+  "runtime": "runtime/motel_fire_extinguisher.glb",
+  "source": "source/fire_extinguisher.blend",
+  "runtime_sha256": "7610e43f1e429e12ad6baeba537d3d9f65c68c81aaf2a74cb6450defc644e6ee",
+  "triangles": 2412,
+  "dimensions_gltf_xyz_m": [
+    0.2745586782693863,
+    0.5455000400543213,
+    0.2240000069141388
+  ],
+  "materials": 1,
+  "opaque": true,
+  "textures": {
+    "base_color": [
+      512,
+      512
+    ],
+    "metallic_roughness": [
+      512,
+      512
+    ]
+  },
+  "scope": "No upload/post, placement, engine/collision install, accepted asset edits, motion/grip/ground or outer-ridge changes"
+}

@@ -21,14 +21,39 @@ static void contact_meshes_create(SwatWorld* w) {
     int count=(int)(sizeof(motel_contact_sources)/sizeof(motel_contact_sources[0]));
     w->motel_contact_meshes=calloc((size_t)count,sizeof(*w->motel_contact_meshes));assert(w->motel_contact_meshes);
     w->motel_contact_mesh_count=count;
+    bool* selected[SWAT_MOTEL_ASSETS]={0};
     for(int i=0;i<count;i++) {
         const SwatMotelContactSource* part=&motel_contact_sources[i];const SwatMotelAsset* source=swat_motel_asset(part->asset);
         assert(part->triangle_count<=240);b3Vec3 vertices[720];int32_t indices[720];
         float units=mesh_units(part->asset);
+        if(part->asset>=46) {
+            // Curved parts can exceed the nearby-triangle contact buffer. Keep
+            // their exact triangles and original adjacency across subset seams.
+            const b3MeshData* original=w->motel_meshes[part->asset];
+            const b3Vec3* positions=b3GetMeshVertices(original);const b3MeshTriangle* triangles=b3GetMeshTriangles(original);
+            if(!selected[part->asset]){selected[part->asset]=calloc((size_t)original->triangleCount,sizeof(bool));assert(selected[part->asset]);}
+            int32_t selection[240];
+            for(int t=0;t<part->triangle_count;t++) {
+                int found=-1;
+                for(int s=0;s<original->triangleCount;s++) {
+                    if(selected[part->asset][s])continue;
+                    int v[]={triangles[s].index1,triangles[s].index2,triangles[s].index3};bool same=true;
+                    for(int k=0;k<3;k++)same&=b3LengthSquared(b3Sub(positions[v[k]],swat_mul(source->vertices[part->indices[3*t+k]],units)))<units*units*1e-12f;
+                    if(same){found=s;break;}
+                }
+                assert(found>=0);selection[t]=found;selected[part->asset][found]=true;
+            }
+            w->motel_contact_meshes[i]=b3CreateMeshSubset(original,selection,part->triangle_count);assert(w->motel_contact_meshes[i]);
+            continue;
+        }
         for(int v=0;v<part->triangle_count*3;v++){vertices[v]=swat_mul(source->vertices[part->indices[v]],units);indices[v]=v;}
         b3MeshDef def={.vertices=vertices,.indices=indices,.vertexCount=part->triangle_count*3,.triangleCount=part->triangle_count,
             .weldVertices=true,.weldTolerance=units*1e-6f,.identifyEdges=true};
         w->motel_contact_meshes[i]=b3CreateMesh(&def,NULL,0);assert(w->motel_contact_meshes[i]);
+    }
+    for(int asset=0;asset<SWAT_MOTEL_ASSETS;asset++)if(selected[asset]) {
+        for(int t=0;t<w->motel_meshes[asset]->triangleCount;t++)assert(selected[asset][t]);
+        free(selected[asset]);
     }
 }
 static bool contact_meshes_bind(SwatWorld* w,SwatObject* o,const SwatMotelInstance* p,const b3ShapeDef* def) {
@@ -208,12 +233,12 @@ static void mounted_recipe(int index,b3Pos* center,b3Vec3* half) {
 }
 // Resolve every authored fastening against the canonical wall polygons, including
 // already destroyed pieces: a loaded damaged map must not pick a new support.
-static bool mounted_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_SUPPORTS]) {
-    const SwatMotelInstance* p=&mounted_instances[index];int group=w->objects[mounted_parents[index]].wall_group,n=0;
+static bool wall_supports(const SwatWorld* w,const SwatMotelInstance* p,int parent,const b3Vec3* anchors,int anchor_count,int supports[SWAT_MAX_SUPPORTS]) {
+    int group=w->objects[parent].wall_group,n=0;
     for(int i=0;i<SWAT_MAX_SUPPORTS;i++)supports[i]=-1;
     if(!group)return false;
-    for(int anchor=0;anchor<SWAT_MAX_SUPPORTS;anchor++) {
-        b3Vec3 a=mounted_anchors[anchor];b3Pos point=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*a.x+sinf(p->yaw)*a.z,a.y,-sinf(p->yaw)*a.x+cosf(p->yaw)*a.z));int found=-1;
+    for(int anchor=0;anchor<anchor_count;anchor++) {
+        b3Vec3 a=anchors[anchor];b3Pos point=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*a.x+sinf(p->yaw)*a.z,a.y,-sinf(p->yaw)*a.x+cosf(p->yaw)*a.z));int found=-1;
         for(int i=group-1;i<SWAT_MOTEL_MOUNTED_FIRST && i<w->count && w->objects[i].wall_group==group;i++) {
             const SwatObject* o=&w->objects[i];if(o->part!=SWAT_PART_SKIN)continue;
             b3Vec3 d=b3SubPos(point,o->center);float c=cosf(o->yaw),s=sinf(o->yaw),x=c*d.x-s*d.z,y=d.y,z=s*d.x+c*d.z;
@@ -227,6 +252,9 @@ static bool mounted_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_
         if(!duplicate)supports[n++]=found;
     }
     return true;
+}
+static bool mounted_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_SUPPORTS]) {
+    return wall_supports(w,&mounted_instances[index],mounted_parents[index],mounted_anchors,SWAT_MAX_SUPPORTS,supports);
 }
 bool swat_motel_mounted(const SwatWorld* w,int owner,SwatMotelInstance* out) {
     int index=owner-SWAT_MOTEL_MOUNTED_FIRST;
@@ -254,15 +282,18 @@ static void mounted_bind(SwatWorld* w) {
     }
 }
 static const SwatMotelInstance prop_instances[]={
-    {45,{-8.75f,.0055f,-9.35f},{1,1,1},0,SWAT_STEEL,false,false}
+    {45,{-8.75f,.0055f,-9.35f},{1,1,1},0,SWAT_STEEL,false,false},
+    {46,{4.20f,1.12f,.224f},{1,1,1},0,SWAT_STEEL,false,false}
 };
-static float prop_health(void){return swat_material(SWAT_STEEL)->fracture_health*.008f/swat_material(SWAT_STEEL)->reference_thickness;}
+static const float prop_thickness[]={.008f,.012f};
+static float prop_health(int index){return swat_material(SWAT_STEEL)->fracture_health*prop_thickness[index]/swat_material(SWAT_STEEL)->reference_thickness;}
 static void prop_recipe(int index,b3Pos* center,b3Vec3* half) {
     const SwatMotelInstance* p=&prop_instances[index];const SwatMotelAsset* a=swat_motel_asset(p->asset);
     *center=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*a->center.x+sinf(p->yaw)*a->center.z,a->center.y,-sinf(p->yaw)*a->center.x+cosf(p->yaw)*a->center.z));*half=a->half;
 }
 static bool prop_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_SUPPORTS]) {
     const SwatMotelInstance* p=&prop_instances[index];
+    if(index==1)return wall_supports(w,p,85,prop_extinguisher_anchors,2,supports);
     for(int i=0;i<SWAT_MAX_SUPPORTS;i++)supports[i]=-1;
     // Resolve all measured contacts against original floor triangles, rather
     // than the bounds (the perimeter trim is 1 mm above this floor surface).
@@ -291,24 +322,23 @@ static bool prop_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_SUP
 }
 bool swat_motel_prop(const SwatWorld* w,int owner,SwatMotelInstance* out) {
     int index=owner-SWAT_MOTEL_PROPS_FIRST;
-    if(!w->motel || w->count<SWAT_MOTEL_OBJECTS || index<0 || index>=SWAT_MOTEL_PROP_INSTANCES)return false;
+    if(!w->motel || owner>=w->count || index<0 || index>=SWAT_MOTEL_PROP_INSTANCES)return false;
     *out=prop_instances[index];return true;
 }
 static bool props_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_PROPS_FIRST)return true; // Existing version-17 maps keep their prefix.
-    if(w->count<SWAT_MOTEL_OBJECTS)return false;
-    for(int i=0;i<SWAT_MOTEL_PROP_INSTANCES;i++) {
+    if(w->count>SWAT_MOTEL_OBJECTS)return false;
+    for(int i=0;i<SWAT_MOTEL_PROP_INSTANCES && SWAT_MOTEL_PROPS_FIRST+i<w->count;i++) {
         b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];prop_recipe(i,&center,&half);
         const SwatObject* o=&w->objects[SWAT_MOTEL_PROPS_FIRST+i];
         if(!prop_supports(w,i,supports) || memcmp(supports,o->supports,sizeof(supports)) ||
            b3Distance(center,o->center)>1e-4f || b3Length(b3Sub(half,o->half))>1e-4f || fabsf(swat_angle(o->yaw-prop_instances[i].yaw))>1e-5f ||
-           o->pitch!=0 || o->door || o->fractured || o->wall_group || o->part!=SWAT_PART_FIXTURE || o->material!=SWAT_STEEL || o->max_health!=prop_health() || o->structural_thickness!=.008f)return false;
+           o->pitch!=0 || o->door || o->fractured || o->wall_group || o->part!=SWAT_PART_FIXTURE || o->material!=SWAT_STEEL || o->max_health!=prop_health(i) || o->structural_thickness!=prop_thickness[i])return false;
     }
     return true;
 }
 static void props_bind(SwatWorld* w) {
-    if(w->count<SWAT_MOTEL_OBJECTS)return;
-    for(int i=0;i<SWAT_MOTEL_PROP_INSTANCES;i++) {
+    for(int i=0;i<SWAT_MOTEL_PROP_INSTANCES && SWAT_MOTEL_PROPS_FIRST+i<w->count;i++) {
         SwatObject* o=&w->objects[SWAT_MOTEL_PROPS_FIRST+i];b3DestroyShape(o->shape,false);
         b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
         bool bound=contact_meshes_bind(w,o,&prop_instances[i],&def);assert(bound);(void)bound;
@@ -524,10 +554,11 @@ void swat_motel_build(SwatWorld* w) {
     assert(w->count==SWAT_MOTEL_PROPS_FIRST);
     for(int i=0;i<SWAT_MOTEL_PROP_INSTANCES;i++) {
         b3Pos center;b3Vec3 half;prop_recipe(i,&center,&half);
-        int id=swat_world_box(w,center,half,SWAT_STEEL,prop_health());SwatObject* o=&w->objects[id];
-        o->part=SWAT_PART_FIXTURE;o->structural_thickness=.008f;swat_world_place(o,prop_instances[i].yaw);
-        int supports[SWAT_MAX_SUPPORTS];bool supported=prop_supports(w,i,supports);assert(supported);(void)supported;
-        bool attached=swat_world_attach(w,id,supports,1);assert(attached);(void)attached;
+        int id=swat_world_box(w,center,half,SWAT_STEEL,prop_health(i));SwatObject* o=&w->objects[id];
+        o->part=SWAT_PART_FIXTURE;o->structural_thickness=prop_thickness[i];swat_world_place(o,prop_instances[i].yaw);
+        int supports[SWAT_MAX_SUPPORTS],count=0;bool supported=prop_supports(w,i,supports);assert(supported);(void)supported;
+        while(count<SWAT_MAX_SUPPORTS && supports[count]>=0)count++;
+        bool attached=swat_world_attach(w,id,supports,count);assert(attached);(void)attached;
     }
     assert(props_validate(w));props_bind(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};

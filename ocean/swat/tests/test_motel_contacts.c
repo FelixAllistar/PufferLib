@@ -33,7 +33,7 @@ static void check(SwatWorld* world) {
             for(int t=0;t<mesh.data->triangleCount;t++) {
                 int found=-1;for(int s=0;s<source->triangleCount;s++)if(!seen[s]&&same_triangle(mesh.data,t,source,s)){found=s;break;}
                 assert(found>=0);seen[found]=true;
-                // Whole-component partition must not turn a shared edge into
+                // A partition must not turn a shared edge into
                 // a false convex seam or lose concavity handling.
                 assert(b3GetMeshFlags(mesh.data)[t]==b3GetMeshFlags(source)[found]);
             }
@@ -68,7 +68,7 @@ static void check(SwatWorld* world) {
         }
         b3DestroyBody(reference_body);
     }
-    assert(assets>=23 && tested[24] && tested[40] && tested[44] && tested[45]);
+    assert(assets>=24 && tested[24] && tested[40] && tested[44] && tested[45] && tested[46]);
     printf("PASS motel contact partitions: %d assets, %d original triangles and edge flags preserved, %d matched full/partition rays and ballistic exit distances\n",assets,triangles,rays);
 }
 int main(void) {

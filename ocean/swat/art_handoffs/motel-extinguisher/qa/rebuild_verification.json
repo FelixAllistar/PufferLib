@@ -1,0 +1,19 @@
+{
+  "method": "Independent clean temporary directory, regenerated textures and model from scripts; no copied binaries.",
+  "byte_identical": true,
+  "files": {
+    "runtime/motel_fire_extinguisher.glb": {
+      "original": "7610e43f1e429e12ad6baeba537d3d9f65c68c81aaf2a74cb6450defc644e6ee",
+      "rebuilt": "7610e43f1e429e12ad6baeba537d3d9f65c68c81aaf2a74cb6450defc644e6ee"
+    },
+    "source/extinguisher_atlas_512.png": {
+      "original": "4076fa861768d7b41468587144820166658b11d60d4f487f2bfb6e500cccf069",
+      "rebuilt": "4076fa861768d7b41468587144820166658b11d60d4f487f2bfb6e500cccf069"
+    },
+    "source/extinguisher_orm_512.png": {
+      "original": "8bc6f2e8cd7723557d97d75bdd6437367ea2074bb8fb9d5b4cbcbea6b0c9ecd3",
+      "rebuilt": "8bc6f2e8cd7723557d97d75bdd6437367ea2074bb8fb9d5b4cbcbea6b0c9ecd3"
+    }
+  },
+  "blend_note": "Packed editable blend saved and audited, binary equality not required because Blender metadata varies."
+}

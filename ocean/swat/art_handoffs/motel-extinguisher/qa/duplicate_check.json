@@ -1,0 +1,32 @@
+{
+  "catalog_source": "attachments/7aba0240-4eeb-4d09-a01d-f801b1f48dc2/SWAT-asset-catalog-2026-10-08-r008-lamp-desk-maintenance.zip / asset_rows.json",
+  "catalog_rows_checked": 416,
+  "keywords": [
+    "fire extinguisher",
+    "extinguisher",
+    "fire cylinder"
+  ],
+  "matches": [],
+  "recent_index": "catalog_r009_recentdeliveries_update02/INDEX.md",
+  "recent_folder_names_checked": [
+    "motel_cleaning_tool_rack_v1",
+    "motel_downspout_shoe_v1",
+    "motel_fire_extinguisher_v1",
+    "motel_folded_wet_floor_sign_v1",
+    "motel_folding_step_stool_v1",
+    "motel_guest_travel_case_v1",
+    "motel_laundry_sack_v1",
+    "motel_maintenance_group_v1",
+    "motel_roadside_detail_v1",
+    "motel_service_call_button_v1",
+    "motel_service_key_cabinet_v1",
+    "motel_service_trolley_v1",
+    "motel_surface_junction_v1",
+    "motel_surroundings_kit_v1",
+    "motel_surroundings_kit_v2materials",
+    "motel_surroundings_kit_v3appearance",
+    "motel_wall_hose_hanger_v1",
+    "motel_wall_receptacle_v1"
+  ],
+  "decision": "Distinct wall-bracket portable fire extinguisher; not a variant of hose, junction, call button, receptacle, trolley, stool, rack, suitcase, laundry sack or caution sign. No extinguisher match in actual catalog or recent local design folders."
+}

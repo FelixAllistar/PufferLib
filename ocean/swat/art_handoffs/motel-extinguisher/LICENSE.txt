@@ -1,0 +1,6 @@
+CC0 1.0 Universal
+
+To the extent possible under law, the authors waive all copyright and related or neighboring rights in the original geometry, textures, generated artwork, scripts and documentation in this package under CC0 1.0.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Blender, Python, Pillow and the DejaVu font dependency remain under their respective licenses. No software or font binary is relicensed or included. Font attribution/license notice is included for transparency.
