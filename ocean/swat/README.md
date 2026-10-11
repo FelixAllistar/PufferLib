@@ -99,6 +99,28 @@ rendered Windows measurements without taking focus. `--storefront` and
 `--motel` select the imported environments. Replay recording excludes
 `--indoors`/`--fire`, whose starting-state overrides are not in replay headers.
 
+Motel wall finishes now cache combined meshes per wall assembly and material.
+Their existing clipped positions, normals, UVs and borrowed materials remain
+unchanged. Changed occupancy, surviving-fragment corners or source geometry
+rebuild the affected cache; unchanged views reuse it. Shadow/contact passes
+retain the individual fragment meshes. The ordinary player uses this path.
+Compare it with `--motel --indoors --fire --audio --frames 600 --hidden`
+and the same arguments plus `--wall-faces-reference`. Reported submissions
+are model requests before frustum rejection, and attribute bytes exclude GPU
+driver overhead. The intact motel requests 20 combined wall models instead of
+536 fragment models per view, adding 1.72 MiB of vertex attributes on CPU and
+GPU each without duplicating textures.
+
+The maintained `test_environment_art` mode `wall-face-batch` compares 56 native
+Windows lit/unlit views across intact, breached, missing-source and partially
+reshaped walls. They are pixel-identical to the reference; repeated unchanged
+views create no meshes. The existing 42 wall-core comparisons and live-replica
+breach graphics also pass. In the later paired 600-frame indoor firing runs,
+world-geometry mean time was 9.10 ms combined versus 12.09 ms reference, and
+total frame mean was 17.85 versus 20.23 ms. Other work was running on the machine
+and large outliers remain, so these measurements do not establish the final
+frame-time budget.
+
 The indoor shooting bottleneck was NPC acoustic routing: unheard events remain
 pending for two seconds, and every route scanned all building pieces. Routing
 now builds a query-local spatial tree over the acoustic bounds, shares it across
