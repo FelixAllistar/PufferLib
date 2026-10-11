@@ -107,6 +107,8 @@ void swat_world_step_doors(SwatWorld* world);
 void swat_world_place(SwatObject* object, float yaw);
 void swat_world_tilt(SwatObject* object,float pitch);
 bool swat_world_fragment(SwatObject* object,const float corners[4][2]);
+bool swat_world_fragment_valid(const SwatObject* object,const float corners[4][2]);
+b3HullData* swat_world_fragment_hull(const SwatObject* object,const float corners[4][2]);
 bool swat_world_breachable(const SwatObject* object);
 int swat_world_breach(SwatWorld* world,int object,b3Pos position);
 int swat_world_room(const SwatWorld* world, b3Pos position);

@@ -866,7 +866,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 15) and the same generated
+Saves require this network/replay version (currently 18) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -896,13 +896,29 @@ fragment shapes. Crack boundaries are irregular, while surface UVs remain
 continuous in metres. Short-lived chips and persistent small rubble are cosmetic;
 there is no full structural stress or dynamic rubble simulation yet.
 
+C4 also chips the surviving convex edges beside newly removed fragments. Each
+shared-edge cut travels at most 7 cm along adjoining edges in masonry or 12 cm
+in board, further limited for small pieces. It keeps four convex corners,
+reduces remaining health by the lost area and changes the actual collision,
+ray queries, clipped source faces and exposed masonry strips together. Intact
+remote walls retain their shape. This refines the bounded fragment system;
+chunks still disappear rather than becoming loose structural rubble.
+Live snapshots now carry those corners, including already inactive pieces.
+Peers need matching version-18 builds; start fresh recordings/saves for this
+build. Existing recordings are retained, but earlier wire versions cannot load.
+
+```bash
+make -C ocean/swat breach-geometry-test
+./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" breach-geometry
+```
+
 Squad movement now routes by floor height, standing/crouching clearance and actual
 stair support. Doors are operated on approach; actors still move through the real
 controller rather than teleporting along the route. Wall destruction updates nearby cells and their connections in
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **13**; older clients and
+breach. The network geometry contract is version **18**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The motel's east wire fence has actual openings for bullets and porous sound
@@ -1105,7 +1121,7 @@ Navigation lazily allocates 216 × 168 cells and four height layers for the wide
 motel, retaining the exact previous 60 cm indoor sampling arithmetic. Smaller
 worlds retain their previous 108 × 108 grid. Grid/route scratch share one heap
 allocation, with 32-bit queue indices; reset/map replacement/close free it once.
-Protocol/replay version is 16; older recorded sessions must be regenerated.
+Protocol/replay version is 18; older recorded sessions must be regenerated.
 
 Native rendering QA can be run after a Windows player build:
 

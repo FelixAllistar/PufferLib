@@ -208,21 +208,75 @@ static float charge_demand(const SwatObject* o) {
     return m->charge_resistance*(2*o->half.x/m->reference_thickness);
 }
 
-bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
-    if(!o->active || o->door || o->part!=SWAT_PART_SKIN) return false;
-    b3Vec3 points[8];
+bool swat_world_fragment_valid(const SwatObject* o,const float corners[4][2]) {
+    if(o->door || o->part!=SWAT_PART_SKIN)return false;
     for(int i=0;i<4;i++) {
         int j=(i+1)%4,k=(i+2)%4;
         float ay=corners[j][0]-corners[i][0],az=corners[j][1]-corners[i][1];
         float by=corners[k][0]-corners[j][0],bz=corners[k][1]-corners[j][1];
         if(!isfinite(corners[i][0]) || !isfinite(corners[i][1]) ||
            fabsf(corners[i][0])>o->half.y+.001f || fabsf(corners[i][1])>o->half.z+.001f || ay*bz-az*by<.001f) return false;
+    }
+    return true;
+}
+b3HullData* swat_world_fragment_hull(const SwatObject* o,const float corners[4][2]) {
+    if(!swat_world_fragment_valid(o,corners))return NULL;
+    b3Vec3 points[8];
+    for(int i=0;i<4;i++) {
         points[i]=swat_v(-o->half.x,corners[i][0],corners[i][1]);
         points[i+4]=swat_v(o->half.x,corners[i][0],corners[i][1]);
     }
-    b3HullData* hull=b3CreateHull(points,8,8); if(!hull) return false;
+    return b3CreateHull(points,8,8);
+}
+bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
+    if(!o->active)return false;
+    b3HullData* hull=swat_world_fragment_hull(o,corners);if(!hull)return false;
     b3Shape_SetHull(o->shape,hull); b3DestroyHull(hull);
     memcpy(o->corners,corners,sizeof(o->corners)); o->fractured=true; return true;
+}
+
+static float fragment_area(const float v[4][2]) {
+    float area=0;for(int i=0;i<4;i++){int k=(i+1)%4;area+=v[i][0]*v[k][1]-v[i][1]*v[k][0];}
+    return area*.5f;
+}
+static void chip_breach_edges(SwatWorld* w,int group,const bool previously_active[SWAT_MAX_OBJECTS]) {
+    // Only shared edges beside material removed by THIS charge are cut. Four
+    // convex corners keep the physics/query/render representation bounded.
+    for(int i=0;i<w->count;i++) {
+        SwatObject* o=&w->objects[i];
+        if(!o->active || !o->fractured || o->wall_group!=group || o->part!=SWAT_PART_SKIN)continue;
+        float original[4][2],cut[4][2];memcpy(original,o->corners,sizeof(original));memcpy(cut,original,sizeof(cut));
+        bool edges[4]={0};float c=cosf(o->yaw),s=sinf(o->yaw);
+        for(int j=0;j<w->count;j++) {
+            const SwatObject* n=&w->objects[j];
+            if(n->active || !previously_active[j] || !n->fractured || n->wall_group!=group || n->part!=SWAT_PART_SKIN)continue;
+            b3Vec3 d=b3SubPos(n->center,o->center);
+            if(fabsf(c*d.x-s*d.z)>.001f || fabsf(d.y)>o->half.y+n->half.y+.01f)continue;
+            float ny=d.y,nz=s*d.x+c*d.z;
+            for(int e=0;e<4;e++)for(int f=0;f<4;f++) {
+                int k=(e+1)%4,g=(f+1)%4;
+                if(hypotf(original[e][0]-ny-n->corners[g][0],original[e][1]-nz-n->corners[g][1])<.001f &&
+                   hypotf(original[k][0]-ny-n->corners[f][0],original[k][1]-nz-n->corners[f][1])<.001f)edges[e]=true;
+            }
+        }
+        for(int e=0;e<4;e++)if(edges[e]) {
+            int k=(e+1)%4,previous=(e+3)%4,next=(e+2)%4;
+            uint32_t hash=(uint32_t)(i+1)*0x9e3779b9u+(uint32_t)e*0x85ebca6bu;
+            float maximum=o->material==SWAT_BRICK?.07f:.12f;
+            float depth=maximum*(.55f+.45f*((hash>>8)&255)/255.0f);
+            float a=fminf(.20f,depth/fmaxf(.001f,hypotf(original[previous][0]-original[e][0],original[previous][1]-original[e][1])));
+            float b=fminf(.20f,depth*.75f/fmaxf(.001f,hypotf(original[next][0]-original[k][0],original[next][1]-original[k][1])));
+            for(int axis=0;axis<2;axis++) {
+                cut[e][axis]+=a*(original[previous][axis]-original[e][axis]);
+                cut[k][axis]+=b*(original[next][axis]-original[k][axis]);
+            }
+        }
+        if(!memcmp(original,cut,sizeof(cut)))continue;
+        float ratio=fragment_area(cut)/fragment_area(original);
+        if(ratio>0 && ratio<1 && swat_world_fragment(o,cut)) {
+            o->health=fmaxf(.001f,o->health*ratio);w->generation++;
+        }
+    }
 }
 
 bool swat_world_breachable(const SwatObject* o) {
@@ -235,6 +289,8 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object])) return 0;
     SwatObject source=w->objects[object];
     if(source.door) return swat_world_damage(w,object,source.max_health) ? 1 : 0;
+    bool previously_active[SWAT_MAX_OBJECTS]={0};
+    for(int i=0;i<w->count;i++)previously_active[i]=w->objects[i].active;
     bool fence=source.part==SWAT_PART_FENCE_WIRE || source.part==SWAT_PART_FENCE_RAIL;
     b3Vec3 tangent=swat_v(sinf(source.yaw),0,cosf(source.yaw));
     if(fence)tangent=swat_v(cosf(source.yaw),0,-sinf(source.yaw));
@@ -272,6 +328,7 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
         }
         if(!supported) removed+=swat_world_damage(w,i,skin->max_health);
     }
+    if(removed && !fence)chip_breach_edges(w,source.wall_group,previously_active);
     return removed;
 }
 

@@ -322,9 +322,10 @@ size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state) {
     for(int i=0;i<SWAT_MAX_ACTORS;i++) putactor(&w,&state->actors[i]);
     for(int i=0;i<state->object_count;i++) {
         const SwatObjectState* o=&state->objects[i];
-        put8(&w,o->active | (o->door_open<<1) | (o->locked<<2)); putf(&w,o->health); putf(&w,o->door_angle);
+        put8(&w,o->active | (o->door_open<<1) | (o->locked<<2) | (o->fractured<<3)); putf(&w,o->health); putf(&w,o->door_angle);
         put8(&w,o->breach_owner+1); put8(&w,o->breach_ticks);
         put8(&w,o->wedge_owner+1); put8(&w,o->peek | (o->trapped<<1)); put32(&w,o->trap_known); putpos(&w,o->breach_position);
+        if(o->fractured)for(int j=0;j<4;j++)for(int k=0;k<2;k++)putf(&w,o->corners[j][k]);
     }
     put8(&w,state->sound_count);
     for(int i=0;i<state->sound_count;i++) {
@@ -377,15 +378,21 @@ bool swat_decode_snapshot(SwatSnapshot* state,const void* bytes,size_t size) {
         if(i>=tmp.actor_count && tmp.actors[i].present) r.ok=false;
     }
     for(int i=0;i<tmp.object_count;i++) {
-        unsigned int flags=get8(&r); if(flags>7) r.ok=false;
+        unsigned int flags=get8(&r); if(flags>15) r.ok=false;
         SwatObjectState* o=&tmp.objects[i];
         o->active=(flags&1)!=0; o->door_open=(flags&2)!=0; o->locked=(flags&4)!=0;
+        o->fractured=(flags&8)!=0;
         o->health=getf(&r,0,1000000); o->door_angle=getf(&r,0,SWAT_PI*0.5f);
         o->breach_owner=(int)get8(&r)-1; o->breach_ticks=(int)get8(&r);
         if(o->breach_owner>=SWAT_MAX_ACTORS || o->breach_ticks>48) r.ok=false;
         o->wedge_owner=(int)get8(&r)-1; unsigned int tools=get8(&r); o->trap_known=get32(&r);
         o->peek=tools&1; o->trapped=tools&2; o->breach_position=getpos(&r);
         if(o->wedge_owner>=SWAT_MAX_ACTORS || tools>3 || o->trap_known>=(1u<<SWAT_MAX_ACTORS)) r.ok=false;
+        if(o->fractured) {
+            for(int j=0;j<4;j++)for(int k=0;k<2;k++)o->corners[j][k]=getf(&r,-10000,10000);
+            SwatObject bounds={.half={1,10000,10000},.part=SWAT_PART_SKIN};
+            if(!swat_world_fragment_valid(&bounds,o->corners))r.ok=false;
+        }
     }
     tmp.sound_count=(int)get8(&r); if(tmp.sound_count>SWAT_NET_SOUNDS || !r.ok) return false;
     uint32_t previous=0;
@@ -494,6 +501,8 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
         const SwatObject* o=&sim->world.objects[i];
         state->objects[i]=(SwatObjectState){.active=o->active,.door_open=o->door_open,.locked=o->locked,
             .health=o->health,.door_angle=o->door_angle,.breach_owner=o->breach_owner,.breach_ticks=o->breach_ticks,.wedge_owner=o->wedge_owner,.peek=o->peek,.trapped=o->trapped,.trap_known=o->trap_known,.breach_position=o->breach_position};
+        state->objects[i].fractured=o->fractured;
+        if(o->fractured)memcpy(state->objects[i].corners,o->corners,sizeof(o->corners));
     }
     int start=sim->sounds.count>SWAT_NET_SOUNDS ? sim->sounds.count-SWAT_NET_SOUNDS : 0;
     for(int i=start;i<sim->sounds.count;i++) {
@@ -541,6 +550,16 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->room_light_off_mask&~((1u<<sim->world.room_count)-1u))return false;
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i]; const SwatObjectState* in=&state->objects[i];
+        if(in->fractured!=o->fractured)return false;
+        if(in->fractured) {
+            if(!swat_world_fragment_valid(o,in->corners))return false;
+            // A live update may remove material, never grow it into new cover.
+            for(int v=0;v<4;v++)for(int e=0;e<4;e++) {
+                int k=(e+1)%4;
+                float ay=o->corners[k][0]-o->corners[e][0],az=o->corners[k][1]-o->corners[e][1];
+                if(ay*(in->corners[v][1]-o->corners[e][1])-az*(in->corners[v][0]-o->corners[e][0])<-.00001f)return false;
+            }
+        }
         for(int k=0;k<SWAT_MAX_SUPPORTS;k++)if(in->active && o->supports[k]>=0 &&
             !state->objects[o->supports[k]].active)return false;
         if(in->breach_owner>=0) {
@@ -555,8 +574,19 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
            (!o->door && (in->wedge_owner>=0 || in->peek || in->trapped || in->trap_known)) ||
            (in->wedge_owner>=0 && (!in->active || in->door_open)) || (in->trap_known && !in->trapped)) return false;
     }
+    b3HullData* hulls[SWAT_MAX_OBJECTS]={0};
+    // Prepare all changed hulls before committing any part of the snapshot.
+    for(int i=0;i<state->object_count;i++) {
+        const SwatObject* o=&sim->world.objects[i];const SwatObjectState* in=&state->objects[i];
+        if(in->active && in->fractured && memcmp(o->corners,in->corners,sizeof(o->corners))) {
+            hulls[i]=swat_world_fragment_hull(o,in->corners);
+            if(!hulls[i]){for(int j=0;j<i;j++)if(hulls[j])b3DestroyHull(hulls[j]);return false;}
+        }
+    }
     for(int i=0;i<state->object_count;i++) {
         SwatObject* o=&sim->world.objects[i]; const SwatObjectState* in=&state->objects[i];
+        if(hulls[i]){b3Shape_SetHull(o->shape,hulls[i]);b3DestroyHull(hulls[i]);}
+        if(in->fractured)memcpy(o->corners,in->corners,sizeof(o->corners));
         o->health=in->health; o->door_open=in->door_open; o->door_angle=in->door_angle;
         o->wedge_owner=in->wedge_owner; o->peek=in->peek; o->trapped=in->trapped; o->trap_known=in->trap_known;
         o->locked=in->locked; o->breach_owner=in->breach_owner; o->breach_ticks=in->breach_ticks; o->breach_position=in->breach_position;
