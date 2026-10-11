@@ -1,0 +1,28 @@
+{
+  "received": "2026-10-11",
+  "archive_sha256": "4540a89e2d3c72690699f7e698aa7994c5e43056c914054d0d98cee280529050",
+  "archive_bytes": 21153181,
+  "glb": "imports/power_box_01_rear_centered_1k.glb",
+  "glb_bytes": 4388152,
+  "triangles": 21272,
+  "meshes": 2,
+  "materials": 1,
+  "embedded_maps": [
+    [
+      1024,
+      1024
+    ],
+    [
+      1024,
+      1024
+    ],
+    [
+      1024,
+      1024
+    ]
+  ],
+  "packet_checksums": "all passed via sha256sum -c",
+  "review": "Actual export previews inspected; runtime placement, damage/collision and native lighting/performance not yet accepted. Artist rebuild scripts retained as provenance and not executed.",
+  "drive_url": "https://drive.google.com/file/d/1KU-e6ptP7GbwnFn9kRUrexXFWuHgrbGI/view",
+  "slack_url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1791688988880499"
+}

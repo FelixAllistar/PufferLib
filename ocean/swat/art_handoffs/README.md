@@ -16,3 +16,13 @@ cat audio_sources/free-firearm.7z.*.part > free-firearm.7z
 
 The assembled archive's SHA-256 is recorded in `audio_sources/free-firearm.sha256`.
 Other packages retain their supplied manifests, hashes and license records.
+
+The 2026-10-11 maintenance deliveries are retained as complete source archives:
+[tied refuse bag](motel-maintenance-bag/source.zip) and
+[open power box](motel-power-box/source.zip). Their adjacent `receipt.json` files
+record archive hashes, byte sizes and independent GLB/header, triangle and 1K
+embedded-image checks. All supplied packet checksums passed. Actual export
+previews were reviewed; the bag's source gloss and cabinet's supplied static
+open pose remain intact. These are received source candidates, not installed
+runtime placements or accepted collision/damage/performance. Author rebuild
+scripts are preserved inside the archives as provenance and were not executed.
