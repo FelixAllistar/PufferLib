@@ -1,0 +1,15 @@
+{
+  "title": "Power Box 01 by Rico Cilliers; source rigging credit Yann Kervran",
+  "source_url": "https://polyhaven.com/a/power_box_01",
+  "license": "CC0-1.0",
+  "license_file": "POWER_BOX_CC0-1.0.txt",
+  "source_packet": "../../../art_handoffs/motel-power-box/source.zip",
+  "runtime_sha256": "aacb5528bbc53a1de6cc94ce1c86f4bf0406b6d859fa0d398ebd39326af40024",
+  "geometry_triangles": 21272,
+  "meshes": 2,
+  "materials": 1,
+  "embedded_maps": "Three RGB8 1K original-derivative maps: albedo, GL normal and ARM; source factor defaults of 1; no invented AO binding",
+  "transform": "Original right-handed Y-up metres, hierarchy and static open-door pose retained",
+  "physics": "Full source ballistic query; 97 source-flag contact subsets; one static metal-cover game damage owner; four modeled rear-rim geometric support references, not certified mounting hardware",
+  "limitations": "Source mixed substrate, gauge and electrical behavior unknown; 1.2 mm metal health section is a game approximation; no hinge or live electrical controls"
+}

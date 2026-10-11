@@ -22,7 +22,9 @@
     ]
   ],
   "packet_checksums": "all passed via sha256sum -c",
-  "review": "Actual export previews inspected; runtime placement, damage/collision and native lighting/performance not yet accepted. Artist rebuild scripts retained as provenance and not executed.",
+  "review": "Installed at source scale above the service washers in the supplied static open pose. Native C full-scene import regenerates byte-identically; all 21272 source triangles/query geometry and 97 contact subsets retained. Original mixed PBR/1K maps retained. Four modeled rear-rim geometric supports resolve against physical wall skins; hardware and gauge remain unknown. Linux/native damage/support/C4/replica and legacy-map checks, 155722 native source/fallback ray/raster checks, all four completion/replay/save routes on both platforms pass. Native scene render inspected. Author scripts remain archived provenance and were not executed.",
   "drive_url": "https://drive.google.com/file/d/1KU-e6ptP7GbwnFn9kRUrexXFWuHgrbGI/view",
-  "slack_url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1791688988880499"
+  "slack_url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1791688988880499",
+  "runtime": "../../assets/environment/motel_props/power_box_01_rear_centered_1k.glb",
+  "evidence": "../../../../build/swat/review/service-cabinet"
 }

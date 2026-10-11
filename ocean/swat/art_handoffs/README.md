@@ -25,6 +25,17 @@ embedded-image checks. All supplied packet checksums passed. Actual export
 previews were reviewed; the bag's source gloss and cabinet's supplied static
 open pose remain intact. The bag is installed beside the rear service trolley
 with source geometry, matching collision/fallback, damage/support replication
-and native graphics/completion checks. The cabinet remains a received source
-candidate. Author rebuild
+and native graphics/completion checks. The cabinet is installed above the rear
+service-room washers in its original static open pose, with all 21,272 source
+triangles, matching native art/fallback coverage, metal-cover game damage,
+four geometric rear-rim wall references and support/charge removal replication.
+These references are modeled geometry, not certified mounting hardware; source
+mixed substrate and gauge remain unknown. Both platforms' four completion,
+replay/save and replica routes pass. Author rebuild
 scripts are preserved inside the archives as provenance and were not executed.
+
+The artist has also completed the [concrete barrier comparison package](https://drive.google.com/file/d/109cuF_xoMuPFYmEkPbhN7ieRJHuvzE5a/view):
+the preserved 60,928-triangle CC0 source and a 9,997-triangle trial at original
+1.545 x 0.639 x 0.831 m dimensions. This is an available external handoff,
+not yet downloaded, checked locally or installed. The reduced lifting loops
+and chipped edges require native placement review before accepting it as LOD.

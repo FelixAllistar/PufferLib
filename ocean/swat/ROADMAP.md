@@ -62,6 +62,37 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The original service cabinet is installed above the rear washer pair, retaining
+the two source meshes, static open-door pose, metre dimensions and mixed PBR
+with three 1K maps. Native C import regeneration is byte-identical. All 21,272
+source triangles survive the full query and 97 source-flag contact subsets.
+Four actual modeled rear-rim vertices resolve to canonical wall-skin supports;
+source fasteners, material gauge and electrical behavior are not inferred.
+One static metal-cover damage owner uses an explicit 1.2 mm game health section.
+Linux/native rim rays, washer clearance, partial/removal damage, support/C4 loss,
+replicas, malformed state and old bag-prefix checks pass. Expanded contact QA
+preserves 67,754 triangles/flags on 30 tested assets and 72,000 ray/exit matches
+per platform, repeated after map reconstruction. Native source/fallback graphics
+passes 155,722 stable ray/raster comparisons with original bounds/maps, lighting,
+removal and texture lifetime checks; the room render was inspected. Both
+platforms' four ordinary-input completion routes pass with every-tick replay,
+mid-run save/resume, fresh replicas, truthful debrief and no contact overflow.
+Normal Windows/Linux players/servers and float Puffer are rebuilt. The existing
+performance tool can select any room and initial yaw for targeted indoor
+shooting. Compact evidence is under `build/swat/review/service-cabinet`; source,
+runtime, licenses and reproducible import remain in the normal repo. Hose/tap
+integration, cabinet hinge/electrical behavior, further character/material/
+destruction polish and full slice performance/behavior acceptance remain open.
+Two sequential 600-frame native HRTF firing runs after this agent's build/test
+jobs ended each fired 67 shots with 1,332 objects and nine actors. Guest-room
+total time was 30.487 ms mean / 52.692 ms p95 / 101.835 ms max; service-room total
+was 23.320 / 33.676 / 278.587 ms. The service maximum included a 255.979 ms shadow
+pass, while simulation topped at 11.411 ms. Texture maps add exactly three unique
+1K images and 12 MiB of API-format full-mip data, totaling 368.92 MiB; driver
+allocation is not measured. Other machine activity was not controlled, and this
+is not a paired old/new comparison or slice performance acceptance. Large
+indoor shadow spikes remain a measured engine issue for the next iteration.
+
 The interrupted-pose audit reproduced a 0.79951 m rifle-stock displacement on
 the first controlled crouch-transition frame: local skeletal blending moved
 the prop after its achieved gameplay alignment. Active blends now restore the
@@ -94,7 +125,7 @@ data; total shared texture data is 356.92 MiB, excluding driver overhead. The
 600-frame native indoor-firing diagnostic measured 19.559 ms mean total and
 38.141 ms p95 with a 74.827 ms maximum. It overlapped native scenario checks;
 this does not establish stable-load performance acceptance. Evidence is under
-`build/swat/review/maintenance-bag`. Cabinet and reuse hose/tap integration,
+`build/swat/review/maintenance-bag`. Reuse hose/tap integration,
 squad visual clearance, further materials/destruction and stable-load playtests
 remain part of the full slice goal.
 

@@ -1,15 +1,15 @@
 // Original prop silhouettes and open spaces must agree with collision.
 static void motel_prop_graphics(SwatView* view,const char* directory,int index) {
-    const char* names[]={"trolley","extinguisher","noticeboard","chair","nightstand","armchair-frame","armchair-cushion","daybed","bag"};
-    const int triangles[]={2416,2412,1416,1884,470,8916,8916,2715,4482};
-    int pixels[]={512,512,1024,512,2048,1024,1024,1024,1024};
+    const char* names[]={"trolley","extinguisher","noticeboard","chair","nightstand","armchair-frame","armchair-cushion","daybed","bag","cabinet"};
+    const int triangles[]={2416,2412,1416,1884,470,8916,8916,2715,4482,21272};
+    int pixels[]={512,512,1024,512,2048,1024,1024,1024,1024,1024};
     if(getenv("SWAT_MOTEL_SEATING_TEXTURES") && !strcmp(getenv("SWAT_MOTEL_SEATING_TEXTURES"),"original"))for(int i=5;i<8;i++)pixels[i]=2048;
-    const int meshes[]={1,1,1,3,2,2,2,1,1};const float sizes[]={1.12f,.64f,.90f,1.12f,.76f,1.2f,1.2f,2.3f,.78f};
+    const int meshes[]={1,1,1,3,2,2,2,1,1,2};const float sizes[]={1.12f,.64f,.90f,1.12f,.76f,1.2f,1.2f,2.3f,.78f,.75f};
     int asset=45+index;const char* name=names[index];
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,81);SwatEnvironmentArt* art=&view->environment;
     swat_environment_art_prepare_location(art,&sim.world);before=sim.world;
-    Model source=art->motel[asset];assert(source.meshCount==meshes[index] && source.materialCount==(index==4?2:meshes[index]+1));
+    Model source=art->motel[asset];assert(source.meshCount==meshes[index] && source.materialCount==((index==4 || index==9)?2:meshes[index]+1));
     int total=0;for(int m=0;m<source.meshCount;m++)total+=source.meshes[m].triangleCount;assert(total==triangles[index]);
     for(int m=1;m<source.materialCount;m++) {
         Material material=source.materials[m];assert(material.maps[MATERIAL_MAP_ALBEDO].texture.width==pixels[index]);
@@ -20,14 +20,15 @@ static void motel_prop_graphics(SwatView* view,const char* directory,int index) 
         } else assert(material.maps[MATERIAL_MAP_ROUGHNESS].texture.width==pixels[index]);
         if(index==4){assert(material.maps[MATERIAL_MAP_NORMAL].texture.width==2048);assert(material.maps[MATERIAL_MAP_METALNESS].value==0 && material.maps[MATERIAL_MAP_ROUGHNESS].value==1);}
     }
-    SwatObject* o=&sim.world.objects[index==8?SWAT_MOTEL_BAG_FIRST:index>=5?SWAT_MOTEL_SEATING_FIRST+index-5:index==4?SWAT_MOTEL_NIGHTSTAND_FIRST:SWAT_MOTEL_PROPS_FIRST+index];
+    SwatObject* o=&sim.world.objects[index==9?SWAT_MOTEL_CABINET_FIRST:index==8?SWAT_MOTEL_BAG_FIRST:index>=5?SWAT_MOTEL_SEATING_FIRST+index-5:index==4?SWAT_MOTEL_NIGHTSTAND_FIRST:SWAT_MOTEL_PROPS_FIRST+index];
     if(index>=5) {
         Model part=source;if(index<7){part.meshCount=1;part.meshes=&source.meshes[index-5];part.meshMaterial=&source.meshMaterial[index-5];}
         BoundingBox b=GetModelBoundingBox(part);const SwatMotelAsset* a=swat_motel_asset(asset);
         assert(fabsf(b.min.x-(a->center.x-a->half.x))<2e-6f && fabsf(b.max.x-(a->center.x+a->half.x))<2e-6f);
         assert(fabsf(b.min.y-(a->center.y-a->half.y))<2e-6f && fabsf(b.max.y-(a->center.y+a->half.y))<2e-6f);
         assert(fabsf(b.min.z-(a->center.z-a->half.z))<2e-6f && fabsf(b.max.z-(a->center.z+a->half.z))<2e-6f);
-        assert(part.meshes[0].triangleCount==a->triangle_count && o->query_mesh.data->triangleCount==a->triangle_count);
+        int part_triangles=0;for(int m=0;m<part.meshCount;m++)part_triangles+=part.meshes[m].triangleCount;
+        assert(part_triangles==a->triangle_count && o->query_mesh.data->triangleCount==a->triangle_count);
         for(int m=1;m<source.materialCount;m++) {
             Material material=source.materials[m];assert(material.maps[MATERIAL_MAP_NORMAL].texture.width==pixels[index]);
             assert(!material.maps[MATERIAL_MAP_OCCLUSION].texture.id);
@@ -53,7 +54,7 @@ static void motel_prop_graphics(SwatView* view,const char* directory,int index) 
         assert(fabsf(b.min.z-(a->center.z-a->half.z))<2e-6f && fabsf(b.max.z-(a->center.z+a->half.z))<2e-6f);
         assert(source.meshMaterial[0]==source.meshMaterial[1]);
     }
-    int parts=b3Body_GetShapeCount(o->body);b3ShapeId shapes[64];assert(parts>1 && parts<64 && b3Body_GetShapes(o->body,shapes,64)==parts);
+    int parts=b3Body_GetShapeCount(o->body);b3ShapeId shapes[128];assert(parts>1 && parts<128 && b3Body_GetShapes(o->body,shapes,128)==parts);
     bool prepared=view->lighting.prepared;view->lighting.prepared=false;
     const Vector3 directions[]={{0,0,1},{0,0,-1},{1,0,0},{-1,0,0},{0,1,0}};
     int checked=0,filled=0,empty=0;
@@ -91,12 +92,13 @@ static void motel_prop_graphics(SwatView* view,const char* directory,int index) 
     if(index==5 || index==6)camera=(Camera3D){{1.4f,1.32f,-.42f},{2.83f,.5f,-.75f},{0,1,0},65,CAMERA_PERSPECTIVE};
     if(index==7)camera=(Camera3D){{5.25f,1.4f,-1.48f},{6.72f,.5f,-.60f},{0,1,0},70,CAMERA_PERSPECTIVE};
     if(index==8)camera=(Camera3D){{-10.4f,1.2f,-8.6f},{-9.65f,.3f,-9.4f},{0,1,0},58,CAMERA_PERSPECTIVE};
+    if(index==9)camera=(Camera3D){{-9.6f,1.9f,-8.6f},{-10.7f,1.6f,-9.75f},{0,1,0},58,CAMERA_PERSPECTIVE};
     Image image=room101_capture_size(view,camera,true,1440,810);char path[4096];
     snprintf(path,sizeof(path),"%s/%s-scene.png",directory,name);assert(ExportImage(image,path));UnloadImage(image);
     assert(room101_owner_pixels(art,o,false)>100);
     assert(swat_world_damage(&sim.world,o->tag.index,10000));assert(!room101_owner_pixels(art,o,false));
     swat_sim_close(&sim);
-    printf("PASS %s graphics: %d ray/raster samples on five faces with original art and exact fallback, %s %dpx original material maps, native lighting/shadows and authoritative removal\n",name,checked,index==3?"three scalar-PBR wood":index==4?"original albedo/GL normal/ARM":"two packed-PBR",pixels[index]);
+    printf("PASS %s graphics: %d ray/raster samples on five faces with original art and exact fallback, %s %dpx original material maps, native lighting/shadows and authoritative removal\n",name,checked,index==3?"three scalar-PBR wood":index==4?"original albedo/GL normal/ARM":"original packed-PBR",pixels[index]);
 }
 
 static void motel_props_graphics(SwatView* view,const char* directory) {
