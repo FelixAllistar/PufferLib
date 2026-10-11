@@ -7,6 +7,7 @@ int main() {
         dict_set(puf_ini_section(&ini,"vec",0),"total_agents",4);
         dict_set(puf_ini_section(&ini,"game",0),"max_frames",17);
         dict_set(puf_ini_section(&ini,"fpg",0),"max_frames",13);
+        dict_set(puf_ini_section(&ini,"fpg",0),"curriculum_resume",1);
         fpt_configure(&ini,"train",nullptr);
         Env envs[4]={};float obs[4][FPT_OBS],actions[4]={},rewards[4]={},terminals[4]={};
         for(int i=0;i<4;i++) {

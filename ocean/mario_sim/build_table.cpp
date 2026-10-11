@@ -60,7 +60,7 @@ int main(int argc,char** argv) {
         require(!all_teachers||(!variants&&!plans),"the backward curriculum uses recorded suffix lengths; keep variants=0 and plans=0");
         auto begin=std::chrono::steady_clock::now();
         FpgTimeHeader h={FPG_TIME_MAGIC,FPG_TIME_VERSION,sizeof(FpgTimeEntry),(uint32_t)bank.entries.size(),
-            seed,variants,plans,horizon,bank.header.payload_hash,fpg_time_file_hash(cpu.c_str()),fpg_time_file_hash(cuda.c_str()),0};
+            seed,variants,plans,horizon,bank.header.payload_hash,fpg_time_engine_hash(false),fpg_time_engine_hash(true),0};
         if(!args.count("--refresh")&&std::filesystem::exists(output)) {
             try {FpgTimeTable old(output.c_str(),bank,cpu.c_str(),cuda.c_str());auto& o=old.header;
                 if(o.seed==seed&&o.variants==variants&&o.plans==plans&&o.horizon==horizon) {
