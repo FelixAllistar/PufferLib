@@ -72,6 +72,20 @@ rules, material penetration/resistance and remote wall geometry are unchanged.
 Four-corner fragments and disappearing chunks remain approximations; this does
 not complete fracture realism or introduce loose structural rubble.
 
+The next rendering increment combines the motel's clipped opaque wall finishes
+by assembly and original material. The camera requests 20 wall models instead
+of 536 fragments; positions, normals, UVs, textures, structural cores, exposed
+edges and shadow/contact geometry retain their existing values. Occupancy,
+partial corner changes and source replacement invalidate the affected cache.
+Twenty initial builds reuse 1.72 MiB of combined vertex attributes on CPU and
+GPU each, with no extra textures. Native Windows checks pass 56 pixel-identical
+reference comparisons, unchanged-view cache reuse, the 42 existing core pairs
+and the live-replica breach graphics. Later paired indoor firing runs measured
+9.10 versus 12.09 ms mean world-geometry time and 17.85 versus 20.23 ms total;
+machine contention and large outliers limit these results. Stable-load indoor
+shooting acceptance remains outstanding. This changes presentation only, not
+physics, training, authority, wire versions or the ordinary player workflow.
+
 Protocol/replay version 18 carries mutable fragment corners in snapshots. Full
 validation and hull preparation precede mutation; nonfinite, nonconvex,
 out-of-bounds and growing shapes fail atomically. Existing pre-damage clients,

@@ -2,13 +2,17 @@
 // Materials/textures are borrowed from the original bank, never duplicated.
 #ifndef SWAT_MOTEL_WALL_ART_H
 #define SWAT_MOTEL_WALL_ART_H
+#include <assert.h>
 typedef struct SwatWallVertex {Vector3 p,n;Vector2 uv,uv2;} SwatWallVertex;
 typedef struct SwatWallMeshCache {
     Model model;const Mesh* source;b3Pos center;b3Vec3 half;bool fractured;float corners[4][2];uint64_t mask;
 } SwatWallMeshCache;
 typedef struct SwatMotelWallArt {
     SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5],windows[5];
+    SwatWallMeshCache faces[SWAT_MOTEL_INSTANCES][2];
     bool core_batch_disabled,core_batch_requested,cores_drawn;
+    bool face_batch_disabled,faces_drawn[SWAT_MOTEL_INSTANCES][2];
+    unsigned int face_builds,face_submissions,piece_submissions;
 } SwatMotelWallArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
     for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
@@ -20,6 +24,7 @@ static void wall_art_close(SwatEnvironmentArt* art) {
     for(int i=0;i<3;i++)wall_mesh_close(&art->motel_wall_art->fences[i]);
     for(int i=0;i<5;i++)wall_mesh_close(&art->motel_wall_art->banks[i]);
     for(int i=0;i<5;i++)wall_mesh_close(&art->motel_wall_art->windows[i]);
+    for(int i=0;i<SWAT_MOTEL_INSTANCES;i++)for(int j=0;j<2;j++)wall_mesh_close(&art->motel_wall_art->faces[i][j]);
     free(art->motel_wall_art);art->motel_wall_art=NULL;
 }
 static const Model* filtered_mesh(SwatWallMeshCache* cache,const Model* source,uint64_t mask,int (*triangle_part)(int),int asset) {
@@ -149,5 +154,59 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
         UploadMesh(&mesh,false);model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=mesh;
     }
     return model;
+}
+static uint64_t wall_face_hash(uint64_t h,const void* bytes,size_t count) {
+    const unsigned char* p=bytes;for(size_t i=0;i<count;i++){h^=p[i];h*=UINT64_C(1099511628211);}return h;
+}
+static const Model* wall_faces(SwatMotelWallArt* art,const Model* source,const SwatWorld* w,int owner,int slot) {
+    // Join the existing opaque clipped faces by material; keep their source
+    // coordinates and borrowed textures. Shadow passes still use piece meshes.
+    // Hash corners as well as occupancy: a charge can shrink a surviving piece.
+    const SwatMotelInstance* p=swat_motel_instance(owner-1);
+    int group=w->objects[owner].wall_group,first=group-1;
+    uint64_t hash=UINT64_C(14695981039346656037);
+    for(int i=first;i<w->count && w->objects[i].wall_group==group;i++) {
+        const SwatObject* o=&w->objects[i];hash=wall_face_hash(hash,&o->active,sizeof(o->active));
+        if(!o->active)continue;
+        hash=wall_face_hash(hash,&o->center,sizeof(o->center));hash=wall_face_hash(hash,&o->half,sizeof(o->half));
+        hash=wall_face_hash(hash,&o->fractured,sizeof(o->fractured));hash=wall_face_hash(hash,o->corners,sizeof(o->corners));
+    }
+    SwatWallMeshCache* cache=&art->faces[owner-1][slot];
+    if(cache->source==source->meshes && cache->mask==hash)return &cache->model;
+    art->face_builds++;
+    wall_mesh_close(cache);cache->source=source->meshes;cache->mask=hash;
+    Model* model=&cache->model;model->transform=MatrixIdentity();model->materials=source->materials;model->materialCount=source->materialCount;
+    int* counts=calloc((size_t)source->materialCount,sizeof(int));assert(counts);
+    for(int i=first;i<w->count && w->objects[i].wall_group==group;i++)if(w->objects[i].active) {
+        const Model* clipped=wall_mesh(&art->pieces[i][slot],source,&w->objects[i],p);
+        for(int m=0;m<clipped->meshCount;m++)counts[clipped->meshMaterial[m]]+=clipped->meshes[m].vertexCount;
+    }
+    model->meshes=MemAlloc(source->materialCount*sizeof(Mesh));memset(model->meshes,0,source->materialCount*sizeof(Mesh));
+    model->meshMaterial=MemAlloc(source->materialCount*sizeof(int));
+    for(int material=0;material<source->materialCount;material++)if(counts[material]) {
+        Mesh mesh={0};mesh.vertexCount=counts[material];mesh.triangleCount=mesh.vertexCount/3;
+        mesh.vertices=MemAlloc(mesh.vertexCount*3*sizeof(float));mesh.normals=MemAlloc(mesh.vertexCount*3*sizeof(float));mesh.texcoords=MemAlloc(mesh.vertexCount*2*sizeof(float));
+        bool uv2=false;
+        for(int i=first;i<w->count && w->objects[i].wall_group==group;i++)if(w->objects[i].active) {
+            const Model* clipped=&art->pieces[i][slot].model;
+            for(int m=0;m<clipped->meshCount;m++)if(clipped->meshMaterial[m]==material)uv2|=clipped->meshes[m].texcoords2!=NULL;
+        }
+        if(uv2){mesh.texcoords2=MemAlloc(mesh.vertexCount*2*sizeof(float));memset(mesh.texcoords2,0,mesh.vertexCount*2*sizeof(float));}
+        int at=0;
+        for(int i=first;i<w->count && w->objects[i].wall_group==group;i++)if(w->objects[i].active) {
+            const Model* clipped=&art->pieces[i][slot].model;
+            for(int m=0;m<clipped->meshCount;m++)if(clipped->meshMaterial[m]==material) {
+                const Mesh* src=&clipped->meshes[m];
+                memcpy(mesh.vertices+at*3,src->vertices,src->vertexCount*3*sizeof(float));
+                memcpy(mesh.normals+at*3,src->normals,src->vertexCount*3*sizeof(float));
+                memcpy(mesh.texcoords+at*2,src->texcoords,src->vertexCount*2*sizeof(float));
+                if(src->texcoords2)memcpy(mesh.texcoords2+at*2,src->texcoords2,src->vertexCount*2*sizeof(float));
+                at+=src->vertexCount;
+            }
+        }
+        assert(at==mesh.vertexCount);UploadMesh(&mesh,false);
+        model->meshMaterial[model->meshCount]=material;model->meshes[model->meshCount++]=mesh;
+    }
+    free(counts);return model;
 }
 #endif

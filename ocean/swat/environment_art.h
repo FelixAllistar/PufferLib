@@ -103,6 +103,10 @@ void swat_environment_motel_cores_begin(SwatEnvironmentArt* art,const SwatWorld*
 void swat_environment_motel_cores_end(SwatEnvironmentArt* art);
 // Presentation comparison only; no simulation or source geometry changes.
 void swat_environment_motel_core_batch(SwatEnvironmentArt* art,bool enabled);
+void swat_environment_motel_face_batch(SwatEnvironmentArt* art,bool enabled);
+typedef struct SwatWallFaceStats {unsigned int builds,submissions,piece_submissions;size_t vertices,attribute_bytes;} SwatWallFaceStats;
+// Model submissions before frustum rejection; attribute bytes exclude driver overhead.
+SwatWallFaceStats swat_environment_motel_face_stats(const SwatEnvironmentArt* art);
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
 // Blended GLB primitives follow all opaque geometry, sorted per camera.
 void swat_environment_art_transparent(const SwatEnvironmentArt* art,const SwatWorld* world,Vector3 eye,bool cutaway);

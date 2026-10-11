@@ -969,6 +969,7 @@ int main(int argc,char** argv) {
     }
     if(argc>2 && !strcmp(argv[2],"wall-depth")) {wall_depth_graphics(&view,directory);swat_view_close(&view);return 0;}
     if(argc>2 && !strcmp(argv[2],"wall-batch")) {wall_core_batch_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
+    if(argc>2 && !strcmp(argv[2],"wall-face-batch")) {wall_face_batch_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-props")) {texture_owner_graphics("motel_props/motel_service_trolley.glb");texture_owner_graphics("motel_props/motel_fire_extinguisher.glb");texture_owner_graphics("motel_props/motel_reception_noticeboard.glb");texture_owner_graphics("motel_props/chair_dining_spindle.glb");motel_props_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-chair")) {texture_owner_graphics("motel_props/chair_dining_spindle.glb");motel_prop_graphics(&view,directory,3);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"textures")) {texture_sharing_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}

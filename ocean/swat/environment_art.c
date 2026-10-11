@@ -735,8 +735,24 @@ static void motel_wall_core(const SwatObject* o) {
 void swat_environment_motel_core_batch(SwatEnvironmentArt* art,bool enabled) {
     if(art->motel_wall_art)art->motel_wall_art->core_batch_disabled=!enabled;
 }
+void swat_environment_motel_face_batch(SwatEnvironmentArt* art,bool enabled) {
+    if(art->motel_wall_art)art->motel_wall_art->face_batch_disabled=!enabled;
+}
+SwatWallFaceStats swat_environment_motel_face_stats(const SwatEnvironmentArt* art) {
+    SwatWallFaceStats stats={0};const SwatMotelWallArt* cache=art->motel_wall_art;if(!cache)return stats;
+    stats.builds=cache->face_builds;stats.submissions=cache->face_submissions;stats.piece_submissions=cache->piece_submissions;
+    for(int i=0;i<SWAT_MOTEL_INSTANCES;i++)for(int s=0;s<2;s++) {
+        const Model* model=&cache->faces[i][s].model;
+        for(int m=0;m<model->meshCount;m++) {
+            stats.vertices+=model->meshes[m].vertexCount;
+            stats.attribute_bytes+=(size_t)model->meshes[m].vertexCount*(model->meshes[m].texcoords2?40:32);
+        }
+    }
+    return stats;
+}
 void swat_environment_motel_cores_end(SwatEnvironmentArt* art) {
-    if(art->motel_wall_art){art->motel_wall_art->cores_drawn=false;art->motel_wall_art->core_batch_requested=false;}
+    if(art->motel_wall_art){art->motel_wall_art->cores_drawn=false;art->motel_wall_art->core_batch_requested=false;
+        memset(art->motel_wall_art->faces_drawn,0,sizeof(art->motel_wall_art->faces_drawn));}
 }
 void swat_environment_motel_cores_begin(SwatEnvironmentArt* art,const SwatWorld* w) {
     swat_environment_motel_cores_end(art);
@@ -777,12 +793,22 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
         motel_wall_core(o);
         if(offset){rlDrawRenderBatchActive();glDisable(SWAT_GL_POLYGON_OFFSET_FILL);}
     }
-    const Model* clipped=wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p);
-    location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
+    bool batch=!shadow && art->motel_wall_art->cores_drawn && !art->motel_wall_art->face_batch_disabled;
+    const Model* clipped;
+    if(!batch || !art->motel_wall_art->faces_drawn[owner-1][0]) {
+        clipped=batch?wall_faces(art->motel_wall_art,source,w,owner,0):wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p);
+        location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
+        if(!shadow){if(batch)art->motel_wall_art->face_submissions++;else art->motel_wall_art->piece_submissions++;}
+        if(batch)art->motel_wall_art->faces_drawn[owner-1][0]=true;
+    }
     if(owner==13 && art->room101_ready) {
         source=art->room101_v3_ready?&art->room101_v3[10]:&art->room101[5];
-        clipped=wall_mesh(&art->motel_wall_art->pieces[o->tag.index][1],source,o,p);
-        location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
+        if(!batch || !art->motel_wall_art->faces_drawn[owner-1][1]) {
+            clipped=batch?wall_faces(art->motel_wall_art,source,w,owner,1):wall_mesh(&art->motel_wall_art->pieces[o->tag.index][1],source,o,p);
+            location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
+            if(!shadow){if(batch)art->motel_wall_art->face_submissions++;else art->motel_wall_art->piece_submissions++;}
+            if(batch)art->motel_wall_art->faces_drawn[owner-1][1]=true;
+        }
     }
     if(art->masonry_edge.meshCount) {
         SwatMotelEdge edges[32];int n=swat_motel_wall_edges(w,o,edges,32);
