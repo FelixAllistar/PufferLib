@@ -14,6 +14,7 @@ typedef struct SwatCharacterView {
     Shader fallback;
     Texture2D *influence_maps,*palette_maps;
     float** palette_pixels;
+    unsigned int palette_uploads;
     Mesh* arms;
     // Borrowed rigid body replacement; source animation and magazine meshes
     // stay intact. Owner outlives this view and releases the model/textures.
@@ -24,7 +25,7 @@ typedef struct SwatCharacterView {
 bool swat_character_view_init(SwatCharacterView* view,const char* path,char* error,size_t capacity);
 bool swat_character_view_init_gpu(SwatCharacterView* view,const char* path,char* error,size_t capacity);
 bool swat_character_view_sample(SwatCharacterView* view,const char* clip,double time);
-void swat_character_view_draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix root);
-void swat_character_view_draw_first_person(const SwatCharacterView* view,SwatLighting* lighting,Matrix root);
+void swat_character_view_draw(SwatCharacterView* view,SwatLighting* lighting,Matrix root);
+void swat_character_view_draw_first_person(SwatCharacterView* view,SwatLighting* lighting,Matrix root);
 void swat_character_view_close(SwatCharacterView* view);
 #endif

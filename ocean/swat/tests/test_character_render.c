@@ -555,11 +555,17 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         assert(swat_character_runtime_draw(runtime,0,NULL)); assert(runtime->draws==draws+1); EndMode3D(); EndDrawing();
         Vector3 feet={cached->feet.x,cached->feet.y,cached->feet.z};
         memcpy(view->visible,cached->visible,(size_t)view->model.meshCount);
+        unsigned int uploads=view->palette_uploads;
+        Image repeated={0};
         for(int pass=0;pass<3;pass++) {
             Image image=frame(view,light,(Camera3D){Vector3Add(feet,(Vector3){3,1.5f,3}),Vector3Add(feet,(Vector3){0,stance ? .5f : .9f,0}),{0,1,0},40,CAMERA_PERSPECTIVE},cached->root);
+            assert(view->palette_uploads==uploads);
+            if(!pass)repeated=ImageCopy(image);
+            else {assert(image.width==repeated.width && image.height==repeated.height && image.format==repeated.format);assert(!memcmp(image.data,repeated.data,(size_t)GetPixelDataSize(image.width,image.height,image.format)));}
             if(pass==0 && angle==0 && getenv("SWAT_CHARACTER_TEST_CAPTURES")) ExportImage(image,TextFormat("%s/live-%s.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),stance ? "crouch" : "standing"));
             UnloadImage(image);
         }
+        UnloadImage(repeated);
         assert(!memcmp(before,sim,sizeof(*before)));
     }
     first_person_check(runtime,sim,light);

@@ -62,6 +62,37 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The indoor shadow trace identified dynamic room composition as the expensive
+stage in the controlled service firing run: 900 room refreshes, no static
+sun/room refreshes, and a 167.270 ms maximum shadow pass. Native input inspection
+confirmed stationary NPC poses and real squad motion, approximately 14 mm per
+tick in the inspected interval. The renderer now composites hinged leaves over
+cached architecture and restores only lamp faces whose door/actor signatures
+change, using the same conservative bounds as submission. Eight door rotation/
+room-crossing/removal states and seven actor direction/removal states match full
+redraws with zero samples outside a three-unit RGB-sum tolerance. The actor cases
+refresh two faces per crossing and one on removal, while static depths remain
+cached. Camera-independent rooms, partial-fracture invalidation, all six lamp
+directions/seam, contact occlusion and GPU lifecycle checks still pass.
+Exact unchanged RGBA32F joint palettes also reuse their current upload. Native
+CPU/GPU parity, eight stance/yaw states with byte-identical repeated captures,
+movement/blend/ADS/reload and immutable-authority checks pass. No matrices or
+influence sets are reduced. Normal Linux and Windows players are rebuilt, and
+the ordinary `./swat` launch/capture passes without another freshness rebuild.
+Normal float Puffer is rebuilt with the same renderer changes for eval.
+Two final native service runs reduce measured lamp composites from 5,400 to
+3,750 faces for the same 900 dynamic rooms and 67 shots. Total mean/p95/max
+times are 10.805/20.320/32.991 and 11.057/20.700/41.108 ms; shadow maxima are
+25.303 and 24.644 ms. A guest-room run measures 16.412/27.279/45.671 ms total
+and a 25.542 ms shadow maximum, with 3,150 faces across 750 dynamic room updates.
+All runs use HRTF audio, 1,332 objects and nine actors. This batch destroys no
+objects; active breach/destruction performance needs its own measurement.
+This agent's build/test jobs had ended before timing; other machine activity
+was not controlled, so these observations do not establish a guaranteed speedup
+or full slice acceptance. Guest world submission still averages 8.222 ms, and
+changing/alternating character palettes still upload frequently. Evidence and
+the inspected service capture are in `build/swat/review/shadow-refresh`.
+
 The original service cabinet is installed above the rear washer pair, retaining
 the two source meshes, static open-door pose, metre dimensions and mixed PBR
 with three 1K maps. Native C import regeneration is byte-identical. All 21,272
@@ -91,7 +122,7 @@ pass, while simulation topped at 11.411 ms. Texture maps add exactly three uniqu
 1K images and 12 MiB of API-format full-mip data, totaling 368.92 MiB; driver
 allocation is not measured. Other machine activity was not controlled, and this
 is not a paired old/new comparison or slice performance acceptance. Large
-indoor shadow spikes remain a measured engine issue for the next iteration.
+indoor shadow spikes motivated the shadow-cache iteration recorded above.
 
 The interrupted-pose audit reproduced a 0.79951 m rifle-stock displacement on
 the first controlled crouch-transition frame: local skeletal blending moved

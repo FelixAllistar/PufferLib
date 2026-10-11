@@ -135,7 +135,7 @@ bool swat_character_view_sample(SwatCharacterView* view,const char* clip,double 
     }
     return true;
 }
-static void draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix root,bool first_person) {
+static void draw(SwatCharacterView* view,SwatLighting* lighting,Matrix root,bool first_person) {
     if(!swat_character_finalize_pose(view->asset)) return;
     Shader shader=lighting && lighting->enabled && lighting->prepared ? lighting->mesh.shader : view->gpu ? view->fallback : (Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
     rlDrawRenderBatchActive(); rlDisableBackfaceCulling();
@@ -156,8 +156,15 @@ static void draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix roo
         if(lighting) swat_lighting_material_scaled(lighting,material,true,scale);
         if(view->gpu) {
             const SwatArtMesh* source=swat_character_mesh(view->asset,i);
-            memcpy(view->palette_pixels[i],source->palette,(size_t)source->palette_count*16*sizeof(float));
-            UpdateTexture(view->palette_maps[i],view->palette_pixels[i]);
+            size_t bytes=(size_t)source->palette_count*16*sizeof(float);
+            // Sun, lamp faces and feeds often draw this exact palette again.
+            // Avoid a texture write/read hazard unless any matrix really changed;
+            // actor switches and first-person poses still upload their exact data.
+            if(memcmp(view->palette_pixels[i],source->palette,bytes)) {
+                memcpy(view->palette_pixels[i],source->palette,bytes);
+                UpdateTexture(view->palette_maps[i],view->palette_pixels[i]);
+                view->palette_uploads++;
+            }
             int enabled=1,sets=source->influences/4,palette=11,influences=12;
             SetShaderValue(shader,GetShaderLocation(shader,"useSkinning"),&enabled,SHADER_UNIFORM_INT);
             SetShaderValue(shader,GetShaderLocation(shader,"skinSets"),&sets,SHADER_UNIFORM_INT);
@@ -188,5 +195,5 @@ static void draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix roo
     }
     rlEnableBackfaceCulling();
 }
-void swat_character_view_draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix root) { draw(view,lighting,root,false); }
-void swat_character_view_draw_first_person(const SwatCharacterView* view,SwatLighting* lighting,Matrix root) { draw(view,lighting,root,true); }
+void swat_character_view_draw(SwatCharacterView* view,SwatLighting* lighting,Matrix root) { draw(view,lighting,root,false); }
+void swat_character_view_draw_first_person(SwatCharacterView* view,SwatLighting* lighting,Matrix root) { draw(view,lighting,root,true); }

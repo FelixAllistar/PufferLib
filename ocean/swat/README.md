@@ -163,8 +163,13 @@ Lighting uses linear material shading, a free CC0 HDR sky with convolved diffuse
 illumination and roughness-filtered reflections, warm room lights and continuously
 weighted depth shadows. The visible sky, outdoor reflections and sun direction
 come from the same source. Geometry changes invalidate the
-shadow cache immediately; moving silhouettes refresh every four simulation
-ticks.
+shadow cache immediately. Hinged leaves are composited over the cached static
+sun/room architecture and update on their actual movement/removal tick; they
+do not resubmit every wall/prop for each angle. Moving character silhouettes
+refresh every four simulation ticks. Individual lamp faces reuse their depth
+until a relevant caster changes or leaves; the same conservative bounds select
+both signatures and submitted geometry. Native door rotation, room crossing and
+removal match full redraws at all eight tested states with no static rebuilds.
 
 Indoor ambient now darkens near adjacent floor/wall/ceiling planes, excluding a
 surface's own plane. This room-bound approximation affects diffuse ambient and
@@ -1200,6 +1205,9 @@ routes pass on Linux and Windows with the cabinet installed.
 The existing performance tool accepts `--room INDEX --yaw RADIANS`; for example
 `--motel --room 5 --yaw -1.93 --fire --audio --frames 600` exercises the rear
 service room with actual weapon inputs and impact/audio work.
+`--shadow-events` logs static sun/room and dynamic room/face refresh counts for
+geometry changes and shadow passes over 30 ms, with the tick and shot count.
+The summary associates the maximum shadow pass with its refresh work.
 Editing this standalone diagnostic does not trigger a player rebuild through
 `./swat`; runtime sources, headers, assets and configuration still do.
 Canonical older maps retain their prefix. Recreate pre-cabinet motel recordings:

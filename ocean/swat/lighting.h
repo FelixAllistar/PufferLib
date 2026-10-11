@@ -28,15 +28,16 @@ typedef struct SwatLighting {
     Matrix sun_matrix,lamp_matrix[SWAT_LAMP_FACES];
     Vector3 sun_direction;
     float exposure;
-    uint32_t geometry;
+    uint32_t geometry,moving_geometry;
     Vector3 shadow_origin;
     int shadow_face;
     int shadow_room,last_tick,updates,room_updates;
     uint32_t room_geometry[SWAT_MAX_ROOMS];
-    uint32_t room_actors[SWAT_MAX_ROOMS];
+    uint32_t face_moving_geometry[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
+    uint32_t face_actors[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
     uint32_t actor_signature[SWAT_MAX_ACTORS];
     int actor_changed_tick[SWAT_MAX_ACTORS];
-    unsigned int sun_geometry_updates,actor_room_updates;
+    unsigned int sun_geometry_updates,actor_room_updates,actor_face_updates;
     bool room_ready[SWAT_MAX_ROOMS],split_shadows;
     bool cutaway,lamp_shadows; // Receiving toggle for renderer diagnostics; default on.
     unsigned int surface_normal,surface_roughness;
@@ -64,8 +65,12 @@ void swat_lighting_prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowScene draw);
 void swat_lighting_prepare_context(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowSceneContext draw,void* context);
-// Static room depths are cached independently; moving actors are composited
-// over them. shadow_room selects the room being drawn, or -1 for the sun.
+// Static room depths exclude hinged leaves; the second callback draws doors
+// and actors over cached architecture. Door geometry invalidates immediately;
+// actor-only movement refreshes every four ticks. shadow_room selects the room
+// being drawn, or -1 for the sun. Combined legacy callbacks still draw all leaves.
+// Lamp composition reuses individual faces with no changed casters, using the
+// same conservative room/face bounds as the renderer, including caster exits.
 void swat_lighting_prepare_split(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowSceneContext geometry,SwatShadowSceneContext actors,void* context);
 bool swat_lighting_face_intersects(const SwatLighting* light,Vector3 center,Vector3 half);
