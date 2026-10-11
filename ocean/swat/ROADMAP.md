@@ -62,6 +62,32 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The seating increment adds source-scale CC0 furniture to Rooms 103 and 104:
+Modern Arm Chair 01 with separate wood/cushion owners, and the original mixed
+Vintage Day Bed primitive. Source geometry, materials, UVs and hierarchy remain
+intact; separate 1K runtime maps reduce the shared nine-texture mip data from
+144 to 36 MiB in the native API format. Original 2K GLBs, compact provenance,
+independent C/Node checks and two selected native room captures are retained in
+the repo. Driver VRAM allocation is not measured. Low fixture seats/bases are
+now blocked in navigation without changing stair or player controller rules;
+fixture removal restores access. Coarse damage sections are game approximations,
+and the daybed still has one mixed-primitive material response.
+
+Seating/support/snapshot checks, exact collision contacts, native original/1K
+ray/raster matches and shared texture lifetime checks pass. Full front-door
+isolation/combat, exterior-charge and inter-room-charge runs pass on Linux and
+Windows, including every-tick replay, saved continuation and fresh replicas.
+The repeatable QA plan uses ordinary escort/hold tools to clear arrested suspects
+before recovering weapons from reachable floor positions; no production scenario
+sequence or success trigger is added. Normal Windows/Linux players, server and
+Puffer are current, and an ordinary native `./swat` motel capture passes.
+After completion checks finished, the 240-frame native indoor-fire diagnostic
+(30 shots, 1,330 objects, nine actors) measured 18.660 ms mean total, 28.444 ms
+p95 and 2.570 ms mean shadows. One 106.040 ms frame remains; this is a local
+diagnostic, not final performance acceptance or a controlled texture-speedup
+claim. Concurrent-test and later runs are retained separately in
+`build/swat/review/seating/indoor-fire{,-idle}.log`.
+
 The indoor-lighting follow-up now caches static sun geometry separately from
 actor shadows. Empty or settled room shadow tiles retain their composited depth;
 moving actors, room entry/exit and the final 0.22-second pose blend still refresh.

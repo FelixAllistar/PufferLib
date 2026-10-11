@@ -205,7 +205,10 @@ the daybed still uses one coarse wood response for its mixed source mesh.
 Separate 1K texture variants are selected by default, with the immutable 2K
 GLBs retained as source and missing-variant fallback. Both chair owners share
 the same six texture IDs. Scalar factors and the original unbound AO channel
-are preserved. `tools/verify_motel_seating.cjs` independently checks the actual
+are preserved. Native checks measure nine unique API-format RGB texture mip
+chains at 36 MiB for the 1K pair versus 144 MiB for the originals; this is not
+measured driver VRAM allocation. `SWAT_MOTEL_SEATING_TEXTURES=original ./swat`
+selects the retained originals for review. `tools/verify_motel_seating.cjs` independently checks the actual
 source/candidate geometry bytes, hierarchy, materials and texture routing;
 `tools/import_motel_seating.c` creates the matching compiled collision data.
 The compact source/license/exporter receipts and independent audit are in
@@ -216,7 +219,9 @@ Navigation excludes fixture tops and checks the low seat/base clearance that
 the normal stair allowance skips. Real stair treads and player movement retain
 their existing rules. Removing a fixture restores navigable floor underneath.
 Complete scenario QA chooses a reachable, unobstructed evidence approach instead
-of requiring a fixed side that may lie inside furniture.
+of requiring a fixed side that may lie inside furniture. Its repeatable player
+plan escorts arrested suspects to staging before returning for their dropped
+weapons. Production scenarios do not require that sequence.
 
 Rooms 102–104 now use `motel_guest_desk/desk_original_clean_strokes_v1.glb`
 on render owners 48/72/96. The original finish is preserved; only seven raised
