@@ -1,0 +1,163 @@
+{
+  "date": "2026-10-10",
+  "sourcePackets": {
+    "original": "https://drive.google.com/file/d/139CgHyyKTQvbtnZ5QKVrRudeiDK4REyw/view",
+    "candidate": "https://drive.google.com/file/d/1AnqtZjPZzxp1WXv64Z5MU6Mql2yS9esD/view"
+  },
+  "sources": [
+    {
+      "id": "modern_arm_chair_01",
+      "authors": {
+        "Vibrant Nordic": "All"
+      },
+      "source": "https://polyhaven.com/a/modern_arm_chair_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "painted_wooden_nightstand",
+      "authors": {
+        "Kirill Sannikov": "All"
+      },
+      "source": "https://polyhaven.com/a/painted_wooden_nightstand",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "vintage_suitcase",
+      "authors": {
+        "Maximilian Schuster": "All"
+      },
+      "source": "https://polyhaven.com/a/vintage_suitcase",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "vintage_day_bed",
+      "authors": {
+        "Aron Łyczek": "All"
+      },
+      "source": "https://polyhaven.com/a/vintage_day_bed",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    }
+  ],
+  "placements": [
+    {
+      "owner": 1327,
+      "asset": 50,
+      "room": 103,
+      "origin": [
+        2.83,
+        0.004,
+        -0.75
+      ],
+      "yaw": 0,
+      "material": "WOOD",
+      "support": 57,
+      "sourceTriangles": 5608
+    },
+    {
+      "owner": 1328,
+      "asset": 51,
+      "room": 103,
+      "origin": [
+        2.83,
+        0.004,
+        -0.75
+      ],
+      "yaw": 0,
+      "material": "CLOTH",
+      "support": 1327,
+      "sourceTriangles": 3308
+    },
+    {
+      "owner": 1329,
+      "asset": 52,
+      "room": 104,
+      "origin": [
+        6.72,
+        0.004,
+        -0.6
+      ],
+      "yaw": 3.141592653589793,
+      "material": "WOOD",
+      "support": 81,
+      "sourceTriangles": 2715
+    }
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "defaultTextureVariant": "1K",
+  "originalsRetained": true,
+  "uniqueSharedMaps": 9,
+  "apiFormatMipBytes": {
+    "original": 150994935,
+    "candidate": 37748727
+  },
+  "driverVramMeasured": false,
+  "checks": {
+    "sourceGeometryHierarchyMaterialsAndTextureRouting": "source-audit.json",
+    "nativeRasterSamplesPerVariant": 463428,
+    "originalAndCandidateGraphics": true,
+    "sharedTextureLifetime": true,
+    "supportAndPartialHealthReplication": true,
+    "legacyRecipeAndMalformedMapRejection": true,
+    "lowFixtureNavigationAndRemoval": true,
+    "fullPlayerInputRoutes": [
+      "front isolation",
+      "front combat",
+      "exterior charge combat",
+      "interroom charge combat"
+    ],
+    "platforms": [
+      "Linux",
+      "Windows"
+    ],
+    "everyTickReplay": true,
+    "midRunSaveResume": true,
+    "freshReplicas": true,
+    "contactBufferOverflows": 0,
+    "movementDecisionsMatchedToFullGame": 6000,
+    "normalLinuxWindowsAndPufferBuilds": true,
+    "normalNativeLauncherCapture": true,
+    "nativeLightingCacheAndGeometry": true
+  },
+  "indoorShootingDiagnostic": {
+    "frames": 240,
+    "shots": 30,
+    "objects": 1330,
+    "actors": 9,
+    "audio": false,
+    "totalMeanMs": 18.66,
+    "totalP95Ms": 28.444,
+    "totalMaxMs": 106.04,
+    "shadowMeanMs": 2.57,
+    "controlledPerformanceAttribution": false
+  },
+  "limitations": [
+    "Damage sections approximate construction; the daybed has one mixed source primitive with a coarse wood response.",
+    "Cushion uses the current soft cloth response for its leather covering.",
+    "Furniture remains static; support failure removes dependent art/collision without authored falling debris.",
+    "The QA player plan escorts arrested suspects to staging before approaching weapons; production scenarios mandate no sequence.",
+    "Driver VRAM and final full-game performance budgets are not established."
+  ],
+  "proofs": [
+    {
+      "path": "native/armchair-1k.png",
+      "sha256": "ff64bd0bda43961673f1b5e8eca7324bff6ce34a0aee9234d03df37dd1e35278"
+    },
+    {
+      "path": "native/daybed-1k.png",
+      "sha256": "c4415713c795ce4c5c8712c488a61d8eed553329ff4b62b399d389f88c1d33a2"
+    }
+  ],
+  "sourceReceiptArchive": {
+    "path": "source-receipts.tar.gz",
+    "sha256": "50ba60e9abaa3e5d4e5a32c246f5beeb01e760c2b92c397823718b85ed5169f0",
+    "contents": "Source/license/QA receipts and archived exporter scripts; original runtime GLBs are stored once under assets/environment/motel_props. No exporter Python executed locally."
+  }
+}
