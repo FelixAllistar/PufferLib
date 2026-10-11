@@ -1,0 +1,12 @@
+{
+  "title": "Trashbag by Benny Weimer",
+  "source_url": "https://polyhaven.com/a/trashbag",
+  "license": "CC0-1.0",
+  "license_file": "TRASHBAG_CC0-1.0.txt",
+  "source_packet": "../../../art_handoffs/motel-maintenance-bag/source.zip",
+  "runtime_sha256": "efba6d19771700af6d4e7999eb68e938778b185214e29165fe20ecce40bc6f42",
+  "geometry_triangles": 4482,
+  "embedded_maps": "Three original-derivative RGB8 1K maps; metallicFactor=0; source gloss retained",
+  "transform": "Original right-handed Y-up metres and floor-centered parent retained",
+  "physics": "19 source-flag contact subsets; full source ballistic query; static soft-cover damage owner"
+}

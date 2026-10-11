@@ -385,7 +385,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         Model* model=location ? &art->storefront[i] : &art->motel[i];
         bool found=false;
         const char* seating=getenv("SWAT_MOTEL_SEATING_TEXTURES");
-        if(!location && i>=50 && (!seating || strcmp(seating,"original"))) {
+        if(!location && i>=50 && i<=52 && (!seating || strcmp(seating,"original"))) {
             char candidate[256];snprintf(candidate,sizeof(candidate),"motel_props/%s_floor_centered_1k_candidate.glb",i<52?"modern_arm_chair_01":"vintage_day_bed");
             found=asset_path(path,sizeof(path),candidate);
         }

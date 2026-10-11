@@ -1,10 +1,10 @@
 // Original prop silhouettes and open spaces must agree with collision.
 static void motel_prop_graphics(SwatView* view,const char* directory,int index) {
-    const char* names[]={"trolley","extinguisher","noticeboard","chair","nightstand","armchair-frame","armchair-cushion","daybed"};
-    const int triangles[]={2416,2412,1416,1884,470,8916,8916,2715};
-    int pixels[]={512,512,1024,512,2048,1024,1024,1024};
+    const char* names[]={"trolley","extinguisher","noticeboard","chair","nightstand","armchair-frame","armchair-cushion","daybed","bag"};
+    const int triangles[]={2416,2412,1416,1884,470,8916,8916,2715,4482};
+    int pixels[]={512,512,1024,512,2048,1024,1024,1024,1024};
     if(getenv("SWAT_MOTEL_SEATING_TEXTURES") && !strcmp(getenv("SWAT_MOTEL_SEATING_TEXTURES"),"original"))for(int i=5;i<8;i++)pixels[i]=2048;
-    const int meshes[]={1,1,1,3,2,2,2,1};const float sizes[]={1.12f,.64f,.90f,1.12f,.76f,1.2f,1.2f,2.3f};
+    const int meshes[]={1,1,1,3,2,2,2,1,1};const float sizes[]={1.12f,.64f,.90f,1.12f,.76f,1.2f,1.2f,2.3f,.78f};
     int asset=45+index;const char* name=names[index];
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,81);SwatEnvironmentArt* art=&view->environment;
@@ -20,7 +20,7 @@ static void motel_prop_graphics(SwatView* view,const char* directory,int index) 
         } else assert(material.maps[MATERIAL_MAP_ROUGHNESS].texture.width==pixels[index]);
         if(index==4){assert(material.maps[MATERIAL_MAP_NORMAL].texture.width==2048);assert(material.maps[MATERIAL_MAP_METALNESS].value==0 && material.maps[MATERIAL_MAP_ROUGHNESS].value==1);}
     }
-    SwatObject* o=&sim.world.objects[index>=5?SWAT_MOTEL_SEATING_FIRST+index-5:index==4?SWAT_MOTEL_NIGHTSTAND_FIRST:SWAT_MOTEL_PROPS_FIRST+index];
+    SwatObject* o=&sim.world.objects[index==8?SWAT_MOTEL_BAG_FIRST:index>=5?SWAT_MOTEL_SEATING_FIRST+index-5:index==4?SWAT_MOTEL_NIGHTSTAND_FIRST:SWAT_MOTEL_PROPS_FIRST+index];
     if(index>=5) {
         Model part=source;if(index<7){part.meshCount=1;part.meshes=&source.meshes[index-5];part.meshMaterial=&source.meshMaterial[index-5];}
         BoundingBox b=GetModelBoundingBox(part);const SwatMotelAsset* a=swat_motel_asset(asset);
@@ -90,6 +90,7 @@ static void motel_prop_graphics(SwatView* view,const char* directory,int index) 
     if(index==4)camera=(Camera3D){{6.95f,1.12f,-2.15f},{7.56f,.35f,-3.15f},{0,1,0},58,CAMERA_PERSPECTIVE};
     if(index==5 || index==6)camera=(Camera3D){{1.4f,1.32f,-.42f},{2.83f,.5f,-.75f},{0,1,0},65,CAMERA_PERSPECTIVE};
     if(index==7)camera=(Camera3D){{5.25f,1.4f,-1.48f},{6.72f,.5f,-.60f},{0,1,0},70,CAMERA_PERSPECTIVE};
+    if(index==8)camera=(Camera3D){{-10.4f,1.2f,-8.6f},{-9.65f,.3f,-9.4f},{0,1,0},58,CAMERA_PERSPECTIVE};
     Image image=room101_capture_size(view,camera,true,1440,810);char path[4096];
     snprintf(path,sizeof(path),"%s/%s-scene.png",directory,name);assert(ExportImage(image,path));UnloadImage(image);
     assert(room101_owner_pixels(art,o,false)>100);

@@ -11,7 +11,7 @@ static const float seating_thickness[]={.025f,.0015f,.025f};
 static const int seating_floors[]={57,57,81};
 bool swat_motel_seating(const SwatWorld* w,int owner,SwatMotelInstance* out) {
     int index=owner-SWAT_MOTEL_SEATING_FIRST;
-    if(!w->motel || w->count!=SWAT_MOTEL_OBJECTS || index<0 || index>=SWAT_MOTEL_SEATING_PARTS)return false;
+    if(!w->motel || w->count<SWAT_MOTEL_SEATING_END || index<0 || index>=SWAT_MOTEL_SEATING_PARTS)return false;
     *out=seating_instances[index];return true;
 }
 static float seating_health(int index) {
@@ -29,7 +29,7 @@ static bool seating_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_
 }
 static bool seating_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_SEATING_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int i=0;i<SWAT_MOTEL_SEATING_PARTS;i++) {
         const SwatObject* o=&w->objects[SWAT_MOTEL_SEATING_FIRST+i];const SwatMotelInstance* p=&seating_instances[i];
         b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];seating_recipe(i,&center,&half);
@@ -40,7 +40,7 @@ static bool seating_validate(const SwatWorld* w) {
     }return true;
 }
 static void seating_bind(SwatWorld* w) {
-    if(w->count!=SWAT_MOTEL_OBJECTS)return;
+    if(w->count<SWAT_MOTEL_SEATING_END)return;
     for(int i=0;i<SWAT_MOTEL_SEATING_PARTS;i++) {
         SwatObject* o=&w->objects[SWAT_MOTEL_SEATING_FIRST+i];if(!o->active)continue;
         b3DestroyShape(o->shape,false);b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
