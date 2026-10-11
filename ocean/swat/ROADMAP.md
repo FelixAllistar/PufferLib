@@ -62,6 +62,21 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The interrupted-pose audit reproduced a 0.79951 m rifle-stock displacement on
+the first controlled crouch-transition frame: local skeletal blending moved
+the prop after its achieved gameplay alignment. Active blends now restore the
+rifle frame and carry magazine frames with it, then resolve arms from the
+blended shoulders to the sampled grip/reload targets with existing length/reach
+limits. Native checks pass stock/all-axis alignment and authored wrist targets
+within actual reach deficit through reversals and 112 interrupted
+locomotion/aim/ADS/low-ready frames, plus the existing 336 steady movement poses,
+rigid carriers, reload boundaries, aperture/post alignment and immutable
+authority. Both ordinary player builds are refreshed. Source clips and shared
+simulation remain unchanged. Full helmet mesh clearance and perfect grip
+contact during unreachable intermediate poses remain visual acceptance work;
+this is a measured prop-frame correction, not completion of character polish.
+Compact evidence is under `build/swat/review/transition-attachments`.
+
 The maintenance-bag handoff is now installed beside the rear service trolley at
 source metre scale. Original 4,482-triangle geometry, UVs, one glossy nonmetallic
 material and three 1K maps survive. Nineteen bounded contact subsets preserve

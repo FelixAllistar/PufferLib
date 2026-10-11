@@ -346,7 +346,46 @@ static Vector3 displayed_node(SwatCharacterRuntime* runtime,int actor,const char
     int at=swat_character_find_node(asset,name);assert(at>=0);
     return Vector3Transform(point(pose->matrices+at*16,(Vector3){0}),pose->root);
 }
-static void blend_check(SwatCharacterRuntime* runtime,SwatSim* sim) {
+static void blended_rifle_check(SwatCharacterRuntime* runtime,SwatSim* sim) {
+    SwatCharacterActorPose* pose=&runtime->actors[0];
+    SwatCharacterAsset* asset=runtime->banks[pose->bank].asset;
+    int prop=swat_character_find_node(asset,"Prop_Rifle");assert(prop>=0);
+    SwatPose achieved=swat_pose(&sim->actors[0].controller,&sim->actors[0].arsenal);
+    // Stock plus all three measured rifle-frame axes: a correct stock alone
+    // would miss a blended barrel direction which disagrees with ballistics.
+    const Vector3 source[]={{.0012969123f,.4499999881f,.0226502232f},
+        {.0012969123f,.1499999881f,.0226502232f},
+        {.0012969123f,.4499999881f,.1226502232f},
+        {-.0987030877f,.4499999881f,.0226502232f}};
+    const b3Vec3 local[]={{0,0,0},{.3f,0,0},{0,.1f,0},{0,0,.1f}};
+    for(int i=0;i<4;i++) {
+        Vector3 drawn=Vector3Transform(point(pose->matrices+prop*16,source[i]),pose->root);
+        b3Pos expected=swat_pose_weapon_point(&achieved,local[i]);
+        float error=Vector3Distance(drawn,(Vector3){expected.x,expected.y,expected.z});
+        if(error>=1e-4f)fprintf(stderr,"Blend rifle drift bank%d point%d %.5fm\n",pose->bank,i,error);
+        assert(error<1e-4f);
+    }
+    // Derive wrist goals from the unblended authored hand/rifle relationship.
+    // An unreachable goal may miss by the limb's reach deficit, but blending
+    // must not add a floating-hand error or feed it into the next transition.
+    Matrix grip_root=MatrixMultiply(pose->first_person_inverse_gun,swat_weapon_art_transform(&achieved));
+    for(int side=0;side<2;side++) {
+        const char* names[2][3]={{"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand"},
+            {"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand"}};
+        int upper=swat_character_find_node(asset,names[side][0]),lower=swat_character_find_node(asset,names[side][1]),hand=swat_character_find_node(asset,names[side][2]);
+        assert(upper>=0 && lower>=0 && hand>=0);
+        Vector3 a=Vector3Transform(point(pose->matrices+upper*16,(Vector3){0}),pose->root),
+            b=Vector3Transform(point(pose->matrices+lower*16,(Vector3){0}),pose->root),
+            c=Vector3Transform(point(pose->matrices+hand*16,(Vector3){0}),pose->root);
+        Vector3 goal=Vector3Transform(point(pose->first_person_matrices+hand*16,(Vector3){0}),grip_root);
+        float ab=Vector3Distance(a,b),bc=Vector3Distance(b,c),distance=Vector3Distance(a,goal);
+        float deficit=fabsf(distance-Clamp(distance,fabsf(ab-bc)+1e-5f,ab+bc-1e-5f));
+        float error=Vector3Distance(goal,c);
+        if(error>deficit+2e-4f)fprintf(stderr,"Blend wrist drift bank%d side%d error%.5f reach-deficit%.5f\n",pose->bank,side,error,deficit);
+        assert(error<=deficit+2e-4f);
+    }
+}
+static void blend_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light) {
     if(!runtime->banks[SWAT_CHARACTER_CROUCH_READY].asset)return;
     SwatSim* before=malloc(sizeof(*before));assert(before);
     SwatActor* actor=&sim->actors[0];actor->controller.yaw=actor->controller.pitch=0;
@@ -361,13 +400,20 @@ static void blend_check(SwatCharacterRuntime* runtime,SwatSim* sim) {
     for(int pass=0;pass<4;pass++) {
         swat_body_set_crouch(&actor->controller.body,crouch[pass]);
         actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
-        for(int frame=0;frame<steps[pass];frame++) {
+        for(int sample=0;sample<steps[pass];sample++) {
             sim->tick++;memcpy(before,sim,sizeof(*before));swat_character_runtime_prepare(runtime,sim);
             assert(runtime->actors[0].valid && !memcmp(before,sim,sizeof(*before)));
             Vector3 current=displayed_node(runtime,0,"mixamorig:Hips");
             float jump=Vector3Distance(current,previous);maximum=fmaxf(maximum,jump);assert(jump<.09f);previous=current;
             SwatCharacterActorPose* pose=&runtime->actors[0];SwatCharacterAsset* asset=runtime->banks[pose->bank].asset;
             assert(swat_character_restore_pose(asset,pose->matrices,pose->count));carrier_check(asset);
+            blended_rifle_check(runtime,sim);
+            if(sample==0 && getenv("SWAT_CHARACTER_BLEND_CAPTURES")) {
+                Vector3 feet={pose->feet.x,pose->feet.y,pose->feet.z};
+                Camera3D camera={Vector3Add(feet,(Vector3){1,1.55f,2.5f}),Vector3Add(feet,(Vector3){.15f,1.1f,0}),{0,1,0},45,CAMERA_PERSPECTIVE};
+                Image image=frame(&runtime->banks[pose->bank],light,camera,pose->root);
+                assert(ExportImage(image,TextFormat("%s/crouch-reverse-%d.png",getenv("SWAT_CHARACTER_BLEND_CAPTURES"),pass)));UnloadImage(image);
+            }
             const char* joints[][2]={{"LeftUpLeg","LeftLeg"},{"LeftLeg","LeftFoot"},{"RightUpLeg","RightLeg"},{"RightLeg","RightFoot"},
                 {"LeftArm","LeftForeArm"},{"LeftForeArm","LeftHand"},{"RightArm","RightForeArm"},{"RightForeArm","RightHand"}};
             float lengths[8];
@@ -389,8 +435,29 @@ static void blend_check(SwatCharacterRuntime* runtime,SwatSim* sim) {
         if(pass==2)assert(standing.y-previous.y>.25f);
     }
     assert(Vector3Distance(previous,standing)<1e-4f);
+    // Interrupt every locomotion bank before its blend finishes while aim,
+    // ADS and low-ready change. Keep physical feet fixed to distinguish bank
+    // selection from invented animation travel; steady stride is tested above.
+    const b3Vec3 velocities[]={{1,0,0},{0,0,-1},{0,0,1},{-1,0,0},{1,0,0},{0,0,0},{0,0,0}};
+    const int banks[]={SWAT_CHARACTER_WALK,SWAT_CHARACTER_LEFT,SWAT_CHARACTER_RIGHT,SWAT_CHARACTER_BACKWARD,
+        SWAT_CHARACTER_CROUCH_WALK,SWAT_CHARACTER_CROUCH_READY,SWAT_CHARACTER_READY};
+    int transitions=0;
+    for(int yaw=0;yaw<4;yaw++)for(int pass=0;pass<7;pass++) {
+        actor->controller.yaw=yaw*SWAT_PI*.5f;actor->controller.pitch=(pass-3)*5*SWAT_RAD;
+        actor->controller.ads=pass%2;actor->controller.ready_blend=pass==5 ? .5f : 0;
+        swat_body_set_crouch(&actor->controller.body,pass==4 || pass==5);
+        actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;actor->controller.body.onGround=true;
+        float c=cosf(actor->controller.yaw),s=sinf(actor->controller.yaw);b3Vec3 v=velocities[pass];
+        b3Body_SetLinearVelocity(actor->controller.body.body,swat_v(c*v.x-s*v.z,0,s*v.x+c*v.z));
+        for(int tick=0;tick<4;tick++) {
+            sim->tick++;memcpy(before,sim,sizeof(*before));swat_character_runtime_prepare(runtime,sim);
+            assert(!memcmp(before,sim,sizeof(*before)) && runtime->actors[0].valid);
+            assert(runtime->actors[0].bank==banks[pass]);blended_rifle_check(runtime,sim);transitions++;
+        }
+    }
+    actor->controller.pitch=actor->controller.yaw=actor->controller.ads=actor->controller.ready_blend=0;
     free(before);
-    printf("PASS skeletal blend: interrupted crouch/reverse/settle, max hip step %.4f m, rigid limb lengths/carriers, authority and repeated camera cache\n",maximum);
+    printf("PASS skeletal blend: interrupted crouch/reverse/settle, max hip step %.4f m, %d moving/aim/ADS/ready transition frames, exact rifle frame, authored wrist targets within reach deficit, rigid limb lengths/carriers, authority and repeated camera cache\n",maximum,transitions);
 }
 static void runtime_check(const char* directory,SwatLighting* light) {
 #ifdef _WIN32
@@ -451,7 +518,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
     }
     movement_aim_check(runtime,sim,light);
     backward_check(runtime,sim,light);
-    blend_check(runtime,sim);
+    blend_check(runtime,sim,light);
     for(int stance=0;stance<2;stance++) for(int angle=0;angle<4;angle++) {
         actor->controller.yaw=angle*SWAT_PI/2; actor->controller.pitch=angle==3 ? 70*SWAT_RAD : 0;
         swat_body_set_crouch(&actor->controller.body,stance!=0); sim->tick++;

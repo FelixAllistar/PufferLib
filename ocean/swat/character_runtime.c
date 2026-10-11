@@ -381,7 +381,22 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         ok=limb(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",hand_targets[0]) && ok;
         ok=limb(asset,"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand",hand_targets[1]) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset)) continue;
-        if(!transition(runtime,cache,asset,bank,changed,dt) || !elbow_carriers(asset) || !swat_character_finalize_pose(asset))continue;
+        if(!transition(runtime,cache,asset,bank,changed,dt))continue;
+        if(cache->transition_elapsed<.22) {
+            // The bank blend interpolates local prop transforms along with
+            // the skeleton. Restore the achieved rifle frame afterwards and
+            // carry the magazine frames with that correction. Solve from the
+            // blended shoulders to the sampled grip/reload hand targets in
+            // the achieved rifle frame. Reusing blended, reach-clamped wrists
+            // here would accumulate their error across interrupted blends.
+            // Preserve limb lengths when a new stance is out of reach.
+            Matrix blended_gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
+            Matrix correction=compose(target_gun,MatrixInvert(blended_gun));
+            for(int p=0;p<3;p++)ok=transform(asset,props[p],correction) && ok;
+            ok=limb(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",hand_targets[0]) && ok;
+            ok=limb(asset,"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand",hand_targets[1]) && ok;
+        }
+        if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset))continue;
         if(cache->count!=count) {
             free(cache->matrices);cache->matrices=calloc(count,sizeof(float));cache->count=count;
         }
