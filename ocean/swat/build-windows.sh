@@ -161,6 +161,12 @@ done
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_audio_dsp.c" \
     "$SWAT_ROOT/ocean/swat/audio_dsp.c" "$SWAT_ROOT/ocean/swat/materials.c" -static -lm -o "$SWAT_BUILD/test_audio_dsp.exe"
 
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_sound_bank.c" \
+    "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_sound_bank.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_impact_effects.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_impact_effects.exe"
+
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_spatial_audio.c" \
     "$SWAT_ROOT/ocean/swat/spatial_audio.c" -static -lm -o "$SWAT_BUILD/test_spatial_audio.exe"
 

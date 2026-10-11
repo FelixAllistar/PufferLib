@@ -469,6 +469,69 @@
       "duration_seconds": 0.419854,
       "sha256": "968284eeb6838bd6f41ec721a763d12eab5130b541f120aa1887008b0b1c73ae",
       "processing": "Unchanged original Ogg; existing runtime decoder converts to 48 kHz mono float."
+    },
+    {
+      "file": "kenney_ceramic_0.ogg",
+      "source": "kenney/Audio/impactPlate_light_000.ogg",
+      "source_sha256": "6e797cf8a5bfc52d7ed5eb47c227974c1cf2a674954fec5b539cea7d62c7282c",
+      "sha256": "6e797cf8a5bfc52d7ed5eb47c227974c1cf2a674954fec5b539cea7d62c7282c",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_ceramic_1.ogg",
+      "source": "kenney/Audio/impactPlate_light_001.ogg",
+      "source_sha256": "947915c2eb6ac57ee08fd3a48b297fd108d69abc72076e79882c21cad0eef56e",
+      "sha256": "947915c2eb6ac57ee08fd3a48b297fd108d69abc72076e79882c21cad0eef56e",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_ceramic_2.ogg",
+      "source": "kenney/Audio/impactPlate_light_002.ogg",
+      "source_sha256": "8ac5869ea434cf0d364872774efe70b2d666a4f02ba35ddfc1e051d336721be8",
+      "sha256": "8ac5869ea434cf0d364872774efe70b2d666a4f02ba35ddfc1e051d336721be8",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_aluminum_0.ogg",
+      "source": "kenney/Audio/impactTin_medium_000.ogg",
+      "source_sha256": "f4bbee66ca191ec744b84fc07ac9ed2a6fda955d51cfed8360f12b62815d3cbd",
+      "sha256": "f4bbee66ca191ec744b84fc07ac9ed2a6fda955d51cfed8360f12b62815d3cbd",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_aluminum_1.ogg",
+      "source": "kenney/Audio/impactTin_medium_001.ogg",
+      "source_sha256": "84253095543c094d83cd749f42ecfbc96e356b60385f18a192c18eafb25b3cc6",
+      "sha256": "84253095543c094d83cd749f42ecfbc96e356b60385f18a192c18eafb25b3cc6",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_aluminum_2.ogg",
+      "source": "kenney/Audio/impactTin_medium_002.ogg",
+      "source_sha256": "c1d2c4f9910d4529581ae56a9a9a01454c4619fbb7d6da7616221d8ec58cc0c4",
+      "sha256": "c1d2c4f9910d4529581ae56a9a9a01454c4619fbb7d6da7616221d8ec58cc0c4",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_soft_0.ogg",
+      "source": "kenney/Audio/impactSoft_medium_000.ogg",
+      "source_sha256": "7d3ba0bb5e60a11b5d3e558c141303dcf494256675fbf753c0d252d2cf0481e3",
+      "sha256": "7d3ba0bb5e60a11b5d3e558c141303dcf494256675fbf753c0d252d2cf0481e3",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_soft_1.ogg",
+      "source": "kenney/Audio/impactSoft_medium_001.ogg",
+      "source_sha256": "7642a4fd43e547afe4f7adfadb3dabb681c0ff512f52c1674bae30a726841faf",
+      "sha256": "7642a4fd43e547afe4f7adfadb3dabb681c0ff512f52c1674bae30a726841faf",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "kenney_soft_2.ogg",
+      "source": "kenney/Audio/impactSoft_medium_002.ogg",
+      "source_sha256": "5069e3571a77d7f7aae9ef71d0364aa245fb7d64a7c8cc9956f221d03088c089",
+      "sha256": "5069e3571a77d7f7aae9ef71d0364aa245fb7d64a7c8cc9956f221d03088c089",
+      "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
     }
   ]
 }

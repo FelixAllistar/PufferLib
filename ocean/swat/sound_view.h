@@ -4,7 +4,7 @@
 #include "audio_dsp.h"
 #include "spatial_audio.h"
 #include "raylib.h"
-#define SWAT_SOUND_CLIPS 80
+#define SWAT_SOUND_CLIPS 96
 typedef struct SwatSoundClip {
     float* pcm;
     int frames,rate,kind,material,profile;

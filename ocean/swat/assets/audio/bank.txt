@@ -75,3 +75,15 @@
 6 4 -1 0.600 bfh1_metal_falling_01.ogg
 6 4 -1 0.600 bfh1_metal_falling_02.ogg
 6 4 -1 0.600 bfh1_metal_falling_03.ogg
+5 8 -1 0.450 kenney_ceramic_0.ogg
+5 8 -1 0.450 kenney_ceramic_1.ogg
+5 8 -1 0.450 kenney_ceramic_2.ogg
+5 13 -1 0.350 kenney_aluminum_0.ogg
+5 13 -1 0.350 kenney_aluminum_1.ogg
+5 13 -1 0.350 kenney_aluminum_2.ogg
+5 15 -1 0.350 kenney_soft_0.ogg
+6 15 -1 0.300 kenney_soft_0.ogg
+5 15 -1 0.350 kenney_soft_1.ogg
+6 15 -1 0.300 kenney_soft_1.ogg
+5 15 -1 0.350 kenney_soft_2.ogg
+6 15 -1 0.300 kenney_soft_2.ogg

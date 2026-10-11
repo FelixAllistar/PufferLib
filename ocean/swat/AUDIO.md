@@ -3,8 +3,10 @@
 An officer and an AI listener should hear through the same changing building.
 The current implementation combines shared live-geometry propagation, a
 device-independent PCM mixer, approximate room reflections and optional Steam
-Audio headphone rendering. Sounds are still procedural placeholders. Material
-coefficients are authored game tuning, not measured building assemblies.
+Audio headphone rendering. Player firearms, some footsteps/mechanisms and
+material hits/breaks use licensed recordings. Commands, blast transients and
+uncovered cues retain synthesis. Material coefficients are authored game tuning,
+not measured building assemblies.
 
 ## Current path
 
@@ -71,6 +73,25 @@ stays at the officer's ears while using the optiwand or planning cameras;
 direct scope control listens at the selected sniper. Saved
 master volume affects player output only; authority/training opens no device.
 
+The production bank contains 88 entries in 96 fixed slots. All 16 impact/break
+surfaces have recorded choices: authored surface entries take precedence over
+foley-family fallbacks and wildcard entries. Ceramic uses plate contacts, thin
+aluminum uses tin contacts, and cloth/rubber/insulation/earth use soft contacts;
+stone/concrete use masonry families. Ceramic breakage uses glass shatter and
+aluminum breakage uses metal fall. These are deliberate foley approximations,
+not measured ballistic hits or construction failure recordings. Nine added
+unchanged Kenney CC0 Oggs total 67,619 bytes; source hashes and license receipts
+are retained beside the existing bank provenance. Selection is event-ID based.
+When a contact emits both a hit and a same-surface break, player playback consumes
+the redundant hit. NPC hearing and the replicated events remain unchanged.
+
+`make -C ocean/swat sound-bank-test` checks the real production loader/selector
+without opening an audio device. The native Windows build includes
+`test_sound_bank.exe`. An optional second argument exports a nine-second stereo
+listening proof (ceramic/aluminum/soft impacts, then masonry/glass/wood breaks).
+The existing propagation lab renders synthesized comparisons; it does not load
+this player bank. Hearing tests and PCM tests do not establish perceptual quality.
+
 The scripted guard consumes delayed kind/gain/16-sector world-bearing cues.
 `SwatHeardSound` excludes hidden source coordinates and identity. Loud movement,
 shots, doors and breakage create brief turning memory; firing still requires
@@ -81,7 +102,6 @@ visible acquisition and reaction time. NPC hearing ignores its own events.
 From the repository root:
 
 ```sh
-python3 ocean/swat/setup_audio.py
 make -C ocean/swat viewer audio-lab spatial-test
 build/swat/test_spatial_audio --require
 build/swat/audio_lab build/swat/audio-lab-stereo
@@ -89,9 +109,10 @@ build/swat/audio_lab build/swat/audio-lab-hrtf --hrtf
 ./swat play
 ```
 
-The setup script verifies the pinned official SDK archive hash and installs
-only local Linux/Windows runtimes and license notices under ignored `build/`.
-No Steam client/account is involved. The Windows build copies an installed DLL
+These HRTF comparisons require the installed local Steam Audio runtime;
+without it the player uses stereo fallback. Runtime binaries and license
+notices live under ignored `build/`. No Steam client/account is involved.
+The Windows build copies an installed DLL
 beside the executable. The startup log reports HRTF or stereo fallback. Other
 build locations can use the explicit library environment variable. Headers and
 notices are in `vendor/steam_audio`; binaries are not committed.

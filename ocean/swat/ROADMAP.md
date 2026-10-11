@@ -62,6 +62,32 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The breach-feedback increment replaces per-removed-piece flying cube submissions
+with the existing single event batch: charge pairs produce up to 24 dust/chip
+particles for 1.15 seconds, masonry/wood/metal chips tumble as small solid shapes,
+and glass keeps thin shards. Material tone variation and ballistic chip fall
+remain cosmetic. The hard limits are still 12 selected events, 96 particles and
+1,404 vertices per view; sampling never changes authority, RNG or collision.
+The production bank now has 88 entries in 96 slots. Nine unchanged Kenney CC0
+ceramic/thin-metal/soft contacts add 67,619 bytes. Exact material entries precede
+documented foley families and wildcard clips; all 16 impact/break materials have
+three recorded choices. A same-contact break replaces redundant player hit
+playback, while shared hearing/events remain intact. Blast transients and these
+foley families are not measured explosive or ballistic source recordings.
+
+Linux/native Windows sampler and production-bank checks pass, including finite
+directional PCM, cleanup, complete material coverage, expiry, event/snapshot
+equivalence and immutable authority. Native graphics cover opaque occlusion,
+depth-state restoration and an ordinary held-C4 mount/retreat/detonate scenario.
+Maximum-batch CPU submission measured 0.121 ms; GPU completion is excluded.
+Normal Linux/Windows players and Puffer rebuilt. Native indoor automatic firing
+with HRTF and the 88-entry bank (240 frames, 30 shots, 1,330 objects, nine actors)
+measured 18.279 ms mean total, 28.732 ms p95, 35.326 ms maximum, and 0.329 ms mean
+audio. This short local diagnostic is not a controlled speedup or final slice
+acceptance. Logs, compact before/burst/after captures and one listening proof are
+in `build/swat/review/breach-feedback`. Production blast/door/voice sources and
+finer physical fracture geometry remain work for subsequent increments.
+
 The seating increment adds source-scale CC0 furniture to Rooms 103 and 104:
 Modern Arm Chair 01 with separate wood/cushion owners, and the original mixed
 Vintage Day Bed primitive. Source geometry, materials, UVs and hierarchy remain

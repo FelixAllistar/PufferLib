@@ -1,4 +1,5 @@
 #include "sound_view.h"
+#include "sound_feedback.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,14 +27,19 @@ static void recordings_open(SwatSoundView* view) {
     fclose(file); TraceLog(LOG_INFO,"SWAT AUDIO: %d recorded variants loaded",view->clip_count);
 }
 static void recording_start(const SwatSoundView* view,const SwatSim* sim,SwatAudioVoice* voice) {
-    int choices[SWAT_SOUND_CLIPS],count=0; bool sidearm=false;
-    int material=voice->event.material==SWAT_OPAQUE_GLASS?SWAT_GLASS:voice->event.material;
+    int choices[SWAT_SOUND_CLIPS],count=0,best=-1; bool sidearm=false;
+    int material=voice->event.material;
+    int family=swat_sound_recorded_material(voice->event.kind,material);
     int actor=voice->event.source_actor;
     if(actor>=0 && actor<sim->actor_count) sidearm=sim->actors[actor].arsenal.active==1;
     for(int i=0;i<view->clip_count;i++) {
         const SwatSoundClip* clip=&view->clips[i];
-        if(clip->kind==(int)voice->event.kind && (clip->material<0 || clip->material==material) &&
-           (clip->profile<0 || clip->profile==(int)sidearm)) choices[count++]=i;
+        if(clip->kind!=(int)voice->event.kind || (clip->profile>=0 && clip->profile!=(int)sidearm))continue;
+        int score=clip->material==material?4:clip->material==family?2:clip->material<0?0:-1;
+        if(score<0)continue;
+        score+=clip->profile>=0;
+        if(score>best){best=score;count=0;}
+        if(score==best)choices[count++]=i;
     }
     if(!count) return;
     uint32_t hash=voice->event.id*2654435761u; hash^=hash>>16;
@@ -73,6 +79,9 @@ void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,flo
         for(int i=0;i<sim->sounds.count;i++) {
             const SwatSoundEvent* event=swat_sound_at(&sim->sounds,i);
             if(swat_hearing_consumed(&view->memory,event->id)) continue;
+            if(swat_sound_contact_replaced(&sim->sounds,event)) {
+                swat_hearing_consume(&view->memory,event->id);continue;
+            }
             if(sim->tick-event->tick>SWAT_SOUND_LIFETIME) { swat_hearing_consume(&view->memory,event->id); continue; }
             int slot=(int)(event->id%SWAT_SOUND_CAPACITY);
             if(view->path_ids[slot]!=event->id || sim->tick-view->path_ticks[slot]>=6 ||
