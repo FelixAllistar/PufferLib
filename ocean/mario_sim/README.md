@@ -73,12 +73,18 @@ episodes as their denominator; FPG metrics use FPG episodes.
 
 ## Build and run
 
-Commands below run from the repository root. Supply the local World/NTSC ROM at
+Commands below run from the repository root. The World/NTSC ROM at
 `ocean/retro/roms/smb1_ntsc.nes` and the annotated disassembly at
-`build/mario_sim/reference/smbdis_complete.asm`. ROM-derived build assets stay
-local and ignored by Git. Existing local assets have been migrated.
+`build/mario_sim/reference/smbdis_complete.asm` are committed, along with the
+game and FPG reset banks and curriculum timing table (about 3.5 MiB total).
+Compiled runtime files are generated locally. CUDA builds target the installed
+GPU by default; set `CUDA_ARCH=sm_XX` to target another GPU explicitly.
 
 ```sh
+# Fresh checkout with the committed reset banks:
+CUDA_HOME=/usr/local/cuda ./build.sh mario_sim
+
+# Optional: regenerate the reset banks and timing table:
 make -f ocean/mario_sim/runtime.mk -j2 all bank-builder
 build/mario_sim/runtime/build_bank build/mario_sim/runtime/generated 16 73
 make -f ocean/mario_sim/fpg.mk curriculum

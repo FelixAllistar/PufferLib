@@ -2,7 +2,8 @@
 RUNTIME_DIR ?= build/mario_sim/runtime
 RUNTIME_SRC := ocean/mario_sim
 NVCC ?= /usr/local/cuda/bin/nvcc
-CUDA_ARCH ?= sm_61
+# Match the installed GPU, including Blackwell cards on newer CUDA toolkits.
+CUDA_ARCH ?= native
 CPU_OPT ?= -O3
 CUDA_OPT ?= -O3
 INCLUDES := -I$(RUNTIME_DIR) -I$(RUNTIME_SRC)

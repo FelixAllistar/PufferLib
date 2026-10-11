@@ -5,6 +5,7 @@ CPU := build/mario_sim/runtime/logic_cpu.a
 MODULE := build/mario_sim/runtime/cuda_replay.cubin
 VERIFY := build/mario_sim/runtime/verify_cuda
 NVCC ?= /usr/local/cuda/bin/nvcc
+CUDA_ARCH ?= native
 .PHONY: all table runtime test pipe transfer curriculum curriculum-test semantic-test
 all: $(OUT)/build_table
 runtime:
@@ -41,14 +42,14 @@ $(OUT)/test_cpu: $(SRC)/test_cpu.cpp $(wildcard $(SRC)/*.h) $(wildcard ocean/mar
 	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -o $@
 $(OUT)/test_cuda: $(SRC)/test_cuda.cu $(SRC)/mario_sim.cu $(wildcard $(SRC)/*.h) $(wildcard ocean/mario_sim/*.h) $(CPU) $(MODULE)
 	mkdir -p $(OUT)
-	$(NVCC) -O2 -arch=sm_61 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -L/usr/local/cuda/lib64/stubs -lcuda -o $@
+	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -L/usr/local/cuda/lib64/stubs -lcuda -o $@
 test: table $(OUT)/test_cpu $(OUT)/test_cuda
 	$(OUT)/test_cpu
 	$(OUT)/test_cuda
 $(OUT)/test_curriculum_cpu: $(SRC)/test_curriculum_cpu.cpp $(wildcard $(SRC)/*.h) $(wildcard ocean/mario_sim/*.h) $(CPU)
 	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -o $@
 $(OUT)/test_curriculum_cuda: $(SRC)/test_curriculum_cuda.cu $(SRC)/mario_sim.cu $(wildcard $(SRC)/*.h) $(wildcard ocean/mario_sim/*.h) $(CPU) $(MODULE)
-	$(NVCC) -O2 -arch=sm_61 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -L/usr/local/cuda/lib64/stubs -lcuda -o $@
+	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -L/usr/local/cuda/lib64/stubs -lcuda -o $@
 curriculum-test: table $(OUT)/test_curriculum_cpu $(OUT)/test_curriculum_cuda
 	$(OUT)/test_curriculum_cpu
 	$(OUT)/test_curriculum_cuda
@@ -62,7 +63,7 @@ transfer: $(OUT)/sim2rom
 $(OUT)/test_observation: $(SRC)/test_observation.cpp $(SRC)/observation.h $(SRC)/policy_shape.h
 	clang++ -O2 -std=c++17 $< -o $@
 $(OUT)/test_encoder $(OUT)/test_encoder_bf16: $(SRC)/test_encoder.cu $(SRC)/encoder.cu $(SRC)/encoder_cpu.h $(SRC)/observation.h $(SRC)/policy_shape.h $(OUT)/policy.o $(CPU) $(wildcard src/*.cu src/*.h)
-	$(NVCC) -O2 --threads 2 -arch=sm_61 -std=c++17 -I. -Isrc -Ivendor -Iraylib-5.5_linux_amd64/include \
+	$(NVCC) -O2 --threads 2 -arch=$(CUDA_ARCH) -std=c++17 -I. -Isrc -Ivendor -Iraylib-5.5_linux_amd64/include \
 		$(if $(findstring bf16,$@),-DFPT_TEST_BF16) \
 		-Xcompiler=-fopenmp,-Wno-narrowing,-Wno-multichar --diag-suppress 550 --diag-suppress 68 --diag-suppress 2361 --diag-suppress 1422 \
 		$< $(OUT)/policy.o $(CPU) raylib-5.5_linux_amd64/lib/libraylib.a -L/usr/local/cuda/lib64/stubs \
