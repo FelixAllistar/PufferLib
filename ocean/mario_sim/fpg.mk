@@ -8,6 +8,12 @@ NVCC ?= /usr/local/cuda/bin/nvcc
 CUDA_ARCH ?= native
 .PHONY: all table runtime test pipe transfer curriculum curriculum-test semantic-test
 all: $(OUT)/build_table
+$(OUT)/test_table: $(SRC)/test_table.cpp $(SRC)/table.h $(SRC)/bank_io.h
+	mkdir -p $(OUT)
+	clang++ -O2 -std=c++17 -Iocean/mario_sim $< -o $@
+.PHONY: table-test
+table-test: $(OUT)/test_table
+	$(OUT)/test_table
 runtime:
 	$(MAKE) -f ocean/mario_sim/runtime.mk -j2 cpu gpu
 $(CPU) $(MODULE) $(VERIFY) &:
