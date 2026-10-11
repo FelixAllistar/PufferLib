@@ -139,6 +139,13 @@ reduction, animation resampling or weight renormalization. Shadow/unlit renderin
 uses the same deformation. Headless simulation/server builds have no renderer
 or graphics dependency.
 
+Repeated draws compare the exact joint palette against its current uploaded
+RGBA32F contents and reuse it byte-for-byte when unchanged. A different actor,
+pose or first-person deformation still uploads every changed matrix; there is
+no quantization or influence reduction. Native parity, eight settled stance/yaw
+states and repeated full-image comparisons cover reuse alongside the existing
+movement, ADS and reload checks.
+
 Original 2K diffuse/emissive and specular-color maps are interpreted as sRGB. The paired source gloss map is linear and supplies perceptual
 roughness `clamp(1 - gloss, 0.08, 1)`. Specular RGB supplies F0; diffuse energy
 uses `1 - max(F0)`, following the

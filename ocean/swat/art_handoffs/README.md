@@ -39,3 +39,13 @@ the preserved 60,928-triangle CC0 source and a 9,997-triangle trial at original
 1.545 x 0.639 x 0.831 m dimensions. This is an available external handoff,
 not yet downloaded, checked locally or installed. The reduced lifting loops
 and chipped edges require native placement review before accepting it as LOD.
+
+The artist's latest delivery is a [tape-measure package](https://drive.google.com/file/d/1jcz6vcM6kbD1CZT5t0m9guLtWWLn1qZO/view),
+reported as 2,228 triangles, two meshes, one material, three 1K maps and original
+8.31 x 4.15 x 8.14 cm dimensions, with source/creator CC0 evidence. Its original
+label and the artist's unverified brand-clearance note remain part of that
+handoff. It is an available static prop, not yet locally checked or installed.
+[Catalog UPDATE06](https://drive.google.com/file/d/1nHq8hZUuOfqhn6pn-skFSI0i2lUsTkGk/view)
+records the bag/cabinet as engine-reported installed and the barrier candidates
+as awaiting native review. Hose/tap, barrier and tape-measure integration are
+engine work; the original exports remain frozen during review.

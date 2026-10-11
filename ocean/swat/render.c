@@ -231,10 +231,11 @@ static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
         (sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? &sim->layout : NULL);
 }
 
-static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway) {
+static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaway,bool doors) {
     SwatView* view=context;view->environment.shadow_room=view->lighting.shadow_room;
     for(int i=0;i<sim->world.count;i++) {
         const SwatObject* o=&sim->world.objects[i];
+        if(o->door!=doors)continue;
         if((!o->active && !swat_motel_fence_proxy(&sim->world,o) && swat_motel_surroundings_part(&sim->world,o)!=1) || o->material==SWAT_GLASS) continue;
         if(view->lighting.shadow_room>=0 && !swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],
             (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
@@ -250,7 +251,11 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
     }
     view->environment.shadow_room=-1;
 }
+static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway) {
+    swat_draw_shadow_objects(context,sim,cutaway,false);
+}
 static void swat_draw_shadow_actors(void* context,const SwatSim* sim,bool cutaway) {
+    swat_draw_shadow_objects(context,sim,cutaway,true);
     SwatView* view=context;if(cutaway)return;
     for(int i=0;i<sim->actor_count;i++) {
         if(!sim->actors[i].present)continue;

@@ -490,10 +490,12 @@ void swat_lighting_close(SwatLighting* light) {
 static uint32_t hash_bytes(uint32_t hash,const void* data,size_t size) {
     const unsigned char* p=data; for(size_t i=0;i<size;i++) { hash^=p[i]; hash*=16777619u; } return hash;
 }
-static uint32_t geometry_hash(const SwatWorld* world) {
+static uint32_t geometry_hash(const SwatWorld* world,bool split) {
     uint32_t hash=2166136261u;
     for(int i=0;i<world->count;i++) {
-        const SwatObject* o=&world->objects[i]; hash=hash_bytes(hash,&o->active,sizeof(o->active));
+        const SwatObject* o=&world->objects[i];
+        if(split && o->door)continue;
+        hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->active,sizeof(o->active));
         if(!o->active || o->material==SWAT_GLASS) continue;
         hash=hash_bytes(hash,&o->center,sizeof(o->center)); hash=hash_bytes(hash,&o->half,sizeof(o->half));
         hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw)); hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
@@ -535,16 +537,35 @@ bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 h
     float z=fmaxf(0,fabsf(center.z-room->center.z)-room->half.z);
     return x*x+y*y+z*z<=radius*radius;
 }
-static uint32_t room_geometry_hash(const SwatWorld* world,int room) {
+static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split) {
     uint32_t hash=hash_bytes(2166136261u,&world->rooms[room],sizeof(SwatRoom));
     for(int i=0;i<world->count;i++) {
         const SwatObject* o=&world->objects[i];
-        if(!o->active || o->material==SWAT_GLASS || !swat_lighting_room_intersects(&world->rooms[room],
+        if((split && o->door) || !o->active || o->material==SWAT_GLASS || !swat_lighting_room_intersects(&world->rooms[room],
             (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
         hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
         hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
         hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
+        if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
+    }
+    return hash;
+}
+// Hinged leaves are composited over cached architecture. Their actual geometry
+// changes invalidate immediately, including removal and leaving a room, without
+// forcing every wall/prop to be submitted again for each animated door angle.
+static uint32_t door_geometry_hash(const SwatLighting* light,const SwatWorld* world,int room) {
+    uint32_t hash=2166136261u;
+    for(int i=0;i<world->count;i++) {
+        const SwatObject* o=&world->objects[i];
+        if(!o->door || !o->active || o->material==SWAT_GLASS)continue;
+        if(room>=0 && !swat_lighting_room_intersects(&world->rooms[room],
+            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+        if(room>=0 && !swat_lighting_face_intersects(light,
+            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+        hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
+        hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
+        hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
     }
     return hash;
@@ -561,6 +582,8 @@ static uint32_t room_actor_hash(SwatLighting* light,const SwatSim* sim,int room)
         const SwatActor* a=&sim->actors[i];if(!a->present)continue;
         b3Pos feet=swat_body_feet_position(&a->controller.body);
         if(!swat_lighting_room_intersects(&sim->world.rooms[room],
+            (Vector3){feet.x,feet.y+1,feet.z},(Vector3){.5f,1,.5f}))continue;
+        if(!swat_lighting_face_intersects(light,
             (Vector3){feet.x,feet.y+1,feet.z},(Vector3){.5f,1,.5f}))continue;
         uint32_t pose=hash_bytes(2166136261u,&feet,sizeof(feet));
         pose=hash_bytes(pose,&a->controller,sizeof(a->controller));
@@ -580,10 +603,10 @@ static uint32_t room_actor_hash(SwatLighting* light,const SwatSim* sim,int room)
     }
     return hash;
 }
-static void copy_depth(RenderTexture2D from,RenderTexture2D to,int y,int width,int height) {
+static void copy_depth(RenderTexture2D from,RenderTexture2D to,int x,int y,int width,int height) {
     rlDrawRenderBatchActive();unsigned int previous=rlGetActiveFramebuffer();
     rlBindFramebuffer(RL_READ_FRAMEBUFFER,from.id);rlBindFramebuffer(RL_DRAW_FRAMEBUFFER,to.id);
-    rlBlitFramebuffer(0,y,width,y+height,0,y,width,y+height,0x00000100);
+    rlBlitFramebuffer(x,y,x+width,y+height,x,y,x+width,y+height,0x00000100);
     rlEnableFramebuffer(previous);
 }
 static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context) {
@@ -600,12 +623,13 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
         }
         center=(Vector3){(x0+x1)*.5f,0,(z0+z1)*.5f}; extent=fmaxf(x1-x0,z1-z0)*1.5f+12;
     }
-    uint32_t hash=geometry_hash(world);
+    uint32_t hash=geometry_hash(world,actors!=NULL);
+    uint32_t moving=actors?door_geometry_hash(light,world,-1):0;
     hash=hash_bytes(hash,&light->sun_direction,sizeof(light->sun_direction));
     bool reset=!light->prepared || cutaway!=light->cutaway || light->split_shadows!=(actors!=NULL) || sim->tick<light->last_tick;
     if(reset)memset(light->actor_signature,0,sizeof(light->actor_signature));
     bool refresh=reset || sim->tick-light->last_tick>=4;
-    if(!refresh && hash==light->geometry)return;
+    if(!refresh && hash==light->geometry && moving==light->moving_geometry)return;
     Camera3D sun={Vector3Add(center,Vector3Scale(light->sun_direction,45)),center,{0,1,0},extent,CAMERA_ORTHOGRAPHIC};
     light->shadow_room=-1;
     if(actors) {
@@ -613,11 +637,11 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
             light->sun_matrix=shadow(light->sun_static,sun,sim,cutaway,draw,contextual,NULL,context,-1,true);
             light->sun_geometry_updates++;
         }
-        copy_depth(light->sun_static,light->sun,0,light->sun.depth.width,light->sun.depth.height);
+        copy_depth(light->sun_static,light->sun,0,0,light->sun.depth.width,light->sun.depth.height);
         shadow(light->sun,sun,sim,cutaway,NULL,NULL,actors,context,-1,false);
     } else light->sun_matrix=shadow(light->sun,sun,sim,cutaway,draw,contextual,NULL,context,-1,true);
     for(int room=0;room<world->room_count;room++) {
-        uint32_t local=room_geometry_hash(world,room);
+        uint32_t local=room_geometry_hash(world,room,actors!=NULL);
         Vector3 origin=room_light_origin(world,room);local=hash_bytes(local,&origin,sizeof(origin));
         bool dirty=reset || !light->room_ready[room] || local!=light->room_geometry[room] ||
             (!actors && sim->actor_count && refresh); // Legacy combined callbacks may include actors.
@@ -632,22 +656,29 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
             }
             light->room_geometry[room]=local;light->room_ready[room]=true;light->room_updates++;
         }
-        uint32_t actor_hash=actors?room_actor_hash(light,sim,room):0;
-        if(dirty || (refresh && (!actors || actor_hash!=light->room_actors[room]))) {
-            // Restore the entire room's cached depth before adding moving actors.
-            int y=room*SWAT_LAMP_SIZE,w=SWAT_LAMP_SIZE*SWAT_LAMP_FACES;
-            copy_depth(light->lamp_static,light->lamp,y,w,SWAT_LAMP_SIZE);
-            if(actors)for(int face=0;face<SWAT_LAMP_FACES;face++) {
-                light->shadow_face=face;
-                Camera3D lamp={origin,Vector3Add(origin,lamp_dir[face]),lamp_up[face],fov/SWAT_RAD,CAMERA_PERSPECTIVE};
-                shadow(light->lamp,lamp,sim,cutaway,NULL,NULL,actors,context,room*SWAT_LAMP_FACES+face,false);
+        bool composited=false;
+        for(int face=0;face<SWAT_LAMP_FACES;face++) {
+            light->shadow_face=face;
+            uint32_t doors=actors?door_geometry_hash(light,world,room):0;
+            uint32_t actor_hash=actors?room_actor_hash(light,sim,room):0;
+            if(dirty || doors!=light->face_moving_geometry[room][face] ||
+                (refresh && (!actors || actor_hash!=light->face_actors[room][face]))) {
+                // Restore only this face before adding current doors/actors.
+                // A caster leaving the face invalidates its former depth too.
+                copy_depth(light->lamp_static,light->lamp,face*SWAT_LAMP_SIZE,room*SWAT_LAMP_SIZE,SWAT_LAMP_SIZE,SWAT_LAMP_SIZE);
+                if(actors) {
+                    Camera3D lamp={origin,Vector3Add(origin,lamp_dir[face]),lamp_up[face],fov/SWAT_RAD,CAMERA_PERSPECTIVE};
+                    shadow(light->lamp,lamp,sim,cutaway,NULL,NULL,actors,context,room*SWAT_LAMP_FACES+face,false);
+                }
+                light->face_actors[room][face]=actor_hash;light->actor_face_updates++;composited=true;
             }
-            light->room_actors[room]=actor_hash;light->actor_room_updates++;
+            light->face_moving_geometry[room][face]=doors;
         }
+        if(composited)light->actor_room_updates++;
     }
     for(int i=world->room_count;i<SWAT_MAX_ROOMS;i++)light->room_ready[i]=false;
     light->shadow_room=-1;light->split_shadows=actors!=NULL;
-    light->geometry=hash;if(refresh)light->last_tick=sim->tick;
+    light->geometry=hash;light->moving_geometry=moving;if(refresh)light->last_tick=sim->tick;
     light->cutaway=cutaway; light->prepared=true; light->updates++;
 }
 void swat_lighting_prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw) {
