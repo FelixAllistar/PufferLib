@@ -62,6 +62,27 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The maintenance-bag handoff is now installed beside the rear service trolley at
+source metre scale. Original 4,482-triangle geometry, UVs, one glossy nonmetallic
+material and three 1K maps survive. Nineteen bounded contact subsets preserve
+source triangle edge flags; full-mesh bullet queries, minimum-height source
+floor contact, finite soft-cover damage and support loss replicate together.
+The appended owner leaves all existing IDs intact; seating-only canonical maps
+retain their mesh reconstruction. Runtime strength uses the existing soft-cover
+game approximation; unknown contents and torn-polymer dynamics remain outside
+this increment. CC0 source/artist packet and reproducible C import are retained.
+Linux/native physics and 156,054 native art/fallback ray/raster checks pass. All
+four completion routes pass on both platforms with every-tick replay, saved
+continuation, fresh replicas and no contact-buffer overflow. Normal players,
+servers and Puffer are rebuilt. Three unique maps add 12 MiB of API-format mip
+data; total shared texture data is 356.92 MiB, excluding driver overhead. The
+600-frame native indoor-firing diagnostic measured 19.559 ms mean total and
+38.141 ms p95 with a 74.827 ms maximum. It overlapped native scenario checks;
+this does not establish stable-load performance acceptance. Evidence is under
+`build/swat/review/maintenance-bag`. Cabinet and reuse hose/tap integration,
+squad visual clearance, further materials/destruction and stable-load playtests
+remain part of the full slice goal.
+
 The physical breach-edge increment chips surviving shared boundaries next to
 material removed by the current charge. Deterministic cuts stay inside their
 original convex fragment, cap adjoining-edge movement at 7 cm for brick and

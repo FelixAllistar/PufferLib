@@ -22,7 +22,25 @@
     ]
   ],
   "packet_checksums": "all passed via sha256sum -c",
-  "review": "Actual export previews inspected; runtime placement, damage/collision and native lighting/performance not yet accepted. Artist rebuild scripts retained as provenance and not executed.",
+  "review": "Accepted source-faithful service-room placement after native lit review, original bounds/material maps, 156054 art/fallback ray/raster samples, owner removal, floor/dependency/damage replicas, legacy seating maps and all four Linux/native ordinary-input completion/replay/save routes. Full slice and stable-load performance acceptance remain unfinished. Artist rebuild scripts retained as provenance and not executed.",
   "drive_url": "https://drive.google.com/file/d/1x3FgpTVZgFk-Flv9ag4jkSK8IwVkuf7_/view",
-  "slack_url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1791681907503579"
+  "slack_url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1791681907503579",
+  "runtime_sha256": "efba6d19771700af6d4e7999eb68e938778b185214e29165fe20ecce40bc6f42",
+  "runtime_file": "ocean/swat/assets/environment/motel_props/trashbag_floor_centered_1k.glb",
+  "engine_placement": {
+    "origin_metres": [
+      -9.65,
+      0.0055,
+      -9.4
+    ],
+    "yaw_radians": 0,
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "owner": 1330,
+    "floor_owner": 127,
+    "material_response": "Existing soft-cover game approximation; contents and polymer gauge unknown."
+  }
 }

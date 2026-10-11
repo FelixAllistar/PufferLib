@@ -23,6 +23,8 @@ The 2026-10-11 maintenance deliveries are retained as complete source archives:
 record archive hashes, byte sizes and independent GLB/header, triangle and 1K
 embedded-image checks. All supplied packet checksums passed. Actual export
 previews were reviewed; the bag's source gloss and cabinet's supplied static
-open pose remain intact. These are received source candidates, not installed
-runtime placements or accepted collision/damage/performance. Author rebuild
+open pose remain intact. The bag is installed beside the rear service trolley
+with source geometry, matching collision/fallback, damage/support replication
+and native graphics/completion checks. The cabinet remains a received source
+candidate. Author rebuild
 scripts are preserved inside the archives as provenance and were not executed.

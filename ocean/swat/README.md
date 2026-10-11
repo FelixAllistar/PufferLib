@@ -1162,6 +1162,20 @@ is physical, with finite steel strength, four floor contacts, original PBR maps,
 exact art fallback and serialized removal. Existing saves retain their canonical
 prefix. `mounted-props-test` and `motel-contacts-test` also check the trolley;
 the native environment-art selector `motel-props` checks source/fallback coverage.
+The tied CC0 refuse bag now sits beside this cart, retaining its original 4,482
+triangles, source metre scale, glossy nonmetallic PBR and three 1K maps. Its
+collision uses 19 bounded contact meshes with original edge flags; bullet
+queries retain the full mesh. A real minimum-height source vertex rests on the
+service floor and removal shares that floor dependency. The existing soft-cover
+response and finite skin health are game approximations; contents and torn-bag
+deformation are not modeled. `motel-bag-test` checks support, clearance, damage,
+replication and legacy seating maps. The native graphics selector `motel-bag`
+passes 156,054 ray/raster comparisons, source bounds/maps, matching missing-art
+fallback, native lighting and owner removal. Both platforms' four ordinary-input
+completion/replay/save routes pass with the appended bag object.
+Canonical older maps retain their prefix. Recreate pre-bag motel recordings:
+the new scenario has an additional physical object, so their deterministic
+state digests differ even though the snapshot codec remains version 18.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native
