@@ -35,6 +35,7 @@ int main(int argc,char** argv) {
     bool headless=false,audio=false,draw_only=false,planning=false,scope=false,expanded=false,indoors=false,fire=false,hidden=false,stereo=false;
     const char* record_path=NULL;
     bool wall_faces_reference=false;
+    int room_index=-1;float camera_yaw=0;bool camera_yaw_set=false;
     const char* capture=NULL;
     int frames=300,mission=SWAT_HOUSE;
     for(int i=1;i<argc;i++) {
@@ -51,12 +52,24 @@ int main(int argc,char** argv) {
         else if(!strcmp(argv[i],"--storefront")) mission=SWAT_STOREFRONT;
         else if(!strcmp(argv[i],"--motel")) mission=SWAT_MOTEL;
         else if(!strcmp(argv[i],"--indoors")) indoors=true;
+        else if(!strcmp(argv[i],"--room")) {
+            if(++i>=argc)return 1;
+            char* end;long index=strtol(argv[i],&end,10);
+            if(end==argv[i] || *end || index<0 || index>1024)return 1;
+            room_index=(int)index;indoors=true;
+        }
+        else if(!strcmp(argv[i],"--yaw")) {
+            if(++i>=argc)return 1;
+            char* end;camera_yaw=strtof(argv[i],&end);
+            if(end==argv[i] || *end || !isfinite(camera_yaw))return 1;
+            camera_yaw_set=true;
+        }
         else if(!strcmp(argv[i],"--fire")) fire=true;
         else if(!strcmp(argv[i],"--wall-faces-reference"))wall_faces_reference=true;
         else if(!strcmp(argv[i],"--record") && ++i<argc) record_path=argv[i];
         else if(!strcmp(argv[i],"--capture") && ++i<argc) capture=argv[i];
         else if(!strcmp(argv[i],"--frames") && ++i<argc) frames=atoi(argv[i]);
-        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--audio|--audio-stereo] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors] [--fire] [--wall-faces-reference] [--record FILE] [--capture PNG] [--frames 30..3600]\n"); return 1; }
+        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--audio|--audio-stereo] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--record FILE] [--capture PNG] [--frames 30..3600]\n"); return 1; }
     }
     if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && (draw_only || indoors || fire))) return 1;
     SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*10,sizeof(double));
@@ -64,12 +77,15 @@ int main(int argc,char** argv) {
     SwatConfig config=swat_default_config(); config.mission=mission; config.layout_seed=42;
     config.tactical_rules=true; config.squad_bots=3; config.hostile_fire=false; config.max_ticks=36000;
     double start=seconds(); swat_sim_init(sim,config,42); double initialization=seconds()-start;
+    if(room_index>=sim->world.room_count){swat_sim_close(sim);free(sim);free(measurements);return 1;}
     if(indoors && sim->world.room_count) {
-        const SwatRoom* room=&sim->world.rooms[mission==SWAT_BUILDING ? 1 : 0];
+        int selected=room_index>=0 ? room_index : mission==SWAT_BUILDING ? 1 : 0;
+        const SwatRoom* room=&sim->world.rooms[selected];
         b3Pos feet={room->center.x,room->center.y-room->half.y+.02f,room->center.z};
         SwatController* c=&sim->actors[0].controller;
         b3Body_SetTransform(c->body.body,b3OffsetPos(feet,swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity); b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);
-        c->yaw=fire ? .55f : 0; c->pitch=c->recoil_pitch=c->recoil_yaw=0;
+        c->yaw=camera_yaw_set ? camera_yaw : fire ? .55f : 0; c->pitch=c->recoil_pitch=c->recoil_yaw=0;
+        printf("indoor_room=%d initial_yaw=%.6f\n",selected,c->yaw);
     }
     if(fire) sim->actors[0].arsenal.slots[0].mode=SWAT_AUTO;
     SwatView view={0}; SwatSoundView sound={0};

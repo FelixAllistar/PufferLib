@@ -52,6 +52,8 @@ swat_needs_build() {
                   ocean/swat/assets/audio/* \
                   config/swat.ini config/default.ini vendor/raygui.h \
                   vendor/enet/*.c vendor/enet/include/enet/*.h; do
+        # The standalone benchmark is not linked into the player.
+        [ "$source" = ocean/swat/performance_tool.c ] && continue
         [ "$source" -nt "$binary" ] && return 0
     done
     return 1

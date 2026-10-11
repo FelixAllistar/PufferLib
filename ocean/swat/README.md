@@ -1183,8 +1183,27 @@ replication and legacy seating maps. The native graphics selector `motel-bag`
 passes 156,054 ray/raster comparisons, source bounds/maps, matching missing-art
 fallback, native lighting and owner removal. Both platforms' four ordinary-input
 completion/replay/save routes pass with the appended bag object.
-Canonical older maps retain their prefix. Recreate pre-bag motel recordings:
-the new scenario has an additional physical object, so their deterministic
+The CC0 service cabinet sits above the original washer pair at source scale,
+retaining both meshes and the supplied static open-door pose. All 21,272
+triangles survive its full bullet query and 97 bounded contact subsets with
+original edge flags. Four actual rear-rim vertices resolve against physical
+wall-skin sections; their loss removes the cabinet on authority and replicas.
+Original mixed PBR, source factor defaults and three 1K maps remain intact.
+The whole enclosure is one damage owner using the existing metal-cover response
+and a 1.2 mm game health section. Unknown source gauge/substrate and mounting
+hardware are not inferred; cabinet hinge motion and electrical controls are
+not implemented. `motel-cabinet-test` covers source rim supports, washer
+clearance, partial/removal damage, C4/support loss, replicas and old bag-prefix
+maps. Native `motel-cabinet` graphics passes 155,722 source/fallback ray/raster
+comparisons and owner removal. All four ordinary-input completion/replay/save
+routes pass on Linux and Windows with the cabinet installed.
+The existing performance tool accepts `--room INDEX --yaw RADIANS`; for example
+`--motel --room 5 --yaw -1.93 --fire --audio --frames 600` exercises the rear
+service room with actual weapon inputs and impact/audio work.
+Editing this standalone diagnostic does not trigger a player rebuild through
+`./swat`; runtime sources, headers, assets and configuration still do.
+Canonical older maps retain their prefix. Recreate pre-cabinet motel recordings:
+the new scenario has additional physical objects, so their deterministic
 state digests differ even though the snapshot codec remains version 18.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.

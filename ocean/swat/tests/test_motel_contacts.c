@@ -24,8 +24,8 @@ static void check(SwatWorld* world) {
         if(tested[asset])continue;
         tested[asset]=true;assets++;
         const b3MeshData* source=o->query_mesh.data;
-        int count=b3Body_GetShapeCount(o->body);assert(count>1 && count<64);
-        b3ShapeId shapes[64];assert(b3Body_GetShapes(o->body,shapes,64)==count);
+        int count=b3Body_GetShapeCount(o->body);assert(count>1 && count<128);
+        b3ShapeId shapes[128];assert(b3Body_GetShapes(o->body,shapes,128)==count);
         bool* seen=calloc((size_t)source->triangleCount,sizeof(bool));assert(seen);int sum=0;
         for(int part=0;part<count;part++) {
             b3Mesh mesh=b3Shape_GetMesh(shapes[part]);assert(mesh.data->triangleCount<=240);sum+=mesh.data->triangleCount;
@@ -68,7 +68,7 @@ static void check(SwatWorld* world) {
         }
         b3DestroyBody(reference_body);
     }
-    assert(assets>=26 && tested[24] && tested[40] && tested[44] && tested[45] && tested[46] && tested[47] && tested[48] && tested[49] && tested[53]);
+    assert(assets>=26 && tested[24] && tested[40] && tested[44] && tested[45] && tested[46] && tested[47] && tested[48] && tested[49] && tested[53] && tested[54]);
     printf("PASS motel contact partitions: %d assets, %d original triangles and edge flags preserved, %d matched full/partition rays and ballistic exit distances\n",assets,triangles,rays);
 }
 int main(void) {
