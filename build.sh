@@ -259,7 +259,11 @@ elif [ "$ENV" = "mario_sim" ]; then
         echo "Error: $ENV currently supports native C++ trainer/evaluator builds" >&2
         exit 1
     fi
-    make -f ocean/mario_sim/runtime.mk -j2 cpu gpu
+    if [ "$USE_GPU_ENV" = "1" ]; then
+        make -f ocean/mario_sim/runtime.mk -j2 cpu gpu
+    else
+        make -f ocean/mario_sim/runtime.mk -j2 cpu
+    fi
     LINK_ARCHIVES+=("build/mario_sim/runtime/logic_cpu.a")
     EXTRA_LDFLAGS+=(-L/usr/local/cuda/lib64/stubs -lcuda)
 elif [ "$ENV" = "shenaniguns3d" ]; then

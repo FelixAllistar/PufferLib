@@ -89,7 +89,7 @@ $(OUT)/test_progress: $(SRC)/test_progress.cpp $(SRC)/game.h
 	clang++ -O2 -std=c++17 $< -o $@
 $(OUT)/test_progress_cuda: $(SRC)/test_progress.cpp $(SRC)/game.h
 	mkdir -p $(OUT)
-	$(NVCC) -O2 -arch=sm_61 -std=c++17 -x cu $< -o $@
+	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -x cu $< -o $@
 .PHONY: progress-test
 progress-test: $(OUT)/test_progress $(OUT)/test_progress_cuda
 	$(OUT)/test_progress

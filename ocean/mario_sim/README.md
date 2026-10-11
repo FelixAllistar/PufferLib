@@ -77,7 +77,8 @@ Commands below run from the repository root. The World/NTSC ROM at
 `ocean/retro/roms/smb1_ntsc.nes` and the annotated disassembly at
 `build/mario_sim/reference/smbdis_complete.asm` are committed, along with the
 game and FPG reset banks and curriculum timing table (about 3.5 MiB total).
-Compiled runtime files are generated locally. CUDA builds target the installed
+The default build compiles the CPU simulator and GPU policy; the CUDA simulator
+is compiled only with `--cu`. Optional CUDA simulator builds target the installed
 GPU by default; set `CUDA_ARCH=sm_XX` to target another GPU explicitly.
 
 ```sh
