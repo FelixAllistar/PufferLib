@@ -1,0 +1,28 @@
+{
+  "received": "2026-10-11",
+  "archive_sha256": "729038003f474ddbbe7a1c61aa285969705c925ee3d33a32268f60968e83d082",
+  "archive_bytes": 16264935,
+  "glb": "imports/trashbag_floor_centered_1k.glb",
+  "glb_bytes": 3134116,
+  "triangles": 4482,
+  "meshes": 1,
+  "materials": 1,
+  "embedded_maps": [
+    [
+      1024,
+      1024
+    ],
+    [
+      1024,
+      1024
+    ],
+    [
+      1024,
+      1024
+    ]
+  ],
+  "packet_checksums": "all passed via sha256sum -c",
+  "review": "Actual export previews inspected; runtime placement, damage/collision and native lighting/performance not yet accepted. Artist rebuild scripts retained as provenance and not executed.",
+  "drive_url": "https://drive.google.com/file/d/1x3FgpTVZgFk-Flv9ag4jkSK8IwVkuf7_/view",
+  "slack_url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1791681907503579"
+}
