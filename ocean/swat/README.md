@@ -186,6 +186,16 @@ Measured bank fits are reconciled before blending; authoritative feet, stance
 and aiming remain immediate. First-person grip/ADS/reload use their existing
 authored pose cache. The live GPU character check covers crouch reversals,
 settled endpoints, limb lengths, rigid elbow carriers and repeated camera draws.
+After an active third-person blend, the runtime restores the rifle to its
+achieved gameplay frame and carries the magazine frames with that correction.
+Arm IK then solves from the blended shoulders to the sampled grip/reload
+targets in the achieved rifle frame without stretching limbs; targets beyond
+their reach still clamp. Native checks compare the stock
+and all three rifle axes throughout crouch reversals and 112 interrupted
+locomotion/aim/ADS/low-ready frames, and bound wrist error by actual reach deficit.
+This fixes prop drift introduced by the
+blend; it does not establish full helmet-mesh clearance or perfect grip contact
+through every intermediate pose. Accepted source clips remain unchanged.
 Frame limits are applied on change, eliminating the per-frame timer-log spam.
 
 Every room has six stable 384 px shadow views covering every direction around
