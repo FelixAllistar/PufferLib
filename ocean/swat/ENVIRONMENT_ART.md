@@ -192,6 +192,32 @@ or collision need intentional, versioned design and multiplayer qualification.
 
 ## Briar Court motel
 
+Room 103 adds the original Poly Haven Modern Arm Chair 01 and Room 104 adds
+the Vintage Day Bed as extra seating. Both retain source metres, floor pivots,
+topology, UVs, normals and material routing. The chair's authored wood and
+cushion primitives have separate damage/collision owners (1327/1328); the
+single mixed-material daybed primitive belongs to owner 1329. The chair frame
+supports its cushion; floors 57 and 81 support the corresponding furniture.
+Ordinary damage and support removal drive rendering, collision and replication.
+Health sections are game approximations, not measured construction gauges;
+the daybed still uses one coarse wood response for its mixed source mesh.
+
+Separate 1K texture variants are selected by default, with the immutable 2K
+GLBs retained as source and missing-variant fallback. Both chair owners share
+the same six texture IDs. Scalar factors and the original unbound AO channel
+are preserved. `tools/verify_motel_seating.cjs` independently checks the actual
+source/candidate geometry bytes, hierarchy, materials and texture routing;
+`tools/import_motel_seating.c` creates the matching compiled collision data.
+The compact source/license/exporter receipts and independent audit are in
+`art_handoffs/motel-seating`. Archived exporter scripts are provenance only;
+engine integration and checks use C and Node.
+
+Navigation excludes fixture tops and checks the low seat/base clearance that
+the normal stair allowance skips. Real stair treads and player movement retain
+their existing rules. Removing a fixture restores navigable floor underneath.
+Complete scenario QA chooses a reachable, unobstructed evidence approach instead
+of requiring a fixed side that may lie inside furniture.
+
 Rooms 102–104 now use `motel_guest_desk/desk_original_clean_strokes_v1.glb`
 on render owners 48/72/96. The original finish is preserved; only seven raised
 dark scratch boxes were removed (580 to 496 triangles). Retained positions,

@@ -3,6 +3,7 @@
 #include "mission.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "motel_data.h"
 #include "motel_utility_data.h"
 #include "motel_fence_data.h"
@@ -11,6 +12,7 @@
 #include "motel_mounted_data.h"
 #include "motel_props_data.h"
 #include "nightstand_data.h"
+#include "motel_seating_data.h"
 typedef struct SwatMotelFoliage {SwatMotelInstance placement;int supports[2];} SwatMotelFoliage;
 #include "motel_foliage_data.h"
 typedef struct SwatMotelContactSource {int asset;const int32_t* indices;int triangle_count;} SwatMotelContactSource;
@@ -155,7 +157,7 @@ static const SwatMotelInstance utility_instances[]={
 {42,{12.5f,-.08f,2},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false},
 {43,{12.5f,-.08f,0},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}
 };
-const SwatMotelAsset* swat_motel_asset(int index) { return index<0 || index>=SWAT_MOTEL_ASSETS?NULL:index<SWAT_MOTEL_BASE_ASSETS?&motel_assets[index]:index<42?&utility_assets[index-SWAT_MOTEL_BASE_ASSETS]:index<44?&fence_assets[index-42]:index==44?&mounted_assets[0]:index==49?&nightstand_asset:&prop_assets[index-45]; }
+const SwatMotelAsset* swat_motel_asset(int index) { return index<0 || index>=SWAT_MOTEL_ASSETS?NULL:index<SWAT_MOTEL_BASE_ASSETS?&motel_assets[index]:index<42?&utility_assets[index-SWAT_MOTEL_BASE_ASSETS]:index<44?&fence_assets[index-42]:index==44?&mounted_assets[0]:index==49?&nightstand_asset:index>=50?seating_assets[index-50]:&prop_assets[index-45]; }
 const SwatMotelInstance* swat_motel_instance(int index) { return index<0 || index>=SWAT_MOTEL_INSTANCES?NULL:index<SWAT_MOTEL_BASE_INSTANCES?&motel_instances[index]:&utility_instances[index-SWAT_MOTEL_BASE_INSTANCES]; }
 static void recipe(int i,b3Pos* center,b3Vec3* half,float* yaw) {
     const SwatMotelInstance* p=swat_motel_instance(i); const SwatMotelAsset* a=swat_motel_asset(p->asset);
@@ -335,7 +337,7 @@ static float nightstand_health(void){const SwatMaterialDef* m=swat_material(SWAT
 static void nightstand_recipe(b3Pos* center,b3Vec3* half){*center=b3OffsetPos(nightstand_instance.origin,nightstand_asset.center);*half=nightstand_asset.half;}
 static bool nightstand_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_NIGHTSTAND_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_WINDOWS_FIRST && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_WINDOWS_FIRST && w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_NIGHTSTAND_FIRST];b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];nightstand_recipe(&center,&half);
     return floor_supports(w,&nightstand_instance,81,nightstand_feet,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(center,o->center)<1e-4f && b3Length(b3Sub(half,o->half))<1e-4f && o->yaw==0 && o->pitch==0 &&
@@ -349,11 +351,13 @@ static void nightstand_bind(SwatWorld* w) {
     bool bound=contact_meshes_bind(w,o,&nightstand_instance,&def);assert(bound);(void)bound;
 }
 bool swat_motel_prop(const SwatWorld* w,int owner,SwatMotelInstance* out) {
+    if(swat_motel_seating(w,owner,out))return true;
     if(w->motel && owner==SWAT_MOTEL_NIGHTSTAND_FIRST && owner<w->count){*out=nightstand_instance;return true;}
     int index=owner-SWAT_MOTEL_PROPS_FIRST;
     if(!w->motel || owner>=w->count || index<0 || index>=SWAT_MOTEL_PROP_INSTANCES)return false;
     *out=prop_instances[index];return true;
 }
+#include "motel_seating_impl.h"
 static bool props_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_PROPS_FIRST)return true; // Existing version-17 maps keep their prefix.
     if(w->count>SWAT_MOTEL_OBJECTS)return false;
@@ -490,7 +494,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
     int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
-    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w) || !panes_validate(w) || !nightstand_validate(w) || !windows_validate(w))return false;
+    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w) || !panes_validate(w) || !nightstand_validate(w) || !windows_validate(w) || !seating_validate(w))return false;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];
         const SwatMotelInstance* p=swat_motel_instance(i);
@@ -536,6 +540,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     nightstand_bind(w);
     panes_bind(w);
     windows_bind(w);
+    seating_bind(w);
     w->motel=true; return true;
 }
 
@@ -719,6 +724,7 @@ void swat_motel_build(SwatWorld* w) {
     int support=81;bool attached=swat_world_attach(w,stand,&support,1);assert(attached);(void)attached;
     assert(nightstand_validate(w));nightstand_bind(w);
     windows_build(w);
+    seating_build(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }

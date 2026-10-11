@@ -20,7 +20,24 @@ static int queries;
 static void check(const SwatNavigation* nav,b3Pos p) {
     assert(swat_navigation_nearest(nav,p)==exhaustive(nav,p));queries++;
 }
+static void low_fixture(void) {
+    static SwatSim sim;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_RANGE;cfg.randomize=false;cfg.hostile_fire=false;cfg.squad_bots=0;
+    swat_sim_init(&sim,cfg,19);
+    int owner=swat_world_box(&sim.world,(b3Pos){2,.2f,2},swat_v(.7f,.2f,.7f),SWAT_WOOD,100);
+    sim.world.objects[owner].part=SWAT_PART_FIXTURE;b3Pos next;
+    assert(swat_navigation_next(&sim,(b3Pos){0,.015f,2},(b3Pos){4,.015f,2},&next));
+    int cell=swat_navigation_nearest(sim.navigation,(b3Pos){2,.015f,2});assert(cell>=0);
+    b3Pos point={sim.navigation->x[cell],sim.navigation->height[cell],sim.navigation->z[cell]};
+    assert(b3Distance(point,(b3Pos){2,.015f,2})>.7f); // Neither seat nor floor underneath is a route node.
+    assert(swat_world_damage(&sim.world,owner,1000));
+    assert(swat_navigation_next(&sim,(b3Pos){0,.015f,2},(b3Pos){4,.015f,2},&next));
+    cell=swat_navigation_nearest(sim.navigation,(b3Pos){2,.015f,2});assert(cell>=0);
+    point=(b3Pos){sim.navigation->x[cell],sim.navigation->height[cell],sim.navigation->z[cell]};
+    assert(b3Distance(point,(b3Pos){2,.015f,2})<.43f);
+    swat_sim_close(&sim);puts("PASS low fixture navigation: routes avoid the seat and ground beneath it; authoritative removal restores floor access");
+}
 int main(void) {
+    low_fixture();
     static SwatSim sim;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,42);b3Pos next;
     swat_navigation_next(&sim,(b3Pos){0,-.08f,20},(b3Pos){0,-.08f,30},&next);

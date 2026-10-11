@@ -1,13 +1,13 @@
 // Internal R1 assembly implementation, compiled only in motel.c.
 #include "motel_windows_data.h"
 const SwatWindowModel* swat_motel_window_model(int kind){return kind>=0 && kind<2?&window_r1_models[kind]:NULL;}
-bool swat_motel_windows_revised(const SwatWorld* w){return w->motel && w->count==SWAT_MOTEL_OBJECTS;}
+bool swat_motel_windows_revised(const SwatWorld* w){return w->motel && w->count>=SWAT_MOTEL_WINDOWS_END;}
 int swat_motel_window_first(int parent){
     int bay=swat_motel_window_index(parent);if(bay<0)return -1;
     return SWAT_MOTEL_WINDOWS_FIRST+(bay?window_r1_models[1].part_count+(bay-1)*window_r1_models[0].part_count:0);
 }
 int swat_motel_window_part_parent(const SwatWorld* w,int owner){
-    if(!swat_motel_windows_revised(w) || owner<SWAT_MOTEL_WINDOWS_FIRST || owner>=w->count)return -1;
+    if(!swat_motel_windows_revised(w) || owner<SWAT_MOTEL_WINDOWS_FIRST || owner>=SWAT_MOTEL_WINDOWS_END)return -1;
     int offset=owner-SWAT_MOTEL_WINDOWS_FIRST,bay=offset<window_r1_models[1].part_count?0:1+(offset-window_r1_models[1].part_count)/window_r1_models[0].part_count;
     return pane_parents[bay];
 }
@@ -34,7 +34,7 @@ static void window_part_recipe(int parent,int index,b3Pos* center,b3Vec3* half,f
 }
 static bool windows_validate(const SwatWorld* w){
     if(w->count<=SWAT_MOTEL_WINDOWS_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int bay=0;bay<5;bay++){
         int parent=pane_parents[bay],first=swat_motel_window_first(parent);const SwatWindowModel* m=&window_r1_models[bay?0:1];
         for(int i=0;i<m->part_count;i++){
@@ -47,7 +47,7 @@ static bool windows_validate(const SwatWorld* w){
     }return true;
 }
 static void windows_bind(SwatWorld* w){
-    if(w->count!=SWAT_MOTEL_OBJECTS)return;
+    if(w->count<SWAT_MOTEL_WINDOWS_END)return;
     // Legacy aggregates remain active logical opening anchors. They own no
     // collision/render triangles in R1. Every physical piece has its own material.
     for(int bay=0;bay<5;bay++){

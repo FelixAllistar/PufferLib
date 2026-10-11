@@ -36,19 +36,23 @@ static b3Pos grid_position(const SwatNavigation* nav,int index) {
     }
     return (b3Pos){nav->min_x+(index%nav->width+.5f)*.6f,0,nav->min_z+(index/nav->width+.5f)*.6f};
 }
-typedef struct NavQuery { const SwatWorld* world; bool blocked; } NavQuery;
+typedef struct NavQuery { const SwatWorld* world; bool blocked,fixtures_only; } NavQuery;
 static bool obstacle(b3ShapeId shape,void* context) {
     NavQuery* query=context;
     SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape));
     if(!tag || tag->kind!=SWAT_HIT_WORLD) return true;
     const SwatObject* o=&query->world->objects[tag->index];
+    if(query->fixtures_only && o->part!=SWAT_PART_FIXTURE)return true;
     if(o->door && o->wedge_owner<0 && o->door_angle<SWAT_PI*.5f-.03f) return true;
     query->blocked=true; return false;
 }
-typedef struct NavFloors { float y[SWAT_NAV_LAYERS]; int count; float top,span; } NavFloors;
+typedef struct NavFloors { float y[SWAT_NAV_LAYERS]; int count; float top,span; const SwatWorld* world; } NavFloors;
 static float floor_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
     SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape)); NavFloors* floors=context;
     if(!tag || tag->kind!=SWAT_HIT_WORLD || normal.y<.70f) return 1;
+    // Furnishing tops are not authored walking floors. A low cushion must not
+    // create a stair route through the furniture below it.
+    if(floors->world && floors->world->objects[tag->index].part==SWAT_PART_FIXTURE)return 1;
     for(int i=0;i<floors->count;i++) if(fabsf(floors->y[i]-(float)point.y)<.05f) return 1;
     if(floors->count<SWAT_NAV_LAYERS) floors->y[floors->count++]=(float)point.y;
     else {
@@ -59,7 +63,7 @@ static float floor_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,
 }
 static bool nav_clear(const SwatWorld* world,b3Pos p,float height) {
     b3Vec3 points[]={{0,height*.5f+.1437f,0},{0,fmaxf(height-.2873f,height*.5f+.1537f),0}}; b3ShapeProxy proxy={points,2,.2873f};
-    NavQuery query={world,false};
+    NavQuery query={.world=world};
     b3World_OverlapShape(world->id,p,&proxy,b3DefaultQueryFilter(),obstacle,&query);
     // The lower box may step over risers within the same 457 mm controller
     // limit, while solid cover above that limit remains an obstacle.
@@ -67,6 +71,11 @@ static bool nav_clear(const SwatWorld* world,b3Pos p,float height) {
     for(int i=0;i<8;i++) feet[i]=swat_v(i&1 ? .2032f : -.2032f,i&2 ? fmaxf(height*.5f,.49f) : .46f,i&4 ? .2032f : -.2032f);
     b3ShapeProxy lower={feet,8,0};
     if(!query.blocked) b3World_OverlapShape(world->id,p,&lower,b3DefaultQueryFilter(),obstacle,&query);
+    // The stair allowance cannot erase a fixture's low seat/base. Check that
+    // lower band against fixtures only, leaving ordinary treads unchanged.
+    for(int i=0;i<8;i++)feet[i].y=i&2?.46f:.015f;
+    query.fixtures_only=true;
+    if(!query.blocked)b3World_OverlapShape(world->id,p,&lower,b3DefaultQueryFilter(),obstacle,&query);
     return !query.blocked;
 }
 static float edge_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
@@ -80,7 +89,7 @@ static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {
         float previous=(float)a.y;
         for(int i=1;i<=4;i++) {
             float t=i*.25f,expected=(float)(a.y+(b.y-a.y)*t);
-            b3Pos p={a.x+(b.x-a.x)*t,expected+.6f,a.z+(b.z-a.z)*t}; NavFloors floors={0};
+            b3Pos p={a.x+(b.x-a.x)*t,expected+.6f,a.z+(b.z-a.z)*t}; NavFloors floors={.world=world};
             b3World_CastRay(world->id,p,swat_v(0,-1.2f,0),b3DefaultQueryFilter(),floor_hit,&floors);
             float nearest=1e9f,height_y=0;
             for(int j=0;j<floors.count;j++) { float d=fabsf(floors.y[j]-expected); if(d<nearest) { nearest=d; height_y=floors.y[j]; } }
@@ -91,12 +100,15 @@ static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {
     // Step up/across/down matches the controller's bounded stair clearance.
     b3Pos raised=a; raised.y=fmax(a.y,b.y)+.015;
     b3Vec3 points[]={{0,height*.5f+.1437f,0},{0,fmaxf(height-.2873f,height*.5f+.1537f),0}}; b3ShapeProxy proxy={points,2,.2873f};
-    NavQuery query={world,false}; b3Vec3 translation=b3SubPos(b,raised); translation.y=0;
+    NavQuery query={.world=world}; b3Vec3 translation=b3SubPos(b,raised); translation.y=0;
     b3World_CastShape(world->id,raised,&proxy,translation,b3DefaultQueryFilter(),edge_hit,&query);
     b3Vec3 feet[8];
     for(int i=0;i<8;i++) feet[i]=swat_v(i&1 ? .2032f : -.2032f,i&2 ? fmaxf(height*.5f,.49f) : .46f,i&4 ? .2032f : -.2032f);
     b3ShapeProxy lower={feet,8,0};
     if(!query.blocked) b3World_CastShape(world->id,raised,&lower,translation,b3DefaultQueryFilter(),edge_hit,&query);
+    for(int i=0;i<8;i++)feet[i].y=i&2?.46f:.015f;
+    query.fixtures_only=true;
+    if(!query.blocked)b3World_CastShape(world->id,raised,&lower,translation,b3DefaultQueryFilter(),edge_hit,&query);
     return !query.blocked;
 }
 static int adjacent(const SwatNavigation* nav,int cell,int direction) {
@@ -109,7 +121,7 @@ static unsigned char navigation_object_state(const SwatObject* o) {
         4*(o->door && o->door_angle>=SWAT_PI*.5f-.03f) : 0);
 }
 static bool navigation_sample(const SwatWorld* world,SwatNavigation* nav,int cell,b3Pos p) {
-    NavFloors floors={0};p.y=nav->top;
+    NavFloors floors={.world=world};p.y=nav->top;
     b3World_CastRay(world->id,p,swat_v(0,nav->bottom-nav->top,0),b3DefaultQueryFilter(),floor_hit,&floors);
     for(int i=0;i<floors.count;i++)for(int j=i+1;j<floors.count;j++)if(floors.y[j]<floors.y[i]) {
         float swap=floors.y[i];floors.y[i]=floors.y[j];floors.y[j]=swap;
@@ -414,7 +426,7 @@ static bool avoid_local_actors(SwatSim* s,int index,b3Pos feet,b3Pos goal,b3Pos*
     bool found=false;float best=1e9f;b3Pos chosen=*waypoint;
     for(int ring=1;ring<=3;ring++)for(int side=-1;side<=1;side+=2) {
         b3Pos candidate=b3OffsetPos(*waypoint,swat_mul(right,side*ring*.28f));
-        NavFloors floors={0};
+        NavFloors floors={.world=&s->world};
         b3World_CastRay(s->world.id,b3OffsetPos(candidate,swat_v(0,.6f,0)),swat_v(0,-1.2f,0),b3DefaultQueryFilter(),floor_hit,&floors);
         float nearest=1e9f,support=0;
         for(int i=0;i<floors.count;i++) {
@@ -485,7 +497,7 @@ const char* swat_squad_order_name(int order) {
     return names[order>=0 && order<SWAT_SQUAD_ORDERS ? order : 0];
 }
 static bool order_support(const SwatWorld* world,b3Pos* point) {
-    NavFloors floors={0};
+    NavFloors floors={.world=world};
     b3World_CastRay(world->id,b3OffsetPos(*point,swat_v(0,.5f,0)),swat_v(0,-1,0),b3DefaultQueryFilter(),floor_hit,&floors);
     float best=.4572f,support=0;
     for(int i=0;i<floors.count;i++)if(fabsf(floors.y[i]-(float)point->y)<best) {

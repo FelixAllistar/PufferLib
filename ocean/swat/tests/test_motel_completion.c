@@ -124,10 +124,55 @@ static void secure(int actor) {
     printf("Secured actor %d at tick %d\n",actor,sim.tick);fflush(stdout);
 }
 static void collect(int actor) {
+    // This QA plan moves arrested suspects clear before recovering weapons.
+    // Use normal escort/hold commands; body interaction keeps its priority.
+    if(sim.actors[actor].alive && sim.actors[actor].gear.restrained) {
+        walk(feet(actor),1.0f);
+        for(int n=0;n<120 && sim.actors[actor].mind.escort_owner!=0;n++) {
+            SwatInput follow=look(chest(actor));follow.interact=n%2==0;step(follow);
+        }
+        if(sim.actors[actor].mind.escort_owner!=0)fail("clear evidence escort");
+        walk(sim.extraction,.35f);
+        for(int n=0;n<3000 && b3Distance(feet(0),feet(actor))>1.0f;n++)idle(1);
+        if(b3Distance(feet(0),feet(actor))>1.3f)fail("suspect did not clear room");
+        for(int n=0;n<120 && sim.actors[actor].mind.escort_owner==0;n++) {
+            SwatInput hold=look(chest(actor));hold.interact=n%2==0;step(hold);
+        }
+        if(sim.actors[actor].mind.escort_owner==0)fail("hold suspect clear of evidence");
+    }
     for(int t=0;t<240 && !sim.evidence[actor].collected;t++) {
         if(t==60) {
             b3Pos evidence=sim.evidence[actor].position;
-            walk((b3Pos){evidence.x,feet(0).y,evidence.z+1.1f},.43f);
+            // Furniture can occupy any one side of dropped evidence. Choose a
+            // physically reachable floor sample within ordinary interaction
+            // range rather than requiring the player to stand inside a prop.
+            b3Pos approach={0};bool found=false;float best=1e9f;
+            for(int side=0;side<48;side++) {
+                float angle=(side%16)*SWAT_PI*.125f,radius=.75f+(side/16)*.3f;
+                b3Pos candidate=b3OffsetPos(evidence,swat_v(cosf(angle)*radius,0,sinf(angle)*radius)),next;
+                candidate.y=feet(0).y;
+                if(!swat_navigation_next_for_actor(&sim,0,candidate,&next))continue;
+                int cell=swat_navigation_nearest(sim.navigation,candidate);if(cell<0)continue;
+                b3Pos floor={sim.navigation->x[cell],sim.navigation->height[cell],sim.navigation->z[cell]};
+                if(hypotf(floor.x-evidence.x,floor.z-evidence.z)>1.55f)continue;
+                b3Pos eye=b3OffsetPos(floor,swat_v(0,1.65f,0));
+                if(b3Distance(eye,evidence)>=2.15f || !swat_world_visible(&sim.world,eye,evidence))continue;
+                SwatHit aimed=swat_world_ray(&sim.world,eye,swat_normalize(b3SubPos(evidence,eye)),2.2f,sim.actors[0].controller.body.body);
+                if(aimed.kind==SWAT_HIT_ACTOR || aimed.kind==SWAT_HIT_DEVICE)continue;
+                if(aimed.kind==SWAT_HIT_WORLD && aimed.index>=0 &&
+                   (sim.world.objects[aimed.index].door || swat_world_breachable(&sim.world.objects[aimed.index])))continue;
+                float distance=b3Distance(feet(0),floor);if(distance<best){approach=floor;best=distance;found=true;}
+            }
+            if(!found)fail("reachable evidence approach");
+            walk(approach,.43f);
+            // This goal is already an exact, checked floor sample. Finish the
+            // last part of the approach using ordinary controller input.
+            for(int n=0;n<120 && hypotf(feet(0).x-approach.x,feet(0).z-approach.z)>.1f;n++) {
+                SwatInput move=look(b3OffsetPos(approach,swat_v(0,1.65f,0)));
+                float yaw=atan2f(approach.z-feet(0).z,approach.x-feet(0).x);
+                if(fabsf(swat_angle(yaw-sim.actors[0].controller.yaw))<20*SWAT_RAD)move.forward=.25f;
+                move.gait=SWAT_WALK;move.crouch=swat_navigation_crouch(&sim,approach);step(move);
+            }
         }
         SwatInput in=look(sim.evidence[actor].position);SwatContext context=swat_context(&sim,0);
         in.interact=context.action==SWAT_CONTEXT_EVIDENCE && context.hit.index==actor && t%2==0;step(in);

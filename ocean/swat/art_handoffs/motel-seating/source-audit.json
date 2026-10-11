@@ -1,0 +1,146 @@
+{
+  "result": "PASS: geometry, hierarchy, accessors, materials and texture routing unchanged; separate 1024px PNG maps",
+  "reports": [
+    {
+      "name": "modern_arm_chair_01",
+      "originalSha256": "6486ee163c828c96f0f3a759dc866c2223374ffb9bf5f54fe45216ae85bbf58a",
+      "candidateSha256": "c86baebfef0b76c9bfd6025df11b31330eca13e7fc282a4120727fcd070e3b20",
+      "geometry": [
+        {
+          "bufferView": 0,
+          "bytes": 46608,
+          "sha256": "405fdf2dba35fd20aafbf9c1b1068e13762c85ccecacb74184fbc4e08bbc2e87"
+        },
+        {
+          "bufferView": 1,
+          "bytes": 46608,
+          "sha256": "25f9fbbef98b9cb4fb3cb9f7f173d2532f310962f70b0fc991755091e5b35b4f"
+        },
+        {
+          "bufferView": 2,
+          "bytes": 31072,
+          "sha256": "3a082796c1da4621770f8ab53f6ad6c43291fdb39312cbe5de8c0d33af7e34bb"
+        },
+        {
+          "bufferView": 3,
+          "bytes": 33648,
+          "sha256": "7c3b40ea69c3bdff0a0544501fef67aba49024a3c0fcd09ffbe4bb8a5c76b30f"
+        },
+        {
+          "bufferView": 4,
+          "bytes": 23604,
+          "sha256": "0f9dd3b661ebe522de5e0b68339c2ad5a3230d52fb25d442d042acff2480db9c"
+        },
+        {
+          "bufferView": 5,
+          "bytes": 23604,
+          "sha256": "437f3cb11fb119303a0b9cf978516c01c868f08a652a4c77967db7572d88461a"
+        },
+        {
+          "bufferView": 6,
+          "bytes": 15736,
+          "sha256": "a3da7ef6e0cdde2053a540fe1ec768443e04d675f749cf64143335b049ffad35"
+        },
+        {
+          "bufferView": 7,
+          "bytes": 19848,
+          "sha256": "3dd61e785e3025f238fa3a0b5181190905b05726f7c05fff518723d7910f6a94"
+        }
+      ],
+      "images": [
+        {
+          "image": 0,
+          "sourceSha256": "5a57c6b8de10b79d7d2b5540bcb864f4c3c0b4f81c6ef2c5f61470e88620c4a7",
+          "derivedSha256": "8b19b0ac00c22e424eb28b85d082a5fdc7c15e81eeaab0ea7102d2f3ee2e26fc",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "image": 1,
+          "sourceSha256": "a3a289f3265d77e120e81aebdd9107b612609b077190e842389b5cd32bbf9a3d",
+          "derivedSha256": "deabe79fa208b8b08116bf969f3aa8e96d217d4efad733169517f910c07c04c6",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "image": 2,
+          "sourceSha256": "38a2b11cdfb18aeed9804fee38de93d8fd856f53ad9448ee877833ba25643f15",
+          "derivedSha256": "ac9cf16335591fe243ffe6f206af90518ff492588d72130160d4ee0123075a23",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "image": 3,
+          "sourceSha256": "dfd11d444ba0a6c1a16304f91c10ef2a2a525180f6a46ca57c2d55c196ff39de",
+          "derivedSha256": "98648f6275433261802cfb3621c535f1fb9f6763b7053785eeb1f631cf6283e7",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "image": 4,
+          "sourceSha256": "20a8b41bd14552643c1355587ec1198cb8c5f1f7dea50dc71dbb0f6a826adfc1",
+          "derivedSha256": "9f17687e0cd2bbb74d39762749b5a7be57019f77a05084690800d8008d34c6fc",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "image": 5,
+          "sourceSha256": "3c98a68f8d4d9045082d1af97994ff564dc4f8378814bea717d9862edf5dae22",
+          "derivedSha256": "65fb7c13d39f42bf3d7fa7c4095e1d5cad763451e765c2a184930612b672c03f",
+          "width": 1024,
+          "height": 1024
+        }
+      ]
+    },
+    {
+      "name": "vintage_day_bed",
+      "originalSha256": "c6c8113806e81d9fb735f427ac0d022d57d60c6b5280725c756495a072a371cf",
+      "candidateSha256": "7b5a06c231ac546270df8b715931ba78970e5647325c7e8816e9fde1fc8bb9e4",
+      "geometry": [
+        {
+          "bufferView": 0,
+          "bytes": 24000,
+          "sha256": "fc6f7047e29c5be5976179308a68c52a55bfbc7ad8d9c8f9adee6b96b44ba515"
+        },
+        {
+          "bufferView": 1,
+          "bytes": 24000,
+          "sha256": "985b28e515df53952b9972fc82f056d47f66db2290855f40f4bee8f585d79399"
+        },
+        {
+          "bufferView": 2,
+          "bytes": 16000,
+          "sha256": "b7c26888354199bef73758f5d1c91ad2babebe289d70fe89cd6ad5e199e3bbcf"
+        },
+        {
+          "bufferView": 3,
+          "bytes": 16290,
+          "sha256": "b77a8a9ac302de8afb133ecbcf30c82e909750b879602efb777856b7e9f477f8"
+        }
+      ],
+      "images": [
+        {
+          "image": 0,
+          "sourceSha256": "3e5de86318a6c095f90248dc672233a6175539454f5e3bf4ca4199ac6021592b",
+          "derivedSha256": "07c39fc3bc0ced184fdd3712fd0421b04f8c914f468db4e9f816494cdd8e53f3",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "image": 1,
+          "sourceSha256": "1233f9c2578d305196c20104af66b16cd979427a0eda880106b027e88d346e78",
+          "derivedSha256": "2e31eaa279f05b4af53d8c14e874ce1986dded4b3706a0c20a43240c745c6d0a",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "image": 2,
+          "sourceSha256": "855bc16659865387308fcf16c87ea5483424455c1f846e89886122a55debd92d",
+          "derivedSha256": "7d75ec53e46af20fbd8ff7aa84ce5a97b4c97253b1574becdc6b5714dd716eb2",
+          "width": 1024,
+          "height": 1024
+        }
+      ]
+    }
+  ]
+}

@@ -383,7 +383,15 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
         char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":i==44?"motel_mounted":"motel_props",a->file);
         Model* model=location ? &art->storefront[i] : &art->motel[i];
-        if(asset_path(path,sizeof(path),file)) *model=LoadModel(path);
+        bool found=false;
+        const char* seating=getenv("SWAT_MOTEL_SEATING_TEXTURES");
+        if(!location && i>=50 && (!seating || strcmp(seating,"original"))) {
+            char candidate[256];snprintf(candidate,sizeof(candidate),"motel_props/%s_floor_centered_1k_candidate.glb",i<52?"modern_arm_chair_01":"vintage_day_bed");
+            found=asset_path(path,sizeof(path),candidate);
+        }
+        // Verified 1K maps preserve the source scene/material routing; missing
+        // candidates fall back to the retained original self-contained GLB.
+        if(found || asset_path(path,sizeof(path),file)) *model=LoadModel(path);
         if(!model->meshCount || model->materialCount!=a->material_count+1 || model->materialCount>SWAT_LOCATION_MATERIALS) { swat_art_model_close(*model); *model=(Model){0}; missing++; continue; }
         SwatArtMaterialFactors factors[SWAT_LOCATION_MATERIALS-1];
         int factors_count=swat_art_material_factors(path,factors,SWAT_LOCATION_MATERIALS-1);
@@ -864,6 +872,15 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     SwatMotelInstance mounted;
     if(swat_motel_mounted(world,o->tag.index,&mounted) || swat_motel_prop(world,o->tag.index,&mounted)) {
+        if(mounted.asset==50 || mounted.asset==51) {
+            const Model* source=&art->motel[mounted.asset];
+            if(source->meshCount!=2)return mounted_fallback(o,shadow);
+            // Both owners use the original GLB; select its authored primitive
+            // so wood and cushion removal agree with their independent meshes.
+            Model part=*source;int primitive=mounted.asset-50;
+            part.meshCount=1;part.meshes=&source->meshes[primitive];part.meshMaterial=&source->meshMaterial[primitive];
+            return location_mesh_draw(art,o,&mounted,&part,source,shadow,cutaway,false,NULL);
+        }
         if(art->motel[mounted.asset].meshCount)return location_draw(art,o,&mounted,&art->motel[mounted.asset],shadow,cutaway,false);
         return mounted_fallback(o,shadow);
     }

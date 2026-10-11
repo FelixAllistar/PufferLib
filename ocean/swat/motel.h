@@ -18,7 +18,10 @@
 #define SWAT_MOTEL_NIGHTSTAND_FIRST (SWAT_MOTEL_PANES_FIRST+SWAT_MOTEL_PANE_INSTANCES)
 #define SWAT_MOTEL_WINDOWS_FIRST (SWAT_MOTEL_NIGHTSTAND_FIRST+1)
 #include "motel_windows_count.h"
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_WINDOWS_FIRST+SWAT_WINDOW_R1_PIECES)
+#define SWAT_MOTEL_WINDOWS_END (SWAT_MOTEL_WINDOWS_FIRST+SWAT_WINDOW_R1_PIECES)
+#define SWAT_MOTEL_SEATING_FIRST SWAT_MOTEL_WINDOWS_END
+#define SWAT_MOTEL_SEATING_PARTS 3
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_SEATING_FIRST+SWAT_MOTEL_SEATING_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -69,6 +72,9 @@ int swat_motel_foliage(const SwatWorld*,int index,SwatMotelInstance* placement);
 bool swat_motel_mounted(const SwatWorld*,int owner,SwatMotelInstance* placement);
 // Static parked service props with real sparse collision and floor support.
 bool swat_motel_prop(const SwatWorld*,int owner,SwatMotelInstance* placement);
+// Original chair wood/cushion primitives and one mixed daybed primitive.
+// The cushion depends on the chair frame; floor roots retain measured anchors.
+bool swat_motel_seating(const SwatWorld*,int owner,SwatMotelInstance* placement);
 // Panes inherit their original assembly. Their authored envelopes are modeled
 // collision depth, not measured physical glazing gauge.
 int swat_motel_pane_parent(const SwatWorld*,const SwatObject*);
