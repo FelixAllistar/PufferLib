@@ -146,14 +146,8 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
         float hash=(o->tag.index*37%101)/101.0f;
         Vector3 p={(float)o->center.x+.18f*(hash-.5f),floor_y+.015f,(float)o->center.z+.25f*(hash-.5f)};
         DrawTriangle3D(p,(Vector3){p.x+.02f,p.y,p.z+.16f},(Vector3){p.x+.13f,p.y,p.z+.04f},(Color){166,158,143,255});
-        if(o->breach_ticks>0) {
-            float age=(48-o->breach_ticks)*SWAT_DT;
-            for(int i=0;i<3;i++) {
-                Vector3 chip={(float)o->center.x+(hash-.5f)*age*2,(float)o->center.y+.4f*age-2.5f*age*age,(float)o->center.z+(i-1)*age*.6f};
-                if(chip.y<floor_y) chip.y=floor_y+.02f;
-                DrawCube(chip,.035f,.018f,.06f,Fade((Color){184,176,158,255},o->breach_ticks/48.0f));
-            }
-        }
+        // Flying debris comes from the bounded material event batch, including
+        // charge apertures. Do not submit three separate cubes per removed tile.
     }
     if (!o->active && !swat_motel_fence_proxy(world,o) && swat_motel_surroundings_part(world,o)!=1) return;
     bool cutaway=view->planning && !view->plan_preview;

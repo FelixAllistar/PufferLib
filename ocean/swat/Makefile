@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 lighting-bake: | $(BUILD)
@@ -102,7 +102,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: impact-effects-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: impact-effects-test sound-bank-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
@@ -129,6 +129,9 @@ environment-art-test-build: ui-assets | $(BUILD)
 impact-effects-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_impact_effects.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_impact_effects
 	ulimit -c 0; $(BUILD)/test_impact_effects
+sound-bank-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_sound_bank.c spatial_audio.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_sound_bank
+	ulimit -c 0; $(BUILD)/test_sound_bank assets/audio
 weapon-art-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapon_art.c weapon_art.c character_asset.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_weapon_art
 lighting-test-build: | $(BUILD)

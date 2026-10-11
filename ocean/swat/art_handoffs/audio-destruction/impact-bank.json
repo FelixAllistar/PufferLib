@@ -1,0 +1,93 @@
+{
+  "license": "CC0-1.0",
+  "license_file": "ocean/swat/art_handoffs/audio_sources/kenney/License.txt",
+  "processing": "Unchanged original Ogg; runtime mono decode through existing bank",
+  "purpose": "Material foley families; not recordings of bullets or explosive charges",
+  "clips": [
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactPlate_light_000.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_ceramic_0.ogg",
+      "bytes": 10474,
+      "sha256": "6e797cf8a5bfc52d7ed5eb47c227974c1cf2a674954fec5b539cea7d62c7282c"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactPlate_light_001.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_ceramic_1.ogg",
+      "bytes": 11730,
+      "sha256": "947915c2eb6ac57ee08fd3a48b297fd108d69abc72076e79882c21cad0eef56e"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactPlate_light_002.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_ceramic_2.ogg",
+      "bytes": 9932,
+      "sha256": "8ac5869ea434cf0d364872774efe70b2d666a4f02ba35ddfc1e051d336721be8"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactTin_medium_000.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_aluminum_0.ogg",
+      "bytes": 6509,
+      "sha256": "f4bbee66ca191ec744b84fc07ac9ed2a6fda955d51cfed8360f12b62815d3cbd"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactTin_medium_001.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_aluminum_1.ogg",
+      "bytes": 6603,
+      "sha256": "84253095543c094d83cd749f42ecfbc96e356b60385f18a192c18eafb25b3cc6"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactTin_medium_002.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_aluminum_2.ogg",
+      "bytes": 6156,
+      "sha256": "c1d2c4f9910d4529581ae56a9a9a01454c4619fbb7d6da7616221d8ec58cc0c4"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactSoft_medium_000.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_soft_0.ogg",
+      "bytes": 5351,
+      "sha256": "7d3ba0bb5e60a11b5d3e558c141303dcf494256675fbf753c0d252d2cf0481e3"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactSoft_medium_001.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_soft_1.ogg",
+      "bytes": 5506,
+      "sha256": "7642a4fd43e547afe4f7adfadb3dabb681c0ff512f52c1674bae30a726841faf"
+    },
+    {
+      "source": "ocean/swat/art_handoffs/audio_sources/kenney/Audio/impactSoft_medium_002.ogg",
+      "runtime": "ocean/swat/assets/audio/kenney_soft_2.ogg",
+      "bytes": 5358,
+      "sha256": "5069e3571a77d7f7aae9ef71d0364aa245fb7d64a7c8cc9956f221d03088c089"
+    }
+  ],
+  "validation": {
+    "linux": "production bank and impact sampler pass",
+    "windows": "production bank, impact sampler, real held charge graphics, cover occlusion, expiry and restored depth writes pass",
+    "authority": "No simulation, material damage, physics, RNG, NPC hearing or wire-layout changes",
+    "bank_entries": 88,
+    "bank_capacity": 96,
+    "materials": 16,
+    "variants_per_material_kind": 3,
+    "render_budget": {
+      "events": 12,
+      "particles": 96,
+      "vertices": 1404
+    },
+    "native_batch_cpu_submission_ms": 0.121,
+    "gpu_completion_in_batch_timing": false,
+    "native_indoor_fire": {
+      "frames": 240,
+      "shots": 30,
+      "objects": 1330,
+      "actors": 9,
+      "hrtf": true,
+      "total_mean_ms": 18.279,
+      "total_p95_ms": 28.732,
+      "total_max_ms": 35.326,
+      "audio_mean_ms": 0.329
+    },
+    "performance_limit": "Short local diagnostic, not a controlled speedup or final performance acceptance",
+    "proof_directory": "build/swat/review/breach-feedback",
+    "listening_proof": "material-review.wav",
+    "builds": "Normal Linux player, Windows player and Puffer rebuilt; actual ./swat capture reviewed"
+  }
+}

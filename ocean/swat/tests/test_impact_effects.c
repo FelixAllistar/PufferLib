@@ -42,8 +42,29 @@ int main(void) {
     log=(SwatSoundLog){0};emit(&log,100,SWAT_SOUND_BREAK,SWAT_BRICK);
     assert(!sample(&log,145));
     swat_sound_surface(&log,100,0,SWAT_SOUND_FLASH,point,2.5f,80,SWAT_BRICK);
-    assert(sample(&log,145)==8); // The existing charge event expands the cue.
-    assert(!sample(&log,160));
+    assert(sample(&log,145)==24); // The existing charge event expands the cue.
+    int dust=0;float minimum_x=100,maximum_x=-100;
+    for(int p=0;p<24;p++) {
+        dust+=particles[p].dust;
+        minimum_x=fminf(minimum_x,(float)particles[p].position.x);
+        maximum_x=fmaxf(maximum_x,(float)particles[p].position.x);
+        assert(particles[p].dust || particles[p].radius<=.065f);
+    }
+    assert(dust==8 && maximum_x-minimum_x>1);
+    assert(!sample(&log,170));
+    // Mixed charge/hit sequences obey both the storage and vertex budgets.
+    log=(SwatSoundLog){0};
+    for(int i=0;i<4;i++) {
+        emit(&log,100+i,SWAT_SOUND_BREAK,SWAT_BRICK);
+        swat_sound_surface(&log,100+i,0,SWAT_SOUND_FLASH,point,2.5f,80,SWAT_BRICK);
+    }
+    for(int i=0;i<8;i++)emit(&log,104+i,SWAT_SOUND_IMPACT,SWAT_CONCRETE);
+    int mixed=sample(&log,115),vertices=0;
+    assert(mixed>0 && mixed<=SWAT_IMPACT_EFFECT_PARTICLES);
+    for(int p=0;p<mixed;p++)vertices+=(particles[p].dust?8:particles[p].shard?3:4)*3;
+    assert(vertices<=SWAT_IMPACT_EFFECT_VERTICES);
+    assert(swat_impact_sample(&log,115,eye,forward,again)==mixed);
+    assert(!memcmp(particles,again,mixed*sizeof(*particles)));
     // Ring wrap + saturation: preserve breaks ahead of newer ordinary impacts.
     log=(SwatSoundLog){0};for(int i=0;i<150;i++)emit(&log,100,SWAT_SOUND_STEP,SWAT_CONCRETE);
     emit(&log,100,SWAT_SOUND_BREAK,SWAT_BRICK);uint32_t break_id=log.next_id-1;
@@ -52,8 +73,8 @@ int main(void) {
     for(int p=0;p<52;p++)breaks+=particles[p].event_id==break_id;
     assert(breaks==8);
     for(int i=0;i<30;i++)emit(&log,102,SWAT_SOUND_BREAK,SWAT_CONCRETE);
-    assert(sample(&log,102)==SWAT_IMPACT_EFFECT_PARTICLES);
-    for(int p=1;p<96;p++)assert(particles[p-1].distance_squared>=particles[p].distance_squared);
+    int saturated=sample(&log,102);assert(saturated>70 && saturated<=SWAT_IMPACT_EFFECT_PARTICLES);
+    for(int p=1;p<saturated;p++)assert(particles[p-1].distance_squared>=particles[p].distance_squared);
     log=(SwatSoundLog){0};emit(&log,INT_MAX,SWAT_SOUND_BREAK,SWAT_GLASS);
     assert(!sample(&log,INT_MIN));assert(sample(&log,INT_MAX)==8);
     log.events[0].material=SWAT_MATERIAL_COUNT;assert(!sample(&log,INT_MAX));
@@ -84,9 +105,10 @@ int main(void) {
     swat_sim_reset(&sim);assert(!swat_impact_sample(&sim.sounds,sim.tick,eye,forward,particles));
     swat_sim_close(&sim);
     log=(SwatSoundLog){0};for(int i=0;i<SWAT_SOUND_CAPACITY;i++)emit(&log,100,SWAT_SOUND_BREAK,SWAT_BRICK);
+    saturated=sample(&log,110);
     clock_t start=clock();int total=0;
     for(int i=0;i<10000;i++)total+=sample(&log,110);
-    assert(total==10000*SWAT_IMPACT_EFFECT_PARTICLES);
+    assert(total==10000*saturated);
     printf("Impact sampler saturated-log CPU mean: %.3f microseconds (10000 iterations)\n",1e6*(clock()-start)/CLOCKS_PER_SEC/10000);
     puts("PASS impact effects: material cues, deterministic replay sampling, expiry, reset, wrapped log, bounded saturation, break priority, charge cue, real ballistic event and immutable authority");
     return 0;

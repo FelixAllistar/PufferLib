@@ -9,8 +9,8 @@ static Image impact_capture(SwatSoundLog* log,int tick,int cover) {
     if(cover==2) {
         // Farther geometry drawn afterward must pass through translucent cues;
         // ordinary geometry after the effects must still write its own depth.
-        DrawCube((Vector3){0,1,-.5f},2,2,.1f,RED);
-        DrawCube((Vector3){0,1,-1},2,2,.1f,BLUE);
+        DrawCube((Vector3){0,1,-.5f},4,4,.1f,RED);
+        DrawCube((Vector3){0,1,-1},4,4,.1f,BLUE);
     }
     EndMode3D();EndTextureMode();Image image=LoadImageFromTexture(target.texture);ImageFlipVertical(&image);
     UnloadRenderTexture(target);return image;
@@ -29,7 +29,7 @@ static void impact_effects_graphics(SwatView* view,const char* directory) {
         Image baseline=impact_capture(&empty,110,0),visible=impact_capture(&log,110,0);
         int pixels=impact_pixel_difference(baseline,visible);assert(pixels>30);
         snprintf(path,sizeof(path),"%s/impact-material-%d.png",directory,materials[i]);assert(ExportImage(visible,path));
-        Image expired=impact_capture(&log,160,0);assert(!impact_pixel_difference(baseline,expired));UnloadImage(expired);
+        Image expired=impact_capture(&log,170,0);assert(!impact_pixel_difference(baseline,expired));UnloadImage(expired);
         for(int cover=1;cover<=2;cover++) {
             Image expected=impact_capture(&empty,110,cover),actual=impact_capture(&log,110,cover);
             assert(!impact_pixel_difference(expected,actual));UnloadImage(expected);UnloadImage(actual);
@@ -67,4 +67,47 @@ static void impact_effects_graphics(SwatView* view,const char* directory) {
     assert(!memcmp(&before,&sim.world,sizeof(before)) && !memcmp(&sounds,&sim.sounds,sizeof(sounds)));
     snprintf(path,sizeof(path),"%s/impact-lobby-native.png",directory);Image scene=LoadImageFromScreen();assert(ExportImage(scene,path));UnloadImage(scene);
     swat_sim_close(&sim);
+
+    // A small scenario fixture uses the ordinary held charge, finite stock,
+    // movement and remote input. Its breach cue comes from accepted authority.
+    memset(&sim,0,sizeof(sim));sim.config=swat_default_config();
+    sim.config.hostile_fire=false;sim.config.max_ticks=10000;
+    swat_world_init(&sim.world);sim.extraction=(b3Pos){-15,0,0};sim.actor_count=3;
+    swat_world_box(&sim.world,(b3Pos){0,-.5f,0},swat_v(20,.5f,20),SWAT_CONCRETE,0);
+    swat_build_framed_wall(&sim.world,(b3Pos){0,0,0},0,4,2.7f,0,0,0,0,true);
+    swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){-1.2f,0,0},0);
+    swat_sim_spawn_actor(&sim,1,SWAT_SUSPECT,(b3Pos){10,0,8},SWAT_PI);
+    swat_sim_spawn_actor(&sim,2,SWAT_CIVILIAN,(b3Pos){10,0,-8},SWAT_PI);
+    swat_equipment_kit(&sim.actors[0].gear,1);
+    SwatInput input=swat_neutral_input();
+    for(int i=0;i<15;i++)swat_sim_step(&sim,&input);
+    input.door_tool=SWAT_PLACE_CHARGE;
+    for(int i=0;i<90;i++)swat_sim_step(&sim,&input);
+    assert(sim.actors[0].gear.breaching_charges==0);
+    input=swat_neutral_input();input.forward=-1;
+    for(int i=0;i<75;i++)swat_sim_step(&sim,&input);
+    for(int i=0;i<2;i++){BeginDrawing();swat_view_draw(view,&sim,false,75);EndDrawing();}
+    snprintf(path,sizeof(path),"%s/charge-before.png",directory);
+    scene=LoadImageFromScreen();assert(ExportImage(scene,path));UnloadImage(scene);
+    input=swat_neutral_input();input.door_tool=SWAT_DETONATE_CHARGE;swat_sim_step(&sim,&input);
+    int breaks=0,flashes=0;
+    for(int i=0;i<sim.sounds.count;i++) {
+        const SwatSoundEvent* e=swat_sound_at(&sim.sounds,i);if(e->tick!=sim.tick)continue;
+        breaks+=e->kind==SWAT_SOUND_BREAK;flashes+=e->kind==SWAT_SOUND_FLASH;
+    }
+    assert(breaks==1 && flashes==1 && sim.events.destroyed>0);
+    int emitted=sim.tick;
+    input=swat_neutral_input();for(int i=0;i<6;i++)swat_sim_step(&sim,&input);
+    before=sim.world;sounds=sim.sounds;
+    for(int i=0;i<2;i++){BeginDrawing();swat_view_draw(view,&sim,false,75);EndDrawing();}
+    assert(!memcmp(&before,&sim.world,sizeof(before)) && !memcmp(&sounds,&sim.sounds,sizeof(sounds)));
+    snprintf(path,sizeof(path),"%s/charge-burst.png",directory);
+    scene=LoadImageFromScreen();assert(ExportImage(scene,path));UnloadImage(scene);
+    for(int i=0;i<90;i++)swat_sim_step(&sim,&input);
+    assert(sim.tick-emitted>69);
+    for(int i=0;i<2;i++){BeginDrawing();swat_view_draw(view,&sim,false,75);EndDrawing();}
+    snprintf(path,sizeof(path),"%s/charge-after.png",directory);
+    scene=LoadImageFromScreen();assert(ExportImage(scene,path));UnloadImage(scene);
+    swat_sim_close(&sim);
+    puts("PASS charge graphics: ordinary mount/retreat/detonate inputs, finite stock, one blast/break pair, transient burst and immutable render authority");
 }

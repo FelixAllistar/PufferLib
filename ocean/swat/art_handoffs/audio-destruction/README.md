@@ -28,3 +28,19 @@ Evidence lives in `build/swat/review/destruction-audio`: bank/source hash and
 decode checks, material selection/finite mixed samples and tactical checks.
 Native player assets receive the same bank and original clips. The normal
 launcher now checks audio-file freshness alongside environment assets.
+
+The October 10 follow-up adds nine unchanged Kenney CC0 plate, tin and soft
+contact recordings (67,619 bytes) with original/runtime hashes in
+`impact-bank.json` and the production `SOURCES.json`. The bank now has 88 rows
+within 96 slots. Exact surface entries override documented family fallbacks;
+all 16 impact/break materials select three recorded variants. Ceramic breakage
+uses glass and aluminum uses steel fall recordings; these remain foley families,
+not captured ballistic or explosive failures. A redundant same-contact hit is
+suppressed when its recorded break plays. Authority and NPC hearing are unchanged.
+
+The production loader/selector check is now a maintained C test,
+`tests/test_sound_bank.c`, rather than only a temporary review tool. Linux and
+Windows decode checks, complete material coverage, selection priority, source
+identity, bounded directional mixing, expiry and cleanup are validated in
+`build/swat/review/breach-feedback`. `material-review.wav` is a compact listening
+proof; realistic blast recordings and voice/door polish remain unfinished.
