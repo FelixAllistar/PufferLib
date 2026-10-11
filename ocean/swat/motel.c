@@ -572,7 +572,14 @@ int swat_motel_wall_edges(const SwatWorld* w,const SwatObject* o,SwatMotelEdge* 
             for(int f=0;f<4;f++) {
                 int g=(f+1)%4;float ay=ny+u[f][0]-v[e][0],az=nz+u[f][1]-v[e][1];
                 float by=ny+u[g][0]-v[e][0],bz=nz+u[g][1]-v[e][1];
-                if(fabsf(ty*az-tz*ay)>.0001f || fabsf(ty*bz-tz*by)>.0001f)continue;
+                // A charge can retreat a shared boundary into its survivor.
+                // The removed neighbor must still lie outside this edge, with
+                // a nearby, oppositely directed boundary. Never mark sealed
+                // seams or the opposite face as exposed fracture surfaces.
+                float gap_a=ty*az-tz*ay,gap_b=ty*bz-tz*by;
+                float neighbor_length=hypotf(by-ay,bz-az);
+                if(gap_a>.001f || gap_b>.001f || gap_a<-.15f || gap_b<-.15f ||
+                   ty*(by-ay)+tz*(bz-az)>-.9f*neighbor_length)continue;
                 float a=ty*ay+tz*az,b=ty*by+tz*bz;
                 if(b>=a)continue; // Neighbor's shared boundary runs the other way.
                 float lo=fmaxf(0,b),hi=fminf(length,a);if(hi-lo<.0001f)continue;

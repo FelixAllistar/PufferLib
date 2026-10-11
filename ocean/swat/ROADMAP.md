@@ -62,6 +62,46 @@ local versions. The previous motel-only tracker entry was usage-limited and its
 replacement request was rejected because it remains unfinished; this roadmap is
 the current working objective, not a claim that the earlier slice was completed.
 
+The physical breach-edge increment chips surviving shared boundaries next to
+material removed by the current charge. Deterministic cuts stay inside their
+original convex fragment, cap adjoining-edge movement at 7 cm for brick and
+12 cm for board (also capped at 20% of each adjacent edge), and proportionally
+reduce the surviving health. Queries, Box3D hulls, source-face clipping and
+authored exposed-edge strips use the resulting corners. Floors, doors, fence
+rules, material penetration/resistance and remote wall geometry are unchanged.
+Four-corner fragments and disappearing chunks remain approximations; this does
+not complete fracture realism or introduce loose structural rubble.
+
+Protocol/replay version 18 carries mutable fragment corners in snapshots. Full
+validation and hull preparation precede mutation; nonfinite, nonconvex,
+out-of-bounds and growing shapes fail atomically. Existing pre-damage clients,
+late maps and reconstructed replay state agree. Older wire versions/journals
+are retained but cannot load into this build; use fresh recordings and matching
+peers. RL observation/action shapes and user config remain unchanged.
+
+Linux/native Windows geometry checks pass for masonry and board at two yaws:
+eight surviving masonry pieces or twelve board pieces shrink in the test
+charges; removed-area rays and capsule casts, unchanged remote cover, identical
+reconstructed charge geometry, live/late replicas, malformed/growing update
+rejection and packet capacity are checked. The motel snapshot is 61,248 bytes.
+Native graphics show 48,737 changed pixels after the charge and pixel-identical
+replicated damage; 3,166 marker pixels prove exposed source edges still draw.
+All four Linux completion plans pass ordinary inputs, every-tick replay,
+mid-run save/resume and replica state. The 14,398-tick hostile inter-room route
+also passes in native Windows. QA staging accepts a reachable position beside
+an occupied grid cell while independently checking tool reach and actual wall
+crossing; Room 104's capsule plan goes around its daybed and desk. No gameplay
+success conditions or scenario triggers were added.
+
+Normal Linux/Windows players, both servers and Puffer rebuilt; `./swat` native
+capture passed. The 240-frame indoor HRTF automatic-fire diagnostic measured
+22.950 ms mean / 38.923 ms p95 / 79.364 ms maximum total, with 13.457 ms mean
+world geometry and 3.404 ms mean shadows. CPU checks/builds were running;
+this is not a controlled speedup/regression comparison or final frame budget.
+Geometry tests, native captures and logs live in
+`build/swat/review/breach-geometry`. Detailed rubble/fracture and remaining
+rendering spikes still need work.
+
 The breach-feedback increment replaces per-removed-piece flying cube submissions
 with the existing single event batch: charge pairs produce up to 24 dust/chip
 particles for 1.15 seconds, masonry/wood/metal chips tumble as small solid shapes,
@@ -86,7 +126,7 @@ measured 18.279 ms mean total, 28.732 ms p95, 35.326 ms maximum, and 0.329 ms me
 audio. This short local diagnostic is not a controlled speedup or final slice
 acceptance. Logs, compact before/burst/after captures and one listening proof are
 in `build/swat/review/breach-feedback`. Production blast/door/voice sources and
-finer physical fracture geometry remain work for subsequent increments.
+further physical fracture detail remain work for subsequent increments.
 
 The seating increment adds source-scale CC0 furniture to Rooms 103 and 104:
 Modern Arm Chair 01 with separate wood/cushion owners, and the original mixed
@@ -209,7 +249,8 @@ strength, exact missing-art fallback and serialized removal; rubber/liner physic
 response and hollow frame construction remain approximations. Native graphics
 match 152,048 ray/raster samples on five views, source and fallback. Linux/Windows
 contact checks preserve 25,983 triangles/edge flags over 23 assets with 55,200
-matched rays each, including replicas. Old version-17 prefixes remain loadable.
+matched rays each, including replicas. Legacy map prefixes remain supported
+when encoded with the current wire version; older wire-version journals do not.
 The hostile exterior route still completes in 9,827 ordinary-input ticks with
 exact replay, mid-run save, fresh replica and no contact-buffer overflow.
 The original extinguisher is now mounted beside room 104 at measured scale,
@@ -385,7 +426,8 @@ The current motel recipe has 1,327 objects, including the room 104 nightstand
 and 137 appended R1 window groups. The 1,190-object prefix retains the
 nightstand and original independent panes. The previous 1,189-object prefix retains independent panes; earlier
 canonical prefixes keep original aggregate glazing. Partial pane recipes and changed opacity/depth/support
-are rejected. Wire layout remains version 17, but peers need matching builds for
+are rejected. That increment used wire version 17 (the current version is 18
+as documented above); peers need matching builds for
 the appended glass/aluminum/rubber/cloth materials and current map recipe. Movement v2 and annex
 v3 remain unchanged. Panes use independently owned, bounded contact subsets and
 cached material batches; original material maps/UVs and Room 101 v3/v4 art survive.

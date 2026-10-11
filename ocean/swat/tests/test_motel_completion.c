@@ -196,9 +196,10 @@ static void evacuate(int actor,bool exterior) {
     printf("Evacuated actor %d at tick %d\n",actor,sim.tick);fflush(stdout);
 }
 static void enter_breach(float wall,b3Pos retreat) {
-    // The route helper returns 60 cm cell centres. Arrival within 40 cm is
-    // sufficient here; actual wall-plane crossing is checked independently.
-    b3Pos start={wall-.8f,0,-1.17f},aim={wall,1,-1.17f};walk(start,.4f);
+    // Staging need not occupy a specific 60 cm grid centre beside a surrendered
+    // person. Actual tool reach, finite placement and aperture crossing are
+    // independently checked below using the ordinary player inputs.
+    b3Pos start={wall-.8f,0,-1.17f},aim={wall,1,-1.17f};walk(start,.6f);
     for(int i=0;i<35;i++)step(look(aim));
     SwatHit hit=swat_context_hit(&sim,0,1.7f);
     if(hit.kind!=SWAT_HIT_WORLD || !swat_world_breachable(&sim.world.objects[hit.index]) || sim.world.objects[hit.index].door)fail("select masonry charge surface");
@@ -210,7 +211,7 @@ static void enter_breach(float wall,b3Pos retreat) {
     idle(1);walk(retreat,.4f);
     SwatInput detonate=swat_neutral_input();detonate.door_tool=SWAT_DETONATE_CHARGE;step(detonate);idle(180);
     if(sim.totals.destroyed<=destroyed)fail("remote masonry breach");
-    walk(start,.4f);
+    walk(start,.6f);
     if(wall>-10 && sim.actors[watch_actor].gear.surrendered && b3Distance(feet(0),feet(watch_actor))<2) {
         secure(watch_actor);
         for(int t=0;t<120 && sim.actors[watch_actor].mind.escort_owner!=0;t++) {
@@ -226,7 +227,7 @@ static void enter_breach(float wall,b3Pos retreat) {
         if(sim.actors[watch_actor].mind.escort_owner==0)fail("hold arrested suspect clear of breach");
         walk((b3Pos){wall-3.2f,0,2.5f},.43f);
         walk((b3Pos){wall-3.2f,0,-.85f},.43f);
-        walk(start,.4f);
+        walk(start,.6f);
     }
     if(wall>-10) {
         // An occupant can swing the front leaf across this side-wall aperture.

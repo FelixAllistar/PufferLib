@@ -124,13 +124,19 @@ static void utility_hits(SwatWorld* w) {
         assert(side.hit && side.index==basket && side.distance>.10f && side.distance<.16f);
     }
 }
+static bool route_object(b3ShapeId shape,void* context) {return B3_ID_EQUALS(shape,((SwatObject*)context)->shape);}
 static void route(b3Pos* source,int count) {
     b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
     for(int i=1;i<count;i++) {
         b3Pos from={source[i-1].x,source[i-1].z,-source[i-1].y};
         b3Pos to={source[i].x,source[i].z,-source[i].y};
         float f=b3World_CastMover(world.id,from,&capsule,b3SubPos(to,from),b3DefaultQueryFilter(),NULL,NULL);
-        printf("capsule route %.2f %.2f -> %.2f %.2f: %.6f\n",(float)from.x,(float)from.z,(float)to.x,(float)to.z,f); fflush(stdout); assert(f>.999f);
+        printf("capsule route %.2f %.2f -> %.2f %.2f: %.6f\n",(float)from.x,(float)from.z,(float)to.x,(float)to.z,f);
+        if(f<=.999f)for(int j=0;j<world.count;j++)if(world.objects[j].active) {
+            float part=b3World_CastMover(world.id,from,&capsule,b3SubPos(to,from),b3DefaultQueryFilter(),route_object,&world.objects[j]);
+            if(part<=.999f)printf("  blocked by owner%d material%d at %.3f\n",j,world.objects[j].material,part);
+        }
+        fflush(stdout);assert(f>.999f);
     }
 }
 typedef struct WallQuery {SwatWorld* world;int group;} WallQuery;
@@ -435,7 +441,14 @@ int main(void) {
     b3Pos west[]={{-14,-.6f,-.08f},{-14,3.3f,-.08f}};route(west,2);
     b3Pos ramp[]={{-10.9f,-3.01f,-.078f},{-10.9f,-1.83f,0},{-10.9f,-.8f,0}};route(ramp,3);
     for(int i=0;i<4;i++) {
-        float x=-6+4*i;b3Pos room[]={{x-1.2f,-.85f,0},{x-1.2f,.7f,0},{x-.15f,1.12f,0},{x-.15f,3.52f,0},{x-1.2f,3.52f,0},{x-1.2f,4.70f,0}};route(room,6);
+        float x=-6+4*i;
+        // Room 104's source-scale daybed blocks the former diagonal shortcut.
+        // Reach the aisle behind it before turning toward the rear bathroom.
+        if(i==3) {
+            b3Pos room[]={{x-1.2f,-.85f,0},{x-1.2f,1.36f,0},{x-.15f,1.36f,0},{x-.15f,3.52f,0},{x-1.2f,3.52f,0},{x-1.2f,4.70f,0}};route(room,6);
+        } else {
+            b3Pos room[]={{x-1.2f,-.85f,0},{x-1.2f,.7f,0},{x-.15f,1.12f,0},{x-.15f,3.52f,0},{x-1.2f,3.52f,0},{x-1.2f,4.70f,0}};route(room,6);
+        }
     }
     assert(swat_world_damage(&world,first,1000) && !world.objects[first].active);
     assert(swat_world_ray(&world,(b3Pos){-4,1,1},swat_v(0,0,-1),2,b3_nullBodyId).hit);
