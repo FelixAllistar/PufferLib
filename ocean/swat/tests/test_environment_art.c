@@ -957,6 +957,7 @@ int main(int argc,char** argv) {
     if(argc>2 && !strcmp(argv[2],"motel-bag")) {texture_owner_graphics("motel_props/trashbag_floor_centered_1k.glb");motel_prop_graphics(&view,directory,8);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-cabinet")) {texture_owner_graphics("motel_props/power_box_01_rear_centered_1k.glb");motel_prop_graphics(&view,directory,9);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-service")) {texture_owner_graphics("motel_props/hose_bracket.glb");texture_owner_graphics("motel_props/wall_garden_spigot_reuse.glb");for(int i=10;i<14;i++)motel_prop_graphics(&view,directory,i);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
+    if(argc>2 && !strcmp(argv[2],"motel-screwdriver")) {texture_owner_graphics("motel_props/wood_handle_flathead_screwdriver_250mm_MAIN.glb");motel_prop_graphics(&view,directory,14);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-seating")) {
         environment("SWAT_MOTEL_SEATING_TEXTURES",argc>3?argv[3]:NULL);
         texture_owner_graphics("motel_props/modern_arm_chair_01_floor_centered_2k.glb");

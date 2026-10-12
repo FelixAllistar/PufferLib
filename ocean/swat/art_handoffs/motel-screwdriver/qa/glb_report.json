@@ -1,0 +1,83 @@
+{
+  "file": "runtime/wood_handle_flathead_screwdriver_250mm_MAIN.glb",
+  "sha256": "1ce59f4c3e6befd1ecd204cae6c07bf18169c6047e3f4c2c1fac462a497d0272",
+  "bytes": 1700352,
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "wood_handle_flathead_screwdriver_MAIN",
+      "rotation": [
+        0,
+        -1,
+        0,
+        1.9470718370939721e-07
+      ],
+      "scale": [
+        0.040596429258584976,
+        0.040596429258584976,
+        0.040596429258584976
+      ],
+      "translation": [
+        0,
+        0.01319979503750801,
+        -0.083059161901474
+      ]
+    }
+  ],
+  "mesh_count": 1,
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "Original screwdriver maps",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    }
+  ],
+  "primitives": [
+    {
+      "vertices": 1507,
+      "triangles": 2560,
+      "attributes": [
+        "POSITION",
+        "NORMAL",
+        "TEXCOORD_0"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "screwdriver_diffuse",
+      "mimeType": "image/png",
+      "size": [
+        1024,
+        1024
+      ],
+      "bytes": 1420601,
+      "sha256": "467cdd332362df8bb49d6c200f5c3fdc3bb9cecbb98bdb043413bf1b651924bd"
+    },
+    {
+      "name": "screwdriver_metallic-screwdriver_roughness",
+      "mimeType": "image/png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 214364,
+      "sha256": "2fc1fe3df8d2afccf91d97900f107b4d190ab23190e66f344477a97a42826f54"
+    }
+  ]
+}

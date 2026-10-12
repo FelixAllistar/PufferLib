@@ -34,7 +34,7 @@ static void window_part_recipe(int parent,int index,b3Pos* center,b3Vec3* half,f
 }
 static bool windows_validate(const SwatWorld* w){
     if(w->count<=SWAT_MOTEL_WINDOWS_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int bay=0;bay<5;bay++){
         int parent=pane_parents[bay],first=swat_motel_window_first(parent);const SwatWindowModel* m=&window_r1_models[bay?0:1];
         for(int i=0;i<m->part_count;i++){

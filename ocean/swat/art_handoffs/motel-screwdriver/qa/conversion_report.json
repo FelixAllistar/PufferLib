@@ -1,0 +1,156 @@
+{
+  "blender": "4.3.2",
+  "object_count": 1,
+  "source_geometry": {
+    "vertices": 1462,
+    "polygons": 1280,
+    "triangles": 2560,
+    "uv_layers": [
+      "Bake"
+    ],
+    "local_position_f64_sha256": "442525148e1c4c8a86ed52b3aa2bfbd7ff23b2e2aabb6cca1ad9fb167a48ca00",
+    "loop_uv_f64_sha256": "59a233c40661fbdc572dc36b0f3bcfd9ab178c1e4b9c9efdaa737e2558ee67f7",
+    "polygon_index_sha256": "957bc5117f9103ddd54f3167c3d05bc3364da8f987a30fc341aade630b02bcfb",
+    "matrix_world": [
+      [
+        -0.6541075110435486,
+        2.5471885578554065e-07,
+        -1.9230739572930096e-14,
+        -1.6591943502426147
+      ],
+      [
+        -2.5471885578554065e-07,
+        -0.6541075110435486,
+        4.938374331686646e-08,
+        6.408636093139648
+      ],
+      [
+        8.96237571926722e-22,
+        4.938374331686646e-08,
+        0.6541075110435486,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "runtime_editable_geometry": {
+    "vertices": 1462,
+    "polygons": 1280,
+    "triangles": 2560,
+    "uv_layers": [
+      "Bake"
+    ],
+    "local_position_f64_sha256": "442525148e1c4c8a86ed52b3aa2bfbd7ff23b2e2aabb6cca1ad9fb167a48ca00",
+    "loop_uv_f64_sha256": "59a233c40661fbdc572dc36b0f3bcfd9ab178c1e4b9c9efdaa737e2558ee67f7",
+    "polygon_index_sha256": "957bc5117f9103ddd54f3167c3d05bc3364da8f987a30fc341aade630b02bcfb",
+    "matrix_world": [
+      [
+        -0.040596429258584976,
+        1.580883335350336e-08,
+        -1.193533691306182e-15,
+        7.450580596923828e-09
+      ],
+      [
+        -1.580883335350336e-08,
+        -0.040596429258584976,
+        3.0649451865372157e-09,
+        0.083059161901474
+      ],
+      [
+        -1.314907593385669e-23,
+        3.0649451865372157e-09,
+        0.040596429258584976,
+        0.01319979503750801
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "unchanged_local_mesh_and_uv": true,
+  "source_bounds_blender_xyz": {
+    "min": [
+      -1.8706685304641724,
+      3.056295156478882,
+      -0.2126808911561966
+    ],
+    "max": [
+      -1.4477205276489258,
+      7.084404945373535,
+      0.212680846452713
+    ],
+    "dimensions": [
+      0.4229480028152466,
+      4.028109550476074,
+      0.4253617525100708
+    ]
+  },
+  "normalization": {
+    "uniform_factor": 0.062063849572630954,
+    "length_metres": 0.25,
+    "basis": "Editorial normalization, NOT verified physical size",
+    "pivot": "Source orientation retained; bottom-centered world AABB. Blender Y length; glTF Z length; glTF Y up."
+  },
+  "normalized_bounds_blender_xyz": {
+    "min": [
+      -0.01312489528208971,
+      -0.1250000149011612,
+      -4.0392822420187713e-10
+    ],
+    "max": [
+      0.013124885968863964,
+      0.12499997764825821,
+      0.026399586349725723
+    ],
+    "dimensions": [
+      0.026249781250953674,
+      0.25,
+      0.026399586349725723
+    ]
+  },
+  "texture_mapping": [
+    {
+      "source": "textures/screwdriver_diffuse.png",
+      "socket": "Base Color",
+      "color_space": "sRGB",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "sha256": "467cdd332362df8bb49d6c200f5c3fdc3bb9cecbb98bdb043413bf1b651924bd",
+      "sampling": "linear, repeat; original UVMap"
+    },
+    {
+      "source": "textures/screwdriver_roughness.png",
+      "socket": "Roughness",
+      "color_space": "Non-Color",
+      "resolution": [
+        512,
+        512
+      ],
+      "sha256": "8852aa0867ff1724bb3cb6ee83c3f3b0eb59ca84e4b042e979705dccdb78d997",
+      "sampling": "linear, repeat; original UVMap"
+    },
+    {
+      "source": "textures/screwdriver_metallic.png",
+      "socket": "Metallic",
+      "color_space": "Non-Color",
+      "resolution": [
+        512,
+        512
+      ],
+      "sha256": "e950ea4a16512f1d5157f58dd55b815907d691a65a911a7290f9205ed8fe9c61",
+      "sampling": "linear, repeat; original UVMap"
+    }
+  ],
+  "shader_defaults": "Blender 4.3 Principled BSDF defaults except linked base color, roughness and metallic. No retuning. No normal input.",
+  "export_note": "glTF exporter packs roughness in G and metallic in B; this derived runtime image is separate from immutable original maps."
+}

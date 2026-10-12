@@ -26,6 +26,28 @@ plumbing, deformable hose and certified mounts are outside this increment.
 Source/limits/regeneration: `art_handoffs/motel-wall-service/ENGINE_IMPORT.md`.
 The full slice acceptance checks below remain open.
 
+Screwdriver increment (2026-10-12): the unchanged original 2,560-triangle MAIN
+model now rests on the maintenance trolley's actual top-liner triangle, retaining
+the artist's explicitly editorial 250 mm scale, normals/UVs, original 1K colour
+and 512px packed scalar maps. No normal/AO or LOD is introduced. Native C physics
+regeneration is byte-identical; independent image QA checks all 262,144 packed
+roughness/metallic pixels against the source. Eleven contact subsets retain every
+source triangle/edge flag. Linux/native contact, 595 silhouette hits/1,324 openings,
+finite partial/removal damage, trolley dependency loss, live/late replicas, older
+hose/tap maps and malformed-state checks pass. Expanded contact QA preserves
+80,102 original triangles/flags and 84,000 ray/exit matches on both platforms,
+repeated after encoded-map reconstruction. Native source/fallback rendering passes
+157,428 stable comparisons, original bounds/PBR, lighting, removal and texture
+lifetime; the trolley view was inspected. All four full ordinary-input scenario
+routes pass on both platforms with every-tick replay, save/resume, replicas,
+truthful debrief and no contact overflow. Normal Windows/Linux players/servers
+and float Puffer are rebuilt. Source/editable/license data stays in repo, with
+the original 18-tool archive retained once for future reuse. This is a static
+mixed-assembly prop with explicit game health/support; handheld use, certified
+balance/material strengths and separate handle/shaft destruction are not claimed.
+Receipt: `art_handoffs/motel-screwdriver/ENGINE_IMPORT.md`; compact evidence:
+`build/swat/review/screwdriver`. Full performance and behavior acceptance remain open.
+
 Recorded breach profiling (2026-10-12): the normal diagnostic now accepts
 `--replay FILE --seek TICKS`, replays ordinary inputs with every-tick digest
 verification and measures actual player C4 openings. It rejects simulation
@@ -43,6 +65,9 @@ moving shadows, scene submission and breach refresh rather than claiming a
 stable frame budget. Other machine activity was uncontrolled; these are diagnostics,
 not a paired speedup claim or full performance acceptance. Compact evidence is
 under `build/swat/review/wall-service`.
+Felix subsequently confirmed League of Legends was running during these timings.
+Treat them as competing-load diagnostics, not a reliable performance baseline;
+the deterministic breach/replay checks still pass independently of timing.
 
 Deliver a near-realistic vertical slice of the fuller tactical game, with a
 finished Briar Court level as the main proving ground and the shared range,
