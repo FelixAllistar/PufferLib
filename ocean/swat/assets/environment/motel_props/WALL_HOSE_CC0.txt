@@ -1,0 +1,7 @@
+SPDX-License-Identifier: CC0-1.0
+
+To the extent possible under law, the creator dedicates all copyright and related or neighboring rights in the original geometry, textures, scripts, source files, runtime exports, documentation and preview images in this wall-mounted hose hanger package to the public domain under CC0 1.0 Universal.
+
+You may copy, modify, distribute and use the original work, including commercially, without asking permission or giving attribution. This work is provided without warranty. This dedication does not grant trademark, patent, publicity or privacy rights.
+
+CC0 1.0 Universal legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode

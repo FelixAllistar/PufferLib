@@ -12,6 +12,20 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Latest prop increment (2026-10-12): the source-full 8,380-triangle hose hanger and
+1,408-triangle capped tap are installed on the reception-side service wall.
+Original triangles/attributes/images and metre frames pass independent preservation
+and byte-identical regeneration checks. Four rubber/metal damage owners retain
+open geometry and 46 bounded contacts with source flags; fixed wall dependencies,
+damage/C4/removal, live/late replicas and old cabinet-prefix maps pass on both
+platforms. All four full ordinary-input completion/replay/save routes also pass.
+Native graphics passes 622,384 source/fallback ray/raster samples, original maps,
+shared textures, lighting and removal. Generic motel/storefront PBR now honors
+authored normal-map strength. Source gaps, disconnected hose and capped tap remain;
+plumbing, deformable hose and certified mounts are outside this increment.
+Source/limits/regeneration: `art_handoffs/motel-wall-service/ENGINE_IMPORT.md`.
+The full slice acceptance checks below remain open.
+
 Deliver a near-realistic vertical slice of the fuller tactical game, with a
 finished Briar Court level as the main proving ground and the shared range,
 building and generated scenarios supporting equipment/behavior validation.

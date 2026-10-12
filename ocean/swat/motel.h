@@ -25,7 +25,10 @@
 #define SWAT_MOTEL_BAG_FIRST SWAT_MOTEL_SEATING_END
 #define SWAT_MOTEL_BAG_END (SWAT_MOTEL_BAG_FIRST+1)
 #define SWAT_MOTEL_CABINET_FIRST SWAT_MOTEL_BAG_END
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_CABINET_FIRST+1)
+#define SWAT_MOTEL_CABINET_END (SWAT_MOTEL_CABINET_FIRST+1)
+#define SWAT_MOTEL_SERVICE_FIRST SWAT_MOTEL_CABINET_END
+#define SWAT_MOTEL_SERVICE_PARTS 4
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_SERVICE_FIRST+SWAT_MOTEL_SERVICE_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -65,6 +68,7 @@ bool swat_motel_surroundings_instance(int owner,SwatMotelInstance* out);
 int swat_motel_bank_triangle_part(int triangle);
 const SwatMotelAsset* swat_motel_asset(int index);
 const SwatMotelInstance* swat_motel_instance(int index);
+bool swat_motel_service(const SwatWorld*,int owner,SwatMotelInstance*);
 // Small visual fixtures inherit a real support; they add no hidden colliders.
 // Returns the current supporting object, or -1 when that support is gone.
 int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* placement);

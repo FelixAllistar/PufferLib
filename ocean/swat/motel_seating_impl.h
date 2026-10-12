@@ -29,7 +29,7 @@ static bool seating_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_
 }
 static bool seating_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_SEATING_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int i=0;i<SWAT_MOTEL_SEATING_PARTS;i++) {
         const SwatObject* o=&w->objects[SWAT_MOTEL_SEATING_FIRST+i];const SwatMotelInstance* p=&seating_instances[i];
         b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];seating_recipe(i,&center,&half);

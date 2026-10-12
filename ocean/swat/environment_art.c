@@ -404,6 +404,9 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             material->maps[MATERIAL_MAP_NORMAL].value=2; // Signed UV derivatives.
             material->maps[MATERIAL_MAP_OCCLUSION].value=m<factors_count?factors[m].occlusion_strength:1;
             if(!location)art->motel_occlusion_uv[i][m+1]=m<factors_count?factors[m].occlusion_texcoord:0;
+            float normal_scale=m<factors_count?factors[m].normal_scale:1;
+            if(location)art->storefront_normal_scale[i][m+1]=normal_scale;
+            else art->motel_normal_scale[i][m+1]=normal_scale;
             for(int k=0;k<=MATERIAL_MAP_BRDF;k++) {
                 Texture2D* t=&material->maps[k].texture;
                 if(t->id && t->id!=rlGetTextureIdDefault()) { GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR); SetTextureWrap(*t,TEXTURE_WRAP_REPEAT); }
@@ -702,7 +705,11 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(source==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(source==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
             int ao_uv=0;
-            for(int r=0;r<SWAT_MOTEL_ASSETS;r++)if(source==&art->motel[r])ao_uv=art->motel_occlusion_uv[r][model->meshMaterial[i]];
+            for(int r=0;r<SWAT_MOTEL_ASSETS;r++)if(source==&art->motel[r]) {
+                ao_uv=art->motel_occlusion_uv[r][model->meshMaterial[i]];
+                normal_scale=art->motel_normal_scale[r][model->meshMaterial[i]];
+            }
+            for(int r=0;r<SWAT_STOREFRONT_ASSETS;r++)if(source==&art->storefront[r])normal_scale=art->storefront_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_MOTEL_DRESSING_ASSETS;r++)if(source==&art->motel_dressing[r]) {
                 ao_uv=art->motel_dressing_occlusion_uv[r][model->meshMaterial[i]];
                 normal_scale=art->motel_dressing_normal_scale[r][model->meshMaterial[i]];

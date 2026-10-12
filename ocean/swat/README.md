@@ -1210,7 +1210,18 @@ geometry changes and shadow passes over 30 ms, with the tick and shot count.
 The summary associates the maximum shadow pass with its refresh work.
 Editing this standalone diagnostic does not trigger a player rebuild through
 `./swat`; runtime sources, headers, assets and configuration still do.
-Canonical older maps retain their prefix. Recreate pre-cabinet motel recordings:
+The [wall hose/tap integration](art_handoffs/motel-wall-service/ENGINE_IMPORT.md)
+adds the original full hanger and capped tap to the reception-side service wall.
+All 9,788 triangles and original metre dimensions/maps remain intact. The bracket,
+rubber hose, couplers and tap have separate damage owners, open collision geometry,
+real wall dependencies and replicated removal. Mounts and material health sections
+are explicit game approximations; the hose is stored and disconnected. The generic
+motel/storefront draw path honors authored normal-map strength, including the
+hanger's 0.22. `motel-service-test` checks physics/support/damage/replicas and old
+cabinet-prefix maps; native graphics selector `motel-service` checks original
+maps/bounds, shared textures, fallback and owner removal. Both platforms' four
+ordinary-input completion/replay/save routes pass with these props installed.
+Canonical older maps retain their prefix. Recreate pre-hose motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ even though the snapshot codec remains version 18.
 The unchanged compact zoning authoring excerpt is preserved with its source
