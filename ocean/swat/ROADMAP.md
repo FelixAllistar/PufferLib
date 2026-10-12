@@ -26,6 +26,24 @@ plumbing, deformable hose and certified mounts are outside this increment.
 Source/limits/regeneration: `art_handoffs/motel-wall-service/ENGINE_IMPORT.md`.
 The full slice acceptance checks below remain open.
 
+Recorded breach profiling (2026-10-12): the normal diagnostic now accepts
+`--replay FILE --seek TICKS`, replays ordinary inputs with every-tick digest
+verification and measures actual player C4 openings. It rejects simulation
+overrides and incomplete windows; read/digest overhead is measured separately
+and excluded from simulation/total. Two sequential native HRTF runs with 1,336
+objects/nine actors measured 600 frames after this agent's build/test jobs ended.
+Exterior ticks 832–1431 include one detonation and eight destroyed owners; total
+mean/p95/max was 18.376/32.844/82.773 ms. Interroom ticks 5312–5911 include one
+detonation and 25 destroyed owners; total was 17.239/27.699/100.167 ms. Every
+skipped/warm/measured tick matched the native completion recording. At detonation,
+shadow time was 42.935/39.313 ms and refreshed one/two static lamp rooms plus sun.
+The largest shadow passes (74.644/73.487 ms) preceded detonation with no static
+rebuild; world submission also remains costly. This localizes further work to
+moving shadows, scene submission and breach refresh rather than claiming a
+stable frame budget. Other machine activity was uncontrolled; these are diagnostics,
+not a paired speedup claim or full performance acceptance. Compact evidence is
+under `build/swat/review/wall-service`.
+
 Deliver a near-realistic vertical slice of the fuller tactical game, with a
 finished Briar Court level as the main proving ground and the shared range,
 building and generated scenarios supporting equipment/behavior validation.
