@@ -68,7 +68,7 @@ static void check(SwatWorld* world) {
         }
         b3DestroyBody(reference_body);
     }
-    assert(assets>=34 && tested[24] && tested[40] && tested[44] && tested[45] && tested[46] && tested[47] && tested[48] && tested[49] && tested[53] && tested[54] && tested[55] && tested[56] && tested[57] && tested[58]);
+    assert(assets>=35 && tested[24] && tested[40] && tested[44] && tested[45] && tested[46] && tested[47] && tested[48] && tested[49] && tested[53] && tested[54] && tested[55] && tested[56] && tested[57] && tested[58] && tested[59]);
     printf("PASS motel contact partitions: %d assets, %d original triangles and edge flags preserved, %d matched full/partition rays and ballistic exit distances\n",assets,triangles,rays);
 }
 int main(void) {

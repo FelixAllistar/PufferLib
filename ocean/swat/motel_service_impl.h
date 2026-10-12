@@ -13,7 +13,7 @@ static const b3Vec3 service_bracket_anchors[]={{0,-.077f,0},{0,.077f,0}};
 static const b3Vec3 service_bib_anchors[]={{-.044f,.062665071f,0},{.044f,.062665071f,0},{-.044f,.147665071f,0},{.044f,.147665071f,0}};
 bool swat_motel_service(const SwatWorld* w,int owner,SwatMotelInstance* out) {
     int index=owner-SWAT_MOTEL_SERVICE_FIRST;
-    if(!w->motel || w->count!=SWAT_MOTEL_OBJECTS || index<0 || index>=SWAT_MOTEL_SERVICE_PARTS)return false;
+    if(!w->motel || w->count<SWAT_MOTEL_SERVICE_END || index<0 || index>=SWAT_MOTEL_SERVICE_PARTS)return false;
     *out=service_instances[index];return true;
 }
 static float service_health(int index) {
@@ -32,7 +32,7 @@ static bool service_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_
 }
 static bool service_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_SERVICE_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int i=0;i<SWAT_MOTEL_SERVICE_PARTS;i++) {
         const SwatObject* o=&w->objects[SWAT_MOTEL_SERVICE_FIRST+i];b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];service_recipe(i,&center,&half);
         if(!service_supports(w,i,supports)||memcmp(supports,o->supports,sizeof(supports))||b3Distance(center,o->center)>1e-4f||b3Length(b3Sub(half,o->half))>1e-5f||
@@ -42,7 +42,7 @@ static bool service_validate(const SwatWorld* w) {
     return true;
 }
 static void service_bind(SwatWorld* w) {
-    if(w->count!=SWAT_MOTEL_OBJECTS)return;
+    if(w->count<SWAT_MOTEL_SERVICE_END)return;
     for(int i=0;i<SWAT_MOTEL_SERVICE_PARTS;i++) {
         SwatObject* o=&w->objects[SWAT_MOTEL_SERVICE_FIRST+i];if(!o->active)continue;
         b3DestroyShape(o->shape,false);b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);

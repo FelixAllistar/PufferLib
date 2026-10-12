@@ -1,0 +1,76 @@
+{
+  "screwdriver_250mm_MAIN.blend": {
+    "scene_objects": [
+      [
+        "wood_handle_flathead_screwdriver_MAIN",
+        "MESH"
+      ]
+    ],
+    "all_mesh_datablocks": [
+      "Screwdriver"
+    ],
+    "images": [
+      {
+        "name": "screwdriver_diffuse.png",
+        "packed": true,
+        "size": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "name": "screwdriver_metallic.png",
+        "packed": true,
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "screwdriver_roughness.png",
+        "packed": true,
+        "size": [
+          512,
+          512
+        ]
+      }
+    ]
+  },
+  "screwdriver_original_scale.blend": {
+    "scene_objects": [
+      [
+        "Screwdriver",
+        "MESH"
+      ]
+    ],
+    "all_mesh_datablocks": [
+      "Screwdriver"
+    ],
+    "images": [
+      {
+        "name": "screwdriver_diffuse.png",
+        "packed": true,
+        "size": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "name": "screwdriver_metallic.png",
+        "packed": true,
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "screwdriver_roughness.png",
+        "packed": true,
+        "size": [
+          512,
+          512
+        ]
+      }
+    ]
+  }
+}

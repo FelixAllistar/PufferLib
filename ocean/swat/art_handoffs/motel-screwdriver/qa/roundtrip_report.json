@@ -1,0 +1,40 @@
+{
+  "comparison": "One-to-one triangle-corner position+UV match, all corner permutations, per-component tolerance 2e-6. No rounding-grid comparison; measured float32 conversion errors reported.",
+  "source_mesh_objects": 1,
+  "reimport_mesh_objects": 1,
+  "source_triangles": 2560,
+  "reimport_triangles": 2560,
+  "unmatched_source_triangles": 0,
+  "unmatched_reimport_triangles": 0,
+  "geometry_uv_roundtrip_pass": true,
+  "maximum_position_component_error_metres": 1.5832483768463135e-08,
+  "maximum_uv_component_error": 2.9802322387695312e-08,
+  "bounds_source": [
+    [
+      -0.01312489528208971,
+      0.013124885968863964
+    ],
+    [
+      -0.1250000149011612,
+      0.12499997764825821
+    ],
+    [
+      -4.0392822420187713e-10,
+      0.026399586349725723
+    ]
+  ],
+  "bounds_reimport": [
+    [
+      -0.013124902732670307,
+      0.013124878518283367
+    ],
+    [
+      -0.1250000149011612,
+      0.12499997764825821
+    ],
+    [
+      1.862645149230957e-09,
+      0.02639959007501602
+    ]
+  ]
+}

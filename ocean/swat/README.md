@@ -1241,7 +1241,18 @@ hanger's 0.22. `motel-service-test` checks physics/support/damage/replicas and o
 cabinet-prefix maps; native graphics selector `motel-service` checks original
 maps/bounds, shared textures, fallback and owner removal. Both platforms' four
 ordinary-input completion/replay/save routes pass with these props installed.
-Canonical older maps retain their prefix. Recreate pre-hose motel recordings:
+The [original flathead screwdriver](art_handoffs/motel-screwdriver/ENGINE_IMPORT.md)
+now rests on the maintenance trolley's real top liner. Its unchanged source model
+retains 2,560 triangles, editorial 250 mm length, original 1K colour and 512px
+roughness/metallic, with no normal or AO map. Full bullet queries and eleven
+contact subsets preserve the narrow tip and source flags. A fixed trolley support
+and finite mixed-assembly metal response remove art/physics together on authority
+and replicas; handheld use and separate wood-handle destruction are not modeled.
+`motel-screwdriver-test` covers contacts, damage, replicas and older hose/tap maps;
+native `motel-screwdriver` graphics compares original art/fallback and removal.
+The original 18-tool source archive is stored once for reuse, alongside compact
+editable screwdriver scenes, source maps and CC0 provenance.
+Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ even though the snapshot codec remains version 18.
 The unchanged compact zoning authoring excerpt is preserved with its source

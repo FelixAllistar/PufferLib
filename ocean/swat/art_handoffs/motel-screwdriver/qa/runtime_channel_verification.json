@@ -1,0 +1,29 @@
+{
+  "roughness": {
+    "packed_channel": "G",
+    "source_resolution": [
+      512,
+      512
+    ],
+    "packed_resolution": [
+      512,
+      512
+    ],
+    "max_byte_error": 0,
+    "exact_pixel_match": true
+  },
+  "metallic": {
+    "packed_channel": "B",
+    "source_resolution": [
+      512,
+      512
+    ],
+    "packed_resolution": [
+      512,
+      512
+    ],
+    "max_byte_error": 0,
+    "exact_pixel_match": true
+  },
+  "R_channel": "Exporter-generated 255, not connected as occlusion"
+}

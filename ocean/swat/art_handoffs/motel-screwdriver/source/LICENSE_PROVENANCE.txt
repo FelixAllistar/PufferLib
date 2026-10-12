@@ -1,0 +1,9 @@
+Asset: Screwdriver (MAIN) from Set of 18 PBR Tools
+Creator: SirDraco65
+Source: https://opengameart.org/content/set-of-18-pbr-tools
+Direct download: https://opengameart.org/sites/default/files/Tools%20Pack.zip
+License shown on author submission: CC0
+License reference: https://creativecommons.org/publicdomain/zero/1.0/
+Listing captured 2026-10-12 UTC in source_listing.html.
+Author comment states manual Blender setup/baking; texture bases mostly from cc0textures.com.
+Original full archive is preserved byte-for-byte. Runtime conversion is not source-author certification or a verified physical tool specification.
