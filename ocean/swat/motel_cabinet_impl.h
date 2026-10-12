@@ -8,7 +8,7 @@ static bool cabinet_supports(const SwatWorld* w,int supports[SWAT_MAX_SUPPORTS])
 }
 static bool cabinet_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_CABINET_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_CABINET_FIRST];int supports[SWAT_MAX_SUPPORTS];
     return cabinet_supports(w,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(o->center,b3OffsetPos(cabinet_instance.origin,cabinet_asset.center))<1e-4f && b3Length(b3Sub(o->half,cabinet_asset.half))<1e-5f &&
@@ -16,7 +16,7 @@ static bool cabinet_validate(const SwatWorld* w) {
         o->material==SWAT_STEEL && o->structural_thickness==cabinet_section && o->max_health==cabinet_health();
 }
 static void cabinet_bind(SwatWorld* w) {
-    if(w->count!=SWAT_MOTEL_OBJECTS)return;
+    if(w->count<SWAT_MOTEL_CABINET_END)return;
     SwatObject* o=&w->objects[SWAT_MOTEL_CABINET_FIRST];if(!o->active)return;
     b3DestroyShape(o->shape,false);b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
     bool bound=contact_meshes_bind(w,o,&cabinet_instance,&def);assert(bound);(void)bound;

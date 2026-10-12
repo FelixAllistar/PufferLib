@@ -281,14 +281,17 @@ static void personal_shadow_review(SwatView* view,const char* directory) {
     assert(!memcmp(&before,&sim.world,sizeof(before)));swat_sim_close(&sim);
     puts("PASS personal shadow diagnostics: fixed camera/geometry, caster/lamp/contact isolation, shifted view, immutable authority");
 }
-static int room101_owner_pixels(SwatEnvironmentArt* art,SwatObject* o,bool cutaway) {
-    float d=b3Length(o->half)*2+1;
+static int room101_owner_pixels_pad(SwatEnvironmentArt* art,SwatObject* o,bool cutaway,float padding) {
+    float d=b3Length(o->half)*2+padding;
     Camera3D camera={{o->center.x+d,o->center.y+d,o->center.z+d},{o->center.x,o->center.y,o->center.z},{0,1,0},50,CAMERA_PERSPECTIVE};
     RenderTexture2D target=LoadRenderTexture(256,256);BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
     assert(swat_environment_motel_draw(art,&sim.world,o,false,cutaway));EndMode3D();EndTextureMode();
     Image frame=LoadImageFromTexture(target.texture);Color* pixels=LoadImageColors(frame);int count=0;
     for(int i=0;i<256*256;i++)count+=pixels[i].r!=MAGENTA.r || pixels[i].g!=MAGENTA.g || pixels[i].b!=MAGENTA.b;
     UnloadImageColors(pixels);UnloadImage(frame);UnloadRenderTexture(target);return count;
+}
+static int room101_owner_pixels(SwatEnvironmentArt* art,SwatObject* o,bool cutaway) {
+    return room101_owner_pixels_pad(art,o,cutaway,1);
 }
 static void masonry_silhouette(SwatView* view,const char* directory) {
     SwatObject* piece=NULL;
@@ -953,6 +956,7 @@ int main(int argc,char** argv) {
     if(argc>2 && !strcmp(argv[2],"motel-nightstand")) {texture_owner_graphics("motel_props/painted_wooden_nightstand_floor_centered_2k.glb");motel_prop_graphics(&view,directory,4);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-bag")) {texture_owner_graphics("motel_props/trashbag_floor_centered_1k.glb");motel_prop_graphics(&view,directory,8);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-cabinet")) {texture_owner_graphics("motel_props/power_box_01_rear_centered_1k.glb");motel_prop_graphics(&view,directory,9);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
+    if(argc>2 && !strcmp(argv[2],"motel-service")) {texture_owner_graphics("motel_props/hose_bracket.glb");texture_owner_graphics("motel_props/wall_garden_spigot_reuse.glb");for(int i=10;i<14;i++)motel_prop_graphics(&view,directory,i);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-seating")) {
         environment("SWAT_MOTEL_SEATING_TEXTURES",argc>3?argv[3]:NULL);
         texture_owner_graphics("motel_props/modern_arm_chair_01_floor_centered_2k.glb");

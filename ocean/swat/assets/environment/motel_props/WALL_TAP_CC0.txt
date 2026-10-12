@@ -1,0 +1,19 @@
+Batch 03: yard and utility props
+
+Original geometry, authored scene, generation scripts, generated texture artwork,
+and rendered previews in this package are dedicated to the public domain under
+CC0 1.0 Universal (CC0-1.0).
+
+To the extent possible under law, all copyright and related or neighboring rights
+in those original contributions are waived. You may use, modify, redistribute,
+and sell them for any purpose, including commercial games, without permission or
+attribution. Attribution is welcome but not required.
+
+License text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+Summary: https://creativecommons.org/publicdomain/zero/1.0/
+
+The assets were procedurally authored for this environment batch. No third-party
+models or textures are included. Blender and Pillow are build tools and remain
+under their respective licenses. This license does not relicense PufferLib or
+any other engine, and no trademark affiliation is implied. Provided as-is without
+warranty, including fitness for gameplay, physical simulation or real-world use.

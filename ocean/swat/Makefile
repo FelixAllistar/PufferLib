@@ -158,6 +158,9 @@ motel-bag-test: | $(BUILD)
 motel-cabinet-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_cabinet.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_cabinet
 	ulimit -c 0; $(BUILD)/test_motel_cabinet
+motel-service-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_service.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_service
+	ulimit -c 0; $(BUILD)/test_motel_service
 motel-nightstand-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_nightstand.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_nightstand
 	ulimit -c 0; $(BUILD)/test_motel_nightstand $(BUILD)/nightstand-test.sgrp
