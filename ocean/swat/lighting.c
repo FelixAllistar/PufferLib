@@ -537,11 +537,13 @@ bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 h
     float z=fmaxf(0,fabsf(center.z-room->center.z)-room->half.z);
     return x*x+y*y+z*z<=radius*radius;
 }
-static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split) {
+static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split,const SwatLighting* face) {
     uint32_t hash=hash_bytes(2166136261u,&world->rooms[room],sizeof(SwatRoom));
     for(int i=0;i<world->count;i++) {
         const SwatObject* o=&world->objects[i];
         if((split && o->door) || !o->active || o->material==SWAT_GLASS || !swat_lighting_room_intersects(&world->rooms[room],
+            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+        if(face && !swat_lighting_face_intersects(face,
             (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
         hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
@@ -574,17 +576,11 @@ static Vector3 room_light_origin(const SwatWorld* world,int room) {
     SwatRoomLight light=swat_world_room_light(world,room);
     return (Vector3){light.origin.x,light.origin.y,light.origin.z};
 }
-// Hash only presentation inputs for actors near this room. Empty/unchanged
-// rooms keep their composited depth; leaving a room invalidates it as well.
-static uint32_t room_actor_hash(SwatLighting* light,const SwatSim* sim,int room) {
-    uint32_t hash=2166136261u;
+// Fingerprint presentation inputs once, shared by sunlight and lamp faces.
+static void actor_signatures(SwatLighting* light,const SwatSim* sim) {
     for(int i=0;i<sim->actor_count;i++) {
         const SwatActor* a=&sim->actors[i];if(!a->present)continue;
         b3Pos feet=swat_body_feet_position(&a->controller.body);
-        if(!swat_lighting_room_intersects(&sim->world.rooms[room],
-            (Vector3){feet.x,feet.y+1,feet.z},(Vector3){.5f,1,.5f}))continue;
-        if(!swat_lighting_face_intersects(light,
-            (Vector3){feet.x,feet.y+1,feet.z},(Vector3){.5f,1,.5f}))continue;
         uint32_t pose=hash_bytes(2166136261u,&feet,sizeof(feet));
         pose=hash_bytes(pose,&a->controller,sizeof(a->controller));
         pose=hash_bytes(pose,&a->arsenal,sizeof(a->arsenal));
@@ -595,6 +591,22 @@ static uint32_t room_actor_hash(SwatLighting* light,const SwatSim* sim,int room)
         b3Vec3 velocity=b3Body_GetLinearVelocity(a->controller.body.body);
         pose=hash_bytes(pose,&velocity,sizeof(velocity));
         if(pose!=light->actor_signature[i]){light->actor_signature[i]=pose;light->actor_changed_tick[i]=sim->tick;}
+    }
+}
+// Room/face membership matches the renderer's conservative caster tests.
+// Sunlight includes all present actors; exits/removal invalidate old depths.
+static uint32_t actor_shadow_hash(const SwatLighting* light,const SwatSim* sim,int room) {
+    uint32_t hash=2166136261u;
+    for(int i=0;i<sim->actor_count;i++) {
+        const SwatActor* a=&sim->actors[i];if(!a->present)continue;
+        if(room>=0) {
+            b3Pos feet=swat_body_feet_position(&a->controller.body);
+            if(!swat_lighting_room_intersects(&sim->world.rooms[room],
+                (Vector3){feet.x,feet.y+1,feet.z},(Vector3){.5f,1,.5f}))continue;
+            if(!swat_lighting_face_intersects(light,
+                (Vector3){feet.x,feet.y+1,feet.z},(Vector3){.5f,1,.5f}))continue;
+        }
+        uint32_t pose=light->actor_signature[i];
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&pose,sizeof(pose));
         // A stopped actor can still be finishing the 0.22-second local pose
         // blend. Refresh until it settles rather than freezing an in-between
@@ -630,38 +642,52 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
     if(reset)memset(light->actor_signature,0,sizeof(light->actor_signature));
     bool refresh=reset || sim->tick-light->last_tick>=4;
     if(!refresh && hash==light->geometry && moving==light->moving_geometry)return;
+    if(actors)actor_signatures(light,sim);
     Camera3D sun={Vector3Add(center,Vector3Scale(light->sun_direction,45)),center,{0,1,0},extent,CAMERA_ORTHOGRAPHIC};
     light->shadow_room=-1;
     if(actors) {
-        if(reset || hash!=light->geometry) {
+        bool dirty=reset || hash!=light->geometry;
+        if(dirty) {
             light->sun_matrix=shadow(light->sun_static,sun,sim,cutaway,draw,contextual,NULL,context,-1,true);
             light->sun_geometry_updates++;
         }
-        copy_depth(light->sun_static,light->sun,0,0,light->sun.depth.width,light->sun.depth.height);
-        shadow(light->sun,sun,sim,cutaway,NULL,NULL,actors,context,-1,false);
+        uint32_t actor_hash=actor_shadow_hash(light,sim,-1);
+        if(dirty || moving!=light->moving_geometry || (refresh && actor_hash!=light->sun_actors)) {
+            copy_depth(light->sun_static,light->sun,0,0,light->sun.depth.width,light->sun.depth.height);
+            shadow(light->sun,sun,sim,cutaway,NULL,NULL,actors,context,-1,false);
+            light->sun_actors=actor_hash;light->sun_actor_updates++;
+        }
     } else light->sun_matrix=shadow(light->sun,sun,sim,cutaway,draw,contextual,NULL,context,-1,true);
     for(int room=0;room<world->room_count;room++) {
-        uint32_t local=room_geometry_hash(world,room,actors!=NULL);
+        uint32_t local=room_geometry_hash(world,room,actors!=NULL,NULL);
         Vector3 origin=room_light_origin(world,room);local=hash_bytes(local,&origin,sizeof(origin));
         bool dirty=reset || !light->room_ready[room] || local!=light->room_geometry[room] ||
             (!actors && sim->actor_count && refresh); // Legacy combined callbacks may include actors.
         light->shadow_room=room;light->shadow_origin=origin;
         float fov=2*atanf(lamp_tan());
+        bool face_dirty[SWAT_LAMP_FACES]={0};
         if(dirty) {
+            bool updated=false;
             for(int face=0;face<SWAT_LAMP_FACES;face++) {
                 light->shadow_face=face;
+                uint32_t face_hash=room_geometry_hash(world,room,actors!=NULL,light);
+                face_hash=hash_bytes(face_hash,&origin,sizeof(origin));
+                face_dirty[face]=reset || !light->room_ready[room] ||
+                    (!actors && sim->actor_count && refresh) || face_hash!=light->face_geometry[room][face];
+                if(!face_dirty[face])continue;
                 Camera3D lamp={origin,Vector3Add(origin,lamp_dir[face]),lamp_up[face],fov/SWAT_RAD,CAMERA_PERSPECTIVE};
                 shadow(light->lamp_static,lamp,sim,cutaway,draw,contextual,NULL,context,room*SWAT_LAMP_FACES+face,true);
                 light->lamp_matrix[face]=MatrixMultiply(MatrixLookAt((Vector3){0},lamp_dir[face],lamp_up[face]),MatrixPerspective(fov,1,.05,120));
+                light->face_geometry[room][face]=face_hash;light->room_face_updates++;updated=true;
             }
-            light->room_geometry[room]=local;light->room_ready[room]=true;light->room_updates++;
+            light->room_geometry[room]=local;light->room_ready[room]=true;if(updated)light->room_updates++;
         }
         bool composited=false;
         for(int face=0;face<SWAT_LAMP_FACES;face++) {
             light->shadow_face=face;
             uint32_t doors=actors?door_geometry_hash(light,world,room):0;
-            uint32_t actor_hash=actors?room_actor_hash(light,sim,room):0;
-            if(dirty || doors!=light->face_moving_geometry[room][face] ||
+            uint32_t actor_hash=actors?actor_shadow_hash(light,sim,room):0;
+            if(face_dirty[face] || doors!=light->face_moving_geometry[room][face] ||
                 (refresh && (!actors || actor_hash!=light->face_actors[room][face]))) {
                 // Restore only this face before adding current doors/actors.
                 // A caster leaving the face invalidates its former depth too.

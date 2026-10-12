@@ -12,6 +12,38 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Shadow reuse increment (2026-10-12): local architecture changes now invalidate
+individual conservative lamp faces within affected rooms. Sunlight reuses settled
+actor depth, and actor presentation fingerprints are computed once per preparation
+for all sun/room faces. Door/destruction invalidation stays immediate; actor refresh
+and the 0.22-second blend settling window retain their existing cadence. Native and
+Linux GPU lighting QA passes 91 full-redraw image comparisons across all six faces,
+seams, movement, partial fractures/corner edits, removal, rotation and light relocation
+(35 updated static faces versus 78 whole-room faces). Thirteen sun comparisons cover
+settling/reuse, immediate doors/destruction, actor movement/removal/restoration, changed
+sun and replay rewind; all sun comparisons have zero mismatches. Existing multiroom,
+door, actor-face, lamp-coverage/contact/material/exposure/lifecycle checks pass.
+The production shadow preparation is shared with the real-motel graphics check:
+32 more full-redraw comparisons pass on both platforms through doors, C4, prop damage
+and full skin/procedural caster movement/removal/restoration, with immutable authority.
+Its native run updates 49 static faces versus 60 faces for complete changed rooms;
+the 288-face unconditional reference is a correctness control, not an old runtime
+performance baseline. Original meshes/materials and shadow map sizes remain intact.
+
+Two sequential native 600-frame HRTF breach windows verify every skipped/warm/measured
+input against the existing native scenario recordings, with 1,337 objects/nine actors.
+Exterior tick 911 destroys eight owners and updates three static lamp faces instead
+of six. Interroom tick 5394 destroys 25 owners and updates six faces instead of twelve.
+Each window includes exactly one actual detonation input. Exterior total mean/p95/max
+was 17.402/45.295/355.524 ms; interroom was 11.153/19.443/65.773 ms. Static-breach shadow
+passes were 28.442/47.906 ms. Exterior world submission peaked at 236.604 ms and moving
+shadows still have large spikes. This agent's build/test jobs had ended before timing,
+but other activity, including possible League load, was uncontrolled; these figures
+do not establish a speedup or a stable frame budget. Next engine work should target
+moving caster submission and scene work with conservative bounds and image proof.
+Normal native/Linux players and float Puffer are rebuilt. Compact evidence is under
+`build/swat/review/shadow-reuse`; full performance/behavior acceptance stays open.
+
 Latest prop increment (2026-10-12): the source-full 8,380-triangle hose hanger and
 1,408-triangle capped tap are installed on the reception-side service wall.
 Original triangles/attributes/images and metre frames pass independent preservation

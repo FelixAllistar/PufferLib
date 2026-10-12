@@ -208,10 +208,8 @@ static void room101_shadow(void* context,const SwatSim* s,bool cutaway) {
     art->motel_personal[1]=glasses;
     art->shadow_room=-1;
 }
-static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int width,int height) {
+static Image room101_capture_prepared(SwatView* view,Camera3D camera,bool lit,int width,int height) {
     SwatEnvironmentArt* art=&view->environment; SwatLighting* light=&view->lighting;
-    light->prepared=false;
-    if(lit) swat_lighting_prepare_context(light,&sim,camera.position,false,room101_shadow,view);
     if(lit) swat_lighting_contact(light,&sim,camera,width,height,room101_shadow,view);
     RenderTexture2D target=LoadRenderTexture(width,height); assert(target.id);
     BeginTextureMode(target); ClearBackground(MAGENTA);
@@ -231,6 +229,11 @@ static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int wi
     EndMode3D(); EndTextureMode();
     Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image); UnloadRenderTexture(target);
     return image;
+}
+static Image room101_capture_size(SwatView* view,Camera3D camera,bool lit,int width,int height) {
+    view->lighting.prepared=false;
+    if(lit)swat_lighting_prepare_context(&view->lighting,&sim,camera.position,false,room101_shadow,view);
+    return room101_capture_prepared(view,camera,lit,width,height);
 }
 static Image room101_capture(SwatView* view,Camera3D camera,bool lit) {return room101_capture_size(view,camera,lit,960,800);}
 static void reading_lamp_graphics(SwatView* view,const char* directory,Camera3D bed) {
@@ -945,6 +948,7 @@ static void culling_graphics(SwatView* view,const char* directory) {
 #include "motel_windows_graphics.h"
 #include "impact_effects_graphics.h"
 #include "breach_geometry_graphics.h"
+#include "shadow_reuse_graphics.h"
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
@@ -952,6 +956,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"shadow-reuse")) {shadow_reuse_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-windows")) {texture_owner_graphics("motel_windows_r1/room_window_insert_realistic_r1.glb");texture_owner_graphics("motel_windows_r1/lobby_glazed_facade_realistic_r1.glb");motel_windows_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-nightstand")) {texture_owner_graphics("motel_props/painted_wooden_nightstand_floor_centered_2k.glb");motel_prop_graphics(&view,directory,4);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-bag")) {texture_owner_graphics("motel_props/trashbag_floor_centered_1k.glb");motel_prop_graphics(&view,directory,8);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}

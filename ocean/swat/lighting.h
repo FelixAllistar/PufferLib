@@ -28,16 +28,17 @@ typedef struct SwatLighting {
     Matrix sun_matrix,lamp_matrix[SWAT_LAMP_FACES];
     Vector3 sun_direction;
     float exposure;
-    uint32_t geometry,moving_geometry;
+    uint32_t geometry,moving_geometry,sun_actors;
     Vector3 shadow_origin;
     int shadow_face;
     int shadow_room,last_tick,updates,room_updates;
     uint32_t room_geometry[SWAT_MAX_ROOMS];
+    uint32_t face_geometry[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
     uint32_t face_moving_geometry[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
     uint32_t face_actors[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
     uint32_t actor_signature[SWAT_MAX_ACTORS];
     int actor_changed_tick[SWAT_MAX_ACTORS];
-    unsigned int sun_geometry_updates,actor_room_updates,actor_face_updates;
+    unsigned int sun_geometry_updates,sun_actor_updates,room_face_updates,actor_room_updates,actor_face_updates;
     bool room_ready[SWAT_MAX_ROOMS],split_shadows;
     bool cutaway,lamp_shadows; // Receiving toggle for renderer diagnostics; default on.
     unsigned int surface_normal,surface_roughness;

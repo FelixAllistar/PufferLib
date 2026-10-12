@@ -146,13 +146,14 @@ int main(int argc,char** argv) {
     else {swat_sim_step(sim,&input);first_tick=seconds()-start;}
     if(record_path)valid=swat_replay_append(&recording,&input,sim)&&valid;
     input.sniper_order=SWAT_SNIPER_NONE;
-    unsigned int sun_start=0,rooms_start=0,actors_start=0,faces_start=0;
-    double shadow_max=0;unsigned int max_sun=0,max_rooms=0,max_actors=0,max_faces=0;int max_tick=0;
+    unsigned int sun_start=0,rooms_start=0,actors_start=0,faces_start=0,static_faces_start=0,sun_actors_start=0;
+    double shadow_max=0;unsigned int max_sun=0,max_rooms=0,max_actors=0,max_faces=0,max_static_faces=0,max_sun_actors=0;int max_tick=0;
     int measured_start=0,destroyed_start=0,detonations=0,measured=0;
     for(int i=0;valid && i<frames+30;i++) {
         if(i==30){measured_start=sim->tick;destroyed_start=sim->totals.destroyed;}
         unsigned int sun_before=view.lighting.sun_geometry_updates,rooms_before=view.lighting.room_updates,actors_before=view.lighting.actor_room_updates;
         unsigned int faces_before=view.lighting.actor_face_updates;
+        unsigned int static_faces_before=view.lighting.room_face_updates,sun_actors_before=view.lighting.sun_actor_updates;
         if(!replay_path){input.fire=fire; input.reload=fire && !sim->actors[0].arsenal.slots[0].magazine;}
         // Sweep intact wall areas instead of spending the run firing through
         // the first broken leaf/opening. Keep all impacts on the real weapon path.
@@ -168,12 +169,13 @@ int main(int argc,char** argv) {
         if(!headless) { BeginDrawing(); swat_view_draw(&view,sim,false,75); }
         double drawing=seconds()-t; t=seconds(); if(!headless) EndDrawing(); double present=seconds()-t;
         if(i>=30) {
-            if(i==30){sun_start=sun_before;rooms_start=rooms_before;actors_start=actors_before;faces_start=faces_before;}
+            if(i==30){sun_start=sun_before;rooms_start=rooms_before;actors_start=actors_before;faces_start=faces_before;static_faces_start=static_faces_before;sun_actors_start=sun_actors_before;}
             unsigned int sun=view.lighting.sun_geometry_updates-sun_before,rooms=view.lighting.room_updates-rooms_before,actors=view.lighting.actor_room_updates-actors_before;
             unsigned int faces=view.lighting.actor_face_updates-faces_before;
-            if(view.shadow_seconds>shadow_max){shadow_max=view.shadow_seconds;max_tick=sim->tick;max_sun=sun;max_rooms=rooms;max_actors=actors;max_faces=faces;}
+            unsigned int static_faces=view.lighting.room_face_updates-static_faces_before,sun_actors=view.lighting.sun_actor_updates-sun_actors_before;
+            if(view.shadow_seconds>shadow_max){shadow_max=view.shadow_seconds;max_tick=sim->tick;max_sun=sun;max_rooms=rooms;max_actors=actors;max_faces=faces;max_static_faces=static_faces;max_sun_actors=sun_actors;}
             if(shadow_events && (sun || rooms || view.shadow_seconds>.030))
-                printf("shadow_event tick=%d shadow_ms=%.3f static_sun=%u static_rooms=%u dynamic_rooms=%u dynamic_faces=%u shots=%d destroyed=%d\n",sim->tick,view.shadow_seconds*1000,sun,rooms,actors,faces,sim->actors[0].arsenal.shots,sim->totals.destroyed);
+                printf("shadow_event tick=%d shadow_ms=%.3f static_sun=%u static_rooms=%u static_faces=%u dynamic_sun=%u dynamic_rooms=%u dynamic_faces=%u shots=%d destroyed=%d\n",sim->tick,view.shadow_seconds*1000,sun,rooms,static_faces,sun_actors,actors,faces,sim->actors[0].arsenal.shots,sim->totals.destroyed);
             int n=i-30; measurements[n]=tick; measurements[frames+n]=mix;
             measured++;
             measurements[2*frames+n]=drawing; measurements[3*frames+n]=present;
@@ -195,8 +197,8 @@ int main(int argc,char** argv) {
     report("simulation",measurements,frames); report("audio",measurements+frames,frames);
     if(replay_path)report("replay_verification_excluded_from_total",measurements+10*frames,frames);
     printf("wall_faces_reference=%d\n",wall_faces_reference);
-    printf("shadow_cache static_sun=%u static_rooms=%u dynamic_rooms=%u dynamic_faces=%u max_tick=%d max_static_sun=%u max_static_rooms=%u max_dynamic_rooms=%u max_dynamic_faces=%u\n",
-        view.lighting.sun_geometry_updates-sun_start,view.lighting.room_updates-rooms_start,view.lighting.actor_room_updates-actors_start,view.lighting.actor_face_updates-faces_start,max_tick,max_sun,max_rooms,max_actors,max_faces);
+    printf("shadow_cache static_sun=%u static_rooms=%u static_faces=%u dynamic_sun=%u dynamic_rooms=%u dynamic_faces=%u max_tick=%d max_static_sun=%u max_static_rooms=%u max_static_faces=%u max_dynamic_sun=%u max_dynamic_rooms=%u max_dynamic_faces=%u\n",
+        view.lighting.sun_geometry_updates-sun_start,view.lighting.room_updates-rooms_start,view.lighting.room_face_updates-static_faces_start,view.lighting.sun_actor_updates-sun_actors_start,view.lighting.actor_room_updates-actors_start,view.lighting.actor_face_updates-faces_start,max_tick,max_sun,max_rooms,max_static_faces,max_sun_actors,max_actors,max_faces);
     SwatWallFaceStats face_stats=swat_environment_motel_face_stats(&view.environment);
     printf("wall_face_cache builds=%u batch_submissions=%u piece_submissions=%u vertices=%zu attribute_bytes=%zu\n",face_stats.builds,face_stats.submissions,face_stats.piece_submissions,face_stats.vertices,face_stats.attribute_bytes);
     report("draw_submit",measurements+2*frames,frames); report("present",measurements+3*frames,frames);

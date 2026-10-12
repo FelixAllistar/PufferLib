@@ -475,18 +475,23 @@ static void swat_draw_weapon(SwatView* view,const SwatSim* s,const SwatActor* a,
     if(s->tick-a->last_shot_tick<=2) DrawSphere(swat_position(pose.muzzle),.035f,(Color){255,216,112,230});
 }
 
-void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
-    if (!view->initialized) return;
-    view->pose_seconds=view->shadow_seconds=view->scene_seconds=view->geometry_seconds=view->weapon_seconds=0;
+void swat_view_prepare_shadows(SwatView* view,const SwatSim* s,Vector3 eye,bool cutaway) {
+    if(!view->initialized)return;
     double measured=GetTime();
-    Vector3 light_eye={11,1.6f,0};
-    if(view->actor>=0 && view->actor<s->actor_count && s->actors[view->actor].present)
-        light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
     swat_character_runtime_prepare(view->characters,s);
     view->pose_seconds=GetTime()-measured;measured=GetTime();
     swat_environment_art_prepare_location(&view->environment,&s->world);
-    swat_lighting_prepare_split(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene,swat_draw_shadow_actors,view);
+    swat_lighting_prepare_split(&view->lighting,s,eye,cutaway,swat_draw_shadow_scene,swat_draw_shadow_actors,view);
     view->shadow_seconds=GetTime()-measured;
+}
+void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
+    if (!view->initialized) return;
+    view->pose_seconds=view->shadow_seconds=view->scene_seconds=view->geometry_seconds=view->weapon_seconds=0;
+    Vector3 light_eye={11,1.6f,0};
+    if(view->actor>=0 && view->actor<s->actor_count && s->actors[view->actor].present)
+        light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
+    swat_view_prepare_shadows(view,s,light_eye,view->planning && !view->plan_preview);
+    double measured;
     if(view->planning) { swat_draw_plan(view,s); return; }
     if(view->actor<0 || view->actor>=s->actor_count || !s->actors[view->actor].present) {
         ClearBackground((Color){25,37,47,255});
