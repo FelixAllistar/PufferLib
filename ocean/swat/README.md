@@ -99,6 +99,26 @@ rendered Windows measurements without taking focus. `--storefront` and
 `--motel` select the imported environments. Replay recording excludes
 `--indoors`/`--fire`, whose starting-state overrides are not in replay headers.
 
+The same tool can profile an actual saved-input breach without forcing geometry
+or moving actors. `--replay FILE --seek TICKS` restores the recording's scenario
+and seed, steps every skipped input, then renders 30 warmup ticks and the requested
+measurement frames. Every input is checked against its recorded state digest.
+Use a recording produced by the current build/platform; added scenario objects
+change its digest. For example, after the native completion test writes an
+exterior route recording:
+
+```sh
+./build/swat/windows/performance_tool.exe --hidden --audio \
+  --replay RECORDING.sgrp --seek 800 --frames 600 --shadow-events
+```
+
+The summary reports verified frames, the measured tick range, actual detonation
+inputs and new destroyed objects. Replay read/digest verification is reported
+separately and excluded from game `simulation`/`total` timings. Replay playback
+rejects `--record`, `--draw-only`, mission/room/yaw overrides, `--fire` and scope
+assignment, because those would change the recorded simulation. An incomplete
+window or digest mismatch fails instead of reporting a partial benchmark.
+
 Motel wall finishes now cache combined meshes per wall assembly and material.
 Their existing clipped positions, normals, UVs and borrowed materials remain
 unchanged. Changed occupancy, surviving-fragment corners or source geometry
