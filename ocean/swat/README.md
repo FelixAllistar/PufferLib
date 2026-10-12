@@ -1228,6 +1228,15 @@ service room with actual weapon inputs and impact/audio work.
 `--shadow-events` logs static sun/room and dynamic room/face refresh counts for
 geometry changes and shadow passes over 30 ms, with the tick and shot count.
 The summary associates the maximum shadow pass with its refresh work.
+Shadow diagnostics now include `static_faces` and `dynamic_sun`. Changed rooms
+rebuild only the conservative lamp faces whose geometry changed; changing a light
+origin resets all its faces. Sunlight reuses settled actor depth and updates for
+moving doors, changed architecture, actor poses/removal and replay rewind.
+Actor presentation fingerprints are computed once per shadow preparation and
+shared by sunlight and lamp faces. The existing four-tick pose refresh and blend
+settling interval remain in use. `test_lighting` compares these caches against
+unconditional redraws; native `test_environment_art.exe OUTPUT shadow-reuse`
+also checks the real motel's materials, skinned/procedural casters and C4 geometry.
 Editing this standalone diagnostic does not trigger a player rebuild through
 `./swat`; runtime sources, headers, assets and configuration still do.
 The [wall hose/tap integration](art_handoffs/motel-wall-service/ENGINE_IMPORT.md)

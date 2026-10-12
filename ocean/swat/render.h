@@ -39,6 +39,8 @@ SwatCameraLayout swat_camera_layout(int width,int height,float expansion,bool ha
 int swat_hud_measure(const SwatView* view,const char* text,int size);
 void swat_hud_text(const SwatView* view,const char* text,int x,int y,int size,Color color);
 void swat_view_init(SwatView* view, bool hidden);
+// Shared runtime pose/asset preparation and production shadow callbacks.
+void swat_view_prepare_shadows(SwatView* view,const SwatSim* sim,Vector3 eye,bool cutaway);
 // Draws inside the caller's BeginDrawing/EndDrawing pair.
 void swat_view_draw(SwatView* view, const SwatSim* sim, bool policy, float vertical_fov);
 void swat_view_close(SwatView* view);

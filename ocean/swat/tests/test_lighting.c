@@ -146,7 +146,7 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     for(int i=0;i<3;i++) {
         sim.tick+=4;static_calls=actor_calls=0;
         swat_lighting_prepare_split(light,&sim,eyes[i],false,counted_geometry,test_actors,NULL);
-        assert(static_calls==0 && actor_calls==1 && light->room_updates==updates); // Cached sun geometry; empty room tiles untouched.
+        assert(static_calls==0 && actor_calls==0 && light->room_updates==updates); // Settled sun and empty room tiles reused.
         Image frame=capture(light,art,camera,NULL);Color* b=LoadImageColors(frame);
         int mismatch=0;for(int p=0;p<512*512;p++)mismatch+=abs(a[p].r-b[p].r)+abs(a[p].g-b[p].g)+abs(a[p].b-b[p].b)>3;
         assert(!mismatch);UnloadImageColors(b);UnloadImage(frame);
@@ -168,7 +168,7 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     // Removing one blocker updates exactly that room immediately.
     sim.world.objects[3].active=false;static_calls=0;
     swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
-    assert(static_calls==1+SWAT_LAMP_FACES && light->room_updates==updates+1);
+    assert(static_calls>1 && static_calls<=1+SWAT_LAMP_FACES && light->room_updates==updates+1);
     Image removed=capture(light,art,camera,NULL);Color* b=LoadImageColors(removed);int changed=0;
     for(int i=0;i<512*512;i++)changed+=abs(a[i].r-b[i].r)+abs(a[i].g-b[i].g)+abs(a[i].b-b[i].b)>12;
     assert(changed>50);
@@ -185,7 +185,7 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     assert(light->actor_room_updates==actor_updates+2);
     sim.tick+=4;static_calls=actor_calls=0;
     swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
-    assert(static_calls==0 && actor_calls==1 && light->actor_room_updates==actor_updates+2);
+    assert(static_calls==0 && actor_calls==0 && light->actor_room_updates==actor_updates+2);
     // Leaving the room clears its former moving shadow without touching the
     // other rooms' depth, even though the actor remains present in the scene.
     b3Body_SetTransform(sim.actors[0].controller.body.body,(b3Pos){20,.6f,0},b3Quat_identity);sim.tick+=4;
@@ -201,7 +201,7 @@ static void multi_room_checks(SwatLighting* light,SwatEnvironmentArt* art,const 
     memcpy(sim.world.objects[1].corners,corners,sizeof(corners));
     static_calls=0;updates=light->room_updates;unsigned int sun_updates=light->sun_geometry_updates;
     swat_lighting_prepare_split(light,&sim,(Vector3){0,1.6f,20},false,counted_geometry,test_actors,NULL);
-    assert(static_calls==1+SWAT_LAMP_FACES && light->room_updates==updates+1 && light->sun_geometry_updates==sun_updates+1);
+    assert(static_calls>1 && static_calls<=1+SWAT_LAMP_FACES && light->room_updates==updates+1 && light->sun_geometry_updates==sun_updates+1);
     Image partial=capture(light,art,camera,NULL);Color* partial_pixels=LoadImageColors(partial);int opened=0;
     for(float z=-.3f;z<.3f;z+=.03f){
         Vector2 p=GetWorldToScreenEx((Vector3){-5+.85f,.001f,z},camera,512,512);int at=(int)p.y*512+(int)p.x;
@@ -309,6 +309,86 @@ static void actor_face_checks(SwatLighting* light,SwatEnvironmentArt* art) {
     assert(reduced);fake_actor=false;sim.actor_count=0;sim.actors[0].present=false;
     b3DestroyWorld(world);swat_lighting_close(&reference);
     puts("PASS dynamic face cache: all six caster directions and removal match full redraw, unchanged faces reused, former shadows cleared and static architecture retained");
+}
+
+static int shadow_image_compare(Image a,Image b) {
+    assert(a.width==b.width && a.height==b.height);Color* ap=LoadImageColors(a),*bp=LoadImageColors(b);int mismatch=0;
+    for(int p=0;p<a.width*a.height;p++)mismatch+=abs(ap[p].r-bp[p].r)+abs(ap[p].g-bp[p].g)+abs(ap[p].b-bp[p].b)>3;
+    UnloadImageColors(ap);UnloadImageColors(bp);return mismatch;
+}
+static void static_face_checks(SwatLighting* light,SwatEnvironmentArt* art) {
+    sim.world=(SwatWorld){0};sim.actor_count=0;sim.tick=500;fake_actor=false;
+    sim.world.room_count=1;sim.world.count=8;
+    sim.world.rooms[0]=(SwatRoom){{0,0,0},{6,6,6},SWAT_DRYWALL,SWAT_CONCRETE};
+    const Vector3 directions[]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+    for(int face=0;face<6;face++) {
+        Vector3 d=directions[face],half={1.1f,1.1f,1.1f};
+        if(d.x)half.x=.05f;
+        if(d.y)half.y=.05f;
+        if(d.z)half.z=.05f;
+        sim.world.objects[face]=(SwatObject){.active=true,.center={d.x*5,d.y*5,d.z*5},.half={half.x,half.y,half.z},.material=SWAT_CONCRETE};
+    }
+    sim.world.objects[7]=(SwatObject){.active=true,.part=SWAT_PART_LIGHT,.center={0,.06f,0},.half={.01f,.05f,.01f}};
+    SwatLighting reference={0};swat_lighting_init(&reference);assert(reference.enabled);
+    reference.sun_energy=light->sun_energy=(Vector3){0};light->prepared=false;
+    SwatObject* blocker=&sim.world.objects[6];bool reduced=false;unsigned int refreshed=0;int comparisons=0;
+    for(int step=0;step<13;step++) {
+        if(step<6){Vector3 d=directions[step];*blocker=(SwatObject){.active=true,.center={d.x*2,d.y*2,d.z*2},.half={.2f,.2f,.2f},.material=SWAT_WOOD};}
+        if(step==6)*blocker=(SwatObject){.active=true,.center={2,0,2},.half={.5f,.5f,.05f},.yaw=SWAT_PI*.25f,.material=SWAT_WOOD};
+        if(step==7){blocker->fractured=true;const float corners[4][2]={{-.5f,-.5f},{-.5f,.5f},{0,.5f},{0,-.5f}};memcpy(blocker->corners,corners,sizeof(corners));}
+        if(step==8)blocker->corners[2][0]=.25f;
+        if(step==9)blocker->active=false;
+        if(step==10)blocker->active=true;
+        if(step==11){blocker->pitch=.2f;blocker->yaw+=.3f;}
+        if(step==12)sim.world.objects[7].center.x=.25f;
+        before=sim.world;unsigned int faces=light->room_face_updates;
+        swat_lighting_prepare_split(light,&sim,(Vector3){3,2,3},false,counted_geometry,test_actors,NULL);
+        unsigned int updated=light->room_face_updates-faces;refreshed+=updated;
+        if(step)reduced|=updated>0 && updated<SWAT_LAMP_FACES;
+        if(step==12)assert(updated==SWAT_LAMP_FACES); // Moving the light invalidates every projection.
+        reference.prepared=false;swat_lighting_prepare_context(&reference,&sim,(Vector3){3,2,3},false,combined_shadow,NULL);
+        for(int camera_index=0;camera_index<7;camera_index++) {
+            Vector3 d=directions[camera_index%6];Camera3D camera={Vector3Scale(d,4),Vector3Scale(d,5),d.y?(Vector3){0,0,1}:(Vector3){0,1,0},45,CAMERA_PERSPECTIVE};
+            if(camera_index==6)camera=(Camera3D){{3.3f,2.5f,3.3f},{2,0,2},{0,1,0},55,CAMERA_PERSPECTIVE};
+            Image cached=capture(light,art,camera,NULL),full=capture(&reference,art,camera,NULL);int mismatch=shadow_image_compare(cached,full);
+            if(mismatch>=10)fprintf(stderr,"static face state=%d camera=%d mismatches=%d\n",step,camera_index,mismatch);
+            assert(mismatch<10);UnloadImage(cached);UnloadImage(full);comparisons++;
+        }
+        assert(!memcmp(&before,&sim.world,sizeof(before)));sim.tick++; // Same-tick local changes cannot wait for actor cadence.
+    }
+    assert(reduced);swat_lighting_close(&reference);
+    printf("PASS static face cache: %d full-redraw image comparisons across six directions/seam, movement/partial fracture/corner edits/removal/rotation/light relocation; %u static faces versus %d full-room faces; immutable authority\n",comparisons,refreshed,13*SWAT_LAMP_FACES);
+}
+static void sun_cache_checks(SwatLighting* light,SwatEnvironmentArt* art) {
+    sim.world=(SwatWorld){0};sim.actor_count=1;sim.tick=700;fake_actor=true;
+    sim.world.count=3;
+    sim.world.objects[0]=(SwatObject){.active=true,.center={0,-.05f,0},.half={4,.05f,4},.material=SWAT_CONCRETE};
+    sim.world.objects[1]=(SwatObject){.active=true,.center={-1,.5f,0},.half={.3f,.5f,.3f},.material=SWAT_WOOD};
+    sim.world.objects[2]=(SwatObject){.active=true,.door=true,.center={1,.6f,0},.half={.6f,.6f,.08f},.material=SWAT_WOOD};
+    b3WorldDef wd=b3DefaultWorldDef();b3WorldId world=b3CreateWorld(&wd);b3BodyDef bd=b3DefaultBodyDef();bd.position=(b3Pos){0,.6f,0};
+    sim.actors[0]=(SwatActor){.present=true};sim.actors[0].controller.body.body=b3CreateBody(world,&bd);sim.actors[0].controller.body.totalHeight=1.2f;
+    SwatLighting reference={0};swat_lighting_init(&reference);assert(reference.enabled);
+    reference.sun_energy=light->sun_energy=(Vector3){2,2,2};light->prepared=false;
+    Camera3D camera={{3.5f,4,4},{0,0,0},{0,1,0},55,CAMERA_PERSPECTIVE};int comparisons=0;
+    for(int step=0;step<13;step++) {
+        sim.tick+=step==4?16:step==6 || step==7 || step==10?1:4;
+        if(step==6)sim.world.objects[2].yaw=.7f;
+        if(step==7)sim.world.objects[1].active=false;
+        if(step==8)b3Body_SetTransform(sim.actors[0].controller.body.body,(b3Pos){2,.6f,0},b3Quat_identity);
+        if(step==9)sim.actors[0].present=false;
+        if(step==10){sim.actors[0].present=true;sim.actors[0].controller.yaw=.4f;sim.world.objects[2].active=false;}
+        if(step==11)light->sun_direction=reference.sun_direction=Vector3Normalize((Vector3){-.6f,1,.4f});
+        if(step==12)sim.tick=1; // Replay/episode rewind must discard old presentation history.
+        before=sim.world;unsigned int updates=light->sun_actor_updates;
+        swat_lighting_prepare_split(light,&sim,camera.position,false,counted_geometry,test_actors,NULL);
+        if(step==5)assert(light->sun_actor_updates==updates);else assert(light->sun_actor_updates==updates+1);
+        reference.prepared=false;swat_lighting_prepare_context(&reference,&sim,camera.position,false,combined_shadow,NULL);
+        Image cached=capture(light,art,camera,NULL),full=capture(&reference,art,camera,NULL);int mismatch=shadow_image_compare(cached,full);
+        printf("sun cache state=%d updated=%u mismatches=%d\n",step,light->sun_actor_updates-updates,mismatch);assert(mismatch<10);
+        assert(!memcmp(&before,&sim.world,sizeof(before)));UnloadImage(cached);UnloadImage(full);comparisons++;
+    }
+    fake_actor=false;sim.actor_count=0;sim.actors[0].present=false;b3DestroyWorld(world);swat_lighting_close(&reference);
+    printf("PASS settled sun cache: %d full-redraw image comparisons, blend settling/reuse, immediate doors/destruction, actor movement/removal/restoration, changed sun and replay rewind\n",comparisons);
 }
 
 static void wall_quad(float x,bool mirrored) {
@@ -535,6 +615,8 @@ int main(int argc,char** argv) {
     multi_room_checks(&light,&art,directory);
     door_cache_checks(&light,&art,directory);
     actor_face_checks(&light,&art);
+    static_face_checks(&light,&art);
+    sun_cache_checks(&light,&art);
     lamp_coverage_checks(&light,&art,directory);
     swat_lighting_close(&light);assert(!light.environment_atlas.id && !light.environment_sky.id);
     environment("SWAT_LIGHTING","0"); swat_lighting_init(&light); assert(!light.enabled && !light.sun.id);
