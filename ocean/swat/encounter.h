@@ -26,7 +26,7 @@ typedef struct SwatNavigation {
     uint32_t *queue;
     int width,depth,cells,nodes;
     float min_x,min_z;
-    unsigned char object_state[SWAT_MAX_OBJECTS];
+    uint32_t object_state[SWAT_MAX_OBJECTS];
     float top,bottom;
     int generation,count,built_tick,updated_cells;
     bool built;

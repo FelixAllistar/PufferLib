@@ -1,9 +1,37 @@
 #ifndef SWAT_IMPACT_EFFECTS_DRAW_H
 #define SWAT_IMPACT_EFFECTS_DRAW_H
 #include "impact_effects.h"
+#include "breach_rubble.h"
 #include "lighting.h"
 #include "raymath.h"
 #include "rlgl.h"
+
+static void swat_rubble_draw(const SwatWorld* world,Camera3D camera,SwatLighting* light) {
+    SwatRubbleFragment fragments[SWAT_RUBBLE_FRAGMENTS];
+    int count=swat_rubble_sample(world,(b3Pos){camera.position.x,camera.position.y,camera.position.z},fragments);
+    if(!count)return;
+    swat_lighting_surface(light,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
+    rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);
+    const int faces[3][3]={{0,3,1},{1,3,2},{2,3,0}};
+    for(int i=0;i<count;i++) {
+        const SwatRubbleFragment* p=&fragments[i];Vector3 vertices[4];float c=cosf(p->yaw),s=sinf(p->yaw);
+        const float local[4][2]={{-.5f,-.4f},{.5f,-.3f},{-.1f,.5f},{0,0}};
+        for(int v=0;v<4;v++) {
+            float x=local[v][0]*p->length,z=local[v][1]*p->width;
+            vertices[v]=(Vector3){(float)p->position.x+c*x+s*z,(float)p->position.y+(v==3?p->height:0),(float)p->position.z-s*x+c*z};
+        }
+        bool board=p->material==SWAT_DRYWALL || p->material==SWAT_PLASTER;
+        Color color=board?(Color){203,195,177,255}:p->material==SWAT_BRICK?(Color){144,113,91,255}:(Color){164,121,76,255};
+        for(int f=0;f<3;f++) {
+            Vector3 a=vertices[faces[f][0]],b=vertices[faces[f][1]],v=vertices[faces[f][2]];
+            Vector3 normal=Vector3Normalize(Vector3CrossProduct(Vector3Subtract(b,a),Vector3Subtract(v,a)));
+            float tone=.8f+.1f*f;rlNormal3f(normal.x,normal.y,normal.z);
+            rlColor4ub(color.r*tone,color.g*tone,color.b*tone,255);
+            for(int j=0;j<3;j++){Vector3 point=vertices[faces[f][j]];rlTexCoord2f(0,0);rlVertex3f(point.x,point.y,point.z);}
+        }
+    }
+    rlEnd();rlSetTexture(0);
+}
 
 static void swat_impact_vertex(Vector3 p,Vector3 normal,const uint8_t color[4],bool edge) {
     rlNormal3f(normal.x,normal.y,normal.z);

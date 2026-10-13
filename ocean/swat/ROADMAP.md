@@ -12,6 +12,43 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Material destruction prototype (2026-10-12): `./swat play --mission breach-lab`
+provides a retained hinged door, layered timber/board/insulation partition and
+staggered masonry sample. Compact door charges and larger wall breachers have
+separate finite stock. Latch failure leaves the original leaf and maps with a
+local notch/scorch; ordinary board/timber impacts make small physical holes.
+Wall openings preserve every outside section, including several sides of an
+enclosed hole, on the existing physics body/owner. Original imported art stays
+frozen; surviving painted faces retain continuous UVs and no obsolete trim.
+
+Sparse affected-object data is bounded to four profiles and 128 convex sections;
+small impacts reserve a profile for the wall tool. Intact objects allocate no
+cut data, and tiny holes skip navigation resampling. Snapshot version 19 carries
+monotonic profiles and latch state, prepares compound cuts before applying them,
+and rejects malformed or growing updates. Fresh recordings/saves are required.
+Destruction counters count removed owners rather than every changed fragment.
+Route QA also exposed and fixed force evaluation against a post-impact surrender
+state: a lawful first Impact hit is now distinguished from later force against
+an already surrendered person.
+
+Independent geometry checks cover enclosed-hole retention, repeated cuts,
+material thickness, rotated rays/CCD, controller passage, damaged hinge motion,
+live/late replicas and atomic rejection. Graphics checks preserve 5,778 painted
+face samples, compare replicas pixel for pixel, and confirm hinge movement
+creates no new door meshes. The actual motel shadow test passes 32 comparisons
+against full redraw on each platform; native wall face batching passes 56
+pixel-identical lit/unlit reference comparisons through breaches and corner edits.
+Compact captures/logs are under
+`build/swat/review/destruction-samples`. All four ordinary-input motel completion
+routes pass on Linux and Windows, including physical wall entry, every-tick
+replay, save/resume, fresh replicas, debrief and contact-buffer checks. Live UDP,
+tactical, navigation, pane/prop/contact and force/payload checks pass on both.
+Normal players/servers and float Puffer are rebuilt; this increment makes no
+new frame-time claim under competing machine load.
+This remains a bounded material prototype:
+connected sheet support, hinge detachment, structural stress and loose structural
+rubble are still open, as are the full slice acceptance checks below.
+
 Shadow reuse increment (2026-10-12): local architecture changes now invalidate
 individual conservative lamp faces within affected rooms. Sunlight reuses settled
 actor depth, and actor presentation fingerprints are computed once per preparation

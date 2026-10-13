@@ -17,6 +17,7 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
     {"Morrow Block","Clear the laundromat, pawn shop and shared rear service area. Secure occupants and return to the street.",
         {-3,-.139f,5},{-3,-.139f,7},0,{{0}}},
     {"Generated building scenario","Reported armed occupants and civilians. Secure occupants and return to staging.",{0,0,3},{-1.5f,0,3},0,{{0}}},
+    {"Breach material samples","Door, timber partition and painted masonry. Compare tool damage and surviving structure.",{0,0,0},{0,0,0},0,{{0}}},
 };
 const SwatMissionDef* swat_mission(int mission) {
     return &missions[mission>=0 && mission<SWAT_MISSION_COUNT ? mission : SWAT_ANNEX];
@@ -122,6 +123,35 @@ int swat_framed_wall_pieces(float length,float height,float opening_center,float
     SwatWallBuild build={0};
     framed_wall(&build,(b3Pos){0},0,length,height,opening_center,opening_width,sill,opening_height,exterior);
     return build.count;
+}
+void swat_mission_build_breach_lab(SwatWorld* w) {
+    swat_world_box(w,(b3Pos){2,-.5f,0},swat_v(10,.5f,9),SWAT_CONCRETE,0);
+    // Three independent assemblies use the production tool/physics path.
+    swat_build_framed_wall(w,(b3Pos){4,0,-4.2f},0,3.4f,2.7f,0,1.2f,0,2.1f,false);
+    for(int i=1;i<w->count;i++)if(w->objects[i].door)w->objects[i].locked=true;
+    int first=w->count;swat_build_framed_wall(w,(b3Pos){4,0,0},0,3.4f,2.7f,0,0,0,0,false);
+    // Batts occupy the existing cavity between timber, rather than painting
+    // a yellow interior onto a solid board. Each is another material layer.
+    int bays=(int)ceilf(3.4f/.4f);float width=3.4f/bays;
+    for(int bay=0;bay<bays;bay++) {
+        int id=swat_world_box(w,(b3Pos){4,1.35f,-1.7f+(bay+.5f)*width},
+            swat_v(.035f,1.30f,(width-.038f)*.5f),SWAT_INSULATION,10);
+        w->objects[id].part=SWAT_PART_SKIN;w->objects[id].wall_group=first+1;
+    }
+    // Staggered masonry courses provide real small constituent pieces. Their
+    // painted face shares world UVs; cuts can retain multiple pieces of a unit.
+    first=w->count;float dz=.34f,dy=2.7f/14;
+    for(int row=0;row<14;row++)for(int col=0;col<11;col++) {
+        float lo=-1.7f+col*dz-(row%2)*dz*.5f,hi=fminf(1.7f,lo+dz);lo=fmaxf(-1.7f,lo);
+        if(hi-lo<.001f)continue;
+        int id=swat_world_box(w,(b3Pos){4,(row+.5f)*dy,4.2f+(lo+hi)*.5f},
+            swat_v(.09f,dy*.5f,(hi-lo)*.5f),SWAT_BRICK,swat_material(SWAT_BRICK)->fracture_health);
+        w->objects[id].part=SWAT_PART_SKIN;w->objects[id].wall_group=first+1;
+    }
+    for(int side=-1;side<=1;side+=2) {
+        int id=swat_world_box(w,(b3Pos){4+side*.098f,1.35f,4.2f},swat_v(.008f,1.35f,1.7f),SWAT_PLASTER,55);
+        w->objects[id].part=SWAT_PART_SKIN;w->objects[id].wall_group=first+1;
+    }
 }
 void swat_mission_build_house(SwatWorld* w) {
     // Exterior ground stops at the foundation. Finish floors own the contact

@@ -217,8 +217,13 @@ int main(void) {
     b3Body_SetTransform(officer->body.body,(b3Pos){0,officer->body.totalHeight*.5f+.02f,-2},b3Quat_identity);
     b3Body_SetLinearVelocity(officer->body.body,swat_v(0,0,0));
     inputs[0].door_tool=SWAT_DETONATE_CHARGE; ticks(&server,clients,inputs,3,6,&host); synchronize(&server,clients,3);
-    assert(!leaf->active && leaf->breach_ticks>0);
-    for(int i=0;i<3;i++) assert(!replicas[i].world.objects[entry].active && replicas[i].world.objects[entry].breach_owner<0);
+    assert(leaf->active && leaf->latch_broken && leaf->breach_ticks>0);
+    for(int i=0;i<3;i++) {
+        SwatObject* replica_leaf=&replicas[i].world.objects[entry];
+        assert(replica_leaf->active && replica_leaf->latch_broken && replica_leaf->breach_owner<0);
+        assert(replica_leaf->door_angle==leaf->door_angle &&
+            b3Body_GetShapeCount(replica_leaf->body)==b3Body_GetShapeCount(leaf->body));
+    }
     inputs[0]=swat_neutral_input();
     puts("PASS real UDP door tools: interrupted/finished remote pick, finite mounted charge, owner-only detonation, rejoin baseline and shared breach collision");
 

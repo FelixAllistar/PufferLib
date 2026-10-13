@@ -21,14 +21,14 @@ static void breach_geometry_graphics(SwatView* view,const char* directory) {
     Camera3D close={{-6.75f,1.38f,-6.7f},{-7.3333f,1.15f,-5.99f},{0,1,0},55,CAMERA_PERSPECTIVE};
     Image edge=room101_capture_size(view,close,true,960,540);
     snprintf(path,sizeof(path),"%s/masonry-edge-close.png",directory);assert(ExportImage(edge,path));UnloadImage(edge);
-    // Marker material proves the optional source fracture strips remain drawn.
+    // New cuts expose their own physical core; legacy trim must not frame them.
     Model original=view->environment.masonry_edge;
     view->environment.masonry_edge=LoadModelFromMesh(GenMeshCube(.184f,.004f,1));
     view->environment.masonry_edge.materials[0].maps[MATERIAL_MAP_ALBEDO].color=RED;
     Image marked=room101_capture_size(view,camera,false,960,540);Color* colors=LoadImageColors(marked);int red=0;
     for(int i=0;i<marked.width*marked.height;i++)red+=colors[i].r>200 && colors[i].g<80 && colors[i].b<80;
-    assert(red>100);UnloadImageColors(colors);UnloadImage(marked);
+    assert(red==0);UnloadImageColors(colors);UnloadImage(marked);
     UnloadModel(view->environment.masonry_edge);view->environment.masonry_edge=original;
     UnloadImage(intact);UnloadImage(cut);UnloadImage(synchronized);swat_sim_close(&sim);
-    printf("PASS breach geometry graphics: %d altered pixels, pixel-identical live replica, %d exposed-edge marker pixels; clipped source faces, lit close view and immutable render authority\n",pixels,red);
+    printf("PASS breach geometry graphics: %d altered pixels, pixel-identical live replica, %d obsolete-trim marker pixels; clipped source faces, physical material edges, lit close view and immutable render authority\n",pixels,red);
 }

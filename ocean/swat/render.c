@@ -43,7 +43,8 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
             break;
         case SWAT_CONTEXT_WEDGED: action="Door wedged / [Alt+9] Remove"; break;
         case SWAT_CONTEXT_TRAP: action="Trap found / hold [8] Disarm"; break;
-        case SWAT_CONTEXT_WALL: action=context.ready ? "Hold [7] Place wall charge" : "Move closer to place wall charge"; break;
+        case SWAT_CONTEXT_WALL: action=!actor->gear.wall_charges ? "Wall breacher required / Entry kit" :
+            context.ready ? "Hold [7] Place wall breacher" : "Move closer to place wall breacher"; break;
         case SWAT_CONTEXT_CHARGE:
             action=sim->world.objects[context.hit.index].breach_owner==view->actor ? "[K] Detonate charge" : "Teammate's charge"; break;
         case SWAT_CONTEXT_CUFF:
@@ -134,21 +135,6 @@ static Color swat_material_color(const SwatObject* o) {
 }
 
 static void swat_draw_object(const SwatView* view,const SwatWorld* world,const SwatObject* o) {
-    if(!o->active && o->fractured && !view->planning) {
-        swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
-        float floor_y=0;
-        for(int i=0;i<world->room_count;i++) {
-            const SwatRoom* r=&world->rooms[i];
-            if(o->center.y>=r->center.y-r->half.y && fabs(o->center.x-r->center.x)<r->half.x+.2f && fabs(o->center.z-r->center.z)<r->half.z+.2f)
-                floor_y=fmaxf(floor_y,(float)(r->center.y-r->half.y));
-        }
-        // Presentation-only fragments never add colliders or acoustic searches.
-        float hash=(o->tag.index*37%101)/101.0f;
-        Vector3 p={(float)o->center.x+.18f*(hash-.5f),floor_y+.015f,(float)o->center.z+.25f*(hash-.5f)};
-        DrawTriangle3D(p,(Vector3){p.x+.02f,p.y,p.z+.16f},(Vector3){p.x+.13f,p.y,p.z+.04f},(Color){166,158,143,255});
-        // Flying debris comes from the bounded material event batch, including
-        // charge apertures. Do not submit three separate cubes per removed tile.
-    }
     if (!o->active && !swat_motel_fence_proxy(world,o) && swat_motel_surroundings_part(world,o)!=1) return;
     bool cutaway=view->planning && !view->plan_preview;
     bool imported=swat_environment_motel_draw(&view->environment,world,o,false,cutaway) ||
@@ -167,18 +153,19 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
     if (o->door) {
         swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
         bool leaf_art=imported || (art && view->environment.door.meshCount && o->material==SWAT_WOOD);
-        if(!leaf_art) DrawCube((Vector3){-o->half.x-0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
-        if(!leaf_art) DrawCube((Vector3){o->half.x+0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
+        if(!leaf_art && !o->latch_broken) DrawCube((Vector3){-o->half.x-0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
+        if(!leaf_art && !o->latch_broken) DrawCube((Vector3){o->half.x+0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
         if(o->wedge_owner>=0) DrawCube((Vector3){0,-o->half.y+.035f,o->half.z-.2f},.22f,.07f,.28f,(Color){184,98,45,255});
-        if(o->breach_owner>=0) for(int side=-1;side<=1;side+=2) {
-            DrawCube((Vector3){side*(o->half.x+.018f),.12f,o->half.z-.22f},.035f,.18f,.22f,swat_gold);
-            DrawCube((Vector3){side*(o->half.x+.04f),.12f,o->half.z-.22f},.014f,.06f,.08f,(Color){205,65,48,255});
+        if(o->breach_owner>=0) {
+            b3Vec3 local=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(o->breach_position,o->center));
+            float side=local.x>=0?1:-1;
+            DrawCube((Vector3){local.x+side*.012f,local.y,local.z},.025f,.10f,.07f,swat_gold);
         }
     }
     if(!o->door && o->breach_owner>=0) {
         b3Vec3 local=b3InvRotateVector(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3SubPos(o->breach_position,o->center));
         bool fence=o->part==SWAT_PART_FENCE_WIRE || o->part==SWAT_PART_FENCE_RAIL;
-        DrawCube((Vector3){local.x,local.y,local.z},fence?.22f:.045f,.18f,fence?.045f:.22f,swat_gold);
+        DrawCube((Vector3){local.x,local.y,local.z},fence?.55f:.06f,.65f,fence?.06f:.55f,(Color){78,83,70,255});
     }
     rlPopMatrix();
 }
@@ -245,7 +232,8 @@ static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaw
         if(cutaway && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
         rlPushMatrix(); rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
         rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
-        if(o->fractured) swat_environment_fragment_draw(o);
+        if(o->door && o->latch_broken)swat_environment_door_fragment_draw(o);
+        else if(o->fractured || o->cuts) swat_environment_fragment_draw(o);
         else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);
         rlPopMatrix();
     }
@@ -295,7 +283,8 @@ static void swat_draw_contact_scene(void* context,const SwatSim* sim,bool cutawa
         if(swat_environment_motel_draw(&view->environment,&sim->world,o,true,false))continue;
         if(swat_environment_storefront_draw(&view->environment,&sim->world,o,true,false))continue;
         rlPushMatrix();rlTranslatef(p.x,p.y,p.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);
-        if(o->fractured)swat_environment_fragment_draw(o);
+        if(o->door && o->latch_broken)swat_environment_door_fragment_draw(o);
+        else if(o->fractured || o->cuts)swat_environment_fragment_draw(o);
         else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);
         rlPopMatrix();
     }
@@ -410,6 +399,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
         for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,false);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world,&sim->world.objects[i]);
         swat_environment_art_transparent(&view->environment,&sim->world,camera.position,false);
+        swat_rubble_draw(&sim->world,camera,&view->lighting);
         swat_impact_draw(&sim->sounds,sim->tick,camera,&view->lighting);
         swat_end_scene(view); return;
     }
@@ -433,6 +423,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
     for(int i=0;i<sim->actor_count;i++) if(sim->tick-sim->actors[i].last_shot_tick<=3)
         DrawLine3D(swat_position(sim->actors[i].tracer_start),swat_position(sim->actors[i].tracer_end),swat_gold);
     swat_environment_art_transparent(&view->environment,&sim->world,camera.position,false);
+    swat_rubble_draw(&sim->world,camera,&view->lighting);
     swat_impact_draw(&sim->sounds,sim->tick,camera,&view->lighting);
     swat_end_scene(view);
     if(a->gear.gas_ticks>0) DrawRectangle(0,0,width,height,(Color){100,125,55,(unsigned char)(a->gear.gas_ticks*.55f)});
@@ -549,10 +540,11 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     bool cleared=progress.secured;
     Color extraction = cleared ? (Color){99,197,144,255} : (Color){177,146,77,180};
     float extraction_radius=s->config.tactical_rules ? SWAT_STAGING_RADIUS : 1.3f;
-    DrawCylinder((Vector3){(float)s->extraction.x,(float)s->extraction.y+.01f,(float)s->extraction.z},extraction_radius,extraction_radius,0.025f,32,extraction);
+    if(s->config.mission!=SWAT_BREACH_LAB)DrawCylinder((Vector3){(float)s->extraction.x,(float)s->extraction.y+.01f,(float)s->extraction.z},extraction_radius,extraction_radius,0.025f,32,extraction);
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
+    swat_rubble_draw(&s->world,camera,&view->lighting);
     swat_impact_draw(&s->sounds,s->tick,camera,&view->lighting);
     view->geometry_seconds=GetTime()-measured;measured=GetTime();
     if (a->alive && !a->gear.inspecting) {
@@ -598,7 +590,8 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
 
     if(view->debug) swat_hud_center(view,TextFormat("%d FPS / %.1f ms / tick %d / %d objects / %s",GetFPS(),GetFrameTime()*1000,s->tick,s->world.count,view->lighting.enabled ? "lit" : "unlit"),width/2,80,14,swat_gold);
     swat_hud_text(view,swat_sim_mission(s)->name,24,22,15,swat_paper);
-    const char* objective=progress.threats ? TextFormat("Secure armed occupants (%d)",progress.threats) :
+    const char* objective=s->config.mission==SWAT_BREACH_LAB ? "Door / timber / masonry    [7] Place    [K] Detonate" :
+        progress.threats ? TextFormat("Secure armed occupants (%d)",progress.threats) :
         progress.unsecured ? TextFormat("Restrain civilians (%d)",progress.unsecured) :
         progress.evidence ? TextFormat("Recover dropped weapons (%d)",progress.evidence) :
         progress.evacuees ? TextFormat("Escort civilians to staging (%d)",progress.evacuees) : "Regroup at staging";
