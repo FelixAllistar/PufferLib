@@ -1,0 +1,149 @@
+// Deterministic polygon subtraction shared by physics, queries and art.
+#ifndef SWAT_FRACTURE_GEOMETRY_H
+#define SWAT_FRACTURE_GEOMETRY_H
+#include "world.h"
+#include "door_damage.h"
+#include <string.h>
+typedef struct SwatCutPlane {float y,z,offset;} SwatCutPlane;
+static inline bool swat_cut_valid(const SwatCut* cut) {
+    return isfinite(cut->y) && isfinite(cut->z) && isfinite(cut->height) && isfinite(cut->width) &&
+        fabsf(cut->y)<=200 && fabsf(cut->z)<=200 && cut->height>=.005f && cut->width>=.005f &&
+        cut->height<=10 && cut->width<=10 && (unsigned int)cut->kind<SWAT_CUT_KINDS;
+}
+static inline void swat_cut_planes(const SwatCut* cut,SwatCutPlane planes[SWAT_CUT_SIDES]) {
+    float points[SWAT_CUT_SIDES][2];
+    for(int i=0;i<SWAT_CUT_SIDES;i++) {
+        float angle=2*SWAT_PI*i/SWAT_CUT_SIDES,c=cosf(angle),s=sinf(angle);
+        // Breacher silhouette follows an authored broad rectangle with rounded
+        // corners. Impact openings use a small ellipse. These are game profiles.
+        if(cut->kind==SWAT_CUT_BREACH){c=copysignf(sqrtf(fabsf(c)),c);s=copysignf(sqrtf(fabsf(s)),s);}
+        unsigned int hash=cut->seed+(unsigned int)i*0x85ebca6bu;hash=(hash^(hash>>13))*1274126177u;hash^=hash>>16;
+        float rough=cut->kind==SWAT_CUT_BREACH?.004f:.025f;
+        float radius=1+rough*((hash%10001)/5000.0f-1);
+        points[i][0]=cut->y+cut->height*radius*c;points[i][1]=cut->z+cut->width*radius*s;
+    }
+    for(int i=0;i<SWAT_CUT_SIDES;i++) {
+        int j=(i+1)%SWAT_CUT_SIDES;float y=points[j][0]-points[i][0],z=points[j][1]-points[i][1],length=hypotf(y,z);
+        planes[i]=(SwatCutPlane){z/length,-y/length,0};
+        planes[i].offset=planes[i].y*points[i][0]+planes[i].z*points[i][1];
+    }
+}
+static inline float swat_polygon_area(const SwatFracturePolygon* p) {
+    float area=0;for(int i=0;i<p->count;i++){int j=(i+1)%p->count;area+=p->vertices[i][0]*p->vertices[j][1]-p->vertices[i][1]*p->vertices[j][0];}
+    return .5f*area;
+}
+static inline void swat_polygon_simplify(SwatFracturePolygon* p) {
+    bool changed=true;
+    while(changed && p->count>=3) {
+        changed=false;
+        for(int i=0;i<p->count;i++) {
+            int j=(i+1)%p->count,k=(i+2)%p->count;
+            float y=p->vertices[j][0]-p->vertices[i][0],z=p->vertices[j][1]-p->vertices[i][1];
+            float dy=p->vertices[k][0]-p->vertices[j][0],dz=p->vertices[k][1]-p->vertices[j][1];
+            if(y*y+z*z<1e-12f || fabsf(y*dz-z*dy)<1e-9f) {
+                memmove(&p->vertices[j],&p->vertices[j+1],(size_t)(p->count-j-1)*sizeof(p->vertices[0]));p->count--;changed=true;break;
+            }
+        }
+    }
+}
+static inline bool swat_polygon_clip(const SwatFracturePolygon* in,SwatCutPlane plane,float sign,SwatFracturePolygon* out) {
+    memset(out,0,sizeof(*out));
+    for(int i=0;i<in->count;i++) {
+        int j=(i+1)%in->count;const float* a=in->vertices[i];const float* b=in->vertices[j];
+        float av=sign*(plane.y*a[0]+plane.z*a[1]-plane.offset),bv=sign*(plane.y*b[0]+plane.z*b[1]-plane.offset);
+        if(av>=0) {if(out->count==SWAT_CUT_VERTICES)return false;memcpy(out->vertices[out->count++],a,2*sizeof(float));}
+        if((av>=0)!=(bv>=0)) {
+            if(out->count==SWAT_CUT_VERTICES)return false;
+            float t=av/(av-bv);
+            out->vertices[out->count][0]=a[0]+t*(b[0]-a[0]);out->vertices[out->count++][1]=a[1]+t*(b[1]-a[1]);
+        }
+    }
+    swat_polygon_simplify(out);return true;
+}
+static inline void swat_source_polygon(const SwatObject* o,SwatFracturePolygon* p) {
+    memset(p,0,sizeof(*p));p->count=4;
+    if(o->fractured)memcpy(p->vertices,o->corners,sizeof(o->corners));
+    else {const float v[4][2]={{-o->half.y,-o->half.z},{o->half.y,-o->half.z},{o->half.y,o->half.z},{-o->half.y,o->half.z}};
+        memcpy(p->vertices,v,sizeof(v));}
+}
+static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int count,SwatFracturePolygon out[SWAT_CUT_SECTIONS]) {
+    SwatFracturePolygon input[SWAT_CUT_SECTIONS]={0};int n=1;
+    if(o->door && o->latch_broken) {
+        n=SWAT_DOOR_SECTIONS;
+        for(int i=0;i<n;i++){input[i].count=4;swat_door_section(o,i,input[i].vertices);}
+    } else swat_source_polygon(o,&input[0]);
+    for(int c=0;c<count;c++) {
+        if(!swat_cut_valid(&cuts[c]))return -1;
+        SwatCutPlane planes[SWAT_CUT_SIDES];swat_cut_planes(&cuts[c],planes);int next=0;
+        for(int p=0;p<n;p++) {
+            SwatFracturePolygon inside=input[p];
+            for(int e=0;e<SWAT_CUT_SIDES && inside.count>=3;e++) {
+                SwatFracturePolygon outside,rest;
+                if(!swat_polygon_clip(&inside,planes[e],1,&outside) || !swat_polygon_clip(&inside,planes[e],-1,&rest))return -1;
+                if(outside.count>=3 && swat_polygon_area(&outside)>1e-6f) {
+                    if(next==SWAT_CUT_SECTIONS)return -1;
+                    out[next++]=outside;
+                }
+                inside=rest;
+            }
+        }
+        n=next;memcpy(input,out,(size_t)n*sizeof(*out));
+    }
+    if(!count)memcpy(out,input,(size_t)n*sizeof(*out));
+    return n;
+}
+static inline bool swat_polygon_contains(const SwatFracturePolygon* p,float y,float z,float tolerance) {
+    for(int i=0;i<p->count;i++) {int j=(i+1)%p->count;
+        if((p->vertices[j][0]-p->vertices[i][0])*(z-p->vertices[i][1])-
+           (p->vertices[j][1]-p->vertices[i][1])*(y-p->vertices[i][0])< -tolerance)return false;
+    }
+    return true;
+}
+static inline bool swat_cut_contains(const SwatCut* cut,float y,float z) {
+    SwatCutPlane planes[SWAT_CUT_SIDES];swat_cut_planes(cut,planes);
+    for(int i=0;i<SWAT_CUT_SIDES;i++)if(planes[i].y*y+planes[i].z*z-planes[i].offset>0)return false;
+    return true;
+}
+static inline bool swat_fracture_contains(const SwatObject* o,float y,float z) {
+    SwatFracturePolygon original;swat_source_polygon(o,&original);
+    if(!swat_polygon_contains(&original,y,z,1e-6f))return false;
+    if(o->door && o->latch_broken && z>swat_door_edge(o,y))return false;
+    if(o->cuts)for(int i=0;i<o->cuts->count;i++)if(swat_cut_contains(&o->cuts->cuts[i],y,z))return false;
+    return true;
+}
+static inline bool swat_fracture_edge_open(const SwatObject* o,const float a[2],const float b[2]) {
+    float dy=b[0]-a[0],dz=b[1]-a[1],length=hypotf(dy,dz);if(length<1e-6f)return false;
+    return !swat_fracture_contains(o,.5f*(a[0]+b[0])+.0001f*dz/length,.5f*(a[1]+b[1])-.0001f*dy/length);
+}
+static inline float swat_fracture_exit(const SwatFracture* f,float half_x,b3Vec3 rel,b3Vec3 direction) {
+    float intervals[SWAT_CUT_SECTIONS][2];int count=0;
+    for(int s=0;s<f->section_count;s++) {
+        const SwatFracturePolygon* polygon=&f->sections[s];float lo=-1e6f,hi=1e6f;
+        for(int p=0;p<polygon->count+2;p++) {
+            float value,rate;
+            if(p<2){float sign=p?-1:1;value=half_x-sign*rel.x;rate=-sign*direction.x;}
+            else {int i=p-2,j=(i+1)%polygon->count;
+                float y=polygon->vertices[j][0]-polygon->vertices[i][0],z=polygon->vertices[j][1]-polygon->vertices[i][1];
+                value=y*(rel.z-polygon->vertices[i][1])-z*(rel.y-polygon->vertices[i][0]);rate=y*direction.z-z*direction.y;}
+            if(fabsf(rate)<1e-7f){if(value< -1e-7f){hi=-1e6f;break;}}
+            else if(rate>0)lo=fmaxf(lo,-value/rate);else hi=fminf(hi,-value/rate);
+        }
+        if(lo<=hi && hi>=0) {
+            int at=count++;while(at && intervals[at-1][0]>lo){memcpy(intervals[at],intervals[at-1],sizeof(intervals[0]));at--;}
+            intervals[at][0]=lo;intervals[at][1]=hi;
+        }
+    }
+    float end=0;bool found=false;
+    for(int i=0;i<count;i++) {
+        if(intervals[i][0]>end+.00001f)break;
+        end=fmaxf(end,intervals[i][1]);found=true;
+    }
+    return found && end<1e6f ? end : 0;
+}
+static inline uint32_t swat_fracture_hash(const SwatObject* o) {
+    if(!o->cuts)return 0;
+    uint32_t hash=2166136261u;const unsigned char* bytes=(const unsigned char*)o->cuts->cuts;
+    for(size_t i=0;i<(size_t)o->cuts->count*sizeof(SwatCut);i++){hash^=bytes[i];hash*=16777619u;}
+    return hash;
+}
+#endif

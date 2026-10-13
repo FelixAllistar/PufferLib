@@ -11,7 +11,7 @@ SwatConfig swat_default_config(void) {
         .layout_seed=1,.generator=SWAT_LAYOUT_NEURAL,.difficulty=1};
 }
 void swat_config_human(SwatConfig* config) {
-    config->tactical_rules=config->mission!=SWAT_ANNEX && config->mission!=SWAT_RANGE;
+    config->tactical_rules=config->mission!=SWAT_ANNEX && config->mission!=SWAT_RANGE && config->mission!=SWAT_BREACH_LAB;
     config->squad_bots=config->tactical_rules ? 3 : 0;
 }
 const SwatMissionDef* swat_sim_mission(const SwatSim* s) { return &s->mission; }
@@ -63,6 +63,7 @@ void swat_sim_reset(SwatSim* s) {
         else if(config.mission==SWAT_MOTEL) swat_motel_build(&s->world);
         else if(config.mission==SWAT_STOREFRONT) swat_storefront_build(&s->world);
         else if(config.mission==SWAT_RANGE) swat_mission_build_test_range(&s->world);
+        else if(config.mission==SWAT_BREACH_LAB)swat_mission_build_breach_lab(&s->world);
         else if(config.mission==SWAT_GENERATED) {
             bool valid=swat_layout_generate(&s->layout,config.layout_seed,config.difficulty,(SwatGenerator)config.generator);
             // A known valid layout is the last-resort fallback for a badly
@@ -121,11 +122,12 @@ void swat_sim_reset(SwatSim* s) {
             swat_sim_spawn_actor(s,8,SWAT_SUSPECT,(b3Pos){4.5f,0,-8},SWAT_PI*.5f);
             s->actor_count=9; s->extraction=s->mission.extraction;
         }
-        if(config.mission==SWAT_RANGE) {
+        if(config.mission==SWAT_RANGE || config.mission==SWAT_BREACH_LAB) {
             for(int i=1;i<s->actor_count;i++) if(s->actors[i].present) {
                 b3DestroyBody(s->actors[i].controller.body.body); memset(&s->actors[i],0,sizeof(s->actors[i]));
             }
             s->actor_count=1; s->extraction=s->mission.extraction;
+            if(config.mission==SWAT_BREACH_LAB){swat_equipment_kit(&s->actors[0].gear,2);s->actors[0].gear.wall_charges=2;}
         }
         if(config.tactical_rules && config.mission==SWAT_GENERATED && config.difficulty==2) {
             for(int i=0;i<s->world.count;i++) if(s->world.objects[i].door && (i+config.layout_seed)%3==0) s->world.objects[i].trapped=true;
@@ -229,11 +231,13 @@ void swat_sim_damage_region(SwatSim* s,int victim,int shooter,float damage,SwatH
     float amount=damage*multiplier[region];
     if(region==SWAT_TORSO) amount*=1-swat_kit(a->gear.kit)->torso_protection;
     a->gear.wounds[region]=fminf(100,a->gear.wounds[region]+amount);
-    if(less_lethal && (a->role==SWAT_SUSPECT || a->role==SWAT_CIVILIAN)) {
+    // Judge force against the pre-impact state. A lawful impact must not count
+    // as shooting a surrendered target merely because that hit causes surrender.
+    swat_sim_damage_actor(s,victim,shooter,amount);
+    if(a->alive && less_lethal && (a->role==SWAT_SUSPECT || a->role==SWAT_CIVILIAN)) {
         a->gear.stunned_ticks=240;
         a->gear.surrendered=true;
     }
-    swat_sim_damage_actor(s,victim,shooter,amount);
 }
 
 static b3Pos wand_sweep(const SwatSim* s,const SwatController* c,b3Pos start,b3Vec3 extension,bool* blocked) {
@@ -334,8 +338,8 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
         float thickness = swat_world_exit_distance(object,hit.point,direction);
         bool mesh=B3_IS_NON_NULL(object->shape) && b3Shape_GetType(object->shape)==b3_meshShape;
         float cost = swat_material_resistance(object->material)*fmaxf(thickness,mesh?.001f:.01f);
-        if (swat_world_impact(&s->world,hit.index,shot.damage*(energy/shot.energy)*(object->door && a->arsenal.active==0 && a->arsenal.primary==6 ? 3 : 1))) {
-            s->events.destroyed++;
+        if (swat_world_impact_at(&s->world,hit.index,hit.point,shot.damage*(energy/shot.energy),a->arsenal.active==0 && a->arsenal.primary==6)) {
+            s->events.destroyed+=!object->active;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
         }
         energy -= cost;
@@ -552,8 +556,11 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
             SwatMaterial material=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? s->world.objects[hit.index].material : SWAT_CARPET;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,1,25,material);
             if(hit.kind==SWAT_HIT_ACTOR) swat_sim_damage_region(s,hit.index,actor,5,swat_sim_hit_region(&s->actors[hit.index],hit.point),true);
-            else if(hit.index>=0 && swat_world_impact(&s->world,hit.index,swat_kit(gear->kit)->ram ? 160 : 18)) {
-                s->events.destroyed++; swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
+            else if(hit.index>=0 && (swat_kit(gear->kit)->ram && s->world.objects[hit.index].door ?
+                    (swat_world_breachable(&s->world.objects[hit.index]) && swat_world_break_latch(&s->world,hit.index)) :
+                    swat_world_impact_at(&s->world,hit.index,hit.point,swat_kit(gear->kit)->ram ? 160 : 18,false))) {
+                s->events.destroyed+=!s->world.objects[hit.index].active;
+                swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
             }
         }
     }
@@ -670,7 +677,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
     // the response. The compact training contract keeps its immediate failure.
     if (!s->config.tactical_rules && s->totals.civilian_damage > 0) s->end = SWAT_CIVILIAN_HARMED;
     else if(officers && !living) s->end=fallen ? SWAT_FALL : SWAT_OFFICER_DOWN;
-    else if(s->config.mission!=SWAT_RANGE && living && progress.secured && !progress.officers_away) s->end=SWAT_SUCCESS;
+    else if(s->config.mission!=SWAT_RANGE && s->config.mission!=SWAT_BREACH_LAB && living && progress.secured && !progress.officers_away) s->end=SWAT_SUCCESS;
     else if (s->tick >= s->config.max_ticks) s->end = SWAT_TIMEOUT;
 }
 

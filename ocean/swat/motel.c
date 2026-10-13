@@ -1,5 +1,6 @@
 #include "motel.h"
 #include <string.h>
+#include "fracture_geometry.h"
 #include "mission.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -587,34 +588,67 @@ static void wall_corners(const SwatObject* o,float v[4][2]) {
 }
 int swat_motel_wall_edges(const SwatWorld* w,const SwatObject* o,SwatMotelEdge* edges,int capacity) {
     if(!o->active || o->material!=SWAT_BRICK || swat_motel_wall_parent(w,o)<0)return 0;
-    int count=0;float c=cosf(o->yaw),s=sinf(o->yaw),v[4][2];wall_corners(o,v);
-    for(int i=o->wall_group-1;i<w->count && w->objects[i].wall_group==o->wall_group;i++) {
-        const SwatObject* n=&w->objects[i];if(n->active || n->part!=SWAT_PART_SKIN)continue;
-        b3Vec3 d=b3SubPos(n->center,o->center);float ny=d.y,nz=s*d.x+c*d.z,u[4][2];wall_corners(n,u);
-        for(int e=0;e<4;e++) {
-            int k=(e+1)%4;float dy=v[k][0]-v[e][0],dz=v[k][1]-v[e][1],length=hypotf(dy,dz);
-            if(length<.0001f)continue;
-            float ty=dy/length,tz=dz/length;
-            for(int f=0;f<4;f++) {
-                int g=(f+1)%4;float ay=ny+u[f][0]-v[e][0],az=nz+u[f][1]-v[e][1];
-                float by=ny+u[g][0]-v[e][0],bz=nz+u[g][1]-v[e][1];
-                // A charge can retreat a shared boundary into its survivor.
-                // The removed neighbor must still lie outside this edge, with
-                // a nearby, oppositely directed boundary. Never mark sealed
-                // seams or the opposite face as exposed fracture surfaces.
-                float gap_a=ty*az-tz*ay,gap_b=ty*bz-tz*by;
-                float neighbor_length=hypotf(by-ay,bz-az);
-                if(gap_a>.001f || gap_b>.001f || gap_a<-.15f || gap_b<-.15f ||
-                   ty*(by-ay)+tz*(bz-az)>-.9f*neighbor_length)continue;
-                float a=ty*ay+tz*az,b=ty*by+tz*bz;
-                if(b>=a)continue; // Neighbor's shared boundary runs the other way.
-                float lo=fmaxf(0,b),hi=fminf(length,a);if(hi-lo<.0001f)continue;
-                float mid=(lo+hi)*.5f,ly=v[e][0]+ty*mid,lz=v[e][1]+tz*mid;
+    if(o->cuts) {
+        SwatFracturePolygon original;swat_source_polygon(o,&original);int count=0;
+        float c=cosf(o->yaw),sn=sinf(o->yaw);
+        for(int p=0;p<o->cuts->section_count;p++) {
+            const SwatFracturePolygon* poly=&o->cuts->sections[p];
+            for(int e=0;e<poly->count;e++) {
+                const float* a=poly->vertices[e];const float* b=poly->vertices[(e+1)%poly->count];
+                float dy=b[0]-a[0],dz=b[1]-a[1],length=hypotf(dy,dz);if(length<.003f)continue;
+                float y=.5f*(a[0]+b[0]),z=.5f*(a[1]+b[1]);
+                if(!swat_polygon_contains(&original,y+.0001f*dz/length,z-.0001f*dy/length,0) ||
+                   !(poly->exposed_edges&(1u<<e)))continue;
+                int neighbor=-1;float best=INFINITY;
+                for(int j=o->wall_group-1;j<w->count && w->objects[j].wall_group==o->wall_group;j++) {
+                    const SwatObject* n=&w->objects[j];if(n->active || n->part!=SWAT_PART_SKIN)continue;
+                    b3Vec3 d=b3SubPos(n->center,o->center);float nz=sn*d.x+c*d.z;
+                    float distance=(d.y-y)*(d.y-y)+(nz-z)*(nz-z);if(distance<best){best=distance;neighbor=j;}
+                }
                 if(count>=capacity)return count;
-                // Strip +Y points into this survivor; +Z follows the reverse edge.
-                edges[count++]=(SwatMotelEdge){o->tag.index,i,b3OffsetPos(o->center,swat_v(s*lz,ly,c*lz)),o->yaw,atan2f(ty,-tz),hi-lo,2*o->half.x};
+                edges[count++]=(SwatMotelEdge){o->tag.index,neighbor,b3OffsetPos(o->center,swat_v(sn*z,y,c*z)),
+                    o->yaw,atan2f(dy/length,-dz/length),length,2*o->half.x};
             }
         }
+        return count;
+    }
+    // Intact assemblies have no fracture dressing. Keep their common path to
+    // one cheap active-bit scan, instead of four polygon-adjacency searches.
+    bool removed=false;
+    for(int i=o->wall_group-1;i<w->count && w->objects[i].wall_group==o->wall_group;i++)
+        removed|=!w->objects[i].active && w->objects[i].part==SWAT_PART_SKIN;
+    if(!removed)return 0;
+    int count=0;float c=cosf(o->yaw),s=sinf(o->yaw),v[4][2];wall_corners(o,v);
+    for(int e=0;e<4;e++) {
+        int k=(e+1)%4;float dy=v[k][0]-v[e][0],dz=v[k][1]-v[e][1],length=hypotf(dy,dz);
+        if(length<.0001f)continue;
+        float ty=dy/length,tz=dz/length,ly=(v[e][0]+v[k][0])*.5f,lz=(v[e][1]+v[k][1])*.5f;
+        float py=ly+.003f*tz,pz=lz-.003f*ty,best=INFINITY;int neighbor=-1;bool sealed=false;
+        for(int i=o->wall_group-1;i<w->count && w->objects[i].wall_group==o->wall_group;i++) {
+            const SwatObject* n=&w->objects[i];if(n==o || n->part!=SWAT_PART_SKIN)continue;
+            b3Vec3 d=b3SubPos(n->center,o->center);if(fabsf(c*d.x-s*d.z)>.001f)continue;
+            float ny=d.y,nz=s*d.x+c*d.z,u[4][2];
+            if(n->active) {
+                if(fabsf(py-ny)>n->half.y+.001f || fabsf(pz-nz)>n->half.z+.001f)continue;
+                wall_corners(n,u);
+                bool inside=true;
+                for(int f=0;f<4;f++) {int g=(f+1)%4;
+                    inside&=(u[g][0]-u[f][0])*(pz-nz-u[f][1])-(u[g][1]-u[f][1])*(py-ny-u[f][0])>=-.00001f;
+                }
+                if(inside){sealed=true;break;}
+            } else {
+                // A new diagonal cut can be well inside its original cell.
+                // Associate it with the closest removed cell on the open side,
+                // rather than assuming a parallel, unchanged tile boundary.
+                float ay=ny-ly,az=nz-lz,along=ty*ay+tz*az,gap=ty*az-tz*ay;
+                float span=hypotf(n->half.y,n->half.z),distance=hypotf(ay,az);
+                if(gap<=.001f && fabsf(along)<length*.5f+span &&
+                   distance<span+hypotf(o->half.y,o->half.z)+.05f && distance<best){best=distance;neighbor=i;}
+            }
+        }
+        if(sealed || neighbor<0)continue;
+        if(count>=capacity)return count;
+        edges[count++]=(SwatMotelEdge){o->tag.index,neighbor,b3OffsetPos(o->center,swat_v(s*lz,ly,c*lz)),o->yaw,atan2f(ty,-tz),length,2*o->half.x};
     }
     return count;
 }

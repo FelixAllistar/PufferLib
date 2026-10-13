@@ -3,6 +3,7 @@
 #include "swat_math.h"
 #include "materials.h"
 #include <stdbool.h>
+#include "fracture_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +41,7 @@ typedef struct SwatObject {
     SwatMaterial material;
     SwatPart part;
     bool active, door, door_open,locked;
+    bool latch_broken; // Retained leaf with a local, physically open edge notch.
     int breach_owner,breach_ticks;
     int wedge_owner;
     bool peek,trapped;
@@ -49,6 +51,7 @@ typedef struct SwatObject {
     // Corners are counter-clockwise in object-local (Y,Z), relative to center.
     bool fractured;
     float corners[4][2];
+    SwatFracture* cuts; // Sparse damage geometry; intact objects allocate none.
     int wall_group;
     // Required attachment supports precede their child; -1 denotes unused slots.
     int supports[SWAT_MAX_SUPPORTS];
@@ -100,6 +103,7 @@ SwatHit swat_world_sphere_cast(const SwatWorld* world, b3Pos origin,
                               b3Vec3 translation, float radius, b3BodyId ignore);
 bool swat_world_damage(SwatWorld* world, int object, float damage);
 bool swat_world_impact(SwatWorld* world,int object,float damage);
+bool swat_world_impact_at(SwatWorld*,int object,b3Pos point,float damage,bool door_round);
 bool swat_world_attach(SwatWorld*,int object,const int* supports,int count);
 float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 direction);
 float swat_material_resistance(SwatMaterial material);
@@ -111,9 +115,18 @@ bool swat_world_fragment_valid(const SwatObject* object,const float corners[4][2
 b3HullData* swat_world_fragment_hull(const SwatObject* object,const float corners[4][2]);
 bool swat_world_breachable(const SwatObject* object);
 int swat_world_breach(SwatWorld* world,int object,b3Pos position);
+// Rebuilds the retained leaf's shapes from the shared latch-damage geometry.
+bool swat_world_break_latch(SwatWorld* world,int object);
+// Exact retained convex pieces; prepare before mutating physics/network state.
+SwatFracture* swat_world_cut_prepare(const SwatObject*,const SwatCut*,int count);
+void swat_world_cut_apply(SwatWorld*,int object,SwatFracture* prepared);
+void swat_world_cut_close(SwatFracture*);
+// Returns 0 unchanged, 1 partially cut, 2 removed, -1 rejected.
+int swat_world_cut(SwatWorld*,int object,SwatCut cut);
 int swat_world_room(const SwatWorld* world, b3Pos position);
 b3SurfaceMaterial swat_physics_material(SwatMaterial material);
 bool swat_world_visible(const SwatWorld* world,b3Pos from,b3Pos to);
+bool swat_world_object_ray(const SwatObject*,b3Pos origin,b3Vec3 translation);
 // Shared renderer/simulation source, including switches and lost supports.
 SwatRoomLight swat_world_room_light(const SwatWorld*,int room);
 // Bounded actor-detection approximation, not photometric lux or renderer pixels.

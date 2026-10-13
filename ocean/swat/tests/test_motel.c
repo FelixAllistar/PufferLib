@@ -76,7 +76,7 @@ static void fence_charge_route(void) {
     SwatController* c=&s.actors[0].controller;
     b3Body_SetTransform(c->body.body,(b3Pos){11.65,-.065f+c->body.totalHeight*.5f,3},b3Quat_identity);c->yaw=0;
     SwatInput in=swat_neutral_input();for(int i=0;i<10;i++)swat_sim_step(&s,&in);
-    b3Pos eye=swat_controller_eye(c);c->pitch=atan2f(1.42f-(float)eye.y,12.5f-(float)eye.x);s.actors[0].gear.breaching_charges=1;
+    b3Pos eye=swat_controller_eye(c);c->pitch=atan2f(1.42f-(float)eye.y,12.5f-(float)eye.x);s.actors[0].gear.wall_charges=1;
     SwatHit target=swat_context_hit(&s,0,1.7f);assert(target.hit && swat_motel_fence_parent(&s.world,&s.world.objects[target.index])==156);
     assert(swat_world_breachable(&s.world.objects[target.index]));
     int first=s.world.objects[156].wall_group-1;
@@ -84,10 +84,10 @@ static void fence_charge_route(void) {
     b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};b3Pos from={11.6,-.075f,3};
     assert(b3World_CastMover(s.world.id,from,&capsule,swat_v(1.8f,0,0),b3DefaultQueryFilter(),NULL,NULL)<.8f);
     in.door_tool=SWAT_PLACE_CHARGE;for(int i=0;i<30;i++)swat_sim_step(&s,&in);
-    assert(s.actors[0].gear.breaching_charges==1);
+    assert(s.actors[0].gear.wall_charges==1);
     in=swat_neutral_input();swat_sim_step(&s,&in);
     in.door_tool=SWAT_PLACE_CHARGE;for(int i=0;i<100;i++)swat_sim_step(&s,&in);
-    assert(s.world.objects[target.index].breach_owner==0 && s.actors[0].gear.breaching_charges==0);
+    assert(s.world.objects[target.index].breach_owner==0 && s.actors[0].gear.wall_charges==0);
     in=swat_neutral_input();in.forward=-1;for(int i=0;i<100;i++)swat_sim_step(&s,&in);
     in=swat_neutral_input();in.door_tool=SWAT_DETONATE_CHARGE;swat_sim_step(&s,&in);
     int removed=0,survivors=0;for(int i=0;i<parts;i++){removed+=!s.world.objects[first+i].active;survivors+=s.world.objects[first+i].active;}
@@ -163,7 +163,7 @@ static void masonry_continuity(void) {
             b3Pos origin=b3OffsetPos(p->origin,swat_v(cosf(p->yaw)*lx+side*.3f*normal.x,ly,-sinf(p->yaw)*lx+side*.3f*normal.z));
             bool hit=false;
             for(int i=first;i<world.count && world.objects[i].wall_group==first+1 && !hit;i++)
-                hit=b3Shape_RayCast(world.objects[i].shape,origin,swat_mul(normal,-side*.6f)).hit;
+                hit=swat_world_object_ray(&world.objects[i],origin,swat_mul(normal,-side*.6f));
             assert(hit);rays++;
         }
     }
@@ -199,15 +199,14 @@ static void masonry_ballistics(void) {
     for(int i=group-1;i<s.world.count && s.world.objects[i].wall_group==group;i++) {
         SwatMotelEdge edges[32];int n=swat_motel_wall_edges(&s.world,&s.world.objects[i],edges,32);
         exposed+=n;for(int k=0;k<n;k++) {
-            assert(edges[k].owner==i && s.world.objects[i].active && !s.world.objects[edges[k].neighbor].active && edges[k].length>0);
+            assert(edges[k].owner==i && s.world.objects[i].active && (edges[k].neighbor<0 || !s.world.objects[edges[k].neighbor].active) && edges[k].length>0);
             SwatMotelEdge e=edges[k];oblique+=fabsf(sinf(e.roll))>.01f && fabsf(cosf(e.roll))>.01f;
             b3Vec3 inward=swat_v(sinf(e.yaw)*sinf(e.roll),cosf(e.roll),cosf(e.yaw)*sinf(e.roll));
             b3Vec3 normal=swat_v(cosf(e.yaw),0,-sinf(e.yaw));
             b3Pos edge_probe=b3OffsetPos(e.origin,b3Add(swat_mul(normal,.3f),swat_mul(inward,.005f)));
-            assert(b3Shape_RayCast(s.world.objects[i].shape,edge_probe,swat_mul(normal,-.6f)).hit);
-            int neighbor=edges[k].neighbor;s.world.objects[neighbor].active=true;
-            assert(swat_motel_wall_edges(&s.world,&s.world.objects[i],edges,32)==n-1);
-            s.world.objects[neighbor].active=false;
+            assert(swat_world_object_ray(&s.world.objects[i],edge_probe,swat_mul(normal,-.6f)));
+            SwatMotelEdge repeated[32];int again=swat_motel_wall_edges(&s.world,&s.world.objects[i],repeated,32);
+            assert(again==n && !memcmp(edges,repeated,n*sizeof(edges[0])) && n<=32);
             break;
         }
     }

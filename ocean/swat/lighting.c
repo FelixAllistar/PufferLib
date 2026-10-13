@@ -1,4 +1,5 @@
 #include "lighting.h"
+#include "fracture_geometry.h"
 #include "raymath.h"
 #include "rlgl.h"
 #include <stdlib.h>
@@ -501,6 +502,7 @@ static uint32_t geometry_hash(const SwatWorld* world,bool split) {
         hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw)); hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
         hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
+        uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));
     }
     return hash_bytes(hash,world->rooms,(size_t)world->room_count*sizeof(*world->rooms));
 }
@@ -550,6 +552,7 @@ static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split,co
         hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
         hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
+        uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));
     }
     return hash;
 }
@@ -568,7 +571,9 @@ static uint32_t door_geometry_hash(const SwatLighting* light,const SwatWorld* wo
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
         hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
         hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
+        hash=hash_bytes(hash,&o->latch_broken,sizeof(o->latch_broken));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
+        uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));
     }
     return hash;
 }

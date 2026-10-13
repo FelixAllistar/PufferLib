@@ -116,9 +116,18 @@ static int adjacent(const SwatNavigation* nav,int cell,int direction) {
     const int neighbors[]={x>0 ? cell-1 : -1,x+1<nav->width ? cell+1 : -1,z>0 ? cell-nav->width : -1,z+1<nav->depth ? cell+nav->width : -1};
     return neighbors[direction];
 }
-static unsigned char navigation_object_state(const SwatObject* o) {
-    return (unsigned char)(o->active ? 1+(o->door && o->wedge_owner>=0)+
-        4*(o->door && o->door_angle>=SWAT_PI*.5f-.03f) : 0);
+static uint32_t navigation_object_state(const SwatObject* o) {
+    if(!o->active)return 0;
+    uint32_t state=1+(o->door && o->wedge_owner>=0)+4*(o->door && o->door_angle>=SWAT_PI*.5f-.03f);
+    if(o->latch_broken)state+=8;
+    if(o->cuts)for(int i=0;i<o->cuts->count;i++) {
+        // Tiny impact openings do not admit a controller; rebuilding every
+        // nearby floor/link sample for them would repeat identical queries.
+        if(o->cuts->cuts[i].kind!=SWAT_CUT_BREACH)continue;
+        const unsigned char* bytes=(const unsigned char*)&o->cuts->cuts[i];
+        for(size_t j=0;j<sizeof(SwatCut);j++){state^=bytes[j];state*=16777619u;}
+    }
+    return state;
 }
 static bool navigation_sample(const SwatWorld* world,SwatNavigation* nav,int cell,b3Pos p) {
     NavFloors floors={.world=world};p.y=nav->top;
@@ -168,6 +177,10 @@ static void navigation_build(SwatSim* s) {
             b3Pos p=grid_position(nav,cell);
             if(fabs(p.x-o->center.x)<=x && fabs(p.z-o->center.z)<=z) cells[cell]=1;
         }
+    }
+    if(!full) {
+        bool changed=false;for(int cell=0;cell<nav->cells;cell++)changed|=cells[cell]!=0;
+        if(!changed){nav->updated_cells=0;nav->generation=s->world.generation;nav->built_tick=s->tick;return;}
     }
     nav->updated_cells=0;
     for(int cell=0;cell<nav->cells;cell++) if(cells[cell]) {

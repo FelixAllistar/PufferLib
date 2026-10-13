@@ -170,14 +170,14 @@ static void doors(void) {
     SwatInput inputs[SWAT_MAX_ACTORS]; for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=swat_neutral_input();
     inputs[3].door_tool=SWAT_DETONATE_CHARGE; swat_sim_step_inputs(&sim,inputs);
     assert(door->active && door->breach_owner==0); // Only the planter owns this remote.
-    place(0,(b3Pos){-8,0,0},0); place(1,(b3Pos){-3,0,0},SWAT_PI);
+    place(0,(b3Pos){-8,0,0},0); place(1,(b3Pos){-3,0,.74f},SWAT_PI);
     place(2,(b3Pos){-3,0,1.1f},SWAT_PI);
-    swat_world_box(&sim.world,(b3Pos){-3.35f,1.3f,.55f},swat_v(.05f,1.3f,.4f),SWAT_CONCRETE,0);
+    swat_world_box(&sim.world,(b3Pos){-3.35f,1.3f,1.15f},swat_v(.05f,1.3f,.25f),SWAT_CONCRETE,0);
     SwatCommand command={.epoch=1,.sequence=1,.input={.door_tool=SWAT_DETONATE_CHARGE}},decoded;
     size=swat_encode_command(bytes,sizeof(bytes),&command);
     assert(size && swat_decode_command(&decoded,bytes,size));
     step(decoded.input,1);
-    assert(!door->active && door->door_open && !door->locked && door->breach_owner<0 && door->breach_ticks>0);
+    assert(door->active && door->latch_broken && door->door_open && !door->locked && door->breach_owner<0 && door->breach_ticks>0);
     int debris=0;
     for(int i=0;i<sim.sounds.count;i++) {
         const SwatSoundEvent* e=swat_sound_at(&sim.sounds,i);
@@ -192,8 +192,8 @@ static void doors(void) {
     swat_capture_map(&sim,1,&map); swat_apply_map(&replica,&map); swat_capture_snapshot(&sim,1,&snapshot);
     size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot);
     assert(size && swat_decode_snapshot(&received,bytes,size) && swat_apply_snapshot(&replica,&received));
-    assert(!replica.world.objects[id].active && replica.world.objects[id].breach_ticks>0);
-    step(decoded.input,12); assert(sim.totals.destroyed==1);
+    assert(replica.world.objects[id].active && replica.world.objects[id].latch_broken && replica.world.objects[id].breach_ticks>0);
+    step(decoded.input,12); assert(sim.totals.destroyed==0 && sim.world.objects[id].latch_broken);
     in=swat_neutral_input(); in.loadout=3; place(0,(b3Pos){0,0,0},0); step(in,1);
     assert(sim.actors[0].gear.kit==1 && sim.actors[0].gear.breaching_charges==0);
     swat_sim_close(&sim); swat_sim_close(&replica);

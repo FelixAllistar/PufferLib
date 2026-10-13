@@ -81,6 +81,12 @@ static void escort_open_leaf(void) {
     puts("PASS escort: civilian and cuffed suspect detour around an open leaf from both sides, without closing it or crediting suspect rescue");
 }
 static void perception_evidence_roe(void) {
+    fixture();
+    swat_sim_damage_region(&sim,1,0,6,SWAT_TORSO,true);
+    assert(sim.actors[1].gear.surrendered && !sim.debrief.roe_violations && !sim.debrief.unlawful_damage);
+    swat_sim_damage_region(&sim,1,0,6,SWAT_TORSO,true);
+    assert(sim.debrief.roe_violations==1 && sim.debrief.unlawful_damage>0);
+    swat_sim_close(&sim);
     fixture(); sim.actors[2].gear.surrendered=true;
     int wall=swat_world_box(&sim.world,(b3Pos){3,1.5f,0},swat_v(.1f,1.5f,12.5f),SWAT_CONCRETE,0);
     SwatInput inputs[SWAT_MAX_ACTORS]; swat_sim_bot_inputs(&sim,inputs); assert(sim.actors[1].mind.target==-1);
@@ -231,7 +237,7 @@ static void scenario_completion(void) {
     SwatConfig config=swat_default_config();assert(!config.tactical_rules && !config.squad_bots);
     for(int mission=0;mission<SWAT_MISSION_COUNT;mission++) {
         config.mission=mission;swat_config_human(&config);
-        bool tactical=mission!=SWAT_ANNEX && mission!=SWAT_RANGE;
+        bool tactical=mission!=SWAT_ANNEX && mission!=SWAT_RANGE && mission!=SWAT_BREACH_LAB;
         assert(config.tactical_rules==tactical && config.squad_bots==(tactical?3:0));
     }
     config.mission=SWAT_MOTEL;swat_config_human(&config);config.hostile_fire=false;

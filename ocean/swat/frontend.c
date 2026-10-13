@@ -157,6 +157,11 @@ static void swat_camera_cycle(SwatFrontend* app,const SwatSim* sim,int direction
 void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
     if(app->last_episode!=sim->episode) {
         app->last_episode=sim->episode; app->loadout_pending=true;
+        if(sim->config.mission==SWAT_BREACH_LAB) {
+            app->selected_kit=sim->actors[app->actor].gear.kit;
+            app->selected_primary=sim->actors[app->actor].arsenal.primary;
+            app->loadout_pending=app->profiles_pending=false;
+        }
         for(int i=0;i<SWAT_SNIPERS;i++) {
             if(sim->snipers[i].deployed) {
                 app->sniper_enabled[i]=true; app->sniper_post[i]=sim->snipers[i].post; app->sniper_rifle[i]=sim->snipers[i].rifle;
@@ -508,7 +513,7 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             int y=GetScreenHeight()-160;
             swat_hud_text(view,"Equipment",24,y,15,menu_gold);
             swat_hud_text(view,TextFormat("[4] Flash %d    [5] CS %d",gear->flashbangs,gear->gas_grenades),24,y+23,14,menu_paper);
-            swat_hud_text(view,TextFormat("[T] Taser %d    [7] Charge %d",gear->taser_charges,gear->breaching_charges),24,y+44,14,menu_paper);
+            swat_hud_text(view,TextFormat("[T] Taser %d   [7] Door %d / Wall %d",gear->taser_charges,gear->breaching_charges,gear->wall_charges),24,y+44,14,menu_paper);
             swat_hud_text(view,TextFormat("[6] Spray %.1fs    [9] Wedges %d    [8] Disarm",gear->spray_ticks/60.0f,gear->wedges),24,y+65,14,menu_paper);
             swat_hud_text(view,"[P] Planning    [M] Squad    [F5/F9] Save/load    [Esc] Pause",24,y+86,14,menu_muted);
         }

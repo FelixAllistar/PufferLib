@@ -114,9 +114,9 @@ static void live_charge(void) {
     b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=-SWAT_PI*.5f;c->pitch=0;
     SwatInput input=swat_neutral_input();for(int i=0;i<10;i++)swat_sim_step(&sim,&input);
     int id=SWAT_MOTEL_PANES_FIRST;SwatHit target=swat_context_hit(&sim,0,1.7f);assert(target.hit && target.index==id);
-    sim.actors[0].gear.breaching_charges=1;input.door_tool=SWAT_PLACE_CHARGE;
+    sim.actors[0].gear.wall_charges=1;input.door_tool=SWAT_PLACE_CHARGE;
     for(int i=0;i<100;i++)swat_sim_step(&sim,&input);
-    assert(sim.world.objects[id].breach_owner==0 && sim.actors[0].gear.breaching_charges==0);
+    assert(sim.world.objects[id].breach_owner==0 && sim.actors[0].gear.wall_charges==0);
     input=swat_neutral_input();input.forward=-1;for(int i=0;i<150;i++)swat_sim_step(&sim,&input);
     input=swat_neutral_input();input.door_tool=SWAT_DETONATE_CHARGE;swat_sim_step(&sim,&input);
     assert(!sim.world.objects[id].active && sim.world.objects[id+1].active && sim.world.objects[6].active && sim.actors[0].health==100);

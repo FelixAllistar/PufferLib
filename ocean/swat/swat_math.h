@@ -11,6 +11,13 @@ static inline float swat_clamp(float x, float lo, float hi) {
     return fmaxf(lo, fminf(hi, x));
 }
 static inline b3Vec3 swat_v(float x, float y, float z) { return (b3Vec3){x,y,z}; }
+// Fixed-axis rotation uses the linked Box3D release library's trig contract.
+// Its debug-only assertion symbol is absent; avoid an outlined generic-axis
+// inline helper introducing that dependency in larger translation units.
+static inline b3Quat swat_rotation(float yaw,float pitch) {
+    b3CosSin y=b3ComputeCosSin(yaw*.5f),p=b3ComputeCosSin(pitch*.5f);
+    b3Quat a={{0,y.sine,0},y.cosine},b={{0,0,p.sine},p.cosine};return b3MulQuat(a,b);
+}
 static inline b3Vec3 swat_add(b3Vec3 a, b3Vec3 b) {
     return swat_v(a.x+b.x, a.y+b.y, a.z+b.z);
 }

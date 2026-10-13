@@ -22,16 +22,19 @@ static void walls(void) {
     swat_world_init(&sim.world); swat_world_box(&sim.world,(b3Pos){0,-.5f,0},swat_v(6,.5f,6),SWAT_CONCRETE,0);
     swat_build_framed_wall(&sim.world,(b3Pos){3,0,0},0,12,2.8f,0,0,0,0,false);
     swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){1.5f,0,0},0); sim.actor_count=1;
-    sim.actors[0].gear.breaching_charges=1;
+    swat_equipment_kit(&sim.actors[0].gear,1); // Control has door charges, not the wall tool.
     step(swat_neutral_input(),12);
     b3Pos next; assert(!swat_navigation_next(&sim,(b3Pos){1,0,0},(b3Pos){4.5f,0,0},&next));
     SwatHit hit=swat_context_hit(&sim,0,1.7f); assert(hit.kind==SWAT_HIT_WORLD && swat_world_breachable(&sim.world.objects[hit.index]));
     int id=hit.index,group=sim.world.objects[id].wall_group;
     assert(sim.world.objects[id].fractured); assert(swat_context(&sim,0).action==SWAT_CONTEXT_WALL);
     SwatInput in=swat_neutral_input(); in.door_tool=SWAT_PLACE_CHARGE; in.fire=true;
-    step(in,30); assert(sim.actors[0].gear.breaching_charges==1 && sim.totals.shots==0);
+    step(in,90);assert(sim.actors[0].gear.wall_charges==0 && sim.actors[0].gear.breaching_charges==1 &&
+        sim.world.objects[id].breach_owner<0 && sim.actors[0].gear.door_ticks==0);
+    step(swat_neutral_input(),1);swat_equipment_kit(&sim.actors[0].gear,2);
+    step(in,30); assert(sim.actors[0].gear.wall_charges==1 && sim.totals.shots==0);
     step(swat_neutral_input(),1); assert(sim.actors[0].gear.door_ticks==0);
-    step(in,90); assert(sim.actors[0].gear.breaching_charges==0 && sim.world.objects[id].breach_owner==0);
+    step(in,90); assert(sim.actors[0].gear.wall_charges==0 && sim.world.objects[id].breach_owner==0);
     sync(); assert(replica.world.objects[id].breach_owner==0 && replica.world.objects[id].fractured);
     assert(b3Distance(sim.world.objects[id].breach_position,replica.world.objects[id].breach_position)<1e-5f);
     decoded.objects[id].active=false; assert(!swat_apply_snapshot(&replica,&decoded));
@@ -43,13 +46,17 @@ static void walls(void) {
     SwatInput all[SWAT_MAX_ACTORS]; for(int i=0;i<SWAT_MAX_ACTORS;i++) all[i]=swat_neutral_input();
     all[3].door_tool=SWAT_DETONATE_CHARGE; swat_sim_step_inputs(&sim,all); assert(sim.world.objects[id].active);
     in=swat_neutral_input(); in.door_tool=SWAT_DETONATE_CHARGE; step(in,1);
-    int skins=0,studs=0,intact=0;
+    int skins=0,studs=0,intact=0,cut_skins=0,cut_studs=0;
     for(int i=0;i<sim.world.count;i++) if(sim.world.objects[i].wall_group==group) {
         SwatObject* o=&sim.world.objects[i]; if(o->active) intact++;
         else if(o->part==SWAT_PART_SKIN) skins++;
         else if(o->part==SWAT_PART_FRAME) studs++;
+        if(o->cuts && o->part==SWAT_PART_SKIN)cut_skins++;
+        if(o->cuts && o->part==SWAT_PART_FRAME)cut_studs++;
     }
-    assert(skins>=4 && studs>=2 && intact>0 && sim.totals.destroyed>=skins+studs);
+    // Small remnants outside the footprint must survive. Count affected
+    // components here; the route below independently proves usable clearance.
+    assert(cut_skins>=4 && cut_studs>=2 && intact>0 && sim.totals.destroyed>=skins+studs);
     assert(swat_world_visible(&sim.world,(b3Pos){2,1.2f,0},(b3Pos){4,1.2f,0}));
     assert(swat_navigation_next(&sim,(b3Pos){1,0,0},(b3Pos){4.5f,0,0},&next));
     assert(sim.navigation->updated_cells>0 && sim.navigation->updated_cells<SWAT_NAV_CELLS/4);
@@ -122,4 +129,20 @@ static void buildings(void) {
     assert(feet.y>2.85f && b3Distance(feet,goal)<.8f);
     swat_sim_close(&sim); puts("PASS 3D navigation: real human stair ascent and commanded squad ascent into the upper storey");
 }
-int main(void) { setvbuf(stdout,NULL,_IOLBF,0); walls(); buildings(); return 0; }
+static void small_opening_navigation(void) {
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_BREACH_LAB;cfg.hostile_fire=false;cfg.randomize=false;swat_config_human(&cfg);
+    swat_sim_init(&sim,cfg,81);assert(sim.actor_count==1 && sim.actors[0].gear.wall_charges==2);
+    b3Pos next;assert(swat_navigation_next(&sim,(b3Pos){0,0,0},(b3Pos){2,0,0},&next));
+    size_t n=(size_t)sim.navigation->nodes;unsigned char* grid=malloc(n*5);assert(grid);
+    memcpy(grid,sim.navigation->walkable,n);memcpy(grid+n,sim.navigation->links,n*4);
+    SwatHit hit=swat_world_ray(&sim.world,(b3Pos){2.9f,1.35f,-.15f},swat_v(1,0,0),1.5f,b3_nullBodyId);
+    assert(hit.hit && sim.world.objects[hit.index].material==SWAT_DRYWALL);
+    assert(swat_world_impact_at(&sim.world,hit.index,hit.point,34,false));
+    assert(swat_navigation_next(&sim,(b3Pos){0,0,0},(b3Pos){2,0,0},&next) && sim.navigation->updated_cells==0);
+    assert(!memcmp(grid,sim.navigation->walkable,n) && !memcmp(grid+n,sim.navigation->links,n*4));
+    sim.navigation->built=false;assert(swat_navigation_next(&sim,(b3Pos){0,0,0},(b3Pos){2,0,0},&next));
+    assert(!memcmp(grid,sim.navigation->walkable,n) && !memcmp(grid+n,sim.navigation->links,n*4));
+    free(grid);swat_sim_close(&sim);
+    puts("PASS small impact navigation: zero incremental floor/link samples, identical full-rebuild clearance; distinct test inventory and single officer");
+}
+int main(void) { setvbuf(stdout,NULL,_IOLBF,0); walls(); buildings();small_opening_navigation(); return 0; }

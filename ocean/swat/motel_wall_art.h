@@ -3,6 +3,8 @@
 #ifndef SWAT_MOTEL_WALL_ART_H
 #define SWAT_MOTEL_WALL_ART_H
 #include <assert.h>
+#include "door_damage.h"
+#include "fracture_geometry.h"
 typedef struct SwatWallVertex {Vector3 p,n;Vector2 uv,uv2;} SwatWallVertex;
 typedef struct SwatWallMeshCache {
     Model model;const Mesh* source;b3Pos center;b3Vec3 half;bool fractured;float corners[4][2];uint64_t mask;
@@ -14,9 +16,15 @@ typedef struct SwatMotelWallArt {
     bool face_batch_disabled,faces_drawn[SWAT_MOTEL_INSTANCES][2];
     unsigned int face_builds,face_submissions,piece_submissions;
 } SwatMotelWallArt;
+#define SWAT_DOOR_CACHE 32
+typedef struct SwatDoorArt {SwatWallMeshCache meshes[SWAT_DOOR_CACHE];int owners[SWAT_DOOR_CACHE];unsigned int builds;} SwatDoorArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
     for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
     MemFree(cache->model.meshes);MemFree(cache->model.meshMaterial);memset(cache,0,sizeof(*cache));
+}
+static void door_art_clear(SwatDoorArt* art) {
+    if(!art)return;
+    for(int i=0;i<SWAT_DOOR_CACHE;i++){wall_mesh_close(&art->meshes[i]);art->owners[i]=-1;}
 }
 static void wall_art_close(SwatEnvironmentArt* art) {
     if(!art->motel_wall_art)return;
@@ -98,7 +106,7 @@ static int wall_clip(SwatWallVertex* vertices,int count,int axis,float edge,floa
     memcpy(vertices,out,n*sizeof(*out));return n;
 }
 static int wall_clip_edge(SwatWallVertex* vertices,int count,Vector2 a,Vector2 b) {
-    SwatWallVertex out[12];int n=0;
+    SwatWallVertex out[64];int n=0;
     for(int i=0;i<count;i++) {
         SwatWallVertex p=vertices[i],q=vertices[(i+1)%count];
         float pv=(b.y-a.y)*(p.p.x-a.x)-(b.x-a.x)*(p.p.y-a.y);
@@ -108,39 +116,47 @@ static int wall_clip_edge(SwatWallVertex* vertices,int count,Vector2 a,Vector2 b
     }
     memcpy(vertices,out,n*sizeof(*out));return n;
 }
+static int wall_polygon(SwatWallVertex v[64],const Mesh* src,int triangle,const SwatFracturePolygon* polygon,
+                       float cx,float cy,const SwatMotelInstance* p) {
+    for(int k=0;k<3;k++) {
+        int at=src->indices?src->indices[3*triangle+k]:3*triangle+k;v[k]=(SwatWallVertex){0};
+        memcpy(&v[k].p,src->vertices+3*at,3*sizeof(float));
+        if(src->normals)memcpy(&v[k].n,src->normals+3*at,3*sizeof(float));
+        if(src->texcoords)memcpy(&v[k].uv,src->texcoords+2*at,2*sizeof(float));
+        if(src->texcoords2)memcpy(&v[k].uv2,src->texcoords2+2*at,2*sizeof(float));
+    }
+    int n=3;
+    for(int e=0;e<polygon->count && n;e++) {int next=(e+1)%polygon->count;
+        Vector2 a={cx+polygon->vertices[e][1]/p->scale.x,cy+polygon->vertices[e][0]/p->scale.y};
+        Vector2 b={cx+polygon->vertices[next][1]/p->scale.x,cy+polygon->vertices[next][0]/p->scale.y};
+        n=wall_clip_edge(v,n,a,b);
+    }
+    return n;
+}
 static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const SwatObject* o,const SwatMotelInstance* p) {
+    uint32_t cuts=swat_fracture_hash(o);
     if(cache->source==source->meshes && b3Distance(cache->center,o->center)<1e-6f && b3Length(b3Sub(cache->half,o->half))<1e-6f &&
-       cache->fractured==o->fractured && !memcmp(cache->corners,o->corners,sizeof(o->corners)))return &cache->model;
+       cache->fractured==o->fractured && cache->mask==cuts && !memcmp(cache->corners,o->corners,sizeof(o->corners)))return &cache->model;
     wall_mesh_close(cache);cache->source=source->meshes;cache->center=o->center;cache->half=o->half;
-    cache->fractured=o->fractured;memcpy(cache->corners,o->corners,sizeof(o->corners));
+    cache->fractured=o->fractured;cache->mask=cuts;memcpy(cache->corners,o->corners,sizeof(o->corners));
     b3Vec3 d=b3SubPos(o->center,p->origin);float cx=(cosf(p->yaw)*d.x-sinf(p->yaw)*d.z)/p->scale.x;
-    float cy=d.y/p->scale.y,hx=o->half.z/p->scale.x,hy=o->half.y/p->scale.y;
+    float cy=d.y/p->scale.y;SwatFracturePolygon original;swat_source_polygon(o,&original);
+    const SwatFracturePolygon* polygons=o->cuts?o->cuts->sections:&original;int sections=o->cuts?o->cuts->section_count:1;
     Model* model=&cache->model;model->transform=MatrixIdentity();
     model->materials=source->materials;model->materialCount=source->materialCount;
     model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
     model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
     for(int m=0;m<source->meshCount;m++) {
-        const Mesh* src=&source->meshes[m];Mesh mesh={0};int capacity=src->triangleCount*21;
+        const Mesh* src=&source->meshes[m];Mesh mesh={0};int capacity=0;
+        for(int t=0;t<src->triangleCount;t++)for(int s=0;s<sections;s++) {
+            SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],cx,cy,p);
+            for(int k=1;k<n-1;k++)if(Vector3LengthSqr(Vector3CrossProduct(Vector3Subtract(v[k].p,v[0].p),Vector3Subtract(v[k+1].p,v[0].p)))>=1e-14f)capacity+=3;
+        }
+        if(!capacity)continue;
         mesh.vertices=MemAlloc(capacity*3*sizeof(float));mesh.normals=MemAlloc(capacity*3*sizeof(float));
         mesh.texcoords=MemAlloc(capacity*2*sizeof(float));if(src->texcoords2)mesh.texcoords2=MemAlloc(capacity*2*sizeof(float));
-        for(int t=0;t<src->triangleCount;t++) {
-            SwatWallVertex v[12];int n=3;
-            for(int k=0;k<3;k++) {
-                int at=src->indices?src->indices[3*t+k]:3*t+k;
-                v[k]=(SwatWallVertex){0};memcpy(&v[k].p,src->vertices+3*at,3*sizeof(float));
-                if(src->normals)memcpy(&v[k].n,src->normals+3*at,3*sizeof(float));
-                if(src->texcoords)memcpy(&v[k].uv,src->texcoords+2*at,2*sizeof(float));
-                if(src->texcoords2)memcpy(&v[k].uv2,src->texcoords2+2*at,2*sizeof(float));
-            }
-            if(o->fractured)for(int e=0;e<4;e++) {
-                int next=(e+1)%4;
-                Vector2 a={cx+o->corners[e][1]/p->scale.x,cy+o->corners[e][0]/p->scale.y};
-                Vector2 b={cx+o->corners[next][1]/p->scale.x,cy+o->corners[next][0]/p->scale.y};
-                n=wall_clip_edge(v,n,a,b);
-            } else {
-                n=wall_clip(v,n,0,cx-hx,1);n=wall_clip(v,n,0,cx+hx,-1);
-                n=wall_clip(v,n,1,cy-hy,1);n=wall_clip(v,n,1,cy+hy,-1);
-            }
+        for(int t=0;t<src->triangleCount;t++)for(int s=0;s<sections;s++) {
+            SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],cx,cy,p);
             for(int k=1;k<n-1;k++) {
                 int corner[]={0,k,k+1};
                 if(Vector3LengthSqr(Vector3CrossProduct(Vector3Subtract(v[k].p,v[0].p),Vector3Subtract(v[k+1].p,v[0].p)))<1e-14f)continue;
@@ -149,6 +165,7 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
                     memcpy(mesh.texcoords+2*at,&a.uv,2*sizeof(float));if(mesh.texcoords2)memcpy(mesh.texcoords2+2*at,&a.uv2,2*sizeof(float));}
             }
         }
+        assert(mesh.vertexCount==capacity);
         mesh.triangleCount=mesh.vertexCount/3;
         if(!mesh.triangleCount) {MemFree(mesh.vertices);MemFree(mesh.normals);MemFree(mesh.texcoords);MemFree(mesh.texcoords2);continue;}
         UploadMesh(&mesh,false);model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=mesh;
@@ -170,6 +187,7 @@ static const Model* wall_faces(SwatMotelWallArt* art,const Model* source,const S
         if(!o->active)continue;
         hash=wall_face_hash(hash,&o->center,sizeof(o->center));hash=wall_face_hash(hash,&o->half,sizeof(o->half));
         hash=wall_face_hash(hash,&o->fractured,sizeof(o->fractured));hash=wall_face_hash(hash,o->corners,sizeof(o->corners));
+        uint32_t cuts=swat_fracture_hash(o);hash=wall_face_hash(hash,&cuts,sizeof(cuts));
     }
     SwatWallMeshCache* cache=&art->faces[owner-1][slot];
     if(cache->source==source->meshes && cache->mask==hash)return &cache->model;

@@ -25,6 +25,7 @@ make -C ocean/swat viewer
 ./swat play
 ./swat play --mission motel  # Briar Court, authored rooms/reception/laundry
 ./swat play --mission storefront  # Morrow Block, laundromat/pawn shop/rear service
+./swat play --mission breach-lab  # Door, layered stud wall and masonry samples
 ```
 
 The standard build entry point also creates the game and launcher:
@@ -396,9 +397,10 @@ being interrupted resets progress. Picking leaves the door closed; **F** opens
 it afterward. Picks are reusable in every kit. Hold **7** for 1.5 seconds to mount
 a breaching charge to a fully closed door, then retreat and press **K** to
 detonate your mounted charges. Another officer cannot fire your remote. The
-charge consumes stock when mounting finishes, removes the actual door collider,
-emits a material-aware blast sound, and can stun/injure nearby people through
-the opening. Intact walls block exposure. Mounted charges appear on the leaf
+charge consumes stock when mounting finishes, breaks the latch with local leaf
+damage, emits a material-aware blast sound, and can stun/injure nearby people
+where physical visibility permits. The surviving leaf swings on its hinge and
+continues to provide cover. Mounted charges appear on the leaf
 and the HUD counts your remaining/mounted stock. Used tools cannot be refilled
 by swapping kits at staging. The annex's training door remains unlocked.
 
@@ -411,11 +413,11 @@ limited-charge taser within 7 m through a checked short trace. It stops at cover
 stuns and can force surrender; it does not simulate a cable or flying darts yet.
 These are fictional, non-damaging game effects; cuffs remain necessary.
 
-| Kit | Flashbangs | CS canisters | Taser charges | Breaching charges | Gas mask |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Recon | 1 | 1 | 2 | 0 | No |
-| Control | 1 | 2 | 3 | 1 | Yes |
-| Entry | 2 | 1 | 0 | 2 | Yes |
+| Kit | Flashbangs | CS canisters | Taser charges | Door charges | Wall breachers | Gas mask |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Recon | 1 | 1 | 2 | 0 | 0 | No |
+| Control | 1 | 2 | 3 | 1 | 0 | Yes |
+| Entry | 2 | 1 | 0 | 2 | 1 | Yes |
 
 The [equipment comparison and gadget shortlist](EQUIPMENT.md) records SWAT 4,
 Elite Force/First Responders, Ready or Not, and manufacturer sources for the
@@ -923,7 +925,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 18) and the same generated
+Saves require this network/replay version (currently 19) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -944,29 +946,45 @@ room uses/furnishings, different exterior openings, and occupants on both floors
 The seed determines those initial conditions. Difficulty adjusts armed occupant
 count. These are assembled prototype environments, not finished architectural art.
 
-Hold **7** while looking at a destructible wall or door to mount a finite charge;
-release or look away to interrupt. Move back and press **K** to detonate charges
-you own. Wall charges remove a localized opening through both skins and the
-segmented studs, with bounded shedding of unsupported adjacent skins. Geometry,
-penetration, visibility, navigation and replicated collision share the convex
-fragment shapes. Crack boundaries are irregular, while surface UVs remain
-continuous in metres. Short-lived chips and persistent small rubble are cosmetic;
-there is no full structural stress or dynamic rubble simulation yet.
+Hold **7** while looking at a destructible wall or fully closed door to mount
+the matching tool; release or look away to interrupt. Move back and press **K**
+to detonate your mounted tools. Door charges and wall breachers have separate
+finite inventories:
 
-C4 also chips the surviving convex edges beside newly removed fragments. Each
-shared-edge cut travels at most 7 cm along adjoining edges in masonry or 12 cm
-in board, further limited for small pieces. It keeps four convex corners,
-reduces remaining health by the lost area and changes the actual collision,
-ray queries, clipped source faces and exposed masonry strips together. Intact
-remote walls retain their shape. This refines the bounded fragment system;
-chunks still disappear rather than becoming loose structural rubble.
-Live snapshots now carry those corners, including already inactive pieces.
-Peers need matching version-18 builds; start fresh recordings/saves for this
+| Kit | Door charges | Wall breachers |
+| --- | ---: | ---: |
+| Recon | 0 | 0 |
+| Control | 1 | 0 |
+| Entry | 2 | 1 |
+
+Door tools break the latch and leave a locally notched, scorched leaf swinging
+on its existing hinge. Wall breachers cut through independent faces, timber and
+cavity material. All material outside the opening survives, including pieces
+on several sides of an internal hole. Small bullet impacts cut local holes in
+boards and timber; masonry retains its separate impact threshold. A breaching
+round can break door hardware when it hits the game's latch region.
+
+Collision, penetration, visibility, navigation, original clipped surface UVs
+and exposed edges use the same retained geometry. A changed object stores at
+most four cut profiles and 128 convex sections on its existing body/owner;
+intact objects allocate no cut data. Tiny impact holes do not rebuild the
+navigation grid. Repeated impacts stop adding holes at three profiles per
+object, reserving the fourth for a wall tool; penetration continues to use the
+existing cover. Removed material supplies cosmetic chips and small rubble.
+This is a bounded prototype: stress, connected sheet support, detached hinges
+and loose structural rubble are not simulated.
+
+The optional **breach-lab** mission has one officer and three independent samples,
+with two wall breachers for comparison. Use **7**, **K**, and **Backspace** to
+place, detonate and reset. The larger wall tool is represented separately from
+the compact door device. Original imported source models and textures stay intact.
+Peers need matching version-19 builds; start fresh recordings/saves for this
 build. Existing recordings are retained, but earlier wire versions cannot load.
 
 ```bash
 make -C ocean/swat breach-geometry-test
 ./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" breach-geometry
+./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" destruction-samples
 ```
 
 Squad movement now routes by floor height, standing/crouching clearance and actual
@@ -975,7 +993,7 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **18**; older clients and
+breach. The network geometry contract is version **19**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The motel's east wire fence has actual openings for bullets and porous sound
@@ -1263,7 +1281,8 @@ The original 18-tool source archive is stored once for reuse, alongside compact
 editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
-state digests differ even though the snapshot codec remains version 18.
+state digests differ. That import used snapshot version 18; the current
+destruction prototype requires version 19 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

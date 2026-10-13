@@ -24,11 +24,13 @@ static void wall_batch_graphics(SwatView* view,const char* directory,bool faces)
         if(stage==3) {
             art->room101_v4[0]=source;
             int group=sim.world.objects[13].wall_group;
-            for(int i=group-1;i<sim.world.count && sim.world.objects[i].wall_group==group;i++)if(sim.world.objects[i].active) {
+            bool modified=false;
+            for(int i=group-1;i<sim.world.count && sim.world.objects[i].wall_group==group;i++)if(sim.world.objects[i].active && !sim.world.objects[i].cuts) {
                 SwatObject* o=&sim.world.objects[i];float corners[4][2];
                 for(int v=0;v<4;v++)for(int axis=0;axis<2;axis++)corners[v][axis]=.9f*o->corners[v][axis];
-                assert(swat_world_fragment(o,corners));break;
+                assert(swat_world_fragment(o,corners));modified=true;break;
             }
+            assert(modified); // Legacy corner edits cannot replace compound cuts.
         }
         for(int lit=0;lit<2;lit++)for(size_t c=0;c<sizeof(cameras)/sizeof(*cameras);c++) {
             before=sim.world;
