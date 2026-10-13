@@ -44,7 +44,9 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
         case SWAT_CONTEXT_WEDGED: action="Door wedged / [Alt+9] Remove"; break;
         case SWAT_CONTEXT_TRAP: action="Trap found / hold [8] Disarm"; break;
         case SWAT_CONTEXT_WALL: action=!actor->gear.wall_charges ? "Wall breacher required / Entry kit" :
-            context.ready ? "Hold [7] Place wall breacher" : "Move closer to place wall breacher"; break;
+            context.ready ? "Hold [7] Place wall breacher" : "Move closer to place wall breacher";
+            if(context.ready && actor->gear.wall_charges)detail="Aim low for a walk-through opening";
+            break;
         case SWAT_CONTEXT_CHARGE:
             action=sim->world.objects[context.hit.index].breach_owner==view->actor ? "[K] Detonate charge" : "Teammate's charge"; break;
         case SWAT_CONTEXT_CUFF:
@@ -223,6 +225,7 @@ static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaw
     for(int i=0;i<sim->world.count;i++) {
         const SwatObject* o=&sim->world.objects[i];
         if(o->door!=doors)continue;
+        if(!swat_lighting_shadow_intersects(&view->lighting,(Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
         if((!o->active && !swat_motel_fence_proxy(&sim->world,o) && swat_motel_surroundings_part(&sim->world,o)!=1) || o->material==SWAT_GLASS) continue;
         if(view->lighting.shadow_room>=0 && !swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],
             (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
@@ -247,6 +250,8 @@ static void swat_draw_shadow_actors(void* context,const SwatSim* sim,bool cutawa
     SwatView* view=context;if(cutaway)return;
     for(int i=0;i<sim->actor_count;i++) {
         if(!sim->actors[i].present)continue;
+        b3Pos caster=swat_body_feet_position(&sim->actors[i].controller.body);
+        if(!swat_lighting_shadow_intersects(&view->lighting,(Vector3){caster.x,caster.y+1,caster.z},(Vector3){.5f,1,.5f}))continue;
         if(view->lighting.shadow_room>=0) {
             b3Pos p=swat_body_feet_position(&sim->actors[i].controller.body);
             if(!swat_lighting_room_intersects(&sim->world.rooms[view->lighting.shadow_room],

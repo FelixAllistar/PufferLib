@@ -1,0 +1,10 @@
+CC0 1.0 Universal dedication
+
+To the extent copyright or related rights exist and can be dedicated, the original authored geometry, procedural texture images, UV layouts, generator/validation source, and renders in this package are dedicated to the public domain under CC0 1.0 Universal.
+
+Legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+Summary: https://creativecommons.org/publicdomain/zero/1.0/
+
+You may copy, modify, distribute, and use this original asset work, including commercially, without attribution requirements under this dedication. No warranty is provided. This notice does not cover Blender, Python, NumPy, or any other software used to generate or inspect the files, which retain their own licenses.
+
+Provenance: Original procedural fired-clay fragments authored for Felix's environment-art work, October 13, 2026. No third-party asset inputs. Artistic sizes and appearance are authored, not scanned or product measurements. This notice grants no rights that do not exist or cannot legally be granted.

@@ -157,6 +157,10 @@ static void doors(void) {
     assert(door->breach_owner<0 && sim.actors[0].gear.breaching_charges==1);
     place(0,(b3Pos){-5,0,0},0); step(in,89); assert(door->breach_owner<0);
     step(in,1); assert(door->breach_owner==0 && sim.actors[0].gear.breaching_charges==0);
+    assert(fabsf(door->breach_position.z)<.01f && door->breach_position.y>1.5f);
+    for(int shot=0;shot<SWAT_MAX_IMPACT_CUTS;shot++)
+        assert(swat_world_impact_at(&sim.world,id,(b3Pos){-3.74f,.55f+.16f*shot,-.3f},34,false));
+    assert(door->breach_owner==0 && !door->latch_broken);
     step(in,100); assert(door->active && door->breach_owner==0 && !sim.actors[0].gear.door_ticks);
     // A late-joining renderer receives the lock, mount, stock and interaction
     // state; it never needs a local collision body for a mounted charge.
@@ -170,13 +174,18 @@ static void doors(void) {
     SwatInput inputs[SWAT_MAX_ACTORS]; for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=swat_neutral_input();
     inputs[3].door_tool=SWAT_DETONATE_CHARGE; swat_sim_step_inputs(&sim,inputs);
     assert(door->active && door->breach_owner==0); // Only the planter owns this remote.
-    place(0,(b3Pos){-8,0,0},0); place(1,(b3Pos){-3,0,.74f},SWAT_PI);
+    place(0,(b3Pos){-8,0,0},0); place(1,(b3Pos){-4.25f,0,.3f},SWAT_PI);
     place(2,(b3Pos){-3,0,1.1f},SWAT_PI);
-    swat_world_box(&sim.world,(b3Pos){-3.35f,1.3f,1.15f},swat_v(.05f,1.3f,.25f),SWAT_CONCRETE,0);
+    swat_world_box(&sim.world,(b3Pos){-3.35f,1.3f,.65f},swat_v(.05f,1.3f,.25f),SWAT_CONCRETE,0);
     SwatCommand command={.epoch=1,.sequence=1,.input={.door_tool=SWAT_DETONATE_CHARGE}},decoded;
     size=swat_encode_command(bytes,sizeof(bytes),&command);
     assert(size && swat_decode_command(&decoded,bytes,size));
-    step(decoded.input,1);
+    // Holding the remote during a reload must still fire when hands are free.
+    sim.actors[0].arsenal.slots[sim.actors[0].arsenal.active].magazine--;
+    SwatInput reload=swat_neutral_input();reload.reload=true;step(reload,1);
+    assert(swat_weapons_busy(&sim.actors[0].arsenal));
+    step(decoded.input,1);assert(door->breach_owner==0);
+    for(int i=0;i<300 && door->breach_owner==0;i++)step(decoded.input,1);
     assert(door->active && door->latch_broken && door->door_open && !door->locked && door->breach_owner<0 && door->breach_ticks>0);
     int debris=0;
     for(int i=0;i<sim.sounds.count;i++) {

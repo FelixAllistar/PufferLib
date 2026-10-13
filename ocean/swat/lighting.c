@@ -519,18 +519,6 @@ bool swat_lighting_face_intersects(const SwatLighting* light,Vector3 center,Vect
     return z+radius>=.05f && fabsf(Vector3DotProduct(d,lamp_up[face]))<=edge &&
         fabsf(Vector3DotProduct(d,Vector3CrossProduct(lamp_dir[face],lamp_up[face])))<=edge;
 }
-static Matrix shadow(RenderTexture2D target,Camera3D camera,const SwatSim* sim,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context,int tile,bool clear) {
-    double near=rlGetCullDistanceNear(),far=rlGetCullDistanceFar(); rlSetClipPlanes(.05,120);
-    if(tile>=0)target.texture.width=target.texture.height=SWAT_LAMP_SIZE; // Square per-room projection.
-    BeginTextureMode(target);
-    if(tile>=0) {rlViewport(tile%SWAT_LAMP_FACES*SWAT_LAMP_SIZE,tile/SWAT_LAMP_FACES*SWAT_LAMP_SIZE,SWAT_LAMP_SIZE,SWAT_LAMP_SIZE);rlEnableScissorTest();rlScissor(tile%SWAT_LAMP_FACES*SWAT_LAMP_SIZE,tile/SWAT_LAMP_FACES*SWAT_LAMP_SIZE,SWAT_LAMP_SIZE,SWAT_LAMP_SIZE);}
-    if(clear)ClearBackground(WHITE);
-    BeginMode3D(camera);
-    Matrix matrix=MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
-    if(contextual) contextual(context,sim,cutaway); else if(draw)draw(sim,cutaway);
-    if(actors)actors(context,sim,cutaway);
-    EndMode3D();if(tile>=0)rlDisableScissorTest();EndTextureMode();rlSetClipPlanes(near,far);return matrix;
-}
 bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 half) {
     // Conservative sphere includes rotating leaves, limbs and authored trim.
     float radius=Vector3Length(half)+.5f;
@@ -626,6 +614,49 @@ static void copy_depth(RenderTexture2D from,RenderTexture2D to,int x,int y,int w
     rlBlitFramebuffer(x,y,x+width,y+height,x,y,x+width,y+height,0x00000100);
     rlEnableFramebuffer(previous);
 }
+#include "shadow_damage.h"
+bool swat_lighting_shadow_intersects(const SwatLighting* light,Vector3 center,Vector3 half) {
+    if(!light->shadow_restricted)return true;
+    Matrix m=light->shadow_clip;float radius=Vector3Length(half)+.5f;
+    const Vector4 planes[]={
+        {m.m3+m.m0,m.m7+m.m4,m.m11+m.m8,m.m15+m.m12},
+        {m.m3-m.m0,m.m7-m.m4,m.m11-m.m8,m.m15-m.m12},
+        {m.m3+m.m1,m.m7+m.m5,m.m11+m.m9,m.m15+m.m13},
+        {m.m3-m.m1,m.m7-m.m5,m.m11-m.m9,m.m15-m.m13}};
+    for(int i=0;i<4;i++) {
+        Vector4 p=planes[i];float d=p.x*center.x+p.y*center.y+p.z*center.z+p.w;
+        if(d < -radius*sqrtf(p.x*p.x+p.y*p.y+p.z*p.z))return false;
+    }
+    return true;
+}
+static Matrix shadow(SwatLighting* light,RenderTexture2D target,Camera3D camera,const SwatSim* sim,bool cutaway,
+        SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context,
+        int tile,bool clear,const BoundingBox* damage,RenderTexture2D restore) {
+    double near=rlGetCullDistanceNear(),far=rlGetCullDistanceFar();rlSetClipPlanes(.05,120);
+    if(tile>=0)target.texture.width=target.texture.height=SWAT_LAMP_SIZE;
+    int width=target.texture.width,height=target.texture.height;
+    int x=tile>=0?tile%SWAT_LAMP_FACES*width:0,y=tile>=0?tile/SWAT_LAMP_FACES*height:0;
+    BeginTextureMode(target);rlViewport(x,y,width,height);BeginMode3D(camera);
+    Matrix matrix=MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
+    Rectangle r=shadow_damage_rect(matrix,damage,width,height);
+    if(r.width>0 && r.height>0) {
+        light->shadow_restricted=damage && (r.width<width || r.height<height);
+        if(light->shadow_restricted) {
+            Matrix crop=MatrixIdentity();crop.m0=width/r.width;crop.m5=height/r.height;
+            crop.m12=(width-2*r.x-r.width)/r.width;crop.m13=(height-2*r.y-r.height)/r.height;
+            light->shadow_clip=MatrixMultiply(matrix,crop);light->partial_shadow_updates++;
+        }
+        // Original projection/viewport guarantee the same rasterization as a
+        // full redraw. Only clearing, restoration and raster writes are bounded.
+        rlEnableScissorTest();rlScissor(x+(int)r.x,y+(int)r.y,(int)r.width,(int)r.height);
+        if(restore.id)copy_depth(restore,target,x+(int)r.x,y+(int)r.y,(int)r.width,(int)r.height);
+        if(clear)ClearBackground(WHITE);
+        if(contextual)contextual(context,sim,cutaway);else if(draw)draw(sim,cutaway);
+        if(actors)actors(context,sim,cutaway);
+    }
+    EndMode3D();rlDisableScissorTest();EndTextureMode();rlSetClipPlanes(near,far);
+    light->shadow_restricted=false;return matrix;
+}
 static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context) {
     if(!light->enabled) return;
     (void)eye; // Every room owns a stable tile; the camera never selects a winner.
@@ -647,22 +678,25 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
     if(reset)memset(light->actor_signature,0,sizeof(light->actor_signature));
     bool refresh=reset || sim->tick-light->last_tick>=4;
     if(!refresh && hash==light->geometry && moving==light->moving_geometry)return;
+    uint32_t damage_base=shadow_damage_base(light,world);BoundingBox damage;
+    bool partial=actors && !reset && shadow_damage_bounds(light,world,damage_base,&damage);
+    const BoundingBox* region=partial?&damage:NULL;
     if(actors)actor_signatures(light,sim);
     Camera3D sun={Vector3Add(center,Vector3Scale(light->sun_direction,45)),center,{0,1,0},extent,CAMERA_ORTHOGRAPHIC};
     light->shadow_room=-1;
     if(actors) {
         bool dirty=reset || hash!=light->geometry;
         if(dirty) {
-            light->sun_matrix=shadow(light->sun_static,sun,sim,cutaway,draw,contextual,NULL,context,-1,true);
+            light->sun_matrix=shadow(light,light->sun_static,sun,sim,cutaway,draw,contextual,NULL,context,-1,true,region,(RenderTexture2D){0});
             light->sun_geometry_updates++;
         }
         uint32_t actor_hash=actor_shadow_hash(light,sim,-1);
         if(dirty || moving!=light->moving_geometry || (refresh && actor_hash!=light->sun_actors)) {
-            copy_depth(light->sun_static,light->sun,0,0,light->sun.depth.width,light->sun.depth.height);
-            shadow(light->sun,sun,sim,cutaway,NULL,NULL,actors,context,-1,false);
+            shadow(light,light->sun,sun,sim,cutaway,NULL,NULL,actors,context,-1,false,
+                actor_hash==light->sun_actors?region:NULL,light->sun_static);
             light->sun_actors=actor_hash;light->sun_actor_updates++;
         }
-    } else light->sun_matrix=shadow(light->sun,sun,sim,cutaway,draw,contextual,NULL,context,-1,true);
+    } else light->sun_matrix=shadow(light,light->sun,sun,sim,cutaway,draw,contextual,NULL,context,-1,true,NULL,(RenderTexture2D){0});
     for(int room=0;room<world->room_count;room++) {
         uint32_t local=room_geometry_hash(world,room,actors!=NULL,NULL);
         Vector3 origin=room_light_origin(world,room);local=hash_bytes(local,&origin,sizeof(origin));
@@ -681,7 +715,7 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
                     (!actors && sim->actor_count && refresh) || face_hash!=light->face_geometry[room][face];
                 if(!face_dirty[face])continue;
                 Camera3D lamp={origin,Vector3Add(origin,lamp_dir[face]),lamp_up[face],fov/SWAT_RAD,CAMERA_PERSPECTIVE};
-                shadow(light->lamp_static,lamp,sim,cutaway,draw,contextual,NULL,context,room*SWAT_LAMP_FACES+face,true);
+                shadow(light,light->lamp_static,lamp,sim,cutaway,draw,contextual,NULL,context,room*SWAT_LAMP_FACES+face,true,region,(RenderTexture2D){0});
                 light->lamp_matrix[face]=MatrixMultiply(MatrixLookAt((Vector3){0},lamp_dir[face],lamp_up[face]),MatrixPerspective(fov,1,.05,120));
                 light->face_geometry[room][face]=face_hash;light->room_face_updates++;updated=true;
             }
@@ -696,11 +730,11 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
                 (refresh && (!actors || actor_hash!=light->face_actors[room][face]))) {
                 // Restore only this face before adding current doors/actors.
                 // A caster leaving the face invalidates its former depth too.
-                copy_depth(light->lamp_static,light->lamp,face*SWAT_LAMP_SIZE,room*SWAT_LAMP_SIZE,SWAT_LAMP_SIZE,SWAT_LAMP_SIZE);
                 if(actors) {
                     Camera3D lamp={origin,Vector3Add(origin,lamp_dir[face]),lamp_up[face],fov/SWAT_RAD,CAMERA_PERSPECTIVE};
-                    shadow(light->lamp,lamp,sim,cutaway,NULL,NULL,actors,context,room*SWAT_LAMP_FACES+face,false);
-                }
+                    shadow(light,light->lamp,lamp,sim,cutaway,NULL,NULL,actors,context,room*SWAT_LAMP_FACES+face,false,
+                        actor_hash==light->face_actors[room][face]?region:NULL,light->lamp_static);
+                } else copy_depth(light->lamp_static,light->lamp,face*SWAT_LAMP_SIZE,room*SWAT_LAMP_SIZE,SWAT_LAMP_SIZE,SWAT_LAMP_SIZE);
                 light->face_actors[room][face]=actor_hash;light->actor_face_updates++;composited=true;
             }
             light->face_moving_geometry[room][face]=doors;
@@ -710,6 +744,7 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
     for(int i=world->room_count;i<SWAT_MAX_ROOMS;i++)light->room_ready[i]=false;
     light->shadow_room=-1;light->split_shadows=actors!=NULL;
     light->geometry=hash;light->moving_geometry=moving;if(refresh)light->last_tick=sim->tick;
+    shadow_damage_remember(light,world,damage_base);
     light->cutaway=cutaway; light->prepared=true; light->updates++;
 }
 void swat_lighting_prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw) {

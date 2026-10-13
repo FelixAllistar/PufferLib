@@ -76,7 +76,8 @@ static void fence_charge_route(void) {
     SwatController* c=&s.actors[0].controller;
     b3Body_SetTransform(c->body.body,(b3Pos){11.65,-.065f+c->body.totalHeight*.5f,3},b3Quat_identity);c->yaw=0;
     SwatInput in=swat_neutral_input();for(int i=0;i<10;i++)swat_sim_step(&s,&in);
-    b3Pos eye=swat_controller_eye(c);c->pitch=atan2f(1.42f-(float)eye.y,12.5f-(float)eye.x);s.actors[0].gear.wall_charges=1;
+    // Mount low for a full-height passage; the tool preserves the aimed height.
+    b3Pos eye=swat_controller_eye(c);c->pitch=atan2f(1.02f-(float)eye.y,12.5f-(float)eye.x);s.actors[0].gear.wall_charges=1;
     SwatHit target=swat_context_hit(&s,0,1.7f);assert(target.hit && swat_motel_fence_parent(&s.world,&s.world.objects[target.index])==156);
     assert(swat_world_breachable(&s.world.objects[target.index]));
     int first=s.world.objects[156].wall_group-1;

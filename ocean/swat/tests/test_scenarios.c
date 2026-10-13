@@ -24,6 +24,7 @@ static void walls(void) {
     swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){1.5f,0,0},0); sim.actor_count=1;
     swat_equipment_kit(&sim.actors[0].gear,1); // Control has door charges, not the wall tool.
     step(swat_neutral_input(),12);
+    sim.actors[0].controller.pitch=atan2f(1.05f-swat_controller_eye(&sim.actors[0].controller).y,1.5f);
     b3Pos next; assert(!swat_navigation_next(&sim,(b3Pos){1,0,0},(b3Pos){4.5f,0,0},&next));
     SwatHit hit=swat_context_hit(&sim,0,1.7f); assert(hit.kind==SWAT_HIT_WORLD && swat_world_breachable(&sim.world.objects[hit.index]));
     int id=hit.index,group=sim.world.objects[id].wall_group;
@@ -70,6 +71,7 @@ static void walls(void) {
     assert(!memcmp(incremental+nodes,sim.navigation->links,nodes*4));
     free(incremental);
     // The human controller, rather than a teleported nav marker, crosses it.
+    sim.actors[0].controller.pitch=0;
     in=swat_neutral_input(); in.forward=1; step(in,180);
     assert(swat_body_feet_position(&sim.actors[0].controller.body).x>3.7f);
     sync(); assert(swat_world_visible(&replica.world,(b3Pos){2,1.2f,0},(b3Pos){4,1.2f,0}));

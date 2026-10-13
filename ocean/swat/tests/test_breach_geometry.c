@@ -212,10 +212,10 @@ static void impact_across_partition(void) {
         b3Pos p={-.3f,1.35f,side*.006f};b3Vec3 ray=swat_v(.4f,0,0);
         assert(!swat_world_object_ray(&server.world.objects[a],p,ray) && !swat_world_object_ray(&server.world.objects[b],p,ray));
     }
-    for(int j=0;j<2;j++)assert(swat_world_impact_at(&server.world,a,(b3Pos){-.0125f,1.6f+j*.3f,-.4f},34,false));
-    assert(server.world.objects[a].cuts->count==3);
+    for(int j=0;j<SWAT_MAX_IMPACT_CUTS-1;j++)assert(swat_world_impact_at(&server.world,a,(b3Pos){-.0125f,.4f+j*.3f,-.4f},34,false));
+    assert(server.world.objects[a].cuts->count==SWAT_MAX_IMPACT_CUTS);
     assert(!swat_world_impact_at(&server.world,a,(b3Pos){-.0125f,2.2f,-.4f},34,false));
-    assert(swat_world_breach(&server.world,a,(b3Pos){-.0125f,1.35f,0})>0 && server.world.objects[a].cuts->count==4);
+    assert(swat_world_breach(&server.world,a,(b3Pos){-.0125f,1.05f,0})>0 && server.world.objects[a].cuts->count==SWAT_MAX_IMPACT_CUTS+1);
     swat_sim_close(&server);
     puts("PASS impact across hidden divisions: one round spans both neighbors, opposite sheet intact; bounded impacts reserve a wall-tool profile");
 }
@@ -225,7 +225,14 @@ static void retained_door(void) {
     int id=swat_world_box(&server.world,(b3Pos){0,1.1f,0},swat_v(.022f,1.05f,.54f),SWAT_WOOD,120);
     SwatObject* o=&server.world.objects[id];o->door=o->locked=true;o->hinge=(b3Pos){0,1.1f,-.54f};
     swat_sim_spawn_actor(&server,0,SWAT_OFFICER,(b3Pos){-5,0,0},0);swat_capture_map(&server,1,&map);swat_apply_map(&replica,&map);
-    assert(swat_world_impact_at(&server.world,id,(b3Pos){-.022f,1.7f,-.12f},34,false) && o->active && !o->latch_broken && o->cuts);
+    for(int hit=0;hit<SWAT_MAX_IMPACT_CUTS;hit++)
+        assert(swat_world_impact_at(&server.world,id,(b3Pos){-.022f,.62f+.15f*hit,-.08f},34,false));
+    assert(o->active && !o->latch_broken && o->cuts && o->cuts->count==SWAT_MAX_IMPACT_CUTS);
+    // Separated impacts only subdivide nearby geometry; a later latch failure
+    // must still fit the compound-body budget and retain all previous holes.
+    assert(o->cuts->section_count<64);
+    o->breach_owner=0;o->breach_position=(b3Pos){-.022f,1.72f,.12f};
+    b3Vec3 mount=b3SubPos(o->breach_position,o->center);
     float body_health=o->health;
     assert(swat_world_breach(&server.world,id,(b3Pos){-.022f,1.16f,.4f})==1 && o->active && o->latch_broken && !o->locked && o->health==body_health);
     assert(server.world.count==2 && b3Body_GetShapeCount(o->body)==o->cuts->section_count);
@@ -237,11 +244,13 @@ static void retained_door(void) {
     assert(fabsf(swat_world_exit_distance(o,(b3Pos){-.022f,1.1f,0},swat_v(1,0,0))-.044f)<1e-5f);
     for(int i=0;i<90;i++)swat_world_step_doors(&server.world);
     assert(o->door_angle>1.5f && o->active && b3Body_GetShapeCount(o->body)==o->cuts->section_count);
+    assert(o->breach_owner==0 && b3Length(b3Sub(mount,b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(o->breach_position,o->center))))<1e-5f);
     b3Vec3 normal=swat_v(cosf(o->yaw),0,-sinf(o->yaw));
     assert(swat_world_object_ray(o,b3OffsetPos(o->center,swat_mul(normal,-.4f)),swat_mul(normal,.8f)));
     swat_capture_snapshot(&server,1,&state);size_t n=swat_encode_snapshot(bytes,sizeof(bytes),&state);
     assert(n && swat_decode_snapshot(&decoded,bytes,n) && swat_apply_snapshot(&replica,&decoded));
     assert(replica.world.objects[id].latch_broken && b3Body_GetShapeCount(replica.world.objects[id].body)==o->cuts->section_count);
+    assert(replica.world.objects[id].breach_owner==0 && b3Distance(replica.world.objects[id].breach_position,o->breach_position)<1e-5f);
     bad=decoded;bad.objects[id].latch_broken=false;reject_snapshot(&bad);
     bad=decoded;bad.objects[id].locked=true;reject_snapshot(&bad);
     bad=decoded;bad.objects[0].latch_broken=true;reject_snapshot(&bad);
@@ -249,8 +258,33 @@ static void retained_door(void) {
     swat_sim_close(&server);swat_sim_close(&replica);
     puts("PASS retained door: local physical notch, solid upper/body cover, standing collision, preserved hinge motion and body count, thickness and atomic live replica");
 }
+static void nearby_blast(void) {
+    for(int cover=0;cover<2;cover++) {
+        memset(&server,0,sizeof(server));swat_world_init(&server.world);swat_mission_build_breach_lab(&server.world);
+        if(cover)swat_world_box(&server.world,(b3Pos){4,1.35f,2.1f},swat_v(.45f,1.35f,.07f),SWAT_CONCRETE,0);
+        SwatHit hit=swat_world_ray(&server.world,(b3Pos){2.9f,1.1f,2.64f},swat_v(1,0,0),1.5f,b3_nullBodyId);
+        assert(hit.hit && server.world.objects[hit.index].material==SWAT_PLASTER);
+        assert(swat_world_blast(&server.world,hit.index,hit.point)>0);
+        int middle=0,far_door=0;
+        for(int i=0;i<server.world.count;i++)if(server.world.objects[i].cuts) {
+            const SwatObject* o=&server.world.objects[i];
+            if(fabsf(o->center.z)<1.71f)middle++;
+            if(o->center.z<-2)far_door++;
+        }
+        printf("Adjacent blast: cover=%d middle affected=%d distant door affected=%d\n",cover,middle,far_door);
+        assert((cover?middle==0:middle>0) && !far_door);swat_sim_close(&server);
+    }
+    memset(&server,0,sizeof(server));swat_world_init(&server.world);
+    int wall=swat_world_box(&server.world,(b3Pos){0,1.35f,0},swat_v(.0125f,1.35f,1.7f),SWAT_DRYWALL,38);
+    server.world.objects[wall].part=SWAT_PART_SKIN;server.world.objects[wall].wall_group=wall+1;
+    assert(swat_world_breach(&server.world,wall,(b3Pos){-.0125f,1.9f,.3f})>0);
+    assert(swat_world_object_ray(&server.world.objects[wall],(b3Pos){-.5f,.3f,.3f},swat_v(1,0,0)));
+    assert(!swat_world_object_ray(&server.world.objects[wall],(b3Pos){-.5f,1.9f,.3f},swat_v(1,0,0)));
+    swat_sim_close(&server);
+    puts("PASS blast: separate nearby assembly reacts, solid cover shields it, distant wall intact, high placement makes a high opening");
+}
 int main(void) {
     run(true,0);run(false,0);run(false,.73f);
-    spent_partial_charge();retained_hole();impact_across_partition();retained_door();
+    spent_partial_charge();retained_hole();impact_across_partition();retained_door();nearby_blast();
     return 0;
 }

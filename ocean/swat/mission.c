@@ -148,8 +148,11 @@ void swat_mission_build_breach_lab(SwatWorld* w) {
             swat_v(.09f,dy*.5f,(hi-lo)*.5f),SWAT_BRICK,swat_material(SWAT_BRICK)->fracture_health);
         w->objects[id].part=SWAT_PART_SKIN;w->objects[id].wall_group=first+1;
     }
-    for(int side=-1;side<=1;side+=2) {
-        int id=swat_world_box(w,(b3Pos){4+side*.098f,1.35f,4.2f},swat_v(.008f,1.35f,1.7f),SWAT_PLASTER,55);
+    // Hidden local divisions keep damage work local on the continuous finish.
+    // Their shared coordinates/UVs do not create visible joints or air gaps.
+    for(int side=-1;side<=1;side+=2)for(int row=0;row<3;row++)for(int col=0;col<4;col++) {
+        int id=swat_world_box(w,(b3Pos){4+side*.098f,(row+.5f)*.9f,2.5f+(col+.5f)*.85f},
+            swat_v(.008f,.45f,.425f),SWAT_PLASTER,55);
         w->objects[id].part=SWAT_PART_SKIN;w->objects[id].wall_group=first+1;
     }
 }

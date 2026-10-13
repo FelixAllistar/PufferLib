@@ -95,7 +95,9 @@ void swat_training_reset(void* pointer,uint32_t seed,int role,int stage) {
             for(int i=0;i<s->world.count;i++) if(s->world.objects[i].part==SWAT_PART_SKIN) {
                 float d=b3Distance(s->world.objects[i].center,(b3Pos){0,1.3f,offset}); if(d<nearest) { nearest=d; target=i; }
             }
-            if(target>=0) swat_world_breach(&s->world,target,(b3Pos){0,1.55f,offset});
+            // Keep the course's original low passage now that tool openings
+            // preserve their explicit placement height.
+            if(target>=0) swat_world_breach(&s->world,target,(b3Pos){0,1.20f,offset});
         }
     }
     env->actor=role==SWAT_SUSPECT ? 1 : 0;

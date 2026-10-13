@@ -5,15 +5,16 @@
 #include "door_damage.h"
 #include <string.h>
 typedef struct SwatCutPlane {float y,z,offset;} SwatCutPlane;
+static inline int swat_cut_plane_count(const SwatCut* cut) {return cut->kind==SWAT_CUT_IMPACT?8:SWAT_CUT_SIDES;}
 static inline bool swat_cut_valid(const SwatCut* cut) {
     return isfinite(cut->y) && isfinite(cut->z) && isfinite(cut->height) && isfinite(cut->width) &&
         fabsf(cut->y)<=200 && fabsf(cut->z)<=200 && cut->height>=.005f && cut->width>=.005f &&
         cut->height<=10 && cut->width<=10 && (unsigned int)cut->kind<SWAT_CUT_KINDS;
 }
 static inline void swat_cut_planes(const SwatCut* cut,SwatCutPlane planes[SWAT_CUT_SIDES]) {
-    float points[SWAT_CUT_SIDES][2];
-    for(int i=0;i<SWAT_CUT_SIDES;i++) {
-        float angle=2*SWAT_PI*i/SWAT_CUT_SIDES,c=cosf(angle),s=sinf(angle);
+    float points[SWAT_CUT_SIDES][2];int sides=swat_cut_plane_count(cut);
+    for(int i=0;i<sides;i++) {
+        float angle=2*SWAT_PI*i/sides,c=cosf(angle),s=sinf(angle);
         // Breacher silhouette follows an authored broad rectangle with rounded
         // corners. Impact openings use a small ellipse. These are game profiles.
         if(cut->kind==SWAT_CUT_BREACH){c=copysignf(sqrtf(fabsf(c)),c);s=copysignf(sqrtf(fabsf(s)),s);}
@@ -22,8 +23,8 @@ static inline void swat_cut_planes(const SwatCut* cut,SwatCutPlane planes[SWAT_C
         float radius=1+rough*((hash%10001)/5000.0f-1);
         points[i][0]=cut->y+cut->height*radius*c;points[i][1]=cut->z+cut->width*radius*s;
     }
-    for(int i=0;i<SWAT_CUT_SIDES;i++) {
-        int j=(i+1)%SWAT_CUT_SIDES;float y=points[j][0]-points[i][0],z=points[j][1]-points[i][1],length=hypotf(y,z);
+    for(int i=0;i<sides;i++) {
+        int j=(i+1)%sides;float y=points[j][0]-points[i][0],z=points[j][1]-points[i][1],length=hypotf(y,z);
         planes[i]=(SwatCutPlane){z/length,-y/length,0};
         planes[i].offset=planes[i].y*points[i][0]+planes[i].z*points[i][1];
     }
@@ -74,10 +75,22 @@ static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int 
     } else swat_source_polygon(o,&input[0]);
     for(int c=0;c<count;c++) {
         if(!swat_cut_valid(&cuts[c]))return -1;
-        SwatCutPlane planes[SWAT_CUT_SIDES];swat_cut_planes(&cuts[c],planes);int next=0;
+        SwatCutPlane planes[SWAT_CUT_SIDES];swat_cut_planes(&cuts[c],planes);int next=0,sides=swat_cut_plane_count(&cuts[c]);
         for(int p=0;p<n;p++) {
+            // A cut's infinite edge planes must not split distant retained
+            // material. Only subtract from pieces that overlap the aperture.
+            SwatFracturePolygon overlap=input[p];
+            for(int e=0;e<sides && overlap.count>=3;e++) {
+                SwatFracturePolygon rest;
+                if(!swat_polygon_clip(&overlap,planes[e],-1,&rest))return -1;
+                overlap=rest;
+            }
+            if(overlap.count<3 || swat_polygon_area(&overlap)<=1e-7f) {
+                if(next==SWAT_CUT_SECTIONS)return -1;
+                out[next++]=input[p];continue;
+            }
             SwatFracturePolygon inside=input[p];
-            for(int e=0;e<SWAT_CUT_SIDES && inside.count>=3;e++) {
+            for(int e=0;e<sides && inside.count>=3;e++) {
                 SwatFracturePolygon outside,rest;
                 if(!swat_polygon_clip(&inside,planes[e],1,&outside) || !swat_polygon_clip(&inside,planes[e],-1,&rest))return -1;
                 if(outside.count>=3 && swat_polygon_area(&outside)>1e-6f) {
@@ -101,7 +114,7 @@ static inline bool swat_polygon_contains(const SwatFracturePolygon* p,float y,fl
 }
 static inline bool swat_cut_contains(const SwatCut* cut,float y,float z) {
     SwatCutPlane planes[SWAT_CUT_SIDES];swat_cut_planes(cut,planes);
-    for(int i=0;i<SWAT_CUT_SIDES;i++)if(planes[i].y*y+planes[i].z*z-planes[i].offset>0)return false;
+    for(int i=0;i<swat_cut_plane_count(cut);i++)if(planes[i].y*y+planes[i].z*z-planes[i].offset>0)return false;
     return true;
 }
 static inline bool swat_fracture_contains(const SwatObject* o,float y,float z) {

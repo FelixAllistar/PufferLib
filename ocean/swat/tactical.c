@@ -103,13 +103,12 @@ SwatContext swat_context(const SwatSim* s,int actor) {
 static void breach(SwatSim* s,int object,int owner) {
     SwatObject* door=&s->world.objects[object]; b3Pos origin=door->breach_position;
     int active=0;for(int i=0;i<s->world.count;i++)active+=s->world.objects[i].active;
-    bool leaf=door->door; int affected=swat_world_breach(&s->world,object,origin);
-    if(!affected) return;
+    swat_world_blast(&s->world,object,origin);
     // A rounded cut can leave the charged cell partly intact. Consume its
     // mounted charge even then; the old whole-cell cut did this through death.
     if(door->active)s->world.generation++;
     door->breach_owner=-1;
-    door->door_open=leaf; door->breach_ticks=24;
+    door->breach_ticks=24;
     for(int i=0;i<s->world.count;i++)active-=s->world.objects[i].active;
     s->events.destroyed+=active;
     swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_FLASH,origin,2.5f,80,door->material);
@@ -136,19 +135,22 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
         !g->restrained && !g->surrendered && !g->cuff_ticks && !g->throw_cooldown && g->taser_cooldown<=150 &&
         !swat_weapons_busy(&a->arsenal);
     if(mode>SWAT_DOOR_NONE && mode<SWAT_DOOR_TOOLS) in->fire=in->reload=in->melee=false;
-    if(allowed && mode==SWAT_DETONATE_CHARGE && previous!=mode) {
+    if(mode==SWAT_DOOR_NONE || mode!=previous)g->door_completed=false;
+    if(allowed && mode==SWAT_DETONATE_CHARGE && !g->door_completed) {
         for(int i=0;i<s->world.count;i++) {
             const SwatObject* door=&s->world.objects[i];
             if(swat_world_breachable(door) && door->breach_owner==actor) breach(s,i,actor);
         }
+        g->door_completed=true;
         in->fire=in->reload=in->melee=false;
     }
-    if(mode==SWAT_DOOR_NONE || mode!=previous) g->door_completed=false;
     if(!allowed || g->door_completed || (mode!=SWAT_LOCKPICK && mode!=SWAT_PLACE_CHARGE &&
        mode!=SWAT_WEDGE && mode!=SWAT_REMOVE_WEDGE && mode!=SWAT_DISARM)) {
         g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return;
     }
-    SwatHit hit=swat_context_hit(s,actor,1.7f);
+    SwatHit hit=mode==SWAT_PLACE_CHARGE?
+        swat_world_ray(&s->world,swat_controller_eye(&a->controller),swat_controller_aim(&a->controller),1.7f,a->controller.body.body):
+        swat_context_hit(s,actor,1.7f);
     SwatObject* door=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? &s->world.objects[hit.index] : NULL;
     bool usable=door && swat_world_breachable(door) && (door->door || mode==SWAT_PLACE_CHARGE) && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
         (mode==SWAT_LOCKPICK ? door->locked : mode==SWAT_PLACE_CHARGE ? ((door->door ? g->breaching_charges : g->wall_charges)>0 && !door->latch_broken && door->max_health>0) :
@@ -165,15 +167,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
         if(mode==SWAT_LOCKPICK) door->locked=false;
         else if(mode==SWAT_PLACE_CHARGE) {
             door->breach_owner=actor;door->breach_position=hit.point;
-            if(door->door) {
-                // Door equipment has an authored game socket at the hardware.
-                float c=cosf(door->yaw),sn=sinf(door->yaw);
-                b3Vec3 relative=b3SubPos(hit.point,door->center);
-                float side=c*relative.x-sn*relative.z>=0?1:-1;
-                b3Vec3 local=swat_v(side*door->half.x,.06f,door->half.z-.06f);
-                door->breach_position=b3OffsetPos(door->center,swat_v(c*local.x+sn*local.z,local.y,-sn*local.x+c*local.z));
-                g->breaching_charges--;
-            } else g->wall_charges--;
+            if(door->door)g->breaching_charges--;else g->wall_charges--;
         }
         else if(mode==SWAT_WEDGE) { door->wedge_owner=actor; g->wedges--; }
         else if(mode==SWAT_REMOVE_WEDGE) { door->wedge_owner=-1; g->wedges=(int)fminf(2,g->wedges+1); }

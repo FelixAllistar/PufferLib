@@ -7,9 +7,9 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 19
+#define SWAT_NET_VERSION 20
+#define SWAT_NET_PACKET_MAX 524288
 #define SWAT_NET_MAGIC 0x53474531u
-#define SWAT_NET_PACKET_MAX 262144
 #define SWAT_NET_SOUNDS 32
 typedef enum SwatMessage { SWAT_MSG_INPUT=1, SWAT_MSG_MAP, SWAT_MSG_SNAPSHOT,
                           SWAT_MSG_WELCOME, SWAT_MSG_RESTART, SWAT_MSG_SCENARIO } SwatMessage;

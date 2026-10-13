@@ -228,9 +228,8 @@ bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool 
             if(!source.door && peer->wall_group!=source.wall_group)break;
             if(!peer->active || peer->door!=source.door || peer->part!=source.part || peer->material!=source.material ||
                fabsf(peer->half.x-source.half.x)>.001f)continue;
-            // Keep one profile available for a wall tool after repeated shots.
-            // Exhausting cosmetic-sized holes must not make a sheet unbreachable.
-            if(peer->cuts && peer->cuts->count>=SWAT_MAX_CUTS-1)continue;
+            // Keep room for tool damage after repeated shots.
+            if(peer->cuts && peer->cuts->count>=SWAT_MAX_IMPACT_CUTS)continue;
             b3Vec3 p=b3InvRotateVector(swat_rotation(peer->yaw,peer->pitch),b3SubPos(point,peer->center));
             if(fabsf(p.x)>peer->half.x+.002f)continue; // Only the contacted sheet/frame layer.
             SwatCut cut={.y=p.y,.z=p.z,.height=radius,.width=radius,.seed=(unsigned int)source.wall_group,.kind=SWAT_CUT_IMPACT};
@@ -311,7 +310,7 @@ SwatFracture* swat_world_cut_prepare(const SwatObject* o,const SwatCut* cuts,int
                     (!o->door || !o->latch_broken || z<=swat_door_edge(o,y));
                 for(int c=0;c<count && present;c++) {
                     bool inside=true;
-                    for(int e=0;e<SWAT_CUT_SIDES && inside;e++)inside=planes[c][e].y*y+planes[c][e].z*z<=planes[c][e].offset;
+                    for(int e=0;e<swat_cut_plane_count(&cuts[c]) && inside;e++)inside=planes[c][e].y*y+planes[c][e].z*z<=planes[c][e].offset;
                     if(inside)present=false;
                 }
                 if(!present)p->exposed_edges|=1u<<e;
@@ -397,7 +396,7 @@ bool swat_world_break_latch(SwatWorld* w,int object) {
     }
     }
     o->latch_broken=true;o->locked=false;o->peek=false;o->door_open=true;
-    o->breach_owner=-1;o->breach_ticks=24;w->generation++;
+    o->breach_ticks=24;w->generation++;
     return true;
 }
 
@@ -410,10 +409,7 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     if(fence)tangent=swat_v(cosf(source.yaw),0,-sinf(source.yaw));
     // Localized game-space aperture. It crosses both wall faces and the
     // intervening stud segments, leaving the rest of the assembly intact.
-    float floor_y=(float)source.center.y;
-    for(int i=0;i<w->count;i++) if(w->objects[i].wall_group==source.wall_group)
-        floor_y=fminf(floor_y,(float)w->objects[i].center.y-w->objects[i].half.y);
-    b3Pos center=position; center.y=fmax(floor_y+1.05,position.y-.35);
+    b3Pos center=position;
     float aperture=.72f*swat_clamp(1-.25f*charge_demand(&source),.65f,1);
     int removed=0;
     for(int i=0;i<w->count;i++) {
@@ -435,6 +431,101 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     // stays connected across them; an AABB/stud overlap cannot decide whether
     // to delete a whole division outside the physical opening.
     return removed;
+}
+
+static float blast_transmission(const SwatWorld* w,b3Pos from,b3Pos to,int target) {
+    int crossed[8],count=0;float transmission=1;b3Vec3 delta=b3SubPos(to,from);
+    if(b3LengthSquared(delta)<1e-8f)return 1;
+    // Evaluate exposure before changing neighbors. Thin layers absorb some
+    // of the authored game impulse; substantial cover stops it completely.
+    while(count<8) {
+        SwatRayContext query={0};query.result.fraction=1;query.result.index=-1;
+        query.world_only=true;query.layers=crossed;query.layer_count=count;
+        b3World_CastRay(w->id,from,delta,b3DefaultQueryFilter(),swat_ray_callback,&query);
+        if(!query.result.hit || query.result.index==target || query.result.fraction>.999f)return transmission;
+        if(query.result.index<0)return 0;
+        const SwatObject* cover=&w->objects[query.result.index];float through=0;
+        switch(cover->material) {
+        case SWAT_GLASS:case SWAT_OPAQUE_GLASS:through=.85f;break;
+        case SWAT_DRYWALL:through=.55f;break;
+        case SWAT_PLASTER:through=.45f;break;
+        case SWAT_INSULATION:through=.9f;break;
+        case SWAT_WOOD:through=cover->half.x<.03f?.25f:0;break;
+        default:break;
+        }
+        transmission*=through;if(transmission<.08f)return 0;
+        crossed[count++]=query.result.index;
+    }
+    return 0;
+}
+static b3Pos blast_group_anchor(const SwatWorld* w,const SwatObject* target,b3Pos origin) {
+    b3Quat q=swat_rotation(target->yaw,target->pitch);
+    b3Vec3 lo=swat_v(1e30f,1e30f,1e30f),hi=swat_v(-1e30f,-1e30f,-1e30f);
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];
+        if(!o->active || o->wall_group!=target->wall_group ||
+           (o->part!=SWAT_PART_SKIN && o->part!=SWAT_PART_FRAME))continue;
+        b3Quat r=swat_rotation(o->yaw,o->pitch);
+        for(int v=0;v<8;v++) {
+            b3Pos p=b3OffsetPos(o->center,b3RotateVector(r,swat_v((v&1?1:-1)*o->half.x,(v&2?1:-1)*o->half.y,(v&4?1:-1)*o->half.z)));
+            b3Vec3 local=b3InvRotateVector(q,b3SubPos(p,target->center));
+            lo=swat_v(fminf(lo.x,local.x),fminf(lo.y,local.y),fminf(lo.z,local.z));
+            hi=swat_v(fmaxf(hi.x,local.x),fmaxf(hi.y,local.y),fmaxf(hi.z,local.z));
+        }
+    }
+    b3Vec3 p=b3InvRotateVector(q,b3SubPos(origin,target->center));
+    p=swat_v(swat_clamp(p.x,lo.x,hi.x),swat_clamp(p.y,lo.y,hi.y),swat_clamp(p.z,lo.z,hi.z));
+    return b3OffsetPos(target->center,b3RotateVector(q,p));
+}
+int swat_world_blast(SwatWorld* w,int object,b3Pos position) {
+    if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object]))return 0;
+    SwatObject source=w->objects[object];b3Quat rotation=swat_rotation(source.yaw,source.pitch);
+    b3Vec3 mount=b3InvRotateVector(rotation,b3SubPos(position,source.center));
+    int affected=swat_world_breach(w,object,position);
+    if(source.door) {
+        SwatCut local={.y=mount.y,.z=mount.z,.height=.18f,.width=.14f,
+            .seed=(unsigned int)object,.kind=SWAT_CUT_BREACH};
+        if(swat_world_cut(w,object,local)>0 && !affected)affected=1;
+    }
+    b3Pos origin=b3OffsetPos(position,b3RotateVector(rotation,swat_v(mount.x>=0?.035f:-.035f,0,0)));
+    float strength[SWAT_MAX_OBJECTS]={0};b3Pos contacts[SWAT_MAX_OBJECTS];
+    bool anchored[SWAT_MAX_OBJECTS]={0};b3Pos anchors[SWAT_MAX_OBJECTS];
+    float range=source.door?1.2f:2.25f;
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];
+        if(i==object || !o->active || !o->max_health ||
+           (!source.door && source.wall_group>0 && o->wall_group==source.wall_group))continue;
+        bool soft=o->material==SWAT_DRYWALL || o->material==SWAT_PLASTER || o->material==SWAT_INSULATION;
+        bool wood=o->material==SWAT_WOOD,glass=o->material==SWAT_GLASS || o->material==SWAT_OPAQUE_GLASS;
+        if(!soft && !wood && !glass)continue;
+        b3Quat q=swat_rotation(o->yaw,o->pitch);b3Vec3 local=b3InvRotateVector(q,b3SubPos(origin,o->center));
+        local=swat_v(swat_clamp(local.x,-o->half.x,o->half.x),swat_clamp(local.y,-o->half.y,o->half.y),swat_clamp(local.z,-o->half.z,o->half.z));
+        contacts[i]=b3OffsetPos(o->center,b3RotateVector(q,local));
+        float distance=b3Distance(origin,contacts[i]);if(distance>=range)continue;
+        strength[i]=(1-distance/range)*blast_transmission(w,origin,contacts[i],i);
+        // One contact per neighboring assembly avoids a repeated little hole
+        // at every hidden cell boundary. Exposure still belongs to each piece.
+        int group=o->wall_group-1;
+        if(strength[i]>.08f && !o->door && (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME) && group>=0 && group<w->count) {
+            if(!anchored[group]){anchors[group]=blast_group_anchor(w,o,origin);anchored[group]=true;}
+            contacts[i]=anchors[group];
+        }
+    }
+    for(int i=0;i<w->count;i++)if(strength[i]>.08f) {
+        SwatObject* o=&w->objects[i];if(!o->active)continue;
+        bool wood=o->material==SWAT_WOOD;
+        if(o->door || o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME) {
+            if(o->material==SWAT_GLASS || o->material==SWAT_OPAQUE_GLASS) {
+                affected+=swat_world_damage(w,i,120*strength[i]);continue;
+            }
+            b3Vec3 local=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(contacts[i],o->center));
+            float scale=wood?.45f:1;
+            SwatCut cut={.y=local.y,.z=local.z,.height=scale*(.12f+.38f*strength[i]),
+                .width=scale*(.08f+.26f*strength[i]),.seed=(unsigned int)(object+1),.kind=SWAT_CUT_BREACH};
+            affected+=swat_world_cut(w,i,cut)>0;
+        } else affected+=swat_world_damage(w,i,(wood?55:120)*strength[i]);
+    }
+    return affected;
 }
 
 float swat_material_resistance(SwatMaterial material) {
@@ -611,10 +702,12 @@ void swat_world_step_doors(SwatWorld* w) {
         float delta = swat_clamp(target-o->door_angle,-2.0f*SWAT_DT,2.0f*SWAT_DT);
         if (fabsf(delta) < 1e-7f) continue;
         if (swat_door_obstructed(w,o,o->door_angle+delta)) continue;
+        b3Vec3 mount=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(o->breach_position,o->center));
         o->door_angle += delta; o->yaw = o->closed_yaw+o->door_angle;
         o->center = b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
         b3Quat rotation = {{0,sinf(o->yaw*0.5f),0},cosf(o->yaw*0.5f)};
         b3Body_SetTransform(o->body,o->center,rotation);
+        if(o->breach_owner>=0)o->breach_position=b3OffsetPos(o->center,b3RotateVector(swat_rotation(o->yaw,o->pitch),mount));
     }
 }
 

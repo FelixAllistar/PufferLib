@@ -376,7 +376,13 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
     // real edge. Advance past arrived samples only with a fresh body sweep.
     while(route>0) {
         b3Pos p=cell_position(nav,at);
-        if(hypotf(p.x-start.x,p.z-start.z)>=.30f || fabs(p.y-start.y)>=.30f)break;
+        float distance=hypotf(p.x-start.x,p.z-start.z),drop=(float)(start.y-p.y);
+        bool arrived=distance<.30f && fabsf(drop)<.30f;
+        // On a low support's rim, walking exactly along the grid row can snag
+        // the feet hull. Allow the next clear edge within one cell to lead off
+        // the support; the same body, door and person sweeps still validate it.
+        bool leaving_support=distance<.65f && drop>.05f && drop<.30f;
+        if(!arrived && !leaving_support)break;
         int ahead=queue[route-1];b3Pos target=cell_position(nav,ahead);
         float height=(nav->walkable[from]&nav->walkable[ahead]&2)?1.8288f:1.016f;
         if(!nav_edge(&s->world,start,target,height) || !people_clear(&people,start,target) ||

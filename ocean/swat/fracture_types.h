@@ -1,7 +1,8 @@
 #ifndef SWAT_FRACTURE_TYPES_H
 #define SWAT_FRACTURE_TYPES_H
 #include "swat_math.h"
-#define SWAT_MAX_CUTS 4
+#define SWAT_MAX_CUTS 8
+#define SWAT_MAX_IMPACT_CUTS (SWAT_MAX_CUTS-2)
 #define SWAT_CUT_SIDES 16
 #define SWAT_CUT_SECTIONS 128
 #define SWAT_CUT_VERTICES 32

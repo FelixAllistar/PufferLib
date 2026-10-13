@@ -1,0 +1,9 @@
+CC0 1.0 Universal dedication — original authored gypsum chip
+
+To the extent permitted by law, the author dedicates all copyright and related rights in the original geometry, UVs, procedural material artwork, previews, and generation/validation scripts supplied in this package to the public domain under CC0 1.0 Universal.
+
+You may copy, modify, distribute, and use this original work, including commercially, without asking permission or providing attribution. This dedication applies only to this package's original work, not Blender, Python, NumPy, glTF specifications, or other third-party software.
+
+Provided as-is, without warranty or fitness for any purpose. No physical-material, safety, engineering, or performance properties are asserted.
+
+CC0 1.0 Universal legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode

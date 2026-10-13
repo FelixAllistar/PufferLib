@@ -32,6 +32,7 @@ static int door_polygon(SwatWallVertex v[64],const Mesh* src,int triangle,const 
     }
     // Small extra subdivisions localize the soot gradient without changing
     // either the original surface or the collision silhouette.
+    if(!o->latch_broken)return n;
     float cuts[]={-o->half.z,o->half.z-.45f,o->half.z-.32f,o->half.z-.20f,o->half.z-.08f,o->half.z};
     float lo=fmaxf(cuts[strip],-o->half.z),hi=fmaxf(cuts[strip+1],-o->half.z);
     if(hi<=lo)return 0;
@@ -57,32 +58,56 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
     else swat_source_polygon(o,&original[0]);
     const SwatFracturePolygon* polygons=o->cuts?o->cuts->sections:original;
     if(o->cuts)sections=o->cuts->section_count;
+    SwatFaceBounds bounds[SWAT_CUT_SECTIONS];
+    for(int s=0;s<sections;s++)bounds[s]=face_bounds(&polygons[s]);
+    int strips=o->latch_broken?5:1;
     Model* model=&cache->model;model->transform=source->transform;model->materials=source->materials;model->materialCount=source->materialCount;
     model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
     model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
     for(int m=0;m<source->meshCount;m++) {
         const Mesh* src=&source->meshes[m];int count=0;
-        for(int t=0;t<src->triangleCount;t++)for(int band=0;band<sections;band++)for(int strip=0;strip<5;strip++) {
+        for(int t=0;t<src->triangleCount;t++) {
+          SwatFaceBounds triangle=face_triangle_bounds(src,t,axis,sy,sz,oy,oz);
+          for(int band=0;band<sections;band++) {
+            if(!face_bounds_overlap(triangle,bounds[band]))continue;
+            for(int strip=0;strip<strips;strip++) {
+            cache->polygon_tests++;
             SwatWallVertex v[64];int n=door_polygon(v,src,t,o,&polygons[band],strip,axis,sy,sz,oy,oz);if(n>=3)count+=3*(n-2);
+            }
+          }
         }
         if(!count)continue;
         Mesh mesh={0};mesh.vertices=MemAlloc(count*3*sizeof(float));mesh.normals=MemAlloc(count*3*sizeof(float));
         mesh.texcoords=MemAlloc(count*2*sizeof(float));mesh.colors=MemAlloc(count*4);
         if(src->texcoords2)mesh.texcoords2=MemAlloc(count*2*sizeof(float));
-        for(int t=0;t<src->triangleCount;t++)for(int band=0;band<sections;band++)for(int strip=0;strip<5;strip++) {
+        for(int t=0;t<src->triangleCount;t++) {
+          SwatFaceBounds triangle=face_triangle_bounds(src,t,axis,sy,sz,oy,oz);
+          for(int band=0;band<sections;band++) {
+            if(!face_bounds_overlap(triangle,bounds[band]))continue;
+            for(int strip=0;strip<strips;strip++) {
+            cache->polygon_tests++;
             SwatWallVertex v[64];int n=door_polygon(v,src,t,o,&polygons[band],strip,axis,sy,sz,oy,oz);
             for(int k=1;k<n-1;k++) {const int indices[]={0,k,k+1};
                 for(int j=0;j<3;j++) {
                     SwatWallVertex p=v[indices[j]];int at=mesh.vertexCount++;
                     memcpy(mesh.vertices+3*at,&p.p,3*sizeof(float));memcpy(mesh.normals+3*at,&p.n,3*sizeof(float));
                     memcpy(mesh.texcoords+2*at,&p.uv,2*sizeof(float));if(mesh.texcoords2)memcpy(mesh.texcoords2+2*at,&p.uv2,2*sizeof(float));
-                    float y=p.p.y*sy+oy-.06f,z=o->half.z-door_vertex_z(p,axis,sz,oz);
-                    float r=hypotf(y/.43f,z/.37f),uneven=.04f*sinf(31*y+17*z);
-                    float soot=o->latch_broken?swat_clamp((1.07f+uneven-r)*1.2f,0,.91f):0;
+                    float y=p.p.y*sy+oy,z=door_vertex_z(p,axis,sz,oz),soot=0;
+                    if(o->latch_broken) {
+                        float r=hypotf((y-.06f)/.43f,(o->half.z-z)/.37f);
+                        soot=swat_clamp((1.07f+.04f*sinf(31*y+17*z)-r)*1.2f,0,.91f);
+                    }
+                    if(o->cuts)for(int c=0;c<o->cuts->count;c++) {
+                        const SwatCut* cut=&o->cuts->cuts[c];if(cut->kind!=SWAT_CUT_BREACH)continue;
+                        float r=hypotf((y-cut->y)/(cut->height*2.2f+.03f),(z-cut->z)/(cut->width*2.2f+.03f));
+                        soot=fmaxf(soot,swat_clamp((1.1f-r)*1.3f,0,.94f));
+                    }
                     mesh.colors[4*at]=(unsigned char)(255*(1-soot));mesh.colors[4*at+1]=(unsigned char)(255*(1-.99f*soot));
                     mesh.colors[4*at+2]=(unsigned char)(255*(1-.96f*soot));mesh.colors[4*at+3]=255;
                 }
             }
+            }
+          }
         }
         assert(mesh.vertexCount==count);mesh.triangleCount=count/3;UploadMesh(&mesh,false);
         model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=mesh;
