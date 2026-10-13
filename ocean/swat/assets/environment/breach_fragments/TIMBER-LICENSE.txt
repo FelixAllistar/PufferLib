@@ -1,0 +1,6 @@
+CC0 1.0 Universal dedication
+
+The original geometry, authored procedural texture artwork, previews, documentation, and generator source in this asset package are offered under CC0 1.0 Universal, to the extent any copyright or related rights subsist and may be waived by the creator.
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+These are original synthetic assets, not scans or redistributions of third-party wood imagery. This notice makes no claim that AI-assisted material necessarily attracts copyright in any particular jurisdiction. No trademarks, patents, personality rights, or warranties are granted. Supplied as-is, with no structural, physical, safety, or simulation warranty. Blender, Python, NumPy, and Pillow are separate tools and retain their own licenses; they are not included in this package.

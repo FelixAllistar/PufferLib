@@ -12,6 +12,45 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Interaction and shot-refresh pass (2026-10-13): charges now attach to the actual
+aimed contact, preserve that opening height, follow moving leaves, and still
+detonate after repeated bullet damage. Neighboring soft walls, timber, glazing
+and props receive cover-tested secondary damage. Each neighboring wall shares
+one damage location across its hidden divisions, avoiding a grid of small holes.
+The lab's large masonry finish now has invisible local damage divisions.
+
+Cut subtraction only partitions intersecting material. Eight-sided impact
+profiles, triangle/polygon bounds checks and removal of unnecessary door soot
+subdivisions cut the third decorated-door hit's polygon clipping work from
+2,183,440 attempts to 9,820. Eight profiles allow six ordinary impacts while
+reserving two tool cuts; snapshots use protocol v20. Bullet holes can refresh
+only their affected shadow regions, using scissored writes and the original
+projection. Nonlocal geometry changes and moving actor composition retain the
+full refresh path. Forty-eight production shadow comparisons against full
+redraw pass on each platform.
+
+Six original CC0 timber, gypsum and clay fragments add sparse edge attachments
+and settled chips. Source metre geometry and thickness are retained; sampled
+vertex colours replace their texture maps. The 79,024-byte geometry set adds
+no runtime textures, physics bodies or per-piece draw calls, with at most twelve
+attached and twelve settled pieces. The cavity remains mostly empty. Both
+platforms preserve 5,561 painted-face samples outside these small attachments,
+pixel-identical replicas, unchanged authority and cached meshes during hinge
+motion. The native gallery demonstrates the far-wall edge blast affecting the
+middle wall and a freely placed charge after three door shots.
+
+Full mission QA also found an escort snag on a low parking-stop rim. Navigation
+can now take the next checked edge off a low support, with the existing body,
+door and person sweeps. The movement course explicitly retains its original
+low breach height. Evidence, source receipts, captures and timing CSVs are under
+`build/swat/review/interaction-polish`; this remains the bounded material
+prototype described below, with connected sheet support and loose structural
+rubble still open.
+All four ordinary-input mission routes pass on Linux and Windows with exact
+replay, save/resume and fresh replicas. Both platforms also pass live UDP,
+charge/geometry checks, the low-support escort regression and the movement
+curriculum. Players and servers are rebuilt on both platforms.
+
 Material destruction prototype (2026-10-12): `./swat play --mission breach-lab`
 provides a retained hinged door, layered timber/board/insulation partition and
 staggered masonry sample. Compact door charges and larger wall breachers have

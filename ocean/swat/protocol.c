@@ -566,7 +566,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->room_light_off_mask&~((1u<<sim->world.room_count)-1u))return false;
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i]; const SwatObjectState* in=&state->objects[i];
-        if((in->latch_broken && (!o->door || in->locked || in->peek || in->breach_owner>=0)) ||
+        if((in->latch_broken && (!o->door || in->locked || in->peek)) ||
            (o->latch_broken && !in->latch_broken))return false;
         if(in->active && in->latch_broken && !o->latch_broken) {
             SwatObject section=*o;section.door=false;section.part=SWAT_PART_SKIN;
@@ -592,14 +592,15 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
         for(int k=0;k<SWAT_MAX_SUPPORTS;k++)if(in->active && o->supports[k]>=0 &&
             !state->objects[o->supports[k]].active)return false;
         if(in->breach_owner>=0) {
-            b3Quat rotation=swat_rotation(o->yaw,o->pitch);
-            b3Vec3 local=b3InvRotateVector(rotation,b3SubPos(in->breach_position,o->center));
+            float yaw=o->door?o->closed_yaw+in->door_angle:o->yaw;
+            b3Pos center=o->door?b3OffsetPos(o->hinge,swat_v(sinf(yaw)*o->half.z,0,cosf(yaw)*o->half.z)):o->center;
+            b3Vec3 local=b3InvRotateVector(swat_rotation(yaw,o->pitch),b3SubPos(in->breach_position,center));
             if(!isfinite(local.x) || !isfinite(local.y) || !isfinite(local.z) ||
                fabsf(local.x)>o->half.x+.05f || fabsf(local.y)>o->half.y+.05f || fabsf(local.z)>o->half.z+.05f) return false;
         }
         if(in->health>o->max_health || (!o->active && in->active) ||
            ((!o->door || !in->active) && in->locked) || (in->breach_owner>=0 && (!in->active || !swat_world_breachable(o))) ||
-           (in->locked && in->door_open) || (in->breach_owner>=0 && in->door_open) ||
+           (in->locked && in->door_open) ||
            (!o->door && (in->wedge_owner>=0 || in->peek || in->trapped || in->trap_known)) ||
            (in->wedge_owner>=0 && (!in->active || in->door_open)) || (in->trap_known && !in->trapped)) return false;
     }

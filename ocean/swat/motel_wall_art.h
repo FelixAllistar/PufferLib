@@ -6,8 +6,31 @@
 #include "door_damage.h"
 #include "fracture_geometry.h"
 typedef struct SwatWallVertex {Vector3 p,n;Vector2 uv,uv2;} SwatWallVertex;
+typedef struct SwatFaceBounds {float ymin,ymax,zmin,zmax;} SwatFaceBounds;
+static SwatFaceBounds face_bounds(const SwatFracturePolygon* p) {
+    SwatFaceBounds b={INFINITY,-INFINITY,INFINITY,-INFINITY};
+    for(int i=0;i<p->count;i++) {
+        b.ymin=fminf(b.ymin,p->vertices[i][0]);b.ymax=fmaxf(b.ymax,p->vertices[i][0]);
+        b.zmin=fminf(b.zmin,p->vertices[i][1]);b.zmax=fmaxf(b.zmax,p->vertices[i][1]);
+    }
+    return b;
+}
+static bool face_bounds_overlap(SwatFaceBounds a,SwatFaceBounds b) {
+    return a.ymin<=b.ymax+1e-6f && a.ymax>=b.ymin-1e-6f && a.zmin<=b.zmax+1e-6f && a.zmax>=b.zmin-1e-6f;
+}
+static SwatFaceBounds face_triangle_bounds(const Mesh* mesh,int triangle,int axis,float sy,float sz,float oy,float oz) {
+    SwatFaceBounds b={INFINITY,-INFINITY,INFINITY,-INFINITY};
+    for(int k=0;k<3;k++) {
+        int at=mesh->indices?mesh->indices[3*triangle+k]:3*triangle+k;
+        float y=mesh->vertices[3*at+1]*sy+oy,z=mesh->vertices[3*at+axis]*sz+oz;
+        b.ymin=fminf(b.ymin,y);b.ymax=fmaxf(b.ymax,y);
+        b.zmin=fminf(b.zmin,z);b.zmax=fmaxf(b.zmax,z);
+    }
+    return b;
+}
 typedef struct SwatWallMeshCache {
     Model model;const Mesh* source;b3Pos center;b3Vec3 half;bool fractured;float corners[4][2];uint64_t mask;
+    size_t polygon_tests;
 } SwatWallMeshCache;
 typedef struct SwatMotelWallArt {
     SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5],windows[5];
@@ -19,8 +42,9 @@ typedef struct SwatMotelWallArt {
 #define SWAT_DOOR_CACHE 32
 typedef struct SwatDoorArt {SwatWallMeshCache meshes[SWAT_DOOR_CACHE];int owners[SWAT_DOOR_CACHE];unsigned int builds;} SwatDoorArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
+    size_t tests=cache->polygon_tests;
     for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
-    MemFree(cache->model.meshes);MemFree(cache->model.meshMaterial);memset(cache,0,sizeof(*cache));
+    MemFree(cache->model.meshes);MemFree(cache->model.meshMaterial);memset(cache,0,sizeof(*cache));cache->polygon_tests=tests;
 }
 static void door_art_clear(SwatDoorArt* art) {
     if(!art)return;
@@ -142,20 +166,31 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
     b3Vec3 d=b3SubPos(o->center,p->origin);float cx=(cosf(p->yaw)*d.x-sinf(p->yaw)*d.z)/p->scale.x;
     float cy=d.y/p->scale.y;SwatFracturePolygon original;swat_source_polygon(o,&original);
     const SwatFracturePolygon* polygons=o->cuts?o->cuts->sections:&original;int sections=o->cuts?o->cuts->section_count:1;
+    SwatFaceBounds bounds[SWAT_CUT_SECTIONS];
+    for(int s=0;s<sections;s++)bounds[s]=face_bounds(&polygons[s]);
     Model* model=&cache->model;model->transform=MatrixIdentity();
     model->materials=source->materials;model->materialCount=source->materialCount;
     model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
     model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
     for(int m=0;m<source->meshCount;m++) {
         const Mesh* src=&source->meshes[m];Mesh mesh={0};int capacity=0;
-        for(int t=0;t<src->triangleCount;t++)for(int s=0;s<sections;s++) {
+        for(int t=0;t<src->triangleCount;t++) {
+          SwatFaceBounds triangle=face_triangle_bounds(src,t,0,p->scale.y,p->scale.x,-cy*p->scale.y,-cx*p->scale.x);
+          for(int s=0;s<sections;s++) {
+            if(!face_bounds_overlap(triangle,bounds[s]))continue;
+            cache->polygon_tests++;
             SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],cx,cy,p);
             for(int k=1;k<n-1;k++)if(Vector3LengthSqr(Vector3CrossProduct(Vector3Subtract(v[k].p,v[0].p),Vector3Subtract(v[k+1].p,v[0].p)))>=1e-14f)capacity+=3;
+          }
         }
         if(!capacity)continue;
         mesh.vertices=MemAlloc(capacity*3*sizeof(float));mesh.normals=MemAlloc(capacity*3*sizeof(float));
         mesh.texcoords=MemAlloc(capacity*2*sizeof(float));if(src->texcoords2)mesh.texcoords2=MemAlloc(capacity*2*sizeof(float));
-        for(int t=0;t<src->triangleCount;t++)for(int s=0;s<sections;s++) {
+        for(int t=0;t<src->triangleCount;t++) {
+          SwatFaceBounds triangle=face_triangle_bounds(src,t,0,p->scale.y,p->scale.x,-cy*p->scale.y,-cx*p->scale.x);
+          for(int s=0;s<sections;s++) {
+            if(!face_bounds_overlap(triangle,bounds[s]))continue;
+            cache->polygon_tests++;
             SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],cx,cy,p);
             for(int k=1;k<n-1;k++) {
                 int corner[]={0,k,k+1};
@@ -164,6 +199,7 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
                     memcpy(mesh.vertices+3*at,&a.p,3*sizeof(float));memcpy(mesh.normals+3*at,&a.n,3*sizeof(float));
                     memcpy(mesh.texcoords+2*at,&a.uv,2*sizeof(float));if(mesh.texcoords2)memcpy(mesh.texcoords2+2*at,&a.uv2,2*sizeof(float));}
             }
+          }
         }
         assert(mesh.vertexCount==capacity);
         mesh.triangleCount=mesh.vertexCount/3;

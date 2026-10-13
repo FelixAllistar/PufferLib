@@ -1,0 +1,165 @@
+{
+  "license": "CC0-1.0",
+  "units": "metres",
+  "geometry": "Original positions, normals, indices and triangle order retained; base-color images sampled into opaque vertex colours. Normal/roughness textures are omitted for these small cosmetic fragments.",
+  "runtime_textures": 0,
+  "runtime_materials": 0,
+  "geometry_attribute_bytes": 79024,
+  "header_sha256": "76ef695434ccd402467c4ba420e71c8fa866d6bfd705df35b5608d67f671719b",
+  "models": [
+    {
+      "file": "timber_splinters_visual_candidate_v1/exports/timber_splinter_01.glb",
+      "source_packet": "https://drive.google.com/file/d/1uTiW91mfgZo7HtK05tZjJsYACBWjcpmx/view",
+      "sha256": "ae9364fb05ab6ff16d7ce97d8a44b6f49440c1d7a48d67b25e5952ced3e28bd3",
+      "triangles": 280,
+      "vertices": 224,
+      "min": [
+        -0.051500000059604645,
+        -0.0035000001080334187,
+        -0.007000000216066837
+      ],
+      "max": [
+        0.051500000059604645,
+        0.0035000001080334187,
+        0.007000000216066837
+      ],
+      "sampled_images": [
+        {
+          "name": "timber_basecolor",
+          "sha256": "45f33fb3cc02896c079467bcef4b1413680a4a26781b3a3056676ba7941e1d71"
+        }
+      ]
+    },
+    {
+      "file": "timber_splinters_visual_candidate_v1/exports/timber_splinter_02.glb",
+      "source_packet": "https://drive.google.com/file/d/1uTiW91mfgZo7HtK05tZjJsYACBWjcpmx/view",
+      "sha256": "e36a0377ee8b487e593edcf8da70ce9d6f302daf13d372fcb101d9c1a3b0bf79",
+      "triangles": 280,
+      "vertices": 224,
+      "min": [
+        -0.06700000166893005,
+        -0.005499999970197678,
+        -0.012000000104308128
+      ],
+      "max": [
+        0.06700000166893005,
+        0.005499999970197678,
+        0.012000000104308128
+      ],
+      "sampled_images": [
+        {
+          "name": "timber_basecolor",
+          "sha256": "45f33fb3cc02896c079467bcef4b1413680a4a26781b3a3056676ba7941e1d71"
+        }
+      ]
+    },
+    {
+      "file": "gypsum_fragments_shared_v1/gypsum_wedge_64mm.glb",
+      "source_packet": "https://drive.google.com/file/d/1rj1HhsWznOAOLJOutwv17ne6iZaRZG5x/view",
+      "sha256": "9e2e6178e4f84d2f1f7cf6dfe8bb99340cef2bdcbc4e019fa06542af59736fa4",
+      "triangles": 310,
+      "vertices": 496,
+      "min": [
+        -0.03100614808499813,
+        -0.006430000066757202,
+        -0.01848175749182701
+      ],
+      "max": [
+        0.03127919137477875,
+        0.007430000230669975,
+        0.019247379153966904
+      ],
+      "sampled_images": [
+        {
+          "name": "Painted_face_paper_basecolor",
+          "sha256": "12844bb6a6c2c7bfbfd98d6f4b3823fd6162a917a1a961532707c5009e61d2d5"
+        },
+        {
+          "name": "Brown_backing_paper_basecolor",
+          "sha256": "f95d235667229d31247a81d06867dde9c78d004fe5e77d37a075bacbb93ce14f"
+        },
+        {
+          "name": "Fractured_gypsum_core_basecolor",
+          "sha256": "2a38ba15313908bbd5546d746db9c5b843409b2d27b7c200790e2260a7276403"
+        }
+      ]
+    },
+    {
+      "file": "gypsum_fragments_shared_v1/gypsum_peeled_84mm.glb",
+      "source_packet": "https://drive.google.com/file/d/1rj1HhsWznOAOLJOutwv17ne6iZaRZG5x/view",
+      "sha256": "0550dc1d9140cf77b7964e328b681ee63014fcebb184eb885a0a38cefb54c6fb",
+      "triangles": 392,
+      "vertices": 618,
+      "min": [
+        -0.0404888279736042,
+        -0.006430000066757202,
+        -0.027351051568984985
+      ],
+      "max": [
+        0.040778256952762604,
+        0.01042999979108572,
+        0.02741602621972561
+      ],
+      "sampled_images": [
+        {
+          "name": "Painted_face_paper_basecolor",
+          "sha256": "12844bb6a6c2c7bfbfd98d6f4b3823fd6162a917a1a961532707c5009e61d2d5"
+        },
+        {
+          "name": "Brown_backing_paper_basecolor",
+          "sha256": "f95d235667229d31247a81d06867dde9c78d004fe5e77d37a075bacbb93ce14f"
+        },
+        {
+          "name": "Fractured_gypsum_core_basecolor",
+          "sha256": "2a38ba15313908bbd5546d746db9c5b843409b2d27b7c200790e2260a7276403"
+        }
+      ]
+    },
+    {
+      "file": "original_fired_clay_fragments_v1/models/Clay_chip_30mm.glb",
+      "source_packet": "https://drive.google.com/file/d/19iWzdllk9hHb4G6B9nfDO2bGgGMKq8Q9/view",
+      "sha256": "6b57d7eb52de1f1b0fef74babf4f0beeed3b8c6ac864977fddce5710913650e7",
+      "triangles": 144,
+      "vertices": 432,
+      "min": [
+        -0.014999999664723873,
+        0,
+        -0.010999999940395355
+      ],
+      "max": [
+        0.014999999664723873,
+        0.00800000037997961,
+        0.010999999940395355
+      ],
+      "sampled_images": [
+        {
+          "name": "brick_basecolor",
+          "sha256": "8e9b8d3ffb24826793d3be97d59ec8531fd13a5b97c56397ddd4b8fb4fbe0b2f"
+        }
+      ]
+    },
+    {
+      "file": "original_fired_clay_fragments_v1/models/Clay_corner_85mm.glb",
+      "source_packet": "https://drive.google.com/file/d/19iWzdllk9hHb4G6B9nfDO2bGgGMKq8Q9/view",
+      "sha256": "56e1abfbaeab209b70008f65dd0b9b7ae32b83870bcc23cb2157fe70304e073d",
+      "triangles": 182,
+      "vertices": 488,
+      "min": [
+        -0.042500000447034836,
+        0,
+        -0.026499999687075615
+      ],
+      "max": [
+        0.042500000447034836,
+        0.04899999871850014,
+        0.026499999687075615
+      ],
+      "sampled_images": [
+        {
+          "name": "brick_basecolor",
+          "sha256": "8e9b8d3ffb24826793d3be97d59ec8531fd13a5b97c56397ddd4b8fb4fbe0b2f"
+        }
+      ]
+    }
+  ]
+}

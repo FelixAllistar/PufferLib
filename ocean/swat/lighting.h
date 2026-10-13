@@ -29,6 +29,12 @@ typedef struct SwatLighting {
     Vector3 sun_direction;
     float exposure;
     uint32_t geometry,moving_geometry,sun_actors;
+    uint32_t damage_base,damage_hash[SWAT_MAX_OBJECTS];
+    unsigned char damage_cuts[SWAT_MAX_OBJECTS];
+    int damage_objects;
+    bool shadow_restricted;
+    Matrix shadow_clip;
+    unsigned int partial_shadow_updates;
     Vector3 shadow_origin;
     int shadow_face;
     int shadow_room,last_tick,updates,room_updates;
@@ -75,6 +81,7 @@ void swat_lighting_prepare_context(SwatLighting* light,const SwatSim* sim,Vector
 void swat_lighting_prepare_split(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowSceneContext geometry,SwatShadowSceneContext actors,void* context);
 bool swat_lighting_face_intersects(const SwatLighting* light,Vector3 center,Vector3 half);
+bool swat_lighting_shadow_intersects(const SwatLighting* light,Vector3 center,Vector3 half);
 bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 half);
 // Screen-space contact occlusion: half-resolution depth, no physics queries.
 // Recomputed from the current camera/geometry; only indirect light is darkened.

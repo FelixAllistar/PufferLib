@@ -36,8 +36,25 @@ static void low_fixture(void) {
     assert(b3Distance(point,(b3Pos){2,.015f,2})<.43f);
     swat_sim_close(&sim);puts("PASS low fixture navigation: routes avoid the seat and ground beneath it; authoritative removal restores floor access");
 }
+static void low_support_escort(void) {
+    static SwatSim sim;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;
+    cfg.randomize=false;cfg.hostile_fire=false;cfg.squad_bots=0;cfg.max_ticks=1200;cfg.tactical_rules=true;
+    swat_sim_init(&sim,cfg,81);
+    const b3Pos positions[]={{-2.9,-.065,6.3},{-2.385337114,.064999998,4.499994278}};
+    for(int i=0;i<2;i++) {
+        SwatController* c=&sim.actors[i].controller;
+        b3Body_SetTransform(c->body.body,b3OffsetPos(positions[i],swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
+        b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=SWAT_PI;
+    }
+    sim.actors[1].gear.surrendered=sim.actors[1].gear.restrained=true;sim.actors[1].mind.escort_owner=0;
+    SwatInput neutral=swat_neutral_input();for(int i=0;i<360;i++)swat_sim_step(&sim,&neutral);
+    b3Pos end=swat_body_feet_position(&sim.actors[1].controller.body);
+    assert(end.z>5.5 && b3Distance(end,positions[0])<1.4f);
+    swat_sim_close(&sim);puts("PASS escort over low support: original parking-stop collision, ordinary NPC movement leaves the rim and rejoins the officer");
+}
 int main(void) {
     low_fixture();
+    low_support_escort();
     static SwatSim sim;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,42);b3Pos next;
     swat_navigation_next(&sim,(b3Pos){0,-.08f,20},(b3Pos){0,-.08f,30},&next);

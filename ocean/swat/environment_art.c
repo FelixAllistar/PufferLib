@@ -755,7 +755,9 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
     Matrix scale=MatrixScale(p->scale.x,p->scale.y,p->scale.z);
     Matrix transform=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(yaw)),MatrixTranslate(origin.x,origin.y,origin.z));
     if(override)transform=*override;
-    Matrix clip=MatrixMultiply(transform,MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection()));
+    Matrix scene=shadow && art->lighting && art->lighting->shadow_restricted ?
+        art->lighting->shadow_clip:MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
+    Matrix clip=MatrixMultiply(transform,scene);
     SwatEnvironmentBound* bounds=location_bounds(art,source);
     if(bounds && bounds_outside(art->bounds,bounds->box,clip))return true;
     bool lit=!shadow && art->lighting && art->lighting->enabled && art->lighting->prepared;
@@ -858,6 +860,7 @@ void swat_environment_motel_face_batch(SwatEnvironmentArt* art,bool enabled) {
 SwatWallFaceStats swat_environment_motel_face_stats(const SwatEnvironmentArt* art) {
     SwatWallFaceStats stats={0};const SwatMotelWallArt* cache=art->motel_wall_art;if(!cache)return stats;
     stats.builds=cache->face_builds;stats.submissions=cache->face_submissions;stats.piece_submissions=cache->piece_submissions;
+    for(int i=0;i<SWAT_MAX_OBJECTS;i++)for(int s=0;s<2;s++)stats.polygon_tests+=cache->pieces[i][s].polygon_tests;
     for(int i=0;i<SWAT_MOTEL_INSTANCES;i++)for(int s=0;s<2;s++) {
         const Model* model=&cache->faces[i][s].model;
         for(int m=0;m<model->meshCount;m++) {
@@ -870,6 +873,7 @@ SwatWallFaceStats swat_environment_motel_face_stats(const SwatEnvironmentArt* ar
 SwatDoorArtStats swat_environment_door_stats(const SwatEnvironmentArt* art) {
     SwatDoorArtStats stats={0};if(!art->door_art)return stats;stats.builds=art->door_art->builds;
     for(int i=0;i<SWAT_DOOR_CACHE;i++) {
+        stats.polygon_tests+=art->door_art->meshes[i].polygon_tests;
         const Model* m=&art->door_art->meshes[i].model;if(m->meshCount)stats.models++;
         for(int j=0;j<m->meshCount;j++) {
             stats.vertices+=m->meshes[j].vertexCount;

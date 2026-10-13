@@ -115,6 +115,8 @@ bool swat_world_fragment_valid(const SwatObject* object,const float corners[4][2
 b3HullData* swat_world_fragment_hull(const SwatObject* object,const float corners[4][2]);
 bool swat_world_breachable(const SwatObject* object);
 int swat_world_breach(SwatWorld* world,int object,b3Pos position);
+// Mounted charge: local tool damage plus attenuated damage to nearby material.
+int swat_world_blast(SwatWorld* world,int object,b3Pos position);
 // Rebuilds the retained leaf's shapes from the shared latch-damage geometry.
 bool swat_world_break_latch(SwatWorld* world,int object);
 // Exact retained convex pieces; prepare before mutating physics/network state.

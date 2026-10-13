@@ -400,7 +400,8 @@ detonate your mounted charges. Another officer cannot fire your remote. The
 charge consumes stock when mounting finishes, breaks the latch with local leaf
 damage, emits a material-aware blast sound, and can stun/injure nearby people
 where physical visibility permits. The surviving leaf swings on its hinge and
-continues to provide cover. Mounted charges appear on the leaf
+continues to provide cover. Charges mount at the actual aimed contact and follow
+the leaf if its hinge moves before detonation. Mounted charges appear on the leaf
 and the HUD counts your remaining/mounted stock. Used tools cannot be refilled
 by swapping kits at staging. The annex's training door remains unlocked.
 
@@ -958,19 +959,30 @@ finite inventories:
 | Entry | 2 | 1 |
 
 Door tools break the latch and leave a locally notched, scorched leaf swinging
-on its existing hinge. Wall breachers cut through independent faces, timber and
+on its existing hinge, with localized damage at the mounted device. The mount
+uses the actual aim ray. Wall breachers center their opening at that contact:
+aim low for a walking passage, or higher for a window. They cut independent faces, timber and
 cavity material. All material outside the opening survives, including pieces
 on several sides of an internal hole. Small bullet impacts cut local holes in
 boards and timber; masonry retains its separate impact threshold. A breaching
-round can break door hardware when it hits the game's latch region.
+round can break door hardware when it hits the game's latch region. A nearby
+blast also damages exposed board, timber, glass and supported props across wall
+assemblies. Thin layers attenuate this secondary damage and solid cover blocks it.
 
 Collision, penetration, visibility, navigation, original clipped surface UVs
 and exposed edges use the same retained geometry. A changed object stores at
-most four cut profiles and 128 convex sections on its existing body/owner;
+most eight cut profiles and 128 convex sections on its existing body/owner;
 intact objects allocate no cut data. Tiny impact holes do not rebuild the
-navigation grid. Repeated impacts stop adding holes at three profiles per
-object, reserving the fourth for a wall tool; penetration continues to use the
-existing cover. Removed material supplies cosmetic chips and small rubble.
+navigation grid. Repeated impacts stop adding holes at six profiles per
+object, leaving two available for tools; penetration continues to use the
+existing cover. The lab's masonry finish is locally divided so one small region
+cannot exhaust the whole face. Subtraction only splits pieces intersecting a
+new opening, and source triangles are culled before expensive clipping.
+Bullet holes refresh bounded shadow regions; other geometry changes retain the
+full refresh path. Removed material supplies cosmetic chips and small rubble.
+At most twelve small attached fragments and twelve settled pieces share one
+opaque batch, preserving the mostly empty cavity. Selected original CC0 timber,
+gypsum and clay geometry uses vertex colours and adds no runtime texture maps.
 This is a bounded prototype: stress, connected sheet support, detached hinges
 and loose structural rubble are not simulated.
 
@@ -978,7 +990,7 @@ The optional **breach-lab** mission has one officer and three independent sample
 with two wall breachers for comparison. Use **7**, **K**, and **Backspace** to
 place, detonate and reset. The larger wall tool is represented separately from
 the compact door device. Original imported source models and textures stay intact.
-Peers need matching version-19 builds; start fresh recordings/saves for this
+Peers need matching version-20 builds; start fresh recordings/saves for this
 build. Existing recordings are retained, but earlier wire versions cannot load.
 
 ```bash
@@ -1282,7 +1294,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 19 as described above.
+destruction prototype requires version 20 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

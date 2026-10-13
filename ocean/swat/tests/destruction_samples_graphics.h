@@ -33,7 +33,12 @@ static void door_damage_graphics(SwatView* view,const char* directory) {
     Camera3D camera={Vector3Add(center,Vector3Add(Vector3Scale(normal,-2.5f),Vector3Scale(tangent,.18f))),
         center,{0,1,0},46,CAMERA_PERSPECTIVE};camera.position.y=1.48f;camera.target.y=1.15f;
     Image intact=sample_capture(view,camera);sample_export(intact,directory,"door-before");
-    assert(swat_world_breach(&sim.world,16,(b3Pos){center.x,center.y,center.z})==1);
+    for(int shot=0;shot<3;shot++) {
+        b3Pos p=b3OffsetPos(door->center,b3RotateVector(swat_rotation(door->yaw,door->pitch),swat_v(-door->half.x,-.35f+.2f*shot,-.1f)));
+        assert(swat_world_impact_at(&sim.world,16,p,34,false));
+    }
+    b3Pos mount=b3OffsetPos(door->center,b3RotateVector(swat_rotation(door->yaw,door->pitch),swat_v(-door->half.x,.3f,-.2f)));
+    assert(swat_world_blast(&sim.world,16,mount)>0);
     Image broken=sample_capture(view,camera);sample_export(broken,directory,"door-after");
     int pixels=impact_pixel_difference(intact,broken);assert(pixels>1000 && door->active && door->door_angle==0);
     swat_capture_snapshot(&sim,1,&state);swat_sim_close(&sim);swat_apply_map(&sim,&map);assert(swat_apply_snapshot(&sim,&state));
@@ -60,7 +65,7 @@ static void destruction_samples_graphics(SwatView* view,const char* directory) {
         Image intact=sample_capture(view,camera);char name[128];snprintf(name,sizeof(name),"%s-before",names[sample]);sample_export(intact,directory,name);
         SwatHit hit=swat_world_ray(&sim.world,(b3Pos){2.9f,1.12f,z[sample]},swat_v(1,0,0),1.5f,b3_nullBodyId);assert(hit.hit);
         if(!sample)assert(sim.world.objects[hit.index].door);
-        affected[sample]=swat_world_breach(&sim.world,hit.index,hit.point);assert(affected[sample]>0);
+        affected[sample]=swat_world_blast(&sim.world,hit.index,hit.point);assert(affected[sample]>0);
         Image broken=sample_capture(view,camera);snprintf(name,sizeof(name),"%s-after",names[sample]);sample_export(broken,directory,name);
         assert(impact_pixel_difference(intact,broken)>1000);UnloadImage(intact);UnloadImage(broken);
         if(sample==1) {
@@ -72,7 +77,8 @@ static void destruction_samples_graphics(SwatView* view,const char* directory) {
             for(int i=0;i<sim.world.count;i++){cuts[i]=sim.world.objects[i].cuts;sim.world.objects[i].cuts=NULL;}
             Image reference=room101_capture_size(view,camera,false,1200,720);sample_export(reference,directory,"lab-studs-surfaces-reference");
             for(int i=0;i<sim.world.count;i++)sim.world.objects[i].cuts=cuts[i];
-            int checked=0,mismatches=0;
+            int checked=0,mismatches=0;SwatBreachDetail details[SWAT_BREACH_DETAILS];
+            int detail_count=swat_breach_details(&sim.world,(b3Pos){camera.position.x,camera.position.y,camera.position.z},details);
             for(int y=6;y<714;y+=6)for(int x=6;x<1194;x+=6) {
                 Ray ray=GetScreenToWorldRayEx((Vector2){x+.5f,y+.5f},camera,1200,720);
                 SwatHit hit=swat_world_ray(&sim.world,(b3Pos){ray.position.x,ray.position.y,ray.position.z},
@@ -86,9 +92,13 @@ static void destruction_samples_graphics(SwatView* view,const char* directory) {
                 for(int c=0;c<o->cuts->count;c++) {
                     SwatCutPlane planes[SWAT_CUT_SIDES];swat_cut_planes(&o->cuts->cuts[c],planes);
                     float outside=-1e9f;
-                    for(int e=0;e<SWAT_CUT_SIDES;e++)outside=fmaxf(outside,planes[e].y*p.y+planes[e].z*p.z-planes[e].offset);
+                    for(int e=0;e<swat_cut_plane_count(&o->cuts->cuts[c]);e++)outside=fmaxf(outside,planes[e].y*p.y+planes[e].z*p.z-planes[e].offset);
                     near|=outside<.03f;
                 }
+                if(near)continue;
+                // Original face colours remain exact outside the small new
+                // attached pieces, which intentionally cover their seated roots.
+                for(int d=0;d<detail_count;d++)near|=b3Distance(hit.point,details[d].position)<.10f;
                 if(near)continue;
                 Color a=GetImageColor(unlit,x,y),b=GetImageColor(reference,x,y);
                 mismatches+=abs(a.r-b.r)>1 || abs(a.g-b.g)>1 || abs(a.b-b.b)>1;checked++;
@@ -103,5 +113,18 @@ static void destruction_samples_graphics(SwatView* view,const char* directory) {
     }
     swat_sim_close(&sim);
     printf("PASS playable material samples: door %d / framed layers %d / masonry %d affected components; production shadows/contact, exposed depth and immutable authority\n",affected[0],affected[1],affected[2]);
+    swat_sim_init(&sim,cfg,81);swat_environment_art_prepare_location(&view->environment,&sim.world);
+    Camera3D edge_camera={{-1,2.4f,1.8f},{4,1.25f,1.8f},{0,1,0},51,CAMERA_PERSPECTIVE};
+    Image edge_before=sample_capture(view,edge_camera);sample_export(edge_before,directory,"nearby-walls-before");
+    SwatHit edge_hit=swat_world_ray(&sim.world,(b3Pos){2.9f,1.3f,2.6f},swat_v(1,0,0),1.5f,b3_nullBodyId);assert(edge_hit.hit);
+    assert(swat_world_blast(&sim.world,edge_hit.index,edge_hit.point)>0);
+    int neighbours=0;for(int i=0;i<sim.world.count;i++) {
+        const SwatObject* o=&sim.world.objects[i];
+        if(fabsf(o->center.z)<1.8f && o->cuts)neighbours++;
+    }
+    assert(neighbours>0);
+    Image edge_after=sample_capture(view,edge_camera);sample_export(edge_after,directory,"nearby-walls-after");
+    assert(impact_pixel_difference(edge_before,edge_after)>1000);UnloadImage(edge_before);UnloadImage(edge_after);
+    printf("PASS visible cross-assembly blast: %d damaged middle-wall components\n",neighbours);swat_sim_close(&sim);
     door_damage_graphics(view,directory);
 }
