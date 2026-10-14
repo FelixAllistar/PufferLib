@@ -28,7 +28,7 @@ void swat_locomotion_observe(const SwatSim* s,int actor,b3Pos goal,float out[SWA
     for(int i=0;i<3;i++) {
         b3Pos probe=b3OffsetPos(feet,swat_add(swat_mul(forward,.6f*(i+1)),swat_v(0,.6f,0)));
         SwatHit hit=swat_world_ray(&s->world,probe,swat_v(0,-1,0),1.2f,c->body.body);
-        out[29+i]=hit.kind==SWAT_HIT_WORLD ? hit.distance/1.2f : 1;
+        out[29+i]=(hit.kind==SWAT_HIT_WORLD || hit.kind==SWAT_HIT_RUBBLE) ? hit.distance/1.2f : 1;
     }
 }
 static int action_value(float value,int limit) { return isfinite(value) ? (int)swat_clamp(value,0,(float)limit) : 0; }

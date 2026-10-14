@@ -3,7 +3,7 @@ BUILD ?= $(ROOT)/build/swat
 BOX3D ?= $(ROOT)/../box3d
 RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC := clang
-CFLAGS ?= -O2 -g -std=gnu11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
+CFLAGS ?= -O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
 CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
 CHARACTER := character_runtime.c character_view.c character_asset.c
@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test wall-support-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 lighting-bake: | $(BUILD)
@@ -60,7 +60,10 @@ net-test: $(ENET_LIB) | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_net
 net-probe: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) net_probe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/net_probe
-test: breach-geometry-test door-support-test
+test: breach-geometry-test door-support-test wall-support-test
+wall-support-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_wall_support.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_wall_support
+	$(BUILD)/test_wall_support $(BUILD)/wall-support-test.sgrp
 door-support-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_door_support.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_door_support
 	$(BUILD)/test_door_support $(BUILD)/door-support-test.sgrp

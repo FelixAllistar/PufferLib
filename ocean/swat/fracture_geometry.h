@@ -165,9 +165,10 @@ static inline int swat_polygons_join(SwatFracturePolygon* pieces,int count) {
     }
     return count;
 }
-static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int count,SwatFracturePolygon out[SWAT_CUT_SECTIONS]) {
+static inline int swat_cut_polygons_from(const SwatObject* o,const SwatCut* cuts,int count,const SwatFracturePolygon* retained,int retained_count,SwatFracturePolygon out[SWAT_CUT_SECTIONS]) {
     SwatFracturePolygon input[SWAT_CUT_SECTIONS]={0};int n=1;
-    if(o->door && o->latch_broken) {
+    if(retained) {n=retained_count;memcpy(input,retained,(size_t)n*sizeof(*input));}
+    else if(o->door && o->latch_broken) {
         n=SWAT_DOOR_SECTIONS;
         for(int i=0;i<n;i++){input[i].count=4;swat_door_section(o,i,input[i].vertices);}
     } else swat_source_polygon(o,&input[0]);
@@ -205,6 +206,9 @@ static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int 
     if(!count)memcpy(out,input,(size_t)n*sizeof(*out));
     return swat_polygons_join(out,n);
 }
+static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int count,SwatFracturePolygon out[SWAT_CUT_SECTIONS]) {
+    return swat_cut_polygons_from(o,cuts,count,NULL,0,out);
+}
 static inline bool swat_polygon_contains(const SwatFracturePolygon* p,float y,float z,float tolerance) {
     for(int i=0;i<p->count;i++) {int j=(i+1)%p->count;
         if((p->vertices[j][0]-p->vertices[i][0])*(z-p->vertices[i][1])-
@@ -218,6 +222,10 @@ static inline bool swat_cut_contains(const SwatCut* cut,float y,float z) {
     return true;
 }
 static inline bool swat_fracture_contains(const SwatObject* o,float y,float z) {
+    if(o->cuts && o->cuts->support_filtered) {
+        for(int s=0;s<o->cuts->section_count;s++)if(swat_polygon_contains(&o->cuts->sections[s],y,z,1e-6f))return true;
+        return false;
+    }
     SwatFracturePolygon original;swat_source_polygon(o,&original);
     if(!swat_polygon_contains(&original,y,z,1e-6f))return false;
     if(o->door && o->latch_broken && z>swat_door_edge(o,y))return false;
@@ -253,10 +261,39 @@ static inline float swat_fracture_exit(const SwatFracture* f,float half_x,b3Vec3
     }
     return found && end<1e6f ? end : 0;
 }
+static inline float swat_fracture_segment_thickness(const SwatFracture* f,float half_x,b3Vec3 origin,b3Vec3 delta) {
+    float intervals[SWAT_CUT_SECTIONS][2];int count=0;
+    for(int s=0;s<f->section_count;s++) {
+        const SwatFracturePolygon* p=&f->sections[s];float lo=0,hi=1;
+        for(int k=0;k<p->count+2 && lo<hi;k++) {
+            float value,rate;
+            if(k<2){float sign=k?-1:1;value=half_x-sign*origin.x;rate=-sign*delta.x;}
+            else {int i=k-2,j=(i+1)%p->count;float y=p->vertices[j][0]-p->vertices[i][0],z=p->vertices[j][1]-p->vertices[i][1];
+                value=y*(origin.z-p->vertices[i][1])-z*(origin.y-p->vertices[i][0]);rate=y*delta.z-z*delta.y;}
+            if(fabsf(rate)<1e-7f){if(value<0)hi=lo;}
+            else if(rate>0)lo=fmaxf(lo,-value/rate);else hi=fminf(hi,-value/rate);
+        }
+        if(lo<hi) {
+            int at=count++;while(at && intervals[at-1][0]>lo){memcpy(intervals[at],intervals[at-1],sizeof(intervals[at]));at--;}
+            intervals[at][0]=lo;intervals[at][1]=hi;
+        }
+    }
+    float length=0,start=0,end=0;
+    for(int i=0;i<count;i++) {
+        if(intervals[i][0]>end){length+=end-start;start=intervals[i][0];}
+        end=fmaxf(end,intervals[i][1]);
+    }
+    return (length+end-start)*b3Length(delta);
+}
 static inline uint32_t swat_fracture_hash(const SwatObject* o) {
     if(!o->cuts)return 0;
     uint32_t hash=2166136261u;const unsigned char* bytes=(const unsigned char*)o->cuts->cuts;
     for(size_t i=0;i<(size_t)o->cuts->count*sizeof(SwatCut);i++){hash^=bytes[i];hash*=16777619u;}
+    if(o->cuts->support_filtered) {
+        bytes=(const unsigned char*)o->cuts->sections;
+        for(size_t i=0;i<(size_t)o->cuts->section_count*sizeof(SwatFracturePolygon);i++){hash^=bytes[i];hash*=16777619u;}
+        hash^=(uint32_t)o->cuts->section_count;hash*=16777619u;
+    }
     return hash;
 }
 #endif

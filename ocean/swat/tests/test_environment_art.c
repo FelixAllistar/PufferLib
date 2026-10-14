@@ -207,7 +207,7 @@ static void room101_shadow(void* context,const SwatSim* s,bool cutaway) {
     SwatView* view=context;SwatEnvironmentArt* art=&view->environment;art->shadow_room=view->lighting.shadow_room;
     Model glasses=art->motel_personal[1];
     if(omit_personal_shadow)art->motel_personal[1]=(Model){0};
-    for(int i=1;i<s->world.count;i++) motel_piece(art,&s->world,&s->world.objects[i],true,cutaway);
+    for(int i=1;i<swat_world_geometry_count(&s->world);i++) motel_piece(art,&s->world,swat_world_geometry(&s->world,i),true,cutaway);
     art->motel_personal[1]=glasses;
     art->shadow_room=-1;
 }
@@ -225,7 +225,7 @@ static Image room101_capture_prepared(SwatView* view,Camera3D camera,bool lit,in
         if(!swat_environment_motel_draw(art,&sim.world,floor,false,false))
             DrawCubeV((Vector3){floor->center.x,floor->center.y,floor->center.z},(Vector3){2*floor->half.x,2*floor->half.y,2*floor->half.z},(Color){110,123,125,255});
     }
-    for(int i=1;i<sim.world.count;i++) motel_piece(art,&sim.world,&sim.world.objects[i],false,false);
+    for(int i=1;i<swat_world_geometry_count(&sim.world);i++) motel_piece(art,&sim.world,swat_world_geometry(&sim.world,i),false,false);
     swat_rubble_draw(&sim.world,camera,lit?light:NULL);
     swat_environment_art_transparent(art,&sim.world,camera.position,false);
     swat_environment_motel_cores_end(art);
@@ -955,6 +955,7 @@ static void culling_graphics(SwatView* view,const char* directory) {
 #include "shadow_reuse_graphics.h"
 #include "destruction_samples_graphics.h"
 #include "door_support_graphics.h"
+#include "wall_support_graphics.h"
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
@@ -964,6 +965,7 @@ int main(int argc,char** argv) {
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     if(argc>2 && !strcmp(argv[2],"destruction-samples")) {destruction_samples_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"door-support")) {door_support_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
+    if(argc>2 && !strcmp(argv[2],"wall-support")) {wall_support_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"shadow-reuse")) {shadow_reuse_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-windows")) {texture_owner_graphics("motel_windows_r1/room_window_insert_realistic_r1.glb");texture_owner_graphics("motel_windows_r1/lobby_glazed_facade_realistic_r1.glb");motel_windows_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"motel-nightstand")) {texture_owner_graphics("motel_props/painted_wooden_nightstand_floor_centered_2k.glb");motel_prop_graphics(&view,directory,4);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}

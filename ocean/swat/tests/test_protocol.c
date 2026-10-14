@@ -59,11 +59,19 @@ int main(void) {
             .kind=c<SWAT_IMPACT_PATCHES?(SwatCutKind)(SWAT_CUT_PATCH+c):SWAT_CUT_BREACH};
         o->door=(SwatDoorState){.broken_hinges=7,.position={0,1,0},.rotation=b3Quat_identity};
     }
+    state.rubble_count=SWAT_RUBBLE_CAPACITY;state.rubble_serial=SWAT_RUBBLE_CAPACITY;
+    for(int i=0;i<SWAT_RUBBLE_CAPACITY;i++) {
+        SwatRubbleState* r=&state.rubble[i];*r=(SwatRubbleState){.active=true,.serial=(uint32_t)i+1,.source=1,.health=1,.section_count=SWAT_RUBBLE_SECTIONS,.rotation=b3Quat_identity};
+        for(int s=0;s<SWAT_RUBBLE_SECTIONS;s++) {
+            SwatFracturePolygon* p=&r->sections[s];p->count=SWAT_CUT_VERTICES;p->exposed_edges=UINT32_MAX;
+            for(int k=0;k<p->count;k++){float a=2*SWAT_PI*k/p->count;p->vertices[k][0]=cosf(a)*.1f;p->vertices[k][1]=sinf(a)*.1f;}
+        }
+    }
     length=swat_encode_snapshot(bytes,sizeof(bytes),&state);
     assert(length && length<sizeof(bytes) && swat_decode_snapshot(&roundtrip,bytes,length));
     assert(roundtrip.object_count==SWAT_MAX_OBJECTS && roundtrip.objects[SWAT_MAX_OBJECTS-1].cut_count==SWAT_MAX_CUTS);
     assert(!swat_encode_snapshot(bytes,length-1,&state));
-    printf("PASS maximum damage packet: %d objects with %d profiles and loose-door poses each, %zu / %zu bytes\n",SWAT_MAX_OBJECTS,SWAT_MAX_CUTS,length,sizeof(bytes));
+    printf("PASS maximum damage packet: %d objects with %d profiles and loose-door poses each plus %d debris bodies with %d polygons of %d vertices, %zu / %zu bytes\n",SWAT_MAX_OBJECTS,SWAT_MAX_CUTS,SWAT_RUBBLE_CAPACITY,SWAT_RUBBLE_SECTIONS,SWAT_CUT_VERTICES,length,sizeof(bytes));
     puts("PASS protocol: explicit portable encoding, all truncations, NaN/trailing bytes, no partial mutation, exact replica pose/lean/crouch and destruction");
     return 0;
 }

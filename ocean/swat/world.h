@@ -16,7 +16,15 @@ extern "C" {
 #define SWAT_SURROUNDINGS_PARTS 15
 #define SWAT_GROUND_PARTS 54
 #define SWAT_MAX_ROOMS 8
-typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE,SWAT_HIT_LIGHT } SwatHitKind;
+#define SWAT_RUBBLE_CAPACITY 64
+#define SWAT_RUBBLE_SECTIONS 16
+#define SWAT_MAX_GEOMETRY (SWAT_MAX_OBJECTS+SWAT_RUBBLE_CAPACITY)
+typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE,SWAT_HIT_LIGHT,SWAT_HIT_RUBBLE } SwatHitKind;
+typedef enum SwatSupportRole {SWAT_SUPPORT_NONE,SWAT_SUPPORT_MEMBER,SWAT_SUPPORT_ANCHOR} SwatSupportRole;
+typedef struct SwatRubble SwatRubble;
+typedef struct SwatRubblePool SwatRubblePool;
+typedef struct SwatWallSupport SwatWallSupport;
+typedef struct SwatSupportPlan SwatSupportPlan;
 typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT, SWAT_PART_LIGHT,
     SWAT_PART_FENCE_WIRE,SWAT_PART_FENCE_RAIL,SWAT_PART_FENCE_POST,SWAT_PART_FIXTURE } SwatPart;
 typedef struct SwatRoom {
@@ -68,6 +76,8 @@ typedef struct SwatObject {
     float corners[4][2];
     SwatFracture* cuts; // Sparse damage geometry; intact objects allocate none.
     SwatDoorMotion* motion;
+    SwatRubble* rubble;
+    SwatSupportRole support_role;
     int wall_group;
     // Required attachment supports precede their child; -1 denotes unused slots.
     int supports[SWAT_MAX_SUPPORTS];
@@ -75,9 +85,33 @@ typedef struct SwatObject {
     b3Pos breach_position;
 } SwatObject;
 
+typedef struct SwatRubbleState {
+    uint32_t serial;
+    bool active,awake;
+    int source,section_count;
+    float health;
+    SwatFracturePolygon sections[SWAT_RUBBLE_SECTIONS];
+    b3Pos position;
+    b3Quat rotation;
+    b3Vec3 velocity,angular_velocity;
+} SwatRubbleState;
+struct SwatRubble {
+    SwatObject object;
+    SwatRubbleState state;
+    b3Pos origin;
+    float source_yaw;
+};
+struct SwatRubblePool {
+    uint32_t serial;
+    int count;
+    SwatRubble pieces[SWAT_RUBBLE_CAPACITY];
+};
+
 typedef struct SwatWorld {
     b3WorldId id;
     b3BodyId door_reference; // Unshaped fixed joint reference, created on demand.
+    SwatRubblePool* rubble;
+    SwatWallSupport* support;
     bool motel,storefront;
     b3MeshData* motel_meshes[SWAT_MOTEL_MESH_CAPACITY]; // Owned static collision; released after world destruction.
     b3MeshData* storefront_meshes[40];
@@ -96,7 +130,17 @@ typedef struct SwatWorld {
 } SwatWorld;
 
 static inline b3Quat swat_object_rotation(const SwatObject* o) {
-    return o->motion?o->motion->state.rotation:swat_rotation(o->yaw,o->pitch);
+    return o->rubble?o->rubble->state.rotation:o->motion?o->motion->state.rotation:swat_rotation(o->yaw,o->pitch);
+}
+static inline b3Vec3 swat_object_extent(const SwatObject* o) {
+    if(!o->motion && !o->rubble)return o->half;
+    b3Quat q=swat_object_rotation(o);
+    b3Vec3 x=b3RotateVector(q,swat_v(o->half.x,0,0)),y=b3RotateVector(q,swat_v(0,o->half.y,0)),z=b3RotateVector(q,swat_v(0,0,o->half.z));
+    return swat_v(fabsf(x.x)+fabsf(y.x)+fabsf(z.x),fabsf(x.y)+fabsf(y.y)+fabsf(z.y),fabsf(x.z)+fabsf(y.z)+fabsf(z.z));
+}
+static inline int swat_world_geometry_count(const SwatWorld* w) {return w->count+(w->rubble?w->rubble->count:0);}
+static inline const SwatObject* swat_world_geometry(const SwatWorld* w,int index) {
+    return index<w->count?&w->objects[index]:&w->rubble->pieces[index-w->count].object;
 }
 
 typedef struct SwatHit {
@@ -107,6 +151,16 @@ typedef struct SwatHit {
     b3Pos point;
     b3Vec3 normal;
 } SwatHit;
+static inline const SwatObject* swat_world_hit_object(const SwatWorld* w,SwatHit hit) {
+    if(hit.index<0)return NULL;
+    if(hit.kind==SWAT_HIT_WORLD && hit.index<w->count)return &w->objects[hit.index];
+    if(hit.kind==SWAT_HIT_RUBBLE && w->rubble && hit.index<w->rubble->count)return &w->rubble->pieces[hit.index].object;
+    return NULL;
+}
+static inline int swat_world_hit_layer(SwatHit hit) {return hit.index+(hit.kind==SWAT_HIT_RUBBLE?SWAT_MAX_OBJECTS:0);}
+static inline SwatMaterial swat_world_hit_material(const SwatWorld* w,SwatHit hit,SwatMaterial fallback) {
+    const SwatObject* o=swat_world_hit_object(w,hit);return o?o->material:fallback;
+}
 
 void swat_world_init(SwatWorld* world);
 void swat_world_close(SwatWorld* world);
@@ -132,6 +186,22 @@ float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
 // Synchronize moving leaves after the shared Box3D step, including devices.
 void swat_world_sync_doors(SwatWorld* world);
+void swat_world_sync_rubble(SwatWorld*);
+bool swat_world_hit_impact(SwatWorld*,SwatHit,float damage,bool door_round);
+void swat_world_support_enable(SwatWorld*,int group);
+void swat_world_support_begin(SwatWorld*);
+void swat_world_support_end(SwatWorld*);
+void swat_world_support_setup(SwatWorld*);
+uint32_t swat_world_support_mask(const SwatWorld*,int group);
+SwatSupportPlan* swat_world_support_prepare(const SwatWorld*,const SwatObject* candidate,uint32_t groups);
+void swat_world_support_commit(SwatWorld*,SwatSupportPlan*,bool spawn);
+void swat_world_support_close(SwatSupportPlan*);
+bool swat_world_support_active_valid(const SwatSupportPlan*,const SwatObject*);
+void swat_world_support_take(SwatSupportPlan*,SwatFracture* cuts[SWAT_MAX_OBJECTS]);
+bool swat_world_rubble_valid(const SwatWorld*,const SwatRubbleState*);
+bool swat_world_rubble_separated(const SwatObject*,const SwatFracture*,const SwatRubbleState*);
+SwatFracture* swat_world_rubble_prepare(const SwatWorld*,const SwatRubbleState*);
+void swat_world_rubble_restore(SwatWorld*,int slot,const SwatRubbleState*,SwatFracture* prepared);
 SwatDoorMotion* swat_world_door_prepare(void);
 unsigned int swat_world_door_hinges(const SwatObject*);
 // Caller prepares sparse storage before an atomic network transaction.
@@ -149,6 +219,7 @@ int swat_world_blast(SwatWorld* world,int object,b3Pos position);
 bool swat_world_break_latch(SwatWorld* world,int object);
 // Exact retained convex pieces; prepare before mutating physics/network state.
 SwatFracture* swat_world_cut_prepare(const SwatObject*,const SwatCut*,int count);
+SwatFracture* swat_world_sections_prepare(const SwatObject*,const SwatCut*,int count,const SwatFracturePolygon*,int sections);
 void swat_world_cut_apply(SwatWorld*,int object,SwatFracture* prepared);
 void swat_world_cut_close(SwatFracture*);
 // Returns 0 unchanged, 1 partially cut, 2 removed, -1 rejected.

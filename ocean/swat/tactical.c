@@ -276,12 +276,12 @@ void swat_projectiles_step(SwatSim* s) {
         SwatTag* b=b3Body_GetUserData(b3Shape_GetBody(e->shapeIdB));
         SwatTag* projectile=a && a->kind==SWAT_HIT_PROJECTILE ? a : (b && b->kind==SWAT_HIT_PROJECTILE ? b : NULL);
         SwatTag* surface=projectile==a ? b : a;
-        if(!projectile || !surface || surface->kind!=SWAT_HIT_WORLD) continue;
+        if(!projectile || !surface || (surface->kind!=SWAT_HIT_WORLD && surface->kind!=SWAT_HIT_RUBBLE)) continue;
         SwatProjectile* p=&s->projectiles[projectile->index];
         if(s->tick-p->last_impact_tick<6 || e->approachSpeed<.6f) continue;
         p->last_impact_tick=s->tick;
         swat_sound_surface(&s->sounds,s->tick,p->owner,SWAT_SOUND_IMPACT,e->point,
-            swat_clamp(e->approachSpeed*.1f,.1f,1),20,s->world.objects[surface->index].material);
+            swat_clamp(e->approachSpeed*.1f,.1f,1),20,swat_world_hit_material(&s->world,(SwatHit){.kind=surface->kind,.index=surface->index},SWAT_CONCRETE));
     }
     for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
         SwatProjectile* p=&s->projectiles[i]; if(!p->active) continue;

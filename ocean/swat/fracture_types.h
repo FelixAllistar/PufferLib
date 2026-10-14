@@ -20,6 +20,7 @@ typedef struct SwatCut {
 typedef struct SwatFracturePolygon {int count;float vertices[SWAT_CUT_VERTICES][2];uint32_t exposed_edges;} SwatFracturePolygon;
 typedef struct SwatFracture {
     int count,section_count;
+    bool support_filtered; // Sections contain only material still attached to anchors.
     SwatCut cuts[SWAT_MAX_CUTS];
     SwatFracturePolygon* sections;
     b3HullData** pending_hulls; // Prepared transaction; NULL after physics commit.

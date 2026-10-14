@@ -533,14 +533,14 @@ static uint32_t hash_bytes(uint32_t hash,const void* data,size_t size) {
 }
 static uint32_t geometry_hash(const SwatWorld* world,bool split) {
     uint32_t hash=2166136261u;
-    for(int i=0;i<world->count;i++) {
-        const SwatObject* o=&world->objects[i];
-        if(split && o->door)continue;
+    for(int i=0;i<swat_world_geometry_count(world);i++) {
+        const SwatObject* o=swat_world_geometry(world,i);
+        if(split && (o->door || o->rubble))continue;
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->active,sizeof(o->active));
         if(!o->active || o->material==SWAT_GLASS) continue;
         hash=hash_bytes(hash,&o->center,sizeof(o->center)); hash=hash_bytes(hash,&o->half,sizeof(o->half));
         hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw)); hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
-        if(o->motion)hash=hash_bytes(hash,&o->motion->state.rotation,sizeof(b3Quat));
+        if(o->motion || o->rubble){b3Quat rotation=swat_object_rotation(o);hash=hash_bytes(hash,&rotation,sizeof(rotation));}
         hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
         uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));
@@ -570,16 +570,17 @@ bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 h
 }
 static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split,const SwatLighting* face) {
     uint32_t hash=hash_bytes(2166136261u,&world->rooms[room],sizeof(SwatRoom));
-    for(int i=0;i<world->count;i++) {
-        const SwatObject* o=&world->objects[i];
-        if((split && o->door) || !o->active || o->material==SWAT_GLASS || !swat_lighting_room_intersects(&world->rooms[room],
-            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+    for(int i=0;i<swat_world_geometry_count(world);i++) {
+        const SwatObject* o=swat_world_geometry(world,i);
+        b3Vec3 extent=swat_object_extent(o);Vector3 half={extent.x,extent.y,extent.z};
+        if((split && (o->door || o->rubble)) || !o->active || o->material==SWAT_GLASS || !swat_lighting_room_intersects(&world->rooms[room],
+            (Vector3){o->center.x,o->center.y,o->center.z},half))continue;
         if(face && !swat_lighting_face_intersects(face,
-            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+            (Vector3){o->center.x,o->center.y,o->center.z},half))continue;
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
         hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
         hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
-        if(o->motion)hash=hash_bytes(hash,&o->motion->state.rotation,sizeof(b3Quat));
+        if(o->motion || o->rubble){b3Quat rotation=swat_object_rotation(o);hash=hash_bytes(hash,&rotation,sizeof(rotation));}
         hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
         uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));
@@ -591,17 +592,18 @@ static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split,co
 // forcing every wall/prop to be submitted again for each animated door angle.
 static uint32_t door_geometry_hash(const SwatLighting* light,const SwatWorld* world,int room) {
     uint32_t hash=2166136261u;
-    for(int i=0;i<world->count;i++) {
-        const SwatObject* o=&world->objects[i];
-        if(!o->door || !o->active || o->material==SWAT_GLASS)continue;
+    for(int i=0;i<swat_world_geometry_count(world);i++) {
+        const SwatObject* o=swat_world_geometry(world,i);
+        if((!o->door && !o->rubble) || !o->active || o->material==SWAT_GLASS)continue;
+        b3Vec3 extent=swat_object_extent(o);Vector3 half={extent.x,extent.y,extent.z};
         if(room>=0 && !swat_lighting_room_intersects(&world->rooms[room],
-            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+            (Vector3){o->center.x,o->center.y,o->center.z},half))continue;
         if(room>=0 && !swat_lighting_face_intersects(light,
-            (Vector3){o->center.x,o->center.y,o->center.z},(Vector3){o->half.x,o->half.y,o->half.z}))continue;
+            (Vector3){o->center.x,o->center.y,o->center.z},half))continue;
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
         hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
         hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
-        if(o->motion)hash=hash_bytes(hash,&o->motion->state.rotation,sizeof(b3Quat));
+        if(o->motion || o->rubble){b3Quat rotation=swat_object_rotation(o);hash=hash_bytes(hash,&rotation,sizeof(rotation));}
         hash=hash_bytes(hash,&o->latch_broken,sizeof(o->latch_broken));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
         uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));

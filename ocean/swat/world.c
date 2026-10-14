@@ -6,6 +6,7 @@
 #include "door_damage.h"
 #include "fracture_geometry.h"
 #include "door_motion.h"
+#include "wall_support.h"
 
 static float swat_bounce(float a,uint64_t ma,float b,uint64_t mb) {
     (void)ma; (void)mb;
@@ -27,6 +28,8 @@ void swat_world_init(SwatWorld* w) {
 }
 
 void swat_world_close(SwatWorld* w) {
+    if(w->rubble){for(int i=0;i<w->rubble->count;i++)rubble_remove(&w->rubble->pieces[i]);free(w->rubble);}
+    if(w->support){for(int i=0;i<w->count;i++)swat_world_cut_close(w->support->before[i]);free(w->support);}
     for(int i=0;i<w->count;i++){swat_world_cut_close(w->objects[i].cuts);free(w->objects[i].motion);}
     if (B3_IS_NON_NULL(w->id)) b3DestroyWorld(w->id);
     for(int i=0;i<SWAT_MOTEL_MESH_CAPACITY;i++) if(w->motel_meshes[i]) b3DestroyMesh(w->motel_meshes[i]);
@@ -99,9 +102,10 @@ static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     b3BodyId body = b3Shape_GetBody(shape);
     if (B3_ID_EQUALS(body,c->ignore)) return -1.0f;
     SwatTag* tag = (SwatTag*)b3Body_GetUserData(body);
-    if(tag && tag->kind==SWAT_HIT_WORLD)for(int i=0;i<c->layer_count;i++)if(tag->index==c->layers[i])return -1.0f;
+    if(tag && (tag->kind==SWAT_HIT_WORLD || tag->kind==SWAT_HIT_RUBBLE))for(int i=0;i<c->layer_count;i++)
+        if(tag->index+(tag->kind==SWAT_HIT_RUBBLE?SWAT_MAX_OBJECTS:0)==c->layers[i])return -1.0f;
     if(tag && tag->kind==SWAT_HIT_PROJECTILE) return -1.0f;
-    if(c->world_only && tag && tag->kind!=SWAT_HIT_WORLD) return -1.0f;
+    if(c->world_only && tag && tag->kind!=SWAT_HIT_WORLD && tag->kind!=SWAT_HIT_RUBBLE) return -1.0f;
     if(c->optical && tag && tag->kind==SWAT_HIT_WORLD && tag->index>=0 &&
        tag->index<c->optical->count && c->optical->objects[tag->index].material==SWAT_GLASS)return -1.0f;
     if (fraction <= c->result.fraction) {
@@ -196,7 +200,7 @@ bool swat_world_damage(SwatWorld* w, int object, float damage) {
             child->health=0;remove_object(w,child);break;
         }
     }
-    return true;
+    support_changed(w,object);return true;
 }
 
 bool swat_world_impact(SwatWorld* w,int object,float damage) {
@@ -222,7 +226,7 @@ bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool 
         const SwatMaterialDef* m=swat_material(o->material);float useful=fmaxf(0,damage-m->impact_threshold);
         if(!useful)return false;
         float radius=swat_clamp((board?.018f:.0125f)*sqrtf(useful/fmaxf(m->fracture_health,1)),.005f,.04f);
-        SwatObject source=*o;bool changed=false;
+        SwatObject source=*o;bool changed=false;support_begin(w);
         int first=!o->door && o->wall_group>0?o->wall_group-1:object;
         for(int i=first;i<w->count;i++) {
             SwatObject* peer=&w->objects[i];
@@ -235,6 +239,7 @@ bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool 
             SwatCut cut=swat_impact_patch(peer,p.y,p.z,radius);
             changed|=swat_world_cut(w,i,cut)>0;
         }
+        support_end(w);
         if(changed && o->door)door_motion_impulse(o,point,fminf(4,damage*.045f));
         return changed;
     }
@@ -288,12 +293,16 @@ void swat_world_cut_close(SwatFracture* f) {
     free(f->sections);free(f);
 }
 SwatFracture* swat_world_cut_prepare(const SwatObject* o,const SwatCut* cuts,int count) {
-    if(count<1 || count>SWAT_MAX_CUTS || !cuts ||
+    if(count<0 || count>SWAT_MAX_CUTS || (count && !cuts) || (!count && o->support_role!=SWAT_SUPPORT_MEMBER) ||
        (!o->door && o->part!=SWAT_PART_SKIN && o->part!=SWAT_PART_FRAME))return NULL;
     SwatFracturePolygon pieces[SWAT_CUT_SECTIONS];int n=swat_cut_polygons(o,cuts,count,pieces);
     if(n<0)return NULL;
+    return swat_world_sections_prepare(o,cuts,count,pieces,n);
+}
+SwatFracture* swat_world_sections_prepare(const SwatObject* o,const SwatCut* cuts,int count,const SwatFracturePolygon* pieces,int n) {
+    if(count<0 || count>SWAT_MAX_CUTS || n<0 || n>SWAT_CUT_SECTIONS)return NULL;
     SwatFracture* f=calloc(1,sizeof(*f));if(!f)return NULL;
-    f->count=count;f->section_count=n;memcpy(f->cuts,cuts,(size_t)count*sizeof(*cuts));
+    f->count=count;f->section_count=n;if(count)memcpy(f->cuts,cuts,(size_t)count*sizeof(*cuts));
     if(n) {
         f->sections=malloc((size_t)n*sizeof(*f->sections));f->pending_hulls=calloc((size_t)n,sizeof(*f->pending_hulls));
         if(!f->sections || !f->pending_hulls){swat_world_cut_close(f);return NULL;}
@@ -303,6 +312,7 @@ SwatFracture* swat_world_cut_prepare(const SwatObject* o,const SwatCut* cuts,int
         SwatFracturePolygon original;swat_source_polygon(o,&original);
         for(int s=0;s<n;s++) {
             SwatFracturePolygon* p=&f->sections[s];p->exposed_edges=0;
+            memset(p->vertices+p->count,0,(size_t)(SWAT_CUT_VERTICES-p->count)*sizeof(*p->vertices));
             for(int e=0;e<p->count;e++) {
                 const float* a=p->vertices[e];const float* b=p->vertices[(e+1)%p->count];
                 float dy=b[0]-a[0],dz=b[1]-a[1],length=hypotf(dy,dz);
@@ -361,7 +371,14 @@ int swat_world_cut(SwatWorld* w,int object,SwatCut cut) {
         cuts[patch]=swat_patch_union(cuts[patch],cut);
     }
     else {if(count==SWAT_MAX_CUTS)return -1;cuts[count++]=cut;}
-    SwatFracture* prepared=swat_world_cut_prepare(o,cuts,count);if(!prepared)return -1;
+    SwatFracture* prepared;
+    if(o->cuts && o->cuts->support_filtered) {
+        SwatFracturePolygon pieces[SWAT_CUT_SECTIONS];
+        int n=swat_cut_polygons_from(o,cuts,count,o->cuts->sections,o->cuts->section_count,pieces);
+        prepared=n<0?NULL:swat_world_sections_prepare(o,cuts,count,pieces,n);
+        if(prepared)prepared->support_filtered=true;
+    } else prepared=swat_world_cut_prepare(o,cuts,count);
+    if(!prepared)return -1;
     float old_area=0,new_area=0;
     if(o->cuts)for(int i=0;i<o->cuts->section_count;i++)old_area+=swat_polygon_area(&o->cuts->sections[i]);
     else {SwatFracturePolygon p;swat_source_polygon(o,&p);old_area=swat_polygon_area(&p);}
@@ -372,11 +389,11 @@ int swat_world_cut(SwatWorld* w,int object,SwatCut cut) {
         SwatObject candidate=*o;candidate.cuts=prepared;
         if(swat_world_door_hinges(&candidate) && !(motion=swat_world_door_prepare())){swat_world_cut_close(prepared);return -1;}
     }
-    swat_world_cut_apply(w,object,prepared);
+    support_preserve(w,object);swat_world_cut_apply(w,object,prepared);
     if(!prepared->section_count){swat_world_damage(w,object,o->max_health);return 2;}
     if(motion)door_motion_begin(o,motion);
     door_motion_refresh(w,o,true);
-    o->health*=new_area/old_area;w->generation++;return 1;
+    o->health*=new_area/old_area;w->generation++;support_changed(w,object);return o->active?1:2;
 }
 
 bool swat_world_breachable(const SwatObject* o) {
@@ -429,6 +446,7 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
         if(changed>0 && swat_cut_contains(&local,.06f,source.half.z-.01f))swat_world_break_latch(w,object);
         return changed>0?1:0;
     }
+    support_begin(w);
     bool fence=source.part==SWAT_PART_FENCE_WIRE || source.part==SWAT_PART_FENCE_RAIL;
     b3Vec3 tangent=swat_v(sinf(source.yaw),0,cosf(source.yaw));
     if(fence)tangent=swat_v(cosf(source.yaw),0,-sinf(source.yaw));
@@ -455,7 +473,7 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     // Collision divisions are not manufactured panels. Retained sheet material
     // stays connected across them; an AABB/stud overlap cannot decide whether
     // to delete a whole division outside the physical opening.
-    return removed;
+    support_end(w);return removed;
 }
 
 static float blast_transmission(const SwatWorld* w,b3Pos from,b3Pos to,int target) {
@@ -467,9 +485,9 @@ static float blast_transmission(const SwatWorld* w,b3Pos from,b3Pos to,int targe
         SwatRayContext query={0};query.result.fraction=1;query.result.index=-1;
         query.world_only=true;query.layers=crossed;query.layer_count=count;
         b3World_CastRay(w->id,from,delta,b3DefaultQueryFilter(),swat_ray_callback,&query);
-        if(!query.result.hit || query.result.index==target || query.result.fraction>.999f)return transmission;
+        if(!query.result.hit || swat_world_hit_layer(query.result)==target || query.result.fraction>.999f)return transmission;
         if(query.result.index<0)return 0;
-        const SwatObject* cover=&w->objects[query.result.index];float through=0;
+        const SwatObject* cover=swat_world_hit_object(w,query.result);if(!cover)return 0;float through=0;
         switch(cover->material) {
         case SWAT_GLASS:case SWAT_OPAQUE_GLASS:through=.85f;break;
         case SWAT_DRYWALL:through=.55f;break;
@@ -479,7 +497,7 @@ static float blast_transmission(const SwatWorld* w,b3Pos from,b3Pos to,int targe
         default:break;
         }
         transmission*=through;if(transmission<.08f)return 0;
-        crossed[count++]=query.result.index;
+        crossed[count++]=swat_world_hit_layer(query.result);
     }
     return 0;
 }
@@ -504,6 +522,7 @@ static b3Pos blast_group_anchor(const SwatWorld* w,const SwatObject* target,b3Po
 }
 int swat_world_blast(SwatWorld* w,int object,b3Pos position) {
     if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object]))return 0;
+    support_begin(w);
     SwatObject source=w->objects[object];b3Quat rotation=swat_object_rotation(&source);
     b3Vec3 mount=b3InvRotateVector(rotation,b3SubPos(position,source.center));
     int affected=swat_world_breach(w,object,position);
@@ -545,6 +564,15 @@ int swat_world_blast(SwatWorld* w,int object,b3Pos position) {
                 .width=scale*(.08f+.26f*strength[i]),.seed=(unsigned int)(object+1),.kind=SWAT_CUT_BREACH};
             affected+=swat_world_cut(w,i,cut)>0;
         } else affected+=swat_world_damage(w,i,(wood?55:120)*strength[i]);
+    }
+    support_end(w);
+    if(w->rubble)for(int i=0;i<w->rubble->count;i++) {
+        SwatRubble* r=&w->rubble->pieces[i];if(!r->object.active)continue;
+        b3Pos point=b3Body_GetWorldCenter(r->object.body);b3Vec3 delta=b3SubPos(point,position);float distance=b3Length(delta);
+        if(distance>=range)continue;
+        float impulse=fminf(20,b3Body_GetMass(r->object.body)*1.5f)*(1-distance/range)*blast_transmission(w,origin,point,SWAT_MAX_OBJECTS+i);
+        b3Body_ApplyLinearImpulse(r->object.body,swat_mul(swat_normalize(delta),impulse),point,true);
+        r->state.velocity=b3Body_GetLinearVelocity(r->object.body);r->state.angular_velocity=b3Body_GetAngularVelocity(r->object.body);r->state.awake=b3Body_IsAwake(r->object.body);
     }
     return affected;
 }

@@ -481,8 +481,11 @@ static Color wear_color(const SwatObject* o,float shade) {
     return (Color){value,value,value,255};
 }
 
+static b3Pos surface_origin(const SwatObject* o){return o->rubble?o->rubble->origin:o->center;}
+static float surface_yaw(const SwatObject* o){return o->rubble?o->rubble->source_yaw:o->yaw;}
 static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,bool metric,bool sides_only,bool material_color) {
-    float oz=sinf(o->yaw)*(float)o->center.x+cosf(o->yaw)*(float)o->center.z;
+    b3Pos origin=surface_origin(o);float yaw=surface_yaw(o);
+    float oz=sinf(yaw)*(float)origin.x+cosf(yaw)*(float)origin.z;
     // Changing rlgl primitive mode resets its texture. Bind the face map after
     // selecting triangles so surviving areas keep the original painted face.
     rlBegin(RL_TRIANGLES);rlSetTexture(texture.id);
@@ -495,7 +498,7 @@ static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vec
             rlNormal3f(side,0,0);
             for(int k=1;k<p->count-1;k++) {int v[3]={0,side>0?k:k+1,side>0?k+1:k};
                 for(int j=0;j<3;j++) {const float* a=p->vertices[v[j]];
-                    rlTexCoord2f((oz+a[1])/tile.x,(metric?1:-1)*((float)o->center.y+a[0])/tile.y);
+                    rlTexCoord2f((oz+a[1])/tile.x,(metric?1:-1)*((float)origin.y+a[0])/tile.y);
                     rlVertex3f(side*o->half.x,a[0],a[1]);}
             }
         }
@@ -626,7 +629,7 @@ static void clear_surface(const SwatEnvironmentArt* art) {
     swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
 }
 void swat_environment_object_rotate(const SwatObject* o) {
-    if(!o->motion){rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);return;}
+    if(!o->motion && !o->rubble){rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);return;}
     b3Quat q=swat_object_rotation(o);
     Matrix rotation=QuaternionToMatrix((Quaternion){q.v.x,q.v.y,q.v.z,q.s});
     rlMultMatrixf(MatrixToFloat(rotation));
@@ -1022,6 +1025,9 @@ static bool window_fallback(const SwatObject* o,bool shadow) {
 }
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel)return false;
+    // Enabled party walls use the original shared board/timber surfaces.
+    // Pool slot indices are independent of authored motel instance IDs.
+    if(o->rubble)return false;
     if(o->tag.index==0) {
         const SwatSurfaceMaps* m=&art->motel_asphalt;
         if(!o->active || shadow || !m->color.id)return false;
