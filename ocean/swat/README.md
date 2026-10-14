@@ -397,10 +397,11 @@ being interrupted resets progress. Picking leaves the door closed; **F** opens
 it afterward. Picks are reusable in every kit. Hold **7** for 1.5 seconds to mount
 a breaching charge to a fully closed door, then retreat and press **K** to
 detonate your mounted charges. Another officer cannot fire your remote. The
-charge consumes stock when mounting finishes, breaks the latch with local leaf
-damage, emits a material-aware blast sound, and can stun/injure nearby people
-where physical visibility permits. The surviving leaf swings on its hinge and
-continues to provide cover. Charges mount at the actual aimed contact and follow
+charge consumes stock when mounting finishes, cuts local leaf material, emits a
+material-aware blast sound, and can stun/injure nearby people where physical
+visibility permits. A hole away from the latch leaves the lock intact. A hole
+through the hardware releases it, but the surviving leaf stays closed until
+opened separately with **F**. Charges mount at the actual aimed contact and follow
 the leaf if its hinge moves before detonation. Mounted charges appear on the leaf
 and the HUD counts your remaining/mounted stock. Used tools cannot be refilled
 by swapping kits at staging. The annex's training door remains unlocked.
@@ -958,8 +959,9 @@ finite inventories:
 | Control | 1 | 0 |
 | Entry | 2 | 1 |
 
-Door tools break the latch and leave a locally notched, scorched leaf swinging
-on its existing hinge, with localized damage at the mounted device. The mount
+Door tools cut and scorch the leaf at the mounted device. Only damage reaching
+the hardware releases the latch; the charge never commands the leaf to open.
+The existing hinge and remaining cover stay in place. The mount
 uses the actual aim ray. Wall breachers center their opening at that contact:
 aim low for a walking passage, or higher for a window. They cut independent faces, timber and
 cavity material. All material outside the opening survives, including pieces
@@ -971,14 +973,17 @@ assemblies. Thin layers attenuate this secondary damage and solid cover blocks i
 
 Collision, penetration, visibility, navigation, original clipped surface UVs
 and exposed edges use the same retained geometry. A changed object stores at
-most eight cut profiles and 128 convex sections on its existing body/owner;
+most 32 cut profiles and 256 convex sections on its existing body/owner;
 intact objects allocate no cut data. Tiny impact holes do not rebuild the
-navigation grid. Repeated impacts stop adding holes at six profiles per
-object, leaving two available for tools; penetration continues to use the
-existing cover. The lab's masonry finish is locally divided so one small region
-cannot exhaust the whole face. Subtraction only splits pieces intersecting a
-new opening, and source triangles are culled before expensive clipping.
-Bullet holes refresh bounded shadow regions; other geometry changes retain the
+navigation grid. Ordinary hits share thirty local damage patches: new hits grow
+the nearby opening, joining local damaged material instead of exhausting a
+lifetime hole counter. Two profiles remain available for tools. The lab's
+masonry finish also has local hidden divisions. Subtraction only splits pieces
+intersecting an opening, and adjacent retained polygons join when their union
+is convex without filling any hole. Source triangles are culled before clipping.
+Door scorch is evaluated per pixel in the leaf's local coordinates, keeping it
+near the damage without subdividing the original art for colour interpolation.
+Bullet damage refreshes bounded shadow regions; other geometry changes retain the
 full refresh path. Removed material supplies cosmetic chips and small rubble.
 At most twelve small attached fragments and twelve settled pieces share one
 opaque batch, preserving the mostly empty cavity. Selected original CC0 timber,
@@ -990,7 +995,7 @@ The optional **breach-lab** mission has one officer and three independent sample
 with two wall breachers for comparison. Use **7**, **K**, and **Backspace** to
 place, detonate and reset. The larger wall tool is represented separately from
 the compact door device. Original imported source models and textures stay intact.
-Peers need matching version-20 builds; start fresh recordings/saves for this
+Peers need matching version-21 builds; start fresh recordings/saves for this
 build. Existing recordings are retained, but earlier wire versions cannot load.
 
 ```bash
@@ -1005,7 +1010,7 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **19**; older clients and
+breach. The network geometry contract is version **21**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The motel's east wire fence has actual openings for bullets and porous sound
@@ -1294,7 +1299,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 20 as described above.
+destruction prototype requires version 21 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

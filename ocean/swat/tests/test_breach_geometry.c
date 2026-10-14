@@ -212,12 +212,16 @@ static void impact_across_partition(void) {
         b3Pos p={-.3f,1.35f,side*.006f};b3Vec3 ray=swat_v(.4f,0,0);
         assert(!swat_world_object_ray(&server.world.objects[a],p,ray) && !swat_world_object_ray(&server.world.objects[b],p,ray));
     }
-    for(int j=0;j<SWAT_MAX_IMPACT_CUTS-1;j++)assert(swat_world_impact_at(&server.world,a,(b3Pos){-.0125f,.4f+j*.3f,-.4f},34,false));
-    assert(server.world.objects[a].cuts->count==SWAT_MAX_IMPACT_CUTS);
-    assert(!swat_world_impact_at(&server.world,a,(b3Pos){-.0125f,2.2f,-.4f},34,false));
-    assert(swat_world_breach(&server.world,a,(b3Pos){-.0125f,1.05f,0})>0 && server.world.objects[a].cuts->count==SWAT_MAX_IMPACT_CUTS+1);
+    for(int j=0;j<12;j++) {
+        b3Pos p={-.0125f,.4f+j*.09f,-.4f};
+        assert(swat_world_object_ray(&server.world.objects[a],b3OffsetPos(p,swat_v(-.2f,0,0)),swat_v(.4f,0,0)));
+        assert(swat_world_impact_at(&server.world,a,p,34,false));
+        assert(!swat_world_object_ray(&server.world.objects[a],b3OffsetPos(p,swat_v(-.2f,0,0)),swat_v(.4f,0,0)));
+    }
+    assert(server.world.objects[a].cuts->count<12);
+    assert(swat_world_breach(&server.world,a,(b3Pos){-.0125f,1.05f,0})>0);
     swat_sim_close(&server);
-    puts("PASS impact across hidden divisions: one round spans both neighbors, opposite sheet intact; bounded impacts reserve a wall-tool profile");
+    puts("PASS impact across hidden divisions: shared physical opening, opposite sheet intact; repeated impacts grow local damage and preserve tool capacity");
 }
 static void retained_door(void) {
     memset(&server,0,sizeof(server));server.config=swat_default_config();server.config.mission=SWAT_RANGE;server.actor_count=1;
@@ -225,16 +229,18 @@ static void retained_door(void) {
     int id=swat_world_box(&server.world,(b3Pos){0,1.1f,0},swat_v(.022f,1.05f,.54f),SWAT_WOOD,120);
     SwatObject* o=&server.world.objects[id];o->door=o->locked=true;o->hinge=(b3Pos){0,1.1f,-.54f};
     swat_sim_spawn_actor(&server,0,SWAT_OFFICER,(b3Pos){-5,0,0},0);swat_capture_map(&server,1,&map);swat_apply_map(&replica,&map);
-    for(int hit=0;hit<SWAT_MAX_IMPACT_CUTS;hit++)
+    for(int hit=0;hit<6;hit++)
         assert(swat_world_impact_at(&server.world,id,(b3Pos){-.022f,.62f+.15f*hit,-.08f},34,false));
-    assert(o->active && !o->latch_broken && o->cuts && o->cuts->count==SWAT_MAX_IMPACT_CUTS);
+    assert(o->active && !o->latch_broken && o->cuts);
     // Separated impacts only subdivide nearby geometry; a later latch failure
     // must still fit the compound-body budget and retain all previous holes.
     assert(o->cuts->section_count<64);
     o->breach_owner=0;o->breach_position=(b3Pos){-.022f,1.72f,.12f};
     b3Vec3 mount=b3SubPos(o->breach_position,o->center);
     float body_health=o->health;
-    assert(swat_world_breach(&server.world,id,(b3Pos){-.022f,1.16f,.4f})==1 && o->active && o->latch_broken && !o->locked && o->health==body_health);
+    assert(swat_world_breach(&server.world,id,(b3Pos){-.022f,1.16f,.4f})==1 && o->active && o->latch_broken && !o->locked && o->health<body_health);
+    for(int i=0;i<90;i++)swat_world_step_doors(&server.world);
+    assert(!o->door_open && o->door_angle==0);
     assert(server.world.count==2 && b3Body_GetShapeCount(o->body)==o->cuts->section_count);
     b3Pos center={-.4f,1.1f,0},notch={-.4f,1.16f,.49f},top={-.4f,2.0f,.44f};b3Vec3 across=swat_v(.8f,0,0);
     assert(swat_world_object_ray(&replica.world.objects[id],notch,across) && !swat_world_object_ray(o,notch,across));
@@ -242,6 +248,7 @@ static void retained_door(void) {
     b3Capsule standing={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
     assert(b3World_CastMover(server.world.id,(b3Pos){-.5f,.05f,0},&standing,swat_v(1,0,0),b3DefaultQueryFilter(),only_piece,o)<.9f);
     assert(fabsf(swat_world_exit_distance(o,(b3Pos){-.022f,1.1f,0},swat_v(1,0,0))-.044f)<1e-5f);
+    o->door_open=true; // Explicit open command after the latch has been released.
     for(int i=0;i<90;i++)swat_world_step_doors(&server.world);
     assert(o->door_angle>1.5f && o->active && b3Body_GetShapeCount(o->body)==o->cuts->section_count);
     assert(o->breach_owner==0 && b3Length(b3Sub(mount,b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(o->breach_position,o->center))))<1e-5f);
@@ -257,6 +264,68 @@ static void retained_door(void) {
     assert(swat_replay_digest(&server)==swat_replay_digest(&replica));
     swat_sim_close(&server);swat_sim_close(&replica);
     puts("PASS retained door: local physical notch, solid upper/body cover, standing collision, preserved hinge motion and body count, thickness and atomic live replica");
+}
+static void continuous_impacts(void) {
+    for(int material=0;material<3;material++) {
+        memset(&server,0,sizeof(server));server.config=swat_default_config();server.config.mission=SWAT_RANGE;server.actor_count=1;
+        swat_world_init(&server.world);
+        b3Vec3 half=material==0?swat_v(.022f,1.05f,.54f):material==1?swat_v(.0125f,1.35f,.85f):swat_v(.045f,1.35f,.045f);
+        int id=swat_world_box(&server.world,(b3Pos){0,1.5f,0},half,material==1?SWAT_DRYWALL:SWAT_WOOD,120);
+        SwatObject* o=&server.world.objects[id];o->door=material==0;o->locked=o->door;
+        o->part=material==1?SWAT_PART_SKIN:SWAT_PART_FRAME;o->wall_group=id+1;
+        if(o->door)o->hinge=b3OffsetPos(o->center,swat_v(0,0,-half.z));
+        swat_sim_spawn_actor(&server,0,SWAT_OFFICER,(b3Pos){-5,0,0},0);
+        swat_capture_map(&server,1,&map);swat_apply_map(&replica,&map);
+        int changed=0,max_hulls=0;uint32_t rng=9721;
+        for(int shot=0;shot<360;shot++) {
+            // Cover every local region, then revisit its sides and corners.
+            // The final pass adds irregular directions and spacing.
+            int row=(shot/5)%6,col=shot%5,pass=shot/30;
+            float fy=pass==0?.35f:pass==1?.70f:pass==2?.20f:swat_rand01(&rng);
+            float fz=pass==0?.35f:pass==1?.70f:pass==2?.80f:swat_rand01(&rng);
+            float y=-half.y+(row+.12f+.76f*fy)*(2*half.y/6),z=-half.z+(col+.12f+.76f*fz)*(2*half.z/5);
+            b3Pos p=b3OffsetPos(o->center,swat_v(-.3f,y,z));b3Vec3 across=swat_v(.6f,0,0);
+            bool solid=o->active && swat_world_object_ray(o,p,across);
+            if(!solid)continue;
+            uint32_t old=swat_fracture_hash(o);server.tick++;
+            swat_sim_shoot(&server,0,p,swat_v(1,0,0),(SwatShot){.fired=true,.damage=34,.energy=60,.range=2});
+            if(o->active && swat_world_object_ray(o,p,across)) {
+                fprintf(stderr,"Repeated impact blocked: material%d shot%d changed%d cuts%d hulls%d point%.6f,%.6f\n",material,shot,changed,o->cuts?o->cuts->count:0,o->cuts?o->cuts->section_count:0,y,z);
+                assert(false);
+            }
+            assert(o->cuts && old!=swat_fracture_hash(o));changed++;
+            assert(o->cuts->count<=SWAT_IMPACT_PATCHES);
+            if(o->cuts->section_count>max_hulls)max_hulls=o->cuts->section_count;
+            // Check a live update after every ordinary bullet. Growing a patch
+            // keeps its profile index and does not require adding a cut slot.
+            swat_capture_snapshot(&server,1,&state);assert(swat_apply_snapshot(&replica,&state));
+            assert(swat_replay_digest(&server)==swat_replay_digest(&replica));
+            for(int i=0;i<32;i++) {
+                float py=half.y*(2*swat_rand01(&rng)-1),pz=half.z*(2*swat_rand01(&rng)-1);
+                b3Pos probe=b3OffsetPos(o->center,swat_v(-.3f,py,pz));
+                assert(swat_world_object_ray(o,probe,across)==swat_fracture_contains(o,py,pz));
+                assert(swat_world_object_ray(o,probe,across)==swat_world_object_ray(&replica.world.objects[id],probe,across));
+            }
+        }
+        assert(changed>60 && o->active);
+        if(o->door)assert(o->locked && !o->latch_broken && !o->door_open && o->door_angle==0);
+        swat_capture_snapshot(&server,1,&state);size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&state);
+        assert(size && swat_decode_snapshot(&decoded,bytes,size));
+        swat_capture_map(&server,1,&map);swat_apply_map(&late,&map);assert(swat_apply_snapshot(&late,&decoded));
+        assert(swat_replay_digest(&server)==swat_replay_digest(&late));
+        bad=state;bad.objects[id].cuts[0].width*=.5f;reject_snapshot(&bad);
+        // A charge still acts after hundreds of bullets; remote/latch behavior
+        // is covered separately by the ordinary-input tactical fixture.
+        b3Pos mount=b3OffsetPos(o->center,swat_v(-half.x,0,0));
+        assert(swat_world_breach(&server.world,id,mount)>0);
+        if(o->door) {
+            assert(o->locked && !o->latch_broken && !o->door_open);
+            b3Pos latch=b3OffsetPos(o->center,swat_v(-half.x,.06f,half.z-.04f));
+            assert(swat_world_breach(&server.world,id,latch)>0 && o->latch_broken && !o->locked && !o->door_open);
+        }
+        printf("PASS continuous impacts: material%d, %d physical changes in 360 attempts, %d peak hulls, live/late replica and geometric ray agreement\n",material,changed,max_hulls);
+        swat_sim_close(&late);swat_sim_close(&replica);swat_sim_close(&server);
+    }
 }
 static void nearby_blast(void) {
     for(int cover=0;cover<2;cover++) {
@@ -285,6 +354,6 @@ static void nearby_blast(void) {
 }
 int main(void) {
     run(true,0);run(false,0);run(false,.73f);
-    spent_partial_charge();retained_hole();impact_across_partition();retained_door();nearby_blast();
+    spent_partial_charge();retained_hole();impact_across_partition();retained_door();continuous_impacts();nearby_blast();
     return 0;
 }

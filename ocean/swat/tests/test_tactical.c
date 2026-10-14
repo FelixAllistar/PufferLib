@@ -149,6 +149,7 @@ static void doors(void) {
     sim.actors[0].controller.yaw=atan2f(-.8f,1.5f);
     step(swat_neutral_input(),1); in=swat_neutral_input(); in.interact=true; step(in,50);
     assert(!door->door_open && door->door_angle<.01f);
+    door->locked=true; // The next charge is aimed away from the hardware.
     sim.actors[0].controller.yaw=0;
     in=swat_neutral_input(); in.door_tool=SWAT_PLACE_CHARGE; step(in,30);
     assert(door->breach_owner<0 && sim.actors[0].gear.breaching_charges==1 && sim.actors[0].gear.door_ticks==30);
@@ -158,8 +159,8 @@ static void doors(void) {
     place(0,(b3Pos){-5,0,0},0); step(in,89); assert(door->breach_owner<0);
     step(in,1); assert(door->breach_owner==0 && sim.actors[0].gear.breaching_charges==0);
     assert(fabsf(door->breach_position.z)<.01f && door->breach_position.y>1.5f);
-    for(int shot=0;shot<SWAT_MAX_IMPACT_CUTS;shot++)
-        assert(swat_world_impact_at(&sim.world,id,(b3Pos){-3.74f,.55f+.16f*shot,-.3f},34,false));
+    for(int shot=0;shot<12;shot++)
+        assert(swat_world_impact_at(&sim.world,id,(b3Pos){-3.74f,.55f+.09f*shot,-.3f},34,false));
     assert(door->breach_owner==0 && !door->latch_broken);
     step(in,100); assert(door->active && door->breach_owner==0 && !sim.actors[0].gear.door_ticks);
     // A late-joining renderer receives the lock, mount, stock and interaction
@@ -186,7 +187,7 @@ static void doors(void) {
     assert(swat_weapons_busy(&sim.actors[0].arsenal));
     step(decoded.input,1);assert(door->breach_owner==0);
     for(int i=0;i<300 && door->breach_owner==0;i++)step(decoded.input,1);
-    assert(door->active && door->latch_broken && door->door_open && !door->locked && door->breach_owner<0 && door->breach_ticks>0);
+    assert(door->active && !door->latch_broken && !door->door_open && door->locked && door->door_angle==0 && door->breach_owner<0 && door->breach_ticks>0);
     int debris=0;
     for(int i=0;i<sim.sounds.count;i++) {
         const SwatSoundEvent* e=swat_sound_at(&sim.sounds,i);
@@ -201,8 +202,8 @@ static void doors(void) {
     swat_capture_map(&sim,1,&map); swat_apply_map(&replica,&map); swat_capture_snapshot(&sim,1,&snapshot);
     size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot);
     assert(size && swat_decode_snapshot(&received,bytes,size) && swat_apply_snapshot(&replica,&received));
-    assert(replica.world.objects[id].active && replica.world.objects[id].latch_broken && replica.world.objects[id].breach_ticks>0);
-    step(decoded.input,12); assert(sim.totals.destroyed==0 && sim.world.objects[id].latch_broken);
+    assert(replica.world.objects[id].active && !replica.world.objects[id].latch_broken && replica.world.objects[id].locked && replica.world.objects[id].breach_ticks>0);
+    step(decoded.input,12); assert(sim.totals.destroyed==0 && !door->latch_broken && door->locked && door->door_angle==0);
     in=swat_neutral_input(); in.loadout=3; place(0,(b3Pos){0,0,0},0); step(in,1);
     assert(sim.actors[0].gear.kit==1 && sim.actors[0].gear.breaching_charges==0);
     swat_sim_close(&sim); swat_sim_close(&replica);

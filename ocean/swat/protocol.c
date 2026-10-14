@@ -576,8 +576,8 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
         }
         int old_cuts=o->cuts?o->cuts->count:0;
         if(in->cut_count<old_cuts || in->cut_count>SWAT_MAX_CUTS ||
-           (in->cut_count && !o->door && o->part!=SWAT_PART_SKIN && o->part!=SWAT_PART_FRAME) ||
-           (old_cuts && memcmp(in->cuts,o->cuts->cuts,(size_t)old_cuts*sizeof(SwatCut))))return false;
+           (in->cut_count && !o->door && o->part!=SWAT_PART_SKIN && o->part!=SWAT_PART_FRAME))return false;
+        for(int c=0;c<old_cuts;c++)if(!swat_cut_grows(&o->cuts->cuts[c],&in->cuts[c]))return false;
         for(int c=0;c<in->cut_count;c++)if(!swat_cut_valid(&in->cuts[c]))return false;
         if(in->fractured!=o->fractured)return false;
         if(in->fractured) {
@@ -610,7 +610,8 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i];const SwatObjectState* in=&state->objects[i];
         bool changed_corners=in->fractured && memcmp(o->corners,in->corners,sizeof(o->corners));
-        if(in->cut_count && ((!o->cuts || o->cuts->count!=in->cut_count) || changed_corners || in->latch_broken!=o->latch_broken)) {
+        if(in->cut_count && ((!o->cuts || o->cuts->count!=in->cut_count ||
+            memcmp(o->cuts->cuts,in->cuts,(size_t)in->cut_count*sizeof(SwatCut))) || changed_corners || in->latch_broken!=o->latch_broken)) {
             SwatObject source=*o;source.latch_broken=in->latch_broken;if(in->fractured)memcpy(source.corners,in->corners,sizeof(source.corners));
             cuts[i]=swat_world_cut_prepare(&source,in->cuts,in->cut_count);
             if(!cuts[i] || (in->active && !cuts[i]->section_count)) {

@@ -153,7 +153,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
         swat_context_hit(s,actor,1.7f);
     SwatObject* door=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? &s->world.objects[hit.index] : NULL;
     bool usable=door && swat_world_breachable(door) && (door->door || mode==SWAT_PLACE_CHARGE) && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
-        (mode==SWAT_LOCKPICK ? door->locked : mode==SWAT_PLACE_CHARGE ? ((door->door ? g->breaching_charges : g->wall_charges)>0 && !door->latch_broken && door->max_health>0) :
+        (mode==SWAT_LOCKPICK ? door->locked : mode==SWAT_PLACE_CHARGE ? ((door->door ? g->breaching_charges : g->wall_charges)>0 && door->max_health>0) :
          mode==SWAT_WEDGE ? (door->wedge_owner<0 && g->wedges>0) : mode==SWAT_REMOVE_WEDGE ? door->wedge_owner>=0 :
          (door->trapped && (door->trap_known&(1u<<actor))));
     if(!usable) { g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return; }

@@ -1,4 +1,4 @@
-// Exact regional refresh for appended bullet holes. Any other geometry/light
+// Exact regional refresh for appended or growing bullet damage. Other geometry/light
 // change falls back to the ordinary full depth pass. Rendering keeps its
 // original projection and viewport; a cropped matrix is used only for culling.
 #ifndef SWAT_SHADOW_DAMAGE_H
@@ -26,14 +26,17 @@ static bool shadow_damage_bounds(const SwatLighting* light,const SwatWorld* worl
     *box=(BoundingBox){{1e30f,1e30f,1e30f},{-1e30f,-1e30f,-1e30f}};bool changed=false;
     for(int i=0;i<world->count;i++) {
         const SwatObject* o=&world->objects[i];int old=light->damage_cuts[i],count=o->cuts?o->cuts->count:0;
-        if(count<old || shadow_cut_prefix(o,old)!=light->damage_hash[i])return false;
-        for(int c=old;c<count;c++) {
-            const SwatCut* cut=&o->cuts->cuts[c];if(cut->kind!=SWAT_CUT_IMPACT)return false;
+        if(count<old)return false;
+        bool appended=shadow_cut_prefix(o,old)==light->damage_hash[i];
+        for(int c=appended?old:0;c<count;c++) {
+            const SwatCut* cut=&o->cuts->cuts[c];if(appended && cut->kind==SWAT_CUT_BREACH)return false;
             b3Quat rotation=swat_rotation(o->yaw,o->pitch);
-            // A clipped authored leaf can change triangle interpolation away
-            // from the opening. Cover its whole small silhouette as well.
-            float y=o->door?0:cut->y,z=o->door?0:cut->z;
-            float hy=o->door?o->half.y:cut->height*1.03f,hz=o->door?o->half.z:cut->width*1.03f;
+            // Joining retained polygons can change source triangulation away
+            // from the newest hit. The unchanged owner's full bounds contain
+            // both old and new geometry, including a growing/replaced patch.
+            bool entire=o->door || cut->kind>=SWAT_CUT_PATCH || !appended;
+            float y=entire?0:cut->y,z=entire?0:cut->z;
+            float hy=entire?o->half.y:cut->height*1.03f,hz=entire?o->half.z:cut->width*1.03f;
             for(int v=0;v<8;v++) {
                 b3Vec3 local=swat_v((v&1?1:-1)*(o->half.x+.1f),
                     y+(v&2?1:-1)*(hy+.002f),z+(v&4?1:-1)*(hz+.002f));
