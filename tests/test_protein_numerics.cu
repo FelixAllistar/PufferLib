@@ -8,6 +8,7 @@
 //   ./test_protein_numerics --gen tests/golden_protein_numerics.txt
 //   ./test_protein_numerics tests/golden_protein_numerics.txt
 //   ./test_protein_numerics --tol 1e-4 tests/golden_protein_numerics.txt
+//   ./test_protein_numerics --spaces-only  # host-side mapping, no CUDA initialization
 
 #include <cuda_runtime.h>
 #include <float.h>
@@ -170,6 +171,77 @@ static int load_and_compare(const char *path, float tol) {
 }
 
 static void section_space(void) {
+    // Pin the pre-step decoder bit-for-bit, including its existing integer and
+    // power-of-two rounding. Omitted step fields must not change old searches.
+    Space legacy[] = {
+        {.type = SPACE_LINEAR, .min = -2, .max = 5, .scale = .5f},
+        {.type = SPACE_LINEAR, .min = -2, .max = 5, .scale = .5f, .is_integer = 1},
+        {.type = SPACE_POW2, .min = 8, .max = 256, .scale = .5f, .is_integer = 1},
+        {.type = SPACE_LOG, .min = .001f, .max = 1, .scale = .5f},
+        {.type = SPACE_LOG, .min = 1, .max = 100, .scale = .5f, .is_integer = 1},
+        {.type = SPACE_LOGIT, .min = .5f, .max = .999f, .scale = .5f},
+    };
+    for (int i = 0; i < sizeof(legacy) / sizeof(*legacy); i++) {
+        Space* old = legacy + i;
+        assert(old->step == 0);
+        for (int k = 0; k <= 2048; k++) {
+            float norm = -1 + k / 1024.0f;
+            float lo = space_fwd(old->type, old->min);
+            float hi = space_fwd(old->type, old->max);
+            float t = (norm + 1) * .5f * (hi - lo) + lo;
+            if (old->type == SPACE_POW2) {
+                t = roundf(t);
+            }
+            float expected = t;
+            if (old->type == SPACE_LOG) {
+                expected = powf(10, t);
+            }
+            if (old->type == SPACE_POW2) {
+                expected = powf(2, t);
+            }
+            if (old->type == SPACE_LOGIT) {
+                expected = 1 - powf(10, t);
+            }
+            if (old->is_integer) {
+                expected = roundf(expected);
+            }
+            assert(fbits(space_unnormalize(old, norm)) == fbits(expected));
+        }
+    }
+
+    Space grids[] = {
+        {.type = SPACE_LINEAR, .min = .125f, .max = 1, .step = .125f},
+        {.type = SPACE_LINEAR, .min = -.375f, .max = .625f, .step = .125f},
+        {.type = SPACE_LINEAR, .min = .05f, .max = 1.05f, .step = .1f},
+        {.type = SPACE_LINEAR, .min = 3, .max = 11, .step = 2},
+        {.type = SPACE_LINEAR, .min = .001f, .max = .009f, .step = .002f},
+    };
+    for (int i = 0; i < sizeof(grids) / sizeof(*grids); i++) {
+        Space* grid = grids + i;
+        assert(space_unnormalize(grid, -1) == grid->min);
+        assert(space_unnormalize(grid, 1) == grid->max);
+        for (int k = 0; k <= 2048; k++) {
+            float value = space_unnormalize(grid, -1 + k / 1024.0f);
+            assert(value >= grid->min && value <= grid->max);
+            float index = (value - grid->min) / grid->step;
+            assert(fabsf(index - roundf(index)) < 32 * FLT_EPSILON * fmaxf(1, index));
+            float again = space_unnormalize(grid, space_normalize(grid, value));
+            assert(fbits(value) == fbits(again));
+        }
+    }
+    assert(space_unnormalize(grids, space_normalize(grids, .1875f)) == .25f);
+    assert(space_unnormalize(grids, space_normalize(grids, .37f)) == .375f);
+    // Like existing integer/pow2 decoding, two latent proposals can select the
+    // same executable value. The native runner observes the original coordinates.
+    assert(space_unnormalize(grids, .33f) == space_unnormalize(grids, .34f));
+    assert(space_normalize(grids, space_unnormalize(grids, .33f)) != .33f);
+    // A fractional grid can help row divisibility; it cannot enforce all joint
+    // agents/buffers/horizon/minibatch constraints by itself.
+    int arbitrary_rows = 16384 - 2 * (int)(4096 * .37f);
+    int grid_rows = 16384 - 2 * (int)(4096 * .375f);
+    assert(arbitrary_rows % 512 != 0 && grid_rows % 512 == 0);
+    assert(grid_rows % 2048 != 0);
+
     Space s = {.type = SPACE_LINEAR, .min = 0.0f, .max = 10.0f, .scale = 0.5f};
     rec_f("space.lin.norm5", space_normalize(&s, 5.0f));
     rec_f("space.lin.unorm0", space_unnormalize(&s, 0.0f));
@@ -281,11 +353,14 @@ static void section_sweep(void) {
 
 int main(int argc, char **argv) {
     int gen = 0;
+    int spaces_only = 0;
     // Default abs tol (numpy-style allclose: rtol = 10*atol).
     float tol = 1e-5f;
     const char *path = "tests/golden_protein_numerics.txt";
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--gen") == 0) {
+        if (strcmp(argv[i], "--spaces-only") == 0) {
+            spaces_only = 1;
+        } else if (strcmp(argv[i], "--gen") == 0) {
             gen = 1;
             if (i + 1 < argc) {
                 path = argv[++i];
@@ -303,6 +378,10 @@ int main(int argc, char **argv) {
 
     printf("=== protein.cu numerical regression ===\n");
     section_space();
+    if (spaces_only) {
+        printf("RESULT: PASS (legacy and stepped spaces; no CUDA initialization)\n");
+        return 0;
+    }
     section_sweep();
     printf("Collected %d records\n", g_n_got);
 
