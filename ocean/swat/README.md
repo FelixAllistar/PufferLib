@@ -592,9 +592,11 @@ playback retains its sensor FOV. Raygui is already vendored at
   Supports are fixed rather than a structural collapse simulation. Destroyed objects lose
   their physics colliders and disappear from sensors immediately. This is
   modular destruction, not structural fracture or simulated debris.
-- **Doors:** an authored hinged, damageable door with real collision. Its short
-  swept rotation stops for actors and resumes once they clear it. It currently
-  moves under game control rather than a motorized rigid-body hinge.
+- **Doors:** authored hinged, damageable leaves with real collision. Intact
+  leaves use short swept rotations that stop for actors and resume once clear.
+  Damage can remove three independent hinge attachments. A single remaining
+  hinge or captured latch becomes a physical joint; losing the final attachment
+  lets the retained leaf fall, collide and sleep on its existing body.
 - **Mission:** house suspects/hostages, command/compliance, hold-to-cuff arrests,
   protected civilians, secure-and-extract success,
   injury/death, civilian-harm failure, fall/timeout, restart, and episode metrics.
@@ -961,7 +963,7 @@ finite inventories:
 
 Door tools cut and scorch the leaf at the mounted device. Only damage reaching
 the hardware releases the latch; the charge never commands the leaf to open.
-The existing hinge and remaining cover stay in place. The mount
+Surviving attachments and remaining cover stay in place. The mount
 uses the actual aim ray. Wall breachers center their opening at that contact:
 aim low for a walking passage, or higher for a window. They cut independent faces, timber and
 cavity material. All material outside the opening survives, including pieces
@@ -988,20 +990,41 @@ full refresh path. Removed material supplies cosmetic chips and small rubble.
 At most twelve small attached fragments and twelve settled pieces share one
 opaque batch, preserving the mostly empty cavity. Selected original CC0 timber,
 gypsum and clay geometry uses vertex colours and adds no runtime texture maps.
-This is a bounded prototype: stress, connected sheet support, detached hinges
-and loose structural rubble are not simulated.
+Door attachment checks use the retained wood around three authored hinge
+locations, aligned to the original motel source. Two hinges, or one hinge plus
+a captured latch, retain the normal door motion. With one attachment left,
+gravity acts through a spherical joint. With none left, the original damaged
+leaf becomes a free physical body and can settle on floors or furnishings.
+The latch remains a separate attachment: cutting all hinges does not release a
+locked latch. Opening the door or damaging its hardware releases that latch.
+These game attachment thresholds are authored, rather than measured hardware
+strengths. Attachment damage does not repair itself when the door closes.
+
+The leaf's full physical pose drives collision, rays, original art, mounted
+details/tools, shadows and sound bounds. Doorway sound paths stay at the original
+opening height, and tilted/fallen leaves release the room's approximate
+reverberation. Navigation checks moving leaves per
+route and allows stepping over a flat leaf without rebuilding its floor grid
+each frame. Sparse motion data is allocated only after hinge damage; the leaf
+keeps its existing owner/body, with one unshaped joint reference per affected
+world. Dense motel collision meshes also use bounded contact subsets so a
+falling panel cannot overflow the physics library's triangle contact buffer.
+This remains a bounded prototype: structural stress, connected wall-sheet
+support and loose wall rubble are not simulated.
 
 The optional **breach-lab** mission has one officer and three independent samples,
 with two wall breachers for comparison. Use **7**, **K**, and **Backspace** to
 place, detonate and reset. The larger wall tool is represented separately from
 the compact door device. Original imported source models and textures stay intact.
-Peers need matching version-21 builds; start fresh recordings/saves for this
+Peers need matching version-22 builds; start fresh recordings/saves for this
 build. Existing recordings are retained, but earlier wire versions cannot load.
 
 ```bash
 make -C ocean/swat breach-geometry-test
+make -C ocean/swat door-support-test
 ./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" breach-geometry
 ./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" destruction-samples
+./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" door-support
 ```
 
 Squad movement now routes by floor height, standing/crouching clearance and actual
@@ -1010,7 +1033,7 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **21**; older clients and
+breach. The network geometry contract is version **22**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The motel's east wire fence has actual openings for bullets and porous sound
@@ -1299,7 +1322,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 21 as described above.
+destruction prototype requires version 22 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

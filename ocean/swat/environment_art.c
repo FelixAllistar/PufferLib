@@ -625,6 +625,12 @@ static void textured_box(Texture2D texture,const SwatObject* o,bool lit,Vector2 
 static void clear_surface(const SwatEnvironmentArt* art) {
     swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
 }
+void swat_environment_object_rotate(const SwatObject* o) {
+    if(!o->motion){rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);return;}
+    b3Quat q=swat_object_rotation(o);
+    Matrix rotation=QuaternionToMatrix((Quaternion){q.v.x,q.v.y,q.v.z,q.s});
+    rlMultMatrixf(MatrixToFloat(rotation));
+}
 
 void swat_environment_door_fragment_draw(const SwatObject* o) {
     if(o->cuts){swat_environment_fragment_draw(o);return;}
@@ -757,6 +763,21 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
     if(p->door) { origin=(Vector3){o->hinge.x,o->hinge.y-o->half.y,o->hinge.z}; yaw=o->yaw-SWAT_PI*.5f; }
     Matrix scale=MatrixScale(p->scale.x,p->scale.y,p->scale.z);
     Matrix transform=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(yaw)),MatrixTranslate(origin.x,origin.y,origin.z));
+    if(o->door && o->motion) {
+        Matrix local;
+        if(p->door) {
+            local=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(-SWAT_PI*.5f)),MatrixTranslate(0,-o->half.y,-o->half.z));
+        } else {
+            // A viewer or other mounted detail uses the same achieved pose as
+            // its leaf, rather than staying at the old world-space hinge.
+            b3Quat yaw_rotation=swat_rotation(o->yaw,0);
+            b3Pos mounted=b3OffsetPos(o->hinge,b3RotateVector(yaw_rotation,swat_v(0,0,o->half.z)));
+            b3Vec3 point=b3InvRotateVector(yaw_rotation,b3SubPos(p->origin,mounted));
+            local=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(p->yaw-o->yaw)),MatrixTranslate(point.x,point.y,point.z));
+        }
+        b3Quat q=swat_object_rotation(o);Matrix rotation=QuaternionToMatrix((Quaternion){q.v.x,q.v.y,q.v.z,q.s});
+        transform=MatrixMultiply(MatrixMultiply(local,rotation),MatrixTranslate(o->center.x,o->center.y,o->center.z));
+    }
     if(override)transform=*override;
     Matrix scene=shadow && art->lighting && art->lighting->shadow_restricted ?
         art->lighting->shadow_clip:MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
@@ -847,7 +868,7 @@ static const Model* motel_wall_source(const SwatEnvironmentArt* art,int owner) {
     return &art->motel[swat_motel_instance(owner-1)->asset];
 }
 static void motel_wall_core(const SwatObject* o) {
-    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
     const uint8_t* c=swat_material(o->material)->color;
     if(o->fractured || o->cuts) {
         SwatObject core=*o;core.half.x-=.001f;swat_environment_fragment_draw(&core);
@@ -968,7 +989,7 @@ static bool mounted_fallback(const SwatObject* o,bool shadow) {
     if(!o->active || !o->query_mesh.data)return true;
     b3Mesh mesh=o->query_mesh;const b3Vec3* vertices=b3GetMeshVertices(mesh.data);
     const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);const uint8_t* color=swat_material(o->material)->color;
-    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
     rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
     for(int i=0;i<mesh.data->triangleCount;i++) {
         b3MeshTriangle t=triangles[i];b3Vec3 a=swat_mul(vertices[t.index1],mesh.scale.x),b=swat_mul(vertices[t.index2],mesh.scale.x),c=swat_mul(vertices[t.index3],mesh.scale.x);
@@ -989,7 +1010,7 @@ static bool window_fallback(const SwatObject* o,bool shadow) {
     b3Mesh mesh=o->query_mesh.data?o->query_mesh:b3Shape_GetMesh(o->shape);
     const b3Vec3* v=b3GetMeshVertices(mesh.data);const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);
     const uint8_t* color=swat_material(o->material)->color;
-    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+    rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
     rlScalef(mesh.scale.x,mesh.scale.y,mesh.scale.z);rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);
     rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
     for(int i=0;i<mesh.data->triangleCount;i++) {
@@ -1094,7 +1115,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         if(!o->active || B3_IS_NULL(o->shape))return true;
         b3Mesh mesh=b3Shape_GetMesh(o->shape);const b3Vec3* vertices=b3GetMeshVertices(mesh.data);
         const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);const uint8_t* color=swat_material(o->material)->color;
-        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
         rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
         for(int i=0;i<mesh.data->triangleCount;i++) {
             b3MeshTriangle t=triangles[i];b3Vec3 a=vertices[t.index1],b=vertices[t.index2],c=vertices[t.index3];
@@ -1110,7 +1131,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         if(!o->active || B3_IS_NULL(o->shape))return true;
         b3Mesh mesh=b3Shape_GetMesh(o->shape);const b3Vec3* vertices=b3GetMeshVertices(mesh.data);
         const b3MeshTriangle* triangles=b3GetMeshTriangles(mesh.data);const uint8_t* color=swat_material(o->material)->color;
-        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
         rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_TRIANGLES);rlColor4ub(shadow?255:color[0],shadow?255:color[1],shadow?255:color[2],255);
         for(int i=0;i<mesh.data->triangleCount;i++) {
             b3MeshTriangle t=triangles[i];b3Vec3 a=vertices[t.index1],b=vertices[t.index2],c=vertices[t.index3];
@@ -1157,7 +1178,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
             source=art->room101_v3_ready?&art->room101_v3[11]:&art->room101[6];
             model=door_mesh(art->door_art,source,o,p);location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
         }
-        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
         door_edge_draw(art,o);rlPopMatrix();
         if(!shadow)swat_lighting_door_damage(art->lighting,NULL);
         return true;
@@ -1200,7 +1221,7 @@ bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWo
         const Model* source=&art->storefront[p->asset];const Model* model=door_mesh(art->door_art,source,o,p);
         if(!shadow)swat_lighting_door_damage(art->lighting,o);
         location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
-        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
         door_edge_draw(art,o);rlPopMatrix();
         if(!shadow)swat_lighting_door_damage(art->lighting,NULL);
         return true;

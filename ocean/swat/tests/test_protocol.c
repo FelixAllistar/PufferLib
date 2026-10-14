@@ -57,12 +57,13 @@ int main(void) {
         SwatObjectState* o=&state.objects[i];*o=(SwatObjectState){.active=true,.health=50,.breach_owner=-1,.wedge_owner=-1,.cut_count=SWAT_MAX_CUTS};
         for(int c=0;c<SWAT_MAX_CUTS;c++)o->cuts[c]=(SwatCut){.height=.02f,.width=.02f,.seed=0x4a4a4a4au,
             .kind=c<SWAT_IMPACT_PATCHES?(SwatCutKind)(SWAT_CUT_PATCH+c):SWAT_CUT_BREACH};
+        o->door=(SwatDoorState){.broken_hinges=7,.position={0,1,0},.rotation=b3Quat_identity};
     }
     length=swat_encode_snapshot(bytes,sizeof(bytes),&state);
     assert(length && length<sizeof(bytes) && swat_decode_snapshot(&roundtrip,bytes,length));
     assert(roundtrip.object_count==SWAT_MAX_OBJECTS && roundtrip.objects[SWAT_MAX_OBJECTS-1].cut_count==SWAT_MAX_CUTS);
     assert(!swat_encode_snapshot(bytes,length-1,&state));
-    printf("PASS maximum damage packet: %d objects with %d profiles each, %zu / %zu bytes\n",SWAT_MAX_OBJECTS,SWAT_MAX_CUTS,length,sizeof(bytes));
+    printf("PASS maximum damage packet: %d objects with %d profiles and loose-door poses each, %zu / %zu bytes\n",SWAT_MAX_OBJECTS,SWAT_MAX_CUTS,length,sizeof(bytes));
     puts("PASS protocol: explicit portable encoding, all truncations, NaN/trailing bytes, no partial mutation, exact replica pose/lean/crouch and destruction");
     return 0;
 }

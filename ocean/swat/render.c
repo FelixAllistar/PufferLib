@@ -43,7 +43,13 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
             break;
         case SWAT_CONTEXT_WEDGED: action="Door wedged / [Alt+9] Remove"; break;
         case SWAT_CONTEXT_TRAP: action="Trap found / hold [8] Disarm"; break;
-        case SWAT_CONTEXT_WALL: action=!actor->gear.wall_charges ? "Wall breacher required / Entry kit" :
+        case SWAT_CONTEXT_WALL:
+            if(sim->world.objects[context.hit.index].door) {
+                action=!actor->gear.breaching_charges ? "Loose door" :
+                    context.ready ? "Hold [7] Place door charge" : "Loose door / move closer";
+                break;
+            }
+            action=!actor->gear.wall_charges ? "Wall breacher required / Entry kit" :
             context.ready ? "Hold [7] Place wall breacher" : "Move closer to place wall breacher";
             if(context.ready && actor->gear.wall_charges)detail="Aim low for a walk-through opening";
             break;
@@ -143,8 +149,7 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
         swat_environment_storefront_draw(&view->environment,world,o,false,cutaway);
     rlPushMatrix();
     rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
-    rlRotatef(o->yaw/SWAT_RAD,0,1,0);
-    rlRotatef(o->pitch/SWAT_RAD,0,0,1);
+    swat_environment_object_rotate(o);
     Vector3 size = {o->half.x*2,o->half.y*2,o->half.z*2};
     bool art=imported || swat_environment_art_draw(&view->environment,o);
     if(!art) DrawCubeV((Vector3){0},size,swat_material_color(o));
@@ -159,7 +164,7 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
         if(!leaf_art && !o->latch_broken) DrawCube((Vector3){o->half.x+0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
         if(o->wedge_owner>=0) DrawCube((Vector3){0,-o->half.y+.035f,o->half.z-.2f},.22f,.07f,.28f,(Color){184,98,45,255});
         if(o->breach_owner>=0) {
-            b3Vec3 local=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(o->breach_position,o->center));
+            b3Vec3 local=b3InvRotateVector(swat_object_rotation(o),b3SubPos(o->breach_position,o->center));
             float side=local.x>=0?1:-1;
             DrawCube((Vector3){local.x+side*.012f,local.y,local.z},.025f,.10f,.07f,swat_gold);
         }
@@ -234,7 +239,7 @@ static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaw
         if(swat_environment_storefront_draw(&view->environment,&sim->world,o,true,cutaway)) continue;
         if(cutaway && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
         rlPushMatrix(); rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
-        rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
+        swat_environment_object_rotate(o);
         if(o->door && o->latch_broken)swat_environment_door_fragment_draw(o);
         else if(o->fractured || o->cuts) swat_environment_fragment_draw(o);
         else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);
@@ -287,7 +292,7 @@ static void swat_draw_contact_scene(void* context,const SwatSim* sim,bool cutawa
         if(!visible)continue;
         if(swat_environment_motel_draw(&view->environment,&sim->world,o,true,false))continue;
         if(swat_environment_storefront_draw(&view->environment,&sim->world,o,true,false))continue;
-        rlPushMatrix();rlTranslatef(p.x,p.y,p.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);
+        rlPushMatrix();rlTranslatef(p.x,p.y,p.z);swat_environment_object_rotate(o);
         if(o->door && o->latch_broken)swat_environment_door_fragment_draw(o);
         else if(o->fractured || o->cuts)swat_environment_fragment_draw(o);
         else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);

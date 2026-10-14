@@ -12,6 +12,46 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Door attachment failure (2026-10-14): ordinary impacts can remove three
+independent hinge attachments at the frozen motel source's hinge locations.
+The retained leaf keeps its original owner/body and clipped surface maps.
+Two hinges, or one hinge plus a captured latch, retain ordinary swept door
+motion. A last hinge or latch becomes a spherical joint; losing that final
+attachment frees the leaf to fall, collide with the actual scene and sleep.
+The latch remains separate, so an off-latch charge never commands an opening.
+Thresholds and a small tipping release are authored game behavior, rather than
+a measured hardware strength or stress model.
+
+Full physical orientation now drives the leaf, viewer, mounted devices,
+ballistic/visibility queries, shadows and sound bounds. Doorway sound paths
+retain the original opening height, and room reverberation accounts for leaf
+tilt/displacement. Navigation evaluates
+moving leaves per route instead of rebuilding floor cells every frame. Motion
+storage is sparse, and each affected world adds one unshaped joint reference.
+Falling panels exposed a contact-buffer limit in older dense motel meshes;
+additional subsets now preserve every cooked runtime triangle and flag while
+bounding each contact mesh to 240 triangles. Full query meshes remain intact.
+Protocol v22 carries attachment failure, pose, velocities and sleep state,
+validates them before mutation and preserves canonical map binding for late joins.
+Matching players/servers and fresh recordings/saves are required.
+
+Linux and native Windows checks cover lab/motel hinge failure, remaining latch
+support, physical settling, carried devices, achieved-pose rays, live/late
+replicas and atomic malformed-state rejection. An ordinary-input recording
+approaches the lab door, mounts and remotely detonates a finite latch charge,
+fires at the hinges, crosses the fallen leaf and preserves exact every-tick
+replay plus an in-flight save/resume. Front/back hanging/fallen silhouettes
+agree with 125,090 physical ray samples per platform outside a 4 mm raster
+boundary; the independently measured viewer attachment follows the leaf.
+Seven new cached/full shadow comparisons pass, meshes remain cached during
+motion, and the settled late replica is pixel-identical. Existing 56 shadow
+cases, material samples, contact coverage, live UDP, protocol, tactical,
+movement and all four complete motel routes also pass on both platforms.
+Logs, journals and captures are under `build/swat/review/door-support`.
+This first support increment covers door leaves; connected wall-sheet support,
+wall rubble, structural stress and full slice acceptance remain open. No new
+performance conclusion is drawn under the concurrent machine workload.
+
 Continuous damage and door follow-up (2026-10-13): the remaining six-impact
 lifetime limit is replaced by thirty local damage patches. Later board/timber
 hits grow nearby openings while retaining bounded state: 32 profiles including

@@ -1,5 +1,6 @@
 #include "sim.h"
 #include "locomotion.h"
+#include "door_damage.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,6 +44,9 @@ static bool obstacle(b3ShapeId shape,void* context) {
     if(!tag || tag->kind!=SWAT_HIT_WORLD) return true;
     const SwatObject* o=&query->world->objects[tag->index];
     if(query->fixtures_only && o->part!=SWAT_PART_FIXTURE)return true;
+    // Damaged moving leaves are checked in their achieved pose per route,
+    // like ordinary opening doors, without resampling the static floor grid.
+    if(swat_door_dynamic(o))return true;
     if(o->door && o->wedge_owner<0 && o->door_angle<SWAT_PI*.5f-.03f) return true;
     query->blocked=true; return false;
 }
@@ -53,6 +57,7 @@ static float floor_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,
     // Furnishing tops are not authored walking floors. A low cushion must not
     // create a stair route through the furniture below it.
     if(floors->world && floors->world->objects[tag->index].part==SWAT_PART_FIXTURE)return 1;
+    if(floors->world && swat_door_dynamic(&floors->world->objects[tag->index]))return 1;
     for(int i=0;i<floors->count;i++) if(fabsf(floors->y[i]-(float)point.y)<.05f) return 1;
     if(floors->count<SWAT_NAV_LAYERS) floors->y[floors->count++]=(float)point.y;
     else {
@@ -119,6 +124,7 @@ static int adjacent(const SwatNavigation* nav,int cell,int direction) {
 static uint32_t navigation_object_state(const SwatObject* o) {
     if(!o->active)return 0;
     uint32_t state=1+(o->door && o->wedge_owner>=0)+4*(o->door && o->door_angle>=SWAT_PI*.5f-.03f);
+    if(swat_door_dynamic(o))return 32; // Dynamic geometry is evaluated below.
     if(o->latch_broken)state+=8;
     if(o->cuts)for(int i=0;i<o->cuts->count;i++) {
         // Tiny impact openings do not admit a controller; rebuilding every
@@ -245,9 +251,26 @@ bool swat_navigation_crouch(const SwatSim* s,b3Pos position) {
     int at=swat_navigation_nearest(s->navigation,position); return at>=0 && !(s->navigation->walkable[at]&2);
 }
 typedef struct NavPeople {b3Pos feet[SWAT_MAX_ACTORS];int count;} NavPeople;
+typedef struct DoorSweep {b3BodyId body;bool blocked;} DoorSweep;
+static float moving_door_hit(b3ShapeId shape,b3Pos p,b3Vec3 n,float f,uint64_t material,int triangle,int child,void* context) {
+    DoorSweep* q=context;if(!B3_ID_EQUALS(b3Shape_GetBody(shape),q->body))return -1;
+    q->blocked=true;return 0;
+}
+static bool moving_door_clear(const SwatWorld* world,const SwatObject* o,b3Pos from,b3Pos to) {
+    // Same standing torso and stair allowance as the controller's route
+    // sweeps. A settled thin leaf can be stepped over; a hanging leaf blocks.
+    b3Vec3 points[]={{0,1.0581f,0},{0,1.5415f,0}};b3ShapeProxy torso={points,2,.2873f};
+    DoorSweep q={.body=o->body};b3Vec3 d=b3SubPos(to,from);
+    b3World_CastShape(world->id,from,&torso,d,b3DefaultQueryFilter(),moving_door_hit,&q);
+    b3Vec3 feet[8];for(int i=0;i<8;i++)feet[i]=swat_v(i&1?.2032f:-.2032f,i&2?.9144f:.46f,i&4?.2032f:-.2032f);
+    b3ShapeProxy lower={feet,8,0};
+    if(!q.blocked)b3World_CastShape(world->id,from,&lower,d,b3DefaultQueryFilter(),moving_door_hit,&q);
+    return !q.blocked;
+}
 static bool door_leaves_clear(const SwatWorld* world,const int doors[],int count,b3Pos from,b3Pos to) {
     for(int i=0;i<count;i++) {
         const SwatObject* o=&world->objects[doors[i]];
+        if(swat_door_dynamic(o)){if(!moving_door_clear(world,o,from,to))return false;continue;}
         if(from.y>o->center.y+o->half.y || from.y+1.8288f<o->center.y-o->half.y)continue;
         b3Vec3 p=b3SubPos(from,o->center),d=b3SubPos(to,from);float c=cosf(o->yaw),s=sinf(o->yaw);
         float origin[]={c*p.x-s*p.z,s*p.x+c*p.z},delta[]={c*d.x-s*d.z,s*d.x+c*d.z};
@@ -300,7 +323,7 @@ static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3
     // moving geometry into the shared static grid.
     for(int i=0;i<s->world.count;i++) {
         const SwatObject* o=&s->world.objects[i];
-        if(o->active && o->door && (fabsf(o->door_angle)>.05f || (stacking && !o->door_open)))doors[door_count++]=i;
+        if(o->active && o->door && (swat_door_dynamic(o) || fabsf(o->door_angle)>.05f || (stacking && !o->door_open)))doors[door_count++]=i;
     }
     if(actor>=0)for(int i=0;i<s->actor_count;i++) {
         SwatActor* other=&s->actors[i];if(i==actor || !other->present || !other->alive)continue;
@@ -402,7 +425,7 @@ bool swat_navigation_yield_door(const SwatSim* s,int actor,SwatInput* in) {
     for(int i=0;i<s->world.count;i++) {
         const SwatObject* o=&s->world.objects[i];
         float target=o->peek?12*SWAT_RAD:SWAT_PI*.5f;
-        if(!o->active || !o->door || !o->door_open || o->wedge_owner>=0 || target-o->door_angle<.03f)continue;
+        if(!o->active || !o->door || swat_door_loose(o) || !o->door_open || o->wedge_owner>=0 || target-o->door_angle<.03f)continue;
         if(feet.y>o->center.y+o->half.y || feet.y+c->body.totalHeight<o->center.y-o->half.y)continue;
         b3Vec3 n=swat_v(cosf(o->closed_yaw),0,-sinf(o->closed_yaw));
         b3Vec3 t=swat_v(sinf(o->closed_yaw),0,cosf(o->closed_yaw)),d=b3SubPos(feet,o->hinge);

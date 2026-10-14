@@ -332,6 +332,12 @@ size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state) {
         for(int j=0;j<o->cut_count && j<SWAT_MAX_CUTS;j++) {
             const SwatCut* c=&o->cuts[j];putf(&w,c->y);putf(&w,c->z);putf(&w,c->height);putf(&w,c->width);put32(&w,c->seed);put8(&w,c->kind);
         }
+        const SwatDoorState* d=&o->door;
+        put8(&w,d->broken_hinges | (d->latched<<3) | (d->awake<<4));
+        if(d->broken_hinges) {
+            putpos(&w,d->position);putvec(&w,d->rotation.v);putf(&w,d->rotation.s);
+            putvec(&w,d->velocity);putvec(&w,d->angular_velocity);
+        }
     }
     put8(&w,state->sound_count);
     for(int i=0;i<state->sound_count;i++) {
@@ -405,6 +411,14 @@ bool swat_decode_snapshot(SwatSnapshot* state,const void* bytes,size_t size) {
             c->height=getf(&r,.005f,10);c->width=getf(&r,.005f,10);c->seed=get32(&r);c->kind=(SwatCutKind)get8(&r);
             if(!swat_cut_valid(c))r.ok=false;
         }
+        unsigned int motion=get8(&r);if(motion>31)r.ok=false;
+        SwatDoorState* d=&o->door;d->broken_hinges=motion&SWAT_DOOR_HINGE_MASK;
+        d->latched=(motion&8)!=0;d->awake=(motion&16)!=0;
+        if(d->broken_hinges) {
+            d->position=getpos(&r);d->rotation.v=getvec(&r,1.001f);d->rotation.s=getf(&r,-1.001f,1.001f);
+            d->velocity=getvec(&r,100);d->angular_velocity=getvec(&r,100);
+            if(!swat_door_state_valid(d))r.ok=false;
+        } else if(motion)r.ok=false;
     }
     tmp.sound_count=(int)get8(&r); if(tmp.sound_count>SWAT_NET_SOUNDS || !r.ok) return false;
     uint32_t previous=0;
@@ -481,6 +495,13 @@ void swat_capture_map(const SwatSim* sim,uint32_t epoch,SwatMap* map) {
         map->objects[i]=(SwatMapObject){.center=o->center,.hinge=o->hinge,.half=o->half,.yaw=swat_angle(o->yaw),.max_health=o->max_health,.closed_yaw=swat_angle(o->closed_yaw),.material=o->material,.part=o->part,.door=o->door,.pitch=o->pitch};
         map->objects[i].fractured=o->fractured; map->objects[i].wall_group=o->wall_group;
         map->objects[i].latch_broken=o->latch_broken;
+        if(o->motion) {
+            // Static map recipes retain the canonical mounted source. The
+            // snapshot carries the hanging/fallen pose, preserving exact
+            // motel collision binding for late joins after a door falls.
+            map->objects[i].yaw=o->closed_yaw;map->objects[i].pitch=0;
+            map->objects[i].center=b3OffsetPos(o->hinge,b3RotateVector(swat_rotation(o->closed_yaw,0),swat_v(0,0,o->half.z)));
+        }
         memcpy(map->objects[i].supports,o->supports,sizeof(o->supports));
         map->objects[i].structural_thickness=o->structural_thickness;
         memcpy(map->objects[i].corners,o->corners,sizeof(o->corners));
@@ -516,6 +537,7 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
             .health=o->health,.door_angle=o->door_angle,.breach_owner=o->breach_owner,.breach_ticks=o->breach_ticks,.wedge_owner=o->wedge_owner,.peek=o->peek,.trapped=o->trapped,.trap_known=o->trap_known,.breach_position=o->breach_position};
         state->objects[i].fractured=o->fractured;
         state->objects[i].latch_broken=o->latch_broken;
+        if(o->motion)state->objects[i].door=o->motion->state;
         if(o->cuts){state->objects[i].cut_count=o->cuts->count;memcpy(state->objects[i].cuts,o->cuts->cuts,(size_t)o->cuts->count*sizeof(SwatCut));}
         if(o->fractured)memcpy(state->objects[i].corners,o->corners,sizeof(o->corners));
     }
@@ -566,6 +588,28 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->room_light_off_mask&~((1u<<sim->world.room_count)-1u))return false;
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i]; const SwatObjectState* in=&state->objects[i];
+        const SwatDoorState* d=&in->door;
+        unsigned int previous=o->motion?o->motion->state.broken_hinges:0;
+        if((d->broken_hinges&previous)!=previous ||
+           (d->broken_hinges && (!o->door || !swat_door_state_valid(d) ||
+            (d->latched && (in->latch_broken || in->door_open)) || (!in->active && d->awake) ||
+            (o->motion && !o->motion->state.latched && d->latched))))return false;
+        if(d->broken_hinges) {
+            int support=swat_door_support(d->broken_hinges,d->latched);
+            if(support==SWAT_DOOR_FREE && (in->locked || in->wedge_owner>=0 || in->peek))return false;
+            if(support==SWAT_DOOR_FIXED) {
+                b3Quat rotation=swat_rotation(o->closed_yaw+in->door_angle,o->pitch);
+                b3Pos center=b3OffsetPos(o->hinge,b3RotateVector(rotation,swat_v(0,0,o->half.z)));
+                float dot=b3Dot(rotation.v,d->rotation.v)+rotation.s*d->rotation.s;
+                if(b3Distance(center,d->position)>.001f || fabsf(dot)<.99999f)return false;
+            }
+            if(support!=SWAT_DOOR_FREE) {
+                b3Vec3 local=support==SWAT_DOOR_LATCH?swat_door_latch(o):
+                    swat_door_hinge(o,support==SWAT_DOOR_FIXED?0:support-SWAT_DOOR_BOTTOM);
+                b3Pos anchor=b3OffsetPos(o->hinge,b3RotateVector(swat_rotation(o->closed_yaw,0),b3Add(local,swat_v(0,0,o->half.z))));
+                if(support!=SWAT_DOOR_FIXED && b3Distance(anchor,b3OffsetPos(d->position,b3RotateVector(d->rotation,local)))>.08f)return false;
+            }
+        }
         if((in->latch_broken && (!o->door || in->locked || in->peek)) ||
            (o->latch_broken && !in->latch_broken))return false;
         if(in->active && in->latch_broken && !o->latch_broken) {
@@ -593,8 +637,8 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
             !state->objects[o->supports[k]].active)return false;
         if(in->breach_owner>=0) {
             float yaw=o->door?o->closed_yaw+in->door_angle:o->yaw;
-            b3Pos center=o->door?b3OffsetPos(o->hinge,swat_v(sinf(yaw)*o->half.z,0,cosf(yaw)*o->half.z)):o->center;
-            b3Vec3 local=b3InvRotateVector(swat_rotation(yaw,o->pitch),b3SubPos(in->breach_position,center));
+            b3Pos center=d->broken_hinges?d->position:o->door?b3OffsetPos(o->hinge,swat_v(sinf(yaw)*o->half.z,0,cosf(yaw)*o->half.z)):o->center;
+            b3Vec3 local=b3InvRotateVector(d->broken_hinges?d->rotation:swat_rotation(yaw,o->pitch),b3SubPos(in->breach_position,center));
             if(!isfinite(local.x) || !isfinite(local.y) || !isfinite(local.z) ||
                fabsf(local.x)>o->half.x+.05f || fabsf(local.y)>o->half.y+.05f || fabsf(local.z)>o->half.z+.05f) return false;
         }
@@ -606,6 +650,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     }
     b3HullData* hulls[SWAT_MAX_OBJECTS]={0};
     SwatFracture* cuts[SWAT_MAX_OBJECTS]={0};
+    SwatDoorMotion* doors[SWAT_MAX_OBJECTS]={0};
     // Prepare all changed hulls before committing any part of the snapshot.
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i];const SwatObjectState* in=&state->objects[i];
@@ -615,12 +660,17 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
             SwatObject source=*o;source.latch_broken=in->latch_broken;if(in->fractured)memcpy(source.corners,in->corners,sizeof(source.corners));
             cuts[i]=swat_world_cut_prepare(&source,in->cuts,in->cut_count);
             if(!cuts[i] || (in->active && !cuts[i]->section_count)) {
-                for(int j=0;j<=i;j++){swat_world_cut_close(cuts[j]);if(hulls[j])b3DestroyHull(hulls[j]);}return false;
+                for(int j=0;j<=i;j++){swat_world_cut_close(cuts[j]);free(doors[j]);if(hulls[j])b3DestroyHull(hulls[j]);}return false;
             }
         }
         if(in->active && !in->cut_count && changed_corners) {
             hulls[i]=swat_world_fragment_hull(o,in->corners);
-            if(!hulls[i]){for(int j=0;j<i;j++){if(hulls[j])b3DestroyHull(hulls[j]);swat_world_cut_close(cuts[j]);}return false;}
+            if(!hulls[i]){for(int j=0;j<i;j++){if(hulls[j])b3DestroyHull(hulls[j]);swat_world_cut_close(cuts[j]);free(doors[j]);}return false;}
+        }
+        SwatObject source=*o;if(cuts[i])source.cuts=cuts[i];
+        unsigned int broken=o->door?swat_world_door_hinges(&source):0;
+        if((in->active && in->door.broken_hinges!=broken) || (in->door.broken_hinges && !o->motion && !(doors[i]=swat_world_door_prepare()))) {
+            for(int j=0;j<=i;j++){swat_world_cut_close(cuts[j]);free(doors[j]);if(hulls[j])b3DestroyHull(hulls[j]);}return false;
         }
     }
     for(int i=0;i<state->object_count;i++) {
@@ -634,7 +684,9 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
         o->wedge_owner=in->wedge_owner; o->peek=in->peek; o->trapped=in->trapped; o->trap_known=in->trap_known;
         o->locked=in->locked; o->breach_owner=in->breach_owner; o->breach_ticks=in->breach_ticks; o->breach_position=in->breach_position;
         if(!in->active && o->active) { b3DestroyBody(o->body); o->body=b3_nullBodyId; o->shape=b3_nullShapeId; o->active=false; }
-        if(o->active && o->door) {
+        if(doors[i])o->motion=doors[i];
+        if(in->door.broken_hinges)swat_world_door_restore(&sim->world,i,&in->door);
+        else if(o->active && o->door) {
             o->yaw=o->closed_yaw+o->door_angle; o->center=b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
             swat_world_tilt(o,o->pitch);
         }

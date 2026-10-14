@@ -1,5 +1,6 @@
 #include "sim.h"
 #include "motel.h"
+#include "door_damage.h"
 #include <string.h>
 
 static bool clear_to(const SwatSim* s,b3Pos from,b3Pos to,int target) {
@@ -86,6 +87,10 @@ SwatContext swat_context(const SwatSim* s,int actor) {
             out.action=door->breach_owner>=0 ? SWAT_CONTEXT_CHARGE : SWAT_CONTEXT_WALL;
             out.ready=out.hit.distance<=1.7f; return out;
         }
+        if(swat_door_loose(door)) {
+            out.action=door->breach_owner>=0?SWAT_CONTEXT_CHARGE:SWAT_CONTEXT_WALL;
+            out.ready=out.hit.distance<=1.7f;return out;
+        }
         out.action=door->wedge_owner>=0 ? SWAT_CONTEXT_WEDGED :
             (door->trapped && (door->trap_known&(1u<<actor))) ? SWAT_CONTEXT_TRAP : door->breach_owner>=0 ? SWAT_CONTEXT_CHARGE : (door->locked ? SWAT_CONTEXT_LOCKED :
             (door->door_open ? SWAT_CONTEXT_CLOSE : SWAT_CONTEXT_OPEN));
@@ -152,9 +157,11 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
         swat_world_ray(&s->world,swat_controller_eye(&a->controller),swat_controller_aim(&a->controller),1.7f,a->controller.body.body):
         swat_context_hit(s,actor,1.7f);
     SwatObject* door=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? &s->world.objects[hit.index] : NULL;
-    bool usable=door && swat_world_breachable(door) && (door->door || mode==SWAT_PLACE_CHARGE) && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
+    bool loose_charge=door && swat_door_loose(door) && mode==SWAT_PLACE_CHARGE;
+    bool usable=door && swat_world_breachable(door) && (door->door || mode==SWAT_PLACE_CHARGE) &&
+        (loose_charge || (!door->door_open && door->door_angle<.01f)) && door->breach_owner<0 &&
         (mode==SWAT_LOCKPICK ? door->locked : mode==SWAT_PLACE_CHARGE ? ((door->door ? g->breaching_charges : g->wall_charges)>0 && door->max_health>0) :
-         mode==SWAT_WEDGE ? (door->wedge_owner<0 && g->wedges>0) : mode==SWAT_REMOVE_WEDGE ? door->wedge_owner>=0 :
+         mode==SWAT_WEDGE ? (!swat_door_dynamic(door) && door->wedge_owner<0 && g->wedges>0) : mode==SWAT_REMOVE_WEDGE ? door->wedge_owner>=0 :
          (door->trapped && (door->trap_known&(1u<<actor))));
     if(!usable) { g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return; }
     if(g->door_target!=hit.index || g->door_mode!=mode) g->door_ticks=0;
@@ -359,13 +366,21 @@ void swat_pepper_spray(SwatSim* s,int actor) {
 void swat_traps_step(SwatSim* s) {
     for(int i=0;i<s->world.count;i++) {
         SwatObject* door=&s->world.objects[i];
-        if(!door->active || !door->door || !door->trapped || door->door_angle<4*SWAT_RAD) continue;
+        if(!door->active || !door->door || !door->trapped)continue;
+        bool moved=door->door_angle>=4*SWAT_RAD;
+        if(door->motion) {
+            b3Quat rest=swat_rotation(door->closed_yaw,0),now=swat_object_rotation(door);
+            b3Pos center=b3OffsetPos(door->hinge,b3RotateVector(rest,swat_v(0,0,door->half.z)));
+            float dot=fabsf(b3Dot(rest.v,now.v)+rest.s*now.s);
+            moved|=b3Distance(center,door->center)>.04f || dot<cosf(2*SWAT_RAD);
+        }
+        if(!moved)continue;
         door->trapped=false; door->trap_known=0;
         swat_sound_emit(&s->sounds,s->tick,-1,SWAT_SOUND_FLASH,door->center,2,60);
         for(int j=0;j<s->actor_count;j++) {
             SwatActor* a=&s->actors[j]; if(!a->present || !a->alive) continue;
             b3Pos eye=swat_controller_eye(&a->controller); float distance=b3Distance(eye,door->center);
-            b3Vec3 normal=swat_v(cosf(door->yaw),0,-sinf(door->yaw));
+            b3Vec3 normal=b3RotateVector(swat_object_rotation(door),swat_v(1,0,0));
             float side=b3Dot(normal,b3SubPos(eye,door->center))>=0 ? 1 : -1;
             b3Pos source=b3OffsetPos(door->center,swat_mul(normal,side*(door->half.x+.03f)));
             if(distance<5 && clear_to(s,source,eye,j)) {

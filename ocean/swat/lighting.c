@@ -489,7 +489,7 @@ void swat_lighting_door_damage(SwatLighting* light,const SwatObject* door) {
     Vector3 origin={0},up={0,1,0},side={0,0,1};
     if(door) {
         origin=(Vector3){door->center.x,door->center.y,door->center.z};
-        b3Quat rotation=swat_rotation(door->yaw,door->pitch);
+        b3Quat rotation=swat_object_rotation(door);
         b3Vec3 u=b3RotateVector(rotation,swat_v(0,1,0)),s=b3RotateVector(rotation,swat_v(0,0,1));
         up=(Vector3){u.x,u.y,u.z};side=(Vector3){s.x,s.y,s.z};
         if(door->latch_broken)scorches[count++]=(Vector4){.06f,door->half.z,.43f,.37f};
@@ -540,6 +540,7 @@ static uint32_t geometry_hash(const SwatWorld* world,bool split) {
         if(!o->active || o->material==SWAT_GLASS) continue;
         hash=hash_bytes(hash,&o->center,sizeof(o->center)); hash=hash_bytes(hash,&o->half,sizeof(o->half));
         hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw)); hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
+        if(o->motion)hash=hash_bytes(hash,&o->motion->state.rotation,sizeof(b3Quat));
         hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
         uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));
@@ -578,6 +579,7 @@ static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split,co
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
         hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
         hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));
+        if(o->motion)hash=hash_bytes(hash,&o->motion->state.rotation,sizeof(b3Quat));
         hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
         uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));
@@ -599,6 +601,7 @@ static uint32_t door_geometry_hash(const SwatLighting* light,const SwatWorld* wo
         hash=hash_bytes(hash,&i,sizeof(i));hash=hash_bytes(hash,&o->center,sizeof(o->center));
         hash=hash_bytes(hash,&o->half,sizeof(o->half));hash=hash_bytes(hash,&o->yaw,sizeof(o->yaw));
         hash=hash_bytes(hash,&o->pitch,sizeof(o->pitch));hash=hash_bytes(hash,&o->fractured,sizeof(o->fractured));
+        if(o->motion)hash=hash_bytes(hash,&o->motion->state.rotation,sizeof(b3Quat));
         hash=hash_bytes(hash,&o->latch_broken,sizeof(o->latch_broken));
         if(o->fractured)hash=hash_bytes(hash,o->corners,sizeof(o->corners));
         uint32_t cuts=swat_fracture_hash(o);hash=hash_bytes(hash,&cuts,sizeof(cuts));

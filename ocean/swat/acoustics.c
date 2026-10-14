@@ -1,4 +1,5 @@
 #include "acoustics.h"
+#include "door_damage.h"
 #include <string.h>
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -45,6 +46,7 @@ typedef struct SwatAcousticScene {
     b3Pos source_center[SWAT_MAX_OBJECTS];
     b3Vec3 source_half[SWAT_MAX_OBJECTS];
     float source_yaw[SWAT_MAX_OBJECTS],source_pitch[SWAT_MAX_OBJECTS];
+    b3Quat source_rotation[SWAT_MAX_OBJECTS];
     bool source_active[SWAT_MAX_OBJECTS];
     SwatAcousticNode nodes[2*SWAT_MAX_OBJECTS];
 } SwatAcousticScene;
@@ -96,6 +98,11 @@ static void swat_acoustic_scene(SwatAcousticScene* scene,const SwatWorld* world)
         float local_x=cp*o->half.x+sp*o->half.y,local_y=sp*o->half.x+cp*o->half.y;
         float extent[3]={fabsf(c)*local_x+fabsf(s)*o->half.z,local_y,
                          fabsf(s)*local_x+fabsf(c)*o->half.z};
+        if(o->motion) {
+            b3Quat q=scene->source_rotation[i]=swat_object_rotation(o);
+            b3Vec3 x=b3RotateVector(q,swat_v(o->half.x,0,0)),y=b3RotateVector(q,swat_v(0,o->half.y,0)),z=b3RotateVector(q,swat_v(0,0,o->half.z));
+            extent[0]=fabsf(x.x)+fabsf(y.x)+fabsf(z.x);extent[1]=fabsf(x.y)+fabsf(y.y)+fabsf(z.y);extent[2]=fabsf(x.z)+fabsf(y.z)+fabsf(z.z);
+        }
         for(int a=0;a<3;a++) {
             // Conservative padding covers float subtraction/rotation rounding.
             float pad=.001f+fabsf(center[a])*.00001f;
@@ -115,7 +122,8 @@ static const SwatAcousticScene* swat_acoustic_cached(const SwatWorld* world) {
         changed=cache.source_active[i]!=o->active ||
             (o->active && (memcmp(&cache.source_center[i],&o->center,sizeof(o->center)) ||
              memcmp(&cache.source_half[i],&o->half,sizeof(o->half)) ||
-             cache.source_yaw[i]!=o->yaw || cache.source_pitch[i]!=o->pitch));
+             cache.source_yaw[i]!=o->yaw || cache.source_pitch[i]!=o->pitch ||
+             (o->motion && memcmp(&cache.source_rotation[i],&o->motion->state.rotation,sizeof(b3Quat)))));
     }
     if(changed) swat_acoustic_scene(&cache,world);
     return &cache;
@@ -150,7 +158,10 @@ static float swat_acoustic_thickness(const SwatObject* o,float c,float s,b3Pos f
     b3Vec3 p=b3SubPos(from,o->center),d=b3SubPos(to,from);
     float origin[3]={c*p.x-s*p.z,p.y,s*p.x+c*p.z};
     float delta[3]={c*d.x-s*d.z,d.y,s*d.x+c*d.z};
-    if(o->pitch!=0) {
+    if(o->motion) {
+        b3Quat q=swat_object_rotation(o);b3Vec3 a=b3InvRotateVector(q,p),b=b3InvRotateVector(q,d);
+        origin[0]=a.x;origin[1]=a.y;origin[2]=a.z;delta[0]=b.x;delta[1]=b.y;delta[2]=b.z;
+    } else if(o->pitch!=0) {
         float cp=cosf(o->pitch),sp=sinf(o->pitch),x=origin[0],dx=delta[0];
         origin[0]=cp*x+sp*origin[1]; origin[1]=-sp*x+cp*origin[1];
         delta[0]=cp*dx+sp*delta[1]; delta[1]=-sp*dx+cp*delta[1];
@@ -241,7 +252,7 @@ static SwatAcousticPath swat_acoustic_scene_path(const SwatAcousticScene* scene,
     SwatAcousticPath best=swat_acoustic_route(scene,event,listener,NULL);
     for(int i=0;i<world->count;i++) {
         const SwatObject* door=&world->objects[i];
-        if(!door->door || (door->active && door->door_angle<0.15f)) continue;
+        if(!door->door || (door->active && !swat_door_dynamic(door) && door->door_angle<0.15f)) continue;
         // Authored openings retain their location when the door swings/breaks.
         // Sample across the opening: a swung leaf can obstruct the centre
         // route even when sound can pass its far edge.
@@ -249,7 +260,7 @@ static SwatAcousticPath swat_acoustic_scene_path(const SwatAcousticScene* scene,
             float offset=2*door->half.z*(.15f+.35f*sample);
             b3Pos portal=b3OffsetPos(door->hinge,swat_v(sinf(door->closed_yaw)*offset,0,cosf(door->closed_yaw)*offset));
             portal.y=swat_clamp((float)(event->position.y+listener.y)*.5f,
-                               (float)door->center.y-door->half.y+.12f,(float)door->center.y+door->half.y-.12f);
+                               (float)door->hinge.y-door->half.y+.12f,(float)door->hinge.y+door->half.y-.12f);
             float length=b3Distance(event->position,portal)+b3Distance(portal,listener);
             float amplitude=event->strength/(1.0f+length);
             float upper=amplitude*.75f*.3f+amplitude*.55f*.5f+amplitude*.35f*.2f;
@@ -265,6 +276,20 @@ SwatAcousticPath swat_acoustic_path(const SwatWorld* world,const SwatSoundEvent*
     return swat_acoustic_scene_path(swat_acoustic_cached(world),event,listener);
 }
 
+static float door_open_area(const SwatObject* o) {
+    if(!o->active)return 1;
+    float fraction=sinf(o->door_angle);
+    if(swat_door_dynamic(o)) {
+        b3Vec3 normal=b3RotateVector(swat_object_rotation(o),swat_v(1,0,0));
+        b3Vec3 closed=swat_v(cosf(o->closed_yaw),0,-sinf(o->closed_yaw));
+        float dot=swat_clamp(b3Dot(normal,closed),-1,1);
+        // Extend the existing projected-opening room approximation to tilt
+        // and vertical displacement. Transmission still uses the actual pose.
+        fraction=fmaxf(fraction,sqrtf(fmaxf(0,1-dot*dot)));
+        fraction=fmaxf(fraction,fabsf((float)(o->center.y-o->hinge.y))/(2*o->half.y));
+    }
+    return swat_clamp(fraction,0,1);
+}
 SwatRoomAcoustics swat_acoustic_room(const SwatWorld* w,b3Pos listener) {
     SwatRoomAcoustics result={{.12f,.10f,.08f},0,{0},{0}};
     int index=swat_world_room(w,listener); if(index<0) return result;
@@ -273,7 +298,7 @@ SwatRoomAcoustics swat_acoustic_room(const SwatWorld* w,b3Pos listener) {
     float volume=x*y*z,floor=x*z,walls=2*y*(x+z),open_area=0;
     for(int i=0;i<w->count;i++) {
         const SwatObject* o=&w->objects[i];
-        if(o->active && (!o->door || o->door_angle<.2f)) continue;
+        if(o->active && (!o->door || (!swat_door_dynamic(o) && o->door_angle<.2f))) continue;
         if(!o->door && o->part!=SWAT_PART_SKIN && o->material!=SWAT_GLASS && o->material!=SWAT_OPAQUE_GLASS) continue;
         b3Vec3 d=b3SubPos(o->door ? o->hinge : o->center,r->center);
         if(fabsf(d.x)>r->half.x+.3f || fabsf(d.z)>r->half.z+.3f) continue;
@@ -284,7 +309,7 @@ SwatRoomAcoustics swat_acoustic_room(const SwatWorld* w,b3Pos listener) {
         }
         // Both board faces must be open; count each half once. Partly open
         // doors leak in proportion to their projected opening.
-        float fraction=o->part==SWAT_PART_SKIN ? .5f : (o->door && o->active ? sinf(o->door_angle) : 1);
+        float fraction=o->part==SWAT_PART_SKIN ? .5f : (o->door ? door_open_area(o) : 1);
         open_area+=4*o->half.y*o->half.z*fraction;
     }
     const SwatMaterialDef* wall=swat_material(r->surface),*ground=swat_material(r->floor);

@@ -22,11 +22,12 @@ static void sample_export(Image image,const char* directory,const char* name) {
 }
 static void sample_gap_pixels(SwatView* view,const SwatObject* anchor,b3Pos origin_center,b3Vec3 half,int group,const char* label,const char* directory) {
     const int width=600,height=900;int samples=0,empty=0,mismatches=0;
-    b3Quat rotation=swat_rotation(anchor->yaw,anchor->pitch);
+    b3Quat rotation=swat_object_rotation(anchor);
     b3Vec3 normal=b3RotateVector(rotation,swat_v(1,0,0));
+    b3Vec3 up=b3RotateVector(rotation,swat_v(0,1,0));
     for(int side=-1;side<=1;side+=2) {
         Vector3 center={origin_center.x,origin_center.y,origin_center.z};
-        Camera3D camera={Vector3Add(center,(Vector3){side*normal.x*2.5f,0,side*normal.z*2.5f}),center,{0,1,0},2*half.y+.2f,CAMERA_ORTHOGRAPHIC};
+        Camera3D camera={Vector3Add(center,(Vector3){side*normal.x*2.5f,side*normal.y*2.5f,side*normal.z*2.5f}),center,{up.x,up.y,up.z},2*half.y+.2f,CAMERA_ORTHOGRAPHIC};
         RenderTexture2D target=LoadRenderTexture(width,height);assert(target.id);
         BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);
         for(int i=0;i<sim.world.count;i++) {
@@ -48,7 +49,7 @@ static void sample_gap_pixels(SwatView* view,const SwatObject* anchor,b3Pos orig
             for(int i=0;i<sim.world.count && !edge;i++) {
                 const SwatObject* o=&sim.world.objects[i];
                 if(!o->active || !o->cuts || (group?o->wall_group!=group:o!=anchor))continue;
-                b3Vec3 local=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(point,o->center));
+                b3Vec3 local=b3InvRotateVector(swat_object_rotation(o),b3SubPos(point,o->center));
                 if(fabsf(local.y)>o->half.y+.005f || fabsf(local.z)>o->half.z+.005f)continue;
                 for(int c=0;c<o->cuts->count && !edge;c++) {
                     SwatCutPlane planes[SWAT_CUT_SIDES];swat_cut_planes(&o->cuts->cuts[c],planes);
