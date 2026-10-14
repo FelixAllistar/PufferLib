@@ -39,6 +39,7 @@ typedef struct {
     SpaceType type;
     float min, max, scale;
     int is_integer;
+    float step;
 } Space;
 
 typedef struct {
@@ -80,6 +81,10 @@ static inline float space_unnormalize(const Space *s, float norm) {
     if (s->type == SPACE_LOGIT) val = 1.0f - powf(10.0f, t);
     if (s->is_integer) {
         val = roundf(val);
+    }
+    if (s->step > 0) {
+        val = s->min + s->step * roundf((val - s->min) / s->step);
+        val = fminf(s->max, fmaxf(s->min, val));
     }
     return val;
 }

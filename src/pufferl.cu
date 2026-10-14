@@ -2898,6 +2898,21 @@ void run_sweep(Ini* ini, const char* exe_path) {
 
         float min_v = dict_get(dict, "min");
         float max_v = dict_get(dict, "max");
+        DictItem* step_item = dict_find(dict, "step");
+        double step_value = step_item ? step_item->value : 0;
+        assert(!step_item || !step_item->str || puf_ini_parse_val(step_item->str, &step_value));
+        float step = step_value;
+        assert(isfinite(step) && step >= 0 && (!step_value || step > 0)
+            && "sweep step must be finite, nonnegative and representable as float");
+        if (step) {
+            assert(type == SPACE_LINEAR && !is_integer && "sweep step requires uniform");
+            assert((min_v == max_v || (min_v + step > min_v && max_v - step < max_v))
+                && "sweep step must separate adjacent float values");
+            float intervals = (max_v - min_v) / step;
+            assert(isfinite(intervals) && intervals >= 0
+                && fabsf(intervals - roundf(intervals)) <= 4 * FLT_EPSILON * fmaxf(1, intervals)
+                && "sweep range must contain a whole number of steps");
+        }
         if (min_v == max_v) {
             assert((float)puf_ini_get(ini, params[n_params].section,
                 params[n_params].key) == min_v && "fixed sweep range must match config");
@@ -2916,7 +2931,8 @@ void run_sweep(Ini* ini, const char* exe_path) {
         }
 
         space->spaces[n_params] = (Space){
-            .type = type, .min = min_v, .max = max_v, .scale = scale, .is_integer = is_integer};
+            .type = type, .min = min_v, .max = max_v, .scale = scale,
+            .is_integer = is_integer, .step = step};
         if (strcmp(dict->name, "sweep.train.total_timesteps") == 0) {
             space->cost_idx = n_params;
         }
