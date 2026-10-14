@@ -49,6 +49,7 @@ static const char* fragment_source=
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform int groundBlend;\n"
+    "uniform int doorScorchCount; uniform vec4 doorScorches[33]; uniform vec3 doorOrigin,doorUp,doorSide;\n"
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
     "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
     "uniform int occlusionUV;uniform float occlusionStrength;uniform vec3 sunDirection,sunEnergy;uniform mat4 contactMatrix;\n"
@@ -122,6 +123,13 @@ static const char* fragment_source=
     "if(dirtWeight>0.0){vec3 dirt=texture(specularMap,dirtUV).xyz*2.0-1.0;dirt.xy*=0.65;"
     "mapped=normalize(mix(normalize(mapped),normalize(dirt),dirtWeight));}"
     "n=normalize(mat3(t,b,n)*mapped);} } }"
+    // Large source triangles remain intact outside the physical cuts. Per-pixel
+    // soot cannot interpolate from a breach all the way to a triangle corner.
+    "if(doorScorchCount>0){vec3 p=position-doorOrigin;vec2 yz=vec2(dot(p,doorUp),dot(p,doorSide));float soot=0.0;"
+    "for(int i=0;i<doorScorchCount;i++){vec4 c=doorScorches[i];float r=length((yz-c.xy)/c.zw);"
+    "soot=max(soot,clamp((1.1+0.04*sin(yz.x*31.0+yz.y*17.0)-r)*1.3,0.0,0.94));}"
+    "albedo*=pow(vec3(1.0)-soot*vec3(1.0,0.99,0.96),vec3(2.2));"
+    "roughness=mix(roughness,1.0,soot);f0=mix(f0,vec3(0.04),soot);metalness*=1.0-soot;}"
     "vec3 sun=sunDirection;"
     "float sunVisibility=visible(sunMap,sunMatrix,position,n,sun,-1); float direct=max(dot(n,sun),0.0)*sunVisibility;"
     "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
@@ -190,6 +198,8 @@ static SwatLightingProgram program(void) {
     p.environment_size=GetShaderLocation(p.shader,"environmentSize");
     p.environment_tile=GetShaderLocation(p.shader,"environmentTile");
     p.ground_blend=GetShaderLocation(p.shader,"groundBlend");
+    p.door_scorch_count=GetShaderLocation(p.shader,"doorScorchCount");p.door_scorches=GetShaderLocation(p.shader,"doorScorches[0]");
+    p.door_origin=GetShaderLocation(p.shader,"doorOrigin");p.door_up=GetShaderLocation(p.shader,"doorUp");p.door_side=GetShaderLocation(p.shader,"doorSide");
     p.camera=GetShaderLocation(p.shader,"camera");
     p.sun_matrix=GetShaderLocation(p.shader,"sunMatrix");
     for(int i=0;i<SWAT_LAMP_FACES;i++) {char name[32];snprintf(name,sizeof(name),"lampMatrix[%d]",i);p.lamp_matrix[i]=GetShaderLocation(p.shader,name);}
@@ -470,6 +480,36 @@ void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughn
     // Mesh draws share auxiliary units and invalidate a previously cached batch.
     light->surface_normal=mesh ? ~0u : normal.id;
     light->surface_roughness=mesh ? ~0u : roughness.id;
+}
+
+void swat_lighting_door_damage(SwatLighting* light,const SwatObject* door) {
+    if(!light || !light->enabled || !light->prepared)return;
+    _Static_assert(SWAT_MAX_CUTS+1<=33,"doorScorches shader array must cover every cut and latch");
+    Vector4 scorches[SWAT_MAX_CUTS+1];int count=0;
+    Vector3 origin={0},up={0,1,0},side={0,0,1};
+    if(door) {
+        origin=(Vector3){door->center.x,door->center.y,door->center.z};
+        b3Quat rotation=swat_rotation(door->yaw,door->pitch);
+        b3Vec3 u=b3RotateVector(rotation,swat_v(0,1,0)),s=b3RotateVector(rotation,swat_v(0,0,1));
+        up=(Vector3){u.x,u.y,u.z};side=(Vector3){s.x,s.y,s.z};
+        if(door->latch_broken)scorches[count++]=(Vector4){.06f,door->half.z,.43f,.37f};
+        if(door->cuts)for(int i=0;i<door->cuts->count;i++) {
+            const SwatCut* c=&door->cuts->cuts[i];if(c->kind!=SWAT_CUT_BREACH)continue;
+            scorches[count++]=(Vector4){c->y,c->z,c->height*2.2f+.03f,c->width*2.2f+.03f};
+        }
+    }
+    rlDrawRenderBatchActive();
+    SwatLightingProgram* programs[]={&light->mesh,&light->batch};
+    for(int i=0;i<2;i++) {
+        SwatLightingProgram* p=programs[i];rlEnableShader(p->shader.id);
+        mesh_uniform(p->door_scorch_count,&count,SHADER_UNIFORM_INT);
+        if(count) {
+            mesh_uniform(p->door_origin,&origin,SHADER_UNIFORM_VEC3);
+            mesh_uniform(p->door_up,&up,SHADER_UNIFORM_VEC3);
+            mesh_uniform(p->door_side,&side,SHADER_UNIFORM_VEC3);
+            rlSetUniform(p->door_scorches,scorches,SHADER_UNIFORM_VEC4,count);
+        }
+    }
 }
 
 void swat_lighting_close(SwatLighting* light) {
@@ -785,6 +825,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValue(s,p->emission,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->environment,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->ground_blend,&zero,SHADER_UNIFORM_INT);
+        SetShaderValue(s,p->door_scorch_count,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->occlusion,&zero,SHADER_UNIFORM_INT);
         int ibl=light->environment_atlas.id!=0,ibl_slot=9,contact=light->contact_ready,contact_slot=7,depth_slot=8;
         SetShaderValue(s,p->ibl,&ibl,SHADER_UNIFORM_INT);SetShaderValue(s,p->ibl_atlas,&ibl_slot,SHADER_UNIFORM_INT);

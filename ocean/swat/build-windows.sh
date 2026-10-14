@@ -82,11 +82,10 @@ SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
     -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
     -I"$SWAT_ROOT/src" -I"$SWAT_ROOT/vendor" -I"$SWAT_ROOT/vendor/enet/include" -I"$SWAT_ROOT/ocean/swat"
     -I"$SWAT_BOX3D/include" -I"$SWAT_RAYLIB/include")
-# Atomic full-world snapshots use bounded scratch storage; match Linux's
-# ordinary 8 MiB stack reservation (pages commit only as actually used).
-SWAT_HEADLESS_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" -Wl,--stack,8388608 -static -lws2_32 -lwinmm -lm)
+# Reserve 16 MiB for bounded atomic snapshot scratch storage; pages commit as used.
+SWAT_HEADLESS_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" -Wl,--stack,16777216 -static -lws2_32 -lwinmm -lm)
 SWAT_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" "$SWAT_RAYLIB/lib/libraylib.a"
-    -Wl,--stack,8388608 -static -lopengl32 -lgdi32 -lws2_32 -lwinmm -lm)
+    -Wl,--stack,16777216 -static -lopengl32 -lgdi32 -lws2_32 -lwinmm -lm)
 SWAT_NET=()
 if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = character ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/character_probe.c" \

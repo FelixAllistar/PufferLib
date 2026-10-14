@@ -557,9 +557,12 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,1,25,material);
             if(hit.kind==SWAT_HIT_ACTOR) swat_sim_damage_region(s,hit.index,actor,5,swat_sim_hit_region(&s->actors[hit.index],hit.point),true);
             else if(hit.index>=0 && (swat_kit(gear->kit)->ram && s->world.objects[hit.index].door ?
-                    (swat_world_breachable(&s->world.objects[hit.index]) && swat_world_break_latch(&s->world,hit.index)) :
+                    (swat_world_breachable(&s->world.objects[hit.index]) &&
+                     (s->world.objects[hit.index].latch_broken || swat_world_break_latch(&s->world,hit.index))) :
                     swat_world_impact_at(&s->world,hit.index,hit.point,swat_kit(gear->kit)->ram ? 160 : 18,false))) {
                 s->events.destroyed+=!s->world.objects[hit.index].active;
+                if(swat_kit(gear->kit)->ram && s->world.objects[hit.index].door)
+                    s->world.objects[hit.index].door_open=true;
                 swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
             }
         }

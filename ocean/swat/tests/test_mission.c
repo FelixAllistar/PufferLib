@@ -67,7 +67,13 @@ static void equipment_and_inspection(void) {
     place(1,(b3Pos){15,0,-2},SWAT_PI);
     place(0,swat_mission(SWAT_HOUSE)->staging,0); in.loadout=3; ticks(in,1);
     place(0,(b3Pos){3.3f,0,-2},0); in=swat_neutral_input(); in.melee=true; ticks(in,1);
-    assert(!sim.world.objects[door.index].active);
+    SwatObject* leaf=&sim.world.objects[door.index];
+    assert(leaf->active && leaf->latch_broken && !leaf->locked && leaf->door_open);
+    ticks(swat_neutral_input(),60);assert(leaf->door_angle>1.5f);
+    leaf->door_open=false;ticks(swat_neutral_input(),60);assert(leaf->door_angle<.01f);
+    // An already released latch still permits a later explicit ram action.
+    in=swat_neutral_input();in.melee=true;ticks(in,1);
+    assert(leaf->active && leaf->latch_broken && leaf->door_open);
     place(0,swat_mission(SWAT_HOUSE)->staging,0); in=swat_neutral_input(); in.loadout=2; ticks(in,1);
     b3Pos from={6.5f,1.4f,7}; b3Vec3 toward={0,0,-1};
     SwatHit rotated=swat_world_ray(&sim.world,from,toward,3,b3_nullBodyId);
@@ -79,7 +85,7 @@ static void equipment_and_inspection(void) {
     for(int i=0;i<60;i++) swat_world_step_doors(&sim.world);
     assert(swat_world_ray(&sim.world,from,toward,3,b3_nullBodyId).index==rotated.index);
     puts("PASS equipment: mass/mobility, impact primary, staging restriction, blocked lens, floor-gap optiwand and fire isolation");
-    puts("PASS house doors: impact rounds stop at closed wood, ram removes the real leaf, rotated hinge opens/closes its collider");
+    puts("PASS house doors: impact rounds stop at closed wood, ram releases/opens the retained leaf and reopens a broken latch, rotated hinge opens/closes its collider");
 }
 static void arrests_and_injuries(void) {
     // Use deterministic fixture placement to test interactions independently

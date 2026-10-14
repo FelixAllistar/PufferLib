@@ -12,6 +12,36 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Continuous damage and door follow-up (2026-10-13): the remaining six-impact
+lifetime limit is replaced by thirty local damage patches. Later board/timber
+hits grow nearby openings while retaining bounded state: 32 profiles including
+two tool slots and at most 256 convex sections per owner. Adjacent retained
+polygons join only when their convex union does not fill an opening. Protocol
+v21 carries growing profiles, rejects restored cover atomically, and supports
+the maximum 2,048-owner damage packet within its 2 MiB buffer.
+
+Door charges now cut at the mount without commanding the leaf to open. Only a
+cut reaching the hardware releases the latch; an off-latch blast leaves a
+locked door locked. Explicit interaction or a ram opens the surviving leaf.
+Closed leaves with broken latches can receive another charge. Door scorch is
+evaluated per pixel in local leaf coordinates, eliminating broad diagonal
+colour interpolation without adding surface subdivisions or texture maps.
+
+Both platforms pass 360 impact attempts per door/board/frame sample, with
+245/225/167 actual geometry changes, physical ray agreement and exact live/late
+replicas. An additional Linux stress run covers 1,200 attempts per sample,
+including region edges. Front/back art silhouettes agree with 238,416 physical
+ray samples per platform, excluding a 4 mm raster boundary and cosmetic chips.
+Unchanged painted faces preserve their UVs, replicas match pixel for pixel,
+and moving damaged hinges reuse their meshes. Each platform passes 56 regional
+shadow comparisons against full redraw, including growth at unchanged cut count.
+All four mission routes retain exact replay, save/resume and fresh replicas;
+live UDP, protocol bounds, tactical, house/ram and movement checks also pass.
+Linux and Windows players/servers are rebuilt. Logs and native captures are
+under `build/swat/review/continuous-damage`. No timing conclusion is drawn under
+the concurrent machine workload. The structural prototype limitations below
+still apply.
+
 Interaction and shot-refresh pass (2026-10-13): charges now attach to the actual
 aimed contact, preserve that opening height, follow moving leaves, and still
 detonate after repeated bullet damage. Neighboring soft walls, timber, glazing

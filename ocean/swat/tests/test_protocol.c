@@ -38,7 +38,7 @@ int main(void) {
     inputs[3].crouch=true; inputs[3].lean=1; inputs[3].strafe=1;
     for(int t=0;t<24;t++) swat_sim_step_inputs(&server,inputs);
     assert(swat_world_damage(&server.world,8,1000));
-    SwatSnapshot state,roundtrip; swat_capture_snapshot(&server,3,&state); state.player_mask=3;
+    static SwatSnapshot state,roundtrip; swat_capture_snapshot(&server,3,&state); state.player_mask=3;
     length=swat_encode_snapshot(bytes,sizeof(bytes),&state); assert(length);
     assert(swat_decode_snapshot(&roundtrip,bytes,length));
     for(size_t i=0;i<length;i++) assert(!swat_decode_snapshot(&roundtrip,bytes,i));
@@ -52,6 +52,17 @@ int main(void) {
     roundtrip.objects[9].active=false; roundtrip.objects[0].health=10;
     assert(!swat_apply_snapshot(&replica,&roundtrip) && replica.world.objects[9].active);
     swat_sim_close(&replica); swat_sim_close(&server);
+    state.object_count=SWAT_MAX_OBJECTS;
+    for(int i=0;i<state.object_count;i++) {
+        SwatObjectState* o=&state.objects[i];*o=(SwatObjectState){.active=true,.health=50,.breach_owner=-1,.wedge_owner=-1,.cut_count=SWAT_MAX_CUTS};
+        for(int c=0;c<SWAT_MAX_CUTS;c++)o->cuts[c]=(SwatCut){.height=.02f,.width=.02f,.seed=0x4a4a4a4au,
+            .kind=c<SWAT_IMPACT_PATCHES?(SwatCutKind)(SWAT_CUT_PATCH+c):SWAT_CUT_BREACH};
+    }
+    length=swat_encode_snapshot(bytes,sizeof(bytes),&state);
+    assert(length && length<sizeof(bytes) && swat_decode_snapshot(&roundtrip,bytes,length));
+    assert(roundtrip.object_count==SWAT_MAX_OBJECTS && roundtrip.objects[SWAT_MAX_OBJECTS-1].cut_count==SWAT_MAX_CUTS);
+    assert(!swat_encode_snapshot(bytes,length-1,&state));
+    printf("PASS maximum damage packet: %d objects with %d profiles each, %zu / %zu bytes\n",SWAT_MAX_OBJECTS,SWAT_MAX_CUTS,length,sizeof(bytes));
     puts("PASS protocol: explicit portable encoding, all truncations, NaN/trailing bytes, no partial mutation, exact replica pose/lean/crouch and destruction");
     return 0;
 }

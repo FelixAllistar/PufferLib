@@ -1,4 +1,5 @@
 // Actual motel models and production skinned/procedural caster callbacks.
+#include "fracture_geometry.h"
 static void shadow_reuse_graphics(SwatView* view,const char* directory) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;
     swat_sim_init(&sim,cfg,81);assert(view->characters);view->lighting.prepared=false;
@@ -10,7 +11,7 @@ static void shadow_reuse_graphics(SwatView* view,const char* directory) {
     };
     int door=-1;for(int i=0;i<sim.world.count;i++)if(sim.world.objects[i].door){door=i;break;}assert(door>=0);
     int comparisons=0;unsigned int static_faces=0,full_faces=0,changed_rooms=0;
-    for(int stage=0;stage<12;stage++) {
+    for(int stage=0;stage<14;stage++) {
         if(stage==2)sim.world.objects[door].door_open=true;
         if(stage==3){SwatHit hit=swat_world_ray(&sim.world,(b3Pos){-6.7f,1.1f,-7},swat_v(0,0,1),1.5f,b3_nullBodyId);assert(hit.hit&&swat_world_breach(&sim.world,hit.index,hit.point)>0);}
         if(stage==4)assert(swat_world_damage(&sim.world,SWAT_MOTEL_CABINET_FIRST,10000));
@@ -32,10 +33,21 @@ static void shadow_reuse_graphics(SwatView* view,const char* directory) {
             }
             SwatObject* o=&sim.world.objects[owner];b3Quat q=swat_rotation(o->yaw,o->pitch);
             b3Vec3 normal=b3RotateVector(q,swat_v(1,0,0));
-            b3Pos point=b3OffsetPos(o->center,b3RotateVector(q,swat_v(-o->half.x,stage<10?-.18f:.18f,-.08f)));
+            float y=stage<10?-.18f:.18f,z=-.08f;
+            int old_count=o->cuts?o->cuts->count:0;
+            if(stage>=12) {
+                // Revisit the same local patch at its opposite corner. Its
+                // profile grows without changing the number of cut records.
+                SwatCut patch=swat_impact_patch(o,y,z,.01f);int cell=patch.kind-SWAT_CUT_PATCH;
+                float dy=2*o->half.y/SWAT_IMPACT_ROWS,dz=2*o->half.z/SWAT_IMPACT_COLS;
+                float low_y=-o->half.y+(cell/SWAT_IMPACT_COLS)*dy,low_z=-o->half.z+(cell%SWAT_IMPACT_COLS)*dz;
+                y=low_y+dy*(y<low_y+.5f*dy?.8f:.2f);z=low_z+dz*(z<low_z+.5f*dz?.8f:.2f);
+            }
+            b3Pos point=b3OffsetPos(o->center,b3RotateVector(q,swat_v(-o->half.x,y,z)));
             b3Pos eye=b3OffsetPos(point,swat_mul(normal,-1.3f));
             cameras[1]=(Camera3D){{eye.x,eye.y+.2f,eye.z},{point.x,point.y,point.z},{0,1,0},55,CAMERA_PERSPECTIVE};
             assert(swat_world_impact_at(&sim.world,owner,point,34,false));
+            if(stage>=12)assert(o->cuts && o->cuts->count==old_count);
         }
         before=sim.world;unsigned int faces=view->lighting.room_face_updates;int rooms=view->lighting.room_updates;
         swat_view_prepare_shadows(view,&sim,cameras[0].position,false);
@@ -61,5 +73,5 @@ static void shadow_reuse_graphics(SwatView* view,const char* directory) {
         assert(!memcmp(&before,&sim.world,sizeof(before)));
     }
     assert(static_faces<full_faces);swat_sim_close(&sim);
-    printf("PASS production motel shadow reuse: %d full-redraw comparisons, original environment/skin/procedural casters, doors/C4/props/actors and regional bullet-hole updates, %u cached static faces / %u complete-changed-room faces / %u unconditional reference faces, immutable authority\n",comparisons,static_faces,changed_rooms*SWAT_LAMP_FACES,full_faces);
+    printf("PASS production motel shadow reuse: %d full-redraw comparisons, original environment/skin/procedural casters, doors/C4/props/actors and appended/growing bullet-hole updates, %u cached static faces / %u complete-changed-room faces / %u unconditional reference faces, immutable authority\n",comparisons,static_faces,changed_rooms*SWAT_LAMP_FACES,full_faces);
 }

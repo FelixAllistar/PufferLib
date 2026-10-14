@@ -682,13 +682,16 @@ static bool material_door(const SwatEnvironmentArt* art,const SwatObject* o) {
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     if(!o->active) return false;
     SwatEnvironmentSurface surface=swat_environment_surface(o);
-    if(surface==SWAT_ENV_DOOR && material_door(art,o)) {if(o->latch_broken || o->cuts)door_edge_draw(art,o);return true;}
     if(surface==SWAT_ENV_DOOR && art->door.meshCount) {
-        clear_surface(art);
-        Model model=o->latch_broken || o->cuts?*door_mesh(art->door_art,&art->door,o,NULL):art->door;
-        DrawModelEx(model,(Vector3){0},(Vector3){0,1,0},0,
-            (Vector3){2*o->half.x,2*o->half.y,2*o->half.z},wear_color(o,1));
-        if(o->latch_broken || o->cuts)door_edge_draw(art,o);
+        bool damaged=o->latch_broken || o->cuts;
+        if(damaged)swat_lighting_door_damage(art->lighting,o);
+        if(!material_door(art,o)) {
+            clear_surface(art);
+            Model model=damaged?*door_mesh(art->door_art,&art->door,o,NULL):art->door;
+            DrawModelEx(model,(Vector3){0},(Vector3){0,1,0},0,
+                (Vector3){2*o->half.x,2*o->half.y,2*o->half.z},wear_color(o,1));
+        }
+        if(damaged){door_edge_draw(art,o);swat_lighting_door_damage(art->lighting,NULL);}
         return true;
     }
     if(o->door && (o->latch_broken || o->cuts)){clear_surface(art);swat_environment_door_fragment_draw(o);return true;}
@@ -1148,13 +1151,16 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     if(o->door && (o->latch_broken || o->cuts) && art->motel[p->asset].meshCount) {
         const Model* source=art->room101_ready && o->tag.index==16?&art->room101[1]:&art->motel[p->asset];
         const Model* model=door_mesh(art->door_art,source,o,p);
+        if(!shadow)swat_lighting_door_damage(art->lighting,o);
         location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
         if(art->room101_ready && o->tag.index==16) {
             source=art->room101_v3_ready?&art->room101_v3[11]:&art->room101[6];
             model=door_mesh(art->door_art,source,o,p);location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
         }
         rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
-        door_edge_draw(art,o);rlPopMatrix();return true;
+        door_edge_draw(art,o);rlPopMatrix();
+        if(!shadow)swat_lighting_door_damage(art->lighting,NULL);
+        return true;
     }
     if(o->tag.index==140 && art->motel_roadside.meshCount)
         return location_draw(art,o,p,&art->motel_roadside,shadow,cutaway,false);
@@ -1192,9 +1198,12 @@ bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWo
     const SwatMotelInstance* p=swat_storefront_instance(o->tag.index-1);
     if(o->door && (o->latch_broken || o->cuts) && art->storefront[p->asset].meshCount) {
         const Model* source=&art->storefront[p->asset];const Model* model=door_mesh(art->door_art,source,o,p);
+        if(!shadow)swat_lighting_door_damage(art->lighting,o);
         location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
         rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);rlRotatef(o->yaw/SWAT_RAD,0,1,0);
-        door_edge_draw(art,o);rlPopMatrix();return true;
+        door_edge_draw(art,o);rlPopMatrix();
+        if(!shadow)swat_lighting_door_damage(art->lighting,NULL);
+        return true;
     }
     return location_draw(art,o,p,&art->storefront[p->asset],shadow,cutaway,false);
 }

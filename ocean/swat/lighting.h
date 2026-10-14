@@ -19,6 +19,7 @@ typedef struct SwatLightingProgram {
     int ibl,ibl_atlas,sun_direction,sun_energy,occlusion,occlusion_strength;
     int occlusion_uv;
     int contact,contact_map,contact_depth_map,contact_matrix;
+    int door_scorch_count,door_scorches,door_origin,door_up,door_side;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -106,4 +107,7 @@ void swat_lighting_material_scaled(SwatLighting* light,Material material,bool en
 // Mesh size/tile remap the original door's unit-space positions to metre UVs.
 void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughness,
                            Vector3 size,Vector2 tile,bool mesh);
+// Local door scorch evaluated per pixel, independent of source triangulation.
+// Bind around the complete leaf/edge draw; NULL clears both mesh and batch state.
+void swat_lighting_door_damage(SwatLighting* light,const SwatObject* door);
 #endif

@@ -5,13 +5,25 @@
 #include "door_damage.h"
 #include <string.h>
 typedef struct SwatCutPlane {float y,z,offset;} SwatCutPlane;
-static inline int swat_cut_plane_count(const SwatCut* cut) {return cut->kind==SWAT_CUT_IMPACT?8:SWAT_CUT_SIDES;}
+static inline int swat_cut_plane_count(const SwatCut* cut) {return cut->kind==SWAT_CUT_BREACH?SWAT_CUT_SIDES:8;}
 static inline bool swat_cut_valid(const SwatCut* cut) {
     return isfinite(cut->y) && isfinite(cut->z) && isfinite(cut->height) && isfinite(cut->width) &&
         fabsf(cut->y)<=200 && fabsf(cut->z)<=200 && cut->height>=.005f && cut->width>=.005f &&
         cut->height<=10 && cut->width<=10 && (unsigned int)cut->kind<SWAT_CUT_KINDS;
 }
 static inline void swat_cut_planes(const SwatCut* cut,SwatCutPlane planes[SWAT_CUT_SIDES]) {
+    if(cut->kind>=SWAT_CUT_PATCH) {
+        // A convex octagon with fixed plane normals. The four bevel distances
+        // are rounded outward; growing a patch can never restore old cover.
+        const int sy[8]={1,1,0,-1,-1,-1,0,1},sz[8]={0,1,1,1,0,-1,-1,-1};
+        for(int i=0;i<8;i++) {
+            float distance=(sy[i]?cut->height:0)+(sz[i]?cut->width:0);
+            if(i&1)distance-=(cut->height+cut->width)*((cut->seed>>(8*(i/2)))&255u)/255.0f;
+            float scale=(i&1)?.7071067811865475f:1;
+            planes[i]=(SwatCutPlane){sy[i]*scale,sz[i]*scale,(sy[i]*cut->y+sz[i]*cut->z+distance)*scale};
+        }
+        return;
+    }
     float points[SWAT_CUT_SIDES][2];int sides=swat_cut_plane_count(cut);
     for(int i=0;i<sides;i++) {
         float angle=2*SWAT_PI*i/sides,c=cosf(angle),s=sinf(angle);
@@ -28,6 +40,32 @@ static inline void swat_cut_planes(const SwatCut* cut,SwatCutPlane planes[SWAT_C
         planes[i]=(SwatCutPlane){z/length,-y/length,0};
         planes[i].offset=planes[i].y*points[i][0]+planes[i].z*points[i][1];
     }
+}
+static inline SwatCut swat_impact_patch(const SwatObject* o,float y,float z,float radius) {
+    int row=(int)floorf((y+o->half.y)*(SWAT_IMPACT_ROWS/(2*o->half.y)));
+    int col=(int)floorf((z+o->half.z)*(SWAT_IMPACT_COLS/(2*o->half.z)));
+    row=(int)swat_clamp(row,0,SWAT_IMPACT_ROWS-1);col=(int)swat_clamp(col,0,SWAT_IMPACT_COLS-1);
+    // 74/255 gives a nearly regular octagon with a conservative round edge.
+    return (SwatCut){.y=y,.z=z,.height=radius,.width=radius,.seed=0x4a4a4a4au,
+        .kind=(SwatCutKind)(SWAT_CUT_PATCH+row*SWAT_IMPACT_COLS+col)};
+}
+static inline SwatCut swat_patch_union(SwatCut a,SwatCut b) {
+    SwatCut out=a;
+    float low_y=fminf(a.y-a.height,b.y-b.height),high_y=fmaxf(a.y+a.height,b.y+b.height);
+    float low_z=fminf(a.z-a.width,b.z-b.width),high_z=fmaxf(a.z+a.width,b.z+b.width);
+    out.y=.5f*(low_y+high_y);out.z=.5f*(low_z+high_z);
+    out.height=.5f*(high_y-low_y);out.width=.5f*(high_z-low_z);out.seed=0;
+    const int sy[4]={1,-1,-1,1},sz[4]={1,1,-1,-1};
+    for(int i=0;i<4;i++) {
+        float da=(a.height+a.width)*((a.seed>>(8*i))&255u)/255.0f;
+        float db=(b.height+b.width)*((b.seed>>(8*i))&255u)/255.0f;
+        float support=fmaxf(sy[i]*a.y+sz[i]*a.z+a.height+a.width-da,
+                           sy[i]*b.y+sz[i]*b.z+b.height+b.width-db);
+        float bevel=sy[i]*out.y+sz[i]*out.z+out.height+out.width-support;
+        unsigned int packed=(unsigned int)swat_clamp(floorf(255*bevel/(out.height+out.width)-.0001f),0,255);
+        out.seed|=packed<<(8*i);
+    }
+    return out;
 }
 static inline float swat_polygon_area(const SwatFracturePolygon* p) {
     float area=0;for(int i=0;i<p->count;i++){int j=(i+1)%p->count;area+=p->vertices[i][0]*p->vertices[j][1]-p->vertices[i][1]*p->vertices[j][0];}
@@ -61,11 +99,71 @@ static inline bool swat_polygon_clip(const SwatFracturePolygon* in,SwatCutPlane 
     }
     swat_polygon_simplify(out);return true;
 }
+static inline bool swat_cut_grows(const SwatCut* old,const SwatCut* next) {
+    if(!memcmp(old,next,sizeof(*old)))return true;
+    if(old->kind<SWAT_CUT_PATCH || old->kind!=next->kind || !swat_cut_valid(next))return false;
+    SwatCutPlane a[SWAT_CUT_SIDES],b[SWAT_CUT_SIDES];swat_cut_planes(old,a);swat_cut_planes(next,b);
+    // Matching fixed normals make containment a small support comparison.
+    for(int i=0;i<8;i++)if(b[i].offset<a[i].offset-1e-6f)return false;
+    return true;
+}
 static inline void swat_source_polygon(const SwatObject* o,SwatFracturePolygon* p) {
     memset(p,0,sizeof(*p));p->count=4;
     if(o->fractured)memcpy(p->vertices,o->corners,sizeof(o->corners));
     else {const float v[4][2]={{-o->half.y,-o->half.z},{o->half.y,-o->half.z},{o->half.y,o->half.z},{-o->half.y,o->half.z}};
         memcpy(p->vertices,v,sizeof(v));}
+}
+static inline float swat_fracture_turn(const float a[2],const float b[2],const float c[2]) {
+    return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+}
+static inline bool swat_polygon_join(const SwatFracturePolygon* a,const SwatFracturePolygon* b,SwatFracturePolygon* joined) {
+    float alo[2]={INFINITY,INFINITY},ahi[2]={-INFINITY,-INFINITY};
+    float blo[2]={INFINITY,INFINITY},bhi[2]={-INFINITY,-INFINITY};
+    for(int i=0;i<a->count;i++)for(int k=0;k<2;k++){alo[k]=fminf(alo[k],a->vertices[i][k]);ahi[k]=fmaxf(ahi[k],a->vertices[i][k]);}
+    for(int i=0;i<b->count;i++)for(int k=0;k<2;k++){blo[k]=fminf(blo[k],b->vertices[i][k]);bhi[k]=fmaxf(bhi[k],b->vertices[i][k]);}
+    for(int k=0;k<2;k++)if(ahi[k]<blo[k]-.000001f || bhi[k]<alo[k]-.000001f)return false;
+    float points[2*SWAT_CUT_VERTICES][2],hull[4*SWAT_CUT_VERTICES][2];int count=0;
+    for(int source=0;source<2;source++) {
+        const SwatFracturePolygon* p=source?b:a;
+        for(int i=0;i<p->count;i++) {
+            int at=count++;
+            while(at && (points[at-1][0]>p->vertices[i][0] ||
+                (points[at-1][0]==p->vertices[i][0] && points[at-1][1]>p->vertices[i][1]))) {
+                memcpy(points[at],points[at-1],sizeof(points[at]));at--;
+            }
+            memcpy(points[at],p->vertices[i],sizeof(points[at]));
+        }
+    }
+    int n=0;
+    for(int i=0;i<count;i++) {
+        while(n>=2 && swat_fracture_turn(hull[n-2],hull[n-1],points[i])<=0)n--;
+        memcpy(hull[n++],points[i],sizeof(points[i]));
+    }
+    int lower=n;
+    for(int i=count-2;i>=0;i--) {
+        while(n>lower && swat_fracture_turn(hull[n-2],hull[n-1],points[i])<=0)n--;
+        memcpy(hull[n++],points[i],sizeof(points[i]));
+    }
+    if(--n<3 || n>SWAT_CUT_VERTICES)return false;
+    memset(joined,0,sizeof(*joined));joined->count=n;
+    memcpy(joined->vertices,hull,(size_t)n*sizeof(*hull));
+    // A convex hull may merge neighbors only when it adds no material across
+    // an opening. The original pieces are disjoint by construction.
+    float area=swat_polygon_area(a)+swat_polygon_area(b);
+    return fabsf(swat_polygon_area(joined)-area)<=1e-7f*fmaxf(1,area);
+}
+static inline int swat_polygons_join(SwatFracturePolygon* pieces,int count) {
+    bool changed=true;
+    while(changed) {
+        changed=false;
+        for(int a=0;a<count;a++)for(int b=a+1;b<count;) {
+            SwatFracturePolygon joined;
+            if(swat_polygon_join(&pieces[a],&pieces[b],&joined)) {
+                pieces[a]=joined;pieces[b]=pieces[--count];changed=true;b=a+1;
+            } else b++;
+        }
+    }
+    return count;
 }
 static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int count,SwatFracturePolygon out[SWAT_CUT_SECTIONS]) {
     SwatFracturePolygon input[SWAT_CUT_SECTIONS]={0};int n=1;
@@ -86,6 +184,7 @@ static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int 
                 overlap=rest;
             }
             if(overlap.count<3 || swat_polygon_area(&overlap)<=1e-7f) {
+                if(next==SWAT_CUT_SECTIONS)next=swat_polygons_join(out,next);
                 if(next==SWAT_CUT_SECTIONS)return -1;
                 out[next++]=input[p];continue;
             }
@@ -94,6 +193,7 @@ static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int 
                 SwatFracturePolygon outside,rest;
                 if(!swat_polygon_clip(&inside,planes[e],1,&outside) || !swat_polygon_clip(&inside,planes[e],-1,&rest))return -1;
                 if(outside.count>=3 && swat_polygon_area(&outside)>1e-6f) {
+                    if(next==SWAT_CUT_SECTIONS)next=swat_polygons_join(out,next);
                     if(next==SWAT_CUT_SECTIONS)return -1;
                     out[next++]=outside;
                 }
@@ -103,7 +203,7 @@ static inline int swat_cut_polygons(const SwatObject* o,const SwatCut* cuts,int 
         n=next;memcpy(input,out,(size_t)n*sizeof(*out));
     }
     if(!count)memcpy(out,input,(size_t)n*sizeof(*out));
-    return n;
+    return swat_polygons_join(out,n);
 }
 static inline bool swat_polygon_contains(const SwatFracturePolygon* p,float y,float z,float tolerance) {
     for(int i=0;i<p->count;i++) {int j=(i+1)%p->count;

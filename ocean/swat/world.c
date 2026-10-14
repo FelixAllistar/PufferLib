@@ -228,11 +228,9 @@ bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool 
             if(!source.door && peer->wall_group!=source.wall_group)break;
             if(!peer->active || peer->door!=source.door || peer->part!=source.part || peer->material!=source.material ||
                fabsf(peer->half.x-source.half.x)>.001f)continue;
-            // Keep room for tool damage after repeated shots.
-            if(peer->cuts && peer->cuts->count>=SWAT_MAX_IMPACT_CUTS)continue;
             b3Vec3 p=b3InvRotateVector(swat_rotation(peer->yaw,peer->pitch),b3SubPos(point,peer->center));
             if(fabsf(p.x)>peer->half.x+.002f)continue; // Only the contacted sheet/frame layer.
-            SwatCut cut={.y=p.y,.z=p.z,.height=radius,.width=radius,.seed=(unsigned int)source.wall_group,.kind=SWAT_CUT_IMPACT};
+            SwatCut cut=swat_impact_patch(peer,p.y,p.z,radius);
             changed|=swat_world_cut(w,i,cut)>0;
         }
         return changed;
@@ -350,9 +348,16 @@ int swat_world_cut(SwatWorld* w,int object,SwatCut cut) {
     SwatObject* o=&w->objects[object];if(!o->active || !o->max_health)return 0;
     if(fabsf(cut.y)>o->half.y+cut.height*1.03f || fabsf(cut.z)>o->half.z+cut.width*1.03f)return 0;
     int count=o->cuts?o->cuts->count:0;
+    if(count<0 || count>SWAT_MAX_CUTS)return -1;
     for(int i=0;i<count;i++)if(!memcmp(&cut,&o->cuts->cuts[i],sizeof(cut)))return 0;
-    if(count==SWAT_MAX_CUTS)return -1;
-    SwatCut cuts[SWAT_MAX_CUTS];if(count)memcpy(cuts,o->cuts->cuts,(size_t)count*sizeof(*cuts));cuts[count++]=cut;
+    SwatCut cuts[SWAT_MAX_CUTS];if(count)memcpy(cuts,o->cuts->cuts,(size_t)count*sizeof(*cuts));
+    int patch=-1;
+    if(cut.kind>=SWAT_CUT_PATCH)for(int i=0;i<count;i++)if(cuts[i].kind==cut.kind){patch=i;break;}
+    if(patch>=0) {
+        if(swat_cut_grows(&cut,&cuts[patch]))return 0;
+        cuts[patch]=swat_patch_union(cuts[patch],cut);
+    }
+    else {if(count==SWAT_MAX_CUTS)return -1;cuts[count++]=cut;}
     SwatFracture* prepared=swat_world_cut_prepare(o,cuts,count);if(!prepared)return -1;
     float old_area=0,new_area=0;
     if(o->cuts)for(int i=0;i<o->cuts->section_count;i++)old_area+=swat_polygon_area(&o->cuts->sections[i]);
@@ -395,7 +400,7 @@ bool swat_world_break_latch(SwatWorld* w,int object) {
         if(!i)o->shape=shape;
     }
     }
-    o->latch_broken=true;o->locked=false;o->peek=false;o->door_open=true;
+    o->latch_broken=true;o->locked=false;o->peek=false;
     o->breach_ticks=24;w->generation++;
     return true;
 }
@@ -403,7 +408,16 @@ bool swat_world_break_latch(SwatWorld* w,int object) {
 int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object])) return 0;
     SwatObject source=w->objects[object];
-    if(source.door) return swat_world_break_latch(w,object) ? 1 : 0;
+    if(source.door) {
+        b3Vec3 mount=b3InvRotateVector(swat_rotation(source.yaw,source.pitch),b3SubPos(position,source.center));
+        SwatCut local={.y=mount.y,.z=mount.z,.height=.18f,.width=.14f,
+            .seed=(unsigned int)object,.kind=SWAT_CUT_BREACH};
+        int changed=swat_world_cut(w,object,local);
+        // Losing leaf material is independent of releasing the hardware, and
+        // neither operation commands the surviving hinged leaf to swing open.
+        if(changed>0 && swat_cut_contains(&local,.06f,source.half.z-.01f))swat_world_break_latch(w,object);
+        return changed>0?1:0;
+    }
     bool fence=source.part==SWAT_PART_FENCE_WIRE || source.part==SWAT_PART_FENCE_RAIL;
     b3Vec3 tangent=swat_v(sinf(source.yaw),0,cosf(source.yaw));
     if(fence)tangent=swat_v(cosf(source.yaw),0,-sinf(source.yaw));
@@ -482,11 +496,6 @@ int swat_world_blast(SwatWorld* w,int object,b3Pos position) {
     SwatObject source=w->objects[object];b3Quat rotation=swat_rotation(source.yaw,source.pitch);
     b3Vec3 mount=b3InvRotateVector(rotation,b3SubPos(position,source.center));
     int affected=swat_world_breach(w,object,position);
-    if(source.door) {
-        SwatCut local={.y=mount.y,.z=mount.z,.height=.18f,.width=.14f,
-            .seed=(unsigned int)object,.kind=SWAT_CUT_BREACH};
-        if(swat_world_cut(w,object,local)>0 && !affected)affected=1;
-    }
     b3Pos origin=b3OffsetPos(position,b3RotateVector(rotation,swat_v(mount.x>=0?.035f:-.035f,0,0)));
     float strength[SWAT_MAX_OBJECTS]={0};b3Pos contacts[SWAT_MAX_OBJECTS];
     bool anchored[SWAT_MAX_OBJECTS]={0};b3Pos anchors[SWAT_MAX_OBJECTS];

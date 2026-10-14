@@ -7,7 +7,7 @@ inspection, command, melee, throwable, taser, door-tool and sniper fields to the
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
 A house/arrest/audio policy requires a new contract and corresponding training;
-network protocol v20 is separate from the RL contract version. Human tool
+network protocol v21 is separate from the RL contract version. Human tool
 inventory, retained cut profiles and latch failure do not add annex action heads
 or observation fields; perception still comes from the shared physical queries.
 
