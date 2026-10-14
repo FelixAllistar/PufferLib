@@ -251,23 +251,25 @@ bool swat_navigation_crouch(const SwatSim* s,b3Pos position) {
     int at=swat_navigation_nearest(s->navigation,position); return at>=0 && !(s->navigation->walkable[at]&2);
 }
 typedef struct NavPeople {b3Pos feet[SWAT_MAX_ACTORS];int count;} NavPeople;
-typedef struct DoorSweep {b3BodyId body;bool blocked;} DoorSweep;
-static float moving_door_hit(b3ShapeId shape,b3Pos p,b3Vec3 n,float f,uint64_t material,int triangle,int child,void* context) {
-    DoorSweep* q=context;if(!B3_ID_EQUALS(b3Shape_GetBody(shape),q->body))return -1;
-    q->blocked=true;return 0;
-}
 static bool moving_door_clear(const SwatWorld* world,const SwatObject* o,b3Pos from,b3Pos to) {
+    float radius=b3Length(o->half)+.3f;
+    if(o->center.x<fmin(from.x,to.x)-radius || o->center.x>fmax(from.x,to.x)+radius ||
+       o->center.z<fmin(from.z,to.z)-radius || o->center.z>fmax(from.z,to.z)+radius ||
+       o->center.y<fmin(from.y,to.y)-radius || o->center.y>fmax(from.y,to.y)+1.83f+radius)return true;
     // Same standing torso and stair allowance as the controller's route
     // sweeps. A settled thin leaf can be stepped over; a hanging leaf blocks.
     b3Vec3 points[]={{0,1.0581f,0},{0,1.5415f,0}};b3ShapeProxy torso={points,2,.2873f};
-    DoorSweep q={.body=o->body};b3Vec3 d=b3SubPos(to,from);
-    b3World_CastShape(world->id,from,&torso,d,b3DefaultQueryFilter(),moving_door_hit,&q);
+    b3Vec3 d=b3SubPos(to,from);b3WorldTransform pose=b3Body_GetTransform(o->body);b3QueryFilter filter=b3DefaultQueryFilter();
+    if(b3Body_OverlapShape(o->body,to,&torso,filter,pose) || b3Body_CastShape(o->body,from,&torso,d,filter,1,false,pose).hit)return false;
     b3Vec3 feet[8];for(int i=0;i<8;i++)feet[i]=swat_v(i&1?.2032f:-.2032f,i&2?.9144f:.46f,i&4?.2032f:-.2032f);
     b3ShapeProxy lower={feet,8,0};
-    if(!q.blocked)b3World_CastShape(world->id,from,&lower,d,b3DefaultQueryFilter(),moving_door_hit,&q);
-    return !q.blocked;
+    return !b3Body_OverlapShape(o->body,to,&lower,filter,pose) && !b3Body_CastShape(o->body,from,&lower,d,filter,1,false,pose).hit;
 }
 static bool door_leaves_clear(const SwatWorld* world,const int doors[],int count,b3Pos from,b3Pos to) {
+    if(world->rubble)for(int i=0;i<world->rubble->count;i++) {
+        const SwatObject* o=&world->rubble->pieces[i].object;
+        if(o->active && !moving_door_clear(world,o,from,to))return false;
+    }
     for(int i=0;i<count;i++) {
         const SwatObject* o=&world->objects[doors[i]];
         if(swat_door_dynamic(o)){if(!moving_door_clear(world,o,from,to))return false;continue;}
@@ -608,9 +610,9 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
     if(edge && in->squad_order>0 && in->squad_order<SWAT_SQUAD_ORDERS) {
         SwatActor* source=&s->actors[leader]; b3Pos eye=swat_controller_eye(&source->controller);
         SwatHit hit=swat_context_hit(s,leader,24); b3Pos goal=hit.point;
-        if(hit.kind==SWAT_HIT_WORLD) goal=b3OffsetPos(hit.point,swat_mul(hit.normal,.6f));
+        if(hit.kind==SWAT_HIT_WORLD || hit.kind==SWAT_HIT_RUBBLE) goal=b3OffsetPos(hit.point,swat_mul(hit.normal,.6f));
         // Preserve the targeted floor; navigation resolves its support height.
-        if(hit.kind==SWAT_HIT_WORLD && hit.normal.y<.5f) goal.y=eye.y-source->controller.eye_height;
+        if((hit.kind==SWAT_HIT_WORLD || hit.kind==SWAT_HIT_RUBBLE) && hit.normal.y<.5f) goal.y=eye.y-source->controller.eye_height;
         swat_sound_emit(&s->sounds,s->tick,leader,SWAT_SOUND_COMMAND,eye,1,20);
         b3Pos assigned[SWAT_MAX_PLAYERS];int count=0;
         for(int i=0;i<s->actor_count;i++) {

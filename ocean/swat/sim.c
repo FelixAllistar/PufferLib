@@ -325,7 +325,7 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
             continue;
         }
         if(hit.kind==SWAT_HIT_DEVICE) { swat_device_damage(s,hit.index,shot.damage); break; }
-        SwatMaterial material=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? s->world.objects[hit.index].material : SWAT_CARPET;
+        SwatMaterial material=swat_world_hit_material(&s->world,hit,SWAT_CARPET);
         if(impacts==0) swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,0.8f,25,material);
         if (hit.kind == SWAT_HIT_ACTOR) {
             SwatActor* victim = &s->actors[hit.index];
@@ -335,17 +335,17 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
         }
         if (hit.index < 0) break;
         if(a->arsenal.active==0 && swat_launcher_kind(a->arsenal.primary)>=0) break;
-        SwatObject* object = &s->world.objects[hit.index];
+        const SwatObject* object=swat_world_hit_object(&s->world,hit);if(!object)break;
         float thickness = swat_world_exit_distance(object,hit.point,direction);
         bool mesh=B3_IS_NON_NULL(object->shape) && b3Shape_GetType(object->shape)==b3_meshShape;
         float cost = swat_material_resistance(object->material)*fmaxf(thickness,mesh?.001f:.01f);
-        if (swat_world_impact_at(&s->world,hit.index,hit.point,shot.damage*(energy/shot.energy),a->arsenal.active==0 && a->arsenal.primary==6)) {
-            s->events.destroyed+=!object->active;
+        if (swat_world_hit_impact(&s->world,hit,shot.damage*(energy/shot.energy),a->arsenal.active==0 && a->arsenal.primary==6)) {
+            s->events.destroyed+=hit.kind==SWAT_HIT_WORLD && !object->active;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
         }
         energy -= cost;
         if (energy <= 0.01f || thickness <= 0) break;
-        layers[layer_count]=hit.index;exits[layer_count++]=travelled+hit.distance+thickness;
+        layers[layer_count]=swat_world_hit_layer(hit);exits[layer_count++]=travelled+hit.distance+thickness;
         impacts++;
         float advance=hit.distance+.00001f;
         remaining-=advance;travelled+=advance;
@@ -555,15 +555,17 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
         gear->melee_cooldown=48; a->controller.stamina-=.08f;
         SwatHit hit=swat_world_ray(&s->world,eye,swat_controller_aim(&a->controller),1.7f,a->controller.body.body);
         if(hit.hit) {
-            SwatMaterial material=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? s->world.objects[hit.index].material : SWAT_CARPET;
+            SwatMaterial material=swat_world_hit_material(&s->world,hit,SWAT_CARPET);
+            const SwatObject* object=swat_world_hit_object(&s->world,hit);
+            bool ram_door=object && hit.kind==SWAT_HIT_WORLD && swat_kit(gear->kit)->ram && object->door && !swat_door_loose(object);
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,1,25,material);
             if(hit.kind==SWAT_HIT_ACTOR) swat_sim_damage_region(s,hit.index,actor,5,swat_sim_hit_region(&s->actors[hit.index],hit.point),true);
-            else if(hit.index>=0 && (swat_kit(gear->kit)->ram && s->world.objects[hit.index].door && !swat_door_loose(&s->world.objects[hit.index]) ?
+            else if(object && (ram_door ?
                     (swat_world_breachable(&s->world.objects[hit.index]) &&
                      (s->world.objects[hit.index].latch_broken || swat_world_break_latch(&s->world,hit.index))) :
-                    swat_world_impact_at(&s->world,hit.index,hit.point,swat_kit(gear->kit)->ram ? 160 : 18,false))) {
-                s->events.destroyed+=!s->world.objects[hit.index].active;
-                if(swat_kit(gear->kit)->ram && s->world.objects[hit.index].door && !swat_door_loose(&s->world.objects[hit.index]))
+                    swat_world_hit_impact(&s->world,hit,swat_kit(gear->kit)->ram ? 160 : 18,false))) {
+                s->events.destroyed+=hit.kind==SWAT_HIT_WORLD && !object->active;
+                if(ram_door && !swat_door_loose(object))
                     s->world.objects[hit.index].door_open=true;
                 swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
             }
@@ -640,6 +642,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
         swat_controller_pre_step(&s->actors[i].controller,&inputs[i],swat_weapons_busy(&s->actors[i].arsenal));
     b3World_Step(s->world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);
     swat_world_sync_doors(&s->world);
+    swat_world_sync_rubble(&s->world);
     if(!movement_only) { swat_projectiles_step(s); swat_devices_step(s); }
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_controller_post_step(&s->actors[i].controller,&inputs[i]);
@@ -654,7 +657,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
                 a->foot_distance=0;
                 float strength=a->controller.body.crouched ? 0.12f : (a->controller.sprinting ? 0.8f : 0.45f);
                 SwatHit ground=swat_world_ray(&s->world,b3OffsetPos(feet,swat_v(0,.2f,0)),swat_v(0,-1,0),.6f,a->controller.body.body);
-                SwatMaterial surface=ground.kind==SWAT_HIT_WORLD && ground.index>=0 ? s->world.objects[ground.index].material : SWAT_CONCRETE;
+                SwatMaterial surface=swat_world_hit_material(&s->world,ground,SWAT_CONCRETE);
                 swat_sound_surface(&s->sounds,s->tick,i,SWAT_SOUND_STEP,b3OffsetPos(feet,swat_v(0,0.1f,0)),strength*swat_material(surface)->footstep_gain,16,surface);
             }
         }
@@ -777,8 +780,8 @@ void swat_sim_observe(const SwatSim* s, int actor, float out[SWAT_OBS_SIZE]) {
         }
         out[offset]=hit.distance/30;
         if (!hit.hit) continue;
-        if (hit.index >= 0 && hit.kind==SWAT_HIT_WORLD) {
-            const SwatObject* object = &s->world.objects[hit.index];
+        const SwatObject* object=swat_world_hit_object(&s->world,hit);
+        if(object) {
             out[offset+1]=object->door ? 0.6f : (object->max_health > 0 ? 0.4f : 0.2f);
             out[offset+2]=object->max_health > 0 ? object->health/object->max_health : 1;
         }

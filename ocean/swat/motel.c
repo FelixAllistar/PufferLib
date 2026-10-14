@@ -758,6 +758,7 @@ void swat_motel_build(SwatWorld* w) {
     for(int i=106;i<=108;i++) {
         SwatObject* o=&w->objects[i];int first=w->count;
         swat_build_framed_wall(w,(b3Pos){o->center.x,0,-3},0,6,2.8f,0,0,0,0,false);
+        swat_world_support_enable(w,first+1);
         o->wall_group=first+1;
         b3DestroyBody(o->body);o->body=b3_nullBodyId;o->shape=b3_nullShapeId;o->active=false;
     }

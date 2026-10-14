@@ -138,6 +138,7 @@ void swat_mission_build_breach_lab(SwatWorld* w) {
             swat_v(.035f,1.30f,(width-.038f)*.5f),SWAT_INSULATION,10);
         w->objects[id].part=SWAT_PART_SKIN;w->objects[id].wall_group=first+1;
     }
+    swat_world_support_enable(w,first+1);
     // Staggered masonry courses provide real small constituent pieces. Their
     // painted face shares world UVs; cuts can retain multiple pieces of a unit.
     first=w->count;float dz=.34f,dy=2.7f/14;

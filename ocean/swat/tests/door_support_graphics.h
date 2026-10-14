@@ -13,13 +13,13 @@ static void support_ticks(int count) {
     SwatInput neutral=swat_neutral_input();for(int t=0;t<count;t++)swat_sim_step(&sim,&neutral);
 }
 static Image support_cached_image(SwatView* view,Camera3D camera) {
-    static SwatSnapshot a,b;swat_capture_snapshot(&sim,1,&a);
+    static SwatSnapshot a,b;swat_capture_snapshot(&sim,1,&a);uint32_t geometry=sample_geometry_hash();
     swat_view_prepare_shadows(view,&sim,camera.position,false);
     Image cached=room101_capture_prepared(view,camera,true,1200,720),full=sample_capture(view,camera);
     Color* p=LoadImageColors(cached),*q=LoadImageColors(full);int mismatches=0;
     for(int i=0;i<1200*720;i++)mismatches+=abs(p[i].r-q[i].r)+abs(p[i].g-q[i].g)+abs(p[i].b-q[i].b)>3;
     assert(mismatches<10);UnloadImageColors(p);UnloadImageColors(q);UnloadImage(full);
-    swat_capture_snapshot(&sim,1,&b);assert(!memcmp(&a,&b,sizeof(a)));
+    swat_capture_snapshot(&sim,1,&b);assert(!memcmp(&a,&b,sizeof(a)) && geometry==sample_geometry_hash());
     return cached;
 }
 static void support_capture(SwatView* view,Camera3D camera,const char* directory,const char* name) {

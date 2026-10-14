@@ -2,8 +2,8 @@
 #include "fracture_geometry.h"
 static uint32_t sample_geometry_hash(void) {
     uint32_t hash=2166136261u;
-    for(int i=0;i<sim.world.count;i++) {
-        const SwatFracture* f=sim.world.objects[i].cuts;if(!f)continue;
+    for(int i=0;i<swat_world_geometry_count(&sim.world);i++) {
+        const SwatFracture* f=swat_world_geometry(&sim.world,i)->cuts;if(!f)continue;
         const unsigned char* bytes=(const unsigned char*)f->sections;
         for(size_t j=0;j<(size_t)f->section_count*sizeof(*f->sections);j++){hash^=bytes[j];hash*=16777619u;}
     }

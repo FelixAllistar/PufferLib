@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 22
+#define SWAT_NET_VERSION 23
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32
@@ -19,6 +19,7 @@ typedef struct SwatMapObject {
     float yaw,max_health,closed_yaw;
     SwatMaterial material;
     SwatPart part;
+    SwatSupportRole support_role;
     bool door,latch_broken;
     float pitch;
     bool fractured;
@@ -76,6 +77,9 @@ typedef struct SwatSnapshot {
     SwatEvidence evidence[SWAT_MAX_ACTORS];
     SwatActorState actors[SWAT_MAX_ACTORS];
     SwatObjectState objects[SWAT_MAX_OBJECTS];
+    uint32_t rubble_serial;
+    int rubble_count;
+    SwatRubbleState rubble[SWAT_RUBBLE_CAPACITY];
     SwatSoundEvent sounds[SWAT_NET_SOUNDS];
     int sound_count;
     SwatProjectile projectiles[SWAT_MAX_PROJECTILES];

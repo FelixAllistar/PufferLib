@@ -1098,6 +1098,11 @@ production audio and useful held-out tactical policies.
   windows/doors, cutaway planning and three authored overwatch posts.
 - Thin independent wall faces, cavities, timber studs, plates and headers;
   distinct material transmission and surface absorption tables.
+- Connected material in the middle timber lab wall and three motel partitions
+  follows the surviving path to fixed timber anchors. Disconnected sheets/stud
+  sections become bounded physical debris with original finishes, achieved
+  poses, dynamic clearance, sound/shadows and live/late/save/replay replication
+  in protocol v23. Corner contact and insulation do not carry wall support.
 - Recon/Control/Entry kit tradeoffs, collision-limited optiwand, melee/ram,
   less-lethal impact launcher, compliance and interruptible cuffing.
 - Head/torso/arm/leg injury, plate protection, injury-driven movement/spread,
@@ -1182,7 +1187,8 @@ records its scope. Briar Court batch 15 is now a playable authored motel with
 replica reconstruction. Exterior masonry and bathroom partitions now use
 material-aware destructible sections with clipped original art; masonry stops
 gunfire but accepts a local charge breach. Exposed-core/chipped-plaster strips now track surviving edges. Irregular opening
-silhouettes, rubble and building-scale structural support remain unfinished; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). The
+silhouettes and physical rubble have bounded prototypes; building-scale structural
+support remains unfinished; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). The
 checks now also cover Morrow Block batch 16: 151 modular placements plus the
 authored street/sidewalk, five functional doors, original static triangle
 collision and actual controller traversal. Original lateral, held crouch and

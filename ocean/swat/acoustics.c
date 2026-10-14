@@ -1,5 +1,6 @@
 #include "acoustics.h"
 #include "door_damage.h"
+#include "fracture_geometry.h"
 #include <string.h>
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -40,15 +41,15 @@ typedef struct SwatAcousticNode {
 typedef struct SwatAcousticScene {
     const SwatWorld* world;
     b3Pos origin;
-    float c[SWAT_MAX_OBJECTS],s[SWAT_MAX_OBJECTS];
-    float low[SWAT_MAX_OBJECTS][3],high[SWAT_MAX_OBJECTS][3];
-    int order[SWAT_MAX_OBJECTS],count,node_count,source_count;
-    b3Pos source_center[SWAT_MAX_OBJECTS];
-    b3Vec3 source_half[SWAT_MAX_OBJECTS];
-    float source_yaw[SWAT_MAX_OBJECTS],source_pitch[SWAT_MAX_OBJECTS];
-    b3Quat source_rotation[SWAT_MAX_OBJECTS];
-    bool source_active[SWAT_MAX_OBJECTS];
-    SwatAcousticNode nodes[2*SWAT_MAX_OBJECTS];
+    float c[SWAT_MAX_GEOMETRY],s[SWAT_MAX_GEOMETRY];
+    float low[SWAT_MAX_GEOMETRY][3],high[SWAT_MAX_GEOMETRY][3];
+    int order[SWAT_MAX_GEOMETRY],count,node_count,source_count;
+    b3Pos source_center[SWAT_MAX_GEOMETRY];
+    b3Vec3 source_half[SWAT_MAX_GEOMETRY];
+    float source_yaw[SWAT_MAX_GEOMETRY],source_pitch[SWAT_MAX_GEOMETRY];
+    b3Quat source_rotation[SWAT_MAX_GEOMETRY];
+    bool source_active[SWAT_MAX_GEOMETRY];
+    SwatAcousticNode nodes[2*SWAT_MAX_GEOMETRY];
 } SwatAcousticScene;
 
 static int swat_acoustic_tree(SwatAcousticScene* scene,int start,int count) {
@@ -84,10 +85,10 @@ static int swat_acoustic_tree(SwatAcousticScene* scene,int start,int count) {
 }
 
 static void swat_acoustic_scene(SwatAcousticScene* scene,const SwatWorld* world) {
-    scene->world=world; scene->count=scene->node_count=0; scene->source_count=world->count;
+    scene->world=world; scene->count=scene->node_count=0; scene->source_count=swat_world_geometry_count(world);
     scene->origin=world->count ? world->objects[0].center : (b3Pos){0};
-    for(int i=0;i<world->count;i++) {
-        const SwatObject* o=&world->objects[i];
+    for(int i=0;i<scene->source_count;i++) {
+        const SwatObject* o=swat_world_geometry(world,i);
         scene->source_active[i]=o->active; scene->source_center[i]=o->center; scene->source_half[i]=o->half;
         scene->source_yaw[i]=o->yaw; scene->source_pitch[i]=o->pitch;
         if(!o->active) continue;
@@ -98,7 +99,7 @@ static void swat_acoustic_scene(SwatAcousticScene* scene,const SwatWorld* world)
         float local_x=cp*o->half.x+sp*o->half.y,local_y=sp*o->half.x+cp*o->half.y;
         float extent[3]={fabsf(c)*local_x+fabsf(s)*o->half.z,local_y,
                          fabsf(s)*local_x+fabsf(c)*o->half.z};
-        if(o->motion) {
+        if(o->motion || o->rubble) {
             b3Quat q=scene->source_rotation[i]=swat_object_rotation(o);
             b3Vec3 x=b3RotateVector(q,swat_v(o->half.x,0,0)),y=b3RotateVector(q,swat_v(0,o->half.y,0)),z=b3RotateVector(q,swat_v(0,0,o->half.z));
             extent[0]=fabsf(x.x)+fabsf(y.x)+fabsf(z.x);extent[1]=fabsf(x.y)+fabsf(y.y)+fabsf(z.y);extent[2]=fabsf(x.z)+fabsf(y.z)+fabsf(z.z);
@@ -116,14 +117,15 @@ static void swat_acoustic_scene(SwatAcousticScene* scene,const SwatWorld* world)
 
 static const SwatAcousticScene* swat_acoustic_cached(const SwatWorld* world) {
     static _Thread_local SwatAcousticScene cache;
-    bool changed=cache.world!=world || cache.source_count!=world->count;
-    for(int i=0;!changed && i<world->count;i++) {
-        const SwatObject* o=&world->objects[i];
+    bool changed=cache.world!=world || cache.source_count!=swat_world_geometry_count(world);
+    for(int i=0;!changed && i<cache.source_count;i++) {
+        const SwatObject* o=swat_world_geometry(world,i);
+        b3Quat rotation=swat_object_rotation(o);
         changed=cache.source_active[i]!=o->active ||
             (o->active && (memcmp(&cache.source_center[i],&o->center,sizeof(o->center)) ||
              memcmp(&cache.source_half[i],&o->half,sizeof(o->half)) ||
              cache.source_yaw[i]!=o->yaw || cache.source_pitch[i]!=o->pitch ||
-             (o->motion && memcmp(&cache.source_rotation[i],&o->motion->state.rotation,sizeof(b3Quat)))));
+             ((o->motion || o->rubble) && memcmp(&cache.source_rotation[i],&rotation,sizeof(rotation)))));
     }
     if(changed) swat_acoustic_scene(&cache,world);
     return &cache;
@@ -156,6 +158,10 @@ static void swat_acoustic_query(const SwatAcousticScene* scene,int index,
 // do not act as acoustic walls. Destroyed cover is excluded immediately.
 static float swat_acoustic_thickness(const SwatObject* o,float c,float s,b3Pos from,b3Pos to) {
     b3Vec3 p=b3SubPos(from,o->center),d=b3SubPos(to,from);
+    if(o->rubble) {
+        b3Quat q=swat_object_rotation(o);
+        return swat_fracture_segment_thickness(o->cuts,o->half.x,b3InvRotateVector(q,p),b3InvRotateVector(q,d));
+    }
     float origin[3]={c*p.x-s*p.z,p.y,s*p.x+c*p.z};
     float delta[3]={c*d.x-s*d.z,d.y,s*d.x+c*d.z};
     if(o->motion) {
@@ -201,13 +207,13 @@ static int swat_acoustic_first_bit(uint64_t bits) {
 
 static void swat_acoustic_transmit(const SwatAcousticScene* scene, b3Pos from, b3Pos to, float bands[3]) {
     float loss[3]={0};
-    uint64_t objects[(SWAT_MAX_OBJECTS+63)/64]={0};
+    uint64_t objects[(SWAT_MAX_GEOMETRY+63)/64]={0};
     b3Vec3 p=b3SubPos(from,scene->origin),d=b3SubPos(to,from);
     float origin[3]={p.x,p.y,p.z},delta[3]={d.x,d.y,d.z};
     if(scene->count) swat_acoustic_query(scene,0,origin,delta,objects);
-    for(int word=0;word<(SWAT_MAX_OBJECTS+63)/64;word++) while(objects[word]) {
+    for(int word=0;word<(SWAT_MAX_GEOMETRY+63)/64;word++) while(objects[word]) {
         int i=word*64+swat_acoustic_first_bit(objects[word]); objects[word]&=objects[word]-1;
-        const SwatObject* o=&scene->world->objects[i];
+        const SwatObject* o=swat_world_geometry(scene->world,i);
         // Open fence infill is acoustically porous. Its spatial group bounds
         // contain mostly air, so applying solid-slab steel loss is invalid.
         // Posts retain their own narrow obstruction; infill diffraction is

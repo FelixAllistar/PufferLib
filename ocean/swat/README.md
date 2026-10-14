@@ -929,7 +929,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 19) and the same generated
+Saves require this network/replay version (currently 23) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -1009,22 +1009,38 @@ each frame. Sparse motion data is allocated only after hinge damage; the leaf
 keeps its existing owner/body, with one unshaped joint reference per affected
 world. Dense motel collision meshes also use bounded contact subsets so a
 falling panel cannot overflow the physics library's triangle contact buffer.
-This remains a bounded prototype: structural stress, connected wall-sheet
-support and loose wall rubble are not simulated.
+The middle timber/board lab wall and the motel's three guest-room partitions
+also track retained material back to the fixed timber plates and jambs. Sheet
+edges carry attachment across hidden collision divisions; a corner touch does
+not, and insulation never carries another piece. Material that loses every
+connection becomes physical debris, with the original finish and exposed core.
+Debris uses its full achieved pose for collision, bullets, sight, sound, shadows
+and route clearance. Flat pieces can be stepped over. Mounted charges disappear
+if their supporting material falls away.
+
+Original wall owners remain stable. A separate pool holds at most 64 debris
+bodies, each with at most 16 convex sections; pressure reclaims inactive/settled
+pieces first, then the oldest moving piece. Fine fragments beyond the geometry
+budget shed without another body. Reclaimed debris and detached wall material
+never reappear. Maps, live/late snapshots and same-build save/replay preserve
+the retained wall and physical debris. This is an attachment prototype;
+structural stress, bending, building collapse and debris crushing are unfinished.
 
 The optional **breach-lab** mission has one officer and three independent samples,
 with two wall breachers for comparison. Use **7**, **K**, and **Backspace** to
 place, detonate and reset. The larger wall tool is represented separately from
 the compact door device. Original imported source models and textures stay intact.
-Peers need matching version-22 builds; start fresh recordings/saves for this
+Peers need matching version-23 builds; start fresh recordings/saves for this
 build. Existing recordings are retained, but earlier wire versions cannot load.
 
 ```bash
 make -C ocean/swat breach-geometry-test
 make -C ocean/swat door-support-test
+make -C ocean/swat wall-support-test
 ./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" breach-geometry
 ./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" destruction-samples
 ./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" door-support
+./build/swat/windows/test_environment_art.exe "$(wslpath -aw build/swat)" wall-support
 ```
 
 Squad movement now routes by floor height, standing/crouching clearance and actual
@@ -1236,7 +1252,7 @@ Navigation lazily allocates 216 × 168 cells and four height layers for the wide
 motel, retaining the exact previous 60 cm indoor sampling arithmetic. Smaller
 worlds retain their previous 108 × 108 grid. Grid/route scratch share one heap
 allocation, with 32-bit queue indices; reset/map replacement/close free it once.
-Protocol/replay version is 18; older recorded sessions must be regenerated.
+Protocol/replay version is 23; older recorded sessions must be regenerated.
 
 Native rendering QA can be run after a Windows player build:
 
@@ -1322,7 +1338,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 22 as described above.
+destruction prototype requires version 23 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native
