@@ -44,7 +44,7 @@ static inline int swat_breach_details(const SwatWorld* w,b3Pos eye,SwatBreachDet
             }
         }
         if(!found)continue;
-        b3Quat q=swat_rotation(o->yaw,o->pitch);
+        b3Quat q=swat_object_rotation(o);
         // Native fragment thickness stays unchanged. Timber/clay can sit at
         // different depths on a real core; thin paper stays with its board skin.
         float depth=kind==1?0:((hash>>8)&255)/255.0f*(2*o->half.x-.02f)-o->half.x+.01f;

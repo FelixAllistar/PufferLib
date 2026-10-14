@@ -10,6 +10,7 @@ static uint32_t shadow_damage_base(const SwatLighting* light,const SwatWorld* wo
         h=hash_bytes(h,&o->active,sizeof(o->active));h=hash_bytes(h,&o->material,sizeof(o->material));
         h=hash_bytes(h,&o->center,sizeof(o->center));h=hash_bytes(h,&o->half,sizeof(o->half));
         h=hash_bytes(h,&o->yaw,sizeof(o->yaw));h=hash_bytes(h,&o->pitch,sizeof(o->pitch));
+        if(o->motion)h=hash_bytes(h,&o->motion->state.rotation,sizeof(b3Quat));
         h=hash_bytes(h,&o->door,sizeof(o->door));h=hash_bytes(h,&o->latch_broken,sizeof(o->latch_broken));
         h=hash_bytes(h,&o->fractured,sizeof(o->fractured));
         if(o->fractured)h=hash_bytes(h,o->corners,sizeof(o->corners));
@@ -30,7 +31,7 @@ static bool shadow_damage_bounds(const SwatLighting* light,const SwatWorld* worl
         bool appended=shadow_cut_prefix(o,old)==light->damage_hash[i];
         for(int c=appended?old:0;c<count;c++) {
             const SwatCut* cut=&o->cuts->cuts[c];if(appended && cut->kind==SWAT_CUT_BREACH)return false;
-            b3Quat rotation=swat_rotation(o->yaw,o->pitch);
+            b3Quat rotation=swat_object_rotation(o);
             // Joining retained polygons can change source triangulation away
             // from the newest hit. The unchanged owner's full bounds contain
             // both old and new geometry, including a growing/replaced patch.

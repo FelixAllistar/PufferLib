@@ -2,6 +2,7 @@
 #include "pose.h"
 #include "motel.h"
 #include "storefront.h"
+#include "door_damage.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -471,6 +472,7 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
             swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.2f,8); return;
         }
         SwatObject* door=&s->world.objects[hit.index];
+        if(swat_door_loose(door))return;
         if(in->peek) { door->door_open=!(door->door_open && door->peek); door->peek=true; }
         else { door->door_open=door->peek || !door->door_open; door->peek=false; }
         swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_DOOR,s->world.objects[hit.index].center,0.6f,18);
@@ -556,12 +558,12 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
             SwatMaterial material=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? s->world.objects[hit.index].material : SWAT_CARPET;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,1,25,material);
             if(hit.kind==SWAT_HIT_ACTOR) swat_sim_damage_region(s,hit.index,actor,5,swat_sim_hit_region(&s->actors[hit.index],hit.point),true);
-            else if(hit.index>=0 && (swat_kit(gear->kit)->ram && s->world.objects[hit.index].door ?
+            else if(hit.index>=0 && (swat_kit(gear->kit)->ram && s->world.objects[hit.index].door && !swat_door_loose(&s->world.objects[hit.index]) ?
                     (swat_world_breachable(&s->world.objects[hit.index]) &&
                      (s->world.objects[hit.index].latch_broken || swat_world_break_latch(&s->world,hit.index))) :
                     swat_world_impact_at(&s->world,hit.index,hit.point,swat_kit(gear->kit)->ram ? 160 : 18,false))) {
                 s->events.destroyed+=!s->world.objects[hit.index].active;
-                if(swat_kit(gear->kit)->ram && s->world.objects[hit.index].door)
+                if(swat_kit(gear->kit)->ram && s->world.objects[hit.index].door && !swat_door_loose(&s->world.objects[hit.index]))
                     s->world.objects[hit.index].door_open=true;
                 swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
             }
@@ -637,6 +639,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_controller_pre_step(&s->actors[i].controller,&inputs[i],swat_weapons_busy(&s->actors[i].arsenal));
     b3World_Step(s->world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);
+    swat_world_sync_doors(&s->world);
     if(!movement_only) { swat_projectiles_step(s); swat_devices_step(s); }
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_controller_post_step(&s->actors[i].controller,&inputs[i]);

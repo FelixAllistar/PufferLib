@@ -34,8 +34,17 @@ static const int pane_parents[]={6,17,41,65,89};
 static float mesh_units(int asset){return asset>=44?100:1;}
 static void contact_meshes_create(SwatWorld* w) {
     int count=(int)(sizeof(motel_contact_sources)/sizeof(motel_contact_sources[0]));
-    w->motel_contact_meshes=calloc((size_t)count,sizeof(*w->motel_contact_meshes));assert(w->motel_contact_meshes);
-    w->motel_contact_mesh_count=count;
+    int total=count;
+    for(int asset=0;asset<SWAT_MOTEL_ASSETS;asset++) {
+        bool authored=false;for(int p=0;p<count;p++)authored|=motel_contact_sources[p].asset==asset;
+        int triangles=w->motel_meshes[asset]->triangleCount;
+        if(!authored && triangles>240) {
+            w->motel_contact_first[asset]=total;w->motel_contact_parts[asset]=(triangles+239)/240;
+            total+=w->motel_contact_parts[asset];
+        }
+    }
+    w->motel_contact_meshes=calloc((size_t)total,sizeof(*w->motel_contact_meshes));assert(w->motel_contact_meshes);
+    w->motel_contact_mesh_count=total;
     bool* selected[SWAT_MOTEL_ASSETS]={0};
     for(int i=0;i<count;i++) {
         const SwatMotelContactSource* part=&motel_contact_sources[i];const SwatMotelAsset* source=swat_motel_asset(part->asset);
@@ -70,12 +79,29 @@ static void contact_meshes_create(SwatWorld* w) {
         for(int t=0;t<w->motel_meshes[asset]->triangleCount;t++)assert(selected[asset][t]);
         free(selected[asset]);
     }
+    // A falling leaf spans a larger contact patch than a character capsule.
+    // Bound the remaining old dense meshes using the library's cooked source,
+    // preserving every original runtime triangle and adjacency flag, including
+    // any welding/degenerate filtering already performed by the library.
+    for(int asset=0;asset<SWAT_MOTEL_ASSETS;asset++)for(int p=0;p<w->motel_contact_parts[asset];p++) {
+        const b3MeshData* source=w->motel_meshes[asset];int32_t triangles[240];
+        int first=p*240,n=source->triangleCount-first;if(n>240)n=240;
+        for(int t=0;t<n;t++)triangles[t]=first+t;
+        int slot=w->motel_contact_first[asset]+p;
+        w->motel_contact_meshes[slot]=b3CreateMeshSubset(source,triangles,n);assert(w->motel_contact_meshes[slot]);
+    }
 }
 static bool contact_meshes_bind(SwatWorld* w,SwatObject* o,const SwatMotelInstance* p,const b3ShapeDef* def) {
     bool found=false;
     b3Vec3 scale=swat_mul(p->scale,1/mesh_units(p->asset));
     for(int i=0;i<(int)(sizeof(motel_contact_sources)/sizeof(motel_contact_sources[0]));i++)if(motel_contact_sources[i].asset==p->asset) {
         b3ShapeId shape=b3CreateMeshShape(o->body,def,w->motel_contact_meshes[i],scale);assert(B3_IS_NON_NULL(shape));
+        if(!found)o->shape=shape;
+        found=true;
+    }
+    for(int i=0;i<w->motel_contact_parts[p->asset];i++) {
+        int part=w->motel_contact_first[p->asset]+i;
+        b3ShapeId shape=b3CreateMeshShape(o->body,def,w->motel_contact_meshes[part],scale);assert(B3_IS_NON_NULL(shape));
         if(!found)o->shape=shape;
         found=true;
     }

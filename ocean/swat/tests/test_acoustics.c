@@ -1,4 +1,5 @@
 #include "sim.h"
+#include "door_damage.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -224,16 +225,38 @@ static void test_doorway_route(void) {
     SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{9,1.6f,3},3,100,SWAT_CONCRETE};
     b3Pos listener={5,1.6f,3};
     SwatAcousticPath closed=swat_acoustic_path(&world,&event,listener);
+    world.room_count=1;
+    world.rooms[0]=(SwatRoom){.center={11,1.8f,0},.half={4,1.8f,6.8f},.surface=SWAT_CONCRETE,.floor=SWAT_CONCRETE};
+    float closed_wet=swat_acoustic_room(&world,event.position).wet;
     int door=-1; for(int i=0;i<world.count;i++) if(world.objects[i].door) door=i;
     world.objects[door].door_open=true;
     for(int i=0;i<90;i++) swat_world_step_doors(&world);
     SwatAcousticPath open=swat_acoustic_path(&world,&event,listener);
     assert(open.via_doorway && open.gain>closed.gain*10);
     assert(open.direction.z<-.5f && open.direction.x>.4f); // heard at the doorway, not through the wall
+    SwatObject* leaf=&world.objects[door];
+    leaf->door_open=false;for(int t=0;t<90;t++)swat_world_step_doors(&world);
+    assert(swat_world_break_latch(&world,door));
+    for(int h=0;h<SWAT_DOOR_HINGES;h++) {
+        b3Vec3 anchor=swat_door_hinge(leaf,h);
+        assert(swat_world_cut(&world,door,(SwatCut){.y=anchor.y,.z=anchor.z,.height=.18f,.width=.10f,.seed=(unsigned)h,.kind=SWAT_CUT_IMPACT})==1);
+    }
+    assert(swat_door_loose(leaf));
+    for(int t=0;t<600;t++) {
+        swat_world_step_doors(&world);b3World_Step(world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);swat_world_sync_doors(&world);
+    }
+    if(b3Body_IsAwake(leaf->body) || leaf->center.y>=.2f)
+        fprintf(stderr,"Acoustic fallen fixture: centre %.6f %.6f %.6f awake%d\n",(float)leaf->center.x,(float)leaf->center.y,(float)leaf->center.z,b3Body_IsAwake(leaf->body));
+    assert(!b3Body_IsAwake(leaf->body) && leaf->center.y<.2f);
+    // Legacy yaw/open controls do not define a fallen leaf's full pose.
+    leaf->door_open=false;leaf->door_angle=0;
+    SwatAcousticPath fallen=swat_acoustic_path(&world,&event,listener);
+    assert(fallen.via_doorway && fallen.gain>closed.gain*10 && fabsf(fallen.direction.y)<1e-6f);
+    assert(swat_acoustic_room(&world,event.position).wet<closed_wet);
     assert(swat_world_damage(&world,door,200));
     assert(swat_acoustic_path(&world,&event,listener).via_doorway);
     swat_world_close(&world);
-    puts("PASS acoustics: open/broken doorway carries sound around the partition with arrival bearing at the opening");
+    puts("PASS acoustics: open/fallen/broken doorway carries sound around the partition at the original opening height; full leaf tilt releases room reverberation");
 }
 static void test_agent_listens(void) {
     SwatSim sim; SwatConfig config=swat_default_config(); config.randomize=false;

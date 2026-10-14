@@ -5,6 +5,7 @@
 #include <string.h>
 #include "door_damage.h"
 #include "fracture_geometry.h"
+#include "door_motion.h"
 
 static float swat_bounce(float a,uint64_t ma,float b,uint64_t mb) {
     (void)ma; (void)mb;
@@ -26,7 +27,7 @@ void swat_world_init(SwatWorld* w) {
 }
 
 void swat_world_close(SwatWorld* w) {
-    for(int i=0;i<w->count;i++)swat_world_cut_close(w->objects[i].cuts);
+    for(int i=0;i<w->count;i++){swat_world_cut_close(w->objects[i].cuts);free(w->objects[i].motion);}
     if (B3_IS_NON_NULL(w->id)) b3DestroyWorld(w->id);
     for(int i=0;i<SWAT_MOTEL_MESH_CAPACITY;i++) if(w->motel_meshes[i]) b3DestroyMesh(w->motel_meshes[i]);
     for(int i=0;i<40;i++) if(w->storefront_meshes[i]) b3DestroyMesh(w->storefront_meshes[i]);
@@ -171,6 +172,7 @@ bool swat_world_attach(SwatWorld* w,int object,const int* supports,int count) {
     return true;
 }
 static void remove_object(SwatWorld* w,SwatObject* o) {
+    door_motion_stop(o);
     b3DestroyBody(o->body);
     o->body = b3_nullBodyId; o->shape = b3_nullShapeId; o->active = false;
     o->locked=false; o->breach_owner=o->wedge_owner=-1;
@@ -209,7 +211,7 @@ bool swat_world_impact(SwatWorld* w,int object,float damage) {
 bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool door_round) {
     if(object<0 || object>=w->count || !isfinite(damage) || damage<=0)return false;
     SwatObject* o=&w->objects[object];if(!o->active)return false;
-    b3Vec3 local=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(point,o->center));
+    b3Vec3 local=b3InvRotateVector(swat_object_rotation(o),b3SubPos(point,o->center));
     if(o->door && door_round && local.z>o->half.z-.32f && fabsf(local.y-.06f)<.36f) {
         // Authored hardware interaction in the game, not a whole-leaf damage
         // multiplier or a real-world ballistic breaching procedure.
@@ -228,11 +230,12 @@ bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool 
             if(!source.door && peer->wall_group!=source.wall_group)break;
             if(!peer->active || peer->door!=source.door || peer->part!=source.part || peer->material!=source.material ||
                fabsf(peer->half.x-source.half.x)>.001f)continue;
-            b3Vec3 p=b3InvRotateVector(swat_rotation(peer->yaw,peer->pitch),b3SubPos(point,peer->center));
+            b3Vec3 p=b3InvRotateVector(swat_object_rotation(peer),b3SubPos(point,peer->center));
             if(fabsf(p.x)>peer->half.x+.002f)continue; // Only the contacted sheet/frame layer.
             SwatCut cut=swat_impact_patch(peer,p.y,p.z,radius);
             changed|=swat_world_cut(w,i,cut)>0;
         }
+        if(changed && o->door)door_motion_impulse(o,point,fminf(4,damage*.045f));
         return changed;
     }
     return swat_world_impact(w,object,damage);
@@ -331,7 +334,7 @@ void swat_world_cut_apply(SwatWorld* w,int object,SwatFracture* f) {
         assert(count==b3Body_GetShapeCount(o->body));
         for(int i=0;i<count;i++)b3DestroyShape(shapes[i],false);
         o->shape=b3_nullShapeId;
-        b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
+        b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);def.density=swat_material(o->material)->density;
         for(int i=0;i<f->section_count;i++) {
             b3ShapeId id=b3CreateHullShape(o->body,&def,f->pending_hulls[i]);
             if(!i)o->shape=id;
@@ -364,8 +367,15 @@ int swat_world_cut(SwatWorld* w,int object,SwatCut cut) {
     else {SwatFracturePolygon p;swat_source_polygon(o,&p);old_area=swat_polygon_area(&p);}
     for(int i=0;i<prepared->section_count;i++)new_area+=swat_polygon_area(&prepared->sections[i]);
     if(new_area>=old_area-1e-6f){swat_world_cut_close(prepared);return 0;}
+    SwatDoorMotion* motion=NULL;
+    if(o->door && !o->motion && prepared->section_count) {
+        SwatObject candidate=*o;candidate.cuts=prepared;
+        if(swat_world_door_hinges(&candidate) && !(motion=swat_world_door_prepare())){swat_world_cut_close(prepared);return -1;}
+    }
     swat_world_cut_apply(w,object,prepared);
     if(!prepared->section_count){swat_world_damage(w,object,o->max_health);return 2;}
+    if(motion)door_motion_begin(o,motion);
+    door_motion_refresh(w,o,true);
     o->health*=new_area/old_area;w->generation++;return 1;
 }
 
@@ -394,13 +404,14 @@ bool swat_world_break_latch(SwatWorld* w,int object) {
     }
     b3ShapeId shapes[SWAT_DOOR_SECTIONS];int count=b3Body_GetShapes(o->body,shapes,SWAT_DOOR_SECTIONS);
     for(int i=0;i<count;i++)b3DestroyShape(shapes[i],false);
-    b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
+    b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);def.density=swat_material(o->material)->density;
     for(int i=0;i<SWAT_DOOR_SECTIONS;i++) {
         b3ShapeId shape=b3CreateHullShape(o->body,&def,hulls[i]);b3DestroyHull(hulls[i]);
         if(!i)o->shape=shape;
     }
     }
     o->latch_broken=true;o->locked=false;o->peek=false;
+    door_motion_refresh(w,o,true);
     o->breach_ticks=24;w->generation++;
     return true;
 }
@@ -409,7 +420,7 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object])) return 0;
     SwatObject source=w->objects[object];
     if(source.door) {
-        b3Vec3 mount=b3InvRotateVector(swat_rotation(source.yaw,source.pitch),b3SubPos(position,source.center));
+        b3Vec3 mount=b3InvRotateVector(swat_object_rotation(&source),b3SubPos(position,source.center));
         SwatCut local={.y=mount.y,.z=mount.z,.height=.18f,.width=.14f,
             .seed=(unsigned int)object,.kind=SWAT_CUT_BREACH};
         int changed=swat_world_cut(w,object,local);
@@ -473,13 +484,13 @@ static float blast_transmission(const SwatWorld* w,b3Pos from,b3Pos to,int targe
     return 0;
 }
 static b3Pos blast_group_anchor(const SwatWorld* w,const SwatObject* target,b3Pos origin) {
-    b3Quat q=swat_rotation(target->yaw,target->pitch);
+    b3Quat q=swat_object_rotation(target);
     b3Vec3 lo=swat_v(1e30f,1e30f,1e30f),hi=swat_v(-1e30f,-1e30f,-1e30f);
     for(int i=0;i<w->count;i++) {
         const SwatObject* o=&w->objects[i];
         if(!o->active || o->wall_group!=target->wall_group ||
            (o->part!=SWAT_PART_SKIN && o->part!=SWAT_PART_FRAME))continue;
-        b3Quat r=swat_rotation(o->yaw,o->pitch);
+        b3Quat r=swat_object_rotation(o);
         for(int v=0;v<8;v++) {
             b3Pos p=b3OffsetPos(o->center,b3RotateVector(r,swat_v((v&1?1:-1)*o->half.x,(v&2?1:-1)*o->half.y,(v&4?1:-1)*o->half.z)));
             b3Vec3 local=b3InvRotateVector(q,b3SubPos(p,target->center));
@@ -493,9 +504,10 @@ static b3Pos blast_group_anchor(const SwatWorld* w,const SwatObject* target,b3Po
 }
 int swat_world_blast(SwatWorld* w,int object,b3Pos position) {
     if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object]))return 0;
-    SwatObject source=w->objects[object];b3Quat rotation=swat_rotation(source.yaw,source.pitch);
+    SwatObject source=w->objects[object];b3Quat rotation=swat_object_rotation(&source);
     b3Vec3 mount=b3InvRotateVector(rotation,b3SubPos(position,source.center));
     int affected=swat_world_breach(w,object,position);
+    if(affected && source.door)door_motion_impulse(&w->objects[object],position,60);
     b3Pos origin=b3OffsetPos(position,b3RotateVector(rotation,swat_v(mount.x>=0?.035f:-.035f,0,0)));
     float strength[SWAT_MAX_OBJECTS]={0};b3Pos contacts[SWAT_MAX_OBJECTS];
     bool anchored[SWAT_MAX_OBJECTS]={0};b3Pos anchors[SWAT_MAX_OBJECTS];
@@ -507,7 +519,7 @@ int swat_world_blast(SwatWorld* w,int object,b3Pos position) {
         bool soft=o->material==SWAT_DRYWALL || o->material==SWAT_PLASTER || o->material==SWAT_INSULATION;
         bool wood=o->material==SWAT_WOOD,glass=o->material==SWAT_GLASS || o->material==SWAT_OPAQUE_GLASS;
         if(!soft && !wood && !glass)continue;
-        b3Quat q=swat_rotation(o->yaw,o->pitch);b3Vec3 local=b3InvRotateVector(q,b3SubPos(origin,o->center));
+        b3Quat q=swat_object_rotation(o);b3Vec3 local=b3InvRotateVector(q,b3SubPos(origin,o->center));
         local=swat_v(swat_clamp(local.x,-o->half.x,o->half.x),swat_clamp(local.y,-o->half.y,o->half.y),swat_clamp(local.z,-o->half.z,o->half.z));
         contacts[i]=b3OffsetPos(o->center,b3RotateVector(q,local));
         float distance=b3Distance(origin,contacts[i]);if(distance>=range)continue;
@@ -527,7 +539,7 @@ int swat_world_blast(SwatWorld* w,int object,b3Pos position) {
             if(o->material==SWAT_GLASS || o->material==SWAT_OPAQUE_GLASS) {
                 affected+=swat_world_damage(w,i,120*strength[i]);continue;
             }
-            b3Vec3 local=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(contacts[i],o->center));
+            b3Vec3 local=b3InvRotateVector(swat_object_rotation(o),b3SubPos(contacts[i],o->center));
             float scale=wood?.45f:1;
             SwatCut cut={.y=local.y,.z=local.z,.height=scale*(.12f+.38f*strength[i]),
                 .width=scale*(.08f+.26f*strength[i]),.seed=(unsigned int)(object+1),.kind=SWAT_CUT_BREACH};
@@ -612,7 +624,7 @@ static bool mesh_exit_triangle(b3Vec3 a,b3Vec3 b,b3Vec3 c,int triangle,void* con
     return true;
 }
 float swat_world_exit_distance(const SwatObject* o,b3Pos entry,b3Vec3 d) {
-    b3Quat q=b3MulQuat(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3MakeQuatFromAxisAngle(swat_v(0,0,1),o->pitch));
+    b3Quat q=swat_object_rotation(o);
     b3Vec3 rel=b3InvRotateVector(q,b3SubPos(entry,o->center));
     b3Vec3 direction=b3InvRotateVector(q,d);
     if(o->cuts)return swat_fracture_exit(o->cuts,o->half.x,rel,direction);
@@ -706,17 +718,25 @@ void swat_world_step_doors(SwatWorld* w) {
         SwatObject* o = &w->objects[i];
         if(o->breach_ticks>0) o->breach_ticks--;
         if (!o->active || !o->door) continue;
+        if(o->motion) {
+            door_motion_refresh(w,o,false);
+            if(o->motion->support!=SWAT_DOOR_FIXED) {
+                o->motion->mount=b3InvRotateVector(swat_object_rotation(o),b3SubPos(o->breach_position,o->center));
+                door_motion_drive(o);continue;
+            }
+        }
         float target = o->door_open ? (o->peek ? 12*SWAT_RAD : SWAT_PI*0.5f) : 0;
         if(o->wedge_owner>=0) target=0;
         float delta = swat_clamp(target-o->door_angle,-2.0f*SWAT_DT,2.0f*SWAT_DT);
         if (fabsf(delta) < 1e-7f) continue;
         if (swat_door_obstructed(w,o,o->door_angle+delta)) continue;
-        b3Vec3 mount=b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(o->breach_position,o->center));
+        b3Vec3 mount=b3InvRotateVector(swat_object_rotation(o),b3SubPos(o->breach_position,o->center));
         o->door_angle += delta; o->yaw = o->closed_yaw+o->door_angle;
         o->center = b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
         b3Quat rotation = {{0,sinf(o->yaw*0.5f),0},cosf(o->yaw*0.5f)};
         b3Body_SetTransform(o->body,o->center,rotation);
-        if(o->breach_owner>=0)o->breach_position=b3OffsetPos(o->center,b3RotateVector(swat_rotation(o->yaw,o->pitch),mount));
+        if(o->motion){o->motion->state.position=o->center;o->motion->state.rotation=rotation;}
+        if(o->breach_owner>=0)o->breach_position=b3OffsetPos(o->center,b3RotateVector(swat_object_rotation(o),mount));
     }
 }
 

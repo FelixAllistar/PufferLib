@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 21
+#define SWAT_NET_VERSION 22
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32
@@ -63,6 +63,7 @@ typedef struct SwatObjectState {
     bool peek,trapped;
     unsigned int trap_known;
     b3Pos breach_position;
+    SwatDoorState door;
 } SwatObjectState;
 typedef struct SwatSnapshot {
     uint32_t epoch, revision, ack[SWAT_MAX_PLAYERS];

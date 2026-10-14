@@ -6,6 +6,9 @@
 #include "storefront.h"
 #include "raylib.h"
 
+// Apply the owner's achieved orientation inside its translated draw frame.
+void swat_environment_object_rotate(const SwatObject*);
+
 typedef enum SwatSurfaceKind {
     SWAT_SURFACE_PLASTER, SWAT_SURFACE_FLOOR, SWAT_SURFACE_FRAME,
     SWAT_SURFACE_DOOR_PAINT, SWAT_SURFACE_DOOR_WOOD, SWAT_SURFACE_WORN, SWAT_SURFACE_COUNT

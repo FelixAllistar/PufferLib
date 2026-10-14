@@ -30,6 +30,21 @@ typedef struct SwatRoomLight {
     float power;
 } SwatRoomLight;
 typedef struct SwatTag { SwatHitKind kind; int index; } SwatTag;
+// Sparse state exists only after a door loses a hinge. Its original owner/body
+// and retained cut geometry remain the same during hanging and free motion.
+typedef struct SwatDoorState {
+    unsigned int broken_hinges;
+    bool latched,awake;
+    b3Pos position;
+    b3Quat rotation;
+    b3Vec3 velocity,angular_velocity;
+} SwatDoorState;
+typedef struct SwatDoorMotion {
+    SwatDoorState state;
+    b3JointId joint;
+    int support;
+    b3Vec3 mount;
+} SwatDoorMotion;
 typedef struct SwatObject {
     SwatTag tag;
     b3BodyId body;
@@ -52,6 +67,7 @@ typedef struct SwatObject {
     bool fractured;
     float corners[4][2];
     SwatFracture* cuts; // Sparse damage geometry; intact objects allocate none.
+    SwatDoorMotion* motion;
     int wall_group;
     // Required attachment supports precede their child; -1 denotes unused slots.
     int supports[SWAT_MAX_SUPPORTS];
@@ -61,6 +77,7 @@ typedef struct SwatObject {
 
 typedef struct SwatWorld {
     b3WorldId id;
+    b3BodyId door_reference; // Unshaped fixed joint reference, created on demand.
     bool motel,storefront;
     b3MeshData* motel_meshes[SWAT_MOTEL_MESH_CAPACITY]; // Owned static collision; released after world destruction.
     b3MeshData* storefront_meshes[40];
@@ -69,6 +86,7 @@ typedef struct SwatWorld {
     b3MeshData* ground_meshes[SWAT_GROUND_PARTS];
     b3MeshData** motel_contact_meshes; // Shared bounded parts; owned by this world.
     int motel_contact_mesh_count;
+    int motel_contact_first[SWAT_MOTEL_MESH_CAPACITY],motel_contact_parts[SWAT_MOTEL_MESH_CAPACITY];
     SwatObject objects[SWAT_MAX_OBJECTS];
     int count, generation;
     int attachment_first; // Derived lower bound; avoids scanning ordinary walls on support loss.
@@ -76,6 +94,10 @@ typedef struct SwatWorld {
     int room_count;
     unsigned int room_light_off_mask; // Authoritative switches; support loss is evaluated separately.
 } SwatWorld;
+
+static inline b3Quat swat_object_rotation(const SwatObject* o) {
+    return o->motion?o->motion->state.rotation:swat_rotation(o->yaw,o->pitch);
+}
 
 typedef struct SwatHit {
     bool hit;
@@ -108,6 +130,12 @@ bool swat_world_attach(SwatWorld*,int object,const int* supports,int count);
 float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 direction);
 float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
+// Synchronize moving leaves after the shared Box3D step, including devices.
+void swat_world_sync_doors(SwatWorld* world);
+SwatDoorMotion* swat_world_door_prepare(void);
+unsigned int swat_world_door_hinges(const SwatObject*);
+// Caller prepares sparse storage before an atomic network transaction.
+void swat_world_door_restore(SwatWorld*,int object,const SwatDoorState*);
 void swat_world_place(SwatObject* object, float yaw);
 void swat_world_tilt(SwatObject* object,float pitch);
 bool swat_world_fragment(SwatObject* object,const float corners[4][2]);
