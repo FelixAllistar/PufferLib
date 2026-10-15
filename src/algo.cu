@@ -75,6 +75,8 @@ struct Network {
     reg_rollout_fn reg_rollout;
     create_weights_fn create_weights;
     int hidden, num_layers, horizon;
+    size_t activation_size;
+    int tokens, heads, ff;
 };
 
 thread_local cublasHandle_t g_cublas_handle = NULL;
@@ -939,7 +941,7 @@ Activations arch_reg_train(Arch* p, Weights& w,
     Activations a;
     a.encoder = calloc(1, p->encoder.activation_size);
     a.decoder = calloc(1, p->decoder.activation_size);
-    a.network = calloc(1, sizeof(MinGRUActivations));
+    a.network = calloc(1, p->network.activation_size);
     p->encoder.reg_train(w.encoder, a.encoder, acts, grads, B_TT);
     p->decoder.reg_train(w.decoder, a.decoder, acts, grads, B_TT);
     p->network.reg_train(w.network, a.network, acts, grads, B_TT);
@@ -951,7 +953,7 @@ Activations arch_reg_rollout(Arch* p, Weights& w,
     Activations a;
     a.encoder = calloc(1, p->encoder.activation_size);
     a.decoder = calloc(1, p->decoder.activation_size);
-    a.network = calloc(1, sizeof(MinGRUActivations));
+    a.network = calloc(1, p->network.activation_size);
     p->encoder.reg_rollout(w.encoder, a.encoder, acts, B_inf);
     p->decoder.reg_rollout(w.decoder, a.decoder, acts, B_inf);
     p->network.reg_rollout(w.network, a.network, acts, B_inf);
@@ -981,12 +983,16 @@ Weights weights_create(Arch* p, Allocator* params) {
 // because fast, general encoder arch is an
 // unsolved research problem.
 #include "ocean.cu"
+#ifdef GS_O_HANDS
+#include "transformer_policy.cuh"
+#endif
 
-// Build an Arch (ops + dims) for this env. Encoder/decoder algorithms are
-// fixed at compile time; hidden_size/num_layers/horizon parameterize shape.
+// Build an Arch (ops + dims) for this env. PufferNet is the unchanged default;
+// the optional Transformer currently has a Goofspiel token encoder.
 // Arch has no heap state so this returns by value; callers store it wherever.
 Arch build_arch(int input_size, int hidden_size,
-        int num_layers, int decoder_output_size, bool is_continuous, int horizon) {
+        int num_layers, int decoder_output_size, bool is_continuous, int horizon,
+        const char* architecture = "puffernet", int transformer_heads = 2) {
     Encoder encoder = {
         .forward = encoder_forward,
         .backward = encoder_backward,
@@ -1025,7 +1031,33 @@ Arch build_arch(int input_size, int hidden_size,
         .hidden = hidden_size,
         .num_layers = num_layers,
         .horizon = horizon,
+        .activation_size = sizeof(MinGRUActivations),
     };
+    if (strcmp(architecture, "transformer") == 0) {
+#ifdef GS_O_HANDS
+        if (hidden_size < 8 || hidden_size % 8 || hidden_size > 256 || num_layers < 1 || num_layers > 16 ||
+                transformer_heads < 1 || hidden_size % transformer_heads || is_continuous) {
+            fprintf(stderr, "Goofspiel Transformer requires width 8-256 (multiple of 8), 1-16 layers and heads dividing width\n"); exit(1);
+        }
+        encoder.forward = gs_tokens_forward;
+        encoder.reg_train = gs_tokens_reg_train;
+        encoder.reg_rollout = gs_tokens_reg_rollout;
+        encoder.in_dim = GS_TRANSFORMER_FEATURES;
+        network = {
+            .forward = transformer_forward, .forward_train = transformer_forward_train,
+            .backward = transformer_backward, .init_weights = transformer_init_weights,
+            .reg_params = transformer_reg_params, .reg_train = transformer_reg_train,
+            .reg_rollout = transformer_reg_rollout, .create_weights = transformer_create_weights,
+            .hidden = hidden_size, .num_layers = num_layers, .horizon = horizon,
+            .activation_size = sizeof(TransformerActivations),
+            .tokens = GS_TRANSFORMER_TOKENS, .heads = transformer_heads, .ff = 4 * hidden_size,
+        };
+#else
+        fprintf(stderr, "policy.architecture=transformer currently requires Goofspiel\n"); exit(1);
+#endif
+    } else if (strcmp(architecture, "puffernet") != 0) {
+        fprintf(stderr, "unknown policy.architecture: %s\n", architecture); exit(1);
+    }
     return Arch{
         .encoder = encoder, .decoder = decoder, .network = network,
     };

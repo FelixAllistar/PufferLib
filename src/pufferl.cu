@@ -472,6 +472,7 @@ struct VecEnv {
     pthread_t* threads;
     float* accum;
     int num_workers;
+    bool main_thread;  // Rendered CPU envs may draw inside puf_step.
     // GPU log reduce scratch (unused on CPU)
     float* log_scratch;
 };
@@ -548,7 +549,7 @@ const char* LOSS_NAMES[] = {
 
 typedef struct {
     unsigned long long* stamps;  // device [2 * NUM_TE]; globaltimer ns
-    cudaEvent_t* rollout_ev;  // GPU [EV_T * horizon]; null on CPU
+    cudaEvent_t* rollout_ev;  // GPU [EV_T * horizon]; rendered CPU [NUM_EV]
     float accum[NUM_PROF];
     int skip_rollout_time;
 } Profile;
@@ -1281,29 +1282,77 @@ typedef struct {
     int buf;
 } VecThreadArg;
 
-static void* vec_thread_main(void* arg) {
-    VecThreadArg* a = (VecThreadArg*)arg;
-    PuffeRL* pufferl = a->pufferl;
+static void vec_rollout(PuffeRL* pufferl, int buf, cudaEvent_t* ev) {
     VecEnv* vec = pufferl->vec;
-    int buf = a->buf;
-    int* state = &vec->worker_state[buf];
     int horizon = pufferl->hypers.horizon;
-    cudaSetDevice(pufferl->hypers.gpu_id);
-    cublas_init_handle();
     int apb = vec->agents_per_buf;
     int agent_start = buf * apb;
     int env_start = vec->env_starts[buf];
     int env_count = vec->env_counts[buf];
     Env* envs = vec->envs;
     cudaStream_t stream = pufferl->streams[buf];
+    float* my_accum = &vec->accum[buf * NUM_PROF];
+    struct timespec t0, t1;
+    float ms = 0.0f;
+    int h2d_pending = 0;
+    for (int t = 0; t < horizon; t++) {
+        cudaEventRecord(ev[MODEL_START], stream);
+        pufferl_forward(pufferl, buf, t, stream);
+        cudaEventRecord(ev[MODEL_END], stream);
+        cudaMemcpyAsync(
+            &vec->actions[agent_start * NUM_ATNS],
+            &pufferl->env.actions.data[agent_start * NUM_ATNS],
+            apb * NUM_ATNS * sizeof(float),
+            cudaMemcpyDeviceToHost, stream);
+        cudaEventRecord(ev[COPY_END], stream);
+        cudaStreamSynchronize(stream);
+        cudaEventElapsedTime(&ms, ev[MODEL_START], ev[MODEL_END]);
+        my_accum[PROF_MODEL] += ms;
+        cudaEventElapsedTime(&ms, ev[MODEL_END], ev[COPY_END]);
+        my_accum[PROF_COPY] += ms;
+        if (h2d_pending) {
+            cudaEventElapsedTime(&ms, ev[H2D_START], ev[H2D_END]);
+            my_accum[PROF_COPY] += ms;
+            h2d_pending = 0;
+        }
+        memset(&vec->rewards[agent_start], 0, apb * sizeof(float));
+        memset(&vec->terminals[agent_start], 0, apb * sizeof(float));
+        clock_gettime(CLOCK_MONOTONIC, &t0);
+        #pragma omp parallel for schedule(static) num_threads(vec->num_workers) if(!vec->main_thread)
+        for (int i = env_start; i < env_start + env_count; i++) {
+            puf_step(&envs[i]);
+        }
+#ifdef PUF_CPU_POST_STEP
+        PUF_CPU_POST_STEP(envs + env_start, env_count);
+#endif
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        my_accum[PROF_ENV] += (t1.tv_sec - t0.tv_sec) * 1000.0f
+            + (t1.tv_nsec - t0.tv_nsec) / 1e6f;
+        cudaEventRecord(ev[H2D_START], stream);
+        cpu_upload(pufferl, agent_start, apb, stream);
+        cudaEventRecord(ev[H2D_END], stream);
+        h2d_pending = 1;
+    }
+    cudaStreamSynchronize(stream);
+    if (h2d_pending) {
+        cudaEventElapsedTime(&ms, ev[H2D_START], ev[H2D_END]);
+        my_accum[PROF_COPY] += ms;
+    }
+}
+
+static void* vec_thread_main(void* arg) {
+    VecThreadArg* a = (VecThreadArg*)arg;
+    PuffeRL* pufferl = a->pufferl;
+    VecEnv* vec = pufferl->vec;
+    int buf = a->buf;
+    int* state = &vec->worker_state[buf];
+    cudaSetDevice(pufferl->hypers.gpu_id);
+    cublas_init_handle();
     cudaEvent_t ev[NUM_EV];
     for (int i = 0; i < NUM_EV; i++) {
         cudaEventCreate(&ev[i]);
     }
     __atomic_store_n(state, BUF_WAITING, __ATOMIC_SEQ_CST);
-    float* my_accum = &vec->accum[buf * NUM_PROF];
-    struct timespec t0, t1;
-    float ms = 0.0f;
     while (true) {
         while (__atomic_load_n(state, __ATOMIC_SEQ_CST) != BUF_RUNNING) {
             if (__atomic_load_n(&vec->shutdown, __ATOMIC_SEQ_CST)) {
@@ -1319,50 +1368,7 @@ static void* vec_thread_main(void* arg) {
             }
             return NULL;
         }
-        int h2d_pending = 0;
-        for (int t = 0; t < horizon; t++) {
-            cudaEventRecord(ev[MODEL_START], stream);
-            pufferl_forward(pufferl, buf, t, stream);
-            cudaEventRecord(ev[MODEL_END], stream);
-            cudaMemcpyAsync(
-                &vec->actions[agent_start * NUM_ATNS],
-                &pufferl->env.actions.data[agent_start * NUM_ATNS],
-                apb * NUM_ATNS * sizeof(float),
-                cudaMemcpyDeviceToHost, stream);
-            cudaEventRecord(ev[COPY_END], stream);
-            cudaStreamSynchronize(stream);
-            cudaEventElapsedTime(&ms, ev[MODEL_START], ev[MODEL_END]);
-            my_accum[PROF_MODEL] += ms;
-            cudaEventElapsedTime(&ms, ev[MODEL_END], ev[COPY_END]);
-            my_accum[PROF_COPY] += ms;
-            if (h2d_pending) {
-                cudaEventElapsedTime(&ms, ev[H2D_START], ev[H2D_END]);
-                my_accum[PROF_COPY] += ms;
-                h2d_pending = 0;
-            }
-            memset(&vec->rewards[agent_start], 0, apb * sizeof(float));
-            memset(&vec->terminals[agent_start], 0, apb * sizeof(float));
-            clock_gettime(CLOCK_MONOTONIC, &t0);
-            #pragma omp parallel for schedule(static) num_threads(vec->num_workers)
-            for (int i = env_start; i < env_start + env_count; i++) {
-                puf_step(&envs[i]);
-            }
-#ifdef PUF_CPU_POST_STEP
-            PUF_CPU_POST_STEP(envs + env_start, env_count);
-#endif
-            clock_gettime(CLOCK_MONOTONIC, &t1);
-            my_accum[PROF_ENV] += (t1.tv_sec - t0.tv_sec) * 1000.0f
-                + (t1.tv_nsec - t0.tv_nsec) / 1e6f;
-            cudaEventRecord(ev[H2D_START], stream);
-            cpu_upload(pufferl, agent_start, apb, stream);
-            cudaEventRecord(ev[H2D_END], stream);
-            h2d_pending = 1;
-        }
-        cudaStreamSynchronize(stream);
-        if (h2d_pending) {
-            cudaEventElapsedTime(&ms, ev[H2D_START], ev[H2D_END]);
-            my_accum[PROF_COPY] += ms;
-        }
+        vec_rollout(pufferl, buf, ev);
         __atomic_store_n(state, BUF_WAITING, __ATOMIC_SEQ_CST);
     }
 }
@@ -1373,7 +1379,7 @@ static void env_restart(PuffeRL* p) {
     if (PUF_BACKEND == PUF_GPU) {
         puf_reset(vec->envs);
     } else {
-        #pragma omp parallel for schedule(static) num_threads(vec->num_workers)
+        #pragma omp parallel for schedule(static) num_threads(vec->num_workers) if(!vec->main_thread)
         for (int i = 0; i < vec->size; i++) {
             puf_reset(&vec->envs[i]);
         }
@@ -1397,12 +1403,16 @@ static void env_start(PuffeRL* p) {
         env_restart(p);
         return;
     }
+    vec->accum = (float*)calloc(1, vec->buffers * NUM_PROF * sizeof(float));
+    env_restart(p);
+    if (vec->main_thread) {
+        assert(vec->buffers == 1 && vec->size == 1);
+        return;
+    }
     vec->worker_state = (int*)calloc(1, vec->buffers * sizeof(int));
     vec->threads = (pthread_t*)calloc(1, vec->buffers * sizeof(pthread_t));
     VecThreadArg* args = (VecThreadArg*)calloc(1,
         vec->buffers * sizeof(VecThreadArg));
-    vec->accum = (float*)calloc(1, vec->buffers * NUM_PROF * sizeof(float));
-    env_restart(p);
     for (int i = 0; i < vec->buffers; i++) {
         args[i].pufferl = p;
         args[i].buf = i;
@@ -1459,6 +1469,11 @@ static void rollout_start(PuffeRL* p) {
         }
         return;
     }
+    if (p->vec->main_thread) {
+        // The window, input polling, and all GL calls must share a thread.
+        vec_rollout(p, 0, p->profile.rollout_ev);
+        return;
+    }
     for (int buf = 0; buf < p->vec->buffers; buf++) {
         int* state = &p->vec->worker_state[buf];
         __atomic_store_n(state, BUF_RUNNING, __ATOMIC_SEQ_CST);
@@ -1492,9 +1507,11 @@ void rollout_finish(PuffeRL* p, double t0) {
         p->profile.accum[PROF_ROLLOUT] += model_ms + env_ms;
         return;
     }
-    for (int buf = 0; buf < p->vec->buffers; buf++) {
-        int* state = &p->vec->worker_state[buf];
-        while (__atomic_load_n(state, __ATOMIC_SEQ_CST) != BUF_WAITING) {}
+    if (!p->vec->main_thread) {
+        for (int buf = 0; buf < p->vec->buffers; buf++) {
+            int* state = &p->vec->worker_state[buf];
+            while (__atomic_load_n(state, __ATOMIC_SEQ_CST) != BUF_WAITING) {}
+        }
     }
     float sec = (float)(wall_clock() - t0);
     p->profile.accum[PROF_ROLLOUT] += sec * 1000.0f;
@@ -1518,8 +1535,10 @@ static void env_close(VecEnv* vec) {
         return;
     }
     __atomic_store_n(&vec->shutdown, 1, __ATOMIC_SEQ_CST);
-    for (int i = 0; i < vec->buffers; i++) {
-        pthread_join(vec->threads[i], NULL);
+    if (!vec->main_thread) {
+        for (int i = 0; i < vec->buffers; i++) {
+            pthread_join(vec->threads[i], NULL);
+        }
     }
     for (int i = 0; i < vec->size; i++) {
         puf_close(&vec->envs[i]);
@@ -1967,6 +1986,13 @@ void puf_load_weights_into(Float dst, Prec params,
     int64_t nbytes = numel(dst.shape) * sizeof(float);
     FILE* fp = fopen(path, "rb");
     assert(fp && "failed to open weights for reading");
+#ifdef PUFFER_GOOFSPIEL
+    if (fseek(fp, 0, SEEK_END) || ftell(fp) != nbytes) {
+        fprintf(stderr, "Goofspiel checkpoint shape mismatch; use the matching policy.architecture, hidden_size and num_layers\n");
+        fclose(fp); exit(1);
+    }
+    rewind(fp);
+#endif
 #ifdef PUFFER_MARIO_SIM
     if(fseek(fp,0,SEEK_END)||ftell(fp)!=nbytes) {
         fprintf(stderr,"Mario semantic checkpoint architecture mismatch: expected %lld bytes for the semantic encoder. "
@@ -2020,7 +2046,7 @@ static void master_weights_setup(Float* mw, Prec* param,
     }
 }
 
-PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
+PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     Hypers hypers = {
         .horizon = puf_ini_get(ini, "train", "horizon"),
         .total_agents = puf_ini_get(ini, "vec", "total_agents"),
@@ -2082,6 +2108,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     int total_agents = dict_get(&vec_kwargs, "total_agents");
     int num_buffers = dict_get(&vec_kwargs, "num_buffers");
     VecEnv* vec = (VecEnv*)calloc(1, sizeof(VecEnv));
+    vec->main_thread = render && PUF_BACKEND != PUF_GPU;
     vec->total_agents = total_agents;
     vec->buffers = num_buffers;
     vec->agents_per_buf = total_agents / num_buffers;
@@ -2145,11 +2172,11 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
 
     cudaMalloc((void**)&pufferl->profile.stamps,
         2 * NUM_TE * sizeof(unsigned long long));
-    if (PUF_BACKEND == PUF_GPU) {
-        int H = hypers.horizon;
+    if (PUF_BACKEND == PUF_GPU || vec->main_thread) {
+        int n = PUF_BACKEND == PUF_GPU ? EV_T * hypers.horizon : NUM_EV;
         pufferl->profile.rollout_ev = (cudaEvent_t*)calloc(
-            1, EV_T * H * sizeof(cudaEvent_t));
-        for (int i = 0; i < EV_T * H; i++) {
+            1, n * sizeof(cudaEvent_t));
+        for (int i = 0; i < n; i++) {
             assert(cudaEventCreate(&pufferl->profile.rollout_ev[i]) == cudaSuccess);
         }
     }
@@ -2205,7 +2232,9 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         assert(slice > 0 && "policy has no agents");
 
         pol->arch = build_arch(input_size, h, L,
-            decoder_output_size, is_continuous, hypers.horizon);
+            decoder_output_size, is_continuous, hypers.horizon,
+            puf_ini_get_str(ini, "policy", "architecture"),
+            puf_ini_get(ini, "policy", "transformer_heads"));
         pol->weights = weights_create(&pol->arch, &pol->params_alloc);
         Allocator* aalloc = pol->frozen ? &pol->activ_alloc : acts;
         pol->buf_acts = (Activations*)calloc(
@@ -2511,9 +2540,20 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     // Tiny terminal: one-line compact summary.
     if (puf_dashboard_tty && (term_cols < PUF_DASH_W || term_rows <= PUF_DASH_BASE_ROWS)) {
         char compact[512];
+#ifdef PUF_EXACT_EVAL
+        char exact[32] = "pending", best[32] = "pending";
+        DictItem* exact_item = dict_find(log, "env/exploitability");
+        DictItem* best_item = dict_find(log, "env/best_exploitability");
+        if (exact_item) snprintf(exact, sizeof(exact), "%.6f", exact_item->value);
+        if (best_item) snprintf(best, sizeof(best), "%.6f", best_item->value);
+        snprintf(compact, sizeof(compact),
+            "Goofspiel exploit=%s best=%s steps=%s SPS=%s to_go=%s",
+            exact, best, steps_s, sps_s, remaining);
+#else
         snprintf(compact, sizeof(compact),
             "PufferLib 5.0  env=%s  steps=%s  SPS=%s  score=%.3f  epoch=%s  to_go=%s",
             env_name, steps_s, sps_s, dash_num(log, "env/score", 0), epoch_s, remaining);
+#endif
         printf("%.*s", term_cols > 1 ? term_cols - 1 : term_cols, compact);
         if (term_rows > 1) {
             dash_eol();
@@ -2611,8 +2651,8 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
             pending = 1;
         } else {
             char ls[32], rs[32];
-            snprintf(ls, sizeof(ls), "%.3f", pending_val);
-            snprintf(rs, sizeof(rs), "%.3f", log->items[i].value);
+            snprintf(ls, sizeof(ls), strstr(pending_key, "exploitability") ? "%.7f" : "%.3f", pending_val);
+            snprintf(rs, sizeof(rs), strstr(sk, "exploitability") ? "%.7f" : "%.3f", log->items[i].value);
             printf("%s│%s %s%-25.25s%s %s%9.9s%s   %s%-25.25s%s %s%9.9s%s    %s│%s",
                 PUF_W, PUF_R, PUF_A, pending_key, PUF_R, PUF_W, ls, PUF_R,
                 PUF_A, sk, PUF_R, PUF_W, rs, PUF_R, PUF_W, PUF_R);
@@ -2623,7 +2663,7 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     }
     if (pending) {
         char ls[32];
-        snprintf(ls, sizeof(ls), "%.3f", pending_val);
+        snprintf(ls, sizeof(ls), strstr(pending_key, "exploitability") ? "%.7f" : "%.3f", pending_val);
         printf("%s│%s %s%-25.25s%s %s%9.9s%s   %-25.25s %9.9s    %s│%s",
             PUF_W, PUF_R, PUF_A, pending_key,
             PUF_R, PUF_W, ls, PUF_R, "", "", PUF_W, PUF_R);
@@ -2834,6 +2874,9 @@ typedef struct {
 } SweepJob;
 
 void run_sweep(Ini* ini, const char* exe_path) {
+#ifdef PUF_SWEEP_PREPARE
+    PUF_SWEEP_PREPARE(ini);
+#endif
     // Optional env-owned worker: it can let train exit before scoring on the
     // same GPU, then return the unchanged TrainResult pipe protocol. Ordinary
     // sweeps still spawn this binary directly.
@@ -2999,6 +3042,11 @@ void run_sweep(Ini* ini, const char* exe_path) {
     int next_run_id = 0;
     int completed = 0;
     int active = 0;
+    printf("sweep objective=%s goal=%s trials=%d\n",
+        puf_ini_get_str(ini, "sweep", "metric"), goal, max_runs);
+#ifdef PUF_SWEEP_VALIDATE
+    int rejected_configs = 0;
+#endif
     // Free-list: slot i owns GPUs [i*train_gpus, (i+1)*train_gpus). Refill as
     // soon as any trial exits (waitpid -1), so finished GPUs are never idle
     // while more runs remain.
@@ -3044,6 +3092,27 @@ void run_sweep(Ini* ini, const char* exe_path) {
                     params[p].section, params[p].key);
                 puf_ini_put(ini, key, buf);
             }
+#ifdef PUF_SWEEP_VALIDATE
+            const char* config_error = PUF_SWEEP_VALIDATE(ini);
+            if (config_error) {
+                fprintf(stderr, "sweep skip invalid configuration: %s\n", config_error);
+                if (!job.run || ++rejected_configs >= 1024) {
+                    fprintf(stderr, "sweep has no usable starting layout or too many consecutive invalid suggestions\n");
+                    exit(1);
+                }
+                protein_sweep_observe(protein, job.sample, NAN, max_cost, 1);
+                --i; // Refill this slot without spawning CUDA or spending a trial.
+                continue;
+            }
+            rejected_configs = 0;
+            printf("sweep start run=%d model=%s agents=%.0f buffers=%.0f threads=%.0f "
+                "horizon=%.0f minibatch=%.0f replay=%.0f width=%.0f layers=%.0f\n",
+                job.run, puf_ini_get_str(ini, "policy", "architecture"),
+                puf_ini_get(ini, "vec", "total_agents"), puf_ini_get(ini, "vec", "num_buffers"),
+                puf_ini_get(ini, "vec", "num_threads"), puf_ini_get(ini, "train", "horizon"),
+                puf_ini_get(ini, "train", "minibatch_size"), puf_ini_get(ini, "train", "replay_ratio"),
+                puf_ini_get(ini, "policy", "hidden_size"), puf_ini_get(ini, "policy", "num_layers"));
+#endif
             char run_id[128];
             snprintf(run_id, sizeof(run_id), "sweep_%ld_%04d",
                 (long)(1000.0 * wall_clock()), job.run);
@@ -3139,7 +3208,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
             protein_sweep_observe(protein, job->sample,
                 job->result.scores[pi], job->result.costs[pi], 0);
         }
-        printf("sweep run=%d score=%.4f cost=%.2f steps=%.0f random=%d gp_obs=%d pareto=%d\n",
+        printf("sweep run=%d score=%.9f cost=%.2f steps=%.0f random=%d gp_obs=%d pareto=%d\n",
             job->run, job->result.score, job->result.cost, job->result.steps,
             job->random, job->gp_obs, job->pareto);
         completed++;
@@ -3256,7 +3325,7 @@ static PuffeRL* eval_make(Ini* ini, TrainContext* ctx, int mode, int render) {
     if (render) {
         puf_ini_put(ini, "train.horizon", "1");
     }
-    PuffeRL* p = create_pufferl(ini, ctx);
+    PuffeRL* p = create_pufferl(ini, ctx, render);
     p->hypers.eval_greedy = puf_ini_get(ini, "base", "eval_greedy") > 0;
     if (p->hypers.eval_greedy) printf("Evaluation actions: greedy (masked argmax)\n");
     if (match) {
@@ -3897,7 +3966,7 @@ int main(int argc, char** argv) {
     setbuf(stderr, NULL);
     if (argc < 2) {
         fprintf(stderr,
-            "usage: %s train|eval|match|sweep [latest|MODEL.bin] [--headless] [--section.key=value ...]\n",
+            "usage: %s train|eval|match|sweep [latest|MODEL.bin] [--headless|--render] [--section.key=value ...]\n",
             argv[0]);
         exit(1);
     }
@@ -3915,11 +3984,16 @@ int main(int argc, char** argv) {
         model = argv[argi++];
     }
     int headless = 0;
+    int explicit_render = 0;
     char* ini_argv[argc > 0 ? (size_t)argc : 1];
     int ini_argc = 0;
     for (int i = argi; i < argc; i++) {
         if (strcmp(argv[i], "--headless") == 0) {
             headless = 1;
+            continue;
+        }
+        if (strcmp(argv[i], "--render") == 0) {
+            explicit_render = 1;
             continue;
         }
         ini_argv[ini_argc++] = argv[i];
@@ -3931,12 +4005,25 @@ int main(int argc, char** argv) {
     }
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
     int render = !headless;
+    int status = 0;
+#ifdef PUF_EXACT_EVAL
+    if (!strcmp(mode, "eval")) render = explicit_render && !headless;
+    if ((!strcmp(mode, "eval") || !strcmp(mode, "match")) && render
+            && puf_ini_get(&ini, "base", "eval_episodes") <= 0)
+        puf_ini_put(&ini, "base.eval_episodes", "8192");
+#else
+    (void)explicit_render;
+#endif
 
     if (strcmp(mode, "train") == 0) {
         launch_train(&ini);
     } else if (strcmp(mode, "sweep") == 0) {
         run_sweep(&ini, argv[0]);
     } else if (strcmp(mode, "eval") == 0) {
+#ifdef PUF_EXACT_EVAL
+        if (!render) status = PUF_EXACT_EVAL(&ini, ini_argc, ini_argv);
+        else
+#endif
         run_eval(&ini, &ctx, EVAL_SCORE, 1, render);
     } else if (strcmp(mode, "match") == 0) {
         run_eval(&ini, &ctx, EVAL_MATCH, 1, render);
@@ -3945,6 +4032,6 @@ int main(int argc, char** argv) {
     }
 
     puf_ini_free(&ini);
-    return 0;
+    return status;
 }
 #endif

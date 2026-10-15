@@ -1,0 +1,6 @@
+{"test":"fp64_reference_and_finite_difference","passed":true,"batch":2,"tokens":5,"width":8,"layers":2,"heads":2,"checked_derivatives":124,"forward_max_abs":6.00746e-07,"gradient_max_abs":3.70929e-07}
+{"test":"fp64_reference_and_finite_difference","passed":true,"batch":1,"tokens":1,"width":8,"layers":1,"heads":1,"checked_derivatives":64,"forward_max_abs":1.04417e-07,"gradient_max_abs":2.5188e-08}
+{"test":"fp64_reference_and_finite_difference","passed":true,"batch":1,"tokens":9,"width":12,"layers":2,"heads":3,"checked_derivatives":126,"forward_max_abs":4.90107e-07,"gradient_max_abs":4.40407e-08}
+{"test":"graph_vs_eager","passed":true,"precision":"fp32","max_abs":0}
+{"test":"bf16_vs_fp32","passed":true,"forward_relative_l2":0.00594836,"input_gradient_relative_l2":0.00876404,"parameter_gradient_relative_l2":0.00866437}
+{"test":"graph_vs_eager","passed":true,"precision":"bf16","max_abs":0}
