@@ -129,8 +129,17 @@ typedef struct SwatWorld {
     unsigned int room_light_off_mask; // Authoritative switches; support loss is evaluated separately.
 } SwatWorld;
 
+static inline b3Quat swat_door_rotation(float yaw,float pitch) {
+    // Share the linked physics library's deterministic trig contract across
+    // bodies, queries, drawing and attachment transitions.
+    return swat_rotation(yaw,pitch);
+}
+static inline b3Pos swat_door_center(const SwatObject* o,float yaw) {
+    return b3OffsetPos(o->hinge,b3RotateVector(swat_door_rotation(yaw,0),swat_v(0,0,o->half.z)));
+}
 static inline b3Quat swat_object_rotation(const SwatObject* o) {
-    return o->rubble?o->rubble->state.rotation:o->motion?o->motion->state.rotation:swat_rotation(o->yaw,o->pitch);
+    return o->rubble?o->rubble->state.rotation:o->motion?o->motion->state.rotation:
+        o->door?swat_door_rotation(o->yaw,o->pitch):swat_rotation(o->yaw,o->pitch);
 }
 static inline b3Vec3 swat_object_extent(const SwatObject* o) {
     if(!o->motion && !o->rubble)return o->half;

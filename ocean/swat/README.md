@@ -129,9 +129,18 @@ recessed skins; thickness caps bound the cuts. The `door-solid` graphics check
 compares twelve grazing views of the lab and motel leaves against physical rays. Run
 `make -C ocean/swat door-solid-test` with a working display.
 
-Use fresh version-24 peers and recordings. Keeping unchanged physics shapes
-changes contact ordering, so older input recordings can diverge even though the
-packet layout is unchanged. Existing recording files are retained.
+Door support distinguishes the visible hinge barrels from the logical pivot
+18 mm away at the leaf edge. Last-hinge joints and snapshot validation use the
+same axis as ordinary opening; damage still targets the original barrel/wood
+locations. Swept doors, collision queries, body transforms and replicas share
+the same rotation calculation through attachment failure, including open leaves.
+The [hardware/remnant request](art_handoffs/motel-door-hinges/request.txt) records
+the verified three-hinge source and pending art work.
+
+Use fresh version-25 peers and recordings. The pivot correction changes physical
+motion, and retaining unchanged shapes in the preceding pass changes contact
+ordering. Older input recordings can diverge even though the packet layout is
+unchanged. Existing recording files are retained.
 
 The quiet exterior/interroom completion fixtures now choose the finite impact
 launcher through the ordinary staging input while keeping Entry's real wall
@@ -547,7 +556,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v8.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v25 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -970,7 +979,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 24) and the same generated
+Saves require this network/replay version (currently 25) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -1071,7 +1080,7 @@ The optional **breach-lab** mission has one officer and three independent sample
 with two wall breachers for comparison. Use **7**, **K**, and **Backspace** to
 place, detonate and reset. The larger wall tool is represented separately from
 the compact door device. Original imported source models and textures stay intact.
-Peers need matching version-24 builds; start fresh recordings/saves for this
+Peers need matching version-25 builds; start fresh recordings/saves for this
 build. Existing recordings are retained, but earlier wire versions cannot load.
 
 ```bash
@@ -1293,7 +1302,7 @@ Navigation lazily allocates 216 × 168 cells and four height layers for the wide
 motel, retaining the exact previous 60 cm indoor sampling arithmetic. Smaller
 worlds retain their previous 108 × 108 grid. Grid/route scratch share one heap
 allocation, with 32-bit queue indices; reset/map replacement/close free it once.
-Protocol/replay version is 24; older recorded sessions must be regenerated.
+Protocol/replay version is 25; older recorded sessions must be regenerated.
 
 Native rendering QA can be run after a Windows player build:
 
@@ -1379,7 +1388,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 24 as described above.
+destruction prototype requires version 25 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

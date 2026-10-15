@@ -107,6 +107,7 @@ static void framed_wall(SwatWallBuild* w,b3Pos o,float yaw,float length,float he
             if(w->world) {
                 SwatObject* d=&w->world->objects[id]; d->door=true; d->closed_yaw=yaw; d->locked=exterior;
                 d->hinge=b3OffsetPos(d->center,swat_v(-sinf(yaw)*d->half.z,0,-cosf(yaw)*d->half.z));
+                swat_world_tilt(d,0);
             }
         }
     }

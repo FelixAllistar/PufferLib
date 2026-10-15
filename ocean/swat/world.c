@@ -83,6 +83,7 @@ void swat_world_build_range(SwatWorld* w, uint32_t* seed, bool randomize) {
     int door = swat_world_box(w,(b3Pos){7,1.25f,0},swat_v(0.07f,1.25f,1.15f),SWAT_WOOD,105);
     w->objects[door].door = true;
     w->objects[door].hinge = (b3Pos){7,1.25f,-1.15f};
+    swat_world_tilt(&w->objects[door],0);
 
     // A tiled freestanding wall. Each cell owns a real collider and can break.
     for (int y=0;y<4;y++) for (int z=0;z<6;z++)
@@ -617,6 +618,7 @@ float swat_material_resistance(SwatMaterial material) {
 void swat_world_place(SwatObject* o, float yaw) {
     o->yaw=yaw;
     b3Quat rotation={{0,sinf(yaw*.5f),0},cosf(yaw*.5f)};
+    if(o->door){o->center=swat_door_center(o,yaw);rotation=swat_door_rotation(yaw,0);}
     b3Body_SetTransform(o->body,o->center,rotation);
 }
 
@@ -759,12 +761,12 @@ static bool swat_door_obstructed(const SwatWorld* w, const SwatObject* o, float 
     b3Vec3 points[16];
     for (int pose=0;pose<2;pose++) {
         float angle = o->closed_yaw+(pose ? next : o->door_angle);
-        float c = cosf(angle), s = sinf(angle);
+        b3Quat rotation=swat_door_rotation(angle,0);
         for (int j=0;j<8;j++) {
             float x = j&1 ? o->half.x : -o->half.x;
             float y = j&2 ? o->half.y : -o->half.y;
             float z = j&4 ? 2*o->half.z : 0;
-            points[pose*8+j] = swat_v(c*x+s*z,y,-s*x+c*z);
+            points[pose*8+j] = b3RotateVector(rotation,swat_v(x,y,z));
         }
     }
     float arc_margin = 2.0f*b3Length(o->half)*(1.0f-cosf((next-o->door_angle)*0.5f));
@@ -793,8 +795,8 @@ void swat_world_step_doors(SwatWorld* w) {
         if (swat_door_obstructed(w,o,o->door_angle+delta)) continue;
         b3Vec3 mount=b3InvRotateVector(swat_object_rotation(o),b3SubPos(o->breach_position,o->center));
         o->door_angle += delta; o->yaw = o->closed_yaw+o->door_angle;
-        o->center = b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
-        b3Quat rotation = {{0,sinf(o->yaw*0.5f),0},cosf(o->yaw*0.5f)};
+        o->center = swat_door_center(o,o->yaw);
+        b3Quat rotation = swat_door_rotation(o->yaw,0);
         b3Body_SetTransform(o->body,o->center,rotation);
         if(o->motion){o->motion->state.position=o->center;o->motion->state.rotation=rotation;}
         if(o->breach_owner>=0)o->breach_position=b3OffsetPos(o->center,b3RotateVector(swat_object_rotation(o),mount));
@@ -803,6 +805,8 @@ void swat_world_step_doors(SwatWorld* w) {
 
 void swat_world_tilt(SwatObject* o,float pitch) {
     o->pitch=pitch;
-    b3Quat q=b3MulQuat(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3MakeQuatFromAxisAngle(swat_v(0,0,1),pitch));
+    b3Quat q=o->door?swat_door_rotation(o->yaw,pitch):
+        b3MulQuat(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3MakeQuatFromAxisAngle(swat_v(0,0,1),pitch));
+    if(o->door)o->center=swat_door_center(o,o->yaw);
     b3Body_SetTransform(o->body,o->center,q);
 }

@@ -52,6 +52,7 @@ void swat_storefront_build(SwatWorld* w) {
         if(p->door) {
             o->door=true; o->closed_yaw=yaw; o->hinge=b3OffsetPos(p->origin,swat_v(0,half.y,0));
             o->locked=strstr(storefront_assets[p->asset].file,"stockroom")==NULL;
+            swat_world_tilt(o,0);
         }
     }
     bool bound=swat_storefront_bind_collision(w); assert(bound); (void)bound;

@@ -17,6 +17,11 @@ static inline b3Vec3 swat_door_hinge(const SwatObject* o,int hinge) {
     return swat_v(0,(y[hinge]/2.19f-.5f)*2*o->half.y,
         -o->half.z+.018f*(o->half.z/.54f));
 }
+static inline b3Vec3 swat_door_hinge_pivot(const SwatObject* o,int hinge) {
+    // The decorative barrel is 18 mm inside the source leaf. The physical
+    // attachment shares the ordinary opening axis at source X=0 instead.
+    b3Vec3 p=swat_door_hinge(o,hinge);p.z=-o->half.z;return p;
+}
 static inline b3Vec3 swat_door_latch(const SwatObject* o) {return swat_v(0,.06f,o->half.z-.01f);}
 static inline int swat_door_support(unsigned int broken,bool latched) {
     int count=0,last=-1;

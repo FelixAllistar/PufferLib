@@ -19,6 +19,7 @@ static inline SwatEnvironmentSurface swat_environment_surface(const SwatObject* 
 // The door hinge is unit (0,0,-.5); a skin's geometry is its own whole box.
 static inline b3Pos swat_environment_point(const SwatObject* o,b3Vec3 unit) {
     b3Vec3 p=swat_v(2*o->half.x*unit.x,2*o->half.y*unit.y,2*o->half.z*unit.z);
+    if(o->door)return b3OffsetPos(o->center,b3RotateVector(swat_object_rotation(o),p));
     float cp=cosf(o->pitch),sp=sinf(o->pitch),cy=cosf(o->yaw),sy=sinf(o->yaw);
     float x=cp*p.x-sp*p.y,y=sp*p.x+cp*p.y;
     return b3OffsetPos(o->center,swat_v(cy*x+sy*p.z,y,-sy*x+cy*p.z));
