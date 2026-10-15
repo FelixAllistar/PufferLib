@@ -1,0 +1,152 @@
+{
+  "run": "sweep_1791768957141_0012",
+  "checkpoint": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+  "checkpoint_sha256": "dd3f89d68a9832a1fb67002e67c31509f7b8786f6b782ebc7269dee876c913eb",
+  "trained_steps": 1999634432,
+  "training_score": 1.1259535551071167,
+  "baseline_report": "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run0_20261011_212838/summary.json",
+  "seed": 137,
+  "deterministic": false,
+  "parallel_workers": 3,
+  "inference": "FP32 CPU; independent native and ROM policy states",
+  "evaluator_sha256": "efecbc6391a47f05e0d74f285c5f22201a42fff1d1b33fee1d093be929c18a31",
+  "input_sha256": {
+    "build/mario_sim/fpg/curriculum/bank.bin": "b6c8bbfccc06f6346920c22d75d5a91d6a32f404fd2fc14c8bea9d074def5f35",
+    "build/mario_sim/fpg/curriculum_targets.bin": "c57f41b8f0f463de6e24d2bf1bb7c798d0d532af406651879dc94629de7d7980",
+    "ocean/retro/roms/smb1_ntsc.nes": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea"
+  },
+  "commands": {
+    "game_all_stages": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/game_all_stages",
+      "32",
+      "137",
+      "0",
+      "all-stages",
+      "0",
+      "game"
+    ],
+    "new_game_1_1": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/new_game.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/new_game_1_1",
+      "32",
+      "137",
+      "0",
+      "new-game",
+      "0",
+      "clear"
+    ],
+    "fpg_3": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_3",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "3",
+      "fpg"
+    ],
+    "fpg_8": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_8",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "8",
+      "fpg"
+    ],
+    "fpg_16": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_16",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "16",
+      "fpg"
+    ],
+    "fpg_24": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_24",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "24",
+      "fpg"
+    ],
+    "fpg_32": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_32",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "32",
+      "fpg"
+    ],
+    "fpg_64": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_64",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "64",
+      "fpg"
+    ],
+    "fpg_96": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_96",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "96",
+      "fpg"
+    ],
+    "fpg_128": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_128",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "128",
+      "fpg"
+    ],
+    "fpg_425": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791768957141_0012/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_eval_run12_20261012_102453/fpg_425",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "425",
+      "fpg"
+    ]
+  }
+}

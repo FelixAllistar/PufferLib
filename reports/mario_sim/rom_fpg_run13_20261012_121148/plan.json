@@ -1,0 +1,41 @@
+{
+  "checkpoint_sha256": "f16b7748cb7043d08eb73e164994a3fe21d0b4f6d03fc115f6d76f7ffb667597",
+  "commands": {
+    "64": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791775608931_0013/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_fpg_run13_20261012_121148/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_fpg_run13_20261012_121148/fpg_64",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "64",
+      "fpg"
+    ],
+    "80": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791775608931_0013/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_fpg_run13_20261012_121148/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_fpg_run13_20261012_121148/fpg_80",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "80",
+      "fpg"
+    ],
+    "96": [
+      "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+      "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791775608931_0013/0000001999634432.bin",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_fpg_run13_20261012_121148/evaluation.ini",
+      "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_fpg_run13_20261012_121148/fpg_96",
+      "64",
+      "137",
+      "0",
+      "build/mario_sim/fpg/curriculum",
+      "96",
+      "fpg"
+    ]
+  }
+}

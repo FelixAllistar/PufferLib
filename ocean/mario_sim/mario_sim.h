@@ -252,7 +252,15 @@ void puf_log(Log* l,Dict* out) {
     dict_set(out,"game_wins",l->game_episodes?l->game_wins/l->game_episodes:0);
     dict_set(out,"game_deaths",l->game_episodes?l->game_deaths/l->game_episodes:0);
     dict_set(out,"game_timeouts",l->game_episodes?l->game_timeouts/l->game_episodes:0);
-    dict_set(out,"game_progress_pixels",l->game_episodes?l->game_progress_pixels/l->game_episodes:0);
+    float game_pixels=l->game_episodes?l->game_progress_pixels/l->game_episodes:0;
+    float curriculum_frames=l->fpg_episodes?l->curriculum_frames/l->fpg_episodes:0;
+    dict_set(out,"game_progress_pixels",game_pixels);
+    // Cheap training-progress objective. One game's area frontier and the full
+    // FPG curriculum set the units; rewards and timing allowances do not.
+    // Keep game progress uncapped so clearing more areas can still improve it.
+    float fpg_progress=fmaxf(0.0f,(curriculum_frames-fpt_curriculum_depths[0])/
+        (fpt_curriculum_depths[FPT_CURRICULUM_LEVELS-1]-fpt_curriculum_depths[0]));
+    dict_set(out,"sweep_score",0.75f*game_pixels/3400.0f+0.25f*fpg_progress);
     dict_set(out,"game_checkpoints",l->game_episodes?l->game_checkpoints/l->game_episodes:0);
     dict_set(out,"game_checkpoint_reward",l->game_episodes?l->game_checkpoint_reward/l->game_episodes:0);
 #define FPT_LOG(field) dict_set(out,#field,l->fpg_episodes?l->field/l->fpg_episodes:0)

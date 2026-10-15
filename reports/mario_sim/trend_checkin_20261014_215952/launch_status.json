@@ -1,0 +1,12 @@
+{
+  "old_parent_stopped": 93408,
+  "old_worker_stopped": 120877,
+  "archived_trials": 44,
+  "archive": "/workspace/PufferLib/reports/mario_sim/launch_tight_10b_20261014/previous_2b_archive.json",
+  "profile": "/workspace/PufferLib/reports/mario_sim/launch_tight_10b_20261014/tight_run26_10b.ini",
+  "output": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014",
+  "tmux": "ssh_tmux:0.0",
+  "command": "cd /workspace/PufferLib && python3 ocean/mario_sim/sweep.py --profile /workspace/PufferLib/reports/mario_sim/launch_tight_10b_20261014/tight_run26_10b.ini --output /workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014",
+  "verified_training_run": "sweep_1792016021935_0000",
+  "verification": "Remote dry run passed; 10B worker command verified; GPU allocation observed"
+}

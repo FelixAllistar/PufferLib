@@ -1,0 +1,71 @@
+{
+  "runs": 128,
+  "steps_per_trial": 10000000000,
+  "completed_steps_range": [
+    9999745024,
+    9999745024
+  ],
+  "total_steps": 1280000000000,
+  "fresh_weights": true,
+  "mode": "mixed",
+  "actors": [
+    4096
+  ],
+  "buffers": 4,
+  "threads": 12,
+  "annealing": false,
+  "metric": "sweep_score",
+  "rom_evaluation": false,
+  "varying_parameters": {
+    "train.learning_rate": [
+      0.00022,
+      0.00032,
+      "log_normal"
+    ],
+    "train.ent_coef": [
+      5e-05,
+      0.00012,
+      "log_normal"
+    ],
+    "train.gamma": [
+      0.9985,
+      0.9991,
+      "logit_normal"
+    ],
+    "train.gae_lambda": [
+      0.968,
+      0.984,
+      "logit_normal"
+    ],
+    "train.replay_ratio": [
+      0.85,
+      1.1,
+      "uniform"
+    ],
+    "train.clip_coef": [
+      0.3,
+      0.42,
+      "uniform"
+    ],
+    "train.vf_clip_coef": [
+      1.8,
+      2.5,
+      "uniform"
+    ],
+    "train.vf_coef": [
+      0.95,
+      1.45,
+      "uniform"
+    ],
+    "train.max_grad_norm": [
+      0.28,
+      0.43,
+      "uniform"
+    ],
+    "train.momentum": [
+      0.925,
+      0.96,
+      "logit_normal"
+    ]
+  }
+}

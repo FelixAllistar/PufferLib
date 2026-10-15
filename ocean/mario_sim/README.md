@@ -113,32 +113,61 @@ learning-rate and entropy annealing are disabled. These are starting settings fo
 previous FPG training results do not establish full-game competence. The viewer
 renders semantic geometry; `retro` provides the ROM pixel display.
 
-## Fresh 30M-step sweep
+## Fresh 2B-step sweep
 
-The native PROTEIN search has 17 varying parameters, with the actor count,
-buffers, threads, 75/25 game/FPG mixture, rewards, and curriculum rules fixed.
-Every trial starts with fresh weights and a fresh three-frame FPG curriculum.
-Both annealings stay off, including in the worker; reward clipping stays off.
+The native PROTEIN sweep uses training metrics directly. It launches the normal
+trainer and receives its result over the native pipe; there is no Python trial
+worker, ROM evaluator, or post-training evaluation pass. Each trial starts with
+fresh weights and a fresh three-frame FPG curriculum. The 75/25 game/FPG mixture,
+rewards, and curriculum rules stay fixed so progress is comparable.
 
 ```sh
 # Inspect settings without starting trials:
 python3 ocean/mario_sim/sweep.py --dry-run
-# Start 128 trials using the current CPU-environment ./puffer:
+# Start native trials using the current CPU-environment ./puffer:
 ./puffer sweep
-# Same search, with all artifacts grouped under reports/mario_sim/sweep_TIMESTAMP:
+# Same search, with artifacts grouped under reports/mario_sim/sweep_TIMESTAMP:
 python3 ocean/mario_sim/sweep.py
-# Optional smaller search and result listing:
-python3 ocean/mario_sim/sweep.py --runs 32
-python3 ocean/mario_sim/sweep.py --summary reports/mario_sim/sweep_TIMESTAMP
+# Change the trial count or step budget consistently:
+python3 ocean/mario_sim/sweep.py --runs 32 --steps 2000000000
+# Rank completed native training logs:
+python3 ocean/mario_sim/sweep.py --summary logs/mario_sim
 ```
 
-| Parameter | Range |
+The search objective is `env/sweep_score`:
+
+```text
+game_progress = game_progress_pixels / 3400
+fpg_progress = max(0, (curriculum_frames - 3) / (425 - 3))
+sweep_score = 0.75 * game_progress + 0.25 * fpg_progress
+```
+
+Game pixels are averaged over completed game episodes, and curriculum frames
+over completed FPG episodes, using separate denominators. The game term has no
+upper cap, so reaching further areas continues to improve the score. FPG
+advancement is measured from its initial three-frame band to the 425-frame band.
+`target_frames` is a timing allowance, not curriculum advancement, and does not
+contribute. Neither training reward magnitudes nor raw FPG success rates enter
+the score. This is a training-progress proxy; standalone ROM checks remain
+available for selected checkpoints. Curriculum advancement does not establish
+that a policy still succeeds on every earlier band.
+
+The defaults use the hyperparameters from the 90M sweep's run 126
+(`sweep_1791715536141_0126`), with a longer training budget and fresh weights.
+Actor count is fixed at 4,096, hidden width at 256, and recurrent depth at two.
+All ten highest-scoring 90M trials used 4,096 actors; nine used width 256.
+Those observations support reducing the next search to 15 varying parameters,
+but do not establish which settings will perform best at 2B steps.
+The launcher honors the configured learning-rate and entropy schedules;
+both remain disabled, matching run 126.
+
+| Parameter | Checked-in range |
 | --- | --- |
-| Hidden width / recurrent layers | 32, 64, 128 / 1–4 |
-| Horizon / minibatch | 32–128 / 1,024–8,192, powers of two |
+| Actors / hidden width / recurrent layers | Fixed at 4,096 / 256 / 2 |
+| Horizon / minibatch | 64–1,024 / 1,024–16,384, powers of two |
 | Learning rate | 0.0001–1, logarithmic |
 | Entropy coefficient | 0.00001–0.1, logarithmic |
-| Gamma / GAE lambda | 0.8–0.9999 / 0.2–0.995, logit scale |
+| Gamma / GAE lambda | 0.8–0.9999 / 0.2–0.999, logit scale |
 | Replay ratio | 0.25–4 |
 | Policy clip / value clip | 0.1–0.9 / 0.01–5 |
 | Value-loss coefficient / gradient norm limit | 0.1–4 / 0.1–1.5 |
@@ -146,48 +175,25 @@ python3 ocean/mario_sim/sweep.py --summary reports/mario_sim/sweep_TIMESTAMP
 | V-trace / rho clip / c clip | Off or on / 1–4 / 0.1–1 |
 
 These PPO/Muon ranges follow the common ranges used by the Breakout, Craftax,
-and NMMO configs. Model and rollout sizes are bounded for the local 3GB card.
-V-trace's two clips only matter when it is enabled. Every allowed shape has
-compatible minibatches and at least one optimizer update at minimum replay.
+and NMMO configs. These defaults target the Vast GPU: run 126 used about 5GB
+of VRAM, and larger rollout candidates can need more. V-trace remains in the
+search because both settings appeared among the best trials; its two clips
+only matter when it is enabled. Failed trials, including out-of-memory candidates, are marked bad
+and skipped. The failure allowance is 1,000, matching the native sweep fallback,
+instead of stopping the entire sweep after 16 failures.
 
-Each trial requests **30,000,000 frames**. The trainer uses whole rollouts,
-so actual budgets are 29,884,416–29,982,720 depending on horizon (under 0.4%
-rounding). The receipt records both requested and completed frames. The default
-search requests 3.84 billion frames in total, with one trial at a time. Final
-checkpoints are retained; sweep workers disable intermediate checkpoints.
-
-After training exits and releases GPU memory, the worker evaluates its frozen
-checkpoint in the **actual NES ROM**, checking the simulator alongside it:
-
-- One natural start at every original stage: 32 game episodes, seed 137,
-  with normal lives and a fixed 6,000-frame cap.
-- Sixteen episodes at each exact FPG start depth
-  `3,8,16,32,64,80,96,128,192,256,320,425`, seed 137, cap 1,800 frames.
-
-The fixed search score is:
-
-```text
-progress_fraction = mean(min(new_progress_pixels / 3400, 1))
-clear_rate = fraction of game episodes clearing at least one stage
-game_score = (progress_fraction + clear_rate) / 2
-score = 0.75 * game_score + 0.25 * FPG_success_rate
-```
-
-The score remains useful before any full-stage clears. It does not depend on
-training reward magnitude or reported curriculum advancement. Results retain
-each component, episode traces, model/config fingerprints, and ROM comparison
-checks. Missing episodes or simulator/ROM mismatches fail a trial. The ROM
-evaluator uses FP32 CPU policy inference; training uses the current binary's
-BF16 GPU policy. These are development starts from the original training
-distribution; recheck selected candidates with more episodes and new seeds.
+Every trial requests **2,000,000,000 frames**, rounded down to whole rollouts.
+The default search requests 128 successful trials, with one trial at a time.
+Native INI logs retain the settings, actual steps, cost, score, game pixels,
+and FPG depth. Checkpoints are saved every 1,024 updates and at the end, along
+with curriculum sidecars.
 
 Search ranges live in [the environment config](../../config/mario_sim.ini).
 [profiles/sweep.ini](profiles/sweep.ini) is a thin launcher overlay. The first
-trial uses the baseline values, then PROTEIN proposes candidates. Individual
-trial failures are retained in `failure.json`; 16 failures stop the sweep.
-`max_suggestion_cost` guides proposals and is not a per-trial kill timer.
-The [setup validation](results/sweep_setup_20261009/summary.json) records the
-four bounded trial checks, including both memory extremes on the 3GB GPU.
+trial uses the baseline values, then PROTEIN proposes candidates. If editing
+`train.total_timesteps` directly, keep the fixed `sweep.train.total_timesteps`
+bounds equal to it. `max_suggestion_cost` guides proposals and is not a per-trial
+kill timer. Its allowance is scaled to 54,000 seconds for the longer trials.
 
 ## Verification and evidence
 

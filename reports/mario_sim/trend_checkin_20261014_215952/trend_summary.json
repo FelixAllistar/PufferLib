@@ -1,0 +1,23 @@
+{
+  "completed_trials": 44,
+  "last_completed_run": 48,
+  "best_run": 26,
+  "best_score": 1.4715195894241333,
+  "trials_since_best": 22,
+  "runner_up_run": 42,
+  "mean_score_22_30": 0.7742596467336019,
+  "mean_score_31_48": 0.8080574174722036,
+  "full_curriculum_with_current_frontier_success": [
+    25,
+    26,
+    27,
+    29,
+    36,
+    39,
+    41,
+    42,
+    47
+  ],
+  "profile_status": "Prepared and validated; not launched; active remote sweep unchanged",
+  "scope": "Native metrics are final-window measurements. No exact GP state restore is implemented."
+}
