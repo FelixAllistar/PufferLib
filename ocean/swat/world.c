@@ -5,6 +5,11 @@
 #include <string.h>
 #include "door_damage.h"
 #include "fracture_geometry.h"
+#include "damage_profile.h"
+_Thread_local SwatDamageProfile swat_damage_profile;
+static SwatFracture* swat_sections_geometry(const SwatObject*,const SwatCut*,int,const SwatFracturePolygon*,int);
+static bool swat_sections_equal(const SwatObject*,const SwatFracture*);
+static bool swat_sections_hulls(const SwatObject*,SwatFracture*);
 #include "door_motion.h"
 #include "wall_support.h"
 
@@ -300,12 +305,17 @@ SwatFracture* swat_world_cut_prepare(const SwatObject* o,const SwatCut* cuts,int
     return swat_world_sections_prepare(o,cuts,count,pieces,n);
 }
 SwatFracture* swat_world_sections_prepare(const SwatObject* o,const SwatCut* cuts,int count,const SwatFracturePolygon* pieces,int n) {
+    SwatFracture* f=swat_sections_geometry(o,cuts,count,pieces,n);
+    if(f && !swat_sections_hulls(o,f)){swat_world_cut_close(f);return NULL;}
+    return f;
+}
+static SwatFracture* swat_sections_geometry(const SwatObject* o,const SwatCut* cuts,int count,const SwatFracturePolygon* pieces,int n) {
     if(count<0 || count>SWAT_MAX_CUTS || n<0 || n>SWAT_CUT_SECTIONS)return NULL;
     SwatFracture* f=calloc(1,sizeof(*f));if(!f)return NULL;
     f->count=count;f->section_count=n;if(count)memcpy(f->cuts,cuts,(size_t)count*sizeof(*cuts));
     if(n) {
-        f->sections=malloc((size_t)n*sizeof(*f->sections));f->pending_hulls=calloc((size_t)n,sizeof(*f->pending_hulls));
-        if(!f->sections || !f->pending_hulls){swat_world_cut_close(f);return NULL;}
+        f->sections=malloc((size_t)n*sizeof(*f->sections));
+        if(!f->sections){swat_world_cut_close(f);return NULL;}
         memcpy(f->sections,pieces,(size_t)n*sizeof(*pieces));
         SwatCutPlane planes[SWAT_MAX_CUTS][SWAT_CUT_SIDES];
         for(int c=0;c<count;c++)swat_cut_planes(&cuts[c],planes[c]);
@@ -326,22 +336,44 @@ SwatFracture* swat_world_sections_prepare(const SwatObject* o,const SwatCut* cut
                 }
                 if(!present)p->exposed_edges|=1u<<e;
             }
-            b3Vec3 points[2*SWAT_CUT_VERTICES];
-            for(int i=0;i<p->count;i++) {
-                points[i]=swat_v(-o->half.x,p->vertices[i][0],p->vertices[i][1]);
-                points[i+p->count]=swat_v(o->half.x,p->vertices[i][0],p->vertices[i][1]);
-            }
-            f->pending_hulls[s]=b3CreateHull(points,2*p->count,2*SWAT_CUT_VERTICES);
-            if(!f->pending_hulls[s]){swat_world_cut_close(f);return NULL;}
         }
     }
     return f;
 }
+// Shape identity depends on the extrusion, not cut history or exposed-edge paint.
+static bool swat_sections_equal(const SwatObject* o,const SwatFracture* f) {
+    SwatFracturePolygon source;swat_source_polygon(o,&source);
+    int n=o->cuts?o->cuts->section_count:1;
+    if(n!=f->section_count)return false;
+    for(int s=0;s<n;s++) {
+        const SwatFracturePolygon* p=o->cuts?&o->cuts->sections[s]:&source;
+        if(p->count!=f->sections[s].count || memcmp(p->vertices,f->sections[s].vertices,(size_t)p->count*sizeof(*p->vertices)))return false;
+    }
+    return true;
+}
+static bool swat_sections_hulls(const SwatObject* o,SwatFracture* f) {
+    if(!f->section_count)return true;
+    f->pending_hulls=calloc((size_t)f->section_count,sizeof(*f->pending_hulls));if(!f->pending_hulls)return false;
+    for(int s=0;s<f->section_count;s++) {
+            const SwatFracturePolygon* p=&f->sections[s];b3Vec3 points[2*SWAT_CUT_VERTICES];
+            for(int i=0;i<p->count;i++) {
+                points[i]=swat_v(-o->half.x,p->vertices[i][0],p->vertices[i][1]);
+                points[i+p->count]=swat_v(o->half.x,p->vertices[i][0],p->vertices[i][1]);
+            }
+            uint64_t start=swat_profile_begin();
+            f->pending_hulls[s]=b3CreateHull(points,2*p->count,2*SWAT_CUT_VERTICES);
+            SWAT_PROFILE_ADD(hulls,1);swat_profile_end(&swat_damage_profile.hull_ms,start);
+            if(!f->pending_hulls[s])return false;
+    }
+    return true;
+}
 void swat_world_cut_apply(SwatWorld* w,int object,SwatFracture* f) {
+    uint64_t start=swat_profile_begin();
     SwatObject* o=&w->objects[object];
-    if(o->active) {
+    if(o->active && !swat_sections_equal(o,f)) {
         b3ShapeId shapes[SWAT_CUT_SECTIONS];int count=b3Body_GetShapes(o->body,shapes,SWAT_CUT_SECTIONS);
         assert(count==b3Body_GetShapeCount(o->body));
+        SWAT_PROFILE_ADD(shape_rebuilds,1);SWAT_PROFILE_ADD(shapes_destroyed,count);SWAT_PROFILE_ADD(shapes_created,f->section_count);
         for(int i=0;i<count;i++)b3DestroyShape(shapes[i],false);
         o->shape=b3_nullShapeId;
         b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);def.density=swat_material(o->material)->density;
@@ -355,6 +387,7 @@ void swat_world_cut_apply(SwatWorld* w,int object,SwatFracture* f) {
         for(int i=0;i<f->section_count;i++)b3DestroyHull(f->pending_hulls[i]);
         free(f->pending_hulls);f->pending_hulls=NULL;
     }
+    swat_profile_end(&swat_damage_profile.collision_ms,start);
 }
 int swat_world_cut(SwatWorld* w,int object,SwatCut cut) {
     if(object<0 || object>=w->count || !swat_cut_valid(&cut))return -1;

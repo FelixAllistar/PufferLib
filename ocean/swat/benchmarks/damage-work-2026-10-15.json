@@ -1,0 +1,64 @@
+{
+  "baselineCommit": "7089d1fb400d88a007f6c4f9b11195ba82f2211a",
+  "protocol": 24,
+  "workload": {
+    "seed": 42,
+    "measuredTicks": 600,
+    "warmupTicks": 30,
+    "initialNeutralTick": 1,
+    "totalRifleShots": 67,
+    "finiteAmmunition": true,
+    "objects": 294,
+    "actors": 6,
+    "fixtures": [
+      "--headless --damage-sample wall --fire --frames 600",
+      "--hidden --gpu --audio --damage-sample door --fire --frames 600"
+    ]
+  },
+  "work": {
+    "wall": {
+      "supportScans": [
+        127,
+        127
+      ],
+      "hullBuilds": [
+        70135,
+        8050
+      ],
+      "objectShapeRebuilds": [
+        8144,
+        240
+      ],
+      "createdShapes": [
+        64630,
+        6957
+      ],
+      "destroyedShapes": [
+        64121,
+        6448
+      ]
+    },
+    "door": {
+      "cachedBuildsIncludingWarmup": [
+        66,
+        66
+      ],
+      "sourceTrianglePolygonClips": [
+        829748,
+        414874
+      ],
+      "retainedSourceVertices": [
+        25761,
+        25761
+      ],
+      "sourceAttributeBytes": [
+        927396,
+        927396
+      ]
+    }
+  },
+  "interpretation": "Pairs are [before, after]. Work counts are reproducible operation counts, not frame-rate or whole-game speedup claims. Door counts cover original clipped art; new immediate-mode wood backing is additional geometry. Attribute bytes count logical used attributes, excluding grow-buffer spare capacity and driver overhead.",
+  "method": "Reference copies the baseline world/support and door rendering sources into the ignored review directory and adds the same opt-in counters; other objects, compiler flags, physics library, seed and weapon inputs match the changed build. The fixture changes only the starting position, then aims and fires through ordinary inputs. Every shot still updates collision immediately. It cannot be recorded because the fixture start override is not a replay-header field.",
+  "timingLimit": "Other training and validation workloads were active. Rendered elapsed queries include CPU submission gaps and presentation; they do not establish GPU busy time or a clean before/after FPS comparison. Raw component timings and paired headless runs remain in build/swat/review/rapid-fire.",
+  "validation": "Linux and native Windows: grazing silhouettes for both source doors, original art/moving doors, cached/full shadows, physical holes, live/late snapshots, atomic malformed rejection, bounded falling rubble, finite input-driven shots and mounted charges, exact replay and checkpoint continuation. Quiet completion fixtures choose the real impact launcher at staging and check its muzzle lane; combat retains its carbine."
+}

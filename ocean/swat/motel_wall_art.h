@@ -40,7 +40,7 @@ typedef struct SwatMotelWallArt {
     unsigned int face_builds,face_submissions,piece_submissions;
 } SwatMotelWallArt;
 #define SWAT_DOOR_CACHE 32
-typedef struct SwatDoorArt {SwatWallMeshCache meshes[SWAT_DOOR_CACHE];int owners[SWAT_DOOR_CACHE];unsigned int builds;} SwatDoorArt;
+typedef struct SwatDoorArt {SwatWallMeshCache meshes[SWAT_DOOR_CACHE];int owners[SWAT_DOOR_CACHE];float core_half[SWAT_DOOR_CACHE];unsigned int builds;} SwatDoorArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
     size_t tests=cache->polygon_tests;
     for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
