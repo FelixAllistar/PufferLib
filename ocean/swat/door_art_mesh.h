@@ -32,6 +32,10 @@ static int door_polygon(SwatWallVertex v[64],const Mesh* src,int triangle,
     }
     return n;
 }
+static float door_core_half(const SwatDoorArt* art,const SwatObject* o,const Model* source) {
+    for(int i=0;i<SWAT_DOOR_CACHE;i++)if(art->owners[i]==o->tag.index && art->meshes[i].source==source->meshes)return art->core_half[i];
+    return o->half.x*.1f;
+}
 static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObject* o,const SwatMotelInstance* p) {
     uint64_t signature=((uint64_t)swat_fracture_hash(o)<<2)|(p?1:0)|(o->latch_broken?2:0);
     int slot=-1;
@@ -41,7 +45,31 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
     SwatWallMeshCache* cache=&art->meshes[slot];
     if(art->owners[slot]==o->tag.index && cache->source==source->meshes &&
        !memcmp(&cache->half,&o->half,sizeof(o->half)) && cache->mask==signature)return &cache->model;
+    uint64_t started=swat_profile_begin();SWAT_PROFILE_ADD(door_builds,1);
     wall_mesh_close(cache);art->owners[slot]=o->tag.index;cache->source=source->meshes;cache->half=o->half;cache->mask=signature;
+    // Place backing below the shallowest source skin, including recessed panels.
+    // Calculate once per rebuild, never while the unchanged leaf moves.
+    float core=o->half.x;bool skin=false;int depth_axis=p?2:0;float depth_scale=p?p->scale.z:2*o->half.x;
+    for(int m=0;m<source->meshCount;m++) {
+        const Mesh* mesh=&source->meshes[m];if(!mesh->normals)continue;
+        BoundingBox box=GetMeshBoundingBox(*mesh);
+        float height=(box.max.y-box.min.y)*(p?p->scale.y:2*o->half.y);
+        float width=(p?box.max.x-box.min.x:box.max.z-box.min.z)*(p?p->scale.x:2*o->half.z);
+        if(height<o->half.y || width<o->half.z)continue; // Hardware does not define the leaf skins.
+        for(int t=0;t<mesh->triangleCount;t++) {
+            int v[3];for(int k=0;k<3;k++)v[k]=mesh->indices?mesh->indices[3*t+k]:3*t+k;
+            int width_axis=p?0:2;const float* a=mesh->vertices+3*v[0],*b=mesh->vertices+3*v[1],*c=mesh->vertices+3*v[2];
+            float area=.5f*fabsf((b[1]-a[1])*(c[width_axis]-a[width_axis])-(c[1]-a[1])*(b[width_axis]-a[width_axis]));
+            area*=(p?p->scale.y:2*o->half.y)*(p?p->scale.x:2*o->half.z);
+            if(area<.02f*o->half.y*o->half.z)continue; // Ignore small hardware faces sharing a material/mesh.
+            for(int k=0;k<3;k++)if(fabsf(mesh->normals[3*v[k]+depth_axis])>.9f &&
+                mesh->normals[3*v[k]+depth_axis]*mesh->vertices[3*v[k]+depth_axis]>0) {
+                float depth=fabsf(mesh->vertices[3*v[k]+depth_axis]*depth_scale);
+                if(depth>1e-5f){core=fminf(core,depth*.98f);skin=true;}
+            }
+        }
+    }
+    art->core_half[slot]=skin?core:o->half.x*.1f;
     art->builds++;
     int axis=p?0:2;float sy=p?p->scale.y:2*o->half.y,sz=p?p->scale.x:2*o->half.z;
     float oy=p?-o->half.y:0,oz=p?-o->half.z:0;
@@ -56,19 +84,7 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
     model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
     model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
     for(int m=0;m<source->meshCount;m++) {
-        const Mesh* src=&source->meshes[m];int count=0;
-        for(int t=0;t<src->triangleCount;t++) {
-          SwatFaceBounds triangle=face_triangle_bounds(src,t,axis,sy,sz,oy,oz);
-          for(int band=0;band<sections;band++) {
-            if(!face_bounds_overlap(triangle,bounds[band]))continue;
-            cache->polygon_tests++;
-            SwatWallVertex v[64];int n=door_polygon(v,src,t,&polygons[band],axis,sy,sz,oy,oz);if(n>=3)count+=3*(n-2);
-          }
-        }
-        if(!count)continue;
-        Mesh mesh={0};mesh.vertices=MemAlloc(count*3*sizeof(float));mesh.normals=MemAlloc(count*3*sizeof(float));
-        mesh.texcoords=MemAlloc(count*2*sizeof(float));mesh.colors=MemAlloc(count*4);
-        if(src->texcoords2)mesh.texcoords2=MemAlloc(count*2*sizeof(float));
+        const Mesh* src=&source->meshes[m];int capacity=0;Mesh mesh={0};
         for(int t=0;t<src->triangleCount;t++) {
           SwatFaceBounds triangle=face_triangle_bounds(src,t,axis,sy,sz,oy,oz);
           for(int band=0;band<sections;band++) {
@@ -77,6 +93,14 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
             SwatWallVertex v[64];int n=door_polygon(v,src,t,&polygons[band],axis,sy,sz,oy,oz);
             for(int k=1;k<n-1;k++) {const int indices[]={0,k,k+1};
                 for(int j=0;j<3;j++) {
+                    if(mesh.vertexCount==capacity) {
+                        capacity=capacity?capacity*2:256;
+                        mesh.vertices=MemRealloc(mesh.vertices,capacity*3*sizeof(float));
+                        mesh.normals=MemRealloc(mesh.normals,capacity*3*sizeof(float));
+                        mesh.texcoords=MemRealloc(mesh.texcoords,capacity*2*sizeof(float));
+                        mesh.colors=MemRealloc(mesh.colors,capacity*4);
+                        if(src->texcoords2)mesh.texcoords2=MemRealloc(mesh.texcoords2,capacity*2*sizeof(float));
+                    }
                     SwatWallVertex p=v[indices[j]];int at=mesh.vertexCount++;
                     memcpy(mesh.vertices+3*at,&p.p,3*sizeof(float));memcpy(mesh.normals+3*at,&p.n,3*sizeof(float));
                     memcpy(mesh.texcoords+2*at,&p.uv,2*sizeof(float));if(mesh.texcoords2)memcpy(mesh.texcoords2+2*at,&p.uv2,2*sizeof(float));
@@ -85,9 +109,12 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
             }
           }
         }
-        assert(mesh.vertexCount==count);mesh.triangleCount=count/3;UploadMesh(&mesh,false);
+        if(!mesh.vertexCount)continue;
+        int count=mesh.vertexCount;mesh.triangleCount=count/3;
+        uint64_t upload=swat_profile_begin();UploadMesh(&mesh,false);swat_profile_end(&swat_damage_profile.upload_ms,upload);
+        SWAT_PROFILE_ADD(door_vertices,count);
         model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=mesh;
     }
-    return model;
+    swat_profile_end(&swat_damage_profile.door_ms,started);return model;
 }
 #endif

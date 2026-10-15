@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test wall-support-test
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test wall-support-test door-solid-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 lighting-bake: | $(BUILD)
@@ -136,6 +136,8 @@ viewer: $(ENET_LIB) ui-assets | $(BUILD)
 	mv $(ROOT)/swat.launcher.tmp $(ROOT)/swat
 environment-art-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_art.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c protocol.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_environment_art
+door-solid-test: environment-art-test-build
+	ulimit -c 0; $(BUILD)/test_environment_art $(BUILD) door-solid
 impact-effects-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_impact_effects.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_impact_effects
 	ulimit -c 0; $(BUILD)/test_impact_effects

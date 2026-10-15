@@ -112,6 +112,7 @@ static void support_edges(SwatFracture* f) {
     }
 }
 SwatSupportPlan* swat_world_support_prepare(const SwatWorld* w,const SwatObject* candidate,uint32_t groups) {
+    uint64_t start=swat_profile_begin();SWAT_PROFILE_ADD(support_scans,1);
     SwatSupportPlan* plan=calloc(1,sizeof(*plan));if(!plan)return NULL;
     if(!candidate)candidate=w->objects;
     if(!w->support || !groups)return plan;
@@ -121,7 +122,9 @@ SwatSupportPlan* swat_world_support_prepare(const SwatWorld* w,const SwatObject*
             if(first<0)first=i;
             const SwatObject* o=&candidate[i];
             if(o->support_role==SWAT_SUPPORT_ANCHOR){count++;continue;}
-            SwatFracture* f=swat_world_cut_prepare(o,o->cuts?o->cuts->cuts:NULL,o->cuts?o->cuts->count:0);
+            const SwatCut* cuts=o->cuts?o->cuts->cuts:NULL;int cut_count=o->cuts?o->cuts->count:0;
+            SwatFracturePolygon pieces[SWAT_CUT_SECTIONS];int sections=swat_cut_polygons(o,cuts,cut_count,pieces);
+            SwatFracture* f=sections<0?NULL:swat_sections_geometry(o,cuts,cut_count,pieces,sections);
             if(!f)goto failed;
             plan->cuts[i]=f;count+=f->section_count;
         }
@@ -172,19 +175,27 @@ SwatSupportPlan* swat_world_support_prepare(const SwatWorld* w,const SwatObject*
             }
         }
         for(int i=0;i<n;i++)if(plan->cuts[nodes[i].owner] && !nodes[i].supported) {
-            SwatFracture* f=plan->cuts[nodes[i].owner];b3DestroyHull(f->pending_hulls[nodes[i].section]);f->pending_hulls[nodes[i].section]=NULL;
+            plan->cuts[nodes[i].owner]->sections[nodes[i].section].count=0;
         }
         free(nodes);
         for(int i=0;i<w->count;i++)if(plan->cuts[i] && candidate[i].wall_group==id) {
             SwatFracture* f=plan->cuts[i];int kept=0;
-            for(int s=0;s<f->section_count;s++)if(f->pending_hulls[s]) {
-                f->sections[kept]=f->sections[s];f->pending_hulls[kept++]=f->pending_hulls[s];
+            for(int s=0;s<f->section_count;s++)if(f->sections[s].count) {
+                f->sections[kept++]=f->sections[s];
             }
             f->section_count=kept;f->support_filtered=true;support_edges(f);
+            // Snapshot preparation must compare against the actual world's bodies,
+            // since candidate geometry may already contain an incoming cut.
+            bool unchanged=swat_sections_equal(&w->objects[i],f);
+            if(unchanged && !w->objects[i].cuts && !f->count) {
+                // Keep intact owners on their original art/cache path as well.
+                swat_world_cut_close(f);plan->cuts[i]=NULL;continue;
+            }
+            if(!unchanged && !swat_sections_hulls(&w->objects[i],f))goto failed;
         }
     }
-    return plan;
-failed:swat_world_support_close(plan);return NULL;
+    swat_profile_end(&swat_damage_profile.support_ms,start);return plan;
+failed:swat_profile_end(&swat_damage_profile.support_ms,start);swat_world_support_close(plan);return NULL;
 }
 bool swat_world_support_active_valid(const SwatSupportPlan* plan,const SwatObject* objects) {
     for(int i=0;i<SWAT_MAX_OBJECTS;i++)if(plan->cuts[i] && objects[i].active && !plan->cuts[i]->section_count)return false;

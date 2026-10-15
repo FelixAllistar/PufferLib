@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "fracture_geometry.h"
+#include "damage_profile.h"
 #include "motel_wall_art.h"
 #include "door_art_mesh.h"
 #include "art_texture_pool.h"
@@ -483,7 +484,7 @@ static Color wear_color(const SwatObject* o,float shade) {
 
 static b3Pos surface_origin(const SwatObject* o){return o->rubble?o->rubble->origin:o->center;}
 static float surface_yaw(const SwatObject* o){return o->rubble?o->rubble->source_yaw:o->yaw;}
-static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,bool metric,bool sides_only,bool material_color) {
+static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,bool metric,bool sides_only,bool material_color,float core_half) {
     b3Pos origin=surface_origin(o);float yaw=surface_yaw(o);
     float oz=sinf(yaw)*(float)origin.x+cosf(yaw)*(float)origin.z;
     // Changing rlgl primitive mode resets its texture. Bind the face map after
@@ -503,6 +504,20 @@ static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vec
             }
         }
     }
+    // The imported leaf has recessed skins. Keep a two-sided wood backing
+    // inside those skins so a grazing view cannot look into an empty shell.
+    // It uses the same retained polygons, so every opening remains open.
+    if(sides_only && o->door)for(int s=0;s<o->cuts->section_count;s++) {
+        const SwatFracturePolygon* p=&o->cuts->sections[s];
+        rlColor4ub(151,115,76,255);
+        for(int side=-1;side<=1;side+=2) {
+            rlNormal3f(side,0,0);
+            for(int k=1;k<p->count-1;k++) {
+                int v[]={0,side>0?k:k+1,side>0?k+1:k};
+                for(int j=0;j<3;j++){rlTexCoord2f(0,0);rlVertex3f(side*core_half,p->vertices[v[j]][0],p->vertices[v[j]][1]);}
+            }
+        }
+    }
     rlEnd();rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_QUADS);
     bool board=o->material==SWAT_DRYWALL || o->material==SWAT_PLASTER,masonry=o->material==SWAT_BRICK;
     int bands=board || masonry?3:1;float finish=board?.08f:masonry?fminf(.12f,.012f/(2*o->half.x)):0;
@@ -511,7 +526,9 @@ static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vec
         const SwatFracturePolygon* p=&o->cuts->sections[s];
         for(int e=0;e<p->count;e++) {
             const float* a=p->vertices[e];const float* b=p->vertices[(e+1)%p->count];
-            if(!(p->exposed_edges&(1u<<e)))continue;
+            bool exposed=p->exposed_edges&(1u<<e);
+            if(!exposed && !(sides_only && o->door))continue;
+            float depth_half=exposed?o->half.x:core_half;
             float y=b[0]-a[0],z=b[1]-a[1],length=hypotf(y,z);rlNormal3f(0,z/length,-y/length);
             uint32_t ha=(uint32_t)(int)(a[0]*1000)*374761393u^(uint32_t)(int)(a[1]*1000)*668265263u;
             uint32_t hb=(uint32_t)(int)(b[0]*1000)*374761393u^(uint32_t)(int)(b[1]*1000)*668265263u;
@@ -525,7 +542,7 @@ static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vec
                 for(int j=0;j<4;j++) {
                     float shade=grain[j==0 || j==3?0:1];
                     rlColor4ub((uint8_t)(c.r*shade),(uint8_t)(c.g*shade),(uint8_t)(c.b*shade),255);rlTexCoord2f(0,0);
-                    rlVertex3f(o->half.x*(2*depth[j]-1),v[j][0],v[j][1]);
+                    rlVertex3f(depth_half*(2*depth[j]-1),v[j][0],v[j][1]);
                 }
             }
         }
@@ -534,7 +551,7 @@ static void cut_fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vec
 }
 
 static void fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,bool metric,bool material_color) {
-    if(o->cuts){cut_fragment_mesh(texture,o,lit,tile,metric,false,material_color);return;}
+    if(o->cuts){cut_fragment_mesh(texture,o,lit,tile,metric,false,material_color,0);return;}
     b3Vec3 vertices[8];
     for(int i=0;i<8;i++) vertices[i]=swat_v(i<4 ? o->half.x : -o->half.x,o->corners[i%4][0],o->corners[i%4][1]);
     const int faces[6][4]={{0,1,2,3},{7,6,5,4},{0,4,5,1},{1,5,6,2},{2,6,7,3},{3,7,4,0}};
@@ -640,8 +657,8 @@ void swat_environment_door_fragment_draw(const SwatObject* o) {
     SwatObject piece=*o;piece.door=false;piece.part=SWAT_PART_SKIN;piece.fractured=true;
     for(int i=0;i<SWAT_DOOR_SECTIONS;i++){swat_door_section(o,i,piece.corners);swat_environment_fragment_draw(&piece);}
 }
-static void door_edge_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
-    if(o->cuts){clear_surface(art);cut_fragment_mesh((Texture2D){.id=rlGetTextureIdDefault()},o,false,(Vector2){1,1},false,true,true);return;}
+static void door_edge_draw(const SwatEnvironmentArt* art,const SwatObject* o,float core_half) {
+    if(o->cuts){clear_surface(art);cut_fragment_mesh((Texture2D){.id=rlGetTextureIdDefault()},o,false,(Vector2){1,1},false,true,true,core_half);return;}
     clear_surface(art);rlSetTexture(rlGetTextureIdDefault());rlBegin(RL_QUADS);
     for(int i=0;i<SWAT_DOOR_SECTIONS;i++) {
         float v[4][2];swat_door_section(o,i,v);
@@ -653,6 +670,13 @@ static void door_edge_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
         rlVertex3f(o->half.x,v[2][0],v[2][1]);rlVertex3f(-o->half.x,v[2][0],v[2][1]);
     }
     rlEnd();rlSetTexture(0);
+}
+static SwatObject door_art_pose(const SwatObject* o) {
+    SwatObject pose=*o;
+    // Attached imported skins use the hinge frame. Derive their backing from
+    // that same frame; a snapshot's centre reconstruction can differ by an ulp.
+    if(!o->motion)pose.center=b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
+    return pose;
 }
 
 static bool material_door(const SwatEnvironmentArt* art,const SwatObject* o) {
@@ -700,7 +724,7 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
             DrawModelEx(model,(Vector3){0},(Vector3){0,1,0},0,
                 (Vector3){2*o->half.x,2*o->half.y,2*o->half.z},wear_color(o,1));
         }
-        if(damaged){door_edge_draw(art,o);swat_lighting_door_damage(art->lighting,NULL);}
+        if(damaged){door_edge_draw(art,o,door_core_half(art->door_art,o,&art->door));swat_lighting_door_damage(art->lighting,NULL);}
         return true;
     }
     if(o->door && (o->latch_broken || o->cuts)){clear_surface(art);swat_environment_door_fragment_draw(o);return true;}
@@ -1178,14 +1202,16 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     if(o->door && (o->latch_broken || o->cuts) && art->motel[p->asset].meshCount) {
         const Model* source=art->room101_ready && o->tag.index==16?&art->room101[1]:&art->motel[p->asset];
         const Model* model=door_mesh(art->door_art,source,o,p);
-        if(!shadow)swat_lighting_door_damage(art->lighting,o);
+        float core_half=door_core_half(art->door_art,o,source);
+        SwatObject pose=door_art_pose(o);
+        if(!shadow)swat_lighting_door_damage(art->lighting,&pose);
         location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
         if(art->room101_ready && o->tag.index==16) {
             source=art->room101_v3_ready?&art->room101_v3[11]:&art->room101[6];
             model=door_mesh(art->door_art,source,o,p);location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
         }
-        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
-        door_edge_draw(art,o);rlPopMatrix();
+        rlPushMatrix();rlTranslatef(pose.center.x,pose.center.y,pose.center.z);swat_environment_object_rotate(&pose);
+        door_edge_draw(art,&pose,core_half);rlPopMatrix();
         if(!shadow)swat_lighting_door_damage(art->lighting,NULL);
         return true;
     }
@@ -1225,10 +1251,11 @@ bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWo
     const SwatMotelInstance* p=swat_storefront_instance(o->tag.index-1);
     if(o->door && (o->latch_broken || o->cuts) && art->storefront[p->asset].meshCount) {
         const Model* source=&art->storefront[p->asset];const Model* model=door_mesh(art->door_art,source,o,p);
-        if(!shadow)swat_lighting_door_damage(art->lighting,o);
+        SwatObject pose=door_art_pose(o);
+        if(!shadow)swat_lighting_door_damage(art->lighting,&pose);
         location_mesh_draw(art,o,p,model,source,shadow,cutaway,false,NULL);
-        rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);swat_environment_object_rotate(o);
-        door_edge_draw(art,o);rlPopMatrix();
+        rlPushMatrix();rlTranslatef(pose.center.x,pose.center.y,pose.center.z);swat_environment_object_rotate(&pose);
+        door_edge_draw(art,&pose,door_core_half(art->door_art,o,source));rlPopMatrix();
         if(!shadow)swat_lighting_door_damage(art->lighting,NULL);
         return true;
     }

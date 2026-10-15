@@ -1,4 +1,5 @@
 #include "replay.h"
+#include "pose.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,6 +53,11 @@ static SwatInput look(b3Pos point) {
     return in;
 }
 static b3Pos chest(int actor) { return b3OffsetPos(swat_controller_eye(&sim.actors[actor].controller),swat_v(0,-.2f,0)); }
+static bool launcher_lane(int actor) {
+    SwatActor* player=&sim.actors[0];SwatPose pose=swat_pose(&player->controller,&player->arsenal);
+    SwatHit hit=swat_world_sphere_cast(&sim.world,pose.muzzle,b3SubPos(chest(actor),pose.muzzle),.04f,player->controller.body.body);
+    return hit.kind==SWAT_HIT_ACTOR && hit.index==actor;
+}
 static void walk(b3Pos goal,float radius) {
     // A 60 cm cell centre can be sqrt(2)*30 cm from the requested point.
     // Breach plane crossing, cuffs and extraction are checked independently.
@@ -83,12 +89,15 @@ static void walk(b3Pos goal,float radius) {
                     in.command=t%15==0;
                     in.taser=sim.actors[watch_actor].role==SWAT_SUSPECT && !sim.actors[0].gear.taser_cooldown && !sim.actors[0].gear.last_taser;
                     if(sim.actors[0].gear.kit==2 && sim.actors[watch_actor].role==SWAT_SUSPECT) {
-                        in.aim=true;in.fire=!sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
+                        // Quiet breach QA selects the real impact launcher at
+                        // staging; Entry has no taser charges. Combat keeps its carbine.
+                        in.aim=true;in.fire=(sim.config.hostile_fire || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
                         in.reload=!sim.actors[0].arsenal.slots[0].chambered;
                         // Camera sight can clear a jamb before this longer
                         // primary's muzzle does. Continue the planned approach
                         // in the current aim basis until the gun clears cover.
-                        if(sim.actors[0].controller.muzzle_blocked) {
+                        if(sim.actors[0].controller.muzzle_blocked || (sim.actors[0].arsenal.primary==2 && !launcher_lane(watch_actor))) {
+                            in.fire=false;
                             float delta=yaw-sim.actors[0].controller.yaw;
                             in.forward=.6f*cosf(delta);in.strafe=.6f*sinf(delta);
                         }
@@ -123,13 +132,14 @@ static void secure(int actor) {
         return; // A lawful squad response can end an armed threat before cuffing.
     }
     if(sim.actors[actor].gear.restrained)return;
+    if(sim.actors[0].arsenal.primary==2 && !sim.actors[actor].gear.surrendered && !launcher_lane(actor))walk(feet(actor),1.45f);
     for(int t=0;t<600 && sim.actors[actor].alive && !sim.actors[actor].gear.surrendered;t++) {
         SwatInput in=look(chest(actor));SwatHit hit=swat_context_hit(&sim,0,9);
         if(hit.kind==SWAT_HIT_ACTOR && hit.index==actor) {
             in.command=t%30==0;
             in.taser=sim.actors[actor].role==SWAT_SUSPECT && t%30==15;
             if(sim.actors[0].gear.kit==2 && sim.actors[actor].role==SWAT_SUSPECT) {
-                in.aim=true;in.fire=!sim.actors[0].arsenal.last_fire && !sim.actors[actor].gear.stunned_ticks;
+                in.aim=true;in.fire=(sim.config.hostile_fire || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[actor].gear.stunned_ticks;
                 in.reload=!sim.actors[0].arsenal.slots[0].chambered;
             }
         }
@@ -286,9 +296,12 @@ int main(int argc,char** argv) {
     int saved_tick=0;uint32_t saved_hash=0;
     swat_sim_init(&sim,cfg,81);assert(swat_replay_record(&journal,argv[1],&sim));
     SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_HOLD;
-    if(strcmp(route,"front"))in.loadout=3; // Entry's actual wall stock, ram and standard carbine.
+    if(strcmp(route,"front")) {
+        in.loadout=3; // Entry's actual finite wall stock and ram.
+        if(!combat)in.primary_profile=3; // Select LL impact through the ordinary staging input.
+    }
     step(in);idle(30);
-    if(strcmp(route,"front"))assert(sim.actors[0].gear.kit==2 && sim.actors[0].arsenal.primary==0);
+    if(strcmp(route,"front"))assert(sim.actors[0].gear.kit==2 && sim.actors[0].arsenal.primary==(combat?0:2));
     const int occupants[]={7,2,1,6,8};const float doors[]={-10.9f,-7.2f,-3.2f,.8f,4.8f};
     for(int i=0;i<5;i++) {
         watch_actor=occupants[i];

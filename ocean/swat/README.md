@@ -100,6 +100,47 @@ rendered Windows measurements without taking focus. `--storefront` and
 `--motel` select the imported environments. Replay recording excludes
 `--indoors`/`--fire`, whose starting-state overrides are not in replay headers.
 
+Repeatable finite-ammunition fixtures use `--damage-sample door --fire` or
+`--damage-sample wall --fire` with the normal weapon, reload and impact path in
+the breach lab and a deterministic aim sweep. They cannot be recorded because
+their starting-position override is not in replay headers. Use `--headless` for
+simulation or `--hidden --gpu` for OpenGL elapsed queries. Queries are collected
+after the measured window; `gpu_timeline_elapsed` includes CPU submission gaps
+and presentation, so it does not measure GPU busy time. Opt-in `damage_work`
+counters report support scans, hulls, shape rebuilds, door builds/vertices and
+inclusive preparation/upload times. Timings overlap: hull time is included in
+support preparation and upload time in door preparation. Counters are off during
+normal play.
+
+In the 67-shot fixtures, wall hull creation falls from 70,135 to 8,050 and
+object shape rebuilds from 8,144 to 240. Door triangle/polygon clipping falls
+from 829,748 to 414,874 with identical clipped source vertices. These are work
+reductions, not an FPS multiplier; other machine workloads affect timings.
+The [measured work record](benchmarks/damage-work-2026-10-15.json) describes
+the fixtures, reference sources, counts and measurement limits.
+
+Wall support prepares retained polygons before hull creation and preserves
+collision shapes when the resulting extrusion is unchanged. Every hit still
+updates collision immediately; support and bullet ordering stay intact. Door
+art clips once into a growing buffer instead of repeating clipping to count
+vertices. The original source geometry, materials and UVs follow independently
+moving doors. An internal wood backing follows the retained polygons behind
+recessed skins; thickness caps bound the cuts. The `door-solid` graphics check
+compares twelve grazing views of the lab and motel leaves against physical rays. Run
+`make -C ocean/swat door-solid-test` with a working display.
+
+Use fresh version-24 peers and recordings. Keeping unchanged physics shapes
+changes contact ordering, so older input recordings can diverge even though the
+packet layout is unchanged. Existing recording files are retained.
+
+The quiet exterior/interroom completion fixtures now choose the finite impact
+launcher through the ordinary staging input while keeping Entry's real wall
+breacher stock. Entry has no taser charges. A muzzle-to-target sphere check
+continues the physical approach when the larger projectile cannot clear cover,
+rather than repeatedly firing through a camera-visible slit. Combat retains its
+carbine. These fixtures still require no deaths, actual charge placement and
+crossing, truthful debrief, exact replay and save/resume.
+
 The same tool can profile an actual saved-input breach without forcing geometry
 or moving actors. `--replay FILE --seek TICKS` restores the recording's scenario
 and seed, steps every skipped input, then renders 30 warmup ticks and the requested
@@ -929,7 +970,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 23) and the same generated
+Saves require this network/replay version (currently 24) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -1030,7 +1071,7 @@ The optional **breach-lab** mission has one officer and three independent sample
 with two wall breachers for comparison. Use **7**, **K**, and **Backspace** to
 place, detonate and reset. The larger wall tool is represented separately from
 the compact door device. Original imported source models and textures stay intact.
-Peers need matching version-23 builds; start fresh recordings/saves for this
+Peers need matching version-24 builds; start fresh recordings/saves for this
 build. Existing recordings are retained, but earlier wire versions cannot load.
 
 ```bash
@@ -1252,7 +1293,7 @@ Navigation lazily allocates 216 × 168 cells and four height layers for the wide
 motel, retaining the exact previous 60 cm indoor sampling arithmetic. Smaller
 worlds retain their previous 108 × 108 grid. Grid/route scratch share one heap
 allocation, with 32-bit queue indices; reset/map replacement/close free it once.
-Protocol/replay version is 23; older recorded sessions must be regenerated.
+Protocol/replay version is 24; older recorded sessions must be regenerated.
 
 Native rendering QA can be run after a Windows player build:
 
@@ -1338,7 +1379,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 23 as described above.
+destruction prototype requires version 24 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

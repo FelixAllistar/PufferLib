@@ -99,8 +99,15 @@ static void door_damage_graphics(SwatView* view,const char* directory) {
     Image broken=sample_capture(view,camera);sample_export(broken,directory,"door-after");
     sample_gap_pixels(view,door,door->center,door->half,0,"door",directory);
     int pixels=impact_pixel_difference(intact,broken);assert(pixels>1000 && door->active && door->door_angle==0);
+    uint32_t geometry=sample_geometry_hash();b3Pos authority_center=door->center;
     swat_capture_snapshot(&sim,1,&state);swat_sim_close(&sim);swat_apply_map(&sim,&map);assert(swat_apply_snapshot(&sim,&state));
-    Image replica=sample_capture(view,camera);assert(!impact_pixel_difference(broken,replica));UnloadImage(replica);
+    assert(geometry==sample_geometry_hash());
+    Image replica=sample_capture(view,camera);int replica_difference=impact_pixel_difference(broken,replica);
+    if(replica_difference) {
+        sample_export(replica,directory,"door-replica-difference");
+        printf("Door replica pixels=%d geometry=%u/%u center=%.12g,%.12g,%.12g / %.12g,%.12g,%.12g\n",replica_difference,geometry,sample_geometry_hash(),authority_center.x,authority_center.y,authority_center.z,sim.world.objects[16].center.x,sim.world.objects[16].center.y,sim.world.objects[16].center.z);
+    }
+    assert(!replica_difference);UnloadImage(replica);
     door=&sim.world.objects[16];int count=sim.world.count;
     unsigned int builds=swat_environment_door_stats(&view->environment).builds;
     for(int i=0;i<90;i++)swat_world_step_doors(&sim.world);
