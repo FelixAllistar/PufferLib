@@ -1,0 +1,8 @@
+Checkpoint settings: reports/goofspiel_automatic/20261014_checks_final/checkpoints/goofspiel/transformer/0000000000004096.bin.ini
+checkpoint=reports/goofspiel_automatic/20261014_checks_final/checkpoints/goofspiel/transformer/0000000000004096.bin
+cards=4 turns=4 prizes=0 ties=0 return_type=0
+on_policy=[0.000000000, 0.000000000]
+best_response=[0.764486203, 0.764486203]
+deviation=[0.764486203, 0.764486203]
+nash_conv=1.528972406 exploitability=0.764486203
+response_nodes=3652 milliseconds=21.771

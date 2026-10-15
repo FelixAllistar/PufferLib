@@ -1,0 +1,9 @@
+Rejected env.open_spiel_obs=1
+Rejected env.information=1
+Rejected env.egocentric=0
+Rejected env.num_players=3
+Rejected policy.hidden_size=12
+Rejected policy.transformer_heads=3
+Rejected policy.num_layers=0
+Rejected policy.architecture=unknown
+Rejected Transformer checkpoint under PufferNet architecture

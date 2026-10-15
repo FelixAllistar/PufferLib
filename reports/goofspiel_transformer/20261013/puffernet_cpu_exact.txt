@@ -1,0 +1,5 @@
+cards=4 turns=4 prizes=0 ties=0 return_type=0
+best_response=[0.586353366, 0.586353366]
+deviation_sum=1.172706731
+nash_conv=1.172706731 exploitability=0.586353366
+response_nodes=7304 seconds=0.058

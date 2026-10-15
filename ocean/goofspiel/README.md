@@ -4,7 +4,8 @@ The CPU simulator, observations, legal-card masks, renderer and standalone
 exact exploitability evaluator are ported from `5c` at `036cf4251`.
 The simulator and observation code are unchanged. The CPU adapter uses the
 existing `MY_VEC_INIT` interface to assign four frozen banks consistently
-across rollout buffers; no shared trainer changes are needed.
+across rollout buffers. Automatic evaluation and sweep validation are
+Goofspiel-specific hooks; other environments keep their evaluation behavior.
 
 ```bash
 make -C ocean/goofspiel test sanitize viewer exploit
@@ -28,6 +29,64 @@ The config retains the old ordinary gameplay and supported PPO settings, with
 upstream selfplay-pool keys. Old EMAg, priority-replay and epoch-sampling
 settings are not imported into the new optimizer. This is not an identical
 training algorithm to the old fork.
+
+## Everyday training, exact evaluation, and sweeps
+
+The existing CPU-environment binary supports both models despite its name:
+
+```bash
+./build/puffer_goofspiel_transformer train
+./build/puffer_goofspiel_transformer eval latest
+./build/puffer_goofspiel_transformer sweep
+```
+
+No sweep helper or extra metric flags are needed. `config/goofspiel.ini` selects
+PufferNet by default. Change `policy.architecture` to `transformer` for the
+second experiment, or pass `--policy.architecture=transformer`.
+
+Training automatically reports exact `exploitability` and `best_exploitability`
+on the dashboard and prints both at the end, with final/best checkpoint paths.
+The opponent is optimized against the **fixed saved learner**; lower is better,
+and zero is unexploitable. This is not self-play win rate or game points.
+No renderer or sampled post-training match is involved.
+
+By default, evaluations occur roughly every 1,048,576 agent steps (rounded up
+to a complete rollout) and on the final checkpoint. With frozen self-play,
+the initial checkpoint is also measured. `base.checkpoint_interval=-1` selects
+this step cadence; `env.exploitability_interval_steps` changes it. Explicit
+positive checkpoint intervals remain epoch-based; zero means final-only
+(plus the frozen pool's initial checkpoint). Evaluations briefly pause training
+and are included in elapsed time/SPS. The displayed values refer to the most
+recent saved checkpoint, not every optimizer update.
+
+`eval latest` now prints exact exploitability and exits, without a window.
+`eval latest --render` explicitly requests the old viewer. Latest means the
+newest nonempty `.bin` under `base.checkpoint_dir/goofspiel`, using nanosecond
+modification times. New checkpoints include `.bin.ini` settings; old ones fall
+back to `base.log_dir/goofspiel/RUN.ini`. Evaluation recovers the recorded model
+shape and game settings automatically, including a Transformer checkpoint
+when the current config says PufferNet. Explicit CLI settings still override
+the recorded settings. The standalone `exploit`/`exploit_gpu` also accept
+`latest`; CPU `exploit` remains PufferNet-only.
+
+Ordinary `sweep` minimizes best exact exploitability and searches **36 active
+dimensions per model**, including runtime/model size, PPO/Muon, schedules,
+V-trace, frozen self-play and exact-response opponents. Both models use the
+single [normal config](../../config/goofspiel.ini): **500 completed trials per
+model, 50 million agent steps per trial**, with agents ranging from 256 to
+262,144. Only the architecture selector changes between campaigns:
+
+```bash
+./build/puffer_goofspiel_transformer sweep
+./build/puffer_goofspiel_transformer sweep --policy.architecture=transformer
+```
+
+Run these sequentially on one GPU. Game rules, seeds, exact-evaluation cadence
+and objective stay fixed. Invalid coupled layouts and candidates exceeding the
+conservative memory estimate are rejected before worker launch, without using
+completed trials or worker failures. This estimate is not a guarantee of GPU
+memory fit. Budgets round down to complete rollouts (49,938,432 steps for the
+starting 16,384-agent/horizon-eight layout). No sweep guarantees zero exploitability.
 
 `make -C ocean/goofspiel test-gpu NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61`
 checks 65,536 game transitions across single-policy and four-frozen-bank
@@ -216,9 +275,9 @@ match budget is only 32 games in these tests, not a policy-quality evaluation.
 ### Exact-exploitability sweeps
 
 The environment publishes `exploitability` (latest saved checkpoint) and
-`best_exploitability` (minimum across checkpoints saved in this run). Select
-either metric explicitly; ordinary `score` is still game points, not exact
-exploitability. Smaller is better. The checkpoint hook measures the metric
+`best_exploitability` (minimum across checkpoints saved in this run). The latter
+is the Goofspiel default for training and sweeps; ordinary `score` is still game
+points, not exact exploitability. Smaller is better. The checkpoint hook measures the metric
 even when exact-response opponents are disabled, without creating table pools.
 When they are enabled, it reuses the response solver's result.
 
@@ -235,8 +294,7 @@ measurements. `base.checkpoint_interval` controls measurement frequency, so
 use the same interval when comparing trials. `Exact checkpoint:` output names
 each measured model; models are retained, not automatically promoted. A resumed
 run measures its initial checkpoint afresh rather than importing a prior best.
-For standalone checkpoint evaluation use `exploit_gpu`, not `puffer eval`
-with an exact metric selected.
+For standalone evaluation use `exploit_gpu latest` or the native `eval latest`.
 
 The Goofspiel sweep ranges include its starting horizon/lambda/clip values and
 cap width at the solver's supported 256; other ranges remain upstream's.
@@ -250,3 +308,225 @@ Verification: core/adapter/exact-solver tests pass with ASan/UBSan; a bounded
 4,096-step async FP32 training run with four frozen banks completes. The
 evaluator's recurrent state and probabilities match upstream CPU inference
 for that checkpoint. Interactive rendering still needs visual qualification.
+
+## Native Transformer comparison
+
+`policy.architecture=puffernet` remains the default, unchanged PufferNet
+(linear encoder, stacked MinGRU/highway blocks, action/value decoder).
+`policy.architecture=transformer` selects the experimental C++/CUDA/cuBLAS
+Transformer. Both use the same native GPU sampler, PPO losses, Muon optimizer,
+async actor snapshots, frozen-checkpoint pool and checkpoint machinery.
+**The default build runs the environment on the CPU and the policy on the GPU.**
+Do not add `--cu` for the CPU-simulator comparison. No Python is needed.
+
+The Transformer requires compact, perfect-information, two-player egocentric
+observations. Its four card-rank tokens encode normalized rank, both hand
+availability flags, remaining-prize status and the current-prize flag. A fifth,
+global token contains every remaining compact observation field. One shared
+21-to-width linear projection embeds those features. Each observation has
+independent noncausal attention; rollout time is folded into batch, **not**
+attended across. The final global token feeds the standard action/value head.
+There is no recurrent memory, temporal context, padding, dropout or FlashAttention.
+
+The initial comparison uses width 32, two layers, two attention heads and a
+4x GELU feed-forward expansion. This is **26,304 total parameters** versus
+**7,840** for the existing width-32/two-layer PufferNet. It is not a
+parameter-matched experiment. Widths must be multiples of eight in 8–256,
+depth must be 1–16, and `policy.transformer_heads` must divide width.
+Normalization/bias vectors use the existing optimizer's rank-1 update path;
+only matrices receive Muon's orthogonalization. FP32 core gradients are cast
+into the trainer's precision when BF16 is used.
+
+```bash
+# Separate output: does not replace ./puffer or change config/goofspiel.ini.
+bash build.sh goofspiel build/puffer_goofspiel_transformer --float
+make -C ocean/goofspiel exploit-gpu NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61
+bash tests/build_goofspiel_transformer_tests.sh
+./build/test_goofspiel_transformer
+
+# Each destination must be new. Run sequentially on an available local GPU.
+bash tests/run_goofspiel_transformer_smoke.sh reports/goofspiel_transformer/new_smoke
+bash tests/run_goofspiel_transformer_pilot.sh reports/goofspiel_transformer/new_pilot
+```
+
+Select `CUDA_ARCH` for the GPU; `sm_61` and `--float` above match the local
+GTX 1060. The pilot runs both policies for 262,144 total agent steps at seeds
+73/74/75, with CPU simulation, GPU training, async and CUDA graphs enabled,
+512 agents, two buffers, four CPU threads, horizon eight, minibatches of 512,
+replay ratio four and four frozen opponent banks. Both policies share these
+settings and the existing Goofspiel learning-rate/loss settings. Pool refresh
+timeout is 65,536 steps. Five checkpoints per run are evaluated offline by exact
+best response, so evaluator time is excluded from trainer time. A smoke/pilot
+is not a sweep, a convergence claim, or evidence of an attention advantage.
+
+Checkpoint tensors remain flat FP32 master weights; keep the logged INI and
+use the matching architecture, width, depth and head count when loading.
+Weights-only reload does not restore optimizer state. Wrong-sized Goofspiel
+checkpoints are rejected instead of silently truncating a Transformer into
+PufferNet. Frozen policies currently share the learner's architecture/head
+setting; mixed PufferNet/Transformer banks or head-to-head matches are not
+implemented. Separate exact-exploitability evaluation does not require them.
+
+The CUDA exact evaluator accepts Transformer checkpoints with
+`--policy.architecture=transformer --policy.hidden_size=32 --policy.num_layers=2
+--policy.transformer_heads=2`. Its inference adapter shares token features and
+the tested backbone, while exact tree enumeration and legal-card masking stay
+unchanged. Inference is chunked to bound memory. The standalone **CPU** neural
+evaluator/viewer remains PufferNet-only. Native `eval latest` supports both
+architectures and prints exact exploitability headlessly; `--render` explicitly
+opens the viewer against the CPU simulator.
+
+Qualification: the adapter's 84 sampled parameter derivatives pass finite
+differences; rollout/train outputs, CUDA-graph gradients, snapshot isolation,
+observation independence, exact-evaluator probabilities (including a partial
+513-row batch), and the uniform-policy exact value pass. Sixteen 4,096-step
+FP32 CPU-environment runs cover both architectures, sync/async, graphs off/on,
+and mirror/four-frozen-bank play. Existing CPU tests and ASan/UBSan pass.
+BF16 adapter compilation was checked for SM80, but **BF16 training is not yet
+qualified**. CUDA memcheck could not instrument this local WSL/GTX 1060 setup;
+do not count its unsupported-device/debugger errors as a passing memory check.
+Nine negative checks reject unsupported observation modes, dimensions, unknown
+architectures and loading a Transformer checkpoint as PufferNet. Weights-only
+reload, native headless evaluation, and bounded exact-response-pool refresh
+also pass. The guard checks can be rerun with
+`bash tests/check_goofspiel_transformer_guards.sh NEW_REPORT_DIRECTORY TRANSFORMER_CHECKPOINT`.
+
+Initial receipts and three-seed pilot:
+[2026-10-13 report](../../reports/goofspiel_transformer/20261013/README.md).
+
+### Optional organized sweep launcher
+
+The optional launcher uses [config/goofspiel.ini](../../config/goofspiel.ini),
+just like ordinary `train` and `sweep`; there are no separate sweep profiles.
+It only selects architecture, organizes output and accepts CLI overrides.
+PufferNet and Transformer run independent searches of 500 trials each, with
+50 million agent steps per trial. **Setup does not start the campaigns.** The
+launcher and its tests are native C++/Bash; no Python is needed. Use the
+CPU-environment/GPU-policy binary built above, without `--cu`.
+
+The first trial uses the existing Goofspiel learning settings as a control.
+Other trials search:
+
+| Setting | Range | Sampling scale |
+|---|---:|---|
+| Learning rate | 0.0001–0.05 | log |
+| Entropy coefficient | 0.00001–0.1 | log |
+| Discount `gamma` | 0.8–0.9999 | logit |
+| GAE `lambda` | 0.2–0.999 | logit |
+| Policy clipping | 0.02–0.9 | linear |
+| Value clipping | 0.01–5 | linear |
+| Value-loss coefficient | 0.1–4 | linear |
+| Gradient clipping | 0.1–1.5 | linear |
+| Muon momentum | 0.5–0.999 | logit |
+| Agent rows | 256–262,144 | powers of two |
+| Buffers | 1–4 | powers of two |
+| CPU threads | 1–8 | powers of two |
+| Rollout horizon | 4–128 | powers of two |
+| Minibatch steps | 256–32,768 | powers of two |
+| Replay ratio | 0.25–8 | continuous linear |
+| Hidden width | 8–256 | powers of two |
+| Layers | 1–8 | integer |
+| Async actor/learner | off/on | binary |
+| PufferNet: reset state each horizon | off/on | binary |
+| Transformer: attention heads | 1–8 | powers of two |
+
+Seventeen further dimensions cover:
+
+- LR and entropy cosine decay: each off/on, each minimum ratio 0–1.
+- Reward clipping: 0–1 continuously; zero disables the clamp.
+- V-trace: off/on, rho clip 0.1–2 and c clip 0.1–1.
+- Frozen self-play: off/on, 2–9 total policies, historical fraction 0.125–1 in
+  increments of 0.125, pool capacity 1–64 (powers of two), and opponent refresh
+  timeout 16,384–8,000,000 steps (log scale).
+- Exact-response opponents: off/on, 1–8 banks, history capacity 1–256 (powers
+  of two), and latest-response probability 0–1.
+
+The architecture-specific no-op is pinned: attention heads for PufferNet,
+recurrent-state reset for Transformer. That leaves 36 active dimensions for
+each model. Conditional settings act only when their feature is enabled.
+Starting values remain the normal 16,384-agent, width-32/two-layer control.
+Game/observation rules, seeds, GPU count, CUDA graphs, objective, evaluation
+cadence and training budget are fixed. No legacy optimizer/replay flags are added.
+
+From the repository root:
+
+```bash
+# Config/layout checks only: no GPU initialization or report directory creation.
+bash ocean/goofspiel/sweep.sh puffernet reports/goofspiel_sweeps/puffernet_01 --dry-run
+bash ocean/goofspiel/sweep.sh transformer reports/goofspiel_sweeps/transformer_01 --dry-run
+
+# Start these yourself, sequentially on the same available GPU.
+bash ocean/goofspiel/sweep.sh puffernet reports/goofspiel_sweeps/puffernet_01
+bash ocean/goofspiel/sweep.sh transformer reports/goofspiel_sweeps/transformer_01
+
+# Rank completed trials across both campaigns (lower exploitability is better).
+bash ocean/goofspiel/sweep.sh summary reports/goofspiel_sweeps/puffernet_01 reports/goofspiel_sweeps/transformer_01
+```
+
+`GOOFSPIEL_TRAIN_BINARY` selects a different native Goofspiel executable; the
+default is `build/puffer_goofspiel_transformer`, which supports both policies.
+`CUDA_VISIBLE_DEVICES` selects the GPU. The tiny CPU launcher builds itself
+with `${CXX:-g++}` when needed; it does not build the CUDA trainer. The known
+local training path is FP32. BF16 training still needs qualification before a
+modern-GPU performance claim. A successful dry run checks configuration, **not
+GPU memory capacity or CUDA execution**.
+
+CLI overrides take precedence. Values set the starting trial; range bounds
+control the search. Setting both bounds equal pins a dimension:
+
+```bash
+bash ocean/goofspiel/sweep.sh transformer reports/goofspiel_sweeps/transformer_02 --dry-run \
+    --vec.total_agents=1024 --vec.num_buffers=2 --train.minibatch_size=1024 \
+    --train.replay_ratio=2 --policy.hidden_size=64
+```
+
+The helper and native sweep use the same ranges. Fixed bounds follow explicit
+CLI values, including a changed trial budget. The native sweep rejects
+incompatible threads/buffers, minibatch/learner rows, exact-opponent banks and
+V-trace clips before launch, without silently modifying sampled values.
+The eighth-step historical fractions still require coupled layout checks.
+Unknown/retired keys and an out-of-range starting point fail before launch.
+
+`sweep.memory_limit_mb=0` uses free GPU memory measured at campaign start;
+a positive value caps that limit in MiB. The per-trial estimate includes
+rollouts, model caches, frozen policies, optimizer, exact evaluation and
+headroom. It deliberately rejects large combinations before allocating them,
+but is approximate: it can reject feasible trials and cannot prevent every OOM,
+especially if another process takes GPU memory during the campaign.
+
+Scoring uses `best_exploitability`, `goal=minimize`, `downsample=1`. Sampled
+post-training evaluations are disabled so they cannot replace the exact
+objective. The launcher preserves the normal roughly 1,048,576-step exact
+evaluation cadence. Optional `--checkpoints=N` replaces it with a target of N
+intervals across the trial budget. The cadence rounds up to whole rollouts for
+each sampled agents/horizon layout. An explicit positive
+`--base.checkpoint_interval=N` uses trainer epochs instead.
+Keep the same budget, search ranges and evaluation cadence for both campaigns.
+The trainer rounds non-aligned step budgets down to complete rollouts; dry-run
+output reports the effective step count.
+
+Each launch requires a **new** report directory. It retains the resolved
+`sweep.ini`, a shell-escaped `command.sh` audit receipt, `sweep.log`, per-trial
+logged INIs under `logs/goofspiel/`, and weights under `checkpoints/goofspiel/`.
+The summary reports best/final exploitability with nine significant digits,
+elapsed time, steps and the exact per-trial settings file. Its elapsed time
+**includes periodic exact evaluation**, unlike the earlier offline-evaluated
+pilot; it is not pure model throughput. Empty/incomplete results are not ranked.
+
+Ctrl-C/SIGTERM is forwarded to this launcher's trial process group. The default
+worker-failure limit is 100; existing reports are never automatically
+overwritten or deleted. `sweep.max_suggestion_cost` is a search-cost setting,
+**not a timeout**. Stopped campaigns retain artifacts, but Protein search state
+is not restored by a new launch. Repeat promising settings on fresh seeds before
+treating a sweep winner as an architecture-level result.
+
+CPU-only configuration, argv round-trip, directory/exit-status and signal
+contracts (using a stub executable, **not** a real training sweep):
+
+```bash
+bash tests/check_goofspiel_sweep.sh
+bash tests/check_goofspiel_automatic.sh
+
+# Real short training runs and three-trial sweeps for each architecture:
+bash tests/check_goofspiel_live.sh NEW_REPORT_DIRECTORY
+```

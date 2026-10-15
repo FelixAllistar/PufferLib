@@ -1,0 +1,8 @@
+Checkpoint settings: reports/goofspiel_sweeps/setup_20261014_oapQjz/live/checkpoints/goofspiel/transformer/0000000000004096.bin.ini
+checkpoint=reports/goofspiel_sweeps/setup_20261014_oapQjz/live/checkpoints/goofspiel/transformer/0000000000004096.bin
+cards=4 turns=4 prizes=0 ties=0 return_type=0
+on_policy=[0.000000000, 0.000000000]
+best_response=[0.763385913, 0.763385913]
+deviation=[0.763385913, 0.763385913]
+nash_conv=1.526771826 exploitability=0.763385913
+response_nodes=3652 milliseconds=43.575

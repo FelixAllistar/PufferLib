@@ -1,0 +1,1 @@
+{"test":"goofspiel_transformer_adapter","passed":true,"derivatives":84,"gradient_max_abs":1.40715465e-05,"probability_max_abs":4.7438675e-08,"uniform_exploitability":0.746527778,"graph":true,"actor_snapshot":true,"no_temporal_leakage":true}

@@ -75,6 +75,7 @@ static float gs_exact_current_prob;
 static int gs_measure_exploitability;
 static double gs_exploitability = NAN;
 static double gs_best_exploitability = INFINITY;
+static char gs_best_checkpoint[4096];
 
 #if PUF_BACKEND == PUF_GPU
 struct GSDeviceExact {
@@ -431,7 +432,28 @@ void puf_close(Env* env) {
 #endif
 
 #if defined(PUFFERLIB_BUILD_MAIN)
+#include "checkpoint.h"
+#include "training_config.h"
+
+#ifdef PRECISION_FLOAT
+#define GS_TRAIN_ALIGNMENT 4
+#else
+#define GS_TRAIN_ALIGNMENT 8
+#endif
+#define PUF_SWEEP_PREPARE(ini) gs_prepare_sweep(ini)
+#define PUF_SWEEP_VALIDATE(ini) \
+    ((PUF_BACKEND == PUF_GPU && puf_ini_get(ini, "vec", "num_buffers") != 1) \
+        ? "GPU environment requires num_buffers=1" : gs_training_config_error(ini, GS_TRAIN_ALIGNMENT))
+
 void gs_configure(Ini* ini, const char* mode) {
+    if (strcmp(puf_ini_get_str(ini, "policy", "architecture"), "transformer") == 0
+            && (puf_ini_get(ini, "env", "open_spiel_obs") != 0
+                || puf_ini_get(ini, "env", "information") != GS_INFO_PERFECT
+                || puf_ini_get(ini, "env", "num_players") != 2
+                || puf_ini_get(ini, "env", "egocentric") != 1)) {
+        fprintf(stderr, "Goofspiel Transformer requires compact, perfect-information, two-player egocentric observations\n");
+        exit(1);
+    }
     for (int i = 0; i < gs_exact_count; i++) {
         gs_exact_table_clear(gs_exact_tables + i);
     }
@@ -440,15 +462,15 @@ void gs_configure(Ini* ini, const char* mode) {
     gs_exact_restored = 0;
     gs_exploitability = NAN;
     gs_best_exploitability = INFINITY;
+    gs_best_checkpoint[0] = 0;
     const char* metric = puf_ini_get_str(ini, "sweep", "metric");
     if (strncmp(metric, "env/", 4) == 0) {
         metric += 4;
     }
-    gs_measure_exploitability = strcmp(metric, "exploitability") == 0
-        || strcmp(metric, "best_exploitability") == 0;
     gs_exact_training = strcmp(mode, "train") == 0;
+    gs_measure_exploitability = gs_exact_training && (strcmp(metric, "exploitability") == 0
+        || strcmp(metric, "best_exploitability") == 0);
     if (gs_measure_exploitability) {
-        assert(gs_exact_training && "use the standalone solver for exact checkpoint evaluation");
         assert(puf_ini_get(ini, "base", "eval_episodes") == 0);
         assert(puf_ini_get(ini, "selfplay", "eval_games") == 0);
         assert(puf_ini_get(ini, "selfplay", "eval_bot_games") == 0);
@@ -460,6 +482,23 @@ void gs_configure(Ini* ini, const char* mode) {
         puf_ini_put(ini, "vec.num_policies", "1");
         puf_ini_put(ini, "vec.hist_policy_percent", "0");
         return;
+    }
+    const char* layout_error = gs_training_config_error(ini, GS_TRAIN_ALIGNMENT);
+    if (layout_error) {
+        fprintf(stderr, "Goofspiel training configuration: %s\n", layout_error);
+        exit(1);
+    }
+    // -1 means an agent-step cadence, recomputed for every swept layout.
+    // Explicit 0 (final only) or positive epoch intervals keep their meaning.
+    if (puf_ini_get(ini, "base", "checkpoint_interval") < 0) {
+        long long interval = puf_ini_get(ini, "env", "exploitability_interval_steps");
+        long long rollout = (long long)puf_ini_get(ini, "vec", "total_agents")
+            * (long long)puf_ini_get(ini, "train", "horizon")
+            * (long long)puf_ini_get(ini, "train", "gpus");
+        assert(interval > 0 && "exploitability_interval_steps must be positive");
+        char epochs[64];
+        snprintf(epochs, sizeof(epochs), "%lld", (interval + rollout - 1) / rollout);
+        puf_ini_put(ini, "base.checkpoint_interval", epochs);
     }
     int exact = puf_ini_get(ini, "env", "exact_exploiter");
     if (!exact && !gs_measure_exploitability) {
@@ -488,6 +527,7 @@ void gs_load_hook(const char* checkpoint, Ini* ini) {
 #define PUF_LOAD_HOOK(checkpoint, ini) gs_load_hook(checkpoint, ini)
 
 void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
+    gs_save_checkpoint_settings(checkpoint, ini);
     if (!gs_exact_enabled && !gs_measure_exploitability) {
         return;
     }
@@ -510,6 +550,9 @@ void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
     }
     if (isfinite(exploitability)) {
         gs_exploitability = exploitability;
+        if (exploitability < gs_best_exploitability) {
+            snprintf(gs_best_checkpoint, sizeof(gs_best_checkpoint), "%s", checkpoint);
+        }
         gs_best_exploitability = fmin(gs_best_exploitability, exploitability);
         printf("Exact checkpoint: exploitability=%.9f best_exploitability=%.9f path=%s\n",
             exploitability, gs_best_exploitability, checkpoint);
@@ -524,6 +567,49 @@ void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
 #endif
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint, ini) gs_checkpoint_hook(checkpoint, ini)
+
+static int gs_post_train_result(Ini* ini, const char* checkpoint,
+        const char* log_path, Dict* log, float* score) {
+    (void)log_path;
+    if (!isfinite(gs_exploitability)) return 0;
+    dict_set(log, "env/exploitability", gs_exploitability);
+    dict_set(log, "env/best_exploitability", gs_best_exploitability);
+    printf("\nGoofspiel result: exploitability=%.9f best_exploitability=%.9f target=0\n"
+        "Final checkpoint: %s\nBest checkpoint: %s\n",
+        gs_exploitability, gs_best_exploitability, checkpoint, gs_best_checkpoint);
+    if (!gs_measure_exploitability) return 0;
+    const char* metric = puf_ini_get_str(ini, "sweep", "metric");
+    if (!strncmp(metric, "env/", 4)) metric += 4;
+    *score = !strcmp(metric, "best_exploitability") ? gs_best_exploitability : gs_exploitability;
+    return 1;
+}
+#define PUF_POST_TRAIN_EVAL(ini, checkpoint, path, log, score) \
+    gs_post_train_result(ini, checkpoint, path, log, score)
+
+// Goofspiel eval is exact and headless by default; --render opts into the viewer.
+static int gs_exact_eval_command(Ini* ini, int argc, char** argv) {
+    char resolved[4096];
+    const char* path = gs_resolve_checkpoint(ini,
+        puf_ini_get_str(ini, "base", "load_model_path"), resolved, sizeof(resolved));
+    if (!path) return 1;
+    // Metadata loading can reallocate INI strings, so own this pathname first.
+    char checkpoint[4096];
+    if (strlen(path) >= sizeof(checkpoint)) return 1;
+    snprintf(checkpoint, sizeof(checkpoint), "%s", path);
+    gs_load_checkpoint_settings(ini, checkpoint, argc, argv);
+    assert(cudaSetDevice((int)puf_ini_get(ini, "base", "gpu_offset")) == cudaSuccess);
+    uint64_t nodes = 0;
+    double milliseconds = 0;
+    double result = gs_cuda_exploit(checkpoint, ini, &nodes, &milliseconds);
+    printf("checkpoint=%s architecture=%s width=%.0f layers=%.0f\n",
+        checkpoint, puf_ini_get_str(ini, "policy", "architecture"),
+        puf_ini_get(ini, "policy", "hidden_size"), puf_ini_get(ini, "policy", "num_layers"));
+    printf("exploitability=%.9f best_response_opponent_reward=%.9f nash_conv=%.9f target=0\n",
+        result, result, 2 * result);
+    printf("response_nodes=%llu solver_milliseconds=%.3f\n", (unsigned long long)nodes, milliseconds);
+    return 0;
+}
+#define PUF_EXACT_EVAL(ini, argc, argv) gs_exact_eval_command(ini, argc, argv)
 #endif
 
 void gs_render(Env* env) {

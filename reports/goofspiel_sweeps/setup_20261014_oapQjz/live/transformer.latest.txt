@@ -1,0 +1,4 @@
+Checkpoint settings: reports/goofspiel_sweeps/setup_20261014_oapQjz/live/checkpoints/goofspiel/transformer/0000000000004096.bin.ini
+checkpoint=reports/goofspiel_sweeps/setup_20261014_oapQjz/live/checkpoints/goofspiel/transformer/0000000000004096.bin architecture=transformer width=16 layers=1
+exploitability=0.763385913 best_response_opponent_reward=0.763385913 nash_conv=1.526771826 target=0
+response_nodes=3652 solver_milliseconds=37.562

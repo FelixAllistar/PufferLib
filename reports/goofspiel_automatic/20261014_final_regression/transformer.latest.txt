@@ -1,0 +1,4 @@
+Checkpoint settings: reports/goofspiel_automatic/20261014_final_regression/checkpoints/goofspiel/transformer/0000000000004096.bin.ini
+checkpoint=reports/goofspiel_automatic/20261014_final_regression/checkpoints/goofspiel/transformer/0000000000004096.bin architecture=transformer width=16 layers=1
+exploitability=0.762353747 best_response_opponent_reward=0.762353747 nash_conv=1.524707494 target=0
+response_nodes=3652 solver_milliseconds=115.202
