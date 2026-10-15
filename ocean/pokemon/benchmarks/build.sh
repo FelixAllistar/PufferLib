@@ -2,7 +2,11 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 bench_env="${PK_BENCHMARK_ENV:-build/pokemon/oak-benchmark-env}"
-if [[ ! -x "$bench_env/bin/python" ]]; then uv venv "$bench_env"; fi
+if [[ ! -x "$bench_env/bin/python" ]]; then
+    uv venv --python "${PK_BENCHMARK_PYTHON:-3.12}" "$bench_env"
+fi
+# numpy 2.5 requires >=3.12; do not inherit Vast's activated Python 3.11 venv.
+"$bench_env/bin/python" -c 'import sys; assert (3,12) <= sys.version_info[:2] < (3,15), "Use a fresh PK_BENCHMARK_ENV with Python 3.12-3.14"'
 # The search-only benchmark needs the native wheel and numpy, not torch/CUDA.
 uv pip install --python "$bench_env/bin/python" --no-deps 'oak-lab==1.1.4' 'numpy==2.5.4'
 bash ocean/pokemon/build_engine.sh

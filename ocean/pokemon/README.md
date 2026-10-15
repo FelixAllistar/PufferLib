@@ -265,3 +265,67 @@ POKEMON_TRAIN_BINARY=build/pokemon/puffer_native \
 
 The second command requires an idle GPU and the freshly built semantic viewer.
 It is a workflow smoke test, not evidence of playing-strength improvement.
+
+## Single-team Oak-scored sweep
+
+`profiles/starmie_oak.ini` tunes one fresh H64/L2 policy. The team is the
+best-scoring composition in the October 14 Oak comparison, `mie_egg_don`.
+This experiment fixes its species, order, lead and moves; it does **not** claim
+that any particular sampled moveset was proven best. Catalog controls are:
+
+| Pokémon | Fixed moves |
+|---|---|
+| Starmie (lead) | Recover, Thunder Wave, Blizzard, Psychic |
+| Exeggutor | Sleep Powder, Psychic, Explosion, Stun Spore |
+| Rhydon | Earthquake, Rock Slide, Body Slam, Substitute |
+| Chansey | Sing, Seismic Toss, Soft-Boiled, Thunder Wave |
+| Snorlax | Body Slam, Reflect, Rest, Self-Destruct |
+| Tauros | Body Slam, Hyper Beam, Blizzard, Earthquake |
+
+These are existing catalog sets. The species composition comes from the
+[OU sample team](https://pokepast.es/6eba7940bd5e4c94); Exeggutor's Explosion
+replaces that sample's Mega Drain. Forced draft decisions still establish the
+usual recurrent history and count toward the same step accounting as training.
+
+```bash
+# Export once on the machine containing the old league. Refuses overwrite.
+python3 ocean/pokemon/sweep.py prepare
+# Copy saved/pokemon/starmie_sweep/ to the same relative path on the GPU host.
+python3 ocean/pokemon/sweep.py verify
+./build.sh pokemon build/pokemon/puffer_native --float
+bash ocean/pokemon/benchmarks/build.sh
+# Run this inside tmux. The launcher execs the native sweep; stdout stays live.
+python3 ocean/pokemon/sweep.py run
+```
+
+All 14 OU checkpoints, including the unrestricted OU master, are hash-checked
+and frozen. The separate older `free4` master is not part of this H64/L2 bank.
+Half the games use those opponents, half use current-policy self-play. Since
+both seats learn in current-policy games, 75% of counted agent steps are
+learner steps: 33,554,432 counted steps = **25,165,824 learner steps per trial**.
+Only initial/final learner checkpoints are saved, not periodic checkpoints.
+All trials use the same initial seed and fresh weights; opponents are unchanged.
+
+The native Protein sweep runs 16 full trials, default settings first. No short
+learning-based eliminations are used. Each final checkpoint plays 128 games
+against each of three pinned human teams at Oak search budget 4096, with both
+argmax and sampled actions (768 games/trial, balanced player seats). The
+argmax score `(wins + 0.5*draws)/games` is Protein's objective; sampled score is
+reported alongside it. An evaluator failure fails the trial, never substitutes
+its training win rate. Training rewards remain ordinary zero-sum win/loss RL.
+
+Results live beside the native log in `logs/pokemon/<run>.ini.oak/summary.json`,
+with individual evaluations and timing records below it. Oak sees full state;
+our policy uses its normal private observations. The pinned native engine is
+authoritative, not byte-identical to Oak's fork. Every decision checks the
+bridge's legal choices. Battle seeds are recorded, but Oak's internal search
+randomness prevents exact rerun reproducibility. These are development-panel
+results, not a Showdown rating or proof of general strength. Recheck the winning
+settings with fresh training/evaluation seeds before full-league deployment.
+
+CPU configuration checks: `python3 ocean/pokemon/tests/test_sweep.py`.
+Hardware smoke tests can use `sweep.py run --mode=train` and explicit native
+overrides such as `--train.total_timesteps=2097152 --oak.enabled=0`; these are
+throughput/compatibility checks, not hyperparameter-ranking trials. Actual
+sweeps reject budgets below 25 million learner steps. Layout overrides are
+locked into all trials rather than silently searched via generic defaults.
