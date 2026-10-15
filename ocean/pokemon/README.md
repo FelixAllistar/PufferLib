@@ -308,7 +308,8 @@ learner steps: 33,554,432 counted steps = **25,165,824 learner steps per trial**
 Only initial/final learner checkpoints are saved, not periodic checkpoints.
 All trials use the same initial seed and fresh weights; opponents are unchanged.
 
-The native Protein sweep runs 16 full trials, default settings first. No short
+The native Protein sweep targets 500 completed trials, default settings first
+for a new history. No short
 learning-based eliminations are used. The RTX 5060 Ti profile uses 16,384 agent
 rows, two buffers and four CPU threads per buffer. The search varies horizon
 (32/64), minibatch (8192/16384/32768), learning rate, entropy, gamma, lambda,
@@ -335,6 +336,28 @@ overrides such as `--train.total_timesteps=2097152 --oak.enabled=0`; these are
 throughput/compatibility checks, not hyperparameter-ranking trials. Actual
 sweeps reject budgets below 25 million learner steps. Layout overrides are
 locked into all trials rather than silently searched via generic defaults.
+
+Completed trials are appended durably to `saved/pokemon/starmie_sweep/sweep.history`.
+Running the same command again reloads their scores and hyperparameters into
+Protein, refits its search model, and continues toward the total trial target.
+The history is locked to one sweep writer, validates parameter names/ranges,
+and the launcher checks that fixed training and evaluation settings still match.
+This preserves observations; it does not restore the exact previous internal
+random-number or GP optimizer state. Only completed final evaluations count.
+
+For logs produced before durable history was added, import once before resuming:
+
+```bash
+python3 ocean/pokemon/sweep.py import-history
+python3 ocean/pokemon/sweep.py run
+```
+
+The original 16 trials were imported and count toward the 500 total. Their best
+argmax result was trial 15: 177 wins and 207 losses out of 384 games (46.1%),
+with sampled score 31.0% (117 wins, four draws, 263 losses). All 16 checkpoints
+and complete match records were also copied off the GPU host locally under
+`saved/pokemon/vast_sweep_20261015/`. Import checks completed training budgets,
+evaluation counts, fixed settings and checkpoint hashes before accepting scores.
 
 October 15 Vast qualification (RTX 5060 Ti, FP32): all eight GPU integration
 cases passed, including 14-bank loading with CUDA graphs on/off. Scalar/BLAS
