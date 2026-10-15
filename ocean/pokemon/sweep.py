@@ -116,14 +116,115 @@ def verify(output):
     print(f"Verified {len(inventory)} immutable opponent checkpoints and metadata.", flush=True)
 
 
+def search_parameters(config):
+    return [section[6:] for section in config.sections() if section.startswith("sweep.")
+            and float(config[section]["min"]) != float(config[section]["max"])]
+
+
+def history_context(config):
+    varying = set(search_parameters(config))
+    ignored = {"base.run_id", "base.log_dir", "base.checkpoint_dir", "base.result_fd",
+               "base.gpu_offset", "oak.python", "oak.workers"}
+    return {section: {key: value.strip("'\"") for key, value in config[section].items()
+                      if f"{section}.{key}" not in varying | ignored}
+            for section in config.sections() if not section.startswith("sweep")}
+
+
+def validate_history_context(config, path):
+    context_path = Path(str(path) + ".context.json")
+    context = history_context(config)
+    if context_path.exists():
+        if json.loads(context_path.read_text()) != context:
+            raise ValueError("sweep history belongs to different fixed training/evaluation settings")
+    else:
+        if path.exists():
+            raise ValueError("existing sweep history is missing its experiment context")
+        with context_path.open("x") as stream:
+            json.dump(context, stream, indent=2)
+
+
+def import_history(config, logs, history, checkpoint_root):
+    parameters = search_parameters(config)
+    rows, provenance = [], []
+    seen = set()
+    for summary_path in sorted(logs.glob("sweep_*.ini.oak/summary.json")):
+        summary = json.loads(summary_path.read_text())
+        saved = configparser.ConfigParser(interpolation=None)
+        log_path = summary_path.parent.with_suffix("")
+        with log_path.open() as stream:
+            saved.read_file(stream)
+        run = int(saved["base"]["run_id"].rsplit("_", 1)[1])
+        if run in seen:
+            raise ValueError(f"duplicate trial index {run}; select logs from one sweep")
+        seen.add(run)
+        fixed = [("policy", key) for key in config["policy"]]
+        fixed += [("train", key) for key in config["train"] if "train." + key not in parameters]
+        fixed += [("env", key) for key in config["env"]
+                  if key not in ("rules_sha", "reward_gamma", "core_next_assigned", "core_next_drafted")]
+        fixed += [("vec", key) for key in ("total_agents", "num_buffers", "num_threads", "action_mask_size")]
+        fixed += [("base", key) for key in ("seed", "load_model_path", "async", "reset_every_horizon")]
+        fixed += [("oak", key) for key in ("games", "budget", "seed")]
+        for section, key in fixed:
+            expected = config[section][key].strip("'\"")
+            if section == "env" and key in ("opponent_team", "opponent_lead"):
+                expected = config["env"][key.replace("opponent_", "learner_")]
+            actual = saved[section][key].strip("'\"")
+            try:
+                matches = math.isclose(float(expected), float(actual), rel_tol=2e-6, abs_tol=1e-10)
+            except ValueError:
+                matches = expected == actual
+            if not matches:
+                raise ValueError(f"incompatible {log_path}: {section}.{key}={actual}, expected {expected}")
+        if saved.getint("selfplay", "opp_timeout_steps") != 0:
+            raise ValueError("import requires immutable opponents")
+        checkpoint = Path(summary["checkpoint"])
+        if not checkpoint.exists():
+            checkpoint = checkpoint_root / checkpoint.parent.name / checkpoint.name
+        if sha(checkpoint) != summary["sha256"]:
+            raise ValueError(f"checkpoint changed: {checkpoint}")
+        score = summary["scores"]["argmax"]["score"]
+        if not math.isclose(float(saved["metrics"]["env/oak_score"]), score, abs_tol=1e-7):
+            raise ValueError("native objective and Oak summary disagree")
+        if int(float(saved["metrics"]["agent_steps"])) != config.getint("train", "total_timesteps"):
+            raise ValueError("cannot import an incomplete training stint")
+        if any(summary["scores"][mode]["games"] != 3 * config.getint("oak", "games")
+               for mode in ("argmax", "sample")):
+            raise ValueError("incomplete evaluation panel")
+        cost = float(saved["metrics"]["uptime"]) + summary["elapsed_seconds"]
+        values = [float(saved[section][key]) for section, key in (p.rsplit(".", 1) for p in parameters)]
+        if not all(map(math.isfinite, [score, cost, *values])) or cost <= 0:
+            raise ValueError("nonfinite history observation")
+        rows.append((run, score, cost, values))
+        provenance.append({"run": run, "log": str(log_path), "summary": str(summary_path),
+                           "checkpoint_sha256": summary["sha256"]})
+    if not rows:
+        raise ValueError("no completed, Oak-scored trials to import")
+    if sorted(seen) != list(range(len(rows))):
+        raise ValueError("import expects one contiguous sweep starting at trial zero")
+    if history.exists():
+        raise FileExistsError(history)
+    validate_history_context(config, history)
+    with history.open("x") as stream:
+        stream.write(f"PUFFER_SWEEP_HISTORY_V1 {len(parameters)}\n")
+        for key in parameters:
+            bounds = config["sweep." + key]
+            stream.write(f"{key} {bounds['min']} {bounds['max']} {bounds['distribution']}\n")
+        for run, score, cost, values in sorted(rows):
+            stream.write(f"{run} {score:.17g} {cost:.17g} 0 " + " ".join(f"{v:.17g}" for v in values) + "\n")
+    Path(str(history) + ".import.json").write_text(json.dumps(provenance, indent=2) + "\n")
+    print(f"Imported {len(rows)} completed trials; next trial index={len(rows)}, total target={config['sweep']['max_runs']}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("prepare", "verify", "run"))
+    parser.add_argument("command", choices=("prepare", "verify", "import-history", "run"))
     parser.add_argument("--state", type=Path, default=ROOT / "leagues/pokemon/ou_leads_rr50m/state.json")
     parser.add_argument("--output", type=Path, default=EXPORT)
     parser.add_argument("--profile", type=Path, default=PROFILE)
     parser.add_argument("--binary", type=Path, default=ROOT / "build/pokemon/puffer_native")
     parser.add_argument("--mode", choices=("sweep", "train"), default="sweep")
+    parser.add_argument("--logs", type=Path, default=ROOT / "logs/pokemon")
+    parser.add_argument("--checkpoint-root", type=Path, default=ROOT / "checkpoints/pokemon")
     args, overrides = parser.parse_known_args()
     os.chdir(ROOT)
     if args.command == "prepare":
@@ -135,9 +236,15 @@ def main():
     if args.command == "verify":
         return
     config = read_config(args.profile, overrides)
+    history = Path(config["sweep"]["history_path"])
+    if args.command == "import-history":
+        import_history(config, args.logs, history, args.checkpoint_root)
+        return
     steps = learner_steps(config)
     if args.mode == "sweep" and steps < 25_000_000:
         raise ValueError("sweep trials must train at least 25 million learner steps")
+    if args.mode == "sweep" and str(history) != "None":
+        validate_history_context(config, history)
     for section in config.sections():
         if section.startswith("sweep."):
             parent, key = section[6:].rsplit(".", 1)
