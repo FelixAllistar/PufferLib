@@ -1,0 +1,17 @@
+architecture	async	graphs	frozen_banks	checkpoint_bytes
+puffernet	0	-1	0	31360
+puffernet	0	-1	1	31360
+puffernet	0	1	0	31360
+puffernet	0	1	1	31360
+puffernet	1	-1	0	31360
+puffernet	1	-1	1	31360
+puffernet	1	1	0	31360
+puffernet	1	1	1	31360
+transformer	0	-1	0	105216
+transformer	0	-1	1	105216
+transformer	0	1	0	105216
+transformer	0	1	1	105216
+transformer	1	-1	0	105216
+transformer	1	-1	1	105216
+transformer	1	1	0	105216
+transformer	1	1	1	105216

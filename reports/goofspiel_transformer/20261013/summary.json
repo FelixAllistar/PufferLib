@@ -1,0 +1,125 @@
+{
+  "task": "Existing default PufferNet versus native Transformer, CPU Goofspiel / GPU training",
+  "hardware": {
+    "gpu": "NVIDIA GeForce GTX 1060 3GB",
+    "driver": "581.63",
+    "cuda": "12.6.85",
+    "cpu": "Intel Core i5-7400",
+    "platform": "WSL",
+    "shared_gpu": true
+  },
+  "protocol": {
+    "precision": "fp32",
+    "simulator": "cpu",
+    "async": 1,
+    "cudagraphs": 1,
+    "agents": 512,
+    "buffers": 2,
+    "cpu_threads": 4,
+    "horizon": 8,
+    "minibatch": 512,
+    "replay_ratio": 4,
+    "steps": 262144,
+    "frozen_banks": 4,
+    "opponent_timeout_steps": 65536,
+    "checkpoint_interval_epochs": 16,
+    "offline_exact_evaluation": true
+  },
+  "models": {
+    "puffernet": {
+      "width": 32,
+      "layers": 2,
+      "parameters": 7840
+    },
+    "transformer": {
+      "width": 32,
+      "layers": 2,
+      "heads": 2,
+      "ff": 128,
+      "tokens": 5,
+      "parameters": 26304
+    }
+  },
+  "runs": [
+    {
+      "model": "puffernet",
+      "seed": 73,
+      "initial": 0.761063675,
+      "final": 0.586353328,
+      "best": 0.536504941,
+      "training_seconds": 2.6730334758758545,
+      "process_seconds": 3.72
+    },
+    {
+      "model": "puffernet",
+      "seed": 74,
+      "initial": 0.749033019,
+      "final": 0.568144908,
+      "best": 0.499641111,
+      "training_seconds": 1.514920711517334,
+      "process_seconds": 2.27
+    },
+    {
+      "model": "puffernet",
+      "seed": 75,
+      "initial": 0.759797912,
+      "final": 0.471734812,
+      "best": 0.471734812,
+      "training_seconds": 1.4502651691436768,
+      "process_seconds": 2.36
+    },
+    {
+      "model": "transformer",
+      "seed": 73,
+      "initial": 0.811917632,
+      "final": 0.513731895,
+      "best": 0.513163044,
+      "training_seconds": 13.957345962524414,
+      "process_seconds": 15.39
+    },
+    {
+      "model": "transformer",
+      "seed": 74,
+      "initial": 0.791852955,
+      "final": 0.480881456,
+      "best": 0.480881456,
+      "training_seconds": 13.907665252685547,
+      "process_seconds": 15.02
+    },
+    {
+      "model": "transformer",
+      "seed": 75,
+      "initial": 0.816190462,
+      "final": 0.518619062,
+      "best": 0.515653086,
+      "training_seconds": 10.85030722618103,
+      "process_seconds": 12.01
+    }
+  ],
+  "aggregate": [
+    {
+      "model": "puffernet",
+      "mean_initial_exploitability": 0.7566315353333334,
+      "mean_final_exploitability": 0.5420776826666666,
+      "mean_best_saved_checkpoint_exploitability": 0.5026269546666667,
+      "median_trainer_seconds": 1.514920711517334,
+      "median_process_seconds": 2.36
+    },
+    {
+      "model": "transformer",
+      "mean_initial_exploitability": 0.8066536830000001,
+      "mean_final_exploitability": 0.5044108043333333,
+      "mean_best_saved_checkpoint_exploitability": 0.5032325286666667,
+      "median_trainer_seconds": 13.907665252685547,
+      "median_process_seconds": 15.02
+    }
+  ],
+  "limitations": [
+    "Three short seeds, not convergence or hyperparameter tuning.",
+    "Not parameter-matched.",
+    "Shared old FP32 GPU: not a controlled hardware-throughput benchmark.",
+    "BF16 adapter compile checked only; no BF16 training qualification.",
+    "CUDA memcheck instrumentation unavailable on local WSL/GTX 1060.",
+    "GPU simulator comparison not run; all pilot training used CPU simulation."
+  ]
+}

@@ -1,0 +1,4 @@
+Checkpoint settings: reports/goofspiel_sweeps/setup_20261014_oapQjz/high_agent/checkpoints/goofspiel/sweep_1792010031216_0000/0000000001048576.bin.ini
+checkpoint=reports/goofspiel_sweeps/setup_20261014_oapQjz/high_agent/checkpoints/goofspiel/sweep_1792010031216_0000/0000000001048576.bin architecture=puffernet width=8 layers=1
+exploitability=0.757518853 best_response_opponent_reward=0.757518853 nash_conv=1.515037705 target=0
+response_nodes=3652 solver_milliseconds=17.371

@@ -55,6 +55,8 @@ def test_exact_response_continuation(tmp_path, graphs, asynchronous, variable, b
     settings = {
         "base.checkpoint_dir": tmp_path, "base.log_dir": tmp_path / "logs",
         "base.eval_episodes": 4, "base.eval_agents": 16, "base.checkpoint_interval": 1,
+        # This test deliberately exercises the legacy sampled post-train path.
+        "sweep.metric": "score",
         "base.cudagraphs": graphs, "base.async": asynchronous,
         "vec.total_agents": 64, "vec.num_buffers": buffers, "vec.num_threads": 2,
         "vec.num_policies": 5, "vec.hist_policy_percent": .5,
