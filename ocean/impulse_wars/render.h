@@ -82,16 +82,17 @@ rayClient *createRayClient() {
 
     rayClient *client = fastCalloc(1, sizeof(rayClient));
 
-    if (client->height == 0) {
+    client->width = DEFAULT_WIDTH;
+    client->height = DEFAULT_HEIGHT;
 #ifndef __EMSCRIPTEN__
-        const int monitor = GetCurrentMonitor();
-        client->height = GetMonitorHeight(monitor) - HEIGHT_LEEWAY;
+    // Fit small displays, but don't expand every render target to a large
+    // (sometimes virtual, under WSLg) monitor's full resolution.
+    const int monitorHeight = GetMonitorHeight(GetCurrentMonitor()) - HEIGHT_LEEWAY;
+    if (monitorHeight > 0 && monitorHeight < client->height) {
+        client->height = monitorHeight;
         client->width = ((float)client->height * ((float)DEFAULT_WIDTH / (float)DEFAULT_HEIGHT));
-#else
-        client->width = DEFAULT_WIDTH;
-        client->height = DEFAULT_HEIGHT;
-#endif
     }
+#endif
     client->scale = (float)client->height * (float)(DEFAULT_SCALE / DEFAULT_HEIGHT);
 
     client->halfWidth = client->width / 2.0f;
@@ -100,7 +101,7 @@ rayClient *createRayClient() {
     SetWindowSize(client->width, client->height);
 
 #ifndef __EMSCRIPTEN__
-    SetTargetFPS(EVAL_FRAME_RATE);
+    SetTargetFPS(EVAL_RENDER_FPS);
 #endif
 
     client->camera = fastCalloc(1, sizeof(gameCamera));
@@ -119,12 +120,17 @@ rayClient *createRayClient() {
     client->camera->orthographic = false;
 
     client->wallTexture = LoadTexture("resources/impulse_wars/wall_texture_map.png");
-    client->blurSrcTexture = LoadRenderTexture(client->width, client->height);
-    client->blurDstTexture = LoadRenderTexture(client->width, client->height);
+    // Bloom is low-frequency light; blur at half resolution and upscale.
+    client->blurSrcTexture = LoadRenderTexture(client->width / 2, client->height / 2);
+    client->blurDstTexture = LoadRenderTexture(client->width / 2, client->height / 2);
     client->droneRawTex = LoadRenderTexture(client->width, client->height);
     client->droneBloomTex = LoadRenderTexture(client->width, client->height);
     client->projRawTex = LoadRenderTexture(client->width, client->height);
     client->projBloomTex = LoadRenderTexture(client->width, client->height);
+    SetTextureFilter(client->blurSrcTexture.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(client->blurDstTexture.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(client->droneRawTex.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(client->projRawTex.texture, TEXTURE_FILTER_BILINEAR);
 
     const char *gridVSPath = TextFormat("resources/impulse_wars/shaders/gls%i/shader.vs", GLSL_VERSION);
     const char *gridFSPath = TextFormat("resources/impulse_wars/shaders/gls%i/grid.fs", GLSL_VERSION);
@@ -1447,32 +1453,32 @@ void renderBannerText(iwEnv *e, const bool starting, const int8_t winner, const 
 }
 
 void applyBloom(const iwEnv *e, RenderTexture2D srcTex, RenderTexture2D dstTex, const float bloomIntensity) {
-    BeginTextureMode(e->client->blurSrcTexture);
-    ClearBackground(BLANK);
-    DrawTextureRec(srcTex.texture, (Rectangle){0.0f, 0.0f, e->client->width, -e->client->height}, Vector2Zero(), WHITE);
-    EndTextureMode();
-
-    // apply horizontal and vertical blurring
-    RenderTexture2D blurSrcTex = e->client->blurDstTexture;
+    const int blurWidth = e->client->blurSrcTexture.texture.width;
+    const int blurHeight = e->client->blurSrcTexture.texture.height;
+    const Rectangle blurRect = {0.0f, 0.0f, blurWidth, -blurHeight};
+    // One horizontal/vertical pair at half resolution gives a similar radius
+    // to repeated full-resolution blurs. Downsample during the first pass.
+    RenderTexture2D blurSrcTex = srcTex;
     RenderTexture2D blurDstTex = e->client->blurSrcTexture;
-    for (uint8_t i = 0, horizontal = true; i < 10; i++, horizontal = !horizontal) {
-        RenderTexture2D temp = blurSrcTex;
-        blurSrcTex = blurDstTex;
-        blurDstTex = temp;
+    for (uint8_t i = 0; i < 2; i++) {
+        blurDstTex = i == 0 ? e->client->blurSrcTexture : e->client->blurDstTexture;
 
         Vector2 blurDir;
-        if (horizontal) {
-            blurDir = (Vector2){1.0f / e->client->width, 0.0f};
+        if (i == 0) {
+            blurDir = (Vector2){1.0f / blurWidth, 0.0f};
         } else {
-            blurDir = (Vector2){0.0f, 1.0f / e->client->height};
+            blurDir = (Vector2){0.0f, 1.0f / blurHeight};
         }
 
         BeginTextureMode(blurDstTex);
         BeginShaderMode(e->client->blurShader);
         SetShaderValue(e->client->blurShader, e->client->blurShaderDirLoc, &blurDir, SHADER_UNIFORM_VEC2);
-        DrawTextureRec(blurSrcTex.texture, (Rectangle){0.0f, 0.0f, e->client->width, -e->client->height}, Vector2Zero(), WHITE);
+        DrawTexturePro(blurSrcTex.texture,
+            (Rectangle){0.0f, 0.0f, blurSrcTex.texture.width, -blurSrcTex.texture.height},
+            (Rectangle){0.0f, 0.0f, blurWidth, blurHeight}, Vector2Zero(), 0.0f, WHITE);
         EndShaderMode();
         EndTextureMode();
+        blurSrcTex = blurDstTex;
     }
 
     // bloom
@@ -1481,8 +1487,9 @@ void applyBloom(const iwEnv *e, RenderTexture2D srcTex, RenderTexture2D dstTex, 
 
     SetShaderValue(e->client->bloomShader, e->client->bloomIntensityLoc, &bloomIntensity, SHADER_UNIFORM_FLOAT);
     SetShaderValueTexture(e->client->bloomShader, e->client->bloomTexColorLoc, srcTex.texture);
-    SetShaderValueTexture(e->client->bloomShader, e->client->bloomTexBloomBlurLoc, e->client->blurDstTexture.texture);
-    DrawTextureRec(e->client->blurDstTexture.texture, (Rectangle){0.0f, 0.0f, e->client->width, -e->client->height}, Vector2Zero(), WHITE);
+    SetShaderValueTexture(e->client->bloomShader, e->client->bloomTexBloomBlurLoc, blurDstTex.texture);
+    DrawTexturePro(blurDstTex.texture, blurRect,
+        (Rectangle){0.0f, 0.0f, dstTex.texture.width, dstTex.texture.height}, Vector2Zero(), 0.0f, WHITE);
 
     EndShaderMode();
     EndTextureMode();
@@ -1518,6 +1525,11 @@ void minimalStepEnv(iwEnv *e) {
 
 void _renderEnv(iwEnv *e, const bool starting, const bool ending, const int8_t winner, const int8_t winningTeam) {
     if (ending) {
+#ifndef __EMSCRIPTEN__
+        for (int i = 1; i < e->frameRate / EVAL_RENDER_FPS; i++) {
+            minimalStepEnv(e);
+        }
+#endif
         minimalStepEnv(e);
     }
 
@@ -1749,6 +1761,7 @@ void _renderEnv(iwEnv *e, const bool starting, const bool ending, const int8_t w
     }
 
     EndDrawing();
+    e->client->framesSinceRender = 0;
     puf_web_vsync();
 }
 
@@ -1760,13 +1773,24 @@ void renderWait(iwEnv *e, const bool starting, const bool ending, const int8_t w
         emscripten_sleep(e->deltaTime * 1000.0);
     }
 #else
-    for (uint16_t i = 0; i < (uint16_t)(time * e->frameRate); i++) {
+    const double endTime = GetTime() + time;
+    while (GetTime() < endTime && !WindowShouldClose()) {
         _renderEnv(e, starting, ending, winner, winningTeam);
     }
 #endif
 }
 
 void renderEnv(iwEnv *e, const bool starting, const bool ending, const int8_t winner, const int8_t winningTeam) {
+#ifndef __EMSCRIPTEN__
+    // Preserve a close request until the outer viewer loop can handle it.
+    if (WindowShouldClose()) {
+        return;
+    }
+    // Keep 120 Hz physics and 10 Hz policy decisions while presenting at 60 Hz.
+    if (!starting && !ending && ++e->client->framesSinceRender < e->frameRate / EVAL_RENDER_FPS) {
+        return;
+    }
+#endif
     if (starting) {
         renderWait(e, starting, ending, winner, winningTeam, START_READY_TIME);
     } else if (ending) {

@@ -429,6 +429,9 @@ if [ "$MODE" = "cpu" ]; then
         chmod +x swat.launcher.tmp
         mv swat.launcher.tmp swat
     fi
+    if [ "$ENV" = "impulse_wars" ] && [ "$PLATFORM" = "Linux" ]; then
+        bash ocean/impulse_wars/launch.sh --install "$OUTPUT_NAME"
+    fi
     echo "Built: ./$OUTPUT_NAME"
     exit 0
 elif [ "$MODE" = "web" ]; then
@@ -663,6 +666,9 @@ if [ "$MODE" = "native" ]; then
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
         -lm -Xlinker=-lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
         -o "$TRAIN_BIN"
+    if [ "$ENV" = "impulse_wars" ] && [ "$PLATFORM" = "Linux" ]; then
+        bash ocean/impulse_wars/launch.sh --install "$TRAIN_BIN"
+    fi
     echo "Built: ./$TRAIN_BIN"
 
 elif [ "$MODE" = "profile" ]; then

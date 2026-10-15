@@ -966,7 +966,7 @@ agentActions getPlayerInputs(iwEnv *e, droneEntity *drone, uint8_t gamepadIdx) {
             actions.chargingBurst = true;
         }
 
-        if (IsGamepadButtonPressed(gamepadIdx, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {
+        if (e->client->framesSinceRender == 0 && IsGamepadButtonPressed(gamepadIdx, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {
             actions.discardWeapon = true;
         }
 
@@ -1120,7 +1120,7 @@ void puf_step(iwEnv *e) {
             e->episodeLength++;
 
             // handle actions
-            if (e->client != NULL) {
+            if (e->client != NULL && e->client->framesSinceRender == 0) {
                 updateHumanInputToggle(e);
             }
 
