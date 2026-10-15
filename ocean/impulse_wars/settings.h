@@ -14,6 +14,7 @@ static const uint8_t TRAINING_BOX2D_SUBSTEPS = 2;
 
 static const uint8_t EVAL_FRAME_RATE = 120;
 static const uint8_t EVAL_BOX2D_SUBSTEPS = 4;
+static const uint8_t EVAL_RENDER_FPS = 60;
 
 static const uint8_t NUM_MAPS = 9;
 #define _MAX_MAP_COLUMNS 25

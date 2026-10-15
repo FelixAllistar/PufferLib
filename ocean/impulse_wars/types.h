@@ -359,6 +359,7 @@ typedef struct rayClient {
     uint16_t height;
     uint16_t halfWidth;
     uint16_t halfHeight;
+    uint8_t framesSinceRender;
 
     gameCamera *camera;
 

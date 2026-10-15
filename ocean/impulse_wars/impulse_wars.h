@@ -1,4 +1,6 @@
 #include <stdint.h>
+// Each puf_step advances one policy action (100 ms), including its rendered frames.
+#define PUF_STEPS_PER_SEC 10
 #ifndef IMPULSE_WARS_OBS_T
 #define IMPULSE_WARS_OBS_T
 typedef uint8_t obs_t;
@@ -87,6 +89,7 @@ void puf_init(Env* env, Dict* kwargs) {
 void puf_log(Log* log, Dict* out) {
     dict_set(out, "episode_length", log->length);
     dict_set(out, "ties", log->ties);
+    dict_set(out, "draw_rate", log->ties);
     dict_set(out, "perf", log->stats[0].wins);
     dict_set(out, "score", log->stats[0].wins);
     dict_set(out, "n", log->n);
