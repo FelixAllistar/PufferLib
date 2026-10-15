@@ -3035,6 +3035,11 @@ void run_sweep(Ini* ini, const char* exe_path) {
     });
 
     int parallel = sweep_gpus / train_gpus;
+    int live = puf_ini_get(ini, "sweep", "live") != 0;
+    if (live && parallel != 1) {
+        fprintf(stderr, "sweep.live requires one concurrent trial (sweep.gpus=train.gpus)\n");
+        exit(1);
+    }
     // Row 0 = staging for suggest; rows 1..parallel = per-slot copies for observe.
     float* samples = (float*)calloc((parallel + 1) * space->num, sizeof(float));
     SweepJob* jobs = (SweepJob*)calloc(parallel, sizeof(SweepJob));
@@ -3160,8 +3165,10 @@ void run_sweep(Ini* ini, const char* exe_path) {
             posix_spawn_file_actions_t actions;
             posix_spawn_file_actions_init(&actions);
             posix_spawn_file_actions_addclose(&actions, pipefd[0]);
-            posix_spawn_file_actions_addopen(
-                &actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
+            if (!live) {
+                posix_spawn_file_actions_addopen(
+                    &actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
+            }
             assert(posix_spawnp(&job.pid, worker_path, &actions, NULL, argv, environ) == 0
                 && "posix_spawn train failed");
             posix_spawn_file_actions_destroy(&actions);
