@@ -36,6 +36,7 @@
 
 // Project
 #include "ini.h"
+#include "sweep_history.h"
 
 #ifdef PRECISION_FLOAT
 typedef float precision_t;
@@ -2876,6 +2877,18 @@ typedef struct {
     TrainResult result;
 } SweepJob;
 
+static void sweep_replay_observation(void* context, const float* values,
+        float score, float cost, int failed) {
+    ProteinSweep* protein = (ProteinSweep*)context;
+    float* normalized = (float*)calloc(protein->dim, sizeof(float));
+    for (int i = 0; i < protein->dim; i++) {
+        normalized[i] = space_normalize(&protein->space->spaces[i], values[i]);
+        assert(isfinite(normalized[i]) && normalized[i] >= -1 && normalized[i] <= 1);
+    }
+    protein_sweep_observe(protein, normalized, score, cost, failed);
+    free(normalized);
+}
+
 void run_sweep(Ini* ini, const char* exe_path) {
 #ifdef PUF_SWEEP_PREPARE
     PUF_SWEEP_PREPARE(ini);
@@ -3050,6 +3063,29 @@ void run_sweep(Ini* ini, const char* exe_path) {
     int next_run_id = 0;
     int completed = 0;
     int active = 0;
+    FILE* history = NULL;
+    const char* history_path = puf_ini_get_str(ini, "sweep", "history_path");
+    if (strcmp(history_path, "None") && *history_path) {
+        if (downsample != 1) {
+            fprintf(stderr, "Sweep history requires sweep.downsample=1 (final scores)\n");
+            exit(1);
+        }
+        PufSweepHistoryParam* defs = (PufSweepHistoryParam*)calloc(n_params, sizeof(*defs));
+        for (int i = 0; i < n_params; i++) {
+            snprintf(defs[i].key, sizeof(defs[i].key), "%s.%s", params[i].section, params[i].key);
+            char section[160]; snprintf(section, sizeof(section), "sweep.%s", defs[i].key);
+            snprintf(defs[i].distribution, sizeof(defs[i].distribution), "%s",
+                puf_ini_get_str(ini, section, "distribution"));
+            defs[i].min = space->spaces[i].min;
+            defs[i].max = space->spaces[i].max;
+        }
+        history = puf_sweep_history_open(history_path, defs, n_params,
+            sweep_replay_observation, protein, &completed, &next_run_id);
+        free(defs);
+        protein->suggestion_idx = next_run_id > 0 ? next_run_id - 1 : 0;
+        printf("sweep restored completed=%d observations=%d next_run=%d total_target=%d history=%s\n",
+            completed, protein->succ_n, next_run_id, max_runs, history_path);
+    }
     printf("sweep objective=%s goal=%s trials=%d\n",
         puf_ini_get_str(ini, "sweep", "metric"), goal, max_runs);
 #ifdef PUF_SWEEP_VALIDATE
@@ -3210,6 +3246,11 @@ void run_sweep(Ini* ini, const char* exe_path) {
             fprintf(stderr, "sweep worker run=%d failed; marking sample bad\n",
                 job->run);
             protein_sweep_observe(protein, job->sample, NAN, max_cost, 1);
+            if (history) {
+                for (int p = 0; p < n_params; p++)
+                    samples[p] = space_unnormalize(&space->spaces[p], job->sample[p]);
+                puf_sweep_history_append(history, job->run, samples, n_params, NAN, max_cost, 1);
+            }
             assert(++failed_workers < max_failures && "too many failed sweep workers; inspect trial logs");
             continue;
         }
@@ -3218,11 +3259,19 @@ void run_sweep(Ini* ini, const char* exe_path) {
             protein_sweep_observe(protein, job->sample,
                 job->result.scores[pi], job->result.costs[pi], 0);
         }
+        if (history) {
+            assert(job->result.points == 1);
+            for (int p = 0; p < n_params; p++)
+                samples[p] = space_unnormalize(&space->spaces[p], job->sample[p]);
+            puf_sweep_history_append(history, job->run, samples, n_params,
+                job->result.score, job->result.cost, 0);
+        }
         printf("sweep run=%d score=%.9f cost=%.2f steps=%.0f random=%d gp_obs=%d pareto=%d\n",
             job->run, job->result.score, job->result.cost, job->result.steps,
             job->random, job->gp_obs, job->pareto);
         completed++;
     }
+    if (history) fclose(history);
 }
 
 // Sweep objective: bare names → env/<name>; keys with '/' used as-is.

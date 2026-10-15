@@ -3,6 +3,7 @@ import configparser
 import importlib.util
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 HERE = Path(__file__).resolve().parents[1]
@@ -20,6 +21,43 @@ evaluation = load("pokemon_oak_evaluation", HERE / "benchmarks/evaluate_checkpoi
 
 
 class SweepContracts(unittest.TestCase):
+    def test_history_import_validates_completed_trials_before_writing(self):
+        source = sweep.ROOT / "reports/pokemon_sweeps/20261015_vast_setup"
+        for corrupt in (None, "checkpoint", "budget", "panel"):
+            with self.subTest(corrupt=corrupt), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                report = json.loads((source / "default_trial.json").read_text())
+                checkpoint = root / "weights.bin"
+                checkpoint.write_bytes(b"temporary checkpoint fixture")
+                report["checkpoint"] = str(checkpoint)
+                report["sha256"] = sweep.sha(checkpoint)
+                saved = configparser.ConfigParser(interpolation=None)
+                saved.read(source / "default_trial.ini")
+                saved["base"]["run_id"] = "sweep_fixture_0000"
+                if corrupt == "checkpoint":
+                    checkpoint.write_bytes(b"changed checkpoint")
+                if corrupt == "budget":
+                    saved["metrics"]["agent_steps"] = "1024"
+                if corrupt == "panel":
+                    report["scores"]["sample"]["games"] = 128
+                log = root / "sweep_fixture_0000.ini"
+                with log.open("w") as stream:
+                    saved.write(stream)
+                output = root / "sweep_fixture_0000.ini.oak"
+                output.mkdir()
+                (output / "summary.json").write_text(json.dumps(report))
+                history = root / "history"
+                if corrupt:
+                    with self.assertRaises(ValueError):
+                        sweep.import_history(sweep.read_config(), root, history, root)
+                    self.assertFalse(history.exists())
+                else:
+                    sweep.import_history(sweep.read_config(), root, history, root)
+                    self.assertEqual(len(history.read_text().splitlines()), 12)
+                    changed = sweep.read_config(overrides=("--base.seed=99",))
+                    with self.assertRaises(ValueError):
+                        sweep.validate_history_context(changed, history)
+
     def test_full_learner_budget_and_frozen_architecture(self):
         config = sweep.read_config()
         self.assertEqual(sweep.learner_steps(config), 25_165_824)
