@@ -1,0 +1,60 @@
+{
+  "source_commit": "313aa06e3",
+  "native_binary_sha256": "9b5cbe7f3acb4b61dd208443cd6b1ac701a6676122793fe67cbbbe6b8cc0b515",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5060 Ti, 16 GB",
+    "cuda_toolkit": "13.2",
+    "precision": "FP32",
+    "cpu_quota_cores": 7.68,
+    "chosen_agents": 16384,
+    "chosen_buffers": 2,
+    "threads_per_buffer": 4,
+    "maximum_tested_vram_gib": 11.71002197265625
+  },
+  "checks": {
+    "pokemon_engine_bridge_tests": 3,
+    "pokemon_engine_seeded_games": 128,
+    "pokemon_semantic_cpu_trace": "9a9d18d89f446738",
+    "pokemon_adapter_fixed_team_and_policy_input_tests": "passed",
+    "pokemon_sweep_cpu_contracts": 7,
+    "pokemon_gpu_integration_tests": 8,
+    "gpu_test_scope": "2 and 14 frozen banks, learner H8/L1 and H64/L2, CUDA graphs off/on; incompatible metadata rejected; frozen weights unchanged",
+    "blas_scalar_parity_games": 32,
+    "blas_scalar_parity_transitions": 1908,
+    "blas_max_absolute_logit_difference": 0.0000050067901611328125,
+    "blas_actions_and_states_identical": true,
+    "oak_post_train_hook": "passed: six two-game blocks at search budget 64, not a strength estimate",
+    "goofspiel_sweep_cpu_contracts": 40,
+    "goofspiel_automatic_valid_layouts": 45290,
+    "goofspiel_automatic_rejected_layouts": 33910,
+    "mario_sweep_cpu_tests": 6,
+    "unrelated_gpu_experiments": "Existing work was committed, not requalified on this instance."
+  },
+  "sweep": {
+    "team": "mie_egg_don with fixed catalog movesets",
+    "profile": "ocean/pokemon/profiles/starmie_oak.ini",
+    "frozen_opponents": 14,
+    "frozen_opponent_inventory": "frozen_opponents.json",
+    "initial_checkpoint_sha256": "106dcfa09e0059315c0838f5cc60e1f8e6df5439c580a595fdb09e003741a752",
+    "trials": 16,
+    "counted_steps_per_trial": 33554432,
+    "learner_steps_per_trial": 25165824,
+    "final_oak_games_per_trial": 768,
+    "objective": "argmax (wins + 0.5 * draws) / games; sampled play reported separately",
+    "initial_run": "sweep_1792025879607_0000",
+    "initial_run_completed": true,
+    "initial_run_native_protein_score": 0.2265625,
+    "initial_run_total_training_and_eval_seconds": 189.84,
+    "next_trial_started": true,
+    "remaining_trials_complete": false,
+    "first_trial_local_checkpoint_backup": "saved/pokemon/vast_sweep_20261015/sweep_1792025879607_0000"
+  },
+  "caveats": [
+    "Short hardware runs measure capacity/throughput, not hyperparameter quality.",
+    "The 8192-agent two-buffer check additionally enabled PUFFER_POKEMON_AUDIT.",
+    "Reported hardware SPS is the final native interval, not a repeated-run performance estimate.",
+    "Oak is full-information and its internal search randomness is not controlled by the battle seed.",
+    "These are tuning-panel results, not held-out confirmation or a Showdown rating.",
+    "The Vast container filesystem is ephemeral. Download remaining sweep outputs before destroying the instance."
+  ]
+}

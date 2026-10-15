@@ -300,7 +300,9 @@ python3 ocean/pokemon/sweep.py run
 
 All 14 OU checkpoints, including the unrestricted OU master, are hash-checked
 and frozen. The separate older `free4` master is not part of this H64/L2 bank.
-Half the games use those opponents, half use current-policy self-play. Since
+Half the concurrent battle environments use those opponents; the other half
+use current-policy self-play. Completed-game counts can differ because games
+have different lengths. Since
 both seats learn in current-policy games, 75% of counted agent steps are
 learner steps: 33,554,432 counted steps = **25,165,824 learner steps per trial**.
 Only initial/final learner checkpoints are saved, not periodic checkpoints.
@@ -333,3 +335,23 @@ overrides such as `--train.total_timesteps=2097152 --oak.enabled=0`; these are
 throughput/compatibility checks, not hyperparameter-ranking trials. Actual
 sweeps reject budgets below 25 million learner steps. Layout overrides are
 locked into all trials rather than silently searched via generic defaults.
+
+October 15 Vast qualification (RTX 5060 Ti, FP32): all eight GPU integration
+cases passed, including 14-bank loading with CUDA graphs on/off. Scalar/BLAS
+inference produced identical actions and native states over 32 games and 1908
+transitions (maximum logit difference 5.01e-6). The first complete native trial
+returned its Oak score to Protein and the next trial started normally.
+
+| Fixed Starmie policy | Learner steps | Argmax vs Oak | Sampled vs Oak |
+|---|---:|---:|---:|
+| Same-seed initialization | 0 | 7/384 wins (1.8%) | 0/384 (0.0%) |
+| Default-settings trial | 25,165,824 | 87/384 (22.7%) | 70/384 (18.2%) |
+
+No draws or timeouts occurred in these evaluations. This is evidence of
+improvement on the tuning panel, not a completed sweep or held-out validation.
+It has not surpassed the old composition's 35.2% argmax benchmark; that older
+policy had a different training history and freely chosen movesets.
+The [CSV](../../reports/pokemon_sweeps/20261015_vast_setup/results.csv),
+[raw score summaries](../../reports/pokemon_sweeps/20261015_vast_setup/default_trial.json),
+and [qualification record](../../reports/pokemon_sweeps/20261015_vast_setup/qualification.json)
+are committed; full match records and checkpoints remain outside Git.

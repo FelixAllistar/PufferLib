@@ -1,0 +1,89 @@
+{
+  "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/hardware_16384_b2/0000000000000000.bin",
+  "sha256": "106dcfa09e0059315c0838f5cc60e1f8e6df5439c580a595fdb09e003741a752",
+  "seed": 20261015,
+  "budget": 4096,
+  "elapsed_seconds": 79.84682691897615,
+  "objective": "argmax score (wins + 0.5 draws) / games",
+  "limitations": "Oak sees full state; native pinned engine is authoritative; Oak search RNG is internally seeded.",
+  "scores": {
+    "argmax": {
+      "games": 384,
+      "wins": 7,
+      "draws": 0,
+      "losses": 377,
+      "timeouts": 0,
+      "score": 0.018229166666666668
+    },
+    "sample": {
+      "games": 384,
+      "wins": 0,
+      "draws": 0,
+      "losses": 384,
+      "timeouts": 0,
+      "score": 0.0
+    }
+  },
+  "panel": [
+    {
+      "team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "mode": "argmax",
+      "report": "argmax-zam_egg_mie/PufferLib-pokemon-zam_egg_mie-4096-argmax.json"
+    },
+    {
+      "team": "jynx_mie_don",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "timeouts": 0,
+      "mode": "argmax",
+      "report": "argmax-jynx_mie_don/PufferLib-pokemon-jynx_mie_don-4096-argmax.json"
+    },
+    {
+      "team": "gar_egg_zap",
+      "games": 128,
+      "wins": 6,
+      "draws": 0,
+      "losses": 122,
+      "timeouts": 0,
+      "mode": "argmax",
+      "report": "argmax-gar_egg_zap/PufferLib-pokemon-gar_egg_zap-4096-argmax.json"
+    },
+    {
+      "team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "mode": "sample",
+      "report": "sample-zam_egg_mie/PufferLib-pokemon-zam_egg_mie-4096-sample.json"
+    },
+    {
+      "team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "mode": "sample",
+      "report": "sample-jynx_mie_don/PufferLib-pokemon-jynx_mie_don-4096-sample.json"
+    },
+    {
+      "team": "gar_egg_zap",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "mode": "sample",
+      "report": "sample-gar_egg_zap/PufferLib-pokemon-gar_egg_zap-4096-sample.json"
+    }
+  ]
+}
