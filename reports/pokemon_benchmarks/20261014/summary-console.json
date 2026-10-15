@@ -1,0 +1,251 @@
+{
+  "total_games": 25728,
+  "stochastic_top": [
+    {
+      "name": "zam_egg_mie",
+      "games": 1792,
+      "wins": 1161,
+      "draws": 2,
+      "losses": 629,
+      "timeouts": 0,
+      "score": 0.6484375,
+      "approximate_95_interval": [
+        0.6260347196820221,
+        0.6702052159559541
+      ]
+    },
+    {
+      "name": "zam_egg_zap",
+      "games": 1792,
+      "wins": 1090,
+      "draws": 5,
+      "losses": 697,
+      "timeouts": 0,
+      "score": 0.6096540178571429,
+      "approximate_95_interval": [
+        0.5868556570982664,
+        0.631983242724524
+      ]
+    },
+    {
+      "name": "master",
+      "games": 1792,
+      "wins": 1082,
+      "draws": 3,
+      "losses": 707,
+      "timeouts": 0,
+      "score": 0.6046316964285714,
+      "approximate_95_interval": [
+        0.5817932304478589,
+        0.6270225136578572
+      ]
+    },
+    {
+      "name": "zam_egg_gar",
+      "games": 1792,
+      "wins": 1074,
+      "draws": 5,
+      "losses": 713,
+      "timeouts": 0,
+      "score": 0.6007254464285714,
+      "approximate_95_interval": [
+        0.5778575096213463,
+        0.623162446704423
+      ]
+    },
+    {
+      "name": "mie_egg_don",
+      "games": 1792,
+      "wins": 1057,
+      "draws": 2,
+      "losses": 733,
+      "timeouts": 0,
+      "score": 0.5904017857142857,
+      "approximate_95_interval": [
+        0.5674631567487238,
+        0.6129536461586147
+      ]
+    }
+  ],
+  "argmax_top": [
+    {
+      "name": "zam_egg_cloy_don",
+      "games": 896,
+      "wins": 616,
+      "draws": 4,
+      "losses": 276,
+      "timeouts": 4,
+      "score": 0.6897321428571429,
+      "approximate_95_interval": [
+        0.6586852192147453,
+        0.7191590591560258
+      ]
+    },
+    {
+      "name": "mie_egg_don",
+      "games": 896,
+      "wins": 604,
+      "draws": 2,
+      "losses": 290,
+      "timeouts": 2,
+      "score": 0.6752232142857143,
+      "approximate_95_interval": [
+        0.6438682788710146,
+        0.7050820252714034
+      ]
+    },
+    {
+      "name": "zam_egg_zap",
+      "games": 896,
+      "wins": 585,
+      "draws": 0,
+      "losses": 311,
+      "timeouts": 0,
+      "score": 0.6529017857142857,
+      "approximate_95_interval": [
+        0.6211376741418481,
+        0.6833603619569498
+      ]
+    },
+    {
+      "name": "zam_egg_mie",
+      "games": 896,
+      "wins": 568,
+      "draws": 2,
+      "losses": 326,
+      "timeouts": 2,
+      "score": 0.6350446428571429,
+      "approximate_95_interval": [
+        0.6030074404089348,
+        0.6659287812549669
+      ]
+    },
+    {
+      "name": "master",
+      "games": 896,
+      "wins": 495,
+      "draws": 1,
+      "losses": 400,
+      "timeouts": 1,
+      "score": 0.5530133928571429,
+      "approximate_95_interval": [
+        0.5203008874556914,
+        0.5852732491479065
+      ]
+    }
+  ],
+  "external": [
+    {
+      "file": "free4-master-zam_egg_mie-4096-argmax.json",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "score": 0.0078125
+    },
+    {
+      "file": "free4-master-zam_egg_mie-4096-sample.json",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "score": 0
+    },
+    {
+      "file": "master-jynx_mie_don-4096-sample.json",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "score": 0
+    },
+    {
+      "file": "master-zam_egg_mie-4096-sample-fixed.json",
+      "games": 64,
+      "wins": 1,
+      "draws": 0,
+      "losses": 63,
+      "score": 0.015625
+    },
+    {
+      "file": "master-zam_egg_mie-4096-sample.json",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "score": 0
+    },
+    {
+      "file": "ou_leads_rr50m-master-gar_egg_zap-4096-argmax.json",
+      "games": 128,
+      "wins": 41,
+      "draws": 2,
+      "losses": 85,
+      "score": 0.328125
+    },
+    {
+      "file": "ou_leads_rr50m-master-gar_egg_zap-4096-sample.json",
+      "games": 128,
+      "wins": 2,
+      "draws": 1,
+      "losses": 125,
+      "score": 0.01953125
+    },
+    {
+      "file": "ou_leads_rr50m-master-jynx_mie_don-4096-argmax.json",
+      "games": 128,
+      "wins": 6,
+      "draws": 0,
+      "losses": 122,
+      "score": 0.046875
+    },
+    {
+      "file": "ou_leads_rr50m-master-zam_egg_mie-256-sample.json",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "score": 0.015625
+    },
+    {
+      "file": "ou_leads_rr50m-master-zam_egg_mie-4096-argmax.json",
+      "games": 128,
+      "wins": 20,
+      "draws": 2,
+      "losses": 106,
+      "score": 0.1640625
+    },
+    {
+      "file": "ou_leads_rr50m-zam_egg_cloy_don-gar_egg_zap-4096-argmax.json",
+      "games": 128,
+      "wins": 64,
+      "draws": 0,
+      "losses": 64,
+      "score": 0.5
+    },
+    {
+      "file": "ou_leads_rr50m-zam_egg_cloy_don-jynx_mie_don-4096-argmax.json",
+      "games": 128,
+      "wins": 21,
+      "draws": 0,
+      "losses": 107,
+      "score": 0.1640625
+    },
+    {
+      "file": "ou_leads_rr50m-zam_egg_cloy_don-zam_egg_mie-4096-argmax.json",
+      "games": 128,
+      "wins": 18,
+      "draws": 0,
+      "losses": 110,
+      "score": 0.140625
+    },
+    {
+      "file": "ou_leads_rr50m-zam_egg_mie-zam_egg_mie-4096-argmax.json",
+      "games": 128,
+      "wins": 13,
+      "draws": 0,
+      "losses": 115,
+      "score": 0.1015625
+    }
+  ]
+}
