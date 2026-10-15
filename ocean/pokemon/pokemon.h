@@ -68,6 +68,10 @@ static inline void pk_personality_configure(Ini* ini, const char* mode) {
 #undef PUF_CONFIGURE
 #define PUF_CONFIGURE(ini,mode) pk_personality_configure(ini,mode)
 
+#ifdef PUFFERLIB_BUILD_MAIN
+#include "sweep_eval.h"
+#endif
+
 void puf_step(Env* env) {
     if(!pk_personality_enabled && !pk_behavior_enabled) { pk_base_step(env); return; }
     double before=pk_personality_potential(env->game.obs[0],env->game.obs[1],pk_personality_weights);
