@@ -1,0 +1,3 @@
+# Locally compiled comparison executables; retain their source and results.
+protein_before
+protein_after
