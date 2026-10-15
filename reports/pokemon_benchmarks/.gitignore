@@ -1,0 +1,15 @@
+# Keep compact, reproducible summaries and source teams in Git. Raw per-game
+# results, diagnostics, and frozen model copies remain available locally.
+*
+!*/
+!.gitignore
+!summary.json
+!summary-console.json
+!manifest.json
+!results.csv
+!results.txt
+!results.html
+!team_details.csv
+!*.paste.txt
+frozen_baselines/
+speed_probe/

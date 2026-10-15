@@ -1,0 +1,1428 @@
+{
+  "league": "ou_leads_rr50m",
+  "oak_version": "1.1.4",
+  "budget": 4096,
+  "games_per_team_mode": 128,
+  "seed": 20261014,
+  "panel": {
+    "zam_egg_mie": "https://pokepast.es/2c3090c9fe06d6a0/raw",
+    "jynx_mie_don": "https://pokepast.es/3e7096e479e03605/raw",
+    "gar_egg_zap": "https://pokepast.es/2e85771afa971c5f/raw"
+  },
+  "rows": [
+    {
+      "policy": "mie_egg_don",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/mie_egg_don/r000003-a001/weights.bin",
+      "checkpoint_sha256": "219f8ea34ffc09e1d26649da83b7c2a12e51c9159921744096022dc6f7196a2f",
+      "team": "species:121,103,112,113,143,128",
+      "lead": "121",
+      "species_names": [
+        "Starmie",
+        "Exeggutor",
+        "Rhydon",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Starmie",
+      "argmax": {
+        "games": 384,
+        "wins": 135,
+        "draws": 0,
+        "losses": 249,
+        "timeouts": 0,
+        "score_percent": 35.15625
+      },
+      "sample": {
+        "games": 384,
+        "wins": 11,
+        "draws": 0,
+        "losses": 373,
+        "timeouts": 0,
+        "score_percent": 2.8645833333333335
+      }
+    },
+    {
+      "policy": "zam_egg_cloy_don",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/zam_egg_cloy_don/r000003-a001/weights.bin",
+      "checkpoint_sha256": "58484e28bee39d05be0e51b6ad98ea8d45783e1740c30f5ff626bf64426d4f05",
+      "team": "species:65,103,112,91,113,128",
+      "lead": "65",
+      "species_names": [
+        "Alakazam",
+        "Exeggutor",
+        "Rhydon",
+        "Cloyster",
+        "Chansey",
+        "Tauros"
+      ],
+      "lead_name": "Alakazam",
+      "argmax": {
+        "games": 384,
+        "wins": 101,
+        "draws": 1,
+        "losses": 282,
+        "timeouts": 0,
+        "score_percent": 26.432291666666668
+      },
+      "sample": {
+        "games": 384,
+        "wins": 5,
+        "draws": 0,
+        "losses": 379,
+        "timeouts": 0,
+        "score_percent": 1.3020833333333333
+      }
+    },
+    {
+      "policy": "gar_egg_zap",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/gar_egg_zap/r000002-a001/weights.bin",
+      "checkpoint_sha256": "1a69e8ed2bf0ecf0a60df9d7c2f88b853e139ac934df1204e4b1afb3d3d550cf",
+      "team": "species:94,103,145,113,143,128",
+      "lead": "94",
+      "species_names": [
+        "Gengar",
+        "Exeggutor",
+        "Zapdos",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Gengar",
+      "argmax": {
+        "games": 384,
+        "wins": 79,
+        "draws": 1,
+        "losses": 304,
+        "timeouts": 0,
+        "score_percent": 20.703125
+      },
+      "sample": {
+        "games": 384,
+        "wins": 7,
+        "draws": 0,
+        "losses": 377,
+        "timeouts": 0,
+        "score_percent": 1.8229166666666667
+      }
+    },
+    {
+      "policy": "master",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/master/r000003-a001/weights.bin",
+      "checkpoint_sha256": "b05573b73a4736a7fcaa23e8db534830309cc38c48e153a5a3b069b81bd5aa34",
+      "team": "None",
+      "lead": "None",
+      "species_names": [],
+      "lead_name": "Free choice",
+      "argmax": {
+        "games": 384,
+        "wins": 71,
+        "draws": 4,
+        "losses": 309,
+        "timeouts": 0,
+        "score_percent": 19.010416666666668
+      },
+      "sample": {
+        "games": 384,
+        "wins": 4,
+        "draws": 1,
+        "losses": 379,
+        "timeouts": 0,
+        "score_percent": 1.171875
+      }
+    },
+    {
+      "policy": "gar_egg_mie_zap",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/gar_egg_mie_zap/r000002-a001/weights.bin",
+      "checkpoint_sha256": "d65da914cb2675c9d4eac136c1a0f8235df909c4db9192da0e94105229dc0de2",
+      "team": "species:94,103,121,145,143,128",
+      "lead": "94",
+      "species_names": [
+        "Gengar",
+        "Exeggutor",
+        "Starmie",
+        "Zapdos",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Gengar",
+      "argmax": {
+        "games": 384,
+        "wins": 67,
+        "draws": 0,
+        "losses": 317,
+        "timeouts": 0,
+        "score_percent": 17.447916666666668
+      },
+      "sample": {
+        "games": 384,
+        "wins": 12,
+        "draws": 1,
+        "losses": 371,
+        "timeouts": 0,
+        "score_percent": 3.2552083333333335
+      }
+    },
+    {
+      "policy": "mie_egg_zap",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/mie_egg_zap/r000002-a001/weights.bin",
+      "checkpoint_sha256": "148342f1c2c5de0aaa46dc201f1b1f5c986100d837c6fb9a21727dd21296c58e",
+      "team": "species:121,103,145,113,143,128",
+      "lead": "121",
+      "species_names": [
+        "Starmie",
+        "Exeggutor",
+        "Zapdos",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Starmie",
+      "argmax": {
+        "games": 384,
+        "wins": 53,
+        "draws": 1,
+        "losses": 330,
+        "timeouts": 0,
+        "score_percent": 13.932291666666666
+      },
+      "sample": {
+        "games": 384,
+        "wins": 7,
+        "draws": 0,
+        "losses": 377,
+        "timeouts": 0,
+        "score_percent": 1.8229166666666667
+      }
+    },
+    {
+      "policy": "zam_egg_mie",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/zam_egg_mie/r000003-a001/weights.bin",
+      "checkpoint_sha256": "bde5e8d8755411d07da09e13c79549c03d01f830dee84d5ef6c57ae136f05733",
+      "team": "species:65,103,121,113,143,128",
+      "lead": "65",
+      "species_names": [
+        "Alakazam",
+        "Exeggutor",
+        "Starmie",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Alakazam",
+      "argmax": {
+        "games": 384,
+        "wins": 49,
+        "draws": 4,
+        "losses": 331,
+        "timeouts": 1,
+        "score_percent": 13.28125
+      },
+      "sample": {
+        "games": 384,
+        "wins": 6,
+        "draws": 0,
+        "losses": 378,
+        "timeouts": 0,
+        "score_percent": 1.5625
+      }
+    },
+    {
+      "policy": "jynx_mie_don",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/jynx_mie_don/r000002-a001/weights.bin",
+      "checkpoint_sha256": "752902b000fa84322e43b1307072474b89b0d85e891293e13982df8a192a7de0",
+      "team": "species:124,121,112,113,143,128",
+      "lead": "124",
+      "species_names": [
+        "Jynx",
+        "Starmie",
+        "Rhydon",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Jynx",
+      "argmax": {
+        "games": 384,
+        "wins": 50,
+        "draws": 1,
+        "losses": 333,
+        "timeouts": 0,
+        "score_percent": 13.151041666666666
+      },
+      "sample": {
+        "games": 384,
+        "wins": 3,
+        "draws": 1,
+        "losses": 380,
+        "timeouts": 0,
+        "score_percent": 0.9114583333333334
+      }
+    },
+    {
+      "policy": "zam_egg_gar",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/zam_egg_gar/r000003-a001/weights.bin",
+      "checkpoint_sha256": "595895c519e06254c9fb2c6e13060e0deb527879857bf29fc2e52689971470ea",
+      "team": "species:65,103,94,113,143,128",
+      "lead": "65",
+      "species_names": [
+        "Alakazam",
+        "Exeggutor",
+        "Gengar",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Alakazam",
+      "argmax": {
+        "games": 384,
+        "wins": 45,
+        "draws": 0,
+        "losses": 339,
+        "timeouts": 0,
+        "score_percent": 11.71875
+      },
+      "sample": {
+        "games": 384,
+        "wins": 2,
+        "draws": 0,
+        "losses": 382,
+        "timeouts": 0,
+        "score_percent": 0.5208333333333334
+      }
+    },
+    {
+      "policy": "jynx_egg_zap",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/jynx_egg_zap/r000002-a001/weights.bin",
+      "checkpoint_sha256": "cb2ea64023d58064d2562dbd1401a2872437bc87d38253a356988015b4777fd0",
+      "team": "species:124,103,145,113,143,128",
+      "lead": "124",
+      "species_names": [
+        "Jynx",
+        "Exeggutor",
+        "Zapdos",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Jynx",
+      "argmax": {
+        "games": 384,
+        "wins": 45,
+        "draws": 0,
+        "losses": 339,
+        "timeouts": 0,
+        "score_percent": 11.71875
+      },
+      "sample": {
+        "games": 384,
+        "wins": 5,
+        "draws": 0,
+        "losses": 379,
+        "timeouts": 0,
+        "score_percent": 1.3020833333333333
+      }
+    },
+    {
+      "policy": "jynx_egg_gar_zap",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/jynx_egg_gar_zap/r000002-a001/weights.bin",
+      "checkpoint_sha256": "07209a5b22569149a38f618aa8bd8a36a52c83f6512a290eac785a86e538c5e6",
+      "team": "species:124,103,94,145,143,128",
+      "lead": "124",
+      "species_names": [
+        "Jynx",
+        "Exeggutor",
+        "Gengar",
+        "Zapdos",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Jynx",
+      "argmax": {
+        "games": 384,
+        "wins": 44,
+        "draws": 1,
+        "losses": 339,
+        "timeouts": 0,
+        "score_percent": 11.588541666666666
+      },
+      "sample": {
+        "games": 384,
+        "wins": 2,
+        "draws": 0,
+        "losses": 382,
+        "timeouts": 0,
+        "score_percent": 0.5208333333333334
+      }
+    },
+    {
+      "policy": "zam_egg_zap",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/zam_egg_zap/r000003-a001/weights.bin",
+      "checkpoint_sha256": "5fab53d708e50354fe20e771894c58380028cff1fe164caac630d78142e8220d",
+      "team": "species:65,103,145,113,143,128",
+      "lead": "65",
+      "species_names": [
+        "Alakazam",
+        "Exeggutor",
+        "Zapdos",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Alakazam",
+      "argmax": {
+        "games": 384,
+        "wins": 43,
+        "draws": 0,
+        "losses": 341,
+        "timeouts": 0,
+        "score_percent": 11.197916666666666
+      },
+      "sample": {
+        "games": 384,
+        "wins": 4,
+        "draws": 0,
+        "losses": 380,
+        "timeouts": 0,
+        "score_percent": 1.0416666666666667
+      }
+    },
+    {
+      "policy": "gar_egg_mie",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/gar_egg_mie/r000002-a001/weights.bin",
+      "checkpoint_sha256": "c6c17d6869999bbc109b94bf5a2a1ed981531d9dc0ffed33eb2f58b59c90aec9",
+      "team": "species:94,103,121,113,143,128",
+      "lead": "94",
+      "species_names": [
+        "Gengar",
+        "Exeggutor",
+        "Starmie",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Gengar",
+      "argmax": {
+        "games": 384,
+        "wins": 36,
+        "draws": 0,
+        "losses": 348,
+        "timeouts": 0,
+        "score_percent": 9.375
+      },
+      "sample": {
+        "games": 384,
+        "wins": 0,
+        "draws": 0,
+        "losses": 384,
+        "timeouts": 0,
+        "score_percent": 0.0
+      }
+    },
+    {
+      "policy": "mie_egg_cloy",
+      "checkpoint": "/home/felix/puffertank/pufferlib/leagues/pokemon/ou_leads_rr50m/members/mie_egg_cloy/r000002-a001/weights.bin",
+      "checkpoint_sha256": "d2eb246a79ed18f7d7f185d4edf54a2466a1a7d1ff5ee8d103c8ae734d5eccd3",
+      "team": "species:121,103,91,113,143,128",
+      "lead": "121",
+      "species_names": [
+        "Starmie",
+        "Exeggutor",
+        "Cloyster",
+        "Chansey",
+        "Snorlax",
+        "Tauros"
+      ],
+      "lead_name": "Starmie",
+      "argmax": {
+        "games": 384,
+        "wins": 35,
+        "draws": 1,
+        "losses": 348,
+        "timeouts": 0,
+        "score_percent": 9.244791666666666
+      },
+      "sample": {
+        "games": 384,
+        "wins": 5,
+        "draws": 0,
+        "losses": 379,
+        "timeouts": 0,
+        "score_percent": 1.3020833333333333
+      }
+    }
+  ],
+  "team_details": [
+    {
+      "policy": "master",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 23,
+      "draws": 0,
+      "losses": 105,
+      "timeouts": 0,
+      "score_percent": 17.96875
+    },
+    {
+      "policy": "master",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 5,
+      "draws": 0,
+      "losses": 123,
+      "timeouts": 0,
+      "score_percent": 3.90625
+    },
+    {
+      "policy": "master",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 43,
+      "draws": 4,
+      "losses": 81,
+      "timeouts": 0,
+      "score_percent": 35.15625
+    },
+    {
+      "policy": "master",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "timeouts": 0,
+      "score_percent": 0.78125
+    },
+    {
+      "policy": "master",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "master",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 3,
+      "draws": 1,
+      "losses": 124,
+      "timeouts": 0,
+      "score_percent": 2.734375
+    },
+    {
+      "policy": "zam_egg_mie",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 9,
+      "draws": 0,
+      "losses": 119,
+      "timeouts": 0,
+      "score_percent": 7.03125
+    },
+    {
+      "policy": "zam_egg_mie",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 15,
+      "draws": 0,
+      "losses": 113,
+      "timeouts": 0,
+      "score_percent": 11.71875
+    },
+    {
+      "policy": "zam_egg_mie",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 25,
+      "draws": 4,
+      "losses": 99,
+      "timeouts": 1,
+      "score_percent": 21.09375
+    },
+    {
+      "policy": "zam_egg_mie",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "zam_egg_mie",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "zam_egg_mie",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 4,
+      "draws": 0,
+      "losses": 124,
+      "timeouts": 0,
+      "score_percent": 3.125
+    },
+    {
+      "policy": "zam_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 14,
+      "draws": 0,
+      "losses": 114,
+      "timeouts": 0,
+      "score_percent": 10.9375
+    },
+    {
+      "policy": "zam_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 16,
+      "draws": 0,
+      "losses": 112,
+      "timeouts": 0,
+      "score_percent": 12.5
+    },
+    {
+      "policy": "zam_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 13,
+      "draws": 0,
+      "losses": 115,
+      "timeouts": 0,
+      "score_percent": 10.15625
+    },
+    {
+      "policy": "zam_egg_zap",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "zam_egg_zap",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "zam_egg_zap",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "zam_egg_gar",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 17,
+      "draws": 0,
+      "losses": 111,
+      "timeouts": 0,
+      "score_percent": 13.28125
+    },
+    {
+      "policy": "zam_egg_gar",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 10,
+      "draws": 0,
+      "losses": 118,
+      "timeouts": 0,
+      "score_percent": 7.8125
+    },
+    {
+      "policy": "zam_egg_gar",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 18,
+      "draws": 0,
+      "losses": 110,
+      "timeouts": 0,
+      "score_percent": 14.0625
+    },
+    {
+      "policy": "zam_egg_gar",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "timeouts": 0,
+      "score_percent": 0.78125
+    },
+    {
+      "policy": "zam_egg_gar",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "zam_egg_gar",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "timeouts": 0,
+      "score_percent": 0.78125
+    },
+    {
+      "policy": "zam_egg_cloy_don",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 23,
+      "draws": 1,
+      "losses": 104,
+      "timeouts": 0,
+      "score_percent": 18.359375
+    },
+    {
+      "policy": "zam_egg_cloy_don",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 16,
+      "draws": 0,
+      "losses": 112,
+      "timeouts": 0,
+      "score_percent": 12.5
+    },
+    {
+      "policy": "zam_egg_cloy_don",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 62,
+      "draws": 0,
+      "losses": 66,
+      "timeouts": 0,
+      "score_percent": 48.4375
+    },
+    {
+      "policy": "zam_egg_cloy_don",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "zam_egg_cloy_don",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "zam_egg_cloy_don",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 5,
+      "draws": 0,
+      "losses": 123,
+      "timeouts": 0,
+      "score_percent": 3.90625
+    },
+    {
+      "policy": "mie_egg_don",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 32,
+      "draws": 0,
+      "losses": 96,
+      "timeouts": 0,
+      "score_percent": 25.0
+    },
+    {
+      "policy": "mie_egg_don",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 33,
+      "draws": 0,
+      "losses": 95,
+      "timeouts": 0,
+      "score_percent": 25.78125
+    },
+    {
+      "policy": "mie_egg_don",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 70,
+      "draws": 0,
+      "losses": 58,
+      "timeouts": 0,
+      "score_percent": 54.6875
+    },
+    {
+      "policy": "mie_egg_don",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "mie_egg_don",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 4,
+      "draws": 0,
+      "losses": 124,
+      "timeouts": 0,
+      "score_percent": 3.125
+    },
+    {
+      "policy": "mie_egg_don",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 7,
+      "draws": 0,
+      "losses": 121,
+      "timeouts": 0,
+      "score_percent": 5.46875
+    },
+    {
+      "policy": "mie_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 13,
+      "draws": 0,
+      "losses": 115,
+      "timeouts": 0,
+      "score_percent": 10.15625
+    },
+    {
+      "policy": "mie_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 19,
+      "draws": 0,
+      "losses": 109,
+      "timeouts": 0,
+      "score_percent": 14.84375
+    },
+    {
+      "policy": "mie_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 21,
+      "draws": 1,
+      "losses": 106,
+      "timeouts": 0,
+      "score_percent": 16.796875
+    },
+    {
+      "policy": "mie_egg_zap",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "mie_egg_zap",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "timeouts": 0,
+      "score_percent": 0.78125
+    },
+    {
+      "policy": "mie_egg_zap",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 4,
+      "draws": 0,
+      "losses": 124,
+      "timeouts": 0,
+      "score_percent": 3.125
+    },
+    {
+      "policy": "mie_egg_cloy",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 7,
+      "draws": 0,
+      "losses": 121,
+      "timeouts": 0,
+      "score_percent": 5.46875
+    },
+    {
+      "policy": "mie_egg_cloy",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 20,
+      "draws": 0,
+      "losses": 108,
+      "timeouts": 0,
+      "score_percent": 15.625
+    },
+    {
+      "policy": "mie_egg_cloy",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 8,
+      "draws": 1,
+      "losses": 119,
+      "timeouts": 0,
+      "score_percent": 6.640625
+    },
+    {
+      "policy": "mie_egg_cloy",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "mie_egg_cloy",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "mie_egg_cloy",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 3,
+      "draws": 0,
+      "losses": 125,
+      "timeouts": 0,
+      "score_percent": 2.34375
+    },
+    {
+      "policy": "jynx_mie_don",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 8,
+      "draws": 1,
+      "losses": 119,
+      "timeouts": 0,
+      "score_percent": 6.640625
+    },
+    {
+      "policy": "jynx_mie_don",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 20,
+      "draws": 0,
+      "losses": 108,
+      "timeouts": 0,
+      "score_percent": 15.625
+    },
+    {
+      "policy": "jynx_mie_don",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 22,
+      "draws": 0,
+      "losses": 106,
+      "timeouts": 0,
+      "score_percent": 17.1875
+    },
+    {
+      "policy": "jynx_mie_don",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 1,
+      "losses": 127,
+      "timeouts": 0,
+      "score_percent": 0.390625
+    },
+    {
+      "policy": "jynx_mie_don",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "jynx_mie_don",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 3,
+      "draws": 0,
+      "losses": 125,
+      "timeouts": 0,
+      "score_percent": 2.34375
+    },
+    {
+      "policy": "jynx_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 15,
+      "draws": 0,
+      "losses": 113,
+      "timeouts": 0,
+      "score_percent": 11.71875
+    },
+    {
+      "policy": "jynx_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 12,
+      "draws": 0,
+      "losses": 116,
+      "timeouts": 0,
+      "score_percent": 9.375
+    },
+    {
+      "policy": "jynx_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 18,
+      "draws": 0,
+      "losses": 110,
+      "timeouts": 0,
+      "score_percent": 14.0625
+    },
+    {
+      "policy": "jynx_egg_zap",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "timeouts": 0,
+      "score_percent": 0.78125
+    },
+    {
+      "policy": "jynx_egg_zap",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "jynx_egg_zap",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 4,
+      "draws": 0,
+      "losses": 124,
+      "timeouts": 0,
+      "score_percent": 3.125
+    },
+    {
+      "policy": "jynx_egg_gar_zap",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 15,
+      "draws": 0,
+      "losses": 113,
+      "timeouts": 0,
+      "score_percent": 11.71875
+    },
+    {
+      "policy": "jynx_egg_gar_zap",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 17,
+      "draws": 0,
+      "losses": 111,
+      "timeouts": 0,
+      "score_percent": 13.28125
+    },
+    {
+      "policy": "jynx_egg_gar_zap",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 12,
+      "draws": 1,
+      "losses": 115,
+      "timeouts": 0,
+      "score_percent": 9.765625
+    },
+    {
+      "policy": "jynx_egg_gar_zap",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "jynx_egg_gar_zap",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "jynx_egg_gar_zap",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "gar_egg_mie",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 13,
+      "draws": 0,
+      "losses": 115,
+      "timeouts": 0,
+      "score_percent": 10.15625
+    },
+    {
+      "policy": "gar_egg_mie",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 18,
+      "draws": 0,
+      "losses": 110,
+      "timeouts": 0,
+      "score_percent": 14.0625
+    },
+    {
+      "policy": "gar_egg_mie",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 5,
+      "draws": 0,
+      "losses": 123,
+      "timeouts": 0,
+      "score_percent": 3.90625
+    },
+    {
+      "policy": "gar_egg_mie",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "gar_egg_mie",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "gar_egg_mie",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "score_percent": 0.0
+    },
+    {
+      "policy": "gar_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 32,
+      "draws": 0,
+      "losses": 96,
+      "timeouts": 0,
+      "score_percent": 25.0
+    },
+    {
+      "policy": "gar_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 18,
+      "draws": 1,
+      "losses": 109,
+      "timeouts": 0,
+      "score_percent": 14.453125
+    },
+    {
+      "policy": "gar_egg_zap",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 29,
+      "draws": 0,
+      "losses": 99,
+      "timeouts": 0,
+      "score_percent": 22.65625
+    },
+    {
+      "policy": "gar_egg_zap",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "gar_egg_zap",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 1,
+      "draws": 0,
+      "losses": 127,
+      "timeouts": 0,
+      "score_percent": 0.78125
+    },
+    {
+      "policy": "gar_egg_zap",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 4,
+      "draws": 0,
+      "losses": 124,
+      "timeouts": 0,
+      "score_percent": 3.125
+    },
+    {
+      "policy": "gar_egg_mie_zap",
+      "mode": "argmax",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 29,
+      "draws": 0,
+      "losses": 99,
+      "timeouts": 0,
+      "score_percent": 22.65625
+    },
+    {
+      "policy": "gar_egg_mie_zap",
+      "mode": "argmax",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 19,
+      "draws": 0,
+      "losses": 109,
+      "timeouts": 0,
+      "score_percent": 14.84375
+    },
+    {
+      "policy": "gar_egg_mie_zap",
+      "mode": "argmax",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 19,
+      "draws": 0,
+      "losses": 109,
+      "timeouts": 0,
+      "score_percent": 14.84375
+    },
+    {
+      "policy": "gar_egg_mie_zap",
+      "mode": "sample",
+      "opponent_team": "zam_egg_mie",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "score_percent": 1.5625
+    },
+    {
+      "policy": "gar_egg_mie_zap",
+      "mode": "sample",
+      "opponent_team": "jynx_mie_don",
+      "games": 128,
+      "wins": 5,
+      "draws": 0,
+      "losses": 123,
+      "timeouts": 0,
+      "score_percent": 3.90625
+    },
+    {
+      "policy": "gar_egg_mie_zap",
+      "mode": "sample",
+      "opponent_team": "gar_egg_zap",
+      "games": 128,
+      "wins": 5,
+      "draws": 1,
+      "losses": 122,
+      "timeouts": 0,
+      "score_percent": 4.296875
+    }
+  ],
+  "completed_blocks": 84,
+  "planned_blocks": 84,
+  "games_completed": 10752,
+  "elapsed_seconds": 1753.6662924349075,
+  "timing": {
+    "oak_search": {
+      "calls": 391294,
+      "total_seconds": 4571.504449644359,
+      "mean_ms": 11.68304254510511,
+      "median_ms": 8.748157473746687,
+      "p95_ms": 28.190345037728548
+    },
+    "policy_inference": {
+      "calls": 450905,
+      "total_seconds": 110.068024329,
+      "mean_ms": 0.2441046879697497,
+      "median_ms": 0.174011,
+      "p95_ms": 0.262642
+    }
+  },
+  "limitations": [
+    "Oak sees the full native state; learned policies see private observations.",
+    "Oak searches in its own engine fork, which is not transition-identical to the authoritative native engine.",
+    "Timing is wall clock on this machine; three benchmark workers run concurrently.",
+    "Specialists have fixed species/lead but learned moves; the master drafts freely.",
+    "Latest checkpoint versions are mixed round 2/3; this is not a same-training-budget comparison.",
+    "Fixed battle/draft seeds and alternating seats; Oak search RNG is internally seeded.",
+    "Score = (wins + half draws) / games; a draw may be a 512-update timeout."
+  ],
+  "pre_grid_speed_probe": {
+    "games": 8,
+    "oak_search": {
+      "calls": 281,
+      "total_seconds": 2.443264232482761,
+      "mean_ms": 8.69489050705609,
+      "median_ms": 7.134333020076156,
+      "p95_ms": 17.776406020857394
+    },
+    "policy_inference": {
+      "calls": 323,
+      "total_seconds": 0.055704575000000006,
+      "mean_ms": 0.17245998452012384,
+      "median_ms": 0.16798400000000002,
+      "p95_ms": 0.214017
+    },
+    "note": "Excluded from matchup totals. One Oak worker, with brief overlap from the CPU parity test."
+  }
+}

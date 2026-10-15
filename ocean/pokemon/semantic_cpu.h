@@ -32,6 +32,20 @@ static inline PKCpuMLP pk_cpu_mlp_make(Weights* w, int rows, int in, int mid, in
     return m;
 }
 static inline void pk_cpu_mlp(PKCpuMLP* m, const float* input, int stride) {
+#ifdef PK_CPU_BENCHMARK_GEMM
+    // Optional benchmark acceleration; normal viewer/inference keeps its
+    // existing scalar implementation. Both paths use identical saved weights.
+    extern void pk_benchmark_gemm(const float*,const float*,float*,int,int,int,int,int);
+    pk_benchmark_gemm(input,m->w1,m->hidden,m->rows,stride,m->in,m->mid,PK_AUG(m->in));
+    for(int r=0;r<m->rows;r++)for(int h=0;h<m->mid;h++)
+        m->hidden[r*m->mid+h]=fmaxf(0,m->hidden[r*m->mid+h]+m->w1[h*PK_AUG(m->in)+m->in]);
+    pk_benchmark_gemm(m->hidden,m->w2,m->output,m->rows,m->mid,m->mid,m->out,PK_AUG(m->mid));
+    for(int r=0;r<m->rows;r++)for(int o=0;o<m->out;o++) {
+        float v=m->output[r*m->out+o]+m->w2[o*PK_AUG(m->mid)+m->mid];
+        m->output[r*m->out+o]=m->relu_out?fmaxf(0,v):v;
+    }
+    return;
+#endif
     for (int r = 0; r < m->rows; r++) {
         for (int h = 0; h < m->mid; h++) {
             const float* w = m->w1 + h * PK_AUG(m->in);

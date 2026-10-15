@@ -172,6 +172,35 @@ fn choices(s: *const State, p: usize, out: *[pkmn.CHOICES_SIZE]pkmn.Choice) u8 {
     if (s.result.type != .None) return 0;
     return s.battle.choices(@enumFromInt(p), if (p == 0) s.result.p1 else s.result.p2, out);
 }
+// Evaluation bridge to external search agents. Normal observations stay private.
+export fn pk_benchmark_state(raw: *align(8) const [512]u8, out: *[384]u8) c_int {
+    comptime std.debug.assert(@sizeOf(Battle) == 384);
+    const s: *const State = @ptrCast(raw);
+    @memcpy(out, std.mem.asBytes(&s.battle));
+    return @as(u8, @bitCast(s.result));
+}
+export fn pk_benchmark_choice(raw: *align(8) const [512]u8, player: c_int, encoded_choice: c_int) c_int {
+    if (player < 0 or player > 1 or encoded_choice < 0 or encoded_choice > 255) return -1;
+    const s: *const State = @ptrCast(raw);
+    var cs: [pkmn.CHOICES_SIZE]pkmn.Choice = undefined;
+    const p: usize = @intCast(player);
+    for (cs[0..choices(s,p,&cs)]) |c| {
+        if (@as(u8,@bitCast(c)) == encoded_choice) return @intCast(action(s,p,c));
+    }
+    return -1;
+}
+export fn pk_benchmark_fields(raw: *align(8) const [512]u8, out: *[192]u16) void {
+    const s: *const State = @ptrCast(raw);
+    for (s.battle.sides,0..) |side,p| {
+        for (side.pokemon,0..) |mon,i| {
+            const b=(p*6+i)*16;
+            out[b..][0..8].* = .{@intFromEnum(mon.species),mon.hp,mon.level,mon.status,mon.stats.hp,mon.stats.atk,mon.stats.def,mon.stats.spe};
+            for (mon.moves,0..) |move,j| {
+                out[b+8+2*j]=@intFromEnum(move.id);out[b+9+2*j]=move.pp;
+            }
+        }
+    }
+}
 export fn pk_mask(raw: *align(8) const [512]u8, player: c_int, out: *[ACTIONS]u8) void {
     @memset(out, 0);
     if (player < 0 or player > 1) return;

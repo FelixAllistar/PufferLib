@@ -29,6 +29,10 @@ const char* pk_move_name(int move);
 int pk_set_move(int set, int slot);
 int pk_species_set(int species, int variant);
 int pk_species_count(int species);
+// Benchmark-only full-state export. Never fed to the learned policy.
+int pk_benchmark_state(const PKBattle*, uint8_t out[384]);
+int pk_benchmark_choice(const PKBattle*, int player, int encoded_choice);
+void pk_benchmark_fields(const PKBattle*, uint16_t out[192]);
 #ifdef __cplusplus
 }
 #endif
