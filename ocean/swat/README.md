@@ -575,6 +575,25 @@ When mixing native Windows and a WSL Linux server, use the WSL interface IP
 and Windows host gateway IP respectively; UDP loopback forwarding is not
 assumed. The default native Windows host/join path avoids that extra boundary.
 
+Native network checks should run through a fixed executable path, including
+candidate builds kept in review folders:
+
+```sh
+bash ocean/swat/run-windows-network-test.sh build/swat/review/hinge-axis/test_net.exe
+bash ocean/swat/run-windows-network-test.sh build/swat/review/hinge-axis/test_wall_support.exe "$(wslpath -aw build/swat/wall-support-test.sgrp)"
+```
+
+The runner copies each candidate to its standard `build/swat/windows/test_net.exe`
+or `test_wall_support.exe` path and serializes runs of that test. The archived
+candidate remains available for checksums and reproduction. Arguments pass
+through unchanged; convert file arguments with `wslpath -aw` when calling from WSL.
+Windows Firewall approvals apply to executable paths, so new review directories
+otherwise create new approval prompts. Existing approvals at the standard paths
+can be reused across rebuilds; a new test or network profile can still require
+an initial approval. The runner changes no firewall rules or network-test coverage.
+Felix prefers keeping the complete native checks even if Windows prompts recur.
+See [Microsoft's firewall rule documentation](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/rules).
+
 The graybox weapon model, actors, and HUD use procedural Raylib geometry.
 No assets from Ready or Not or SWAT 4 are included.
 
