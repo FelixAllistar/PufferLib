@@ -1,9 +1,15 @@
 """Verify accelerated logits and identical real-game trajectories against scalar CPU."""
 import ctypes as C
+import argparse
 import json
 from pathlib import Path
 from oak_benchmark import adapter, load_team, ROOT
 
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--checkpoint', type=Path, action='append', help='Repeat to check multiple architectures/checkpoints')
+parser.add_argument('--output', type=Path, default=ROOT/'reports/pokemon_benchmarks/20261014/blas-validation.json')
+args=parser.parse_args()
+args.output.parent.mkdir(parents=True, exist_ok=True)
 out=ROOT/'reports/pokemon_benchmarks/20261014'
 team,_=load_team('zam_egg_mie',out)
 packed=(C.c_uint8*30)(*[x for mon in team for x in mon])
@@ -11,9 +17,10 @@ libraries=[adapter(),adapter('benchmark_adapter_blas.so')]
 for lib in libraries:
     lib.bench_logits.argtypes=[C.c_void_p,C.c_void_p]
 maximum=0;steps=0
-for checkpoint in [
+checkpoints=args.checkpoint or [
     ROOT/'leagues/pokemon/ou_leads_rr50m/members/master/r000003-a001/weights.bin',
-    ROOT/'leagues/pokemon/free4/members/master/r000011-a001/weights.bin']:
+    ROOT/'leagues/pokemon/free4/members/master/r000011-a001/weights.bin']
+for checkpoint in checkpoints:
     handles=[lib.bench_create(str(checkpoint).encode(),0) for lib in libraries]
     try:
         for game in range(16):
@@ -38,6 +45,7 @@ for checkpoint in [
     finally:
         for lib,h in zip(libraries,handles):lib.bench_destroy(h)
 assert maximum<1e-3,maximum
-report={'games':32,'transitions':steps,'max_absolute_logit_error':maximum,'actions_and_native_states_identical':True}
-(out/'blas-validation.json').write_text(json.dumps(report,indent=2)+'\n')
+report={'games':16*len(checkpoints),'checkpoints':[str(p) for p in checkpoints],
+        'transitions':steps,'max_absolute_logit_error':maximum,'actions_and_native_states_identical':True}
+args.output.write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report))
