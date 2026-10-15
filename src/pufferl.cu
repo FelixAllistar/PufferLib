@@ -2820,7 +2820,10 @@ static_assert(sizeof(TrainResult) == 784, "update the Kag sweep worker's pipe AB
 #define EVAL_SCORE 1
 #define EVAL_MATCH 2
 
-#define SELFPLAY_MAX_HIST 8
+// Named leagues can expose the full 32-bank Pokemon roster. Policy tensors and
+// layouts are dynamically allocated; this small bookkeeping array was the only
+// remaining eight-opponent limit.
+#define SELFPLAY_MAX_HIST 32
 #define SELFPLAY_MAX_LADDER 16
 #define SELFPLAY_PATH_MAX 4096
 // One historical opponent ↔ policies[policy_idx] (env tag == policy_idx).
