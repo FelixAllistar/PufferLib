@@ -1,0 +1,20 @@
+[
+  {
+    "path": "/workspace/PufferLib/checkpoints/mario_sim/sweep_1791860385632_0026/0000001999634432.bin",
+    "sha256": "01b3f5f86f335e0b3cb0cf0ce0c652774b284061da3eb32149333817dec8fcf0",
+    "size": 1965248,
+    "local_path": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791860385632_0026/0000001999634432.bin"
+  },
+  {
+    "path": "/workspace/PufferLib/checkpoints/mario_sim/sweep_1791860385632_0026/0000001999634432.bin.curriculum",
+    "sha256": "f74de2c929e8f8a9706dc7c40ac39372c57ad4d69ab1dd339e1c36b00b2795b6",
+    "size": 32976,
+    "local_path": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791860385632_0026/0000001999634432.bin.curriculum"
+  },
+  {
+    "path": "/workspace/PufferLib/checkpoints/mario_sim/sweep_1791860385632_0026/0000001999634432.bin.curriculum.json",
+    "sha256": "f528c9f079c8f191a31370e1ddc318e10179202b17d59a4f0b6a9ef147e9f3bc",
+    "size": 839,
+    "local_path": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1791860385632_0026/0000001999634432.bin.curriculum.json"
+  }
+]

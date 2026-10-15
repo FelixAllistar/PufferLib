@@ -1,0 +1,49 @@
+{
+  "baseline_run": 26,
+  "active_dimensions": {
+    "train.minibatch_size": [
+      1024.0,
+      2048.0,
+      "uniform_pow2"
+    ],
+    "train.learning_rate": [
+      3e-05,
+      0.0006,
+      "log_normal"
+    ],
+    "train.ent_coef": [
+      1e-05,
+      0.0002,
+      "log_normal"
+    ],
+    "train.gamma": [
+      0.9975,
+      0.9997,
+      "logit_normal"
+    ],
+    "train.gae_lambda": [
+      0.94,
+      0.995,
+      "logit_normal"
+    ],
+    "train.replay_ratio": [
+      0.75,
+      1.75,
+      "uniform"
+    ]
+  },
+  "fixed_training_parameters": {
+    "train.horizon": 128,
+    "train.vtrace": 0,
+    "train.vtrace_rho_clip": 3.40632558,
+    "train.vtrace_c_clip": 1.0,
+    "train.clip_coef": 0.362240344,
+    "train.vf_coef": 1.18343806,
+    "train.vf_clip_coef": 2.15372181,
+    "train.max_grad_norm": 0.353460759,
+    "train.momentum": 0.941101253
+  },
+  "steps": 2000000000,
+  "runs": 128,
+  "launched": false
+}

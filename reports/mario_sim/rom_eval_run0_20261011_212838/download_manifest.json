@@ -1,0 +1,98 @@
+{
+  "0000000268435456.bin": {
+    "bytes": 1965248,
+    "sha256": "1c35d4a73a19650df78e2130b9eb5fab2e90b57c4ec2d38837353cae7b46ec8f"
+  },
+  "0000000268435456.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "491a0c1540d346cd8683d994dcd698e7a1bae96dbdc281e00b0dc2bdbf956584"
+  },
+  "0000000268435456.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  },
+  "0000000536870912.bin": {
+    "bytes": 1965248,
+    "sha256": "31aa88257ed8da3009c801a10faef239ead6e794ba04a55687eea44751b77923"
+  },
+  "0000000536870912.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "a56511fdafcb26f37d314f7d05f3fd352aa4169b25b8285e1a42b80bee07ade5"
+  },
+  "0000000536870912.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  },
+  "0000000805306368.bin": {
+    "bytes": 1965248,
+    "sha256": "adddce586fe7fa942f105ac49e1b66c3c6327ad5b02383ec27e8686190b525ee"
+  },
+  "0000000805306368.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "28b07e30ecb8745f9c0c5e294ec12ea60ca5872ff3cf65e512fa2c2e1fa1cb47"
+  },
+  "0000000805306368.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  },
+  "0000001073741824.bin": {
+    "bytes": 1965248,
+    "sha256": "5eb4cc917bbe6a4992fdf2c03132477f43245b077d06be35632a5c78a9cd1644"
+  },
+  "0000001073741824.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "da87c4cd72e4ef67b5753d45be95fffaa6b6923cf58276d189942e966331b0a6"
+  },
+  "0000001073741824.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  },
+  "0000001342177280.bin": {
+    "bytes": 1965248,
+    "sha256": "c53c61b4c6743b9f70cfdb2b177de0b0d8f3e3d78b6993fcb0873b2ec8a654a0"
+  },
+  "0000001342177280.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "a0af12619d801467365201eb9bc9e0657668c6ef0e789ec4413ae2f253dde5bb"
+  },
+  "0000001342177280.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  },
+  "0000001610612736.bin": {
+    "bytes": 1965248,
+    "sha256": "5aa500a8d1fc531610463030fce25e9bf3ac22ce1374a54a5b0203911c28953a"
+  },
+  "0000001610612736.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "616f7eea337f009613dd36aac794e67176da90667b80f642de091c587f503cc6"
+  },
+  "0000001610612736.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  },
+  "0000001879048192.bin": {
+    "bytes": 1965248,
+    "sha256": "8c3c460101ced63ca217828be04d83b486047ee452ca10ac6c68a4d8de0469d8"
+  },
+  "0000001879048192.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "94eb09cb0813b9e5896be5edd907d5e4944f8e4fa5b54e9370035dea8ae2dc30"
+  },
+  "0000001879048192.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  },
+  "0000001999896576.bin": {
+    "bytes": 1965248,
+    "sha256": "444c695c4feb054d4594165d34663732ef3b82eb2ac98d19adb96800c2e7f856"
+  },
+  "0000001999896576.bin.curriculum": {
+    "bytes": 32976,
+    "sha256": "e49f7af39e6ec194d6d6651aefeba4e73d1076964cb8ba725fcf1a4c256eceaa"
+  },
+  "0000001999896576.bin.curriculum.json": {
+    "bytes": 837,
+    "sha256": "dc2e020512bdde43fea6e51512b12e1f57c8d0d033d4fd87c656944456da857b"
+  }
+}

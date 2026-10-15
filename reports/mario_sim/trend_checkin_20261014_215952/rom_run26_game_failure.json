@@ -1,0 +1,28 @@
+{
+  "run": 26,
+  "panel": "all_32_stages",
+  "valid": false,
+  "episodes_completed": 8,
+  "episodes_requested": 32,
+  "failure": {
+    "episode": 8,
+    "scene": 8,
+    "frames": 2334,
+    "native_status": 0,
+    "rom_status": 0,
+    "failure": "native_state",
+    "field": 2048,
+    "start_x": 40,
+    "max_overworld_x": 2990,
+    "final_x": 2428,
+    "touched_flag": false,
+    "fpg": false,
+    "level_clear": false,
+    "progress_pixels": 2844,
+    "checkpoints": 22,
+    "life_losses": 1,
+    "clears": 0,
+    "episode_return": 0.55
+  },
+  "note": "Native/ROM state mismatch; incomplete panel must not be used as a full-game score. New 10B sweep remains running as requested."
+}

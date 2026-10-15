@@ -1,0 +1,12 @@
+panel,episodes,run0_successes,run12_successes,run0_level_clears,run12_level_clears,run0_mean_progress_pixels,run12_mean_progress_pixels,run12_mismatches
+game_all_stages,32,0,0,16,22,2980.21875,3486.375,0
+new_game_1_1,32,10,13,10,13,0,0,0
+fpg_3,64,64,64,0,0,0,0,0
+fpg_8,64,0,62,0,0,0,0,0
+fpg_16,64,0,0,0,0,0,0,0
+fpg_24,64,0,0,0,0,0,0,0
+fpg_32,64,0,0,0,0,0,0,0
+fpg_64,64,0,0,0,0,0,0,0
+fpg_96,64,0,0,0,0,0,0,0
+fpg_128,64,0,0,0,0,0,0,0
+fpg_425,64,0,0,0,0,0,0,0

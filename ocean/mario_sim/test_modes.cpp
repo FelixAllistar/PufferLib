@@ -1,8 +1,32 @@
 #define SMB_HEADLESS
 #include "mario_sim.h"
 #include "test_common.h"
+static void check_sweep_score() {
+    Log log={};Dict metrics={};
+    log.game_episodes=4;log.game_progress_pixels=4*3400;
+    log.fpg_episodes=20;log.curriculum_frames=20*214;
+    puf_log(&log,&metrics);
+    fpt_check(fabs(dict_get(&metrics,"sweep_score")-.875)<1e-6,"sweep score mixes task denominators");
+    log.episode_return=1e6;log.target_frames=1e6;log.successes=20;
+    puf_log(&log,&metrics);
+    fpt_check(fabs(dict_get(&metrics,"sweep_score")-.875)<1e-6,"reward or timing allowance changed sweep score");
+    log.game_progress_pixels*=2;
+    puf_log(&log,&metrics);
+    fpt_check(fabs(dict_get(&metrics,"sweep_score")-1.625)<1e-6,"sweep score caps multi-area game progress");
+    // vec_log normalizes all counters by the combined episode count first.
+    for(size_t k=0;k<sizeof(Log)/sizeof(float);k++)((float*)&log)[k]/=24;
+    puf_log(&log,&metrics);
+    fpt_check(fabs(dict_get(&metrics,"sweep_score")-1.625)<1e-6,"normalized logs changed sweep score");
+    log={};log.fpg_episodes=20;log.curriculum_frames=60;
+    puf_log(&log,&metrics);
+    fpt_check(dict_get(&metrics,"sweep_score")==0,"initial FPG depth counted as advancement");
+    log={};puf_log(&log,&metrics);
+    fpt_check(dict_get(&metrics,"sweep_score")==0,"empty log has nonzero sweep score");
+    dict_clear(&metrics);
+}
 int main() {
     try {
+        check_sweep_score();
         Ini ini={};puf_ini_load_file(&ini,"config/mario_sim.ini");
         dict_set(puf_ini_section(&ini,"vec",0),"total_agents",4);
         dict_set(puf_ini_section(&ini,"game",0),"max_frames",17);
@@ -29,6 +53,6 @@ int main() {
         const char* path="build/mario_sim/mixed_test_cpu_checkpoint.bin";{std::ofstream out(path);out<<"CPU mixed test";}
         fpt_cpu_save(path,nullptr);auto saved=fpt_read_progress(path);fpt_check(saved.progress.size()==1,"CPU checkpoint included game actors");
         for(auto& e:envs)puf_close(&e);puf_ini_free(&ini);
-        printf("{\"CPU_modes\":true,\"config_sections\":true,\"mixed_metrics\":true,\"legacy_resume\":true,\"failures\":0}\n");return 0;
+        printf("{\"CPU_modes\":true,\"config_sections\":true,\"mixed_metrics\":true,\"sweep_score\":true,\"legacy_resume\":true,\"failures\":0}\n");return 0;
     }catch(const std::exception& e){fprintf(stderr,"CPU modes test: %s\n",e.what());return 1;}
 }

@@ -1,0 +1,51 @@
+{
+  "runs": 128,
+  "steps_per_trial": 2000000000,
+  "completed_steps_range": [
+    1999634432,
+    1999634432
+  ],
+  "total_steps": 256000000000,
+  "fresh_weights": true,
+  "mode": "mixed",
+  "actors": [
+    4096
+  ],
+  "buffers": 4,
+  "threads": 12,
+  "annealing": false,
+  "metric": "sweep_score",
+  "rom_evaluation": false,
+  "varying_parameters": {
+    "train.minibatch_size": [
+      1024.0,
+      2048.0,
+      "uniform_pow2"
+    ],
+    "train.learning_rate": [
+      3e-05,
+      0.0006,
+      "log_normal"
+    ],
+    "train.ent_coef": [
+      1e-05,
+      0.0002,
+      "log_normal"
+    ],
+    "train.gamma": [
+      0.9975,
+      0.9997,
+      "logit_normal"
+    ],
+    "train.gae_lambda": [
+      0.94,
+      0.995,
+      "logit_normal"
+    ],
+    "train.replay_ratio": [
+      0.75,
+      1.75,
+      "uniform"
+    ]
+  }
+}

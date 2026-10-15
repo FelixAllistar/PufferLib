@@ -1,0 +1,200 @@
+{
+  "run0": {
+    "new_game_1_1": {
+      "episodes_completed": 32,
+      "rom_successes": 10,
+      "deaths": 22,
+      "timeouts": 0,
+      "mean_success_frames": 2327.9
+    },
+    "all_stage_game": {
+      "episodes_completed": 32,
+      "game_clear_episodes": 10,
+      "level_clears": 16,
+      "rom_successes": 0,
+      "mean_progress_pixels": 2980.21875,
+      "deaths": 32,
+      "timeouts": 0
+    },
+    "fpg": [
+      {
+        "reference_frames": 3,
+        "episodes": 64,
+        "successes": 64,
+        "normal_flags": 0,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 8,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 45,
+        "deaths": 0,
+        "timeouts": 19
+      },
+      {
+        "reference_frames": 16,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 58,
+        "deaths": 0,
+        "timeouts": 6
+      },
+      {
+        "reference_frames": 24,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 64,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 32,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 62,
+        "deaths": 0,
+        "timeouts": 2
+      },
+      {
+        "reference_frames": 64,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 41,
+        "deaths": 0,
+        "timeouts": 23
+      },
+      {
+        "reference_frames": 96,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 60,
+        "deaths": 0,
+        "timeouts": 4
+      },
+      {
+        "reference_frames": 128,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 64,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 425,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 1,
+        "deaths": 63,
+        "timeouts": 0
+      }
+    ]
+  },
+  "run12": {
+    "new_game_1_1": {
+      "episodes_completed": 32,
+      "rom_successes": 13,
+      "deaths": 19,
+      "timeouts": 0,
+      "mean_success_frames": 2117.53846154
+    },
+    "all_stage_game": {
+      "episodes_completed": 32,
+      "game_clear_episodes": 14,
+      "level_clears": 22,
+      "rom_successes": 0,
+      "mean_progress_pixels": 3486.375,
+      "deaths": 32,
+      "timeouts": 0
+    },
+    "fpg": [
+      {
+        "reference_frames": 3,
+        "episodes": 64,
+        "successes": 64,
+        "normal_flags": 0,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 8,
+        "episodes": 64,
+        "successes": 62,
+        "normal_flags": 2,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 16,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 64,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 24,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 64,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 32,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 64,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 64,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 64,
+        "deaths": 0,
+        "timeouts": 0
+      },
+      {
+        "reference_frames": 96,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 10,
+        "deaths": 0,
+        "timeouts": 54
+      },
+      {
+        "reference_frames": 128,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 9,
+        "deaths": 0,
+        "timeouts": 55
+      },
+      {
+        "reference_frames": 425,
+        "episodes": 64,
+        "successes": 0,
+        "normal_flags": 0,
+        "deaths": 64,
+        "timeouts": 0
+      }
+    ]
+  },
+  "run0_totals": {
+    "episodes": 640,
+    "frames": 367022,
+    "mismatches": 0
+  },
+  "run12_totals": {
+    "episodes": 640,
+    "frames": 474085,
+    "mismatches": 0
+  },
+  "same_evaluator": true,
+  "same_configs": true,
+  "same_seed": true,
+  "same_episode_counts": true
+}

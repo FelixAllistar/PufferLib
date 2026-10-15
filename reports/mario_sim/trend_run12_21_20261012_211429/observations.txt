@@ -1,0 +1,7 @@
+Compared completed native 2B trials 12 through 21. All game/FPG settings, actor counts, architecture, seed, and initial load path are identical. Only training hyperparameters vary. These are final training logging-window metrics, not a fixed evaluation panel or whole-run mean. All scores were verified against 0.75*game_pixels/3400 + 0.25*max(0,(curriculum_frames-3)/422).
+
+Run 12 remains the overall winner; run 14 is fastest and second best in this group. Runs 14 and 19 use replay_ratio=0.25 and finish in 73/77 minutes, but their FPG curriculum remains at 3/4. Run 20 uses replay_ratio=2.10, takes 177 minutes, and has the worst score. Learning rates >=0.001 (16/18/20) underperform run 12, but many dimensions change together and this is not a controlled causal comparison.
+
+Run 13 remains unusual: 47.8% FPG success and 39.3% frontier success in training, plus independent prior ROM diagnostic of 63/64 successes at a 64-frame start. Run 21 reaches mean historical curriculum depth 191.4 but current frontier success is zero. That does not establish retained ability at 192-frame starts; it needs a fixed-start evaluation.
+
+Sweep objective uses only the last complete-episode logging snapshot with downsample=1. There is no persisted full learning curve for these runs. Short-window sampling can exaggerate differences; run 12 previously showed independent ROM improvement against run 0, but no matching game panel was run for trials 14-21 during this comparison.

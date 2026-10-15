@@ -133,16 +133,15 @@ Logs report `curriculum_frames`, `curriculum_start_frames`, `frontier_perf`,
 `frontier_fraction` and `curriculum_promotions`. The ordinary `perf` includes
 easier practice and should be read alongside difficulty. Checkpoint JSON reports
 show actor counts per band; these are not weighted by episode length.
-The broad sweep below logs these training metrics but ranks fixed game and FPG
-evaluation panels, so easier replay cannot inflate the search score.
+The broad sweep uses game progress pixels and FPG curriculum frames as a cheap
+training-progress objective. Timing allowances (`target_frames`) and raw FPG
+success rates do not contribute. ROM evaluation remains a separate tool.
 
 ## Broad hyperparameter sweep
 
-The default sweep now trains the mixed task: 75% game frames and 25% FPG
-practice, with fresh weights and curriculum, both annealings off, and a 30M-frame
-budget per trial. The 17 varying parameters cover model size and PPO/Muon,
-including horizon, minibatch, learning rate, entropy, advantage settings,
-clipping, replay, momentum, and V-trace. Actor count and buffers stay fixed.
+The default sweep trains the mixed task: 75% game frames and 25% FPG practice,
+with fresh weights/curriculum and a 2B-frame budget per trial. The native trainer
+reports the search score directly; it does not invoke the ROM evaluator.
 FPG timing rewards and curriculum rules are held constant in this search.
 
 ```sh
@@ -152,11 +151,11 @@ python3 ocean/mario_sim/sweep.py --dry-run
 python3 ocean/mario_sim/sweep.py
 ```
 
-See [the mixed sweep protocol and ranges](README.md#fresh-30m-step-sweep).
-Every trial is ranked using actual-ROM game progress/clears plus a fixed FPG
-panel, rather than its sampled training success rate or curriculum frontier.
-The previous FPG-only 67M setup has been replaced. Historical FPG sweep results
-remain in `results/sweep_setup_20261008/`.
+See [the mixed sweep protocol and ranges](README.md#fresh-2b-step-sweep).
+The objective combines separately normalized game pixels and curriculum
+advancement, with 75/25 weights. It is a training proxy, so selected checkpoints
+can still be checked with the independent ROM tools below. Historical FPG
+sweep results remain in `results/sweep_setup_20261008/`.
 
 ## Historical RAM-policy learning trial
 

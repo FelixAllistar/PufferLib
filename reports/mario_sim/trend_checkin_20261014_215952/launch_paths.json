@@ -1,0 +1,6 @@
+{
+  "profile": "/workspace/PufferLib/reports/mario_sim/launch_tight_10b_20261014/tight_run26_10b.ini",
+  "output": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014",
+  "session": "ssh_tmux",
+  "pane": "ssh_tmux:0.0"
+}

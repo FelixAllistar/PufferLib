@@ -1,0 +1,74 @@
+[
+  {
+    "run_id": "sweep_1791860385632_0026",
+    "checkpoint": "0000000536870912.bin.curriculum.json",
+    "steps": 536870912,
+    "median": 192,
+    "mean": 213.312,
+    "max": 256,
+    "min": 128
+  },
+  {
+    "run_id": "sweep_1791860385632_0026",
+    "checkpoint": "0000001073741824.bin.curriculum.json",
+    "steps": 1073741824,
+    "median": 425,
+    "mean": 423.032,
+    "max": 425,
+    "min": 128
+  },
+  {
+    "run_id": "sweep_1791860385632_0026",
+    "checkpoint": "0000001610612736.bin.curriculum.json",
+    "steps": 1610612736,
+    "median": 425,
+    "mean": 423.26,
+    "max": 425,
+    "min": 128
+  },
+  {
+    "run_id": "sweep_1791860385632_0026",
+    "checkpoint": "0000001999634432.bin.curriculum.json",
+    "steps": 1999634432,
+    "median": 425,
+    "mean": 424.027,
+    "max": 425,
+    "min": 128
+  },
+  {
+    "run_id": "sweep_1791967958445_0042",
+    "checkpoint": "0000000536870912.bin.curriculum.json",
+    "steps": 536870912,
+    "median": 96,
+    "mean": 95.9375,
+    "max": 96,
+    "min": 64
+  },
+  {
+    "run_id": "sweep_1791967958445_0042",
+    "checkpoint": "0000001073741824.bin.curriculum.json",
+    "steps": 1073741824,
+    "median": 192,
+    "mean": 192.625,
+    "max": 256,
+    "min": 128
+  },
+  {
+    "run_id": "sweep_1791967958445_0042",
+    "checkpoint": "0000001610612736.bin.curriculum.json",
+    "steps": 1610612736,
+    "median": 425,
+    "mean": 425,
+    "max": 425,
+    "min": 425
+  },
+  {
+    "run_id": "sweep_1791967958445_0042",
+    "checkpoint": "0000001999634432.bin.curriculum.json",
+    "steps": 1999634432,
+    "median": 425,
+    "mean": 425,
+    "max": 425,
+    "min": 425
+  }
+]
