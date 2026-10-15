@@ -1,0 +1,54 @@
+Room 101 hinge assembly and failure remnants — 2026-10-15
+
+Felix approved this follow-up after the verified three-hinge source handoff.
+Scope: a compact hardware/remnant kit for the accepted motel door, preserving
+the accepted slab surfaces, UVs and maps. Native integration remains engine work.
+Sent in the existing artist thread using the Slack connector:
+https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792069331220309?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+
+Verified source facts (artist's 2026-10-15 handoff):
+Source: https://drive.google.com/file/d/1OsWdtrOmgvHDr49SPdDNF9k2jqGpOV1p/view
+Three disconnected decorative barrels belong to the moving leaf mesh.
+GLB centres (metres): (.018,.23,0), (.018,1.10,0), (.018,1.92,0).
+Bounds X=.003..033, Z=+/- .0142658474, Y=.18..28 / 1.05..1.15 / 1.87..1.97.
+Original Blender centres: (.018,0,.23), (.018,0,1.10), (.018,0,1.92).
+The hinge-named facade casing/caulk is fixed trim, not metal hinge hardware.
+The separate handle/latch is leaf-owned; its backplate is near (.96,1.04,.041).
+No matching fixed metal halves, pins or torn-wood remnants exist in that source.
+The reported barrel-to-jamb gap is 20.5 mm.
+
+Engine coordinate contract:
+Proper source-to-runtime rotation: (-source Z, source Y, source X).
+For the actual 1.08 x 2.19 m slab, local origin is at its centre in ALL axes.
+Barrel centres: (0,-.865,-.522), (0,.005,-.522), (0,.825,-.522).
+Logical pivot anchors: (0,-.865,-.54), (0,.005,-.54), (0,.825,-.54).
+Other game slab sizes scale Y by half-height/1.095 and Z by half-width/.54.
+All world yaw/placement is applied after this local transform.
+Runtime damage probes remain at the visible barrel/wood locations. The last
+surviving hinge constraint shares the normal door opening axis, source X=0.
+These are game attachment locations, not measured hardware strength claims.
+The edge latch support is separate from the visual backplate centre.
+
+Requested deliverable:
+1. A seated assembly at all THREE heights: explicit leaf metal, fixed jamb
+   metal and pin ownership, with existing source materials/maps reused.
+2. Small failure remnants: jamb metal and exposed wood at a failed attachment,
+   and any retained leaf hardware. Keep components separately addressable per
+   hinge and owner. Explain which parts hide or remain for each failure state.
+3. Preserve the accepted door body/finish/UV/maps. The old decorative barrels
+   are leaf-owned and 18 mm off the logical axis; do not silently duplicate
+   them with a second hinge or bridge that obstructs opening. If a seated joint
+   needs those barrels replaced/repositioned, deliver a separate named hardware
+   candidate plus an exact old-to-new component map; leave frozen source intact.
+4. Demonstrate closed, 45-degree and 90-degree opening about source X=0, plus
+   one failed hinge, last-hinge hanging and detached states. Include close views
+   of the pin/bore/jamb seating and a numerical swept clearance/contact check.
+   The decorative source and logical pivot cannot be treated as coaxial.
+5. Include editable source, compact runtime export, node names, original-space
+   mounts/pivot, ownership/failure-state table, material and triangle counts,
+   provenance and review images. Preserve the original source alongside any
+   candidate so the engine can verify the accepted slab and maps are unchanged.
+
+Acceptance is native visual/physics/replica review after delivery. This request
+does not replace the accepted leaf with an unrelated door model. Existing SEAT01
+may be a hardware reference if useful; its native fit here remains unverified.

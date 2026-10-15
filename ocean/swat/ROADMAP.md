@@ -12,6 +12,38 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Door pivot/source follow-up (2026-10-15): the three leaf-owned decorative
+barrels remain the damage locations; last-hinge constraints use the logical
+opening axis 18 mm toward the leaf edge. Damage probes and physics anchors are
+now distinct, including snapshot validation. Ordinary opening, body/query
+orientation, imported skins/backing, attachments and restored bodies share the
+physics library's deterministic rotation calculation. The leaf centre and
+swept obstruction bounds derive from that same rotation. Achieved-pose heading
+uses the library's deterministic inverse trig instead of platform libc results.
+Protocol/replay v25 requires fresh matched peers and recordings/saves.
+
+The artist's source confirmation also establishes that the fixed hinge halves,
+pins and failure remnants do not exist in the accepted model. Felix approved
+and the engine sent a [focused hardware/remnant request](art_handoffs/motel-door-hinges/request.txt)
+in the existing Slack thread, preserving the accepted slab/UV/maps and all three
+source heights. New hardware remains pending delivery and native acceptance.
+
+Linux and native Windows checks cover the independent source anchors, 48
+rotated/scaled body/query/restoration comparisons and nine last-hinge opening
+cases. The ordinary finite-charge/eleven-shot door sequence preserves 1,314
+exact replay ticks, in-flight save/resume and matching replay in both directions
+between the two platforms. Live/late replicas, physical crossing, source viewer
+attachment and malformed-state rejection pass. Twelve grazing views per platform
+have zero missing solid-door pixels; hanging/fallen silhouettes agree with
+125,090 physical ray samples per platform outside the existing 4 mm raster
+boundary. Seven support-shadow and 56 general cached/full comparisons pass.
+Both platforms also pass all four complete motel approaches with exact replay,
+mid-run save/resume, fresh replicas and truthful debriefs, plus generated maps,
+movement/navigation, tactical/device/sound, wall support, contact and UDP checks.
+Evidence is under `build/swat/review/hinge-axis`. The normal players, servers
+and replay/performance tools are rebuilt; no stable-load performance or full
+vertical-slice acceptance is claimed by this increment.
+
 Door attachment failure (2026-10-14): ordinary impacts can remove three
 independent hinge attachments at the frozen motel source's hinge locations.
 The retained leaf keeps its original owner/body and clipped surface maps.

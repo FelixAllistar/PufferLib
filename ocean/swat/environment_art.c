@@ -646,7 +646,7 @@ static void clear_surface(const SwatEnvironmentArt* art) {
     swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
 }
 void swat_environment_object_rotate(const SwatObject* o) {
-    if(!o->motion && !o->rubble){rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);return;}
+    if(!o->door && !o->motion && !o->rubble){rlRotatef(o->yaw/SWAT_RAD,0,1,0);rlRotatef(o->pitch/SWAT_RAD,0,0,1);return;}
     b3Quat q=swat_object_rotation(o);
     Matrix rotation=QuaternionToMatrix((Quaternion){q.v.x,q.v.y,q.v.z,q.s});
     rlMultMatrixf(MatrixToFloat(rotation));
@@ -675,7 +675,7 @@ static SwatObject door_art_pose(const SwatObject* o) {
     SwatObject pose=*o;
     // Attached imported skins use the hinge frame. Derive their backing from
     // that same frame; a snapshot's centre reconstruction can differ by an ulp.
-    if(!o->motion)pose.center=b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
+    if(!o->motion)pose.center=swat_door_center(o,o->yaw);
     return pose;
 }
 
@@ -790,14 +790,14 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
     if(p->door) { origin=(Vector3){o->hinge.x,o->hinge.y-o->half.y,o->hinge.z}; yaw=o->yaw-SWAT_PI*.5f; }
     Matrix scale=MatrixScale(p->scale.x,p->scale.y,p->scale.z);
     Matrix transform=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(yaw)),MatrixTranslate(origin.x,origin.y,origin.z));
-    if(o->door && o->motion) {
+    if(o->door) {
         Matrix local;
         if(p->door) {
             local=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(-SWAT_PI*.5f)),MatrixTranslate(0,-o->half.y,-o->half.z));
         } else {
             // A viewer or other mounted detail uses the same achieved pose as
             // its leaf, rather than staying at the old world-space hinge.
-            b3Quat yaw_rotation=swat_rotation(o->yaw,0);
+            b3Quat yaw_rotation=swat_door_rotation(o->yaw,0);
             b3Pos mounted=b3OffsetPos(o->hinge,b3RotateVector(yaw_rotation,swat_v(0,0,o->half.z)));
             b3Vec3 point=b3InvRotateVector(yaw_rotation,b3SubPos(p->origin,mounted));
             local=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(p->yaw-o->yaw)),MatrixTranslate(point.x,point.y,point.z));

@@ -750,7 +750,7 @@ void swat_motel_build(SwatWorld* w) {
         const SwatMotelInstance* p=swat_motel_instance(i); b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw);
         int id=swat_world_box(w,center,half,p->material,p->door?120:0); assert(id==i+1);
         SwatObject* o=&w->objects[id]; swat_world_place(o,yaw);
-        if(p->door) { o->door=true; o->closed_yaw=yaw; o->hinge=(b3Pos){p->origin.x,p->origin.y+1.095f,p->origin.z}; }
+        if(p->door) { o->door=true; o->closed_yaw=yaw; o->hinge=(b3Pos){p->origin.x,p->origin.y+1.095f,p->origin.z};swat_world_tilt(o,0); }
     }
     bool bound=swat_motel_bind_collision(w); assert(bound); (void)bound;
     // Guest-room party walls: same two board faces, studs and charge aperture

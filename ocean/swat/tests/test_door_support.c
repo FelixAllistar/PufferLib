@@ -80,6 +80,76 @@ static void step(int count,bool sync,int owner) {
         if(sync){sync_replica(false);if(!(t%15))rays(owner);}
     }
 }
+static void source_anchors(void) {
+    const float centered_y[3]={-.865f,.005f,.825f};
+    for(int size=1;size<=2;size++) {
+        SwatObject o={.half={.025f,1.095f*size,.54f*size}};
+        for(int h=0;h<3;h++) {
+            b3Vec3 barrel=swat_door_hinge(&o,h),pivot=swat_door_hinge_pivot(&o,h);
+            assert(fabsf(barrel.y-centered_y[h]*size)<1e-6f);
+            assert(fabsf(barrel.z-(-.522f*size))<1e-6f);
+            assert(fabsf(pivot.z-(-.54f*size))<1e-6f && pivot.y==barrel.y && pivot.x==0);
+        }
+    }
+    puts("PASS frozen source anchors: three barrel centres, slab-centred heights, distinct logical pivot and scaled leaf dimensions");
+}
+static void rotated_leaf_pose(void) {
+    static SwatWorld w;
+    const float yaw[4]={.37f,-.91f,2.3f,-SWAT_PI*.5f};
+    for(int size=1;size<=2;size++)for(int facing=0;facing<4;facing++) {
+        swat_world_init(&w);
+        b3Pos hinge={-4,3,7};b3Vec3 half=swat_v(.025f,1.095f*size,.54f*size);
+        b3Pos center=b3OffsetPos(hinge,swat_v(sinf(yaw[facing])*half.z,0,cosf(yaw[facing])*half.z));
+        int owner=swat_world_box(&w,center,half,SWAT_WOOD,120);SwatObject* o=&w.objects[owner];
+        o->door=true;o->hinge=hinge;o->closed_yaw=yaw[facing];o->door_open=true;
+        swat_world_place(o,yaw[facing]);
+        for(int pose=0;pose<3;pose++) {
+            if(pose)for(int t=0;t<(pose==1?24:90);t++)swat_world_step_doors(&w);
+            b3Vec3 corner=swat_v(half.x,half.y,half.z);
+            for(int restored=0;restored<2;restored++) {
+                if(restored)swat_world_tilt(o,0); // Snapshot body's restoration path.
+                b3Quat body=b3Body_GetTransform(o->body).q;
+                assert(b3Length(b3Sub(b3RotateVector(body,corner),b3RotateVector(swat_object_rotation(o),corner)))<1e-6f);
+                assert(b3Distance(point(o,swat_v(0,0,-half.z)),hinge)<1e-6f);
+            }
+        }
+        swat_world_close(&w);
+    }
+    puts("PASS rotated/scaled doors: physical/query/restored-body orientation and fixed opening axis agree at arbitrary closed yaw through the sweep");
+}
+static void open_leaf_failure(void) {
+    const float angles[3]={0,SWAT_PI*.25f,SWAT_PI*.5f};
+    for(int h=0;h<3;h++)for(int pose=0;pose<3;pose++) {
+        int owner=fixture(SWAT_BREACH_LAB);SwatObject* o=&server.world.objects[owner];
+        assert(swat_world_break_latch(&server.world,owner));o->door_open=true;
+        // Use the normal swept opening before failure. Physics must not
+        // receive a different rest attachment when the last hinge takes over.
+        for(int t=0;t<120 && o->door_angle<angles[pose]-1e-6f;t++)swat_world_step_doors(&server.world);
+        assert(fabsf(o->door_angle-angles[pose])<2*SWAT_DT+.00001f);
+        b3Vec3 local=swat_v(0,(h==0?.23f:h==1?1.10f:1.92f)/2.19f*2*o->half.y-o->half.y,-o->half.z);
+        b3Pos fixed=b3OffsetPos(o->hinge,swat_v(0,local.y,0));
+        assert(b3Distance(point(o,local),fixed)<1e-6f);
+        b3Pos start=o->center;b3Quat rotation=swat_object_rotation(o);
+        bool fresh=true;
+        for(int broken=0;broken<3;broken++)if(broken!=h) {
+            sever_hinge(owner,broken);sync_replica(fresh);fresh=false;
+            b3Quat actual=b3Body_GetTransform(o->body).q,remote=b3Body_GetTransform(replica.world.objects[owner].body).q;
+            b3Vec3 corner=swat_v(o->half.x,o->half.y,o->half.z);
+            assert(b3Length(b3Sub(b3RotateVector(actual,corner),b3RotateVector(swat_object_rotation(o),corner)))<1e-6f);
+            assert(b3Length(b3Sub(b3RotateVector(actual,corner),b3RotateVector(remote,corner)))<1e-6f);
+        }
+        assert(o->motion->support==SWAT_DOOR_BOTTOM+h);
+        assert(b3Distance(o->center,start)<1e-6f && !memcmp(&rotation,&o->motion->state.rotation,sizeof(rotation)));
+        b3Transform a=b3Joint_GetLocalFrameA(o->motion->joint),b=b3Joint_GetLocalFrameB(o->motion->joint);
+        assert(b3Length(b3Sub(b.p,local))<1e-6f);
+        assert(b3Distance((b3Pos){a.p.x,a.p.y,a.p.z},fixed)<1e-6f);
+        assert(b3Distance(point(o,b.p),fixed)<1e-6f);
+        step(60,true,owner);
+        assert(b3Distance(point(o,local),fixed)<.003f);
+        swat_sim_close(&replica);swat_sim_close(&server);
+    }
+    puts("PASS open-leaf failure: each last hinge at closed/45/90-degree poses, coincident joint frames without a pose jump, retained pivot and exact live replicas");
+}
 static void hanging_and_falling(int mission) {
     int owner=fixture(mission);SwatObject* o=&server.world.objects[owner];
     b3BodyId body=o->body;b3Pos standing=o->center;
@@ -100,8 +170,8 @@ static void hanging_and_falling(int mission) {
     // The lab has under-leaf clearance; the motel can rest on its real floor
     // and jamb instead of dropping. Both must retain the last physical joint.
     if(mission==SWAT_BREACH_LAB)assert(o->center.y<standing.y-.005f);
-    b3Vec3 top=swat_door_hinge(o,2);
-    b3Pos fixed=b3OffsetPos(o->hinge,b3RotateVector(swat_rotation(o->closed_yaw,0),b3Add(top,swat_v(0,0,o->half.z))));
+    b3Vec3 top=swat_door_hinge_pivot(o,2);
+    b3Pos fixed=b3OffsetPos(o->hinge,b3RotateVector(swat_door_rotation(o->closed_yaw,0),b3Add(top,swat_v(0,0,o->half.z))));
     assert(b3Distance(point(o,top),fixed)<.03f);
     assert(b3Length(b3Sub(mount,b3InvRotateVector(swat_object_rotation(o),b3SubPos(o->breach_position,o->center))))<1e-4f);
     bad=state;bad.objects[owner].door.position.y+=.3f;reject(&bad);
@@ -227,6 +297,7 @@ static void ordinary_input_replay(const char* path) {
 int main(int argc,char** argv) {
     assert(argc<=2);
     b3SetLogFcn(physics_log);
+    source_anchors();rotated_leaf_pose();open_leaf_failure();
     hanging_and_falling(SWAT_BREACH_LAB);hanging_and_falling(SWAT_MOTEL);latch_support();
     const char* path=argc==2?argv[1]:"door-support-test.sgrp";ordinary_input_replay(path);
     if(argc==1){char save[4096];snprintf(save,sizeof(save),"%s.save",path);remove(path);remove(save);}

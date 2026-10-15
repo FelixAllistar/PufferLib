@@ -369,7 +369,7 @@ void swat_traps_step(SwatSim* s) {
         if(!door->active || !door->door || !door->trapped)continue;
         bool moved=door->door_angle>=4*SWAT_RAD;
         if(door->motion) {
-            b3Quat rest=swat_rotation(door->closed_yaw,0),now=swat_object_rotation(door);
+            b3Quat rest=swat_door_rotation(door->closed_yaw,0),now=swat_object_rotation(door);
             b3Pos center=b3OffsetPos(door->hinge,b3RotateVector(rest,swat_v(0,0,door->half.z)));
             float dot=fabsf(b3Dot(rest.v,now.v)+rest.s*now.s);
             moved|=b3Distance(center,door->center)>.04f || dot<cosf(2*SWAT_RAD);

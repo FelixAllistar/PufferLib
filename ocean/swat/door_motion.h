@@ -31,8 +31,8 @@ static void door_motion_support(SwatWorld* w,SwatObject* o) {
         b3BodyDef def=b3DefaultBodyDef();w->door_reference=b3CreateBody(w->id,&def);
     }
     if(support==SWAT_DOOR_FREE){o->locked=false;o->peek=false;o->wedge_owner=-1;return;}
-    b3Vec3 local=support==SWAT_DOOR_LATCH?swat_door_latch(o):swat_door_hinge(o,support-SWAT_DOOR_BOTTOM);
-    b3Quat closed=swat_rotation(o->closed_yaw,0);
+    b3Vec3 local=support==SWAT_DOOR_LATCH?swat_door_latch(o):swat_door_hinge_pivot(o,support-SWAT_DOOR_BOTTOM);
+    b3Quat closed=swat_door_rotation(o->closed_yaw,0);
     b3Pos anchor=b3OffsetPos(o->hinge,b3RotateVector(closed,b3Add(local,swat_v(0,0,o->half.z))));
     b3SphericalJointDef joint=b3DefaultSphericalJointDef();
     joint.base.bodyIdA=w->door_reference;joint.base.bodyIdB=o->body;
@@ -101,7 +101,7 @@ void swat_world_door_restore(SwatWorld* w,int object,const SwatDoorState* state)
     if(!o->active){m->joint=b3_nullJointId;m->support=swat_door_support(state->broken_hinges,state->latched);return;}
     o->center=state->position;
     b3Vec3 normal=b3RotateVector(state->rotation,swat_v(1,0,0));
-    if(normal.x*normal.x+normal.z*normal.z>1e-8f)o->yaw=atan2f(-normal.z,normal.x);
+    if(normal.x*normal.x+normal.z*normal.z>1e-8f)o->yaw=b3Atan2(-normal.z,normal.x);
     b3Body_SetTransform(o->body,state->position,state->rotation);
     door_motion_support(w,o);
     if(m->support!=SWAT_DOOR_FIXED) {
@@ -119,7 +119,7 @@ void swat_world_sync_doors(SwatWorld* w) {
         m->state.velocity=b3Body_GetLinearVelocity(o->body);m->state.angular_velocity=b3Body_GetAngularVelocity(o->body);
         m->state.awake=b3Body_IsAwake(o->body);
         b3Vec3 normal=b3RotateVector(pose.q,swat_v(1,0,0));
-        if(normal.x*normal.x+normal.z*normal.z>1e-8f)o->yaw=atan2f(-normal.z,normal.x);
+        if(normal.x*normal.x+normal.z*normal.z>1e-8f)o->yaw=b3Atan2(-normal.z,normal.x);
         o->door_angle=swat_clamp(swat_angle(o->yaw-o->closed_yaw),0,SWAT_PI*.5f);
         if(o->breach_owner>=0)o->breach_position=b3OffsetPos(o->center,b3RotateVector(pose.q,m->mount));
         if(o->center.y< -8 || b3Distance(o->center,o->hinge)>60)swat_world_damage(w,i,o->max_health);
