@@ -1,0 +1,5 @@
+policy,learner_steps,action_mode,games,wins,draws,losses,score_percent
+untrained_fixed_starmie,0,argmax,384,7,0,377,1.8229166667
+default_trial_fixed_starmie,25165824,argmax,384,87,0,297,22.65625
+untrained_fixed_starmie,0,sampled,384,0,0,384,0
+default_trial_fixed_starmie,25165824,sampled,384,70,0,314,18.2291666667

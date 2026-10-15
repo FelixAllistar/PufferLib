@@ -1,0 +1,10 @@
+{
+  "games": 32,
+  "checkpoints": [
+    "saved/pokemon/starmie_sweep/master/weights.bin",
+    "saved/pokemon/starmie_sweep/mie_egg_don/weights.bin"
+  ],
+  "transitions": 1908,
+  "max_absolute_logit_error": 5.0067901611328125e-06,
+  "actions_and_native_states_identical": true
+}

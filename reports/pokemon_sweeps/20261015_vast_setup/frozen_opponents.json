@@ -1,0 +1,86 @@
+[
+  {
+    "name": "master",
+    "path": "saved/pokemon/starmie_sweep/master/weights.bin",
+    "sha256": "b05573b73a4736a7fcaa23e8db534830309cc38c48e153a5a3b069b81bd5aa34",
+    "config_sha256": "0406f30273fb3bd311452c1b3000d58269bb8827d2f92a891d0420f4cee5457e"
+  },
+  {
+    "name": "zam_egg_mie",
+    "path": "saved/pokemon/starmie_sweep/zam_egg_mie/weights.bin",
+    "sha256": "bde5e8d8755411d07da09e13c79549c03d01f830dee84d5ef6c57ae136f05733",
+    "config_sha256": "22073aec25c3614e32f5d07126d8f69629d04455442a652e3456028a9c590a55"
+  },
+  {
+    "name": "zam_egg_zap",
+    "path": "saved/pokemon/starmie_sweep/zam_egg_zap/weights.bin",
+    "sha256": "5fab53d708e50354fe20e771894c58380028cff1fe164caac630d78142e8220d",
+    "config_sha256": "a51439c9753337da177abca6f74a1b98f44bbdff08c288e2e4d8f657451863c9"
+  },
+  {
+    "name": "zam_egg_gar",
+    "path": "saved/pokemon/starmie_sweep/zam_egg_gar/weights.bin",
+    "sha256": "595895c519e06254c9fb2c6e13060e0deb527879857bf29fc2e52689971470ea",
+    "config_sha256": "f1ac01287ecec41cea5651849079e238641e761e9fa3d224ac2a375239ff0c56"
+  },
+  {
+    "name": "zam_egg_cloy_don",
+    "path": "saved/pokemon/starmie_sweep/zam_egg_cloy_don/weights.bin",
+    "sha256": "58484e28bee39d05be0e51b6ad98ea8d45783e1740c30f5ff626bf64426d4f05",
+    "config_sha256": "57e063db5b8a58d6997d588698a754cb82fd2ecf12e49a8dba404736bf739a49"
+  },
+  {
+    "name": "mie_egg_don",
+    "path": "saved/pokemon/starmie_sweep/mie_egg_don/weights.bin",
+    "sha256": "219f8ea34ffc09e1d26649da83b7c2a12e51c9159921744096022dc6f7196a2f",
+    "config_sha256": "37936052b7d2da1a3ffbf4c52982e6b8a2fe2901aa9eff625b35b2373071b74f"
+  },
+  {
+    "name": "mie_egg_zap",
+    "path": "saved/pokemon/starmie_sweep/mie_egg_zap/weights.bin",
+    "sha256": "148342f1c2c5de0aaa46dc201f1b1f5c986100d837c6fb9a21727dd21296c58e",
+    "config_sha256": "2ee64908f8fe22af8a4325772422164d9ee7743e5a4c7756046d297c1343bbf7"
+  },
+  {
+    "name": "mie_egg_cloy",
+    "path": "saved/pokemon/starmie_sweep/mie_egg_cloy/weights.bin",
+    "sha256": "d2eb246a79ed18f7d7f185d4edf54a2466a1a7d1ff5ee8d103c8ae734d5eccd3",
+    "config_sha256": "70efc47f697bdc5b0c9f2f33bd58de02149606632443bbd8d654373bd9b8d97a"
+  },
+  {
+    "name": "jynx_mie_don",
+    "path": "saved/pokemon/starmie_sweep/jynx_mie_don/weights.bin",
+    "sha256": "752902b000fa84322e43b1307072474b89b0d85e891293e13982df8a192a7de0",
+    "config_sha256": "c7a19d838b2a1085cca1da8d5d6968adaa77f6b0b700a25e814c83f779478cea"
+  },
+  {
+    "name": "jynx_egg_zap",
+    "path": "saved/pokemon/starmie_sweep/jynx_egg_zap/weights.bin",
+    "sha256": "cb2ea64023d58064d2562dbd1401a2872437bc87d38253a356988015b4777fd0",
+    "config_sha256": "659d2f1bdd0ffff3f8bbd8c87a987f32e6064d457e5530a1b3e8496227d9f56c"
+  },
+  {
+    "name": "jynx_egg_gar_zap",
+    "path": "saved/pokemon/starmie_sweep/jynx_egg_gar_zap/weights.bin",
+    "sha256": "07209a5b22569149a38f618aa8bd8a36a52c83f6512a290eac785a86e538c5e6",
+    "config_sha256": "c58120b8328b0bb0ca1b1cf2b5e1ca5b4d0c56fb20fd5736a8c78c3247a22d8f"
+  },
+  {
+    "name": "gar_egg_mie",
+    "path": "saved/pokemon/starmie_sweep/gar_egg_mie/weights.bin",
+    "sha256": "c6c17d6869999bbc109b94bf5a2a1ed981531d9dc0ffed33eb2f58b59c90aec9",
+    "config_sha256": "800fad41a2042205eeb779667282936c82745c03b624c9ae95b82f56bb9a286c"
+  },
+  {
+    "name": "gar_egg_zap",
+    "path": "saved/pokemon/starmie_sweep/gar_egg_zap/weights.bin",
+    "sha256": "1a69e8ed2bf0ecf0a60df9d7c2f88b853e139ac934df1204e4b1afb3d3d550cf",
+    "config_sha256": "eee9e285c9f4f62b6f09f1736ff53ed914911572e15f7fcf2c2a6933234a7fdb"
+  },
+  {
+    "name": "gar_egg_mie_zap",
+    "path": "saved/pokemon/starmie_sweep/gar_egg_mie_zap/weights.bin",
+    "sha256": "d65da914cb2675c9d4eac136c1a0f8235df909c4db9192da0e94105229dc0de2",
+    "config_sha256": "7711e796dee2b2651857430dc1a37803bc061c5e1b5d006d773129e23e133061"
+  }
+]
