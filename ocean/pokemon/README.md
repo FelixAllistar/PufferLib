@@ -307,7 +307,11 @@ Only initial/final learner checkpoints are saved, not periodic checkpoints.
 All trials use the same initial seed and fresh weights; opponents are unchanged.
 
 The native Protein sweep runs 16 full trials, default settings first. No short
-learning-based eliminations are used. Each final checkpoint plays 128 games
+learning-based eliminations are used. The RTX 5060 Ti profile uses 16,384 agent
+rows, two buffers and four CPU threads per buffer. The search varies horizon
+(32/64), minibatch (8192/16384/32768), learning rate, entropy, gamma, lambda,
+replay ratio, clipping, value-loss weight and gradient clipping. The step budget
+is identical for every rollout shape. Each final checkpoint plays 128 games
 against each of three pinned human teams at Oak search budget 4096, with both
 argmax and sampled actions (768 games/trial, balanced player seats). The
 argmax score `(wins + 0.5*draws)/games` is Protein's objective; sampled score is

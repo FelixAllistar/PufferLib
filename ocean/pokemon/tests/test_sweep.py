@@ -24,12 +24,12 @@ class SweepContracts(unittest.TestCase):
         config = sweep.read_config()
         self.assertEqual(sweep.learner_steps(config), 25_165_824)
         for key in ("policy.hidden_size", "policy.num_layers", "vec.total_agents",
-                    "train.total_timesteps", "train.horizon", "train.minibatch_size"):
+                    "train.total_timesteps"):
             section, name = key.split(".")
             self.assertEqual(config["sweep." + key]["min"], config[section][name])
             self.assertEqual(config["sweep." + key]["max"], config[section][name])
         varying = [s for s in config if s.startswith("sweep.") and config[s]["min"] != config[s]["max"]]
-        self.assertEqual(len(varying), 8)
+        self.assertEqual(len(varying), 10)
 
     def test_native_cli_declares_every_option(self):
         native = configparser.ConfigParser(interpolation=None)
@@ -49,12 +49,19 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual(int(config["env"]["learner_lead"]), team[0]["species_id"])
 
     def test_hardware_overrides_lock_matching_ranges(self):
-        config = sweep.read_config(overrides=("--vec.total_agents=16384", "--vec.num_buffers=1"))
+        config = sweep.read_config(overrides=("--vec.total_agents=8192", "--vec.num_buffers=1"))
         self.assertEqual(sweep.learner_steps(config), 25_165_824)
-        self.assertEqual(config["sweep.vec.total_agents"]["min"], "16384")
+        self.assertEqual(config["sweep.vec.total_agents"]["min"], "8192")
         config["train"]["minibatch_size"] = "1000"
         with self.assertRaises(ValueError):
             sweep.learner_steps(config)
+
+    def test_all_searched_rollout_shapes_have_the_same_full_budget(self):
+        for horizon in (32, 64):
+            for minibatch in (8192, 16384, 32768):
+                config = sweep.read_config(overrides=(f"--train.horizon={horizon}",
+                                                     f"--train.minibatch_size={minibatch}"))
+                self.assertEqual(sweep.learner_steps(config), 25_165_824)
 
     def test_scores_include_draws_and_require_complete_panel(self):
         rows = [{"mode": mode, "team": team, "games": 4, "wins": 1,
