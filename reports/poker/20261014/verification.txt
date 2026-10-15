@@ -1,0 +1,17 @@
+Running as unit: run-rd5ff1f90c6594f9ab64d1ea23fcff102.scope; invocation ID: 0e28e3daa1f443029ae800aa9c33556d
+PASS: kernel memory cap <= 6 GiB; swap disabled
+All terms check.
+PASS: kernel memory cap <= 6 GiB; swap disabled
+players=2 hands=20032 steps=84528 seconds=0.205377 decisions_s=411574 hands_s=97538 bytes_table=84 showdown_fraction=0.233 mode=checked
+players=6 hands=20032 steps=195558 seconds=0.480992 decisions_s=406573 hands_s=41647 bytes_table=188 showdown_fraction=0.561 mode=checked
+players=9 hands=20032 steps=274038 seconds=0.990913 decisions_s=276551 hands_s=20216 bytes_table=266 showdown_fraction=0.630 mode=checked
+PASS Puffer adapter players=6 learner_decisions=128000 terminal_hands=83995 seconds=0.744098 learner_decisions_s=172020
+PASS native frozen policy vs PufferNet: logits, separate seat state, terminal reset
+Poker league: 2 frozen H32/L2 banks, 78592 weight bytes
+PASS Puffer adapter players=6 learner_decisions=128000 terminal_hands=71866 seconds=58.430086 learner_decisions_s=2191
+PASS Bend/native side pots, short-all-in reopening, short blind
+PASS acting-seat batching tables=64 decisions=591
+PASS exact ranks/order/suit symmetry samples=20000
+PASS shared-action PokerKit players=2 hands=1000 decisions=5063 oracle_raise_disagreements=0
+PASS shared-action PokerKit players=6 hands=1000 decisions=11784 oracle_raise_disagreements=7
+PASS shared-action PokerKit players=9 hands=1000 decisions=15846 oracle_raise_disagreements=21
