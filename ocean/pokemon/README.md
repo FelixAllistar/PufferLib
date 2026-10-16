@@ -378,3 +378,15 @@ The [CSV](../../reports/pokemon_sweeps/20261015_vast_setup/results.csv),
 [raw score summaries](../../reports/pokemon_sweeps/20261015_vast_setup/default_trial.json),
 and [qualification record](../../reports/pokemon_sweeps/20261015_vast_setup/qualification.json)
 are committed; full match records and checkpoints remain outside Git.
+
+The completed 500-trial sweep selected `sweep_1792079639324_0223` by the Oak
+argmax objective: 233 wins, two draws and 149 losses (60.9375% score). Its ten
+searched PPO settings are now the defaults in `config/pokemon.ini`. The
+[winning native configuration](../../reports/pokemon_sweeps/20261016_winner/winning_trial.ini)
+and [evaluation summary](../../reports/pokemon_sweeps/20261016_winner/summary.json)
+retain the full experiment setup and checkpoint hash. Values at range boundaries
+use clean nominal decimals in the default config, removing float32 serialization
+noise. Hardware layout, team selection, opponents and run budget remain separately
+configured; the winner itself used 16,384 agents, two buffers, the fixed Starmie
+team and 25,165,824 learner steps. The winning checkpoint is backed up locally
+under `saved/pokemon/vast_sweep_20261015/checkpoints/sweep_1792079639324_0223/`.
