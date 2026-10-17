@@ -149,7 +149,7 @@ records source preservation, import checks and the remaining physics limits.
 `SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
 assembly for comparison. Other rooms retain their accepted art.
 
-Use matching version-29 peers and fresh recordings/saves. Directed squad tasks
+Use matching version-30 peers and fresh recordings/saves. Directed squad tasks
 now retain the selected person; Restrain assigns one officer while the others
 cover, and Fall In keeps moving under visible threat. Jamb damage changes
 door attachments, and queued orders and scripted firing now handle interrupted
@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v29 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v30 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -925,8 +925,9 @@ inter-room charge approaches. It checks real charge placement/retreat/detonation
 and aperture crossing, secured threats, weapon evidence, three civilian escorts
 and squad regrouping. The inter-room route also clears a cuffed suspect from the
 opening using follow/hold and closes a leaf that obstructs the chosen aperture.
-Front/exterior runs require two arrests and no deaths; inter-room permits lawful
-squad return fire, with no civilian/officer deaths or force violations. Each run
+Quiet runs require two arrests and no deaths. Hostile runs permit lawful return
+fire on every approach and account for both suspects, with no civilian/officer
+deaths or force violations. Each run
 verifies exact replay, mid-run save/resume, fresh-replica state and no contact
 buffer overflows. Dense bed/rack contacts preserve their original triangles,
 edge flags and ballistic thickness in bounded shared mesh components.
@@ -1460,7 +1461,22 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 29 as described above.
+destruction prototype requires version 30 as described above.
+The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
+stands on its eight original skid contacts beside the maintenance shed. Its
+unchanged 2,908-triangle GLB supplies a steel body and two independently removable
+closed lids; fork sleeves and underbody clearance remain geometric openings.
+Thirteen bounded collision subsets preserve every source triangle. The existing
+rubber response approximates the molded lids; these are authored game responses,
+with no interactive hinge or certified fabrication-strength claim. Native checks
+use only its four shared embedded maps, compare art/fallback silhouettes with
+physical owners, and inspect production lighting in the graybox service yard.
+`make -C ocean/swat motel-dumpster-test` checks ground contacts, both ordinary-input
+walking lanes, blocked body passage, damage, replicas and legacy map prefixes.
+`motel-dumpster-art-test-build` builds a small display-dependent check; pass an
+existing output directory and an asset root containing only
+`motel_dumpster/BC_DUMP01_closed.glb` to keep its graphics footprint bounded.
+The ordinary Windows build also supplies both check executables.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

@@ -16,8 +16,9 @@ nodes, ground origin, measured dimensions and 2,908 triangles in five primitives
 Authoring Python is retained as source data and was not executed locally. The
 supplied actual-export contact sheet was inspected during intake.
 
-This is a static candidate awaiting engine placement, collision binding and
-actual Windows rendering review. It is not loaded into the level yet. Preserve
+This record describes the original intake. The current
+[engine integration](ENGINE_INTEGRATION.md) places the static assembly in the
+maintenance yard and records collision and native graphics acceptance. Preserve
 the authored render mesh and metre-scale ground origin. Choose a supported
 service-yard placement, keep routes clear, and validate sparse collision and
 material response against the actual shell, skids, fork sleeves and lids.

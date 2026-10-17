@@ -409,7 +409,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     int missing=0;
     for(int i=0;i<(location ? SWAT_STOREFRONT_ASSETS : SWAT_MOTEL_ASSETS);i++) {
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
-        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":i==44?"motel_mounted":"motel_props",a->file);
+        char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i>=60?"motel_dumpster":i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":i==44?"motel_mounted":"motel_props",a->file);
         Model* model=location ? &art->storefront[i] : &art->motel[i];
         bool found=false;
         const char* seating=getenv("SWAT_MOTEL_SEATING_TEXTURES");
@@ -1152,6 +1152,16 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     SwatMotelInstance mounted;
     if(swat_motel_mounted(world,o->tag.index,&mounted) || swat_motel_prop(world,o->tag.index,&mounted)) {
+        if(mounted.asset>=60 && mounted.asset<63) {
+            const Model* source=&art->motel[mounted.asset];
+            if(source->meshCount!=5)return mounted_fallback(o,shadow);
+            // Original body has three primitives; each closed lid has one.
+            // Keep the complete delivered GLB and draw only its owner's node.
+            int primitive=mounted.asset==60?0:mounted.asset-58;
+            Model part=*source;part.meshCount=mounted.asset==60?3:1;
+            part.meshes=&source->meshes[primitive];part.meshMaterial=&source->meshMaterial[primitive];
+            return location_mesh_draw(art,o,&mounted,&part,source,shadow,cutaway,false,NULL);
+        }
         if(mounted.asset==50 || mounted.asset==51) {
             const Model* source=&art->motel[mounted.asset];
             if(source->meshCount!=2)return mounted_fallback(o,shadow);

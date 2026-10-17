@@ -1,0 +1,278 @@
+{
+  "created_utc": "2026-10-17T23:43:11.802Z",
+  "baseline_commit": "c0c739120",
+  "protocol": 30,
+  "asset": "BC_DUMP01",
+  "scope": "Static maintenance-yard dumpster with separate body/lid owners, source-faithful sparse collision and rendering, original-route clearance, material-aware bullet queries, support/damage/replica lifecycle, and three complete motel approaches. Full vertical-slice acceptance remains open.",
+  "evidence_root": "build/swat/review/dumpster-integration/",
+  "runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0",
+  "placement": {
+    "origin_m": [
+      -4.9,
+      -0.08,
+      -8.4
+    ],
+    "yaw_radians": 3.141592653589793,
+    "initial_candidate_eastward_adjustment_m": 0.6,
+    "skid_contact_vertices": 8,
+    "foundation_owner": 0,
+    "source_triangles": [
+      1964,
+      472,
+      472
+    ],
+    "contact_shape_triangle_limit": 240,
+    "contact_shapes": 13,
+    "materials": [
+      "SWAT_STEEL",
+      "SWAT_RUBBER",
+      "SWAT_RUBBER"
+    ],
+    "game_response_approximation": true,
+    "interactive_lid_hinges": false
+  },
+  "source_and_map_hash_audit": true,
+  "checks": {
+    "linux": {
+      "dumpster": {
+        "pass_groups": 4,
+        "log_sha256": "9dfe60503dfc33e08ba2e8b2e07f2a4b85bcc4c796ed7688f5b8acdcdcede2ab"
+      },
+      "motel_screwdriver": {
+        "pass_groups": 1,
+        "log_sha256": "a07ed3423149a8e94a5061221defb2cc2d61e7d7f68c0c58244c1fc91994600b"
+      },
+      "motel_service": {
+        "pass_groups": 1,
+        "log_sha256": "0b4fc114330d1aa26c89d6ecb2d21fc079fa53d77d8909aca45c3d7059022c4e"
+      },
+      "motel_bag": {
+        "pass_groups": 1,
+        "log_sha256": "04bf3634f76609dcb7e8eef093ce504c930b50d9f1749478766745239dbc8851"
+      },
+      "motel_cabinet": {
+        "pass_groups": 1,
+        "log_sha256": "253c3259a7fb28475bb0a5954d4088d436e2a667e2dae251ca8441c583038eff"
+      },
+      "motel_windows": {
+        "pass_groups": 5,
+        "log_sha256": "df4b02a12a7be440f3521697b73a0b2673ce31c71b5814f5ec131b98e2d4e7eb"
+      },
+      "motel": {
+        "pass_groups": 12,
+        "log_sha256": "7dd79a7619d7b47a41951138629927e54039b0c7ca8228144b98d76ec7be12bd"
+      },
+      "encounter": {
+        "pass_groups": 35,
+        "log_sha256": "dbbbed6595e17330787d635364471a4b2b3c1d6813665a62e332c505c96ecb36"
+      },
+      "tactical": {
+        "pass_groups": 10,
+        "log_sha256": "00231a210c6a06c107e4f298993d7eac1fcb369049aa9963ba3b6db42e400a13"
+      },
+      "sim": {
+        "pass_groups": 13,
+        "log_sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+      },
+      "protocol": {
+        "pass_groups": 2,
+        "log_sha256": "98b186805902610ece38f4efc85d5d0b6daad38bc9bd1b00c9cb4bcdb3e8378e"
+      }
+    },
+    "native": {
+      "dumpster": {
+        "pass_groups": 4,
+        "log_sha256": "4f33328e578cd5b3ebb81bf9b88f7bf102bd0e66b8e87fffa80eea34f6142334"
+      },
+      "motel_screwdriver": {
+        "pass_groups": 1,
+        "log_sha256": "fda37cd2203f81dc9eb8072b5ac1ea345babb4c82070218eb0a67a14bd912a91"
+      },
+      "motel_service": {
+        "pass_groups": 1,
+        "log_sha256": "912a334b6ddb6a66d426ed9bb8c4738e1c8f142283eef60b6d763162a768b9d0"
+      },
+      "motel_bag": {
+        "pass_groups": 1,
+        "log_sha256": "ea594d250090a151cc506ebf71a9ae1370b1b9857c2f7dc190598e28ba293944"
+      },
+      "motel_cabinet": {
+        "pass_groups": 1,
+        "log_sha256": "aa9afd04bad2c4868107293d8d416fbff4ca0d6ee5c3f5076c1d0f0ee0981778"
+      },
+      "motel_windows": {
+        "pass_groups": 5,
+        "log_sha256": "f6dfcce66fb398e74483c6529c386b6b8aa415559043d98355f82d4d2f53d269"
+      },
+      "motel": {
+        "pass_groups": 12,
+        "log_sha256": "af18b42c25fa80c7a9b251c0e86852e6abe40eae23efe81069c8ec2fa29d065c"
+      },
+      "encounter": {
+        "pass_groups": 35,
+        "log_sha256": "c52863d2743d9d239aa54abd715b39a5737b7bd020556a4278c58acb3e81f953"
+      },
+      "tactical": {
+        "pass_groups": 10,
+        "log_sha256": "e78f55134ea2b32d938732e9169e146e813ab3e831d10dbab9e4992f0f825350"
+      },
+      "sim": {
+        "pass_groups": 13,
+        "log_sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+      },
+      "protocol": {
+        "pass_groups": 2,
+        "log_sha256": "ece38a67d8e0e9c3210fbbbf32fc933ee5a16b149dd61df0aae5f6f27a6196f2"
+      }
+    }
+  },
+  "matching_encoded_states": {
+    "count": 27,
+    "canonical_sha256": "53b3e0f13ab49f1ada3886e4a17c4af5c1c356da4e0c65505291072420d9fb54"
+  },
+  "native_graphics": {
+    "pass_groups": 2,
+    "shared_embedded_images": 4,
+    "source_and_fallback_silhouettes": true,
+    "production_lighting": true,
+    "surrounding_level_art": "graybox fallback",
+    "render_authority_immutable": true,
+    "all_textures_released": true,
+    "log_sha256": "d848090e00ff40613e7cc48a724e19258b77978af7f928f28bb31fda3df11875",
+    "capture_sha256": {
+      "part-0-side-0-art.png": "c0f054c0e43adf2d8830c35feef5b21f3d7e14e77de510c77577d921fd4ce249",
+      "part-0-side-0-fallback.png": "6806ebe41f671b93c881a73f97227b1d205c90a41df26be505678fd07124152d",
+      "part-0-side-1-art.png": "7a82d24a4fba9bb7c200ef2b77f63d6bbdeb5cb087992d078bd27cbe23a14d58",
+      "part-0-side-1-fallback.png": "4ecd9ab5346333481f053303d143fc87b34e017f374cae8aafeffd2019b38436",
+      "part-1-side-0-art.png": "384c1ca41670b1ef1d474c435d78b7498701f3d3b65a0f3150e0e253843d6760",
+      "part-1-side-0-fallback.png": "04a617ffb236e7b1b50c5762a3cdd1508fca4db0e31b5bdd0a2dce64b6d7284a",
+      "part-1-side-1-art.png": "feb9a325d8a453fb3ca5bca0756a62be9de51926be89717ab51d5e4e42aa054f",
+      "part-1-side-1-fallback.png": "9ccdab72fef90bcff7ca3986e66536862847de1df3f6df09e142c8a26c7c8be6",
+      "part-2-side-0-art.png": "17dd3a877db5978ddd1023c934a7c56f5abda8e2b76876b3395d26e6227e9cc6",
+      "part-2-side-0-fallback.png": "5dc1126e9de12dadb005dd98fdbc2021ad3b5c157d7066bd2a413dea5d7a368f",
+      "part-2-side-1-art.png": "f7ce07e2f6ed2497c0677803be86af74c2860c6e0f50a6bb972508a83d56608d",
+      "part-2-side-1-fallback.png": "420d3e6e077536c2439f28e2238cb1ab91035ca235056b7979c6b73d371bff90",
+      "scene-intact.png": "854c850237faeeac43b78c7a3302dabd26089637a4fba3b4c289858c9167f37c",
+      "scene-left-lid-removed.png": "e099387cd8a58875ccdb69003031b6a2122e36a2f65470561438fe4233cdbae4"
+    }
+  },
+  "full_motel_approaches": {
+    "squad": {
+      "seed": 81,
+      "randomize": false,
+      "hostile_fire": false,
+      "ticks": 20584,
+      "arrests": 2,
+      "armed_suspects_killed": 0,
+      "civilians_evacuated": 3,
+      "weapons_recovered": 2,
+      "protected_deaths": 0,
+      "roe_violations": 0,
+      "linux_every_tick_replay": true,
+      "linux_midrun_restore_and_continue": true,
+      "linux_fresh_replica": true,
+      "native_replay_of_linux_journal": true,
+      "journal_sha256": "18a1a8f59d4a58db9db97d6b5bfeee92a65f5230023bab7dd505cdd868c844f5",
+      "linux_log_sha256": "3c9736c220f7e6bd4b2c65f50b7dab376f674cd8c732fc213435e47f54124504",
+      "native_replay_log_sha256": "40529dc9591d012bf300d25d3c8a918183c282307feeff328d519ba94d8b9bbc"
+    },
+    "exterior": {
+      "seed": 81,
+      "randomize": false,
+      "hostile_fire": true,
+      "ticks": 11697,
+      "arrests": 1,
+      "armed_suspects_killed": 1,
+      "civilians_evacuated": 3,
+      "weapons_recovered": 2,
+      "protected_deaths": 0,
+      "roe_violations": 0,
+      "linux_every_tick_replay": true,
+      "linux_midrun_restore_and_continue": true,
+      "linux_fresh_replica": true,
+      "native_replay_of_linux_journal": true,
+      "journal_sha256": "b9cb1038a49fc98156f8dd076e345e58917d5b92b1b16b8a5f67c2d1b28ca7e8",
+      "linux_log_sha256": "f169fa40c2b5b992dc2f21301b8a948fc5558b75c2dd7d0d5c52875589c74dfc",
+      "native_replay_log_sha256": "712f491d8b969d38bae186536973570639640e9d153fce1dbdc991591ba118ad"
+    },
+    "interroom": {
+      "seed": 81,
+      "randomize": false,
+      "hostile_fire": true,
+      "ticks": 12715,
+      "arrests": 1,
+      "armed_suspects_killed": 1,
+      "civilians_evacuated": 3,
+      "weapons_recovered": 2,
+      "protected_deaths": 0,
+      "roe_violations": 0,
+      "linux_every_tick_replay": true,
+      "linux_midrun_restore_and_continue": true,
+      "linux_fresh_replica": true,
+      "native_replay_of_linux_journal": true,
+      "journal_sha256": "bc1f6d913cb31e10db323506037b0145c5a2ff62c955cc71b4a6fa66d7deb628",
+      "linux_log_sha256": "28e960e059c1b183d8fe26e61c72d4f2ac4e1d5e34cc09c3e2558209b188a7de",
+      "native_replay_log_sha256": "dcae376b55add2faec40c1b17adfb884fc6e06830810280908da03dbebb8fd0d"
+    }
+  },
+  "installed_matching_tools": {
+    "linux": {
+      "swat": "1122e08dc9931ea2806b28b2dc326d0617942477b7550520b23b0e85a7115294",
+      "server": "05c49246fde4db8f5d34e6fc5b5d301f4918ba33aa8554607503c44c82a40380",
+      "replay_tool": "8c52c92b370ff68c8e271292ad2596b279d6102c70c4e7dd3ddf23f42961b248",
+      "performance_tool": "e906b5d92361184833b326aad1e43a6fc9968ad37379b289cf421d45d68cd049"
+    },
+    "native": {
+      "swat": "f0bf7c86f207ee6b1c13dedfd3b2e4c430ac287de820db801e880e21282d1fd6",
+      "server": "d6c4bfad63ad973f52e9c24b1b6ee4cfe82be6269ea0ab97e12eb54f7aec3d12",
+      "replay_tool": "d4f7d6d87b7d979d3c89d79166ef7a71ab289b0a9c0ad0c67672f7468501327a",
+      "performance_tool": "408723361a1ddc77ebcadedb756db47574dc876fe4780a6af88b203e43b97773"
+    }
+  },
+  "installed_runtime_asset_verified": true,
+  "launcher_and_server_help_smokes": {
+    "launcher-linux-help.log": "e3eeedab547e7a57f3ce0d28eb5e77902c6e6aa56206bcb0331bf551a18d9f90",
+    "launcher-native-help.log": "2b5667e3af52054ab154c0bddf83ce9a93961684ba482e7352fa26cdf53348c5",
+    "server-linux-help.log": "4db8e67ddf7e558c469ce42157b5060952ba23b1e0911a79435c4e7dd109a0c4",
+    "server-native-help.log": "993b191bb27dbd132a39449f85f2b2afc8fabac09d0d3df5456cbee39790032e"
+  },
+  "cmake_configuration_python_disabled": true,
+  "source_sha256": {
+    "CMakeLists.txt": "64c78b18962d5f2132d5b042da1cc1869609f5e1ce115b2a0ba099a38bae9334",
+    "Makefile": "17a138bb4ae463707e22e9990bcdc9bf68d03cd379dfd21c8aab0beeb2579012",
+    "README.md": "43c9950a5967e93eebff659d006a38de490f3c62d83f97a639c8228024aa80ab",
+    "ROADMAP.md": "3ccb3b93c9db79429e13cbe98f60878bcdeb574b3de3a637cc872644de9fa96a",
+    "build-windows.sh": "bf59cb8c1df379e44889b4b22cb500260c597962c3174854212e1d0d03f4f755",
+    "environment_art.c": "96fb6946e446516e22a0408041b050348a6fb17216e8afb8bec14354d2ee8db6",
+    "motel.c": "329fb1f8f0537a9cc2b61d693966e264d517334c6f4fe5efcc8ed98cda0c118e",
+    "motel.h": "08357d3364c8918ff96a6e46638d7cfb5ca29bd485f69e79865334d0c9640cc3",
+    "motel_bag_impl.h": "800bb574bdef2a3c42e838a37bf85352aa902158746a1ada07a83c7a24547d50",
+    "motel_cabinet_impl.h": "4041cc80eec3f2b122975759073800e5e5729718e2bb5ea51d2734eb35c2a2ac",
+    "motel_screwdriver_impl.h": "376116b4426a36297bb6975644b1117920c2b43c0b5f3e29cae40947ba069f07",
+    "motel_seating_impl.h": "b0b74849eec19250088042df692e3bf0917079985161ab703cd5c83bca8935c8",
+    "motel_service_impl.h": "4a2b9d20a75486a3e010edaefc0c47e623141e49ab3c82ba172a77f201fe89d4",
+    "motel_windows_impl.h": "95c02c88f895487a38881e6d7891d42e180daa96f500884b16c38a4b50dd0df0",
+    "motel_dumpster_impl.h": "dcfc68e6f54a33c5530976ac7c97563083a2cf1ef69c9c501464b5ec27e832a4",
+    "motel_dumpster_data.h": "60fc462a7eff6bfd831f6b0652f41b8b7917a98532096fd8aaac4aea0ecfc268",
+    "play.sh": "051fa7506f76a6c27c9ca057887f82d3943b190f35869e7d20dbde8aae0f873d",
+    "protocol.h": "689e6ce69eabb00f3044f7b49daeae43934fe35460c3cde664182e044b32221e",
+    "world.h": "f72d7106536d914e02c2153572e3b3fde298153b13737092c985c4c1cb8b2ee6",
+    "tests/test_motel.c": "57fca7d618eacb352c8f8fed1479facf4bf456450a92572c37c511a6717a6150",
+    "tests/test_motel_dumpster.c": "878384643191f8288ee6d48b57e04f76c885c013ca3f763881c1a00f7d431850",
+    "tests/test_motel_dumpster_art.c": "b081eee3d2f6c87e51be74c0287b2837f150623b1e8f01078059ca80fc2a9c8e",
+    "tools/check_dumpster.cjs": "8584d2e4210c5d83ebf859ae63dbdf4a7753afb33ae0d3d637e18af87b032c0e",
+    "tools/import_motel_dumpster.cjs": "595a115be5e9edcce1b3cabc15191046c9970366d22f40fc6a04f5cc98b1de69",
+    "art_handoffs/motel-dumpster/ENGINE_INTAKE.md": "9169d59ad6df8fc266dc44e4440028eb7bf637ace72e16d5f95f4d25c1716d2a",
+    "art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md": "1d01c431fb7c72543c6afc16a459c1db37023cf08dead99085a89786b6100ce9"
+  },
+  "limits": [
+    "The three complete approaches use fixed seed 81; varied occupant seeds remain open.",
+    "Native Windows runs the geometry/behavior suites and replays all three Linux journals. Whole-route save/restore and fresh final replica checks are performed by the Linux driver.",
+    "New-prop replicas are checked through encoded maps/snapshots; this receipt does not claim a new real-UDP motel lifecycle test.",
+    "Native visual acceptance here covers the prop and placement in graybox yard context, not the finished motel composition.",
+    "Lids use the existing rubber game response; no measured material strength, globally welded manufacturing solid, interactive lid joint or LOD is claimed.",
+    "No heavy performance run or GPU benchmark was performed. Performance tools were built and installed only.",
+    "These are scripted tactical behaviors and ordinary-input QA, not learned-policy improvement.",
+    "The geometry-only breach fixture uses a bounded 3 m wall-selection ray after officer backoff and checks the authored wall plane. Separate complete player-input runs retain ordinary charge-placement reach."
+  ]
+}
