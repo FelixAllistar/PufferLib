@@ -14,6 +14,7 @@ typedef struct SwatMind {
     float resolve;
     float order_yaw,pending_yaw; // Authority planning state, reconstructed by input replay.
     int order_door,pending_door; // Zero is no doorway; world object zero is the floor.
+    int order_actor,pending_actor; // Target actor + 1; zero is no directed task.
     bool entry_settled;
     b3Pos memory,goal,waypoint,pending_goal;
 } SwatMind;

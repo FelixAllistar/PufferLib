@@ -39,12 +39,23 @@ int main(void) {
     for(int t=0;t<24;t++) swat_sim_step_inputs(&server,inputs);
     assert(swat_world_damage(&server.world,8,1000));
     static SwatSnapshot state,roundtrip; swat_capture_snapshot(&server,3,&state); state.player_mask=3;
+    state.actors[3].mind.order_actor=2;state.actors[3].mind.pending_actor=3;
     length=swat_encode_snapshot(bytes,sizeof(bytes),&state); assert(length);
     assert(swat_decode_snapshot(&roundtrip,bytes,length));
     for(size_t i=0;i<length;i++) assert(!swat_decode_snapshot(&roundtrip,bytes,i));
     assert(swat_decode_snapshot(&roundtrip,bytes,length)); assert(swat_apply_snapshot(&replica,&roundtrip));
     assert(replica.tick==server.tick && replica.actor_count==4 && !replica.world.objects[8].active);
     assert(replica.actors[3].controller.body.crouched && replica.actors[3].controller.lean>.9f);
+    assert(replica.actors[3].mind.order_actor==2 && replica.actors[3].mind.pending_actor==3);
+    // Reject an out-of-range directed target without replacing decoded state.
+    for(int pending=0;pending<2;pending++) {
+        static SwatSnapshot untouched;untouched=roundtrip;
+        int* target=pending?&state.actors[3].mind.pending_actor:&state.actors[3].mind.order_actor;
+        int saved=*target;*target=SWAT_MAX_ACTORS+1;
+        size_t malformed=swat_encode_snapshot(bad,sizeof(bad),&state);assert(malformed);
+        assert(!swat_decode_snapshot(&roundtrip,bad,malformed) && !memcmp(&roundtrip,&untouched,sizeof(roundtrip)));
+        *target=saved;
+    }
     assert(b3Distance(swat_controller_eye(&replica.actors[3].controller),swat_controller_eye(&server.actors[3].controller))<1e-5f);
     b3Capsule cap=b3Shape_GetCapsule(replica.actors[3].controller.body.capsuleId);
     assert(cap.center2.z>.39f);

@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test door-frame-test wall-support-test door-solid-test entry-interruptions-test
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test door-frame-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 lighting-bake: | $(BUILD)
@@ -94,6 +94,9 @@ encounter-test: $(ENET_LIB) | $(BUILD)
 entry-interruptions-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	ulimit -c 0; $(BUILD)/test_encounter interruptions $(BUILD)/entry-interruptions.trace
+squad-tasks-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter tasks $(BUILD)/squad-tasks.trace
 navigation-search-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_navigation_search.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_navigation_search
 	$(BUILD)/test_navigation_search
@@ -103,6 +106,7 @@ motel-completion-test: $(ENET_LIB) | $(BUILD)
 	$(BUILD)/test_motel_completion $(BUILD)/motel-completion-combat.sgrp combat
 	$(BUILD)/test_motel_completion $(BUILD)/motel-completion-exterior.sgrp combat exterior
 	$(BUILD)/test_motel_completion $(BUILD)/motel-completion-interroom.sgrp combat interroom
+	$(BUILD)/test_motel_completion $(BUILD)/motel-completion-squad.sgrp squad
 environment-binding-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_binding.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_environment_binding
 	$(BUILD)/test_environment_binding

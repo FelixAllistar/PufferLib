@@ -1,0 +1,177 @@
+{
+  "created_utc": "2026-10-17T22:22:44.125Z",
+  "baseline_engine_commit": "3d5cb39e7",
+  "asset_intake_commit": "02315251b",
+  "protocol": 29,
+  "scope": "Directed single-officer restraint, threat-tracking recall, supported formation, physical portal yielding for recalled officers and escorted occupants, and extraction regroup. Full vertical-slice acceptance remains open.",
+  "evidence_root": "build/swat/review/squad-tasks/",
+  "baseline_regressions": {
+    "restraint": {
+      "exit_code": 134,
+      "log_sha256": "8fe040d11161436faf8728c68b6685d73f0676334a24a20b1213e992f2fbb4e1"
+    },
+    "recall": {
+      "exit_code": 134,
+      "log_sha256": "6035c7fa9a6539580d6bc3bd4a79b2fd3bcd28068cfde9b717767052334adc20"
+    },
+    "escort_yield": {
+      "exit_code": 134,
+      "log_sha256": "e84e9200241f75729033580552ec2011f33b3e8311e069a5271f95168ee8f264"
+    },
+    "extraction_rear": {
+      "exit_code": 134,
+      "log_sha256": "95fe2d87220a5db06dd3a15b09c6e8dd8ad88eded0bd5f99f735f53cb2395be9"
+    },
+    "extraction_edge": {
+      "exit_code": 134,
+      "log_sha256": "dc91c40d24454106c4ba54cfb5909a82d726899e87e5bce29bb628430da307d1"
+    },
+    "extraction_crowd": {
+      "exit_code": 134,
+      "log_sha256": "e4e1c3b7754cfe7f7f835ddb9f80e0425f4881192dd5360f1b90e2970ecb9b7c"
+    },
+    "crowded_route_start": {
+      "exit_code": 134,
+      "log_sha256": "1131398cc4a5e2b1289f34f6bed1460cc8505210d55f63c86251b18005e27f33"
+    }
+  },
+  "checks": {
+    "linux": {
+      "tasks": {
+        "pass_results": 16,
+        "log_sha256": "530a4602360919244a5117f14408f05f7f04290207c3f149817ff311666511e7"
+      },
+      "encounter": {
+        "pass_results": 35,
+        "log_sha256": "42525ea32a89e1315e7fa356696c4bef4bab219e237516c4887cbeaccf624a63"
+      },
+      "tactical": {
+        "pass_results": 10,
+        "log_sha256": "00231a210c6a06c107e4f298993d7eac1fcb369049aa9963ba3b6db42e400a13"
+      },
+      "sim": {
+        "pass_results": 13,
+        "log_sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+      },
+      "protocol": {
+        "pass_results": 2,
+        "log_sha256": "98b186805902610ece38f4efc85d5d0b6daad38bc9bd1b00c9cb4bcdb3e8378e"
+      }
+    },
+    "native": {
+      "tasks": {
+        "pass_results": 16,
+        "log_sha256": "aac9d1e8bc32923520274b315ebb69bb5cef84d55d0eaac8755e7a5d5b442311"
+      },
+      "encounter": {
+        "pass_results": 35,
+        "log_sha256": "c52863d2743d9d239aa54abd715b39a5737b7bd020556a4278c58acb3e81f953"
+      },
+      "tactical": {
+        "pass_results": 10,
+        "log_sha256": "e78f55134ea2b32d938732e9169e146e813ab3e831d10dbab9e4992f0f825350"
+      },
+      "sim": {
+        "pass_results": 13,
+        "log_sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+      },
+      "protocol": {
+        "pass_results": 2,
+        "log_sha256": "ece38a67d8e0e9c3210fbbbf32fc933ee5a16b149dd61df0aae5f6f27a6196f2"
+      }
+    }
+  },
+  "focused_trace": {
+    "matching_digests": 8501,
+    "encoded_fresh_replica_roundtrips_per_platform": 291,
+    "canonical_sha256": "f4078b037b783e54c68ce30240aee44be6d1d55272a2b0c84d7662ca0585b8ac",
+    "mirrored_physical_doorway_passage_for_recalled_officers_and_active_escorts": true,
+    "centre_edge_and_actual_crowd_extraction": true,
+    "physical_oblique_start_escape": true
+  },
+  "full_motel_runs": {
+    "squad": {
+      "seed": 81,
+      "randomize": false,
+      "hostile_fire": false,
+      "squad_restraints": 5,
+      "frames": 19998,
+      "arrests": 2,
+      "civilian_evacuations": 3,
+      "weapon_evidence": 2,
+      "civilian_or_officer_deaths": 0,
+      "roe_violations": 0,
+      "linux_every_tick_replay": true,
+      "linux_midrun_save_restore_and_continuation": true,
+      "linux_fresh_final_replica": true,
+      "native_replay_of_linux_journal": true,
+      "linux_log_sha256": "c228df18c0cf25eeb0e89c996e0b847e4083985ee9f4d3441b3619da2beb16c2",
+      "journal_sha256": "292a4e5265076c0c2c804813b5441f7ff2f9eac380892cb29eb4c0589a11f949",
+      "native_replay_log_sha256": "349dc57f34801359b75e7bb127f1721bf77b33a47e2ceab98633d763c4eb9de3"
+    },
+    "combat": {
+      "seed": 81,
+      "randomize": false,
+      "hostile_fire": true,
+      "squad_restraints": 0,
+      "frames": 11611,
+      "arrests": 2,
+      "civilian_evacuations": 3,
+      "weapon_evidence": 2,
+      "civilian_or_officer_deaths": 0,
+      "roe_violations": 0,
+      "linux_every_tick_replay": true,
+      "linux_midrun_save_restore_and_continuation": true,
+      "linux_fresh_final_replica": true,
+      "native_replay_of_linux_journal": true,
+      "linux_log_sha256": "3e11e2b779100b97becf1ed4b20177fd433340f3807bf64abe036c5653a14bc3",
+      "journal_sha256": "b550371dbca454e7406f588ed2e6146d570066e88e2bef348a0c571b1dd259eb",
+      "native_replay_log_sha256": "968d7d1e29f6637ffad991535a8d9896df20e5c8bf4964dc5ab14188bd170609"
+    }
+  },
+  "source_sha256": {
+    "CMakeLists.txt": "88b60cae945958a79927adc5eaa9b42fb247d6502cbbc3adf0b8b0d1d6e6f6fe",
+    "Makefile": "17d229189babe74142a1b8f8c1476cdae8dada4a29c0089c87cdb387b78e0878",
+    "README.md": "cfc92c35c24ca84b96666f6873245c1696a57be86da01c875b42d903aa75fa69",
+    "ROADMAP.md": "516e81c03c4f07d0b5f23bec307141e5cfe65543f90c55de5c48fde01c67c324",
+    "encounter.c": "3c9b664c1afdd5f4db329785f377da40f8d8a89a41fb593562438a70e61f3086",
+    "encounter.h": "79c1b1ffe092b1effed44e7c4051f59ada2f2692b42c9ccd3cbe25f31e61f353",
+    "protocol.c": "e808654d0da22ae1ef0fd90a7f4296ec5df73dfe60572f2c0aa335ffce4aa87c",
+    "protocol.h": "3838c6f1b23ef1ead5b735d2cf79f03ad491f3d9008f7263ca7863f57632749a",
+    "sim.c": "2883e1c9f7b5ba4533a0b5c1543a15aee827e7bb7271774c1e75cb0187b11acb",
+    "tests/entry_interruptions.h": "8b84e5532a6b29e71f74b0ba6a8132d29498848f4b1a2fcb11c850897d19993c",
+    "tests/test_encounter.c": "71aa5a5c89bd0b62ab775d611927ef60d5e82e2c34e7990dab6ff286d26f6e98",
+    "tests/test_motel_completion.c": "687c764ced7e0c9b23802962f3a16cdddde95d6564a09411247f2960c0ff59cb",
+    "tests/test_protocol.c": "e7937ab2c4ff1a40e8b5cdd1affb58d9825fa058b7d3b08fde7b8e61e762451d",
+    "tests/squad_tasks.h": "fefa79a741a5912394c45e03b17ca9be4289fa2e49434254c8dde99980db2faf"
+  },
+  "candidate_binary_sha256": {
+    "linux": {
+      "swat": "f49e1962114faa9641cafc125bc7da0889f1b0c9a009d9227259dfa29d54ea8f",
+      "server": "a3d5d1f34ce19dc71016ad4d9ad04ec5845d3e2521c367e3300aaf49c3e62bec",
+      "replay_tool": "f7812aa35ce9ea7041bc87bc796f7c3dc130c5dea1b06581dbfc87d4da615310",
+      "performance_tool": "0087b1128feb16ab14e12fee7bb496dfaa84680b8b877952403255125ab6366f"
+    },
+    "native": {
+      "swat": "4f902037e5cc984acd1ffab0a9ce343fd8ea45519f0524502bd0296b78e4d224",
+      "server": "432e31c5fdcd71c1fc7502b87fce6c9b53843f41ccf231590714fb3a96c1801d",
+      "replay_tool": "8520410c4ce17d9c554fff34fc5c6b0d7b852d8c2f0fe20da719a576b0bb770b",
+      "performance_tool": "e10133464f875b66a54d2b370ff4f5e8532802a8da7d7439d0d0622feb4bae07"
+    }
+  },
+  "installed_matching_builds": true,
+  "launcher_and_server_help_smokes": {
+    "launcher-linux-help.log": "e3eeedab547e7a57f3ce0d28eb5e77902c6e6aa56206bcb0331bf551a18d9f90",
+    "launcher-native-help.log": "2b5667e3af52054ab154c0bddf83ce9a93961684ba482e7352fa26cdf53348c5",
+    "server-linux-help.log": "4db8e67ddf7e558c469ce42157b5060952ba23b1e0911a79435c4e7dd109a0c4",
+    "server-native-help.log": "993b191bb27dbd132a39449f85f2b2afc8fabac09d0d3df5456cbee39790032e"
+  },
+  "limits": [
+    "The two complete runs use the authored front-door route and fixed seed 81. Exterior/inter-room charge routes and varied seeds are not reaccepted by this receipt.",
+    "Native Windows independently passes focused and broad headless checks and replays both Linux journals; whole-route save/resume and final replica acceptance are performed by the Linux driver.",
+    "These are authored tactical behaviors, not learned-policy improvement.",
+    "No GPU, graphical or heavy performance test was run. The performance tools were built only. Native visual and stable-load frame-time acceptance remain open.",
+    "Dumpster intake is committed, but level placement, sparse collision and native material/visual acceptance remain open.",
+    "Manual playtesting is optional feedback, not a gate for further slice work."
+  ]
+}

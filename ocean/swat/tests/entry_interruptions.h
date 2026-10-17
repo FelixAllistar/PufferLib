@@ -37,13 +37,16 @@ static void interrupt_orders(void) {
 
     interruption_squad();inputs[0]=swat_neutral_input();inputs[0].squad_order=SWAT_ORDER_HOLD;inputs[0].squad_queue=true;
     swat_encounter_orders(&sim,inputs);
+    sim.actors[3].mind.pending_actor=sim.actors[4].mind.pending_actor=2;
     // Human takeover and death before execution cancel only their pending work.
     assert(swat_sim_set_player(&sim,1,true));
     assert(!sim.actors[3].mind.bot && !sim.actors[3].mind.pending_order && !sim.actors[3].mind.queued);
+    assert(!sim.actors[3].mind.pending_actor);
     swat_sim_damage_actor(&sim,4,1,1000);assert(!sim.actors[4].alive);
     inputs[0]=swat_neutral_input();inputs[0].squad_execute=true;sim.tick+=30;swat_encounter_orders(&sim,inputs);
     assert(sim.actors[3].mind.order==SWAT_ORDER_FALL_IN);
     assert(!sim.actors[4].mind.pending_order && !sim.actors[4].mind.queued);
+    assert(!sim.actors[4].mind.pending_actor);
     assert(sim.actors[5].mind.order==SWAT_ORDER_HOLD && !sim.actors[5].mind.pending_order);
     interruption_state();swat_sim_close(&sim);
     puts("PASS interrupted orders: one early Execute pulse survives the delay; human/dead recipients cancel pending work while the remaining bot executes");

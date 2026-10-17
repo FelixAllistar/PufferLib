@@ -12,6 +12,75 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Autonomous continuation (Felix, 2026-10-17): keep developing the entire slice
+against the acceptance checks below without waiting for Felix to playtest each
+increment. Use ordinary-input automated scenarios, deterministic replay,
+save/resume, late replicas, source/asset audits and automated visual review as
+appropriate. Reproduce failures, fix them and validate the resulting behavior;
+commit completed increments and proceed to the next gap. Manual feedback is
+welcome when available, but is not a development gate. A passing increment does
+not complete the slice. Heavy performance runs remain held under Felix's earlier
+machine-use instruction; their final acceptance stays open rather than blocking
+independent work. Do not ask Felix to repeat already-authorized routine checks.
+The existing persistent tracker reports the old full-slice goal as paused and
+rejects replacement while unfinished; the available goal API cannot resume it.
+Preserve that unfinished goal honestly and use this working directive meanwhile.
+
+Acceptance work still open:
+
+- Extend squad task completion to search/equipment orders and varied occupied
+  layouts, beyond the directed restraint, recall and escort cases below.
+- Validate multiple complete motel approaches and varied occupant seeds with
+  ordinary inputs, including replay, mid-run resume and fresh replicas.
+- Finish the motel's composition, remaining props, production audio and visible
+  equipment handling; integrate approved art and inspect actual rendered output.
+- Establish reproducible officer/enemy policy baselines and held-out evaluation
+  before claiming learned improvement, using the normal training workflow.
+- Complete native visual/interaction review and stable-load frame-time acceptance
+  when the machine-use constraint permits it. Automated evidence must state its
+  scope; headless success alone does not accept visual quality or performance.
+
+Squad task and escort pass (2026-10-17): Restrain now assigns one nearest
+eligible officer to the aimed occupant and preserves that person's identity
+through radio delay, queues, replication and saves. The officer obtains
+compliance, approaches physically and holds the real cuff interaction. Glass
+can transmit the order's sight ray but blocks hands; opaque cover prevents
+selection and hidden movement cannot update the remembered position. Hold
+interrupts the task, a different visible threat takes priority, and a completed
+cuff holds position rather than starting an escort.
+
+Fall In continues moving while tracking a visible threat, trails the commander's
+heading on connected floor and holds its feet if formation support is blocked.
+Recalled officers and escorted occupants use supported sidesteps at open doors
+so their leader can pass. Staging destinations remain inside extraction, with
+free reachable alternatives for an inward-facing commander or a crowd of
+rescued people. When people block every grid exit, navigation can seed a nearby
+supported cell from the actor's actual feet after fresh swept clearance checks.
+All movement retains ordinary controller inputs and body collision.
+Sixteen focused cases pass on Linux and native Windows; all 8,501 recorded
+states match, including 291 fresh encoded replica roundtrips per platform.
+Actual body sweeps and commander passage cover both doorway mirrors for recalled
+officers and active escorts. Centre/edge/crowded extraction cases include all
+three officers; a separate commander walk physically escapes the reproduced
+staging crowd. These are authored tactical behaviors, not learned-policy results.
+Complete ordinary-input front routes finish in 19,998 ticks with all five
+restraints delegated to the squad (hostile fire disabled), and 11,611 ticks
+with hostile fire enabled and player restraints. Each has two arrests, three
+civilian evacuations, both weapons recovered, all officers regrouped and no
+deaths or unlawful force. Linux verifies every-tick replay, mid-run save/resume,
+fresh final replicas and no contact-buffer overflow. Both platforms also pass
+the full encounter, tactical, simulation and protocol suites; Windows replays
+all 31,609 frames of the two Linux journals exactly. Durable receipt:
+`tests/receipts/squad-tasks-2026-10-17.json`. These fixed-seed
+front routes do not reaccept charge approaches, varied seeds, visual quality or
+performance. Evidence: `build/swat/review/squad-tasks`.
+Protocol/replay v29 requires matching builds and fresh recordings/saves.
+The approved dumpster source/intake is committed; level placement, collision
+binding and native material/visual acceptance remain open. Blenderbot reports
+the standalone shelter candidate backed up, with its sharing request pending.
+Heavy performance testing remains held; manual playtesting is not a gate for
+continuing the remaining slice work.
+
 Entry interruption and interaction feedback (2026-10-17): one Execute pulse now
 arms all queued recipients through their existing radio delays. Unexecuted
 queued Clears no longer hold up an active entry queue, and human/dead recipients
