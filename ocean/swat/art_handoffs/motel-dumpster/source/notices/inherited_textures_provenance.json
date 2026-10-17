@@ -1,0 +1,106 @@
+{
+  "schema": "storefront_material_provenance_v1",
+  "new_procedural_artwork_license": "CC0-1.0",
+  "new_texture_generation": "build_storefronts.py materials(); deterministic NumPy seed 161005 + material key codepoints; tiny pigment variation, no image generation or external raster source",
+  "files": [
+    {
+      "file": "textures/asphalt.png",
+      "sha256": "1e2730f8964fc8aa1a3acd4c961de6571180f0506e017dba84123cf5cb3ba662",
+      "bytes": 43260,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/brick.png",
+      "sha256": "f5819c78571dd28191a87225db55f39b1e4a4316ea66ef9de0e52d75ee9b68d0",
+      "bytes": 57534,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/concrete.png",
+      "sha256": "5b049d2025d19c3bcb88019affdb88dfc95ba1fb3d7dea426ab788f0b1796bda",
+      "bytes": 67464,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/floor_tile.png",
+      "sha256": "411a906512f2a7d60b6ea6e7e42029f511bc1f71bca6d80bd5468ae6737d5458",
+      "bytes": 75079,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/glass.png",
+      "sha256": "02629e1dd405ee39465df401e8d20658f4d5b220b0f2cad5a50ed8cde1503970",
+      "bytes": 62742,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/iron.png",
+      "sha256": "01df2488443926e283c83797bf03b3e0572530ffc6dfcdceeb5d512274995936",
+      "bytes": 35749,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/ivory.png",
+      "sha256": "8db5bdb235a350c8acea1aa5996d9675ee39318a4a816e1d61ba7a0b5db1530c",
+      "bytes": 72325,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/lamp.png",
+      "sha256": "a3bc9eb70be3fd8bdaa56b15b1a49e936ee917177c0e8a5918572a5f6be7aee9",
+      "bytes": 79321,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/linen.png",
+      "sha256": "7d243a7da02c0e10f00753de38a1cb52d45b36b7640c1806c66a1bb0e8d4b82d",
+      "bytes": 70339,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/mortar.png",
+      "sha256": "12460fbf22b225e60256d03e5a0ee9d79975710c4eb7369ee4196006749577b1",
+      "bytes": 66506,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/ochre.png",
+      "sha256": "5f5e3660679c20d1565c2eb3d56ade7b3b5b6576addb7e4cd6b421de8974952f",
+      "bytes": 64905,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/oxblood.png",
+      "sha256": "052851f3107842487bec50f6c32fbf30961c90ccd4604dfe1c053f4ec0a484ea",
+      "bytes": 44160,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/paper.png",
+      "sha256": "c18c9f40c5668507c08d95d052c5925d41a4b8879efd844938ef46e9af439665",
+      "bytes": 78218,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/rubber.png",
+      "sha256": "d61a89ad40fb86c9060b7a986fd5a61c4573772694f3a07e17e658df31f5256f",
+      "bytes": 4071,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/steel.png",
+      "sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+      "bytes": 57646,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    },
+    {
+      "file": "textures/teal.png",
+      "sha256": "287efb75afc8fc2c306cea79e1aa477e30196733be909fe25bcf75f6e5d5cc0d",
+      "bytes": 42300,
+      "type": "Original 256px sRGB basecolor; no baked geometry lighting"
+    }
+  ],
+  "existing_family": "inputs/materials_v1/material_manifest.json",
+  "reused_asset_provenance": "reused_assets/reuse_catalog.json",
+  "excluded": "Earlier provisional image-generated plaster and its pixels are not included."
+}
