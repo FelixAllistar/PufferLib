@@ -41,7 +41,7 @@ int main(void) {
     assert(!swat_impact_sample(&log,101,eye,(b3Vec3){0,0,1},particles));
     log=(SwatSoundLog){0};emit(&log,100,SWAT_SOUND_BREAK,SWAT_BRICK);
     assert(!sample(&log,145));
-    swat_sound_surface(&log,100,0,SWAT_SOUND_FLASH,point,2.5f,80,SWAT_BRICK);
+    swat_sound_surface(&log,100,0,SWAT_SOUND_BREACH,point,2.5f,80,SWAT_BRICK);
     assert(sample(&log,145)==24); // The existing charge event expands the cue.
     int dust=0;float minimum_x=100,maximum_x=-100;
     for(int p=0;p<24;p++) {
@@ -56,7 +56,7 @@ int main(void) {
     log=(SwatSoundLog){0};
     for(int i=0;i<4;i++) {
         emit(&log,100+i,SWAT_SOUND_BREAK,SWAT_BRICK);
-        swat_sound_surface(&log,100+i,0,SWAT_SOUND_FLASH,point,2.5f,80,SWAT_BRICK);
+        swat_sound_surface(&log,100+i,0,SWAT_SOUND_BREACH,point,2.5f,80,SWAT_BRICK);
     }
     for(int i=0;i<8;i++)emit(&log,104+i,SWAT_SOUND_IMPACT,SWAT_CONCRETE);
     int mixed=sample(&log,115),vertices=0;

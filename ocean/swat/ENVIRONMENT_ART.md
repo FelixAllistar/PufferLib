@@ -327,3 +327,21 @@ ownership. GPU checks validate all 40 motel and 40 storefront models/materials,
 only eight meshes in the extracted site, on-demand switching and idempotence,
 and visible objects behind glass with correct depth state. Windows and Linux
 player captures use the same asset placement and shared lighting.
+
+
+### Guest desk variation, 2026-10-16
+
+Room 102 now has the existing compact chipped mug at (-3.2,.7606,-2.08),
+yaw +25 degrees; Room 104 has the existing television remote at
+(4.8,.7606,-2.08), yaw -15 degrees. Both retain unit metre scale, source geometry
+and maps. These are render-only children of desk owners 48 and 96, including
+shadow passes and support destruction. They add no collision, navigation,
+materials or texture assets. Room 103's original wallet/glasses and Room 101's
+accepted composition retain their placements.
+
+The rotated conservative source bounds leave approximately 71 mm (mug) and
+92 mm (remote) to the hospitality tray's east edge. Both bases sit on the
+existing .7606 m tabletop. Native before/after detail captures and immutable
+authority/resource-release checks live under
+`build/swat/review/occupied-slice/{linux,native}-graphics`. This is a small
+room-identity pass; it does not establish finished environment art.

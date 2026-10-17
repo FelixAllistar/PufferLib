@@ -25,7 +25,7 @@ static void impact_effects_graphics(SwatView* view,const char* directory) {
     int materials[]={SWAT_OPAQUE_GLASS,SWAT_BRICK,SWAT_WOOD};
     for(int i=0;i<3;i++) {
         log=(SwatSoundLog){0};swat_sound_surface(&log,100,0,SWAT_SOUND_BREAK,(b3Pos){0,1,0},1.2f,35,materials[i]);
-        if(i==1)swat_sound_surface(&log,100,0,SWAT_SOUND_FLASH,(b3Pos){0,1,0},2.5f,80,SWAT_BRICK);
+        if(i==1)swat_sound_surface(&log,100,0,SWAT_SOUND_BREACH,(b3Pos){0,1,0},2.5f,80,SWAT_BRICK);
         Image baseline=impact_capture(&empty,110,0),visible=impact_capture(&log,110,0);
         int pixels=impact_pixel_difference(baseline,visible);assert(pixels>30);
         snprintf(path,sizeof(path),"%s/impact-material-%d.png",directory,materials[i]);assert(ExportImage(visible,path));
@@ -78,24 +78,24 @@ static void impact_effects_graphics(SwatView* view,const char* directory) {
     swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){-1.2f,0,0},0);
     swat_sim_spawn_actor(&sim,1,SWAT_SUSPECT,(b3Pos){10,0,8},SWAT_PI);
     swat_sim_spawn_actor(&sim,2,SWAT_CIVILIAN,(b3Pos){10,0,-8},SWAT_PI);
-    swat_equipment_kit(&sim.actors[0].gear,1);
+    swat_equipment_kit(&sim.actors[0].gear,2); // Solid wall requires Entry's wall breacher.
     SwatInput input=swat_neutral_input();
     for(int i=0;i<15;i++)swat_sim_step(&sim,&input);
     input.door_tool=SWAT_PLACE_CHARGE;
     for(int i=0;i<90;i++)swat_sim_step(&sim,&input);
-    assert(sim.actors[0].gear.breaching_charges==0);
+    assert(sim.actors[0].gear.wall_charges==0 && sim.actors[0].gear.breaching_charges==2);
     input=swat_neutral_input();input.forward=-1;
     for(int i=0;i<75;i++)swat_sim_step(&sim,&input);
     for(int i=0;i<2;i++){BeginDrawing();swat_view_draw(view,&sim,false,75);EndDrawing();}
     snprintf(path,sizeof(path),"%s/charge-before.png",directory);
     scene=LoadImageFromScreen();assert(ExportImage(scene,path));UnloadImage(scene);
     input=swat_neutral_input();input.door_tool=SWAT_DETONATE_CHARGE;swat_sim_step(&sim,&input);
-    int breaks=0,flashes=0;
+    int breaks=0,blasts=0;
     for(int i=0;i<sim.sounds.count;i++) {
         const SwatSoundEvent* e=swat_sound_at(&sim.sounds,i);if(e->tick!=sim.tick)continue;
-        breaks+=e->kind==SWAT_SOUND_BREAK;flashes+=e->kind==SWAT_SOUND_FLASH;
+        breaks+=e->kind==SWAT_SOUND_BREAK;blasts+=e->kind==SWAT_SOUND_BREACH;
     }
-    assert(breaks==1 && flashes==1 && sim.events.destroyed>0);
+    assert(breaks==1 && blasts==1 && sim.events.destroyed>0);
     int emitted=sim.tick;
     input=swat_neutral_input();for(int i=0;i<6;i++)swat_sim_step(&sim,&input);
     before=sim.world;sounds=sim.sounds;

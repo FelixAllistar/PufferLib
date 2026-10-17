@@ -395,7 +395,8 @@ void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
         SwatHeardSound heard;
         for(int n=0;n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,eye,i,&a->hearing,&heard);n++) {
             if(heard.gain>=0.015f && (heard.kind==SWAT_SOUND_SHOT || heard.kind==SWAT_SOUND_STEP ||
-               heard.kind==SWAT_SOUND_DOOR || heard.kind==SWAT_SOUND_BREAK || heard.kind==SWAT_SOUND_FLASH)) {
+               heard.kind==SWAT_SOUND_DOOR || heard.kind==SWAT_SOUND_DOOR_CLOSE || heard.kind==SWAT_SOUND_BREACH ||
+               heard.kind==SWAT_SOUND_BREAK || heard.kind==SWAT_SOUND_FLASH)) {
                 a->heard_yaw=heard.bearing; a->hearing_ticks=90;
             }
         }
@@ -475,7 +476,8 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
         if(swat_door_loose(door))return;
         if(in->peek) { door->door_open=!(door->door_open && door->peek); door->peek=true; }
         else { door->door_open=door->peek || !door->door_open; door->peek=false; }
-        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_DOOR,s->world.objects[hit.index].center,0.6f,18);
+        swat_sound_emit(&s->sounds,s->tick,actor,door->door_open?SWAT_SOUND_DOOR:SWAT_SOUND_HANDLE,
+            door->center,door->door_open?.6f:.18f,door->door_open?18:6);
     }
 }
 
@@ -623,6 +625,10 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     swat_controller_recoil(c,swat_arsenal_def(&a->arsenal,a->arsenal.active)->recoil*SWAT_RAD,shot.recoil_yaw);
 }
 
+static void door_closed_sound(void* context,int owner) {
+    SwatSim* s=context;const SwatObject* o=&s->world.objects[owner];
+    swat_sound_surface(&s->sounds,s->tick,-1,SWAT_SOUND_DOOR_CLOSE,o->center,.6f,18,o->material);
+}
 static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],bool movement_only) {
     if (s->end != SWAT_RUNNING) return;
     memset(&s->events,0,sizeof(s->events));
@@ -636,7 +642,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
     }
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_actor_interact(s,i,&inputs[i]);
-    swat_world_step_doors(&s->world);
+    swat_world_step_doors_notify(&s->world,movement_only?NULL:door_closed_sound,s);
     if(!movement_only) swat_traps_step(s);
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_controller_pre_step(&s->actors[i].controller,&inputs[i],swat_weapons_busy(&s->actors[i].arsenal));

@@ -50,7 +50,7 @@ SwatAudioVoice* swat_audio_start(SwatAudioMixer* mixer,SwatSoundEvent event,Swat
         float gain=voice->left+voice->right;
         if(gain<quietest) { quietest=gain; chosen=i; }
     }
-    static const float duration[SWAT_SOUND_KINDS]={.28f,.22f,.3f,.08f,.6f,.5f,.5f,.6f,.65f,.6f,.3f};
+    static const float duration[SWAT_SOUND_KINDS]={.28f,.22f,.3f,.08f,.6f,.5f,.5f,.6f,.65f,.6f,.3f,.35f,.9f};
     SwatAudioVoice* voice=&mixer->voices[chosen]; memset(voice,0,sizeof(*voice));
     voice->active=true; voice->event=event; voice->noise=event.id*0x9e3779b9u+1;
     voice->token=++mixer->next_token;
@@ -82,9 +82,11 @@ static float sample(SwatAudioVoice* voice) {
         }
         case SWAT_SOUND_HANDLE: return .6f*noise*expf(-80*t);
         case SWAT_SOUND_DOOR: return (.3f*noise+.7f*sinf(2*SWAT_PI*(180*t+18*t*t)))*expf(-6*t);
+        case SWAT_SOUND_DOOR_CLOSE: return (noise+.4f*sinf(2*SWAT_PI*120*t))*expf(-20*t);
         case SWAT_SOUND_IMPACT: return (.7f*noise+.4f*sinf(2*SWAT_PI*surface->impact_pitch*t))*expf(-surface->impact_decay*t);
         case SWAT_SOUND_BREAK: return (noise+.25f*sinf(2*SWAT_PI*surface->impact_pitch*t))*expf(-fmaxf(8,surface->impact_decay*.5f)*t);
         case SWAT_SOUND_COMMAND: return .25f*sinf(2*SWAT_PI*180*t)*sinf(SWAT_PI*fminf(t/.6f,1))+.1f*noise*expf(-5*t);
+        case SWAT_SOUND_BREACH:
         case SWAT_SOUND_FLASH: return (noise+.5f*sinf(2*SWAT_PI*65*t))*expf(-18*t);
         case SWAT_SOUND_GAS: return noise*.22f*(1-expf(-40*t))*expf(-3*t);
         case SWAT_SOUND_TASER: return .4f*(noise+sinf(2*SWAT_PI*150*t))*expf(-20*t);

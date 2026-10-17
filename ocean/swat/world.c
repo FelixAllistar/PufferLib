@@ -776,7 +776,7 @@ static bool swat_door_obstructed(const SwatWorld* w, const SwatObject* o, float 
     return blocked;
 }
 
-void swat_world_step_doors(SwatWorld* w) {
+void swat_world_step_doors_notify(SwatWorld* w,void (*closed)(void*,int),void* context) {
     for (int i=0;i<w->count;i++) {
         SwatObject* o = &w->objects[i];
         if(o->breach_ticks>0) o->breach_ticks--;
@@ -800,8 +800,10 @@ void swat_world_step_doors(SwatWorld* w) {
         b3Body_SetTransform(o->body,o->center,rotation);
         if(o->motion){o->motion->state.position=o->center;o->motion->state.rotation=rotation;}
         if(o->breach_owner>=0)o->breach_position=b3OffsetPos(o->center,b3RotateVector(swat_object_rotation(o),mount));
+        if(closed && !o->door_open && o->door_angle==0)closed(context,i);
     }
 }
+void swat_world_step_doors(SwatWorld* w) {swat_world_step_doors_notify(w,NULL,NULL);}
 
 void swat_world_tilt(SwatObject* o,float pitch) {
     o->pitch=pitch;

@@ -4,8 +4,8 @@ An officer and an AI listener should hear through the same changing building.
 The current implementation combines shared live-geometry propagation, a
 device-independent PCM mixer, approximate room reflections and optional Steam
 Audio headphone rendering. Player firearms, some footsteps/mechanisms and
-material hits/breaks use licensed recordings. Commands, blast transients and
-uncovered cues retain synthesis. Material coefficients are authored game tuning,
+material hits/breaks use licensed recordings. Door opening/closing and mounted-charge blasts also use recordings. Commands,
+flashbangs and uncovered cues retain synthesis. Material coefficients are authored game tuning,
 not measured building assemblies.
 
 ## Current path
@@ -36,6 +36,14 @@ points across each opening avoid treating a swung leaf as a closed doorway.
 Arrival delay is path length at 343 m/s, rounded to simulation ticks. This is
 a bounded game approximation; it does not solve arbitrary diffraction or
 multiple-room portal chains.
+
+Hearing rejects events beyond their direct-distance range or earliest possible
+arrival before querying cover, with a conservative float margin. Those events
+remain unconsumed, so a listener approaching a source can still hear it later.
+The spatial cache retains doorway indices in world order and computes body
+rotation only for active moving geometry; geometry changes still invalidate it.
+An exhaustive reference checks exact paths and hearing sequences, including
+next-float range/arrival boundaries and a listener entering range later.
 
 `audio_dsp.c` generates deterministic 48 kHz stereo float PCM with 32 bounded
 voices, smoothed gain/filter changes and a soft output limit. A four-delay
@@ -73,7 +81,7 @@ stays at the officer's ears while using the optiwand or planning cameras;
 direct scope control listens at the selected sniper. Saved
 master volume affects player output only; authority/training opens no device.
 
-The production bank contains 88 entries in 96 fixed slots. All 16 impact/break
+The production bank contains 92 entries in 96 fixed slots. All 16 impact/break
 surfaces have recorded choices: authored surface entries take precedence over
 foley-family fallbacks and wildcard entries. Ceramic uses plate contacts, thin
 aluminum uses tin contacts, and cloth/rubber/insulation/earth use soft contacts;
@@ -89,6 +97,18 @@ the redundant hit. NPC hearing and the replicated events remain unchanged.
 without opening an audio device. The native Windows build includes
 `test_sound_bank.exe`. An optional second argument exports a nine-second stereo
 listening proof (ceramic/aluminum/soft impacts, then masonry/glass/wood breaks).
+An optional third argument exports a second nine-second proof: open, close and
+breach, repeated. Two unchanged qubodup door-open and two door-close recordings
+replace the old shared wood-break aliases. Three unchanged rubberduck cannon
+recordings supply mounted-charge transients; these are firework/cannon foley,
+not recordings of a real door charge. Both sets are CC0; archive URLs/hashes,
+original filenames and selected-byte hashes are in `assets/audio/SOURCES.json`.
+Opening cues start with accepted interaction. Closing requests emit the handle
+cue; the close cue emits once when the unobstructed physical leaf actually
+reaches angle zero. A blocked leaf emits no premature frame-contact sound.
+Mounted charges use their own replicated breach kind, retaining material break
+cues. Protocol/replay v26 requires matched builds and fresh recordings/saves.
+
 The existing propagation lab renders synthesized comparisons; it does not load
 this player bank. Hearing tests and PCM tests do not establish perceptual quality.
 

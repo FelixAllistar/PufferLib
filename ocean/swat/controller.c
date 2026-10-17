@@ -26,7 +26,8 @@ void swat_controller_init_category(SwatController* c, b3WorldId world, b3Pos fee
 }
 
 b3Vec3 swat_controller_right(const SwatController* c) {
-    return swat_v(-sinf(c->yaw),0,cosf(c->yaw));
+    b3CosSin heading=b3ComputeCosSin(c->yaw);
+    return swat_v(-heading.sine,0,heading.cosine);
 }
 
 void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapon_busy) {
@@ -61,7 +62,9 @@ void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapo
         c->stamina = fmaxf(0.0f,c->stamina-0.1f);
     }
     c->last_jump = in->jump;
-    b3Vec3 forward = swat_direction(c->yaw,0);
+    // Physical translation must use the same heading on each platform.
+    b3CosSin heading=b3ComputeCosSin(c->yaw);
+    b3Vec3 forward=swat_v(heading.cosine,0,heading.sine);
     b3Vec2 throttle = {swat_clamp(in->forward,-1,1),swat_clamp(in->strafe,-1,1)};
     swat_body_pre_step(&c->body,SWAT_DT,forward,swat_controller_right(c),throttle);
 }

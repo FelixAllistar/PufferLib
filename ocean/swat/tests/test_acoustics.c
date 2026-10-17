@@ -219,6 +219,36 @@ static void test_transmission_and_arrival(void) {
     swat_world_close(&world);
     puts("PASS acoustics: distance, propagation delay, frequency-dependent cover, destruction, duplicate suppression and expiry");
 }
+
+static void test_hearing_bounds(void) {
+    SwatWorld* world=calloc(1,sizeof(*world));assert(world);swat_world_init(world);
+    float step=343.0f*SWAT_DT;
+    const float distances[]={0,.00001f,nextafterf(step,0),step,nextafterf(step,INFINITY),
+        nextafterf(35,0),35,nextafterf(35,INFINITY),100};
+    const float ranges[]={0,.5f,35,100};const int ages[]={-1,0,1,2,6,7,120,121};int checked=0;
+    for(unsigned d=0;d<sizeof(distances)/sizeof(*distances);d++)
+    for(unsigned r=0;r<sizeof(ranges)/sizeof(*ranges);r++)
+    for(unsigned t=0;t<sizeof(ages)/sizeof(*ages);t++) {
+        SwatSoundLog log={0};SwatHearingMemory actual={0},expected={0};SwatHeardSound a={0},e={0};
+        swat_sound_emit(&log,10,0,SWAT_SOUND_DOOR_CLOSE,(b3Pos){0,1.6f,0},3,ranges[r]);
+        b3Pos listener={distances[d],1.6f,0};int tick=10+ages[t];
+        bool heard=swat_hearing_next(world,&log,tick,listener,1,&actual,&a);
+        assert(heard==reference_hearing_next(world,&log,tick,listener,1,&expected,&e));
+        if(heard)assert(a.id==e.id && a.kind==e.kind && a.gain==e.gain && a.bearing==e.bearing);
+        assert(!memcmp(&actual,&expected,sizeof(actual)));checked++;
+    }
+    SwatSoundLog log={0};SwatHearingMemory actual={0},expected={0};int heard_tick=-1;
+    swat_sound_emit(&log,0,0,SWAT_SOUND_BREACH,(b3Pos){0,1.6f,0},3,5);
+    for(int tick=0;tick<125;tick++) {
+        b3Pos listener={101-tick,1.6f,0};SwatHeardSound a={0},e={0};
+        bool heard=swat_hearing_next(world,&log,tick,listener,1,&actual,&a);
+        assert(heard==reference_hearing_next(world,&log,tick,listener,1,&expected,&e));
+        if(heard){assert(a.id==e.id && a.gain==e.gain && a.bearing==e.bearing);heard_tick=tick;}
+        assert(!memcmp(&actual,&expected,sizeof(actual)));
+    }
+    assert(heard_tick==96);swat_world_close(world);free(world);
+    printf("PASS hearing bounds: %d exhaustive next-float range/arrival/future/expiry comparisons and approaching listener hears the retained event at tick 96\n",checked);
+}
 static void test_doorway_route(void) {
     SwatWorld world; swat_world_init(&world); uint32_t seed=42;
     swat_world_build_range(&world,&seed,false);
@@ -235,6 +265,12 @@ static void test_doorway_route(void) {
     assert(open.via_doorway && open.gain>closed.gain*10);
     assert(open.direction.z<-.5f && open.direction.x>.4f); // heard at the doorway, not through the wall
     SwatObject* leaf=&world.objects[door];
+    // Changing only portal identity must refresh the cached door list too.
+    leaf->door=false;assert_reference(&world,&event,listener);
+    assert(!swat_acoustic_path(&world,&event,listener).via_doorway);
+    leaf->door=true;assert_reference(&world,&event,listener);
+    SwatAcousticPath restored=swat_acoustic_path(&world,&event,listener);
+    assert(restored.via_doorway && restored.gain==open.gain && restored.delay_ticks==open.delay_ticks);
     leaf->door_open=false;for(int t=0;t<90;t++)swat_world_step_doors(&world);
     assert(swat_world_break_latch(&world,door));
     for(int h=0;h<SWAT_DOOR_HINGES;h++) {
@@ -309,4 +345,4 @@ static void test_fragment_path(void) {
 }
 
 int main(void) {
-    test_fragment_path(); test_spatial_search(); test_hearing_sequence(); test_transmission_and_arrival(); test_doorway_route(); test_agent_listens(); test_surface_room(); return 0; }
+    test_fragment_path(); test_spatial_search(); test_hearing_sequence(); test_hearing_bounds(); test_transmission_and_arrival(); test_doorway_route(); test_agent_listens(); test_surface_room(); return 0; }
