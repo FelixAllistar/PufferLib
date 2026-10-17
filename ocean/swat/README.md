@@ -94,7 +94,12 @@ GALLIUM_DRIVER=d3d12 ./build/swat/performance_tool --generated --audio --frames 
 To reproduce indoor wall-hit stalls, use `--indoors --fire --frames 180`.
 `--indoors` starts at the first room centre; `--fire` continuously fires the
 carbine and reloads it. Compare `--headless` with a rendered run and with
-`--audio` to separate simulation, graphics, and output audio. `--audio-stereo`
+`--audio` to separate simulation, graphics, and output audio. Add
+`--journal-profile` to include the real per-tick state digest used by the solo
+player’s automatic save journal. The reported `journal_digest_or_append` is
+included in `total`; the fixture profile excludes file I/O, while `--record`
+measures the actual digest and command/file append. This avoids attributing save
+hashing to simulation or omitting it from rapid-fire player-cost estimates. `--audio-stereo`
 keeps output audio while disabling the optional HRTF backend. `--hidden` runs
 rendered Windows measurements without taking focus. `--storefront` and
 `--motel` select the imported environments. Replay recording excludes
@@ -175,7 +180,7 @@ Their existing clipped positions, normals, UVs and borrowed materials remain
 unchanged. Changed occupancy, surviving-fragment corners or source geometry
 rebuild the affected cache; unchanged views reuse it. Shadow/contact passes
 retain the individual fragment meshes. The ordinary player uses this path.
-Compare it with `--motel --indoors --fire --audio --frames 600 --hidden`
+Compare it with `--motel --indoors --fire --audio --journal-profile --frames 600 --hidden`
 and the same arguments plus `--wall-faces-reference`. Reported submissions
 are model requests before frustum rejection, and attribute bytes exclude GPU
 driver overhead. The intact motel requests 20 combined wall models instead of
@@ -556,7 +561,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v25 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v26 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1407,7 +1412,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 25 as described above.
+destruction prototype requires version 26 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

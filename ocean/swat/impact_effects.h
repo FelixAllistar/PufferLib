@@ -40,7 +40,7 @@ static inline int swat_impact_sample(const SwatSoundLog* log,int tick,b3Pos eye,
             const SwatSoundEvent* other=swat_sound_at(log,j);
             if(!swat_impact_near(e,other))continue;
             if(!broken && other->kind==SWAT_SOUND_BREAK && other->material==e->material)duplicate=true;
-            if(broken && other->kind==SWAT_SOUND_FLASH && other->strength>=2.4f)blast=true;
+            if(broken && other->kind==SWAT_SOUND_BREACH)blast=true;
         }
         if(blast)lifetime=1.15f;
         float t=((int64_t)tick-e->tick)*SWAT_DT;

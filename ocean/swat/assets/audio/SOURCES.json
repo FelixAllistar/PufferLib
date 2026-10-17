@@ -26,6 +26,22 @@
       "download_url": "https://opengameart.org/sites/default/files/sfx_breaking_and_falling.zip",
       "archive_sha256": "e6ee04d91c5f4d30cfda1260d2c9d1faf96fda36319287215fbd07bcb1a80451",
       "selection": "Nine original rock-breaking, glass-breaking and metal-falling clips; unchanged Ogg bytes in runtime, no duplicate archive installed."
+    },
+    {
+      "url": "https://opengameart.org/content/door-open-door-close-set",
+      "author": "qubodup / Iwan Gabovitch",
+      "license": "CC0-1.0",
+      "download_url": "https://opengameart.org/sites/default/files/qubodup-DoorSet.7z",
+      "archive_sha256": "88502c82451a646fa4bc1b9021a26bbd3441b2850a613784a05336067b11a25d",
+      "selection": "Four unchanged original Ogg variants: DoorOpen01/02 and DoorClose01/02."
+    },
+    {
+      "url": "https://opengameart.org/content/25-cc0-bang-firework-sfx",
+      "author": "rubberduck",
+      "license": "CC0-1.0",
+      "download_url": "https://opengameart.org/sites/default/files/25-CC0-bang-sfx.zip",
+      "archive_sha256": "c0c9ecc11e2dc0d190f0cced755569858234b8528286bc83becb6314c663407f",
+      "selection": "Three unchanged recorded firework/cannon transients used as breach foley, not measured charge recordings."
     }
   ],
   "clips": [
@@ -532,6 +548,62 @@
       "source_sha256": "5069e3571a77d7f7aae9ef71d0364aa245fb7d64a7c8cc9956f221d03088c089",
       "sha256": "5069e3571a77d7f7aae9ef71d0364aa245fb7d64a7c8cc9956f221d03088c089",
       "processing": "Unchanged original CC0 Ogg; mono decode at runtime"
+    },
+    {
+      "file": "qubodup-DoorOpen01.ogg",
+      "source": "qubodup-DoorSet/ogg/qubodup-DoorOpen01.ogg",
+      "source_sha256": "a8f27b2da62edce49e8c50909d35e932cfd5d23dd22c16ae73a22c6d0d26a997",
+      "start_seconds": 0,
+      "duration_seconds": 1,
+      "sha256": "a8f27b2da62edce49e8c50909d35e932cfd5d23dd22c16ae73a22c6d0d26a997"
+    },
+    {
+      "file": "qubodup-DoorOpen02.ogg",
+      "source": "qubodup-DoorSet/ogg/qubodup-DoorOpen02.ogg",
+      "source_sha256": "877552b020edbea385fc7c0ad543696bac471ced6cafc6bdbb52997851c561d8",
+      "start_seconds": 0,
+      "duration_seconds": 1,
+      "sha256": "877552b020edbea385fc7c0ad543696bac471ced6cafc6bdbb52997851c561d8"
+    },
+    {
+      "file": "qubodup-DoorClose01.ogg",
+      "source": "qubodup-DoorSet/ogg/qubodup-DoorClose01.ogg",
+      "source_sha256": "bfdf68934a00f973b299f353d7485857234fa44fec185399c760ef3c309eca73",
+      "start_seconds": 0,
+      "duration_seconds": 1,
+      "sha256": "bfdf68934a00f973b299f353d7485857234fa44fec185399c760ef3c309eca73"
+    },
+    {
+      "file": "qubodup-DoorClose02.ogg",
+      "source": "qubodup-DoorSet/ogg/qubodup-DoorClose02.ogg",
+      "source_sha256": "2ef388b5fc95f50f6ba0473bb5f331532e75b02f30000c6a4f4c25fd84a6fbeb",
+      "start_seconds": 0,
+      "duration_seconds": 1,
+      "sha256": "2ef388b5fc95f50f6ba0473bb5f331532e75b02f30000c6a4f4c25fd84a6fbeb"
+    },
+    {
+      "file": "bang-pack-cannon_01.ogg",
+      "source": "25-CC0-bang-sfx/cannon_01.ogg",
+      "source_sha256": "e87ca0ee6b53da1f21cd9086cb75f456495871618fdfed63388bd2208a872596",
+      "start_seconds": 0,
+      "duration_seconds": 1.238271,
+      "sha256": "e87ca0ee6b53da1f21cd9086cb75f456495871618fdfed63388bd2208a872596"
+    },
+    {
+      "file": "bang-pack-cannon_03.ogg",
+      "source": "25-CC0-bang-sfx/cannon_03.ogg",
+      "source_sha256": "c3690a013befc16be1432e6fe62422db71c7b606980ddfe62429e864c5caf1d2",
+      "start_seconds": 0,
+      "duration_seconds": 0.864271,
+      "sha256": "c3690a013befc16be1432e6fe62422db71c7b606980ddfe62429e864c5caf1d2"
+    },
+    {
+      "file": "bang-pack-cannon_04.ogg",
+      "source": "25-CC0-bang-sfx/cannon_04.ogg",
+      "source_sha256": "58714ef1d8c73a52cd9358c783de4b961ee96259de112c6493a1028bc60410e8",
+      "start_seconds": 0,
+      "duration_seconds": 0.917979,
+      "sha256": "58714ef1d8c73a52cd9358c783de4b961ee96259de112c6493a1028bc60410e8"
     }
   ]
 }

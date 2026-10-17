@@ -53,6 +53,7 @@ int main(int argc,char** argv) {
     const char* replay_path=NULL;int seek=0;bool seek_set=false,gpu=false;
     int damage_sample=-1;
     bool wall_faces_reference=false,shadow_events=false;
+    bool journal_profile=false;uint32_t journal_checksum=0;
     int room_index=-1;float camera_yaw=0;bool camera_yaw_set=false;
     const char* capture=NULL;
     int frames=300,mission=SWAT_HOUSE;
@@ -66,6 +67,7 @@ int main(int argc,char** argv) {
         else if(!strcmp(argv[i],"--hidden")) hidden=true;
         else if(!strcmp(argv[i],"--audio")) audio=true;
         else if(!strcmp(argv[i],"--audio-stereo")) audio=stereo=true;
+        else if(!strcmp(argv[i],"--journal-profile")) journal_profile=true;
         else if(!strcmp(argv[i],"--draw-only")) draw_only=true;
         else if(!strcmp(argv[i],"--plan")) planning=true;
         else if(!strcmp(argv[i],"--camera")) scope=true;
@@ -101,7 +103,7 @@ int main(int argc,char** argv) {
             if(end==argv[i] || *end || value<0 || value>INT32_MAX)return 1;
             if(is_seek){seek=(int)value;seek_set=true;}else frames=(int)value;
         }
-        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600]\n"); return 1; }
+        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--journal-profile] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600]\n"); return 1; }
     }
     if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && (draw_only || indoors || fire))) return 1;
     if((gpu && headless) || (damage_sample>=0 && (replay_path || record_path || indoors || scope || mission!=SWAT_BREACH_LAB)))return 1;
@@ -110,7 +112,7 @@ int main(int argc,char** argv) {
     if(replay_path && (!swat_replay_open(&playback,replay_path) || (uint64_t)seek+frames+31>playback.count)) {
         fprintf(stderr,"Cannot read requested replay window\n");if(playback.file)swat_replay_close(&playback);return 1;
     }
-    SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*11,sizeof(double));
+    SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*12,sizeof(double));
     if(!sim || !measurements) { if(playback.file)swat_replay_close(&playback);free(sim); free(measurements); return 1; }
     SwatConfig config=swat_default_config(); config.mission=mission; config.layout_seed=42;
     config.tactical_rules=true; config.squad_bots=3; config.hostile_fire=false; config.max_ticks=36000;
@@ -173,9 +175,10 @@ int main(int argc,char** argv) {
     input.sniper_order=SWAT_SNIPER_NONE;
     unsigned int sun_start=0,rooms_start=0,actors_start=0,faces_start=0,static_faces_start=0,sun_actors_start=0;
     double shadow_max=0;unsigned int max_sun=0,max_rooms=0,max_actors=0,max_faces=0,max_static_faces=0,max_sun_actors=0;int max_tick=0;
+    time_t measured_started=0;
     int measured_start=0,destroyed_start=0,detonations=0,measured=0;
     for(int i=0;valid && i<frames+30;i++) {
-        if(i==30){measured_start=sim->tick;destroyed_start=sim->totals.destroyed;swat_damage_profile=(SwatDamageProfile){.enabled=true};}
+        if(i==30){measured_started=time(NULL);measured_start=sim->tick;destroyed_start=sim->totals.destroyed;swat_damage_profile=(SwatDamageProfile){.enabled=true};}
         unsigned int sun_before=view.lighting.sun_geometry_updates,rooms_before=view.lighting.room_updates,actors_before=view.lighting.actor_room_updates;
         unsigned int faces_before=view.lighting.actor_face_updates;
         unsigned int static_faces_before=view.lighting.room_face_updates,sun_actors_before=view.lighting.sun_actor_updates;
@@ -194,8 +197,14 @@ int main(int argc,char** argv) {
         double t=seconds();if(replay_path)valid=replay_step(&playback,sim,&input,&replay_tick,&verification);else if(!draw_only) swat_sim_step(sim,&input);
         if(!valid)break;
         if(i>=30 && input.door_tool==SWAT_DETONATE_CHARGE)detonations++;
-        if(recording.file && !swat_replay_append(&recording,&input,sim)) valid=false;
         double tick=replay_path?replay_tick:seconds()-t;
+        // Solo players hash each accepted tick for their automatic journal.
+        // Profile that real digest even in fixtures that cannot be recorded.
+        // With --record this also includes the actual command/file append.
+        t=seconds();
+        if(recording.file) {if(!swat_replay_append(&recording,&input,sim))valid=false;}
+        else if(journal_profile)journal_checksum^=swat_replay_digest(sim);
+        double journal=recording.file || journal_profile ? seconds()-t : 0;
         t=seconds(); if(audio) swat_sound_view_update(&sound,sim,0,1,0,0); double mix=seconds()-t;
         t=seconds();
         swat_gpu_profile_begin(&gpu_profile,i);
@@ -213,11 +222,12 @@ int main(int argc,char** argv) {
             int n=i-30; measurements[n]=tick; measurements[frames+n]=mix;
             measured++;
             measurements[2*frames+n]=drawing; measurements[3*frames+n]=present;
-            measurements[4*frames+n]=tick+mix+drawing+present;
+            measurements[4*frames+n]=tick+journal+mix+drawing+present;
             measurements[5*frames+n]=view.pose_seconds;measurements[6*frames+n]=view.shadow_seconds;
             measurements[7*frames+n]=view.scene_seconds;measurements[8*frames+n]=view.geometry_seconds;
             measurements[9*frames+n]=view.weapon_seconds;
             measurements[10*frames+n]=verification;
+            measurements[11*frames+n]=journal;
         }
     }
     if(measured!=frames) {
@@ -230,6 +240,8 @@ int main(int argc,char** argv) {
     printf("SWAT PERF mission=%s seed=%u objects=%d actors=%d frames=%d draw_only=%d audio=%d planning=%d camera=%d expanded=%d indoors=%d shots=%d destroyed=%d init_ms=%.3f first_tick_ms=%.3f\n",
         swat_mission(mission)->name,seed,sim->world.count,sim->actor_count,frames,draw_only,audio,planning,scope,expanded,indoors,sim->actors[0].arsenal.shots,sim->totals.destroyed,initialization*1000,first_tick*1000);
     report("simulation",measurements,frames); report("audio",measurements+frames,frames);
+    report("journal_digest_or_append",measurements+11*frames,frames);
+    printf("journal_profile=%d recording=%d digest_checksum=%08x file_io_included=%d measured_unix_start=%lld measured_unix_end=%lld\n",journal_profile,record_path!=NULL,journal_checksum,record_path!=NULL,(long long)measured_started,(long long)time(NULL));
     if(gpu_samples){swat_gpu_profile_results(&gpu_profile,gpu_samples,30);report("gpu_timeline_elapsed",gpu_samples,frames);}
     const SwatDamageProfile* p=&swat_damage_profile;
     printf("damage_work support_scans=%llu hulls=%llu shape_rebuilds=%llu created=%llu destroyed=%llu door_builds=%llu door_vertices=%llu support_ms=%.3f hull_ms=%.3f collision_ms=%.3f door_ms=%.3f upload_ms=%.3f\n",

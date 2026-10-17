@@ -116,7 +116,7 @@ static void breach(SwatSim* s,int object,int owner) {
     door->breach_ticks=24;
     for(int i=0;i<s->world.count;i++)active-=s->world.objects[i].active;
     s->events.destroyed+=active;
-    swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_FLASH,origin,2.5f,80,door->material);
+    swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_BREACH,origin,2.5f,80,door->material);
     // One material debris source for the whole aperture, not one voice per
     // removed wall fragment. It follows the same room/occlusion path as shots.
     swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_BREAK,origin,1.2f,35,door->material);

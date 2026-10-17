@@ -1,8 +1,11 @@
 #include "protocol.h"
+#include "replay.h"
+#include "door_damage.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 static SwatSim sim,replica;
+static FILE* occupied_trace;
 static void fixture(void) {
     memset(&sim,0,sizeof(sim)); sim.config=swat_default_config(); sim.config.tactical_rules=true; sim.config.hostile_fire=false; sim.config.max_ticks=10000;
     sim.extraction=(b3Pos){-7,0,0}; sim.mission.staging=(b3Pos){0,0,0}; swat_world_init(&sim.world);
@@ -343,4 +346,68 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
-int main(void) { navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance(); return 0; }
+static void occupied_entry(int route,int mirror) {
+    fixture();sim.config.mission=SWAT_HOUSE;
+    place_actor(0,(b3Pos){-1.8f,0,0});place_actor(1,(b3Pos){4,0,mirror*1.8f});place_actor(2,(b3Pos){3,0,-mirror*1.8f});
+    sim.actors[2].gear.surrendered=sim.actors[2].gear.restrained=true;
+    int first=sim.world.count;
+    swat_build_framed_wall(&sim.world,(b3Pos){0,0,0},0,6,2.7f,0,1.4f,0,2.19f,false);
+    int owner=-1;for(int i=first;i<sim.world.count;i++)if(sim.world.objects[i].door)owner=i;
+    assert(owner>=0);
+    for(int i=3;i<6;i++) {
+        swat_sim_spawn_actor(&sim,i,SWAT_OFFICER,(b3Pos){-3,0,(i-4)*1.1f},0);
+        sim.actors[i].mind.bot=true;
+    }
+    sim.actor_count=6;
+    SwatInput input=swat_neutral_input();input.squad_order=SWAT_ORDER_CLEAR;input.interact=true;
+    if(route==2) {
+        // A physically open breach fixture. Move is aimed at supported floor
+        // through it, so no original door owner is needed for the command.
+        assert(swat_world_damage(&sim.world,owner,1000));
+        sim.actors[0].controller.pitch=atan2f(-swat_controller_eye(&sim.actors[0].controller).y,5.3f);
+        input.squad_order=SWAT_ORDER_MOVE;input.interact=false;
+    }
+    swat_sim_step(&sim,&input);
+    if(route!=2)assert(sim.world.objects[owner].door_open);
+    if(route==1) {
+        SwatObject* door=&sim.world.objects[owner];assert(swat_world_break_latch(&sim.world,owner));
+        for(int h=0;h<3;h++) {
+            b3Vec3 anchor=swat_door_hinge(door,h);
+            for(int shot=0;shot<8 && (!door->motion || !(door->motion->state.broken_hinges&(1u<<h)));shot++) {
+                b3Quat q=swat_object_rotation(door);int sample=shot%4;
+                b3Vec3 local=swat_v(-.3f,anchor.y+(sample&1?1:-1)*.035f*(door->half.y/1.095f),anchor.z+(sample&2?1:-1)*.008f*(door->half.z/.54f));
+                swat_sim_shoot(&sim,0,b3OffsetPos(door->center,b3RotateVector(q,local)),b3RotateVector(q,swat_v(1,0,0)),(SwatShot){.fired=true,.damage=34,.energy=60,.range=2});
+            }
+        }
+        assert(swat_door_loose(door));
+    }
+    int seeing[3]={0},tick;
+    for(tick=0;tick<1500;tick++) {
+        swat_sim_step(&sim,&(SwatInput){0});bool done=true;
+        if(occupied_trace)assert(fprintf(occupied_trace,"%d %d %d %08x\n",route,mirror,tick,swat_replay_digest(&sim))>0);
+        for(int i=3;i<6;i++) {
+            seeing[i-3]+=sim.actors[i].mind.state==SWAT_ENGAGE;
+            done&=sim.actors[i].mind.entry_settled;
+        }
+        if(done)break;
+    }
+    for(int i=3;i<6;i++) {
+        SwatActor* a=&sim.actors[i];b3Pos feet=swat_body_feet_position(&a->controller.body);
+        fprintf(stderr,"Occupied entry route%d mirror%d officer%d: tick%d feet%.3f,%.3f goal%.3f,%.3f engaged%d settled%d order%d\n",route,mirror,i,tick,(float)feet.x,(float)feet.z,(float)a->mind.goal.x,(float)a->mind.goal.z,seeing[i-3],a->mind.entry_settled,a->mind.order);
+        assert(a->health==100 && a->arsenal.shots==0);
+    }
+    assert(tick<1500 && seeing[0]>10 && sim.actors[2].health==100);
+    for(int i=3;i<6;i++)assert(b3Distance(swat_body_feet_position(&sim.actors[i].controller.body),sim.actors[i].mind.goal)<.65f);
+    swat_sim_close(&sim);
+    printf("PASS occupied entry route%d mirror%d: ordinary Clear/Move commands through opening/fallen-leaf/breach fixtures, three physical officers finish separate sectors while tracking a visible suspect, civilian intact and fire disabled\n",route,mirror);
+}
+int main(int argc,char** argv) {
+    if((argc==2 || argc==3) && !strcmp(argv[1],"occupied")) {
+        if(argc==3){occupied_trace=fopen(argv[2],"w");assert(occupied_trace);}
+        for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side);
+        if(occupied_trace)assert(!fclose(occupied_trace));
+        return 0;
+    }
+    assert(argc==1);
+    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side);return 0;
+}

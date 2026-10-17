@@ -44,11 +44,8 @@
 2 -1 -1 0.550 mechanism_1.wav
 3 -1 -1 0.45 mechanism_1.wav
 6 2 -1 0.600 break_wood_0.wav
-4 -1 -1 0.50 break_wood_0.wav
 6 2 -1 0.600 break_wood_1.wav
-4 -1 -1 0.50 break_wood_1.wav
 6 2 -1 0.600 break_wood_2.wav
-4 -1 -1 0.50 break_wood_2.wav
 1 8 -1 0.450 step_concrete_0.wav
 1 8 -1 0.450 step_concrete_1.wav
 1 8 -1 0.450 step_concrete_2.wav
@@ -87,3 +84,10 @@
 6 15 -1 0.300 kenney_soft_1.ogg
 5 15 -1 0.350 kenney_soft_2.ogg
 6 15 -1 0.300 kenney_soft_2.ogg
+4 -1 -1 0.500 qubodup-DoorOpen01.ogg
+4 -1 -1 0.500 qubodup-DoorOpen02.ogg
+11 -1 -1 0.500 qubodup-DoorClose01.ogg
+11 -1 -1 0.500 qubodup-DoorClose02.ogg
+12 -1 -1 0.700 bang-pack-cannon_01.ogg
+12 -1 -1 0.700 bang-pack-cannon_03.ogg
+12 -1 -1 0.700 bang-pack-cannon_04.ogg

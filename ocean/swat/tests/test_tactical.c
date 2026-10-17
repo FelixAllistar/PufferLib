@@ -20,6 +20,36 @@ static void fixture(SwatMaterial floor) {
     swat_sim_spawn_actor(&sim,2,SWAT_CIVILIAN,(b3Pos){10,0,5},SWAT_PI);
     step(swat_neutral_input(),15);
 }
+static int sounds(SwatSoundKind kind) {
+    int count=0;for(int i=0;i<sim.sounds.count;i++)count+=swat_sound_at(&sim.sounds,i)->kind==kind;
+    return count;
+}
+static void door_sounds(void) {
+    fixture(SWAT_CONCRETE);
+    int owner=swat_world_box(&sim.world,(b3Pos){-3.7f,1.3f,0},swat_v(.04f,1.3f,.8f),SWAT_WOOD,120);
+    SwatObject* door=&sim.world.objects[owner];door->door=true;door->hinge=(b3Pos){-3.7f,1.3f,-.8f};
+    SwatInput in=swat_neutral_input();in.interact=true;step(in,1);
+    assert(door->door_open && sounds(SWAT_SOUND_DOOR)==1 && !sounds(SWAT_SOUND_DOOR_CLOSE));
+    step(swat_neutral_input(),60);assert(door->door_angle>1.5f);
+    place(0,(b3Pos){-4.8f,0,0},atan2f(-.8f,1.9f));step(in,1);
+    assert(!door->door_open && door->door_angle>1.4f && !sounds(SWAT_SOUND_DOOR_CLOSE));
+    place(2,(b3Pos){-3.1f,0,-.35f},0);sim.actors[2].gear.restrained=true;
+    step(swat_neutral_input(),60);
+    assert(door->door_angle>.05f && !sounds(SWAT_SOUND_DOOR_CLOSE));
+    place(2,(b3Pos){10,0,5},0);
+    for(int i=0;i<90 && door->door_angle>0;i++)step(swat_neutral_input(),1);
+    assert(door->door_angle==0 && sounds(SWAT_SOUND_DOOR_CLOSE)==1);
+    const SwatSoundEvent* closed=NULL;
+    for(int i=0;i<sim.sounds.count;i++)if(swat_sound_at(&sim.sounds,i)->kind==SWAT_SOUND_DOOR_CLOSE)closed=swat_sound_at(&sim.sounds,i);
+    assert(closed && closed->tick==sim.tick && b3Distance(closed->position,door->center)<1e-6f);
+    step(swat_neutral_input(),30);assert(sounds(SWAT_SOUND_DOOR_CLOSE)==1);
+    static SwatMap map;static SwatSnapshot state,decoded;static unsigned char packet[SWAT_NET_PACKET_MAX];
+    swat_capture_map(&sim,1,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,1,&state);
+    size_t n=swat_encode_snapshot(packet,sizeof(packet),&state);assert(n && swat_decode_snapshot(&decoded,packet,n) && swat_apply_snapshot(&replica,&decoded));
+    bool received=false;for(int i=0;i<replica.sounds.count;i++)received|=swat_sound_at(&replica.sounds,i)->kind==SWAT_SOUND_DOOR_CLOSE;
+    assert(received);swat_sim_close(&replica);swat_sim_close(&sim);
+    puts("PASS door sound timing: opening cue, silent closing obstruction, one actual frame-contact close event, no repeats and late-replica sound codec");
+}
 static float bounce(SwatMaterial material) {
     fixture(material); assert(swat_throw(&sim,0,SWAT_FLASHBANG));
     SwatProjectile* p=&sim.projectiles[0];
@@ -361,4 +391,4 @@ static void light_switches(void) {
     swat_sim_init(&sim,cfg,87);assert(!sim.world.room_light_off_mask);swat_sim_close(&sim);
     puts("PASS light switches: all four mounts, press/release, narrow targeting, reach, real cover, destroyed support, late-join snapshot, invalid state rejection and reset");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); context(); wedges_spray_traps(); light_switches(); return 0; }
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); doors(); network(); context(); wedges_spray_traps(); light_switches(); return 0; }

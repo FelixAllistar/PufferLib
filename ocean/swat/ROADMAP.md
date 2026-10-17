@@ -12,6 +12,65 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Occupied entry and sound pass (2026-10-16): officers receiving Clear/Move now
+keep translating along their physical route while tracking a visible suspect,
+instead of freezing the first officer and the entire entry queue. Movement
+rebases into the aimed heading and retains policy-controlled locomotion. Loose
+leaves are treated as physical obstacles rather than usable closed doors.
+Steering and controller translation use the existing deterministic math to
+remove Linux/Windows angle/velocity drift exposed by the new cases. Six
+controlled opening/fallen-leaf/open-breach fixtures with mirrored occupants
+complete separated sectors and match all 6,575 snapshot digests across platforms.
+Those fixtures disable hostile fire and use stationary target placements; full
+motel hostile-fire and actual charge routes are separate checks.
+
+Two recorded opening, two closing and three mounted-breach variants bring the
+production bank to 92 entries in its existing 96 slots. CC0 source URLs, archive
+hashes and unchanged selected Ogg hashes are retained in the bank provenance.
+Closing commands use a handle cue; frame contact emits once on achieved closure,
+with no premature close sound from an obstructed leaf. Mounted charges have a
+distinct replicated breach kind; flashbangs retain their own cue. Protocol/replay
+v26 requires matched builds and fresh recordings/saves. Both platforms produce
+byte-identical listening WAVs through the real bank/mixer. Room 102's mug and
+Room 104's remote reuse existing small assets on their actual desk owners.
+
+The artist reports option 1 complete: a separate three-hinge relief / 6 mm
+casing-retreat assembly on the current axis. Its 901-pose and clearance claims
+remain artist-side checks. The engine received the 81-file package, verified
+all 80 payload hashes and confirmed its two frozen inputs match the accepted
+local GLBs byte for byte. Frozen source meshes/maps remain untouched in the
+engine. Native seating, sweep, failure-state and collision/render acceptance
+are pending.
+
+Performance tooling now optionally includes the solo journal's actual per-tick
+digest, with digest/file-append cost separated from simulation. Fixture digest
+profiling excludes file I/O; real recording includes the append. Measurement
+UTC bounds allow matching GPU/load telemetry. Evidence and final validation
+receipts for this increment live under `build/swat/review/occupied-slice`.
+This increment does not complete the full vertical-slice goal.
+
+The CPU profile exposed repeated acoustic routing for inaudible events,
+full-world doorway scans, and unnecessary static-object rotation calculations.
+Direct-distance range/arrival bounds now skip those queries without consuming
+events; the cache keeps doorway indices in the original order. Exact exhaustive
+hearing checks cover 720 paths, 288 next-float boundary cases and an approaching
+listener. Existing motel/door journals reproduce every tick on both optimized
+platforms, and all 6,575 controlled occupied-entry digests remain unchanged.
+
+Native GTX 1060 3 GB measurements use 600 measured ticks after 30 warm-up ticks,
+67 finite-ammo shots, the real solo-journal digest and matched checksum cc0afddf.
+Two headless baseline runs average 7.505/7.580 ms simulation time; optimized runs
+average 6.121/5.506 ms, about 23% less across each pair's mean. These headless
+runs exclude rendering and audio. Their p95 simulation times remain approximately
+20–24 ms: damage spikes remain. Full-render HRTF runs average 29.910/39.825 ms
+before and 23.265/46.948 ms after, including a 3,167 ms outlier. They establish
+no repeatable FPS improvement. Rendering/submission and stalls still need work.
+The four-case baseline and before/after logs retain UTC measurement bounds,
+GPU telemetry and process snapshots. The desktop was idle, with other resident
+apps still occupying GPU memory. These uncapped hidden-window runs advance one
+simulation tick per rendered frame; digest-only profiling excludes file I/O.
+
+
 Door pivot/source follow-up (2026-10-15): the three leaf-owned decorative
 barrels remain the damage locations; last-hinge constraints use the logical
 opening axis 18 mm toward the leaf edge. Damage probes and physics anchors are

@@ -20,7 +20,7 @@ int main(int argc,char** argv) {
 #else
     assert(!setenv("SWAT_SOUND_ASSETS",argv[1],1));
 #endif
-    recordings_open(&view);assert(view.clip_count==88 && view.clip_count<SWAT_SOUND_CLIPS);
+    recordings_open(&view);assert(view.clip_count==92 && view.clip_count<SWAT_SOUND_CLIPS);
     for(int c=0;c<view.clip_count;c++) {
         const SwatSoundClip* clip=&view.clips[c];double energy=0;
         assert(clip->frames>0 && clip->frames<=4*clip->rate);
@@ -47,6 +47,16 @@ int main(int argc,char** argv) {
             }
         }
         assert(energy>1e-5 && !voice->active);
+    }
+    const SwatSoundKind entry_kinds[]={SWAT_SOUND_DOOR,SWAT_SOUND_DOOR_CLOSE,SWAT_SOUND_BREACH};
+    for(int k=0;k<3;k++) {
+        const float* seen[3]={0};int count=0;
+        for(int id=1;id<=48;id++) {
+            SwatAudioVoice* voice=start(id,entry_kinds[k],SWAT_WOOD);assert(voice->recording);
+            bool found=false;for(int i=0;i<count;i++)found|=seen[i]==voice->recording;
+            if(!found){assert(count<3);seen[count++]=voice->recording;}
+        }
+        assert(count==(k==2?3:2));
     }
     // An exact authored surface beats its family and any wildcard, even when
     // a wildcard has a weapon profile. Missing recordings retain synthesis.
@@ -90,7 +100,18 @@ int main(int argc,char** argv) {
         WaveFormat(&wave,SWAT_AUDIO_RATE,16,2);assert(ExportWave(wave,argv[2]));
         UnloadWave(wave);
     }
+    if(argc>3) {
+        static float proof[SWAT_AUDIO_RATE*9*2];
+        const SwatSoundKind kinds[]={SWAT_SOUND_DOOR,SWAT_SOUND_DOOR_CLOSE,SWAT_SOUND_BREACH,
+            SWAT_SOUND_DOOR,SWAT_SOUND_DOOR_CLOSE,SWAT_SOUND_BREACH};
+        for(int i=0;i<6;i++) {
+            start(12+i,kinds[i],SWAT_WOOD);
+            swat_audio_mix(&view.mixer,proof+i*SWAT_AUDIO_RATE*3,SWAT_AUDIO_RATE*3/2,.85f);
+        }
+        Wave wave=WaveCopy((Wave){.frameCount=SWAT_AUDIO_RATE*9,.sampleRate=SWAT_AUDIO_RATE,.sampleSize=32,.channels=2,.data=proof});
+        assert(IsWaveValid(wave));WaveFormat(&wave,SWAT_AUDIO_RATE,16,2);assert(ExportWave(wave,argv[3]));UnloadWave(wave);
+    }
     swat_sound_view_close(&view);assert(!view.clip_count);
-    puts("PASS production sound bank: 88 decoded entries; all 16 impact/break materials, three deterministic variants each, exact/family/wildcard priority, directional finite PCM, expiry, contact deduplication and cleanup");
+    puts("PASS production sound bank: 92 decoded entries; all 16 impact/break materials, two open/close and three breach variants, exact/family/wildcard priority, directional finite PCM, expiry, contact deduplication and cleanup");
     return 0;
 }

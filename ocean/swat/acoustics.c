@@ -48,7 +48,8 @@ typedef struct SwatAcousticScene {
     b3Vec3 source_half[SWAT_MAX_GEOMETRY];
     float source_yaw[SWAT_MAX_GEOMETRY],source_pitch[SWAT_MAX_GEOMETRY];
     b3Quat source_rotation[SWAT_MAX_GEOMETRY];
-    bool source_active[SWAT_MAX_GEOMETRY];
+    bool source_active[SWAT_MAX_GEOMETRY],source_door[SWAT_MAX_GEOMETRY];
+    int doors[SWAT_MAX_OBJECTS],door_count;
     SwatAcousticNode nodes[2*SWAT_MAX_GEOMETRY];
 } SwatAcousticScene;
 
@@ -85,10 +86,12 @@ static int swat_acoustic_tree(SwatAcousticScene* scene,int start,int count) {
 }
 
 static void swat_acoustic_scene(SwatAcousticScene* scene,const SwatWorld* world) {
-    scene->world=world; scene->count=scene->node_count=0; scene->source_count=swat_world_geometry_count(world);
+    scene->world=world; scene->count=scene->node_count=scene->door_count=0; scene->source_count=swat_world_geometry_count(world);
     scene->origin=world->count ? world->objects[0].center : (b3Pos){0};
     for(int i=0;i<scene->source_count;i++) {
         const SwatObject* o=swat_world_geometry(world,i);
+        scene->source_door[i]=o->door;
+        if(i<world->count && o->door)scene->doors[scene->door_count++]=i;
         scene->source_active[i]=o->active; scene->source_center[i]=o->center; scene->source_half[i]=o->half;
         scene->source_yaw[i]=o->yaw; scene->source_pitch[i]=o->pitch;
         if(!o->active) continue;
@@ -120,12 +123,14 @@ static const SwatAcousticScene* swat_acoustic_cached(const SwatWorld* world) {
     bool changed=cache.world!=world || cache.source_count!=swat_world_geometry_count(world);
     for(int i=0;!changed && i<cache.source_count;i++) {
         const SwatObject* o=swat_world_geometry(world,i);
-        b3Quat rotation=swat_object_rotation(o);
-        changed=cache.source_active[i]!=o->active ||
+        changed=cache.source_active[i]!=o->active || cache.source_door[i]!=o->door ||
             (o->active && (memcmp(&cache.source_center[i],&o->center,sizeof(o->center)) ||
              memcmp(&cache.source_half[i],&o->half,sizeof(o->half)) ||
-             cache.source_yaw[i]!=o->yaw || cache.source_pitch[i]!=o->pitch ||
-             ((o->motion || o->rubble) && memcmp(&cache.source_rotation[i],&rotation,sizeof(rotation)))));
+             cache.source_yaw[i]!=o->yaw || cache.source_pitch[i]!=o->pitch));
+        if(!changed && o->active && (o->motion || o->rubble)) {
+            b3Quat rotation=swat_object_rotation(o);
+            changed=memcmp(&cache.source_rotation[i],&rotation,sizeof(rotation))!=0;
+        }
     }
     if(changed) swat_acoustic_scene(&cache,world);
     return &cache;
@@ -256,8 +261,8 @@ static SwatAcousticPath swat_acoustic_scene_path(const SwatAcousticScene* scene,
                                                b3Pos listener) {
     const SwatWorld* world=scene->world;
     SwatAcousticPath best=swat_acoustic_route(scene,event,listener,NULL);
-    for(int i=0;i<world->count;i++) {
-        const SwatObject* door=&world->objects[i];
+    for(int i=0;i<scene->door_count;i++) {
+        const SwatObject* door=&world->objects[scene->doors[i]];
         if(!door->door || (door->active && !swat_door_dynamic(door) && door->door_angle<0.15f)) continue;
         // Authored openings retain their location when the door swings/breaks.
         // Sample across the opening: a swung leaf can obstruct the centre
@@ -377,6 +382,12 @@ bool swat_hearing_next(const SwatWorld* world, const SwatSoundLog* log, int tick
         const SwatSoundEvent* event=swat_sound_at(log,i);
         if(event->source_actor==actor || swat_hearing_consumed(memory,event->id)) continue;
         if(tick-event->tick>SWAT_SOUND_LIFETIME) { swat_hearing_consume(memory,event->id); continue; }
+        // Every bent route is at least the direct distance. Keep a generous
+        // rounding margin, and leave skipped events unconsumed: approaching
+        // listeners and changed cover still get the original later queries.
+        float distance=b3Distance(event->position,listener),margin=fmaxf(.001f,event->range*.00001f);
+        if(tick<event->tick || distance>event->range+margin ||
+           distance>(tick-event->tick)*(343.0f*SWAT_DT)+margin)continue;
         if(!scene) scene=swat_acoustic_cached(world);
         SwatAcousticPath path=swat_acoustic_scene_path(scene,event,listener);
         if(tick<event->tick+path.delay_ticks || path.gain<0.008f) continue;

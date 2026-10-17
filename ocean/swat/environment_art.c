@@ -1179,6 +1179,14 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         SwatMotelInstance mount={.origin={.8f,.7606f,i?-2.23f:-2.03f},.scale={1,1,1},.yaw=(i?-12:8)*SWAT_RAD};
         location_draw(art,o,&mount,&art->motel_personal[i],shadow,cutaway,false);
     }
+    // Sparse guest belongings distinguish the other occupied desks. Reuse the
+    // accepted metre-scale tabletop art; ownership follows the actual desk.
+    if(o->active && (o->tag.index==48 || o->tag.index==96)) {
+        bool remote=o->tag.index==96;
+        SwatMotelInstance mount={.origin={remote?4.8f:-3.2f,.7606f,-2.08f},
+            .scale={1,1,1},.yaw=(remote?-15:25)*SWAT_RAD};
+        location_draw(art,o,&mount,&art->props[remote?SWAT_ENV_PROP_REMOTE:SWAT_ENV_PROP_MUG],shadow,cutaway,false);
+    }
     if(o->tag.index==5 && o->active && art->motel_reception.meshCount) {
         SwatMotelInstance sign={.origin={-10.6f,2.4f,2.01f},.scale={1,1,1},.roof=true};
         location_draw(art,o,&sign,&art->motel_reception,shadow,cutaway,false);

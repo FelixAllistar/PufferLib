@@ -193,6 +193,8 @@ bool swat_world_attach(SwatWorld*,int object,const int* supports,int count);
 float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 direction);
 float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
+// Optional notice after an unobstructed ordinary sweep reaches closed.
+void swat_world_step_doors_notify(SwatWorld*,void (*closed)(void*,int),void* context);
 // Synchronize moving leaves after the shared Box3D step, including devices.
 void swat_world_sync_doors(SwatWorld* world);
 void swat_world_sync_rubble(SwatWorld*);

@@ -52,3 +52,46 @@ Requested deliverable:
 Acceptance is native visual/physics/replica review after delivery. This request
 does not replace the accepted leaf with an unrelated door model. Existing SEAT01
 may be a hardware reference if useful; its native fit here remains unverified.
+
+
+Engine follow-up, 2026-10-16: Felix authorized continuing the slice. Sent option 1
+in the existing thread: preserve current logical axis/opening direction, make
+three local hinge-edge reliefs and a 6 mm retreat of the offending casing in a
+separate candidate. The proposed 12 mm hardware / 6 mm pin / ~7 mm relief are
+provisional art dimensions pending seating and a full 0–90 degree sweep. Frozen
+originals and unaffected broad surfaces/UV/maps remain protected. Require exact
+changed components/faces, three-barrel mapping and the original failure-state kit.
+Relay: https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792198005422439?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+The artist subsequently required Felix's direct confirmation in that thread:
+https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792198031284389?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+No candidate had been delivered or accepted at this point; current runtime
+geometry is unchanged.
+
+Felix directly confirmed in the same thread on 2026-10-16:
+https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792198791335179?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+Candidate delivery and engine acceptance remain pending.
+
+Artist acknowledged and is proceeding, 2026-10-16:
+https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792199307637799?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+The later 901-pose / approximately 1 mm clearance statement is artist-side QA,
+not engine acceptance. Delivered bytes and native checks are still required.
+
+Artist subsequently reports the candidate packaged/backed up, with 3,198
+hardware triangles and 24 failure remnants totaling 504 triangles. Its preview
+F0C9ZCW4FM0 was received; package bytes have not yet reached the engine.
+Artist completion: https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792200536006649?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+The artist's automatic file-sharing review blocked posting the private link
+publicly. Felix explicitly consented to reading the private handoff solely to
+retrieve that link. The connected DM currently contains only a welcome message,
+and connected Drive searches found no package. Asked for actual private delivery
+without changing Drive permissions or posting the link publicly:
+https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792201114150099?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+
+Artist subsequently obtained sharing approval and posted the actual package:
+https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792201158089529?thread_ts=1791078311.943659&cid=C0C5TN3AA8K
+https://drive.google.com/file/d/16ikkKMVxaPFiHzcUZAkPPBtWXLepQZtn/view?usp=drivesdk
+Engine downloaded all 12,386,542 bytes, verified all 80 payload SHA256 entries
+(plus the manifest itself = 81 files), and matched the two frozen GLB inputs
+byte for byte against the accepted local originals. New barrels are on source
+X=0, not the former decorative X=.018. Native candidate integration/acceptance
+is next; the artist's last-hinge pose is explicitly an art pose, not a load test.
