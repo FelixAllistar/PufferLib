@@ -149,7 +149,9 @@ records source preservation, import checks and the remaining physics limits.
 `SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
 assembly for comparison. Other rooms retain their accepted art.
 
-Use matching version-28 peers and fresh recordings/saves. Jamb damage changes
+Use matching version-29 peers and fresh recordings/saves. Directed squad tasks
+now retain the selected person; Restrain assigns one officer while the others
+cover, and Fall In keeps moving under visible threat. Jamb damage changes
 door attachments, and queued orders and scripted firing now handle interrupted
 entries and same-tick compliance. Replicas validate combined incoming leaf/frame
 geometry before applying a snapshot. Earlier versions are incompatible; existing
@@ -571,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v28 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v29 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -930,8 +932,11 @@ buffer overflows. Dense bed/rack contacts preserve their original triangles,
 edge flags and ballistic thickness in bounded shared mesh components.
 Windows builds the equivalent `test_motel_completion.exe`; pass an output
 `.sgrp` path, optional `combat`, and optional `exterior` or `interroom` argument.
-The QA driver knows the room plan;
-this is not an RL evaluation or a substitute for human playtesting.
+Optional `squad` delegates restraints to the actual squad, moves the commander
+clear of the doorway, and recalls covering officers before escorting occupants.
+The QA driver knows the room plan. These checks establish functional behavior,
+not RL improvement, rendered visual quality or a stable-load performance budget.
+Further development does not wait on manual playtesting.
 
 Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
@@ -966,6 +971,24 @@ also gives each selected officer a separate endpoint; empty sky is not a target.
 Bots route through static clearance and locally visible bodies, open/pick doors
 when their order allows it, and keep physical collision throughout. This is an
 initial authored tactical behavior layer; it is not a trained squad policy.
+Fall In continues the physical route while the officer tracks a visible suspect;
+its formation trails the commander's heading on connected floor, and recalled
+officers give a nearby open doorway room for the commander to pass. A blocked
+formation holds its own position instead of collapsing onto the commander.
+At extraction, officers choose free reachable destinations inside staging so
+the rear officer can regroup through a crowd of rescued people. Escorted occupants also physically yield in open
+doorways instead of blocking their escort leader's passage.
+Hold and Cover retain their positioning behavior. Restrain selects the nearest available officer from
+the chosen team to handle the aimed person, leaving other officers on their
+current orders. That officer calls for compliance, approaches using the normal
+controller, and holds the actual cuff interaction. Cover blocks hands, hidden
+movement cannot update the last observed goal, and a different visible suspect
+takes precedence over cuffing. Finishing the task holds position; it does not
+start an escort. `make -C ocean/swat squad-tasks-test` covers those transitions,
+including a pane that transmits sight but blocks hands, Hold during cuffing,
+mirrored doorway passage and centre/edge/crowded extraction. When visible bodies
+block every grid exit, navigation also checks nearby supported steps from the
+actor's actual feet. Those first steps retain swept body, wall and door clearance.
 Scripted officers recheck the actual aimed sight ray before firing, including
 buffered semi-auto shots, so a suspect surrendering during that tick stops the
 stale shot. Human inputs retain the existing weapon rules and ROE consequences.
@@ -1437,7 +1460,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 28 as described above.
+destruction prototype requires version 29 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native
