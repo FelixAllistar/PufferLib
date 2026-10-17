@@ -650,8 +650,14 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
         }
     }
     for(int i=0;i<s->actor_count;i++) {
-        SwatMind* mind=&s->actors[i].mind;
-        if(!mind->pending_order || mind->command_tick>s->tick || (mind->queued && !in->squad_execute)) continue;
+        SwatActor* a=&s->actors[i];SwatMind* mind=&a->mind;
+        if(!a->present || !a->alive || !mind->bot || a->role!=SWAT_OFFICER) {
+            mind->pending_order=0;mind->queued=false;continue;
+        }
+        // Execute arms the queue once, including recipients whose radio delay
+        // has not elapsed. The player need not hold the key through that delay.
+        if(in->squad_execute)mind->queued=false;
+        if(!mind->pending_order || mind->command_tick>s->tick || mind->queued) continue;
         mind->order=mind->pending_order; mind->goal=mind->pending_goal;mind->order_yaw=mind->pending_yaw;mind->order_door=mind->pending_door;mind->entry_settled=false; mind->pending_order=0; mind->queued=false; mind->replan_tick=0;
         swat_sound_emit(&s->sounds,s->tick,i,SWAT_SOUND_COMMAND,swat_controller_eye(&s->actors[i].controller),.5f,12);
     }
@@ -663,7 +669,7 @@ static void officer_move(SwatSim* s,int i,SwatInput* in,bool tracking) {
     bool entry_wait=false;
     if(mind->order==SWAT_ORDER_CLEAR && mind->order_door>0)for(int j=0;j<i;j++) {
         const SwatActor* peer=&s->actors[j];if(!peer->present || !peer->alive || !peer->mind.bot)continue;
-        entry_wait|=(peer->mind.pending_order==SWAT_ORDER_CLEAR && peer->mind.pending_door==mind->order_door) ||
+        entry_wait|=(peer->mind.pending_order==SWAT_ORDER_CLEAR && !peer->mind.queued && peer->mind.pending_door==mind->order_door) ||
             (peer->mind.order==SWAT_ORDER_CLEAR && peer->mind.order_door==mind->order_door && !peer->mind.entry_settled);
     }
     if(entry_wait)return;

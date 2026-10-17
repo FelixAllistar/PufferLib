@@ -166,7 +166,10 @@ bool swat_sim_set_player(SwatSim* s, int slot, bool present) {
     if(index<0) return false;
     SwatActor* actor=&s->actors[index];
     bool replace_bot=!present && s->config.tactical_rules && slot>0 && slot<=s->config.squad_bots;
-    if(actor->present==present && !replace_bot) { if(present) actor->mind.bot=false; return true; }
+    if(actor->present==present && !replace_bot) {
+        if(present){actor->mind.bot=false;actor->mind.pending_order=0;actor->mind.queued=false;}
+        return true;
+    }
     if(actor->present) b3DestroyBody(actor->controller.body.body);
     memset(actor,0,sizeof(*actor));
     if(present || replace_bot) {
@@ -598,6 +601,19 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     int old_slot=a->arsenal.active,old_reload=a->arsenal.slots[old_slot].reload_remaining;
     SwatFireMode old_mode=a->arsenal.slots[old_slot].mode;
     SwatInput weapon_input=*in;
+    if(s->config.tactical_rules && a->role==SWAT_OFFICER && a->mind.bot &&
+       (weapon_input.fire || a->arsenal.fire_buffer_ticks)) {
+        // Commands, less-lethal hits and movement can change the perceived
+        // target after bot input selection. Recheck the actual aimed sight ray
+        // before consuming ammunition, including a pending semi-auto shot.
+        int target=a->target_actor;
+        bool clear=swat_sim_firing_line_clear(s,actor,target,24);
+        if(clear) {
+            const SwatActor* seen=&s->actors[target];
+            clear=seen->role==SWAT_SUSPECT && !seen->gear.surrendered && !seen->gear.restrained;
+        }
+        if(!clear){weapon_input.fire=false;a->arsenal.fire_buffer_ticks=0;}
+    }
     int payload=a->arsenal.active==0 ? swat_launcher_kind(a->arsenal.primary) : -1;
     bool physical=payload>=0 && (s->config.tactical_rules || a->arsenal.primary!=2);
     bool projectile_room=false; for(int i=0;i<SWAT_MAX_PROJECTILES;i++) projectile_room|=!s->projectiles[i].active;

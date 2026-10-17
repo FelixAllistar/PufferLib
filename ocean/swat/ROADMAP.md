@@ -12,6 +12,29 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Entry interruption and interaction feedback (2026-10-17): one Execute pulse now
+arms all queued recipients through their existing radio delays. Unexecuted
+queued Clears no longer hold up an active entry queue, and human/dead recipients
+cannot execute stale bot commands. Scripted officers recheck the actual aimed
+sight ray before consuming ammunition, canceling direct or buffered shots after
+same-tick compliance. Human input and its ROE consequences remain unchanged.
+Four controlled fallen-leaf entries cover both occupant mirrors, actual compliance
+commands, and Hold followed by a fresh Clear. Fire is disabled in those movement
+fixtures; short hostile-fire cases independently exercise the firing guard.
+Linux/Windows interruption traces match all 4,959 snapshot digests. Both platforms
+also pass the full encounter, tactical, simulation and protocol checks.
+A complete ordinary-input hostile-fire motel front route finishes in 11,749 ticks
+on each platform, with two arrests, three evacuations, both weapons collected,
+squad regrouping and no civilian/officer deaths or unlawful force. Every-tick
+replay, mid-run save/resume and fresh replica outcomes pass; each platform replays
+the other's complete recording exactly. Evidence: `build/swat/review/entry-followup`;
+durable receipt: `tests/receipts/entry-interruptions-2026-10-17.json`.
+Door HUD feedback uses a read-only actor sweep to identify an obstructed swing;
+tool prompts explain reload/switch recovery. Visual review and performance runs
+remain held while Felix uses the machine. Protocol/replay v28 requires matched
+builds and fresh recordings/saves. This is another slice increment, not full
+vertical-slice acceptance.
+
 Room 101 jamb support (2026-10-17): destroyed masonry at each authored fixed
 hinge mount now releases that attachment independently of leaf damage. Local
 cuts, full backing removal and wall-charge apertures use the same support points

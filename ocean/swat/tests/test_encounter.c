@@ -346,7 +346,7 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
-static void occupied_entry(int route,int mirror) {
+static void occupied_entry(int route,int mirror,int event) {
     fixture();sim.config.mission=SWAT_HOUSE;
     place_actor(0,(b3Pos){-1.8f,0,0});place_actor(1,(b3Pos){4,0,mirror*1.8f});place_actor(2,(b3Pos){3,0,-mirror*1.8f});
     sim.actors[2].gear.surrendered=sim.actors[2].gear.restrained=true;
@@ -359,6 +359,7 @@ static void occupied_entry(int route,int mirror) {
         sim.actors[i].mind.bot=true;
     }
     sim.actor_count=6;
+    if(event==1)sim.actors[1].mind.resolve=0;
     SwatInput input=swat_neutral_input();input.squad_order=SWAT_ORDER_CLEAR;input.interact=true;
     if(route==2) {
         // A physically open breach fixture. Move is aimed at supported floor
@@ -381,14 +382,49 @@ static void occupied_entry(int route,int mirror) {
         }
         assert(swat_door_loose(door));
     }
-    int seeing[3]={0},tick;
+    int seeing[3]={0},tick,phase=0,hold_tick=0;bool applied=event==0;
+    b3Pos held[3];
     for(tick=0;tick<1500;tick++) {
-        swat_sim_step(&sim,&(SwatInput){0});bool done=true;
-        if(occupied_trace)assert(fprintf(occupied_trace,"%d %d %d %08x\n",route,mirror,tick,swat_replay_digest(&sim))>0);
+        SwatInput next=swat_neutral_input();
+        if(event==1 && !applied && seeing[0]>10) {
+            SwatController* c=&sim.actors[0].controller;
+            b3Vec3 d=b3SubPos(swat_controller_eye(&sim.actors[1].controller),swat_controller_eye(c));
+            next.yaw_delta=swat_clamp(swat_angle(b3Atan2(d.z,d.x)-c->yaw),-3*SWAT_RAD,3*SWAT_RAD);
+            next.pitch_delta=swat_clamp(b3Atan2(d.y,hypotf(d.x,d.z))-c->pitch,-3*SWAT_RAD,3*SWAT_RAD);
+            SwatContext context=swat_context(&sim,0);
+            next.command=context.action==SWAT_CONTEXT_COMPLY && context.hit.index==1;
+        }
+        if(event==2 && !phase && seeing[0]>10){next.squad_order=SWAT_ORDER_HOLD;phase=1;}
+        if(event==2 && phase==1) {
+            bool holding=true;for(int i=3;i<6;i++)holding&=sim.actors[i].mind.order==SWAT_ORDER_HOLD && !sim.actors[i].mind.pending_order;
+            if(holding){phase=2;hold_tick=tick;}
+        }
+        if(event==2 && phase==2 && tick==hold_tick+15)
+            for(int i=3;i<6;i++)held[i-3]=swat_body_feet_position(&sim.actors[i].controller.body);
+        if(event==2 && phase==2 && tick>=hold_tick+45) {
+            for(int i=3;i<6;i++)assert(b3Distance(held[i-3],swat_body_feet_position(&sim.actors[i].controller.body))<.05f);
+            phase=3;
+        }
+        if(event==2 && phase==3) {
+            SwatController* c=&sim.actors[0].controller;
+            b3Vec3 d=b3SubPos(sim.world.objects[owner].center,swat_controller_eye(c));
+            next.yaw_delta=swat_clamp(swat_angle(b3Atan2(d.z,d.x)-c->yaw),-3*SWAT_RAD,3*SWAT_RAD);
+            next.pitch_delta=swat_clamp(b3Atan2(d.y,hypotf(d.x,d.z))-c->pitch,-3*SWAT_RAD,3*SWAT_RAD);
+            SwatHit hit=swat_context_hit(&sim,0,24);
+            if(hit.kind==SWAT_HIT_WORLD && hit.index==owner){next.squad_order=SWAT_ORDER_CLEAR;phase=4;applied=true;}
+        }
+        swat_sim_step(&sim,&next);bool done=applied;
+        if(event==1 && sim.actors[1].gear.surrendered)applied=true;
+        if(occupied_trace) {
+            if(event)assert(fprintf(occupied_trace,"%d %d %d %d %08x\n",route,mirror,event,tick,swat_replay_digest(&sim))>0);
+            else assert(fprintf(occupied_trace,"%d %d %d %08x\n",route,mirror,tick,swat_replay_digest(&sim))>0);
+        }
         for(int i=3;i<6;i++) {
             seeing[i-3]+=sim.actors[i].mind.state==SWAT_ENGAGE;
             done&=sim.actors[i].mind.entry_settled;
         }
+        if(event==2 && phase<4)done=false;
+        if(event==2 && phase==4)for(int i=3;i<6;i++)done&=sim.actors[i].mind.order==SWAT_ORDER_CLEAR && !sim.actors[i].mind.pending_order;
         if(done)break;
     }
     for(int i=3;i<6;i++) {
@@ -396,18 +432,39 @@ static void occupied_entry(int route,int mirror) {
         fprintf(stderr,"Occupied entry route%d mirror%d officer%d: tick%d feet%.3f,%.3f goal%.3f,%.3f engaged%d settled%d order%d\n",route,mirror,i,tick,(float)feet.x,(float)feet.z,(float)a->mind.goal.x,(float)a->mind.goal.z,seeing[i-3],a->mind.entry_settled,a->mind.order);
         assert(a->health==100 && a->arsenal.shots==0);
     }
+    if(tick==1500) {
+        SwatContext c=swat_context(&sim,0);
+        fprintf(stderr,"Entry event%d applied%d phase%d context%d kind%d owner%d surrender%d\n",event,applied,phase,c.action,c.hit.kind,c.hit.index,sim.actors[1].gear.surrendered);
+    }
     assert(tick<1500 && seeing[0]>10 && sim.actors[2].health==100);
+    assert(applied && (event!=1 || sim.actors[1].gear.surrendered));
+    if(event==2)assert(phase==4 && swat_door_loose(&sim.world.objects[owner]));
     for(int i=3;i<6;i++)assert(b3Distance(swat_body_feet_position(&sim.actors[i].controller.body),sim.actors[i].mind.goal)<.65f);
     swat_sim_close(&sim);
-    printf("PASS occupied entry route%d mirror%d: ordinary Clear/Move commands through opening/fallen-leaf/breach fixtures, three physical officers finish separate sectors while tracking a visible suspect, civilian intact and fire disabled\n",route,mirror);
+    printf("PASS occupied entry route%d mirror%d event%d: ordinary commands through opening/fallen-leaf/breach fixtures, three physical officers finish separate sectors, civilian intact and fire disabled\n",route,mirror,event);
 }
+#include "entry_interruptions.h"
 int main(int argc,char** argv) {
+    setvbuf(stdout,NULL,_IONBF,0);
+    if(argc>=2 && (!strcmp(argv[1],"interruptions") || !strcmp(argv[1],"interrupt-orders") || !strcmp(argv[1],"interrupt-fire"))) {
+        assert(argc<=3);
+        if(argc==3){interruption_trace=fopen(argv[2],"w");assert(interruption_trace);}
+        if(strcmp(argv[1],"interrupt-fire"))interrupt_orders();
+        if(strcmp(argv[1],"interrupt-orders"))interrupt_fire();
+        if(!strcmp(argv[1],"interruptions")) {
+            interrupt_queue();occupied_trace=interruption_trace;
+            for(int side=-1;side<=1;side+=2){occupied_entry(1,side,1);occupied_entry(1,side,2);}
+            occupied_trace=NULL;
+        }
+        if(interruption_trace)assert(!fclose(interruption_trace));
+        return 0;
+    }
     if((argc==2 || argc==3) && !strcmp(argv[1],"occupied")) {
         if(argc==3){occupied_trace=fopen(argv[2],"w");assert(occupied_trace);}
-        for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side);
+        for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);
         if(occupied_trace)assert(!fclose(occupied_trace));
         return 0;
     }
     assert(argc==1);
-    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side);return 0;
+    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();return 0;
 }

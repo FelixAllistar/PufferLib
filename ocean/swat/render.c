@@ -36,7 +36,11 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
     const char* action="",*detail=NULL;
     switch(context.action) {
         case SWAT_CONTEXT_OPEN: case SWAT_CONTEXT_CLOSE:
-            action=context.ready ? (context.action==SWAT_CONTEXT_OPEN ? "[F] Open door" : "[F] Close door") : "Move closer to use door"; break;
+            action=context.ready ? (context.action==SWAT_CONTEXT_OPEN ? "[F] Open door" : "[F] Close door") : "Move closer to use door";
+            if(context.ready && swat_world_door_blocked(&sim->world,context.hit.index)) {
+                detail=action;action="Door blocked / clear the swing";
+            }
+            break;
         case SWAT_CONTEXT_LOCKED:
             action=context.ready ? "Hold [RMB] Pick lock" : "Locked / move closer";
             if(context.ready && swat_kit(actor->gear.kit)->optiwand) detail="[G] Mirror under door";
@@ -69,6 +73,12 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
         default: return;
     }
     const SwatEquipment* gear=&actor->gear;
+    bool tool=context.action==SWAT_CONTEXT_LOCKED || context.action==SWAT_CONTEXT_WEDGED ||
+        context.action==SWAT_CONTEXT_TRAP || context.action==SWAT_CONTEXT_WALL;
+    if(tool && context.ready && swat_weapons_busy(&actor->arsenal)) {
+        action=actor->arsenal.equip_remaining ? "Finish switching weapons to use tools" : "Finish reloading to use tools";
+        detail=NULL;
+    }
     float progress=gear->door_ticks ? gear->door_ticks/(gear->door_mode==SWAT_LOCKPICK ? 180.0f : gear->door_mode==SWAT_DISARM ? 120.0f : gear->door_mode==SWAT_PLACE_CHARGE ? 90.0f : 45.0f) : gear->cuff_ticks/72.0f;
     if(gear->door_ticks) {
         const char* tools[]={"","Picking lock...","Mounting charge...","","Placing wedge...","Removing wedge...","Disarming trap..."};

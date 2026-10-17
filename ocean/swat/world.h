@@ -193,6 +193,9 @@ bool swat_world_attach(SwatWorld*,int object,const int* supports,int count);
 float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 direction);
 float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
+// Read-only query of the next ordinary swing step, using its actual actor sweep.
+// Dynamic loose/hanging leaves and wedges keep their separate behavior.
+bool swat_world_door_blocked(const SwatWorld* world,int object);
 // Optional notice after an unobstructed ordinary sweep reaches closed.
 void swat_world_step_doors_notify(SwatWorld*,void (*closed)(void*,int),void* context);
 // Synchronize moving leaves after the shared Box3D step, including devices.

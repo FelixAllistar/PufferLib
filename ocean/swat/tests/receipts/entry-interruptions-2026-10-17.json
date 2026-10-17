@@ -1,0 +1,172 @@
+{
+  "created_utc": "2026-10-17T16:42:03.832Z",
+  "baseline_feature_commit": "7dd2b2a62",
+  "protocol": 28,
+  "scope": "Queued command execution, human/dead bot handoff, independent active entry queues, scripted same-tick fire cancellation, and door/tool HUD feedback. Full vertical-slice acceptance remains open.",
+  "evidence_root": "build/swat/review/entry-followup/",
+  "baseline_regressions": {
+    "early_execute": {
+      "exit_code": 134,
+      "log_sha256": "9bbf6b75342e2039bd98b110b2be02623b34f774cb5ee30c0ac1b588b5c2cec5"
+    },
+    "same_tick_scripted_fire": {
+      "exit_code": 134,
+      "log_sha256": "5db358650db3063771591dcda3031b189dfebe7946daeaf063f5bf2c53076a2c"
+    }
+  },
+  "checks": {
+    "linux": {
+      "interruptions": {
+        "pass_results": 7,
+        "log_sha256": "58da06f21790736bca96c89bbb10775a9a5322efef473feafc082dddd4750903"
+      },
+      "encounter": {
+        "pass_results": 19,
+        "log_sha256": "1511ff484cea918c08d1db8e1280915e57a03dc2163356bc987c41b883bbad4e"
+      },
+      "tactical": {
+        "pass_results": 10,
+        "log_sha256": "00231a210c6a06c107e4f298993d7eac1fcb369049aa9963ba3b6db42e400a13"
+      },
+      "sim": {
+        "pass_results": 13,
+        "log_sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+      },
+      "protocol": {
+        "pass_results": 2,
+        "log_sha256": "9042c8362c473adf16c971ac80b66930d7d3f82e383b57f75a8c30595e57759e"
+      },
+      "motel-combat": {
+        "pass_results": 2,
+        "log_sha256": "99f5dbaa492eece81f528b7415cc83d96af2c845482534f9f4dcae195f9b545c"
+      }
+    },
+    "native": {
+      "interruptions": {
+        "pass_results": 7,
+        "log_sha256": "a9367ce8f3745d17c9d306757ce4de0701a6dff59d4ff600370cb432e91a9df7"
+      },
+      "encounter": {
+        "pass_results": 19,
+        "log_sha256": "418083d90a5d689cb5a02334f3ab6980de4d7108f442be5e13f86f801f11cf65"
+      },
+      "tactical": {
+        "pass_results": 10,
+        "log_sha256": "e78f55134ea2b32d938732e9169e146e813ab3e831d10dbab9e4992f0f825350"
+      },
+      "sim": {
+        "pass_results": 13,
+        "log_sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+      },
+      "protocol": {
+        "pass_results": 2,
+        "log_sha256": "1e6764ab9a6e4eb44814183a8e871405838034f7de70cecbe79467646b646b52"
+      },
+      "motel-combat": {
+        "pass_results": 2,
+        "log_sha256": "6569d6672b16c22b8aabf42afd3b3dc3efc7a54b912be35f7d7de2750ce93996"
+      }
+    }
+  },
+  "interruption_trace": {
+    "matching_digests": 4959,
+    "unit_snapshot_states": 37,
+    "fallen_leaf_case_frames": {
+      "1/-1/1": 1217,
+      "1/-1/2": 1253,
+      "1/1/1": 1213,
+      "1/1/2": 1239
+    },
+    "canonical_sha256": "0cfa9f9a73a2993796c8e0e0f1a6c031e09e8de1f648fa9242b92830d43ee244",
+    "movement_hostile_fire": false,
+    "actual_compliance_commands": true,
+    "hold_stop_and_fresh_clear": true,
+    "fresh_encoded_replicas_for_unit_cases": true
+  },
+  "scripted_fire": {
+    "stale_direct_request_canceled": true,
+    "pending_semi_auto_canceled": true,
+    "continuing_threat_fires": true,
+    "human_shot_preserved_with_truthful_roe": true,
+    "gate": "Only tactical scripted officers with a firing request or pending buffer; recheck the actual current aimed sight ray before reading observed target compliance."
+  },
+  "door_feedback": {
+    "query_read_only_snapshot_unchanged": true,
+    "blocked_late_replica_agrees": true,
+    "clearing_actor_unblocks": true,
+    "one_achieved_close_cue": true,
+    "hud_compiled_linux_and_windows": true,
+    "visual_review_deferred": true
+  },
+  "combat_completion": {
+    "route": "front",
+    "ordinary_player_inputs": true,
+    "hostile_fire": true,
+    "ticks": 11749,
+    "arrests": 2,
+    "armed_suspects_killed": 0,
+    "civilian_evacuations": 3,
+    "evidence_collected": 2,
+    "officer_and_civilian_deaths": 0,
+    "unlawful_force": 0,
+    "squad_regrouped": true,
+    "exact_every_tick_replay": true,
+    "mid_run_save_resume": true,
+    "fresh_final_replica": true,
+    "contact_overflows": 0,
+    "journals": {
+      "linux": {
+        "sha256": "505c0df8fd25a799d2c4b97ecbf36adf45dbfc170fac8e6e02dde9cddbf1635b",
+        "frames": 11749
+      },
+      "native": {
+        "sha256": "a7ce3591238994e37adff712a550b193cfc5988f0f057fd56d9e26d2bc3e5a5f",
+        "frames": 11749
+      }
+    },
+    "cross_platform_replay": "11749/11749 exact in both directions; independently generated input files are not byte-identical."
+  },
+  "build_registration": {
+    "make": [
+      "encounter-test",
+      "entry-interruptions-test"
+    ],
+    "cmake": [
+      "swat_encounter (no spurious argument)",
+      "swat_entry_interruptions"
+    ],
+    "native": "test_encounter.exe interruptions",
+    "headless_cmake_configure_pass": true,
+    "make_link_includes_replay_and_enet": true
+  },
+  "installed_runtimes_sha256": {
+    "build/swat/swat": "65a1495f58c9147c7c01c7054633cd028144e7d87bbedcd0aa565ac9dffe5003",
+    "build/swat/server": "4293b2a6e74e29f5d52e6d0348c82f990dfaf412636af1d8f911a5c06f57b0ca",
+    "build/swat/replay_tool": "4c69dfb992f64974d145927b17923694c343208b0069e7020c551769f61d1be2",
+    "build/swat/performance_tool": "ac8ec90cff8fc2825de28f58ecb8f054e0d8f9abc915a852ed2b3f05497c072a",
+    "build/swat/windows/swat.exe": "21578ba9ddb973c702cd49e7501913d6e54eeb864a8d13cfdf82ebb998155292",
+    "build/swat/windows/swat-server.exe": "49a4b1bb612165d0fe8fc3448d665b0a8bd5187e2a635efa66cee5f934f84d09",
+    "build/swat/windows/replay_tool.exe": "a9f60ad29159cc59a2cc4fd3f4602b07f47af77d8fb6c4c08528a7fd033fa900",
+    "build/swat/windows/performance_tool.exe": "0433daf6620fc61806a6a8d55a4511f7cc4e249d27bce0b755cce9a0a1f4a90a"
+  },
+  "normal_launchers": "Linux and native Windows player/server --help exit without automatic rebuild, graphics initialization or socket startup.",
+  "sources_sha256": {
+    "encounter.c": "468ce195025f1da27fe3c3cf6ab48809ea17c07c1f7f293d338356a28aeb1aab",
+    "sim.c": "233d9fa2f539d6deb5e5bda39e3542c773ba5036740f6f00410b5b936ce459f4",
+    "world.c": "af87c1273dba18af5061e8d74eac8b850c10e78d612f1d711fa0020db76f8019",
+    "world.h": "f72e491d43238e8afe57bd915143d9e13fab4c235364021811147957fb773b16",
+    "render.c": "ef505d88d3a020d52cf94714a39030acf9577a5735e6930faf7037a88aa0ab11",
+    "protocol.h": "92db6475356745714c2912c59ff855f3e163217af59e92fb37a06bba6971d91a",
+    "tests/test_encounter.c": "2d3ab54f1645cf37711700d487e57148de4ba5bb0aafc71825a341409708a253",
+    "tests/entry_interruptions.h": "9c21fa2f3ad6a531e5282f294832e95b7f80c1e612dca1113b70c3fdf5e3f672",
+    "tests/test_tactical.c": "b7f3e28fe6f5d3f2d8c2350f8ff19718c889f8cfd0a095be9b0b95aac437d910"
+  },
+  "limits": [
+    "Movement interruption cases are controlled framed-wall/fallen-leaf fixtures with hostile fire disabled; short firing cases and the full motel combat route provide separate combat coverage.",
+    "This run rechecks the motel front route; exterior and inter-room completion routes retain their earlier separate evidence.",
+    "HUD strings are compiled on both platforms, but no graphics context or visual review was launched.",
+    "The performance tool was rebuilt for matching protocol only and was not executed. No performance measurements were collected.",
+    "No protected source art was edited. Room 101 fixed hinge support and its existing latch approximation retain their prior scope.",
+    "Version 28 requires matching peers and fresh recordings/saves; older files remain preserved."
+  ]
+}
