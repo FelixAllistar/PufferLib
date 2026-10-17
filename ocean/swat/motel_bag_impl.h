@@ -5,7 +5,7 @@ static const float bag_skin=.00015f;
 static float bag_health(void){const SwatMaterialDef* m=swat_material(SWAT_CLOTH);return m->fracture_health*bag_skin/m->reference_thickness;}
 static bool bag_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_BAG_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_BAG_FIRST];int supports[SWAT_MAX_SUPPORTS];
     return floor_contacts(w,&bag_instance,127,bag_floor_contact,1,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(o->center,b3OffsetPos(bag_instance.origin,bag_asset.center))<1e-4f && b3Length(b3Sub(o->half,bag_asset.half))<1e-5f &&

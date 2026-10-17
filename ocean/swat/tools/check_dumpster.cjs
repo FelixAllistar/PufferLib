@@ -53,4 +53,4 @@ const mapHashes=new Set(provenance.textures.map(t=>{
 assert.equal(g.images.length,4);
 for(const image of g.images){assert(!image.uri && image.mimeType==='image/png');assert(mapHashes.has(sha(view(image.bufferView))));}
 assert.equal(sha(fs.readFileSync(path.join(handoff,manifest.editable_source.file))),manifest.editable_source.sha256);
-console.log('PASS BC_DUMP01 intake: original runtime/source/map hashes, 2908 triangles, 5 primitives, 64 source solids, finite indexed geometry/UVs, embedded PNGs, identity nodes and ground-centred metre bounds; native placement/collision remain open');
+console.log('PASS BC_DUMP01 intake: original runtime/source/map hashes, 2908 triangles, 5 primitives, 64 source solids, finite indexed geometry/UVs, embedded PNGs, identity nodes and ground-centred metre bounds; engine acceptance is tracked separately');

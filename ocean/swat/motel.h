@@ -30,7 +30,10 @@
 #define SWAT_MOTEL_SERVICE_PARTS 4
 #define SWAT_MOTEL_SERVICE_END (SWAT_MOTEL_SERVICE_FIRST+SWAT_MOTEL_SERVICE_PARTS)
 #define SWAT_MOTEL_SCREWDRIVER_FIRST SWAT_MOTEL_SERVICE_END
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_SCREWDRIVER_FIRST+1)
+#define SWAT_MOTEL_SCREWDRIVER_END (SWAT_MOTEL_SCREWDRIVER_FIRST+1)
+#define SWAT_MOTEL_DUMPSTER_FIRST SWAT_MOTEL_SCREWDRIVER_END
+#define SWAT_MOTEL_DUMPSTER_PARTS 3
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_DUMPSTER_FIRST+SWAT_MOTEL_DUMPSTER_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -71,6 +74,8 @@ int swat_motel_bank_triangle_part(int triangle);
 const SwatMotelAsset* swat_motel_asset(int index);
 const SwatMotelInstance* swat_motel_instance(int index);
 bool swat_motel_service(const SwatWorld*,int owner,SwatMotelInstance*);
+// Static closed-lid refuse container: steel body and two dependent soft lids.
+bool swat_motel_dumpster(const SwatWorld*,int owner,SwatMotelInstance*);
 // Small visual fixtures inherit a real support; they add no hidden colliders.
 // Returns the current supporting object, or -1 when that support is gone.
 int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* placement);

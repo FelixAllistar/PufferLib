@@ -125,7 +125,7 @@ static void utility_hits(SwatWorld* w) {
         assert(side.hit && side.index==basket && side.distance>.10f && side.distance<.16f);
     }
 }
-static bool route_object(b3ShapeId shape,void* context) {return B3_ID_EQUALS(shape,((SwatObject*)context)->shape);}
+static bool route_object(b3ShapeId shape,void* context) {return B3_ID_EQUALS(b3Shape_GetBody(shape),((SwatObject*)context)->body);}
 static void route(b3Pos* source,int count) {
     b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
     for(int i=1;i<count;i++) {
@@ -380,8 +380,13 @@ static void live_breach_routes(void) {
         for(int t=0;t<120;t++)swat_sim_step(&s,&(SwatInput){0});
         b3Pos feet=swat_body_feet_position(&c->body);
         assert(feet.x<starts[route].x+.15f);
-        SwatHit wall=swat_world_ray(&s.world,b3OffsetPos(feet,swat_v(0,1,0)),swat_v(1,0,0),1.5f,c->body.body);
+        // A blocked officer can back off while planning around visible people.
+        // This fixture selects the authored wall for a direct geometry cut;
+        // separate ordinary-input runs check real charge-placement reach.
+        SwatHit wall=swat_world_ray(&s.world,b3OffsetPos(feet,swat_v(0,1,0)),swat_v(1,0,0),3.0f,c->body.body);
+        fprintf(stderr,"Breach fixture route%d feet %.4f %.4f %.4f wall kind%d index%d hit%d\n",route,(float)feet.x,(float)feet.y,(float)feet.z,wall.kind,wall.index,wall.hit);
         assert(wall.hit && wall.kind==SWAT_HIT_WORLD && swat_world_breachable(&s.world.objects[wall.index]));
+        assert(fabsf((float)wall.point.x-(route?-4.0f:-12.0f))<.2f);
         assert(swat_world_breach(&s.world,wall.index,wall.point)>0);
         int t=0;for(;t<900;t++) {
             swat_sim_step(&s,&(SwatInput){0});feet=swat_body_feet_position(&c->body);
@@ -393,7 +398,8 @@ static void live_breach_routes(void) {
     }
     puts("PASS motel breach movement: wedged doors prevent detours; actual squad controller crosses exterior masonry and inter-room openings after destruction without teleporting");
 }
-int main(void) {
+int main(int argc,char** argv) {
+    if(argc==2&&!strcmp(argv[1],"live-breach")){live_breach_routes();return 0;}
     masonry_continuity();
     live_fence_routes();
     fence_charge_route();

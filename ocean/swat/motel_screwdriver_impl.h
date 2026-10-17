@@ -11,7 +11,7 @@ static bool screwdriver_supports(const SwatWorld* w,int supports[SWAT_MAX_SUPPOR
 }
 static bool screwdriver_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_SCREWDRIVER_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_SCREWDRIVER_FIRST];int supports[SWAT_MAX_SUPPORTS];
     return screwdriver_supports(w,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(o->center,b3OffsetPos(screwdriver_instance.origin,screwdriver_asset.center))<1e-4f && b3Length(b3Sub(o->half,screwdriver_asset.half))<1e-5f &&
@@ -19,7 +19,7 @@ static bool screwdriver_validate(const SwatWorld* w) {
         o->material==SWAT_STEEL && o->structural_thickness==screwdriver_section && o->max_health==screwdriver_health();
 }
 static void screwdriver_bind(SwatWorld* w) {
-    if(w->count<SWAT_MOTEL_OBJECTS)return;
+    if(w->count<SWAT_MOTEL_SCREWDRIVER_END)return;
     SwatObject* o=&w->objects[SWAT_MOTEL_SCREWDRIVER_FIRST];if(!o->active)return;
     b3DestroyShape(o->shape,false);b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
     bool bound=contact_meshes_bind(w,o,&screwdriver_instance,&def);assert(bound);(void)bound;

@@ -22,16 +22,15 @@ welcome when available, but is not a development gate. A passing increment does
 not complete the slice. Heavy performance runs remain held under Felix's earlier
 machine-use instruction; their final acceptance stays open rather than blocking
 independent work. Do not ask Felix to repeat already-authorized routine checks.
-The existing persistent tracker reports the old full-slice goal as paused and
-rejects replacement while unfinished; the available goal API cannot resume it.
-Preserve that unfinished goal honestly and use this working directive meanwhile.
+The persistent full-slice goal was resumed on 2026-10-17 and is active. Keep
+that complete objective active until every acceptance requirement is verified.
 
 Acceptance work still open:
 
 - Extend squad task completion to search/equipment orders and varied occupied
   layouts, beyond the directed restraint, recall and escort cases below.
-- Validate multiple complete motel approaches and varied occupant seeds with
-  ordinary inputs, including replay, mid-run resume and fresh replicas.
+- Extend the complete front/exterior/inter-room approaches to varied occupant
+  seeds, preserving ordinary inputs, replay, mid-run resume and fresh replicas.
 - Finish the motel's composition, remaining props, production audio and visible
   equipment handling; integrate approved art and inspect actual rendered output.
 - Establish reproducible officer/enemy policy baselines and held-out evaluation
@@ -39,6 +38,37 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+
+Dumpsters and complete approaches (2026-10-17): the approved BC_DUMP01 is now
+placed beside the maintenance shed at (-4.9, -.08, -8.4), yaw pi. All eight skid
+corners contact the real foundation. Its first candidate moved 0.6 m east to
+keep the original service exit clear; all nine existing capsule routes pass.
+The unchanged source supplies the thin steel body, two independently removable
+closed lids, open fork sleeves and underbody space. Thirteen bounded collision
+subsets preserve all 2,908 source triangles. Steel and molded-lid game responses,
+support dependencies, reset and encoded late replicas agree across platforms.
+Actual bullet queries pass through the fork opening and stop at the steel.
+Twenty-seven encoded states match on Linux/Windows, including ordinary walking
+through both service lanes and stopping at the container. Both platforms pass
+85 headless check groups across the prop, prior props/windows, motel, encounter,
+tactical, simulation and protocol suites. Fourteen small native correctness
+captures check original materials, shared maps, art/fallback silhouettes,
+lighting and lid removal. These use graybox yard context, not finished-level
+visual acceptance; selected captures and the sealed receipt are retained in
+`art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md` and its adjacent files.
+
+The complete squad-restraint front route finishes in 20,584 ticks with five
+squad cuffs, two arrests and no deaths. Hostile-fire exterior/inter-room charge
+routes finish in 11,697/12,715 ticks, each with one arrest and one armed suspect
+lawfully killed. All three evacuate the civilians, recover both weapons, regroup
+every officer and record no protected deaths or unlawful force. Linux verifies
+every-tick replay, mid-run save/resume, fresh final replicas and no contact-buffer
+overflow. Windows replays all 44,996 frames exactly. These remain fixed-seed 81
+checks, not held-out policy evaluation or a performance result. The geometry-only
+breach fixture now accounts for officer backoff while selecting the actual
+authored wall; the ordinary-input charge runs retain real placement reach.
+Matched v30 player/server/replay/performance builds are installed with the asset;
+fresh recordings/saves are required. Performance tools were built only.
 
 Squad task and escort pass (2026-10-17): Restrain now assigns one nearest
 eligible officer to the aimed occupant and preserves that person's identity
