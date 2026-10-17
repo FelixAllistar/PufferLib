@@ -552,7 +552,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
             if(b3Distance(hinge,o->hinge)>1e-4f || fabsf(swat_angle(yaw-o->closed_yaw))>1e-5f) return false;
             // Checkpoint/maps can be captured while a door is already open.
             // Validate its canonical hinge and current transform, not rest yaw.
-            center=b3OffsetPos(hinge,swat_v(sinf(o->yaw)*half.z,0,cosf(o->yaw)*half.z)); yaw=o->yaw;
+            center=b3OffsetPos(hinge,b3RotateVector(swat_door_rotation(o->yaw,0),swat_v(0,0,half.z))); yaw=o->yaw;
         }
         if(b3Distance(center,o->center)>1e-4f || b3Length(b3Sub(half,o->half))>1e-4f || fabsf(swat_angle(yaw-o->yaw))>1e-5f || o->pitch!=0 ||
             o->door!=p->door || o->material!=p->material) return false;
@@ -607,9 +607,9 @@ int swat_motel_wall_parent(const SwatWorld* w,const SwatObject* piece) {
     }
     return -1;
 }
-int swat_motel_hinge_frame_owner(const SwatWorld* w,int hinge) {
+static int hinge_frame_owner(const SwatWorld* w,const SwatObject* objects,int hinge) {
     if(!w->motel || w->count<=16 || hinge<0 || hinge>=3)return -1;
-    const SwatObject* door=&w->objects[16],*frame=&w->objects[13];
+    const SwatObject* door=&objects[16],*frame=&objects[13];
     const float heights[]={.23f,1.10f,1.92f};
     // Masonry behind the authored casing, outside the swept leaf. The casing
     // extends toward the opening beyond the coarser structural wall sections.
@@ -618,7 +618,7 @@ int swat_motel_hinge_frame_owner(const SwatWorld* w,int hinge) {
     int first=frame->active?13:frame->wall_group-1;
     if(first<0)return -1;
     for(int i=first;i<w->count;i++) {
-        const SwatObject* part=&w->objects[i];
+        const SwatObject* part=&objects[i];
         if(!frame->active && part->wall_group!=frame->wall_group)break;
         if(part->active) {
             b3Vec3 local=b3InvRotateVector(swat_object_rotation(part),b3SubPos(mount,part->center));
@@ -627,6 +627,13 @@ int swat_motel_hinge_frame_owner(const SwatWorld* w,int hinge) {
         if(frame->active)break;
     }
     return -1;
+}
+int swat_motel_hinge_frame_owner(const SwatWorld* w,int hinge) {return hinge_frame_owner(w,w->objects,hinge);}
+unsigned int swat_motel_hinge_frame_broken(const SwatWorld* w,const SwatObject* objects) {
+    if(!w->motel || w->count<=16)return 0;
+    unsigned int broken=0;
+    for(int h=0;h<3;h++)if(hinge_frame_owner(w,objects,h)<0)broken|=1u<<h;
+    return broken;
 }
 static void wall_corners(const SwatObject* o,float v[4][2]) {
     if(o->fractured){memcpy(v,o->corners,sizeof(o->corners));return;}

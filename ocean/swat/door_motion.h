@@ -56,6 +56,7 @@ unsigned int swat_world_door_hinges(const SwatObject* o) {
 static void door_motion_refresh(SwatWorld* w,SwatObject* o,bool geometry) {
     if(!o->door || !o->active)return;
     unsigned int broken=geometry?swat_world_door_hinges(o):0;
+    if(geometry && w->motel && o==&w->objects[16])broken|=swat_motel_hinge_frame_broken(w,w->objects);
     if(!broken && !o->motion)return;
     if(!o->motion) {
         SwatDoorMotion* motion=swat_world_door_prepare();if(!motion)return;
@@ -72,6 +73,14 @@ static void door_motion_refresh(SwatWorld* w,SwatObject* o,bool geometry) {
         b3Body_SetAngularVelocity(o->body,m->state.angular_velocity);
     }
     m->state.awake=b3Body_IsAwake(o->body);
+}
+static void door_frame_refresh(SwatWorld* w) {
+    // Only Room 101 currently has an authored fixed-side mounting contract.
+    // Run on geometry changes, not on every simulation tick or door movement.
+    if(!w->motel || w->count<=16 || !w->objects[16].active)return;
+    SwatObject* o=&w->objects[16];
+    unsigned int previous=o->motion?o->motion->state.broken_hinges:0;
+    if(swat_motel_hinge_frame_broken(w,w->objects)&~previous)door_motion_refresh(w,o,true);
 }
 static void door_motion_drive(SwatObject* o) {
     SwatDoorMotion* m=o->motion;

@@ -1,0 +1,114 @@
+{
+  "created_utc": "2026-10-17T14:36:16.238Z",
+  "baseline_feature_commit": "e9c2e9246",
+  "protocol": 27,
+  "scope": "Room 101 fixed hinge backing releases the existing leaf constraints. Source art is unchanged. Full vertical-slice acceptance remains open.",
+  "previous_art_acceptance": "VALIDATION.json",
+  "evidence_root": "build/swat/review/jamb-support/",
+  "checks": {
+    "linux": {
+      "frame": {
+        "pass_results": 5,
+        "log_sha256": "8cbb4a1aeaa1b5c626a5ef74194df9a065a9b113fabc1962db9af0621e5da69d"
+      },
+      "door": {
+        "pass_results": 7,
+        "log_sha256": "5199cfeeca09412ff58bc895868e4d0a517e9ec9506e6a3e614fae31bf466018"
+      },
+      "breach": {
+        "pass_results": 11,
+        "log_sha256": "7bd922d14e3afc53f118ed081a6b77038346db6bcf26cd4e8cf8edf676e7b36a"
+      },
+      "protocol": {
+        "pass_results": 2,
+        "log_sha256": "9042c8362c473adf16c971ac80b66930d7d3f82e383b57f75a8c30595e57759e"
+      }
+    },
+    "native": {
+      "frame": {
+        "pass_results": 5,
+        "log_sha256": "e2ee5b293c0b6f83012b2bc06d4e7f1fe205e4b476e89b73c52ceff33c73d619"
+      },
+      "door": {
+        "pass_results": 7,
+        "log_sha256": "f359ea6b7bd33782d9b940fb0dc538b9179cca09ae561b63f8112d75a49806be"
+      },
+      "breach": {
+        "pass_results": 11,
+        "log_sha256": "c3ddc6ed569d0e904334dba9b70cebe61655b38f056dbdb813a5ca6c97e0fc88"
+      },
+      "protocol": {
+        "pass_results": 2,
+        "log_sha256": "1e6764ab9a6e4eb44814183a8e871405838034f7de70cecbe79467646b646b52"
+      }
+    }
+  },
+  "replication": {
+    "matching_snapshot_digests": 794,
+    "canonical_trace_sha256": "930c99622ed8147ce0b343b2dd409cdafab68f6d0f0a3e82a7230c6656d8b5fb",
+    "fresh_late_snapshots": true,
+    "atomic_malformed_state_rejection": true
+  },
+  "physics": {
+    "last_hinge_cases": 9,
+    "poses_degrees": [
+      0,
+      45,
+      90
+    ],
+    "initial_joint_frames_coincident": true,
+    "no_initial_pose_jump": true,
+    "maximum_stepped_anchor_drift_m": 0.005051,
+    "anchor_drift_test_bound_m": 0.01,
+    "opposite_jamb_proven_solid_by_physical_ray": true,
+    "wall_charge_geometry_path": true
+  },
+  "journals": {
+    "ordinary_input_ticks": 1314,
+    "linux_recording_replayed_on_windows": "exact",
+    "windows_recording_replayed_on_linux": "exact",
+    "in_flight_save_resume": true
+  },
+  "build_registration": {
+    "make": "door-frame-test",
+    "cmake": "swat_door_frame",
+    "native": "test_door_frame.exe",
+    "cmake_headless_configure_pass": true
+  },
+  "installed_runtimes_sha256": {
+    "build/swat/swat": "4c0dc0d1a6b611752ea47c6833bd3718be9ff9514b9ec5ae80b76d82426b02c0",
+    "build/swat/server": "a93b6ce0eb9bc4bda0c67eedeade281f325fdcfd395003343604708305669c23",
+    "build/swat/replay_tool": "b9d643e549973bf0d422e6b41e6f7dd2ffeace7e489c0989d578b3207b85723d",
+    "build/swat/performance_tool": "441f0e937805965b1ba2a10325423c5397a7f7a275fb0b43b305c7f0a7d23b7e",
+    "build/swat/windows/swat.exe": "be92fa7f3492b42e34586c6ff113e9a7a767ec8fcaae8fe12f977f018665c039",
+    "build/swat/windows/swat-server.exe": "227543fe9625d9700318a207b87b74d6d083ef894b4abaa5e68bbc8d7590115e",
+    "build/swat/windows/replay_tool.exe": "c6d26d5d8301b3c717d87e09ec7e0ff34b91213ed1846db2390e20d9cc7da303",
+    "build/swat/windows/performance_tool.exe": "9c7128fdf8760ad8d8c293c6c463ae2f5361094e894530a746768621aa0775b3"
+  },
+  "normal_launcher_check": "Linux and native Windows player/server --help paths exit without rebuild, graphics initialization or socket startup.",
+  "sources_sha256": {
+    "door_motion.h": "aee8758e25cc45f11d00ac004fec0292407657960a2a0aa3c29973fd97b51609",
+    "world.c": "1634efe9f4585dd6e2268b5c497145b29162d557f205b75c691c896b4f46a274",
+    "wall_support.h": "0448efea1106828b4f7f0e7324f49cd965ae5f09cddcb45154716caea875b7b4",
+    "motel.c": "a06946a856c8b862a58c41c699213c3edb366f232e040e7729c68b89a60b79b9",
+    "motel.h": "f4c2425d9c854dd1b484fe88a8e152bf0ae6d256d97d2505d9d1a7465523540e",
+    "protocol.c": "da33c8847edfdadd1b8d35dc1ef5860836803ca63eba905f664fe3ace6ac7ec6",
+    "protocol.h": "00f3968822fc6270ff27a3dc0f4110561ab038dbce2093ccf0485015c081a801",
+    "tests/test_door_frame.c": "5f9581a6ecc7153f795e164e2e6d040f147ba8dfd64aafba76bd2c3cda78a4ac"
+  },
+  "unchanged_art_sha256": {
+    "room101_facade_option1.glb": "5a9e1ceb65dcc903e954e6870bd384e43d937d90a9f567ebaa6380f547a85e39",
+    "room101_leaf_option1.glb": "ea55965f7ca1e5a9c3bc0d4ca8dbc4057d72a0cf1882a9cc0078e36a02071b66",
+    "room101_hardware_option1.glb": "e2512143d2a3193d3d33b19f18da60b565043c2a902273cbd2d0e461044a909c",
+    "room101_failure_remnants.glb": "6c7588f6b8635a6b2e7b67f077470223735b81246c1c5161a531019dcbf70a3c"
+  },
+  "artist_check_in": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792246917088539?thread_ts=1791078311.943659&cid=C0C5TN3AA8K",
+  "limits": [
+    "Fixed-side mounting inference is currently defined for Room 101 hinges only; other doors retain their leaf-side damage rules.",
+    "Latch engagement remains the existing authored latch state; separate loss of its own jamb mounting is not inferred in this increment.",
+    "Small metal/relief/remnant colliders and new hardware debris bodies are not added.",
+    "New frame-loss checks use direct geometry fixtures and the normal wall-charge geometry function, not a newly recorded player-input jamb breach.",
+    "Graphics and performance runs were not launched. Prior v26 visual acceptance remains separate historical evidence.",
+    "Version 27 requires matching peers and fresh recordings/saves. Existing older files are preserved."
+  ]
+}
