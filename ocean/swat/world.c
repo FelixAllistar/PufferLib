@@ -775,6 +775,14 @@ static bool swat_door_obstructed(const SwatWorld* w, const SwatObject* o, float 
     b3World_OverlapShape(w->id,o->hinge,&proxy,b3DefaultQueryFilter(),swat_door_overlap,&blocked);
     return blocked;
 }
+bool swat_world_door_blocked(const SwatWorld* w,int object) {
+    if(object<0 || object>=w->count)return false;
+    const SwatObject* o=&w->objects[object];
+    if(!o->active || !o->door || swat_door_dynamic(o) || o->wedge_owner>=0)return false;
+    float target=o->door_open?(o->peek?12*SWAT_RAD:SWAT_PI*.5f):0;
+    float delta=swat_clamp(target-o->door_angle,-2*SWAT_DT,2*SWAT_DT);
+    return fabsf(delta)>=1e-7f && swat_door_obstructed(w,o,o->door_angle+delta);
+}
 
 void swat_world_step_doors_notify(SwatWorld* w,void (*closed)(void*,int),void* context) {
     for (int i=0;i<w->count;i++) {

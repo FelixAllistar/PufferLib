@@ -149,8 +149,9 @@ records source preservation, import checks and the remaining physics limits.
 `SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
 assembly for comparison. Other rooms retain their accepted art.
 
-Use matching version-27 peers and fresh recordings/saves. Jamb damage now changes
-door attachment behavior, and replicas validate the combined incoming leaf/frame
+Use matching version-28 peers and fresh recordings/saves. Jamb damage changes
+door attachments, and queued orders and scripted firing now handle interrupted
+entries and same-tick compliance. Replicas validate combined incoming leaf/frame
 geometry before applying a snapshot. Earlier versions are incompatible; existing
 recording files are retained. The headless `make -C ocean/swat door-frame-test`
 checks local jamb cuts, all three last hinges at closed/45/90 degrees, latch
@@ -570,7 +571,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v27 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v28 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -956,12 +957,27 @@ orders; choose Gold, Red or Blue, Shift-click to queue, and press **J** to execu
 Orders acknowledge after 18 simulation ticks. Stack selects separate supported
 positions outside the targeted door and never opens it. Clear fills separate
 interior positions from the far flank back toward the doorway, then faces inward.
-Queued orders wait for J; an installed wedge still blocks entry. Officers choose
+One tap of J arms every queued recipient, even before the radio delay expires.
+An unexecuted queued Clear leaves an already active entry queue free to proceed.
+Human takeover or death cancels that recipient's pending bot commands. An installed
+wedge still blocks entry. Officers choose
 another sector when a newly visible occupant blocks the planned position. Move
 also gives each selected officer a separate endpoint; empty sky is not a target.
 Bots route through static clearance and locally visible bodies, open/pick doors
 when their order allows it, and keep physical collision throughout. This is an
 initial authored tactical behavior layer; it is not a trained squad policy.
+Scripted officers recheck the actual aimed sight ray before firing, including
+buffered semi-auto shots, so a suspect surrendering during that tick stops the
+stale shot. Human inputs retain the existing weapon rules and ROE consequences.
+The headless `make -C ocean/swat entry-interruptions-test` covers early Execute,
+control handoff, independent entry queues, same-tick compliance and mirrored
+Hold/resume/surrender entries around an actual fallen leaf.
+
+Door context feedback identifies an actor blocking the next ordinary swing step
+and retains the button hint to reverse the request. The read-only query also
+works on replicated geometry. Tool prompts explain when a reload or weapon switch
+must finish first. These HUD changes still need visual review when graphics runs
+resume.
 
 **Alt+F** peeks an unlocked door to 12 degrees. **9** places a wedge, **Alt+9**
 recovers it, **8** disarms an inspected trap, and **6** sprays pepper. These are
@@ -1421,7 +1437,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 27 as described above.
+destruction prototype requires version 28 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native
