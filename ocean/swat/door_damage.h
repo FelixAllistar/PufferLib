@@ -11,15 +11,17 @@ typedef enum SwatDoorSupport {
     SWAT_DOOR_LATCH,SWAT_DOOR_FREE
 } SwatDoorSupport;
 static inline b3Vec3 swat_door_hinge(const SwatObject* o,int hinge) {
-    // Frozen motel source: three 100 mm hinge parts at Y=.23/1.10/1.92 m,
-    // X=.003..033 m on a 1.08 x 2.19 m leaf. Other sizes scale this game mount.
+    // Wood-support damage probes at Y=.23/1.10/1.92 m, 18 mm inside the
+    // 1.08 x 2.19 m slab. These matched the old decorative barrels. The seated
+    // candidate's new metal is on the pivot; retain these probes in solid wood
+    // beyond its 7 mm edge relief, rather than sampling half outside the slab.
     const float y[SWAT_DOOR_HINGES]={.23f,1.10f,1.92f};
     return swat_v(0,(y[hinge]/2.19f-.5f)*2*o->half.y,
         -o->half.z+.018f*(o->half.z/.54f));
 }
 static inline b3Vec3 swat_door_hinge_pivot(const SwatObject* o,int hinge) {
-    // The decorative barrel is 18 mm inside the source leaf. The physical
-    // attachment shares the ordinary opening axis at source X=0 instead.
+    // Physical attachment and the new seated metal share the ordinary source
+    // X=0 opening axis. Wood-support damage probes remain separate above.
     b3Vec3 p=swat_door_hinge(o,hinge);p.z=-o->half.z;return p;
 }
 static inline b3Vec3 swat_door_latch(const SwatObject* o) {return swat_v(0,.06f,o->half.z-.01f);}

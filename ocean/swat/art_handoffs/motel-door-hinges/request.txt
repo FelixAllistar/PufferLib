@@ -95,3 +95,38 @@ Engine downloaded all 12,386,542 bytes, verified all 80 payload SHA256 entries
 byte for byte against the accepted local originals. New barrels are on source
 X=0, not the former decorative X=.018. Native candidate integration/acceptance
 is next; the artist's last-hinge pose is explicitly an art pose, not a load test.
+
+Engine integration, 2026-10-16: all four delivered GLBs are now used unchanged
+for Room 101, with the frozen originals retained for comparison. The new metal
+is coaxial with the existing opening pivot. The 18 mm inset probes remain wood
+support samples beyond the 7 mm relief; they are not new barrel centres.
+Leaf/fixed metal and eight failure fragments per hinge use existing replicated
+failure bits. No new wire fields or per-pin physics bodies are introduced.
+
+The coarse masonry stops short of the authored casing edge. Casing rendering
+uses backing sections 20 mm behind that edge without moving any source vertex.
+Source/clipped surface area agrees at 1.062717552 / 1.062717533 m2. Actual
+faceted pin/bore clearance is approximately .28411 mm for all three hinges;
+axial gaps are approximately 1 mm. Independent checks verify all 80 payload
+hashes, frozen originals, unchanged embedded maps, protected position/UV values,
+48 retreated casing vertices and approximately .0081-degree bevel-normal drift.
+Reproduce the byte/geometry audit with tools/check_room101_hinges.cjs.
+
+Linux and native Windows functional checks cover three-pin imports, initial
+hidden remnants, moving/fixed ownership and parent removal, hanging/falling
+with 125,090 physical-ray comparisons per platform, seven cached/full shadow
+comparisons, stable moving meshes and pixel-identical late replicas. Native
+grazing checks cover 12 lab/motel views with zero missing solid pixels. Existing
+1,314-tick ordinary door journals still replay exactly on both rebuilt platforms.
+Evidence: build/swat/review/hinge-seated; source audit: engine/source-check.json.
+
+Scope limits: the slab/joint collision remains the game's existing approximation.
+Fine hardware/relief colliders and automatic hinge failure from destroyed jamb
+backing are not implemented. The inherited 0.4 mm threshold overlap is unchanged.
+The supplied 901-pose continuous sweep remains artist-side evidence, while the
+native tests exercise actual engine poses and failures. Full slice acceptance
+and a real-world fastening/load model are not claimed.
+
+Installed runtime hashes and final check scope: engine/VALIDATION.json.
+Engine receipt returned to the existing artist thread:
+https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792203843980569?thread_ts=1791078311.943659&cid=C0C5TN3AA8K

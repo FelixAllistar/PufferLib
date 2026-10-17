@@ -157,8 +157,8 @@ static int wall_polygon(SwatWallVertex v[64],const Mesh* src,int triangle,const 
     }
     return n;
 }
-static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const SwatObject* o,const SwatMotelInstance* p) {
-    uint32_t cuts=swat_fracture_hash(o);
+static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const SwatObject* o,const SwatMotelInstance* p,int hinge_trim) {
+    uint64_t cuts=swat_fracture_hash(o)|((uint64_t)(hinge_trim+1)<<32);
     if(cache->source==source->meshes && b3Distance(cache->center,o->center)<1e-6f && b3Length(b3Sub(cache->half,o->half))<1e-6f &&
        cache->fractured==o->fractured && cache->mask==cuts && !memcmp(cache->corners,o->corners,sizeof(o->corners)))return &cache->model;
     wall_mesh_close(cache);cache->source=source->meshes;cache->center=o->center;cache->half=o->half;
@@ -174,12 +174,17 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
     model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
     for(int m=0;m<source->meshCount;m++) {
         const Mesh* src=&source->meshes[m];Mesh mesh={0};int capacity=0;
+        // The authored hinge casing overhangs the structural wall by ~18 mm.
+        // Assign its unchanged vertices to masonry 20 mm behind the trim, so
+        // clipping cannot cut off the seated jamb edge. Damage still clips the
+        // casing by its backing sections, including holes and support removal.
+        float mcx=cx+(m==hinge_trim?.020f/p->scale.x:0);
         for(int t=0;t<src->triangleCount;t++) {
-          SwatFaceBounds triangle=face_triangle_bounds(src,t,0,p->scale.y,p->scale.x,-cy*p->scale.y,-cx*p->scale.x);
+          SwatFaceBounds triangle=face_triangle_bounds(src,t,0,p->scale.y,p->scale.x,-cy*p->scale.y,-mcx*p->scale.x);
           for(int s=0;s<sections;s++) {
             if(!face_bounds_overlap(triangle,bounds[s]))continue;
             cache->polygon_tests++;
-            SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],cx,cy,p);
+            SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],mcx,cy,p);
             for(int k=1;k<n-1;k++)if(Vector3LengthSqr(Vector3CrossProduct(Vector3Subtract(v[k].p,v[0].p),Vector3Subtract(v[k+1].p,v[0].p)))>=1e-14f)capacity+=3;
           }
         }
@@ -187,11 +192,11 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
         mesh.vertices=MemAlloc(capacity*3*sizeof(float));mesh.normals=MemAlloc(capacity*3*sizeof(float));
         mesh.texcoords=MemAlloc(capacity*2*sizeof(float));if(src->texcoords2)mesh.texcoords2=MemAlloc(capacity*2*sizeof(float));
         for(int t=0;t<src->triangleCount;t++) {
-          SwatFaceBounds triangle=face_triangle_bounds(src,t,0,p->scale.y,p->scale.x,-cy*p->scale.y,-cx*p->scale.x);
+          SwatFaceBounds triangle=face_triangle_bounds(src,t,0,p->scale.y,p->scale.x,-cy*p->scale.y,-mcx*p->scale.x);
           for(int s=0;s<sections;s++) {
             if(!face_bounds_overlap(triangle,bounds[s]))continue;
             cache->polygon_tests++;
-            SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],cx,cy,p);
+            SwatWallVertex v[64];int n=wall_polygon(v,src,t,&polygons[s],mcx,cy,p);
             for(int k=1;k<n-1;k++) {
                 int corner[]={0,k,k+1};
                 if(Vector3LengthSqr(Vector3CrossProduct(Vector3Subtract(v[k].p,v[0].p),Vector3Subtract(v[k+1].p,v[0].p)))<1e-14f)continue;
@@ -211,13 +216,14 @@ static const Model* wall_mesh(SwatWallMeshCache* cache,const Model* source,const
 static uint64_t wall_face_hash(uint64_t h,const void* bytes,size_t count) {
     const unsigned char* p=bytes;for(size_t i=0;i<count;i++){h^=p[i];h*=UINT64_C(1099511628211);}return h;
 }
-static const Model* wall_faces(SwatMotelWallArt* art,const Model* source,const SwatWorld* w,int owner,int slot) {
+static const Model* wall_faces(SwatMotelWallArt* art,const Model* source,const SwatWorld* w,int owner,int slot,int hinge_trim) {
     // Join the existing opaque clipped faces by material; keep their source
     // coordinates and borrowed textures. Shadow passes still use piece meshes.
     // Hash corners as well as occupancy: a charge can shrink a surviving piece.
     const SwatMotelInstance* p=swat_motel_instance(owner-1);
     int group=w->objects[owner].wall_group,first=group-1;
     uint64_t hash=UINT64_C(14695981039346656037);
+    hash=wall_face_hash(hash,&hinge_trim,sizeof(hinge_trim));
     for(int i=first;i<w->count && w->objects[i].wall_group==group;i++) {
         const SwatObject* o=&w->objects[i];hash=wall_face_hash(hash,&o->active,sizeof(o->active));
         if(!o->active)continue;
@@ -232,7 +238,7 @@ static const Model* wall_faces(SwatMotelWallArt* art,const Model* source,const S
     Model* model=&cache->model;model->transform=MatrixIdentity();model->materials=source->materials;model->materialCount=source->materialCount;
     int* counts=calloc((size_t)source->materialCount,sizeof(int));assert(counts);
     for(int i=first;i<w->count && w->objects[i].wall_group==group;i++)if(w->objects[i].active) {
-        const Model* clipped=wall_mesh(&art->pieces[i][slot],source,&w->objects[i],p);
+        const Model* clipped=wall_mesh(&art->pieces[i][slot],source,&w->objects[i],p,hinge_trim);
         for(int m=0;m<clipped->meshCount;m++)counts[clipped->meshMaterial[m]]+=clipped->meshes[m].vertexCount;
     }
     model->meshes=MemAlloc(source->materialCount*sizeof(Mesh));memset(model->meshes,0,source->materialCount*sizeof(Mesh));

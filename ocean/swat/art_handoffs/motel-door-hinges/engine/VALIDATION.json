@@ -1,0 +1,90 @@
+{
+  "created_utc": "2026-10-17T02:24:57.504Z",
+  "baseline_feature_commit": "99251d3a5",
+  "protocol": 26,
+  "scope": "Runtime Room 101 art acceptance within the existing game slab/joint approximation; full vertical-slice acceptance remains open.",
+  "source_audit": "source-check.json",
+  "source_audit_command": "node ocean/swat/tools/check_room101_hinges.cjs",
+  "native_selector": "test_environment_art.exe OUTPUT_DIRECTORY room101-hinges",
+  "platforms": {
+    "linux": {
+      "source_import_and_ownership_pass": true,
+      "hanging_ray_samples": 63231,
+      "fallen_ray_samples": 61859,
+      "ray_mismatches": 0,
+      "cached_full_shadow_comparisons": 7,
+      "late_replica_pixel_identical": true,
+      "log_sha256": "b87f6fc4dc9450cbbec63ce952756be445e45814ccb3992110aefbb6e209b86e",
+      "door_journal": "Replay: 1314/1314 frames, exact match"
+    },
+    "native": {
+      "source_import_and_ownership_pass": true,
+      "hanging_ray_samples": 63231,
+      "fallen_ray_samples": 61859,
+      "ray_mismatches": 0,
+      "cached_full_shadow_comparisons": 7,
+      "late_replica_pixel_identical": true,
+      "log_sha256": "f04c5500754d2e68f0d98084ccdad3e72efbe49f15b0d5bfe22f3fe867fd97ee",
+      "door_journal": "Replay: 1314/1314 frames, exact match"
+    }
+  },
+  "casing_coverage": {
+    "source_area_m2": 1.062717552,
+    "clipped_area_m2": 1.062717533,
+    "native_gpu_mesh_area_pass": true,
+    "linux_cpu_clip_area_pass": true,
+    "linux_cpu_log_sha256": "8e54ad5741acc3745890220145314b095170e866f576baf03f3af78987311080",
+    "note": "The final area assertion uses double-precision barycentric calculations for long thin bevel triangles. A later Linux GPU retry was stopped at context creation; its incomplete log is not evidence."
+  },
+  "native_grazing": {
+    "views": 12,
+    "motel_solid_samples": 45615,
+    "lab_solid_samples": 49143,
+    "missing_pixels": 0,
+    "log_sha256": "c6a0a9b19e29e46d6c9a378013041590499faa7d246f2e76d812cdb3ecd11225"
+  },
+  "normal_player": {
+    "platform": "native Windows",
+    "mission": "breach material lab",
+    "resumed_existing_v26_checkpoint": true,
+    "capture_sha256": "a193dee7b033f206c77fc91cea84ce64bf56163b8ce68bf713d5c84049000b19",
+    "exit_status": 0,
+    "automatic_rebuild": false
+  },
+  "installed_runtimes_sha256": {
+    "build/swat/swat": "32155a9a03ecec1a0ef0366330ac4e108d0bb83d9fdd6a6e127f6c7d14b6f08e",
+    "build/swat/server": "8fbf88d1b09013d21c64f5959291aed7c9736e883d524b1200565f77e7d41c08",
+    "build/swat/replay_tool": "f8e79a351b1a7f55b480bec67da7a8854d46f9693adf507f89d56e12d1dc477d",
+    "build/swat/performance_tool": "76795bbdbbedd2c9c3e82e40035f04909abe5d30582fe133117f8adb9b59aaac",
+    "build/swat/windows/swat.exe": "8be950e756bb53b83b057ff55889bc1df80ef9752671c6e7d0ba0b282a9a6f38",
+    "build/swat/windows/swat-server.exe": "532d99cc601d1f8b5b83c8c5e977506a5359fc5754880fa7969c8e9c26f59c9c",
+    "build/swat/windows/replay_tool.exe": "3e1c40f634e3f80ba8fa00c2ab79cf91ebf23e0c036a7f72ae47439609c8071e",
+    "build/swat/windows/performance_tool.exe": "f5c3b1606a4063a76e16bcfbbd2f99ba36a3b36d0d0dfc9a305507bc9f7dfdbc"
+  },
+  "sources_sha256": {
+    "door_damage.h": "eeb9aa9df52a4e92f066ff9fbe15146d8112cd58212af260b1d39e7e77efa4a5",
+    "environment_art.c": "d5905654305b9cb87aa7cad4e500c39922d6cb595445473c315e389e54c65749",
+    "environment_art.h": "0abaf65fab77bbe3e25e4bea2407a892bf625b5470b2f3736c5f43337d12ee17",
+    "lighting.c": "1b3959f5bc8d3afeaf703d13a8b2fd0c77f042fc08fa6ad3bc22713daa14b15b",
+    "motel.c": "c19c86ae4e72238b312f6c3f30bd5eda458b7face21f139693b7bbe9ceddc428",
+    "motel.h": "53db9cec2406963c364da4992c61b37a7d5d3ec4e449157140a82d19a1ea161c",
+    "motel_wall_art.h": "722fc7fbc93ba1985549e0f83a21453b177af4f27ee06ae4412b02269ec3901e",
+    "play.sh": "d2b2c075b7c093ff044d8e8ea889240c7d6dae03caed8a2893c8796d622e900f",
+    "tests/test_environment_art.c": "9b3c93a655d93828f4b7c03e70c2283fd7e0ff98c3e61b82c18ba6e1ad6b931a",
+    "tests/room101_hinge_graphics.h": "eea2adbe7db25bcd2a6b59cc8fcfebc9f718702a196c87ad7414011fcbd32c18",
+    "tools/check_room101_hinges.cjs": "eec9c2bc036cc7028038b427866c00f59498fa530a18acaec65c2a3b13a1add1"
+  },
+  "handoff_update": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792203843980569?thread_ts=1791078311.943659&cid=C0C5TN3AA8K",
+  "limits": [
+    "Pins, plates, small relief details and fragments have no separate metal colliders or new debris bodies.",
+    "Destroying jamb backing hides its visual pieces; automatic logical hinge failure from that destruction remains future physics work.",
+    "The inherited optional threshold overlay has the documented 0.4 mm overlap.",
+    "The 901-pose continuous sweep remains supplied artist-side evidence; native checks cover actual engine poses and attachment failures.",
+    "No additional performance measurements were taken after Felix resumed machine workloads."
+  ],
+  "source_audit_sha256": "7becced1a6d88c5d9b1e953323dbe4ac044ae6d553acdfa39ceee6fb79d0ca34",
+  "frozen_originals_sha256": {
+    "room_door_leaf_candidate.glb": "cf2cd3c1e521d53cd9e799b1035737f7247badf6d1d8b1cc32286934f7f89afc",
+    "room_facade_4m_candidate.glb": "20585f411836bbc0cdb4b9edcd769f44c1003bfb41b1ad67d041d4df093baa6c"
+  }
+}

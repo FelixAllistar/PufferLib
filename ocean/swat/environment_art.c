@@ -119,6 +119,8 @@ static Texture2D load_surface(const char* name,bool metric) {
 
 static void room101_close(SwatEnvironmentArt* art) {
     door_art_clear(art->door_art);
+    for(int i=0;i<2;i++){swat_art_model_close(art->room101_hinges[i]);art->room101_hinges[i]=(Model){0};}
+    art->room101_hinges_ready=false;
     if(art->motel_zoning.id)UnloadTexture(art->motel_zoning);
     if(art->motel_dirt.color.id)UnloadTexture(art->motel_dirt.color);
     if(art->motel_dirt.normal.id)UnloadTexture(art->motel_dirt.normal);
@@ -174,6 +176,26 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
     swat_art_model_share_textures(*model,path);
     return true;
 }
+static void room101_hinges_load(SwatEnvironmentArt* art) {
+    const char* enabled=getenv("SWAT_MOTEL_HINGES");if(enabled && !strcmp(enabled,"0"))return;
+    const char* names[]={"room101_facade_option1.glb","room101_leaf_option1.glb",
+        "room101_hardware_option1.glb","room101_failure_remnants.glb"};
+    const int expected[]={7,8,9,24};Model models[4]={0};float scales[4][SWAT_ROOM101_MATERIALS]={0};
+    for(int i=0;i<4;i++) {
+        char path[256];snprintf(path,sizeof(path),"motel_room101_hinges/%s",names[i]);
+        if(!room101_model_load(&models[i],scales[i],path) || models[i].meshCount!=expected[i]) {
+            for(int j=0;j<4;j++)swat_art_model_close(models[j]);
+            return; // Whole candidate or the unchanged frozen assembly.
+        }
+    }
+    for(int i=0;i<2;i++) {
+        swat_art_model_close(art->room101[i]);art->room101[i]=models[i];
+        memcpy(art->room101_normal_scale[i],scales[i],sizeof(scales[i]));
+        art->room101_hinges[i]=models[i+2];
+        memcpy(art->room101_hinges_normal_scale[i],scales[i+2],sizeof(scales[i+2]));
+    }
+    art->room101_hinges_ready=true;
+}
 static void room101_load(SwatEnvironmentArt* art) {
     const char* enabled=getenv("SWAT_MOTEL_ROOM101"); if(enabled && !strcmp(enabled,"0")) return;
     static const char* files[SWAT_ROOM101_ASSETS]={
@@ -185,6 +207,7 @@ static void room101_load(SwatEnvironmentArt* art) {
         if(!room101_model_load(&art->room101[i],art->room101_normal_scale[i],file)) {room101_close(art);return;}
     }
     art->room101_ready=true;
+    room101_hinges_load(art);
     if(enabled && !strcmp(enabled,"2"))return;
     static const char* v3[SWAT_ROOM101_V3_ASSETS]={
         "room_window_insert_016_v3.glb","through_wall_ac_017_v3.glb","room_number_plaque_018_v3.glb",
@@ -862,6 +885,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             for(int n=0;n<3;n++)if(source==&art->motel_numbers[n])normal_scale=art->motel_number_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
             if(source==&art->room101_desk)normal_scale=art->room101_desk_normal_scale[model->meshMaterial[i]];
+            for(int h=0;h<2;h++)if(source==&art->room101_hinges[h])normal_scale=art->room101_hinges_normal_scale[h][model->meshMaterial[i]];
             if(source==&art->motel_guest_desk)normal_scale=art->motel_guest_desk_normal_scale[model->meshMaterial[i]];
             for(int j=0;j<2;j++)if(source==&art->motel_surroundings[j])normal_scale=art->motel_surroundings_normal_scale[j][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(source==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
@@ -887,6 +911,41 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
 }
 static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,const SwatMotelInstance* p,const Model* model,bool shadow,bool cutaway,bool transparent) {
     return location_mesh_draw(art,o,p,model,model,shadow,cutaway,transparent,NULL);
+}
+uint32_t swat_environment_motel_hinge_mesh_mask(const SwatWorld* world,int owner,bool remnants) {
+    if(!world->motel || world->count<=16 || owner<0 || owner>=world->count || !world->objects[owner].active)return 0;
+    const SwatObject* door=&world->objects[16];
+    if(owner!=16 && owner!=13 && (!world->objects[13].wall_group || world->objects[owner].wall_group!=world->objects[13].wall_group))return 0;
+    unsigned int broken=door->active?(door->motion?door->motion->state.broken_hinges:0):SWAT_DOOR_HINGE_MASK;
+    uint32_t mask=0;
+    for(int h=0;h<SWAT_DOOR_HINGES;h++) {
+        if(((broken>>h)&1u)!=(unsigned int)remnants)continue;
+        bool leaf=owner==16,frame=!leaf && swat_motel_hinge_frame_owner(world,h)==owner;
+        if(remnants) {
+            if(leaf)mask|=15u<<(8*h);
+            if(frame)mask|=15u<<(8*h+4);
+        } else {
+            if(leaf)mask|=1u<<(3*h);
+            if(frame)mask|=6u<<(3*h);
+        }
+    }
+    return mask;
+}
+static void room101_hardware_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* owner,bool shadow,bool cutaway) {
+    if(!art->room101_ready || !art->room101_hinges_ready || world->count<=16)return;
+    for(int kind=0;kind<2;kind++) {
+        uint32_t mask=swat_environment_motel_hinge_mesh_mask(world,owner->tag.index,kind!=0);if(!mask)continue;
+        const Model* source=&art->room101_hinges[kind];Mesh meshes[24];int materials[24];
+        Model selected=*source;selected.meshes=meshes;selected.meshMaterial=materials;selected.meshCount=0;
+        for(int m=0;m<source->meshCount;m++)if(mask&(1u<<m)) {
+            int at=selected.meshCount++;meshes[at]=source->meshes[m];materials[at]=source->meshMaterial[m];
+        }
+        SwatObject pose=world->objects[16];pose.active=true;
+        if(owner->tag.index!=16) {
+            pose.motion=NULL;pose.yaw=pose.closed_yaw;pose.pitch=0;pose.center=swat_door_center(&pose,pose.yaw);
+        }
+        location_mesh_draw(art,&pose,swat_motel_instance(15),&selected,source,shadow,cutaway,false,NULL);
+    }
 }
 static const Model* motel_wall_source(const SwatEnvironmentArt* art,int owner) {
     if(art->room101_v4_ready) {const int tags[]={23,28,22,29,14,20,9,17};for(int i=0;i<8;i++)if(tags[i]==owner)return &art->room101_v4[i];}
@@ -979,7 +1038,8 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
     bool batch=!shadow && art->motel_wall_art->cores_drawn && !art->motel_wall_art->face_batch_disabled;
     const Model* clipped;
     if(!batch || !art->motel_wall_art->faces_drawn[owner-1][0]) {
-        clipped=batch?wall_faces(art->motel_wall_art,source,w,owner,0):wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p);
+        int hinge_trim=owner==13 && art->room101_ready && art->room101_hinges_ready?3:-1;
+        clipped=batch?wall_faces(art->motel_wall_art,source,w,owner,0,hinge_trim):wall_mesh(&art->motel_wall_art->pieces[o->tag.index][0],source,o,p,hinge_trim);
         location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
         if(!shadow){if(batch)art->motel_wall_art->face_submissions++;else art->motel_wall_art->piece_submissions++;}
         if(batch)art->motel_wall_art->faces_drawn[owner-1][0]=true;
@@ -987,7 +1047,7 @@ static bool motel_wall_draw(const SwatEnvironmentArt* art,const SwatWorld* w,con
     if(owner==13 && art->room101_ready) {
         source=art->room101_v3_ready?&art->room101_v3[10]:&art->room101[5];
         if(!batch || !art->motel_wall_art->faces_drawn[owner-1][1]) {
-            clipped=batch?wall_faces(art->motel_wall_art,source,w,owner,1):wall_mesh(&art->motel_wall_art->pieces[o->tag.index][1],source,o,p);
+            clipped=batch?wall_faces(art->motel_wall_art,source,w,owner,1,-1):wall_mesh(&art->motel_wall_art->pieces[o->tag.index][1],source,o,p,-1);
             location_mesh_draw(art,o,p,clipped,source,shadow,cutaway,false,NULL);
             if(!shadow){if(batch)art->motel_wall_art->face_submissions++;else art->motel_wall_art->piece_submissions++;}
             if(batch)art->motel_wall_art->faces_drawn[owner-1][1]=true;
@@ -1187,6 +1247,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
             .scale={1,1,1},.yaw=(remote?-15:25)*SWAT_RAD};
         location_draw(art,o,&mount,&art->props[remote?SWAT_ENV_PROP_REMOTE:SWAT_ENV_PROP_MUG],shadow,cutaway,false);
     }
+    room101_hardware_draw(art,world,o,shadow,cutaway);
     if(o->tag.index==5 && o->active && art->motel_reception.meshCount) {
         SwatMotelInstance sign={.origin={-10.6f,2.4f,2.01f},.scale={1,1,1},.roof=true};
         location_draw(art,o,&sign,&art->motel_reception,shadow,cutaway,false);

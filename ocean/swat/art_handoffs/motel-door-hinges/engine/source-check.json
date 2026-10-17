@@ -1,0 +1,56 @@
+{
+  "archive_sha256": "9964a13c72bfb68b75824c2b2315f3a7977c227d7625e82245b8585728b50cb5",
+  "files": 81,
+  "verified_payload_hashes": 80,
+  "frozen_inputs_match_local": true,
+  "runtime_sha256": {
+    "room101_facade_option1.glb": "5a9e1ceb65dcc903e954e6870bd384e43d937d90a9f567ebaa6380f547a85e39",
+    "room101_leaf_option1.glb": "ea55965f7ca1e5a9c3bc0d4ca8dbc4057d72a0cf1882a9cc0078e36a02071b66",
+    "room101_hardware_option1.glb": "e2512143d2a3193d3d33b19f18da60b565043c2a902273cbd2d0e461044a909c",
+    "room101_failure_remnants.glb": "6c7588f6b8635a6b2e7b67f077470223735b81246c1c5161a531019dcbf70a3c"
+  },
+  "clearances": [
+    {
+      "hinge": 1,
+      "pin_radius_m": 0.003000000026077032,
+      "minimum_bore_chord_radius_m": 0.0032841095503609156,
+      "radial_clearance_m": 0.0002841095242838835,
+      "axial_gap_m": 0.0009999936819076738
+    },
+    {
+      "hinge": 2,
+      "pin_radius_m": 0.003000000026077032,
+      "minimum_bore_chord_radius_m": 0.0032841095503609156,
+      "radial_clearance_m": 0.0002841095242838835,
+      "axial_gap_m": 0.0009999990463258612
+    },
+    {
+      "hinge": 3,
+      "pin_radius_m": 0.003000000026077032,
+      "minimum_bore_chord_radius_m": 0.0032841095503609156,
+      "radial_clearance_m": 0.0002841095242838835,
+      "axial_gap_m": 0.0009999275207519531
+    }
+  ],
+  "preservation": [
+    {
+      "file": "room101_leaf_option1.glb",
+      "unchanged_position_uv_vertices": 710,
+      "approved_relief_vertices": 599,
+      "approved_6mm_casing_vertices": 0,
+      "position_uv_match_precision_m": 0.000001,
+      "max_unchanged_normal_angle_degrees": 0.008101776371680474,
+      "embedded_png_hashes_unchanged": true
+    },
+    {
+      "file": "room101_facade_option1.glb",
+      "unchanged_position_uv_vertices": 1140,
+      "approved_relief_vertices": 0,
+      "approved_6mm_casing_vertices": 48,
+      "position_uv_match_precision_m": 0.000001,
+      "max_unchanged_normal_angle_degrees": 0.008104192197685161,
+      "embedded_png_hashes_unchanged": true
+    }
+  ],
+  "scope": "Independent byte/hash, protected position/UV, embedded-map, normal, node-transform, triangle-count and actual faceted pin/bore/axial-gap checks. Native renderer and physics acceptance are separate. No authoring script execution."
+}

@@ -345,3 +345,36 @@ existing .7606 m tabletop. Native before/after detail captures and immutable
 authority/resource-release checks live under
 `build/swat/review/occupied-slice/{linux,native}-graphics`. This is a small
 room-identity pass; it does not establish finished environment art.
+
+### Seated Room 101 hinges, 2026-10-16
+
+The four unchanged GLBs in `motel_room101_hinges` replace only Room 101's
+facade/leaf and add independently owned hardware/remnants. The frozen v2 GLBs
+remain in place; `SWAT_MOTEL_HINGES=0` selects them. Loading is atomic: a missing
+candidate component retains the frozen assembly. Original colour/normal/roughness
+images remain byte-identical. Independent source checks preserve protected
+positions/UVs within 1 micrometre, allow only the three local relief regions and
+48 casing vertices displaced 6 mm, and bound inherited bevel-normal drift to
+approximately .0081 degrees. The complete archive, editable scene, licenses,
+ownership table and artist-side sweep reports remain under
+`art_handoffs/motel-door-hinges`.
+
+Three leaf plates follow the achieved body pose. Jamb plates/pins stay in the
+closed frame, owned by the surviving masonry behind each seat. Only a failed
+hinge shows its four leaf and four frame remnants; removing the slab leaves
+frame remnants, and removing their backing hides them. Static depth caches
+include the hinge failure bits so fixed metal cannot leave stale shadows.
+The authored casing extends past the coarse wall boundary. Its unchanged
+vertices are clipped using backing sections 20 mm behind that edge; the native
+rendered-piece area preserves the source's full 1.06271755 square metres.
+
+Logical slab collision, wood-support damage probes and physical joints retain
+their existing game approximation. Pins, plates, small relief details and
+splinters have no separate colliders or added debris bodies. Jamb destruction
+currently hides its visual pieces but does not automatically fail the leaf's
+logical attachment. The inherited optional threshold overlay's 0.4 mm overlap
+is outside the approved edits and remains documented in the supplied handoff.
+The artist's continuous sweep is source-side evidence; native checks cover
+0/45/90-degree seating, actual attachment failure, hanging/falling, grazing
+solidity, shadow invalidation and late replicas. This art increment retains
+protocol/replay v26 and exact existing door journals.
