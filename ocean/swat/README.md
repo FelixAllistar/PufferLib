@@ -134,15 +134,17 @@ recessed skins; thickness caps bound the cuts. The `door-solid` graphics check
 compares twelve grazing views of the lab and motel leaves against physical rays. Run
 `make -C ocean/swat door-solid-test` with a working display.
 
-Door support distinguishes the visible hinge barrels from the logical pivot
-18 mm away at the leaf edge. Last-hinge joints and snapshot validation use the
-same axis as ordinary opening; damage still targets the original barrel/wood
-locations. Swept doors, collision queries, body transforms and replicas share
-the same rotation calculation through attachment failure, including open leaves.
-The [hardware/remnant request](art_handoffs/motel-door-hinges/request.txt) records
-the verified three-hinge source and pending art work.
+Room 101 now uses the delivered seated three-hinge assembly, with three local
+slab reliefs and a 6 mm casing retreat. Its new barrels share the ordinary opening
+axis; wood-support damage probes remain 18 mm inside the slab beyond the reliefs.
+Moving/fixed metal and failure remnants follow the existing replicated hinge bits.
+Swept doors, collision queries, body transforms and replicas retain their shared
+rotation calculation. The [handoff](art_handoffs/motel-door-hinges/request.txt)
+records source preservation, import checks and the remaining physics limits.
+`SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
+assembly for comparison. Other rooms retain their accepted art.
 
-Use fresh version-25 peers and recordings. The pivot correction changes physical
+Use fresh version-26 peers and recordings. The pivot correction changes physical
 motion, and retaining unchanged shapes in the preceding pass changes contact
 ordering. Older input recordings can diverge even though the packet layout is
 unchanged. Existing recording files are retained.

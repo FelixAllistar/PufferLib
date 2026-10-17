@@ -955,6 +955,7 @@ static void culling_graphics(SwatView* view,const char* directory) {
 #include "shadow_reuse_graphics.h"
 #include "destruction_samples_graphics.h"
 #include "door_support_graphics.h"
+#include "room101_hinge_graphics.h"
 #include "door_solid_graphics.h"
 #include "wall_support_graphics.h"
 int main(int argc,char** argv) {
@@ -963,7 +964,9 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_ART",NULL); environment("SWAT_ENVIRONMENT_ASSETS",NULL); environment("SWAT_PLASTER_STYLE",NULL);
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     environment("SWAT_MOTEL_ROOM101",NULL);
+    environment("SWAT_MOTEL_HINGES",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
+    if(argc>2 && !strcmp(argv[2],"room101-hinges")) {room101_hinge_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"door-damage")) {door_damage_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"door-solid")) {door_solid_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}
     if(argc>2 && !strcmp(argv[2],"destruction-samples")) {destruction_samples_graphics(&view,directory);swat_view_close(&view);assert(!swat_art_texture_stats().textures);return 0;}

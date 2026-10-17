@@ -97,6 +97,8 @@ bool swat_motel_lamp(const SwatWorld*,int room,b3Pos* origin);
 bool swat_motel_lamp_switch(const SwatWorld*,int room,b3Pos* position);
 // Retired imported wall supporting this physical section, or -1.
 int swat_motel_wall_parent(const SwatWorld* world,const SwatObject* piece);
+// Surviving Room 101 masonry at each fixed hinge plate, including local cuts.
+int swat_motel_hinge_frame_owner(const SwatWorld*,int hinge);
 typedef struct SwatMotelEdge {
     int owner,neighbor;
     b3Pos origin;

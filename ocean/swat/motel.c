@@ -607,6 +607,27 @@ int swat_motel_wall_parent(const SwatWorld* w,const SwatObject* piece) {
     }
     return -1;
 }
+int swat_motel_hinge_frame_owner(const SwatWorld* w,int hinge) {
+    if(!w->motel || w->count<=16 || hinge<0 || hinge>=3)return -1;
+    const SwatObject* door=&w->objects[16],*frame=&w->objects[13];
+    const float heights[]={.23f,1.10f,1.92f};
+    // Masonry behind the authored casing, outside the swept leaf. The casing
+    // extends toward the opening beyond the coarser structural wall sections.
+    b3Pos mount=b3OffsetPos(door->hinge,b3RotateVector(swat_door_rotation(door->closed_yaw,0),
+        swat_v(-.008f,heights[hinge]-door->half.y,-.05f)));
+    int first=frame->active?13:frame->wall_group-1;
+    if(first<0)return -1;
+    for(int i=first;i<w->count;i++) {
+        const SwatObject* part=&w->objects[i];
+        if(!frame->active && part->wall_group!=frame->wall_group)break;
+        if(part->active) {
+            b3Vec3 local=b3InvRotateVector(swat_object_rotation(part),b3SubPos(mount,part->center));
+            if(fabsf(local.x)<=part->half.x+.001f && swat_fracture_contains(part,local.y,local.z))return i;
+        }
+        if(frame->active)break;
+    }
+    return -1;
+}
 static void wall_corners(const SwatObject* o,float v[4][2]) {
     if(o->fractured){memcpy(v,o->corners,sizeof(o->corners));return;}
     const int sign[4][2]={{-1,-1},{1,-1},{1,1},{-1,1}};

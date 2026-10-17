@@ -1,0 +1,535 @@
+{
+  "status": "candidate_needs_independent_QA",
+  "source_drive_id": "1OsWdtrOmgvHDr49SPdDNF9k2jqGpOV1p",
+  "approved_changes": [
+    "remove_only_original_barrel_components4_5_6",
+    "slab_R7mm_height100mm_at_.23_1.10_1.92",
+    "facade_component3_inner_edge_X_minus6mm_exterior_fixed"
+  ],
+  "coordinate_system": "sourceGLB=(BlenderX,BlenderZ,-BlenderY)",
+  "swing": "xprime=x*cos+z*sin;zprime=-x*sin+z*cos",
+  "nodes": [
+    {
+      "name": "R101_LEAF_00",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 444,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_LEAF_01",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 44,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_LEAF_02",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 44,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_LEAF_03",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 44,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_LEAF_07",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 44,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_LEAF_08",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 44,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_LEAF_09",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 44,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_LEAF_10",
+      "owner": "leaf",
+      "state": "intact_leaf",
+      "triangles": 44,
+      "materials": [
+        "R101_sage_enamel",
+        "R101_satin_metal",
+        "R101_rubber_seal"
+      ]
+    },
+    {
+      "name": "R101_FACADE_00",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 264,
+      "materials": [
+        "R101_SCAN_fine_plaster",
+        "R101_dark_plinth",
+        "R101_cream_enamel"
+      ]
+    },
+    {
+      "name": "R101_FACADE_01",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 44,
+      "materials": [
+        "R101_SCAN_fine_plaster",
+        "R101_dark_plinth",
+        "R101_cream_enamel"
+      ]
+    },
+    {
+      "name": "R101_FACADE_02",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 44,
+      "materials": [
+        "R101_SCAN_fine_plaster",
+        "R101_dark_plinth",
+        "R101_cream_enamel"
+      ]
+    },
+    {
+      "name": "R101_FACADE_03",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 44,
+      "materials": [
+        "R101_SCAN_fine_plaster",
+        "R101_dark_plinth",
+        "R101_cream_enamel"
+      ]
+    },
+    {
+      "name": "R101_FACADE_04",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 44,
+      "materials": [
+        "R101_SCAN_fine_plaster",
+        "R101_dark_plinth",
+        "R101_cream_enamel"
+      ]
+    },
+    {
+      "name": "R101_FACADE_05",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 44,
+      "materials": [
+        "R101_SCAN_fine_plaster",
+        "R101_dark_plinth",
+        "R101_cream_enamel"
+      ]
+    },
+    {
+      "name": "R101_FACADE_06",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 44,
+      "materials": [
+        "R101_SCAN_fine_plaster",
+        "R101_dark_plinth",
+        "R101_cream_enamel"
+      ]
+    },
+    {
+      "name": "R101_H01_LEAF_METAL",
+      "owner": "leaf",
+      "state": "intact",
+      "triangles": 328,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H01_FIXED_JAMB_METAL",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 614,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H01_PIN",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 124,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H02_LEAF_METAL",
+      "owner": "leaf",
+      "state": "intact",
+      "triangles": 328,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H02_FIXED_JAMB_METAL",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 614,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H02_PIN",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 124,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H03_LEAF_METAL",
+      "owner": "leaf",
+      "state": "intact",
+      "triangles": 328,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H03_FIXED_JAMB_METAL",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 614,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H03_PIN",
+      "owner": "frame",
+      "state": "intact",
+      "triangles": 124,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H01_LEAF_EXPOSED_WOOD_REMNANT_0",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H01_LEAF_EXPOSED_WOOD_REMNANT_1",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H01_LEAF_EXPOSED_WOOD_REMNANT_2",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H01_LEAF_METAL_REMNANT",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 12,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H01_FRAME_EXPOSED_WOOD_REMNANT_0",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H01_FRAME_EXPOSED_WOOD_REMNANT_1",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H01_FRAME_EXPOSED_WOOD_REMNANT_2",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H01_FRAME_METAL_REMNANT",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 12,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H02_LEAF_EXPOSED_WOOD_REMNANT_0",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H02_LEAF_EXPOSED_WOOD_REMNANT_1",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H02_LEAF_EXPOSED_WOOD_REMNANT_2",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H02_LEAF_METAL_REMNANT",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 12,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H02_FRAME_EXPOSED_WOOD_REMNANT_0",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H02_FRAME_EXPOSED_WOOD_REMNANT_1",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H02_FRAME_EXPOSED_WOOD_REMNANT_2",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H02_FRAME_METAL_REMNANT",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 12,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H03_LEAF_EXPOSED_WOOD_REMNANT_0",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H03_LEAF_EXPOSED_WOOD_REMNANT_1",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H03_LEAF_EXPOSED_WOOD_REMNANT_2",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H03_LEAF_METAL_REMNANT",
+      "owner": "leaf",
+      "state": "failed",
+      "triangles": 12,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    },
+    {
+      "name": "R101_H03_FRAME_EXPOSED_WOOD_REMNANT_0",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H03_FRAME_EXPOSED_WOOD_REMNANT_1",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H03_FRAME_EXPOSED_WOOD_REMNANT_2",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 24,
+      "materials": [
+        "materials_v1_door_wood_REUSED"
+      ]
+    },
+    {
+      "name": "R101_H03_FRAME_METAL_REMNANT",
+      "owner": "frame",
+      "state": "failed",
+      "triangles": 12,
+      "materials": [
+        "R101_satin_metal"
+      ]
+    }
+  ],
+  "remnants": "exposed wood uses existing materials_v1 door_wood maps unchanged; metal uses original satin material",
+  "triangle_totals": {
+    "leaf": 752,
+    "facade": 528,
+    "intact_hardware": 3198,
+    "failure_remnants_all": 504
+  },
+  "material_names": [
+    "R101_SCAN_fine_plaster",
+    "R101_cream_enamel",
+    "R101_dark_plinth",
+    "R101_rubber_seal",
+    "R101_sage_enamel",
+    "R101_satin_metal",
+    "materials_v1_door_wood_REUSED"
+  ],
+  "reused_door_wood": {
+    "source_drive_id": "1xgE8k9-w-V0-hRHexiHW0b89mbjvpudl",
+    "material_id": "door_wood",
+    "resolution": [
+      512,
+      512
+    ],
+    "tile_metres": [
+      0.6,
+      2.0
+    ],
+    "files": {
+      "door_wood_basecolor.png": {
+        "sha256": "19eff6c77c51302cfad2d260e3c19d2edeae86a91b76e63ad9fef39930012440",
+        "bytes": 200871
+      },
+      "door_wood_normal.png": {
+        "sha256": "4eee14f7f7b28f0fb5eb00977116459a83cc0566a874227c5a8e295c606be7c5",
+        "bytes": 85704
+      },
+      "door_wood_roughness.png": {
+        "sha256": "bdb8f6c56a0bdad3004862c3444b406e6fcac69ce09cbd716f6b074a67d6de48",
+        "bytes": 52880
+      }
+    }
+  },
+  "runtime_files": {
+    "room101_leaf_option1.glb": {
+      "bytes": 188868,
+      "sha256": "ea55965f7ca1e5a9c3bc0d4ca8dbc4057d72a0cf1882a9cc0078e36a02071b66"
+    },
+    "room101_facade_option1.glb": {
+      "bytes": 4123464,
+      "sha256": "5a9e1ceb65dcc903e954e6870bd384e43d937d90a9f567ebaa6380f547a85e39"
+    },
+    "room101_failure_remnants.glb": {
+      "bytes": 447208,
+      "sha256": "6c7588f6b8635a6b2e7b67f077470223735b81246c1c5161a531019dcbf70a3c"
+    },
+    "room101_hardware_option1.glb": {
+      "bytes": 149572,
+      "sha256": "e2512143d2a3193d3d33b19f18da60b565043c2a902273cbd2d0e461044a909c"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "source_url": "https://drive.google.com/file/d/16ikkKMVxaPFiHzcUZAkPPBtWXLepQZtn/view?usp=drivesdk",
+  "source_archive_sha256": "9964a13c72bfb68b75824c2b2315f3a7977c227d7625e82245b8585728b50cb5",
+  "license": "CC0; original material/source notices are retained in the complete source archive and the accepted Room 101 handoff.",
+  "runtime_sha256": {
+    "room101_facade_option1.glb": "5a9e1ceb65dcc903e954e6870bd384e43d937d90a9f567ebaa6380f547a85e39",
+    "room101_leaf_option1.glb": "ea55965f7ca1e5a9c3bc0d4ca8dbc4057d72a0cf1882a9cc0078e36a02071b66",
+    "room101_hardware_option1.glb": "e2512143d2a3193d3d33b19f18da60b565043c2a902273cbd2d0e461044a909c",
+    "room101_failure_remnants.glb": "6c7588f6b8635a6b2e7b67f077470223735b81246c1c5161a531019dcbf70a3c"
+  },
+  "source_geometry": "Four unchanged delivered GLBs. Frozen v2 originals remain in their original paths.",
+  "scope": "Room 101 only; logical slab collision and wood-support damage probes are retained. Small hardware, bore/relief details and remnants are render attachments, without individual metal colliders. Pin fragments do not spawn extra physics bodies.",
+  "provenance": "art_handoffs/motel-door-hinges/source/ROOM101_HINGE_SEATED_OPTION1_r01_candidate.zip"
+}

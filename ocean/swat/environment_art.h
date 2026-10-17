@@ -63,6 +63,9 @@ typedef struct SwatEnvironmentArt {
     Model room101[SWAT_ROOM101_ASSETS];
     float room101_normal_scale[SWAT_ROOM101_ASSETS][SWAT_ROOM101_MATERIALS];
     bool room101_ready;
+    Model room101_hinges[2]; // Intact hardware and initially hidden failure fragments.
+    float room101_hinges_normal_scale[2][SWAT_ROOM101_MATERIALS];
+    bool room101_hinges_ready;
     Model room101_v3[SWAT_ROOM101_V3_ASSETS];
     float room101_v3_normal_scale[SWAT_ROOM101_V3_ASSETS][SWAT_ROOM101_MATERIALS];
     bool room101_v3_ready;
@@ -117,6 +120,8 @@ typedef struct SwatWallFaceStats {unsigned int builds,submissions,piece_submissi
 SwatWallFaceStats swat_environment_motel_face_stats(const SwatEnvironmentArt* art);
 typedef struct SwatDoorArtStats {unsigned int builds,models;size_t vertices,attribute_bytes,polygon_tests;} SwatDoorArtStats;
 SwatDoorArtStats swat_environment_door_stats(const SwatEnvironmentArt* art);
+// Delivered node/primitive order: 9 intact meshes or 24 failure fragments.
+uint32_t swat_environment_motel_hinge_mesh_mask(const SwatWorld*,int owner,bool remnants);
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
 // Blended GLB primitives follow all opaque geometry, sorted per camera.
 void swat_environment_art_transparent(const SwatEnvironmentArt* art,const SwatWorld* world,Vector3 eye,bool cutaway);

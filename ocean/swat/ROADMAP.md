@@ -34,13 +34,21 @@ v26 requires matched builds and fresh recordings/saves. Both platforms produce
 byte-identical listening WAVs through the real bank/mixer. Room 102's mug and
 Room 104's remote reuse existing small assets on their actual desk owners.
 
-The artist reports option 1 complete: a separate three-hinge relief / 6 mm
-casing-retreat assembly on the current axis. Its 901-pose and clearance claims
-remain artist-side checks. The engine received the 81-file package, verified
-all 80 payload hashes and confirmed its two frozen inputs match the accepted
-local GLBs byte for byte. Frozen source meshes/maps remain untouched in the
-engine. Native seating, sweep, failure-state and collision/render acceptance
-are pending.
+The seated Room 101 assembly is integrated: three local reliefs, a 6 mm casing
+retreat, and separate leaf/jamb metal, pins and failure remnants. The complete
+81-file handoff is retained. Independent checks verify all 80 payload hashes,
+frozen local inputs, unchanged embedded maps, protected positions/UVs and all
+three actual faceted pin/bore clearances. New metal shares the opening axis;
+wood-support damage probes remain inside the slab beyond its reliefs.
+The casing's render ownership reaches 20 mm beyond the coarse wall section
+to preserve its authored inner edge, while following damage to its backing.
+Native source/clipped casing areas agree to approximately 2e-8 square metres.
+Both platforms pass hanging/falling silhouettes, seven cached/full shadow
+comparisons and a pixel-identical late replica; native grazing checks have
+zero missing solid-door pixels. Evidence is under `build/swat/review/hinge-seated`.
+Hardware and splinters are visual attachments to the existing game slab/joints;
+fine metal colliders and automatic joint failure from jamb destruction remain
+future physics work. The inherited optional threshold overlap is unchanged.
 
 Performance tooling now optionally includes the solo journal's actual per-tick
 digest, with digest/file-append cost separated from simulation. Fixture digest
@@ -57,7 +65,8 @@ hearing checks cover 720 paths, 288 next-float boundary cases and an approaching
 listener. Existing motel/door journals reproduce every tick on both optimized
 platforms, and all 6,575 controlled occupied-entry digests remain unchanged.
 
-Native GTX 1060 3 GB measurements use 600 measured ticks after 30 warm-up ticks,
+Native GTX 1060 3 GB measurements for the occupied-entry and sound pass were
+taken before the hinge import. They use 600 measured ticks after 30 warm-up ticks,
 67 finite-ammo shots, the real solo-journal digest and matched checksum cc0afddf.
 Two headless baseline runs average 7.505/7.580 ms simulation time; optimized runs
 average 6.121/5.506 ms, about 23% less across each pair's mean. These headless
@@ -69,6 +78,8 @@ The four-case baseline and before/after logs retain UTC measurement bounds,
 GPU telemetry and process snapshots. The desktop was idle, with other resident
 apps still occupying GPU memory. These uncapped hidden-window runs advance one
 simulation tick per rendered frame; digest-only profiling excludes file I/O.
+Performance testing is now held at Felix's request while he uses the machine.
+Do not collect further performance measurements without a new idle window.
 
 
 Door pivot/source follow-up (2026-10-15): the three leaf-owned decorative

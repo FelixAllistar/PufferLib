@@ -531,8 +531,18 @@ void swat_lighting_close(SwatLighting* light) {
 static uint32_t hash_bytes(uint32_t hash,const void* data,size_t size) {
     const unsigned char* p=data; for(size_t i=0;i<size;i++) { hash^=p[i]; hash*=16777619u; } return hash;
 }
+static uint32_t fixed_hinge_hash(uint32_t hash,const SwatWorld* world) {
+    if(world->motel && world->count>16) {
+        const SwatObject* door=&world->objects[16];
+        // Fixed jamb metal changes with the leaf's failure state, even though
+        // its geometry belongs to the static architecture depth pass.
+        unsigned int broken=door->active?(door->motion?door->motion->state.broken_hinges:0):7u;
+        hash=hash_bytes(hash,&broken,sizeof(broken));
+    }
+    return hash;
+}
 static uint32_t geometry_hash(const SwatWorld* world,bool split) {
-    uint32_t hash=2166136261u;
+    uint32_t hash=fixed_hinge_hash(2166136261u,world);
     for(int i=0;i<swat_world_geometry_count(world);i++) {
         const SwatObject* o=swat_world_geometry(world,i);
         if(split && (o->door || o->rubble))continue;
@@ -569,7 +579,7 @@ bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 h
     return x*x+y*y+z*z<=radius*radius;
 }
 static uint32_t room_geometry_hash(const SwatWorld* world,int room,bool split,const SwatLighting* face) {
-    uint32_t hash=hash_bytes(2166136261u,&world->rooms[room],sizeof(SwatRoom));
+    uint32_t hash=fixed_hinge_hash(hash_bytes(2166136261u,&world->rooms[room],sizeof(SwatRoom)),world);
     for(int i=0;i<swat_world_geometry_count(world);i++) {
         const SwatObject* o=swat_world_geometry(world,i);
         b3Vec3 extent=swat_object_extent(o);Vector3 half={extent.x,extent.y,extent.z};
