@@ -145,6 +145,8 @@ done
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_motel_completion.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_door_support.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_door_support.exe"
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_door_frame.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_door_frame.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_wall_support.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_wall_support.exe"
 

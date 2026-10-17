@@ -339,7 +339,7 @@ void swat_world_support_commit(SwatWorld* w,SwatSupportPlan* plan,bool spawn) {
         for(int i=0;i<w->count;i++)if(w->support->saved[i]){swat_world_cut_close(w->support->before[i]);w->support->before[i]=NULL;w->support->saved[i]=false;}
         w->support->busy=false;
     }
-    w->generation++;swat_world_support_close(plan);
+    w->generation++;swat_world_support_close(plan);door_frame_refresh(w);
 }
 static void support_flush(SwatWorld* w) {
     if(!w->support || w->support->busy || w->support->batch || !w->support->dirty)return;

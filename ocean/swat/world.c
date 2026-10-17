@@ -206,7 +206,7 @@ bool swat_world_damage(SwatWorld* w, int object, float damage) {
             child->health=0;remove_object(w,child);break;
         }
     }
-    support_changed(w,object);return true;
+    support_changed(w,object);door_frame_refresh(w);return true;
 }
 
 bool swat_world_impact(SwatWorld* w,int object,float damage) {
@@ -427,7 +427,7 @@ int swat_world_cut(SwatWorld* w,int object,SwatCut cut) {
     if(!prepared->section_count){swat_world_damage(w,object,o->max_health);return 2;}
     if(motion)door_motion_begin(o,motion);
     door_motion_refresh(w,o,true);
-    o->health*=new_area/old_area;w->generation++;support_changed(w,object);return o->active?1:2;
+    o->health*=new_area/old_area;w->generation++;support_changed(w,object);door_frame_refresh(w);return o->active?1:2;
 }
 
 bool swat_world_breachable(const SwatObject* o) {

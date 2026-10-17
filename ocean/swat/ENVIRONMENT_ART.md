@@ -370,11 +370,16 @@ rendered-piece area preserves the source's full 1.06271755 square metres.
 
 Logical slab collision, wood-support damage probes and physical joints retain
 their existing game approximation. Pins, plates, small relief details and
-splinters have no separate colliders or added debris bodies. Jamb destruction
-currently hides its visual pieces but does not automatically fail the leaf's
-logical attachment. The inherited optional threshold overlay's 0.4 mm overlap
+splinters have no separate colliders or added debris bodies. The 17 October
+physics follow-up releases each Room 101 hinge when its fixed backing is lost,
+using the same polygon-aware masonry ownership as these visual pieces. Local
+cuts, whole backing removal and the normal wall-charge aperture are covered by
+the headless `door-frame-test`; other doors retain their leaf-side damage rules.
+The inherited optional threshold overlay's 0.4 mm overlap
 is outside the approved edits and remains documented in the supplied handoff.
 The artist's continuous sweep is source-side evidence; native checks cover
 0/45/90-degree seating, actual attachment failure, hanging/falling, grazing
 solidity, shadow invalidation and late replicas. This art increment retains
-protocol/replay v26 and exact existing door journals.
+protocol/replay v26 and exact existing door journals. The subsequent jamb-support
+behavior requires matching v27 builds and fresh recordings/saves; its headless
+checks do not constitute a new graphical or performance acceptance pass.

@@ -121,8 +121,10 @@ grazing checks cover 12 lab/motel views with zero missing solid pixels. Existing
 Evidence: build/swat/review/hinge-seated; source audit: engine/source-check.json.
 
 Scope limits: the slab/joint collision remains the game's existing approximation.
-Fine hardware/relief colliders and automatic hinge failure from destroyed jamb
-backing are not implemented. The inherited 0.4 mm threshold overlap is unchanged.
+Fine hardware/relief colliders are not implemented. The 17 October engine
+follow-up adds automatic Room 101 hinge failure from destroyed jamb backing
+without editing these source GLBs; see engine/JAMB_VALIDATION.json for its
+separate headless-check scope. The inherited 0.4 mm threshold overlap is unchanged.
 The supplied 901-pose continuous sweep remains artist-side evidence, while the
 native tests exercise actual engine poses and failures. Full slice acceptance
 and a real-world fastening/load model are not claimed.

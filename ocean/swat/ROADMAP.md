@@ -12,6 +12,28 @@ is deliberately a general engine improvement.
 
 ## Active goal: near-realistic fuller-game vertical slice (reset 2026-10-09)
 
+Room 101 jamb support (2026-10-17): destroyed masonry at each authored fixed
+hinge mount now releases that attachment independently of leaf damage. Local
+cuts, full backing removal and wall-charge apertures use the same support points
+as the visible hardware. An intact opposite latch remains an independent
+attachment. Support is refreshed on geometry changes rather than each tick.
+Snapshot validation prepares all incoming frame geometry before checking the
+combined leaf/frame failure bits, preserving atomic rejection and late joins.
+Protocol/replay v27 requires matched builds and fresh recordings/saves.
+Linux and Windows pass 25 functional checks each across the door-frame,
+door-support, breach-geometry and protocol fixtures. All 794 new jamb-state
+digests agree across platforms; each platform also replays the other's
+1,314-tick ordinary-input door journal exactly. The new intact-leaf hanging
+cases have at most 5.051 mm stepped anchor drift under contact, within the
+existing soft-joint approximation; initial joint frames coincide without a
+pose jump. Evidence: `build/swat/review/jamb-support` and the separate
+`art_handoffs/motel-door-hinges/engine/JAMB_VALIDATION.json` receipt.
+Open motel map reconstruction also uses the same deterministic rotation as the
+physical door; its former libc-trig reconstruction could reject a 45-degree map.
+This increment is limited to Room 101's defined fixed mounts; other doors retain
+their leaf-side failures. Fine metal colliders remain future work. Performance
+testing remains held while Felix uses the machine.
+
 Occupied entry and sound pass (2026-10-16): officers receiving Clear/Move now
 keep translating along their physical route while tracking a visible suspect,
 instead of freezing the first officer and the entire entry queue. Movement
@@ -47,8 +69,9 @@ Both platforms pass hanging/falling silhouettes, seven cached/full shadow
 comparisons and a pixel-identical late replica; native grazing checks have
 zero missing solid-door pixels. Evidence is under `build/swat/review/hinge-seated`.
 Hardware and splinters are visual attachments to the existing game slab/joints;
-fine metal colliders and automatic joint failure from jamb destruction remain
-future physics work. The inherited optional threshold overlap is unchanged.
+fine metal colliders remain future physics work. The 17 October increment above
+adds logical failure from Room 101 jamb destruction. The inherited optional
+threshold overlap is unchanged.
 
 Performance tooling now optionally includes the solo journal's actual per-tick
 digest, with digest/file-append cost separated from simulation. Fixture digest
@@ -96,7 +119,8 @@ The artist's source confirmation also establishes that the fixed hinge halves,
 pins and failure remnants do not exist in the accepted model. Felix approved
 and the engine sent a [focused hardware/remnant request](art_handoffs/motel-door-hinges/request.txt)
 in the existing Slack thread, preserving the accepted slab/UV/maps and all three
-source heights. New hardware remains pending delivery and native acceptance.
+source heights. That hardware was subsequently delivered and accepted in the
+16 October seated assembly increment above.
 
 Linux and native Windows checks cover the independent source anchors, 48
 rotated/scaled body/query/restoration comparisons and nine last-hinge opening

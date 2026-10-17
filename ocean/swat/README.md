@@ -138,16 +138,23 @@ Room 101 now uses the delivered seated three-hinge assembly, with three local
 slab reliefs and a 6 mm casing retreat. Its new barrels share the ordinary opening
 axis; wood-support damage probes remain 18 mm inside the slab beyond the reliefs.
 Moving/fixed metal and failure remnants follow the existing replicated hinge bits.
+Destroying the masonry at a fixed Room 101 mounting point now releases that
+hinge even when its leaf wood remains intact. Losing two unlatched supports
+leaves the door hanging from the third; losing every hinge leaves an intact
+opposite latch holding until released. This fixed-side behavior currently uses
+Room 101's authored mounts. Other doors retain their existing leaf-side damage.
 Swept doors, collision queries, body transforms and replicas retain their shared
 rotation calculation. The [handoff](art_handoffs/motel-door-hinges/request.txt)
 records source preservation, import checks and the remaining physics limits.
 `SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
 assembly for comparison. Other rooms retain their accepted art.
 
-Use fresh version-26 peers and recordings. The pivot correction changes physical
-motion, and retaining unchanged shapes in the preceding pass changes contact
-ordering. Older input recordings can diverge even though the packet layout is
-unchanged. Existing recording files are retained.
+Use matching version-27 peers and fresh recordings/saves. Jamb damage now changes
+door attachment behavior, and replicas validate the combined incoming leaf/frame
+geometry before applying a snapshot. Earlier versions are incompatible; existing
+recording files are retained. The headless `make -C ocean/swat door-frame-test`
+checks local jamb cuts, all three last hinges at closed/45/90 degrees, latch
+retention, wall-charge geometry and atomic replica rejection.
 
 The quiet exterior/interroom completion fixtures now choose the finite impact
 launcher through the ordinary staging input while keeping Entry's real wall
@@ -563,7 +570,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v26 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v27 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1414,7 +1421,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 26 as described above.
+destruction prototype requires version 27 as described above.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native

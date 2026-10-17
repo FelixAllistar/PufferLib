@@ -715,6 +715,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     SwatFracture* rubble_cuts[SWAT_RUBBLE_CAPACITY]={0};
     SwatRubblePool* pool=NULL;SwatSupportPlan* support=NULL;SwatObject* candidate=NULL;
     uint32_t support_groups=0;
+    bool frame_changed=false;
     // Prepare all changed hulls before committing any part of the snapshot.
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i];const SwatObjectState* in=&state->objects[i];
@@ -731,24 +732,39 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
             hulls[i]=swat_world_fragment_hull(o,in->corners);
             if(!hulls[i])goto snapshot_failed;
         }
-        SwatObject source=*o;if(cuts[i])source.cuts=cuts[i];
-        unsigned int broken=o->door?swat_world_door_hinges(&source):0;
-        if((in->active && in->door.broken_hinges!=broken) || (in->door.broken_hinges && !o->motion && !(doors[i]=swat_world_door_prepare()))) {
-            goto snapshot_failed;
-        }
         if(o->support_role && (in->active!=o->active || cuts[i] || changed_corners))support_groups|=swat_world_support_mask(&sim->world,o->wall_group);
+        if(sim->world.motel && (i==13 || o->wall_group==sim->world.objects[13].wall_group) &&
+           (in->active!=o->active || cuts[i] || changed_corners))frame_changed=true;
     }
-    if(support_groups) {
+    if(support_groups || frame_changed) {
         candidate=malloc((size_t)sim->world.count*sizeof(*candidate));if(!candidate)goto snapshot_failed;
         memcpy(candidate,sim->world.objects,(size_t)sim->world.count*sizeof(*candidate));
         for(int i=0;i<state->object_count;i++) {
             candidate[i].active=state->objects[i].active;if(cuts[i])candidate[i].cuts=cuts[i];
             if(state->objects[i].fractured)memcpy(candidate[i].corners,state->objects[i].corners,sizeof(candidate[i].corners));
         }
-        support=swat_world_support_prepare(&sim->world,candidate,support_groups);
-        if(!support || !swat_world_support_active_valid(support,candidate))goto snapshot_failed;
-        swat_world_support_take(support,cuts);swat_world_support_close(support);support=NULL;free(candidate);candidate=NULL;
+        if(support_groups) {
+            support=swat_world_support_prepare(&sim->world,candidate,support_groups);
+            if(!support || !swat_world_support_active_valid(support,candidate))goto snapshot_failed;
+            swat_world_support_take(support,cuts);swat_world_support_close(support);support=NULL;
+            for(int i=0;i<state->object_count;i++)if(cuts[i])candidate[i].cuts=cuts[i];
+        }
     }
+    // A hinge may lose its leaf wood OR its fixed jamb backing. Evaluate all
+    // incoming frame cuts/removals together, after support propagation, while
+    // the live world is still untouched. Ordinary pose-only updates reuse it.
+    unsigned int frame_broken=swat_motel_hinge_frame_broken(&sim->world,candidate?candidate:sim->world.objects);
+    for(int i=0;i<state->object_count;i++) {
+        const SwatObject* o=&sim->world.objects[i];const SwatObjectState* in=&state->objects[i];
+        SwatObject source=*o;source.latch_broken=in->latch_broken;
+        if(cuts[i])source.cuts=cuts[i];
+        if(in->fractured)memcpy(source.corners,in->corners,sizeof(source.corners));
+        unsigned int broken=o->door?swat_world_door_hinges(&source):0;
+        if(sim->world.motel && i==16)broken|=frame_broken;
+        if((in->active && in->door.broken_hinges!=broken) ||
+           (in->door.broken_hinges && !o->motion && !(doors[i]=swat_world_door_prepare())))goto snapshot_failed;
+    }
+    free(candidate);candidate=NULL;
     if(state->rubble_count<0 || state->rubble_count>SWAT_RUBBLE_CAPACITY ||
        (sim->world.rubble && (state->rubble_count<sim->world.rubble->count || state->rubble_serial<sim->world.rubble->serial)))goto snapshot_failed;
     uint32_t greatest_serial=0;
