@@ -1,0 +1,300 @@
+{
+  "schema": "BC_DUMP01_independent_offline_geometry_audit_v1",
+  "status": "PASS within static exterior-art scope; consolidated assembly topology caveat recorded",
+  "audited_runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0",
+  "identities": {
+    "runtime/BC_DUMP01_closed.glb": {
+      "sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0",
+      "bytes": 495792
+    },
+    "source/BC_DUMP01_editable.blend": {
+      "sha256": "b65c9269f0e65193b21e30319101bc71aba13285b7a5c8a92b9a436373df74f4",
+      "bytes": 1305100
+    },
+    "source/build_dumpster.py": {
+      "sha256": "e52fa9c5bf561c9ebd4f9c8f7d8b89afa32c73511810176526a1740b04561159",
+      "bytes": 15000
+    },
+    "source/make_textures.py": {
+      "sha256": "e44458c1b29b036b523e766203b52c72f040d56dba6442c033802bc5a13880fb",
+      "bytes": 4276
+    },
+    "source/export_packed.py": {
+      "sha256": "1eb1f664d74fdffbda1e936db8da68e9b2beb2d7db31a6f4ccdb4fb09c7f7be9",
+      "bytes": 1264
+    },
+    "source/maps/dumpster_label_atlas.png": {
+      "sha256": "70ce2df624ca99dbfe187d0938f590e695096e6a0d299cd27376c4e1d9b5ff05",
+      "bytes": 1785
+    },
+    "source/maps/dumpster_paint_atlas.png": {
+      "sha256": "fe461913e7fdea192a3a56349069267dc586c3a2bdaa8f3b2d8b13c9524bbf88",
+      "bytes": 229017
+    },
+    "source/maps/rubber.png": {
+      "sha256": "d61a89ad40fb86c9060b7a986fd5a61c4573772694f3a07e17e658df31f5256f",
+      "bytes": 4071
+    },
+    "source/maps/steel.png": {
+      "sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+      "bytes": 57646
+    }
+  },
+  "summary": {
+    "node_count": 4,
+    "mesh_instances": 3,
+    "mesh_count": 3,
+    "material_count": 4,
+    "image_count": 4,
+    "triangles": 2908,
+    "exported_vertices": 5576,
+    "world_min_gltf_xyz": [
+      -1.2430000305175781,
+      0.0,
+      -0.7389999628067017
+    ],
+    "world_max_gltf_xyz": [
+      1.2430000305175781,
+      1.6036137342453003,
+      0.7595000267028809
+    ],
+    "dimensions_gltf_xyz_m": [
+      2.4860000610351562,
+      1.6036137342453003,
+      1.4984999895095825
+    ],
+    "floor_y_m": 0.0,
+    "all_positions_finite": true,
+    "solid_components": 61
+  },
+  "primitive_inventory": [
+    {
+      "node": "BC_DUMP01_Body",
+      "material": "BC_DUMP01_WeatheredPaint",
+      "triangles": 1268,
+      "vertices": 2676
+    },
+    {
+      "node": "BC_DUMP01_Body",
+      "material": "BC_DUMP01_Hardware",
+      "triangles": 660,
+      "vertices": 1316
+    },
+    {
+      "node": "BC_DUMP01_Body",
+      "material": "BC_DUMP01_FictionalLabel",
+      "triangles": 36,
+      "vertices": 72
+    },
+    {
+      "node": "BC_DUMP01_Lid_Left",
+      "material": "BC_DUMP01_MoldedLid",
+      "triangles": 472,
+      "vertices": 756
+    },
+    {
+      "node": "BC_DUMP01_Lid_Right",
+      "material": "BC_DUMP01_MoldedLid",
+      "triangles": 472,
+      "vertices": 756
+    }
+  ],
+  "geometry_checks": {
+    "finite_positions": true,
+    "zero_area_geometric_triangles_below_1e-12_m2": 0,
+    "duplicate_triangles_within_runtime_mesh": 0,
+    "winding_opposed_vertex_normals": 0,
+    "source_solid_count": 64,
+    "source_closed_oriented_edge_manifold_solids": 64,
+    "source_positive_signed_volume_solids": 64,
+    "source_euler_characteristics": {
+      "2": 62,
+      "0": 2
+    },
+    "whole_runtime_coordinate_weld_caveat": "At 1e-6 m positional welding, coincident sheet-panel contact edges merge separate solids into one 172-triangle cluster with two valence-4 edges. Runtime gives 61 coordinate-connected clusters rather than 64 source solids. The runtime Body is not claimed to be a globally manifold boolean union. Original/source solids individually pass."
+  },
+  "uv_checks": {
+    "all_finite": true,
+    "zero_uv_area_triangles_below_1e-14": 0,
+    "notes": "Opaque material UVs are complete and finite. Lids intentionally tile the rubber image outside 0\u20131. Six hardware/label vertices are below 0 only by float rounding under 9e-8; not visible wrap errors. Unique/non-overlapping or lightmap UVs are not promised."
+  },
+  "texture_checks": [
+    {
+      "index": 0,
+      "name": "dumpster_paint_atlas",
+      "mimeType": "image/png",
+      "bytes": 229017,
+      "sha256": "fe461913e7fdea192a3a56349069267dc586c3a2bdaa8f3b2d8b13c9524bbf88",
+      "exact_source_matches": [
+        "source/maps/dumpster_paint_atlas.png"
+      ]
+    },
+    {
+      "index": 1,
+      "name": "steel",
+      "mimeType": "image/png",
+      "bytes": 57646,
+      "sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+      "exact_source_matches": [
+        "source/maps/steel.png"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "dumpster_label_atlas",
+      "mimeType": "image/png",
+      "bytes": 1785,
+      "sha256": "70ce2df624ca99dbfe187d0938f590e695096e6a0d299cd27376c4e1d9b5ff05",
+      "exact_source_matches": [
+        "source/maps/dumpster_label_atlas.png"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "rubber",
+      "mimeType": "image/png",
+      "bytes": 4071,
+      "sha256": "d61a89ad40fb86c9060b7a986fd5a61c4573772694f3a07e17e658df31f5256f",
+      "exact_source_matches": [
+        "source/maps/rubber.png"
+      ]
+    }
+  ],
+  "source_reopen": {
+    "copied_blend_only_directory": "packed_only",
+    "unit_system": "METRIC",
+    "unit_scale": 1.0,
+    "all_four_images_packed": true,
+    "image_receipts": [
+      {
+        "name": "dumpster_label_atlas.png",
+        "filepath": "//maps/dumpster_label_atlas.png",
+        "packed": true,
+        "packed_sha256": "70ce2df624ca99dbfe187d0938f590e695096e6a0d299cd27376c4e1d9b5ff05",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "dumpster_paint_atlas.png",
+        "filepath": "//maps/dumpster_paint_atlas.png",
+        "packed": true,
+        "packed_sha256": "fe461913e7fdea192a3a56349069267dc586c3a2bdaa8f3b2d8b13c9524bbf88",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "rubber.png",
+        "filepath": "//maps/rubber.png",
+        "packed": true,
+        "packed_sha256": "d61a89ad40fb86c9060b7a986fd5a61c4573772694f3a07e17e658df31f5256f",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "steel.png",
+        "filepath": "//maps/steel.png",
+        "packed": true,
+        "packed_sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+        "size": [
+          256,
+          256
+        ]
+      }
+    ],
+    "raw_64_solid_export_surface_equivalence": {
+      "files": [
+        "/workspace/shared/motel_dumpster_01/candidate/runtime/BC_DUMP01_closed.glb",
+        "/workspace/shared/motel_dumpster_01/independent/packed_only/packed_source_reexport.glb"
+      ],
+      "triangle_count_a": 2908,
+      "triangle_count_b": 2908,
+      "exact_world_triangle_material_normal_uv_match": true,
+      "canonical_oriented_surface_sha256_a": "97d96b79492c2f77d906f1f6b132cee7afda20827d056c9a478044894a8cb4ad",
+      "canonical_oriented_surface_sha256_b": "97d96b79492c2f77d906f1f6b132cee7afda20827d056c9a478044894a8cb4ad",
+      "scope": "Exact float values, material names and oriented triangle corners; independent of mesh grouping, triangle order, and cyclic vertex-start order. Includes POSITION, NORMAL, TEXCOORD_0."
+    }
+  },
+  "relocated_rebuild": {
+    "source": "Relocated copy of source folder; original generated atlases overwritten by make_textures.py, then build_dumpster.py executed in the relocated directory",
+    "result_runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0",
+    "runtime_byte_identical": true,
+    "generated_paint_and_label_byte_identical": true,
+    "scope": "Blender 4.3.2 / current installed Python, NumPy and Pillow; this verifies relocation and deterministic result on the same toolchain, not arbitrary future versions. Inherited steel/rubber maps copied unchanged, not regenerated."
+  },
+  "supplied_packed_export": {
+    "script_sha256": "1eb1f664d74fdffbda1e936db8da68e9b2beb2d7db31a6f4ccdb4fb09c7f7be9",
+    "copied_blend_sha256": "b65c9269f0e65193b21e30319101bc71aba13285b7a5c8a92b9a436373df74f4",
+    "export_sha256": "f13f89b93d879b138706d09dd0f1de39b662bf4618f9ffef5493e5b8cf6dfc7b",
+    "surface_equivalence": {
+      "files": [
+        "/workspace/shared/motel_dumpster_01/candidate/runtime/BC_DUMP01_closed.glb",
+        "/workspace/shared/motel_dumpster_01/independent/packed_only/supplied_packed_export.glb"
+      ],
+      "triangle_count_a": 2908,
+      "triangle_count_b": 2908,
+      "exact_world_triangle_material_normal_uv_match": true,
+      "canonical_oriented_surface_sha256_a": "97d96b79492c2f77d906f1f6b132cee7afda20827d056c9a478044894a8cb4ad",
+      "canonical_oriented_surface_sha256_b": "97d96b79492c2f77d906f1f6b132cee7afda20827d056c9a478044894a8cb4ad",
+      "scope": "Exact float values, material names and oriented triangle corners; independent of mesh grouping, triangle order, and cyclic vertex-start order. Includes POSITION, NORMAL, TEXCOORD_0."
+    },
+    "byte_identical_expected": false
+  },
+  "independent_imported_visual_review": {
+    "renderer": "Blender 4.3.2 Cycles CPU, 28 samples, independent glTF import, review-only ground/lights/camera",
+    "views": [
+      {
+        "name": "front_3q.png",
+        "sha256": "9ae2ccc0749abe03a335d2e4ee2cf2344e164f5f87f81d8e90e79f06105c6f05",
+        "source_runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0"
+      },
+      {
+        "name": "rear_3q.png",
+        "sha256": "49171d023d07d7ade8b15e9920e1bce2ca49d3c015891aa4cdb6e89b3a27787a",
+        "source_runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0"
+      },
+      {
+        "name": "side.png",
+        "sha256": "7196e0a56329d99e28f4785f3bbc440ea745e099316df7bdf4df9d4aeb1e15d7",
+        "source_runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0"
+      },
+      {
+        "name": "top.png",
+        "sha256": "2b96258bf7ed85c2f04ddcbfa38ce0958d3fe43c35b1fedbacb44be9b3363919",
+        "source_runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0"
+      },
+      {
+        "name": "underside.png",
+        "sha256": "994fd97ea593a9fe973582df520908e69dc3e0e502ba480f193ad39ce8a1ab6d",
+        "source_runtime_sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0"
+      }
+    ],
+    "result": "Inspected final front three-quarter, rear three-quarter, side, top, and underside. Tapered body, split corrugated lids, open fork pockets, skid floor contact, and restrained weathering read clearly. No missing textures, visible open shell fault, conspicuous shading seam, or accidental label/stiffener overlap. Flat placard follows the nominal front plane and may bridge shallow dent interpolation. Render noise is review sampling, not asset texture."
+  },
+  "excluded_acceptance": [
+    "Native game engine import/integration",
+    "Collision, gameplay, hinges or interactive opening",
+    "Target-platform performance or draw-call certification",
+    "Manufacturing, physical lifting, sanitation or load compliance"
+  ],
+  "toolchain": {
+    "blender": "4.3.2",
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "Pillow": "12.3.0"
+  },
+  "placard_contact_sample": {
+    "scope": "161x161 sample grid on placard back rectangle against directly reexported source front-skin triangles; ray depth interpolation in glTF +Z front direction",
+    "maximum_sampled_gap_m": 0.0006918639225472756,
+    "location_blender_x_z": [
+      0.185,
+      0.79
+    ],
+    "interpretation": "Thin flat placard meets the nominal body plane but locally bridges a shallow triangulated dent on its positive-X lower portion. No active collision or physical-contact contract is implied."
+  }
+}

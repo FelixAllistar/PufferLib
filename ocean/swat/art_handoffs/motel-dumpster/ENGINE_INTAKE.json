@@ -1,0 +1,27 @@
+{
+  "created_utc": "2026-10-17T21:33:26.835Z",
+  "asset": "BC_DUMP01",
+  "source_drive_file": "1JjLcKzExcGajLzwcahGANMbtZGAh8E6K",
+  "archive": {
+    "bytes": 18016289,
+    "sha256": "60887eb3a0986e88fe509684b5a61a7330be3ea22ef1c52caf74c501351e856a",
+    "members": 54,
+    "indexed_payloads_verified": 53,
+    "index_sha256": "a5997b34f46686d79f4379aa90b270b5ab399df0ab7106c3581b0f7ad8cd3a47"
+  },
+  "runtime": {
+    "path": "ocean/swat/assets/environment/motel_dumpster/BC_DUMP01_closed.glb",
+    "sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0",
+    "triangles": 2908,
+    "primitives": 5,
+    "meshes": 3,
+    "materials": 4,
+    "embedded_images": 4
+  },
+  "intake_check": "node ocean/swat/tools/check_dumpster.cjs",
+  "supplied_actual_export_sheet_inspected": true,
+  "authoring_python_executed": false,
+  "source_unchanged": true,
+  "status": "Verified intake; not loaded into the level. Placement, sparse collision/material binding, native rendering and performance acceptance remain open.",
+  "slack_ack": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792271847499529?thread_ts=1791078311.943659&cid=C0C5TN3AA8K"
+}

@@ -1,0 +1,128 @@
+{
+  "asset_id": "BC_DUMP01",
+  "title": "Briar Court closed-lid commercial dumpster",
+  "revision": "r01",
+  "design_count": 1,
+  "runtime_exports": 1,
+  "state": "static closed lids",
+  "native_acceptance": "OPEN / NOT TESTED",
+  "performance_acceptance": "OPEN / NOT TESTED",
+  "runtime": {
+    "file": "runtime/BC_DUMP01_closed.glb",
+    "bytes": 495792,
+    "sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0",
+    "triangles": 2908,
+    "nodes": 4,
+    "mesh_nodes": 3,
+    "material_primitives": 5,
+    "materials": 4,
+    "embedded_images": 4,
+    "dimensions_blender_xyz_m": [
+      2.4860000610351562,
+      1.4984999895095825,
+      1.6036137342453003
+    ],
+    "dimensions_gltf_xyz_m": [
+      2.4860000610351562,
+      1.6036137342453003,
+      1.4984999895095825
+    ],
+    "bounds_blender_xyz_m": [
+      [
+        -1.2430000305175781,
+        -0.7595000267028809,
+        0.0
+      ],
+      [
+        1.2430000305175781,
+        0.7389999628067017,
+        1.6036137342453003
+      ]
+    ],
+    "placement_origin": [
+      0,
+      0,
+      0
+    ],
+    "node_inventory": [
+      {
+        "name": "BC_DUMP01_Body",
+        "mesh": 0,
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "BC_DUMP01_Lid_Left",
+        "mesh": 1,
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "BC_DUMP01_Lid_Right",
+        "mesh": 2,
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "BC_DUMP01_ROOT",
+        "mesh": null,
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    ],
+    "material_inventory": [
+      "BC_DUMP01_WeatheredPaint",
+      "BC_DUMP01_Hardware",
+      "BC_DUMP01_FictionalLabel",
+      "BC_DUMP01_MoldedLid"
+    ]
+  },
+  "editable_source": {
+    "file": "source/BC_DUMP01_editable.blend",
+    "sha256": "b65c9269f0e65193b21e30319101bc71aba13285b7a5c8a92b9a436373df74f4",
+    "named_solids": 64,
+    "packed_images": 4,
+    "triangulation": "editable modifiers, evaluated in runtime"
+  },
+  "recipe": [
+    "source/make_textures.py",
+    "source/build_dumpster.py"
+  ],
+  "packed_export_helper": "source/export_packed.py",
+  "preview_recipe": "source/render_export.py",
+  "rights": "Project-scoped new geometry/scripts/paint/sign; only exact inherited steel and rubber maps retain CC0-1.0. See PROVENANCE.json.",
+  "topology_qualification": "64 source solids individually manifold; consolidated runtime is an overlapping fabricated-sheet assembly, not globally boolean-unioned or globally manifold after arbitrary positional welding.",
+  "source_untouched": "Prior library payloads were read/copied, never edited."
+}

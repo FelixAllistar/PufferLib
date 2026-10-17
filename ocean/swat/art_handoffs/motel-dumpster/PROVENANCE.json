@@ -1,0 +1,70 @@
+{
+  "asset": "BC_DUMP01",
+  "created_utc": "2026-10-17",
+  "new_geometry": "Original geometry authored procedurally in source/build_dumpster.py. No outside downloaded model or copied mesh.",
+  "new_artwork_rights": "Project-scoped original work; no new blanket CC0 dedication or general-purpose license.",
+  "textures": [
+    {
+      "file": "source/maps/dumpster_paint_atlas.png",
+      "sha256": "fe461913e7fdea192a3a56349069267dc586c3a2bdaa8f3b2d8b13c9524bbf88",
+      "bytes": 229017,
+      "resolution": [
+        512,
+        512
+      ],
+      "encoding": "sRGB basecolor",
+      "source": "New deterministic original procedural artwork; source/make_textures.py",
+      "rights": "Project-scoped original work",
+      "notices": [],
+      "transformations": "seeded original generation; no photographic inputs, no baked illumination"
+    },
+    {
+      "file": "source/maps/dumpster_label_atlas.png",
+      "sha256": "70ce2df624ca99dbfe187d0938f590e695096e6a0d299cd27376c4e1d9b5ff05",
+      "bytes": 1785,
+      "resolution": [
+        256,
+        256
+      ],
+      "encoding": "sRGB basecolor",
+      "source": "New deterministic original procedural artwork; source/make_textures.py",
+      "rights": "Project-scoped original work",
+      "notices": [],
+      "transformations": "seeded original generation; no photographic inputs, no baked illumination"
+    },
+    {
+      "file": "source/maps/steel.png",
+      "sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+      "bytes": 57646,
+      "resolution": [
+        256,
+        256
+      ],
+      "encoding": "sRGB basecolor",
+      "source": "Unchanged batch16 original procedural texture, retained through EYE01 reconstruction",
+      "rights": "Inherited CC0-1.0 for this map only",
+      "notices": [
+        "source/notices/inherited_LICENSE.txt",
+        "source/notices/inherited_textures_provenance.json"
+      ],
+      "transformations": "none"
+    },
+    {
+      "file": "source/maps/rubber.png",
+      "sha256": "d61a89ad40fb86c9060b7a986fd5a61c4573772694f3a07e17e658df31f5256f",
+      "bytes": 4071,
+      "resolution": [
+        256,
+        256
+      ],
+      "encoding": "sRGB basecolor",
+      "source": "Unchanged batch16 original procedural texture, retained through EYE01 reconstruction",
+      "rights": "Inherited CC0-1.0 for this map only",
+      "notices": [
+        "source/notices/inherited_LICENSE.txt",
+        "source/notices/inherited_textures_provenance.json"
+      ],
+      "transformations": "none"
+    }
+  ]
+}
