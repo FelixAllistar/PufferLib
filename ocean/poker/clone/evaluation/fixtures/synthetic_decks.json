@@ -1,0 +1,54 @@
+{
+  "decks": [
+    [
+      23,
+      48,
+      41,
+      50,
+      10,
+      36,
+      1,
+      19,
+      37
+    ],
+    [
+      43,
+      35,
+      5,
+      50,
+      6,
+      11,
+      40,
+      16,
+      29
+    ],
+    [
+      45,
+      37,
+      12,
+      32,
+      18,
+      26,
+      19,
+      44,
+      43
+    ],
+    [
+      19,
+      22,
+      2,
+      42,
+      36,
+      34,
+      0,
+      1,
+      51
+    ]
+  ],
+  "orientation": "each literal deck in both seat orientations",
+  "primary_seed": 202610186500,
+  "redirected_action_seed": 202610186598,
+  "schema": "poker-clone-synthetic-decks-v1",
+  "scope": "literal synthetic test inputs only",
+  "uncertain_action_seed": 202610186599
+}
