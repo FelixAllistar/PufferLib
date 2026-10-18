@@ -123,29 +123,69 @@ exact amounts. Responses return every seat's terminal profit, including folded
 and all-in seats. Consume these before resetting a completed table. The trusted
 kernel uses debug assertions; validate untrusted inputs at the boundary.
 
-## Rules bot and external evaluation
+## Native opponents and external evaluation
 
-The fixed initial baseline is style 1: positional/preflop hand features, made
-hands/draws, call-price thresholds and randomized value/semi-bluff sizing. It
-has no search or large tables. Styles 0 and 2 preserve the initial and positional
-pilot variants. Its scores are heuristics, not calibrated equity or GTO claims.
-The [October 17 loss audit](../../reports/poker/index.html#diagnosis) reproduces
-over-folding of strong draws and overpairs in the frozen baseline, and breaks
-down the original 4,000-hand Slumbot sample. The separate
-[native baseline experiment](../../reports/poker/index.html#baselines) compares
-Fullhouse and two defense candidates; see those measurements before choosing a
-replacement. The default remains the original style 1.
+Three native policies remain active. Numeric IDs are stable implementation
+selectors, not difficulty levels or human personalities.
 
-### Native Fullhouse and candidate benchmarks
+| ID | Name | Role |
+| --- | --- | --- |
+| 1 | Rules control | Original cheap heuristic, retained for reproducible comparisons. |
+| 4 | Fullhouse | External learned policy; requires its compiled weights. |
+| 7 | Range | Current equity-based opponent and training default. |
 
-Styles 0/1/2 retain the old policies. Style 3 is a broad defense experiment;
-style 5 makes narrower changes to draws, top pairs/overpairs and AK re-raises.
-Neither candidate is a calibrated equity solver. Style 4 ports the published
-Fullhouse Deep CFR policy, including its five-action abstraction and short-stack
-chart. It supports two or six seats; the published checkpoint was developed for
-six-player play, so heads-up and 200 BB results require separate measurement.
+The redundant experimental IDs 0/2/3/5/6/8 have been removed from active native
+builds. Sampling is now a setting on the range policy: `equity_samples=32`, `64`
+or `128`; zero uses the pinned build's default. Historical source snapshots,
+binary hashes, results and old libraries remain available. An old numeric ID
+requires the matching archived library; IDs are never silently reassigned.
 
-Clone the pinned external source into the ignored build tree and export it:
+The [HTML notebook](../../reports/poker/index.html) records strategy revisions,
+Slumbot measurements and six-seat checks. The
+[behavior audit](../../reports/poker/index.html#behavior) describes the nine-ID
+snapshot before cleanup; `audit_behavior.py` defaults to that frozen library.
+A policy's identity is its source/binary hash, numeric ID and sample setting.
+
+Use `--env.bot_policy=7` and optionally `--env.equity_samples=128` in the trainer.
+`--env.native_baseline_mask=146` mixes IDs 1/4/7 when Fullhouse is compiled in;
+130 mixes only rules and range. A nonzero mask samples the native policy once
+per table/opponent seat and keeps it across hands. Zero uses `bot_policy`.
+The snapshot league exposes `--bot-policy`, `--equity-samples` and
+`--baseline-mask`. Its native-versus-snapshot fraction still applies; frozen
+network identities are sampled per hand and recurrent state resets each hand.
+
+### Range equity and public table history
+
+The range policy samples complete unknown deals, weighted by a hand-written
+opponent range model. It accounts for card removal, ties, folded contributions
+and side-pot eligibility. No opponent holes or unrevealed board cards are read.
+Simulation RNG is separate from dealing. Decision-time code is native C with no
+allocation, Python, network, learned weight file or GPU dependency. Range
+likelihoods and the betting rule remain approximations, not full action values.
+
+The default budget is 128 samples in heads-up builds and 32 at six/nine seats.
+The [October 18 iteration series](../../reports/poker/index.html#strength) tried
+four candidates and retained this sampling change. A fresh 6,000-hand Slumbot
+run scored -20.13 BB/100 versus -32.33 for a clean 6,000-hand control window;
+the +12.20 +/-48.48 difference is inconclusive. Fresh local heads-up comparisons
+improved; six-seat default results match the old range policy. Bet-context,
+blind-rule and exact-river experiments remain archived rather than active.
+The compiled current trainer is `build/poker/puffer_range`.
+
+Set `--env.native_history=1` (or league `--native-history`) to retain public
+per-seat statistics across hands until the table is destroyed. The range model
+uses shrunk VPIP, preflop-raise and postflop-raise rates. Fold and size statistics
+are also recorded, but are not policy inputs. All learner and opponent actions
+update profiles without inspecting cards or outcomes. Profiles cost 64 bytes per
+seat and are off by default. They do not enter the learner's observation vector;
+consistent strength gains from history and human realism remain unestablished.
+
+### Fullhouse and duplicate-deal benchmarks
+
+The native Fullhouse port uses the published five-action policy and short-stack
+chart. Its checkpoint was developed for six-player play; heads-up and 200 BB
+results are measured separately. Clone the pinned source into the ignored build
+tree and export it:
 
 ```sh
 git clone https://github.com/advitrocks9/fullhouse-bot.git build/poker/external/fullhouse-bot
@@ -154,111 +194,41 @@ uv venv build/poker/bench-venv
 uv pip install --python build/poker/bench-venv/bin/python numpy==2.2.6 eval7==0.1.10 requests pokerkit==0.7.7
 OPENBLAS_NUM_THREADS=1 build/poker/bench-venv/bin/python ocean/poker/build_baselines.py
 OPENBLAS_NUM_THREADS=1 build/poker/bench-venv/bin/python ocean/poker/test_baselines.py
-python3 ocean/poker/benchmark.py --hands 60000 --output build/poker/local_baselines
+build/poker/bench-venv/bin/python ocean/poker/test_equity.py --build build/poker
+python3 ocean/poker/benchmark.py --candidates 1 4 7 --hands 60000 \
+  --output build/poker/new_baseline_match
 ```
 
-The exporter checks the source revision, records hashes, and embeds 588,180 bytes
-of fp32 weights/tables in each native library. Decision-time inference uses C,
-optional AVX2 and libm; it needs no Python, BLAS, allocations, GPU or network.
-The source license is retained in `third_party/fullhouse-LICENSE.txt`. External
-source and model files stay outside the tracked source tree.
-
-`benchmark.py` rotates the tested policy through every seat on each duplicate
-deal. Intervals use independent deal-block means; candidate differences are
-paired on the same deals and field. It tests original, Fullhouse and mixed
-six-player fields. `--stack 10000` tests 100 BB; `--candidates 1 5 4` selects a
-subset; `--build` selects a frozen build directory. Output directories must be
-new. These opponent fields are baselines, not a validated model of human play.
-
-Fullhouse works with the same Slumbot runner:
+The exporter pins the source revision, records hashes and embeds 588,180 bytes
+of fp32 weights/tables. Inference uses C, optional AVX2 and libm. The source
+license is retained in `third_party/fullhouse-LICENSE.txt`; external source and
+model files stay outside tracked source. To embed Fullhouse in the trainer:
 
 ```sh
-python3 ocean/poker/eval.py --style 4 --library build/poker/libpoker_fullhouse2.so \
-  --hands 4000 --games 5 --contact https://github.com/FelixAllistar \
-  --output build/poker/slumbot_fullhouse.jsonl
-```
-
-The October 17 experiment stopped its 50-game pilot after connection failures;
-five games then completed cleanly. Logs retain all ambiguous outcomes. An
-unsupported style is rejected before opening an API game.
-
-To embed Fullhouse in the existing PPO environment, build with its generated
-header (replace this absolute example with your build path):
-
-```sh
-NVCC_EXTRA='-DPOKER_FULLHOUSE_MODEL="/home/felix/puffertank/pufferlib/build/poker/baselines_v2/fullhouse_weights.h"' \
+NVCC_EXTRA='-DPOKER_FULLHOUSE_MODEL="/home/felix/puffertank/pufferlib/build/poker/fullhouse_weights.h"' \
   bash build.sh poker build/poker/puffer_baselines
 ```
 
-Use `--env.bot_policy=4` for Fullhouse, or `--env.native_baseline_mask=23` for
-styles 0, 1, 2 and 4 (bit i enables style i). A nonzero mask samples each
-opponent's native style once at table initialization and keeps it across hands.
-Zero preserves the single `bot_policy` selection. The snapshot league accepts
-`--bot-policy` and `--baseline-mask`; `rules_fraction` still controls the native
-baseline fraction versus frozen PufferNet opponents. Those network identities
-are sampled per hand as before. The optional range baselines below can use public
-table history; learner and frozen-network recurrent state still reset each hand.
-
-### Bounded range equity and public table history
-
-Styles 6/7/8 keep style 5's preflop policy and replace its postflop strength score
-with sampled showdown equity. Style 6 samples 32 uniform opponent hands (a weak
-ablation). Style 7 uses 32 range-weighted samples; style 8 uses 128. Ranges depend
-on position and each seat's strongest public action on each visible street.
-The joint sampler accounts for card removal, ties, folded contributions and
-side-pot eligibility. Simulation RNG is separate from dealing; no opponent
-cards or unrevealed board are read. Range likelihoods and the betting rule are
-still heuristics: this is not CFR, a calibrated human model, or full action EV.
-
-These styles work in the ordinary native build and in the Fullhouse build.
-The [range experiment](../../reports/poker/index.html#equity) records held-out
-matches, Slumbot, throughput and the uniform/range/sample-budget ablations.
-Use `--env.bot_policy=7` for the faster range baseline, or 8 for more samples.
-The original style 1 remains available and is still the default.
-
-Set `--env.native_history=1` (or league `--native-history`) to allocate a public
-profile per seat, retained across hands until the table is destroyed. Styles
-7/8 use shrunk VPIP, preflop-raise and postflop-raise rates to adjust ranges.
-Facing-bet folds and bet-size statistics are also recorded for inspection, but
-are not yet policy inputs. All learner and opponent actions update the profiles;
-they never inspect cards or results. Memory costs 64 bytes per seat when enabled
-(384 bytes for six seats), in addition to simulator and trainer buffers. The
-feature is off by default. This is the beginning of behavioral adaptation;
-human realism and a consistent strength gain from history have not been established.
-
-```sh
-# After the pinned Fullhouse export above:
-build/poker/bench-venv/bin/python ocean/poker/test_equity.py --build build/poker
-python3 ocean/poker/benchmark.py --build build/poker --candidates 1 7 8 \
-  --fields original fullhouse positional mixed varied --hands 60000 \
-  --seed 202610174 --output build/poker/range_holdout
-python3 ocean/poker/benchmark.py --build build/poker --candidates 1 7 \
-  --fields fullhouse varied --hands 60000 --session-blocks 50 --native-history \
-  --seed 202610175 --output build/poker/history_comparison
-build/poker/policy_bench6
-```
-
-With `--session-blocks 50`, confidence intervals use independent sessions of
-50 duplicate-deal blocks. Each seat rotation has its own table profiles, so no
-profile observes the other rotations of the same deal. To measure history's
-effect, run the same session configuration once with and once without
-`--native-history`; compare paired session returns. Fixed-position latency from
-`policy_bench2`/`policy_bench6` reports process CPU time and wall time separately.
+`benchmark.py` rotates each tested policy through every seat on duplicate deals.
+Intervals use independent block means, and policy differences are paired on the
+same deals. Current fields are rules, Fullhouse and a mixed six-seat field
+(1/4/1/4/4); the older positional/varied fields belong to archived experiments.
+`--stack 10000` tests 100 BB; `--build` selects a frozen build. Output directories
+must be new. `--session-blocks 50 --native-history` groups 50 hands per seat into
+independent sessions for history ablations; each rotation owns separate profiles.
+`policy_bench2` and `policy_bench6` report fixed-position process CPU and wall time
+separately from integrated match throughput.
 
 The [checkpoint audit](../../reports/poker/20261017/equity_v1/checkpoint-audit.json)
-checked all tracked NPZ files in the published main revision and 13 archive
-tags: two advantage-network artifacts, no average-strategy network. The supplied
-model matches the author's stated shipped policy. The trainer's newer default
-average-strategy export is not evidence of a deployment bug. To repeat after
-fetching the external repository's tags:
+found two advantage checkpoints and no average-strategy checkpoint in the pinned
+main revision and 13 archive tags. The supplied model matches the author's stated
+shipped policy. Repeat after fetching the external repository's tags with
+`build/poker/bench-venv/bin/python ocean/poker/audit_fullhouse.py --output build/poker/checkpoint-audit.json`.
+
+### Slumbot runner
 
 ```sh
-build/poker/bench-venv/bin/python ocean/poker/audit_fullhouse.py \
-  --output build/poker/checkpoint-audit.json
-```
-
-```sh
-python3 ocean/poker/eval.py --hands 1000 --style 1 --seed 991 \
+python3 ocean/poker/eval.py --hands 1000 --policy range --games 5 --seed 991 \
     --output build/poker/slumbot_eval.jsonl
 ```
 
@@ -278,13 +248,17 @@ server/transport errors use exponential backoff. Ambiguous actions are never
 replayed: the unresolved hand is logged and play continues in a fresh session.
 Summaries report unresolved counts and worst-case score bounds separately.
 Six consecutive failed hand attempts in a game stop the run. Use `--resume` with the same
-output, style and library to retain completed results and continue to `--hands`
+output, policy, sample setting and library to retain completed results and continue to `--hands`
 total hands. Running net BB, BB/100 and ETA print every 25 completed hands and
 are written to a `.progress.txt` file, or the path selected with `--progress`.
-SIGINT drains current hands and then stops, preserving a boundary for resuming.
-The sole completed initial pilot was 100
-hands at −41.4 BB/100, with an approximate 95% half-width of 62.8 BB/100. This
-does not establish opponent strength or a win over Slumbot.
+SIGINT and SIGTERM drain current hands and then stop, preserving a boundary for
+resuming. A forced kill cannot drain: a log without a final summary has unknown
+pending outcomes and must not be reported as a clean completed run.
+Use `--policy rules`, `--policy fullhouse` or `--policy range`;
+`--style` accepts historical numeric IDs only when the selected library supports
+them. `--equity-samples` selects the range budget. Live runs and their uncertainty
+are retained in the HTML notebook; development scores are separate from final
+evaluation scores.
 
 ## Correctness and measurement
 

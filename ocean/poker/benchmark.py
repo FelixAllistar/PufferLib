@@ -17,10 +17,10 @@ def main():
     p.add_argument('--seed',type=int,default=202610171)
     p.add_argument('--build',type=Path,default=ROOT/'build/poker')
     p.add_argument('--stack',type=int,default=20000)
-    p.add_argument('--candidates',type=int,nargs='+',default=[1,3,4,5])
+    p.add_argument('--candidates',type=int,nargs='+',default=[1,4,7])
     p.add_argument('--session-blocks',type=int,default=1)
     p.add_argument('--native-history',action='store_true')
-    p.add_argument('--fields',nargs='+',choices=('original','fullhouse','mixed','positional','varied'),
+    p.add_argument('--fields',nargs='+',choices=('original','fullhouse','mixed'),
                    default=['original','fullhouse','mixed'])
     args=p.parse_args()
     args.output.mkdir(parents=True,exist_ok=False)
@@ -35,8 +35,8 @@ def main():
     (args.output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     results=[]
     for n in (2,6):
-        fields={'original':'1','fullhouse':'4','positional':'2'}
-        if n==6: fields.update(mixed='0,1,2,4,4',varied='0,2,5,4,4')
+        fields={'original':'1','fullhouse':'4'}
+        if n==6: fields.update(mixed='1,4,1,4,4')
         fields={name:opponents for name,opponents in fields.items() if name in args.fields}
         for field,opponents in fields.items():
             for hero in args.candidates:

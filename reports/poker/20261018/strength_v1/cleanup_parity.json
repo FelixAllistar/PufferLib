@@ -1,0 +1,11 @@
+{
+  "hands": 1200,
+  "decisions_and_rng_checked": 14498,
+  "differences": 0,
+  "policies": [
+    1,
+    7
+  ],
+  "reference": "blind frozen build",
+  "candidate": "clean_check"
+}

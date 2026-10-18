@@ -28,7 +28,7 @@ int main(void) {
     uint32_t stacks[POKER_PLAYERS];
     for (int p=0;p<POKER_PLAYERS;p++) stacks[p]=20000;
     poker_reset(g,0,0,stacks,deck);
-    int styles[] = {1,4,6,7,8};
+    int styles[] = {1,4,7};
     int32_t (*volatile decide)(Poker*,int,uint64_t*,int) = poker_bot;
     volatile int32_t sink = 0;
     printf("[\n");

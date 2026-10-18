@@ -1,0 +1,17 @@
+{
+  "objective": "Improve the native range bot against Slumbot; six-seat checks guard against regressions. No persona work.",
+  "control": {
+    "build": "build/poker/equity_v2",
+    "style": 7,
+    "live_hands": 8000,
+    "seed": 2026101820,
+    "replacement_seed": 2026101830,
+    "replacement_reason": "First long process terminated externally before final summary; excluded from confirmatory comparison."
+  },
+  "development": "Three successive candidates: more stable equity; public bet-size/re-raise likelihoods; preflop or action-selection repair based on evidence. Local duplicate-deal screens plus 3000 live hands per candidate. Development scores are exploratory.",
+  "holdout": "After all development attempts, select once; compare a fresh 6000-hand candidate run with the first 6000 completed control hands from slumbot_confirm_control.jsonl. Prefix verified free of interrupted attempts and fixed before its prefix score was computed. Full source plus unused suffix retained. Fresh local seed.",
+  "concurrency": "Five games per process; frozen control may overlap one development candidate, at most ten games total. Candidates run sequentially. Updated before development outcomes because observed HTTP throughput is about 9 hands/s. Retain unresolved attempts.",
+  "cleanup": "One active range policy with a sample-budget setting; retain Fullhouse and one original rules control. Remove superseded variants from active source/API; full frozen source snapshots and old libraries retain historical reproductions. Stable IDs 1/4/7 are not renumbered.",
+  "fourth_candidate": "Exact HU river enumeration, branched from original range model; local screen, independent exhaustive oracle, and 3000 Slumbot development hands before selection. Added after first development run, before its own outcomes.",
+  "fourth_candidate_retry": "DNS recovered. Run a new independent 3000-hand river development series, seed 2026101826; exclude interrupted 610-hand attempt from selection."
+}

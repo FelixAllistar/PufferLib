@@ -1,0 +1,135 @@
+{
+  "combinations_per_position": 990,
+  "positions": [
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "Jh",
+        "Th",
+        "2c",
+        "3d"
+      ],
+      "expected_share": 1.0,
+      "exact_native_share": 1.0,
+      "effective_combinations": 492.1412048339844
+    },
+    {
+      "hole": [
+        "2c",
+        "3d"
+      ],
+      "board": [
+        "As",
+        "Ks",
+        "Qs",
+        "Js",
+        "Ts"
+      ],
+      "expected_share": 0.5,
+      "exact_native_share": 0.5,
+      "effective_combinations": 914.89990234375
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d",
+        "9s",
+        "4c"
+      ],
+      "expected_share": 0.67825513956757,
+      "exact_native_share": 0.6782551407814026,
+      "effective_combinations": 505.5234069824219
+    },
+    {
+      "hole": [
+        "As",
+        "Kd"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c",
+        "3s",
+        "9h"
+      ],
+      "expected_share": 0.1215069034911528,
+      "exact_native_share": 0.12150690704584122,
+      "effective_combinations": 500.7087707519531
+    },
+    {
+      "hole": [
+        "Ad",
+        "Td"
+      ],
+      "board": [
+        "Ah",
+        "Js",
+        "Jh",
+        "3d",
+        "Qh"
+      ],
+      "expected_share": 0.6016555045468847,
+      "exact_native_share": 0.6016554832458496,
+      "effective_combinations": 542.7503051757812
+    },
+    {
+      "hole": [
+        "Th",
+        "Tc"
+      ],
+      "board": [
+        "Qd",
+        "Qc",
+        "8c",
+        "3c",
+        "7h"
+      ],
+      "expected_share": 0.6476879142391812,
+      "exact_native_share": 0.6476879119873047,
+      "effective_combinations": 555.143798828125
+    },
+    {
+      "hole": [
+        "Kd",
+        "Td"
+      ],
+      "board": [
+        "Kh",
+        "6d",
+        "3h",
+        "3d",
+        "3s"
+      ],
+      "expected_share": 0.8819996674310138,
+      "exact_native_share": 0.881999671459198,
+      "effective_combinations": 896.0069580078125
+    },
+    {
+      "hole": [
+        "6s",
+        "5s"
+      ],
+      "board": [
+        "4c",
+        "7h",
+        "8c",
+        "Ah",
+        "Ad"
+      ],
+      "expected_share": 0.917031641849107,
+      "exact_native_share": 0.9170316457748413,
+      "effective_combinations": 541.0704956054688
+    }
+  ],
+  "seed_independence": true,
+  "game_state_unchanged": true
+}

@@ -22,8 +22,11 @@ def text_card(value):
 
 
 class Native:
-    def __init__(self, players=2, seed=73, library=None):
+    def __init__(self, players=2, seed=73, library=None, samples=0):
         self.players = players
+        if samples not in (0, 32, 64, 128):
+            raise ValueError("Equity samples must be 0 (build default), 32, 64 or 128")
+        self.samples = samples
         self.path = Path(library) if library else ROOT / f"build/poker/libpoker{players}.so"
         self.lib = C.CDLL(str(self.path.resolve()))
         self.styles = self.lib.poker_bot_styles() if hasattr(self.lib, "poker_bot_styles") else 7
@@ -41,6 +44,11 @@ class Native:
         }
         for name, args in signatures.items():
             getattr(self.lib, name).argtypes = args
+        if hasattr(self.lib, "poker_decide"):
+            self.lib.poker_decide.argtypes = [C.c_void_p, C.c_int, C.POINTER(C.c_uint64),
+                                             C.c_int, C.c_int, C.c_void_p]
+        elif samples:
+            raise ValueError("This archived library does not support a sample-budget setting")
         self.lib.poker_rank.restype = C.c_uint32
         self.storage = C.create_string_buffer(self.lib.poker_bytes())
         self.rng = C.c_uint64(seed or 1)
@@ -69,6 +77,8 @@ class Native:
     def bot(self, style):
         if not self.styles & (1 << style):
             raise ValueError(f"Policy style {style} is unavailable in {self.path}")
+        if self.samples:
+            return self.lib.poker_decide(self.storage, 0, C.byref(self.rng), style, self.samples, None)
         return self.lib.poker_bot(self.storage, 0, C.byref(self.rng), style)
 
 
@@ -102,10 +112,12 @@ def slumbot(args):
 
     assert 1 <= args.games <= 50 and args.hands > 0 and args.request_delay >= 0
     binary = Path(args.library) if args.library else ROOT / "build/poker/libpoker2.so"
-    if not Native(library=binary).styles & (1 << args.style):
+    samples = getattr(args, "equity_samples", 0)
+    if not Native(library=binary, samples=samples).styles & (1 << args.style):
         raise ValueError(f"Policy style {args.style} is unavailable in {binary}")
     agent = "PufferTank-PokerEval/1.0" + (f" (+{args.contact})" if args.contact else "")
-    metadata = {"style": args.style, "seed": args.seed, "hands_requested": args.hands,
+    metadata = {"style": args.style, "equity_samples": samples,
+        "seed": args.seed, "hands_requested": args.hands,
         "library_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
         "opponent": "slumbot.com", "starting_bb": 200,
         "request_delay_seconds": args.request_delay, "concurrent_games": args.games,
@@ -119,6 +131,7 @@ def slumbot(args):
         records = [json.loads(line) for line in output.read_text().splitlines()]
         original = records[0]["metadata"]
         assert all(original[k] == metadata[k] for k in ("style", "library_sha256"))
+        assert original.get("equity_samples", 0) == samples
         hands = [r for r in records if "winnings_chips" in r]
         results = [r["winnings_chips"] / 100 for r in hands]
         unresolved = sum("interrupted" in r for r in records)
@@ -131,7 +144,7 @@ def slumbot(args):
     def play(game, quota):
         session = requests.Session()
         session.headers["User-Agent"] = agent
-        native = Native(seed=args.seed + game * 1000003, library=binary)
+        native = Native(seed=args.seed + game * 1000003, library=binary, samples=samples)
         if game in rngs:
             native.rng.value = rngs[game]
         token, failure = None, None
@@ -276,9 +289,10 @@ def slumbot(args):
             + line + "\n")
         return summary
 
-    # SIGINT stops between hands, allowing later concurrency changes without
-    # abandoning an in-flight game. Workers keep independent tokens and RNGs.
+    # Graceful signals stop between hands. A forced SIGKILL cannot drain; logs
+    # without a final summary must be treated as having unknown pending outcomes.
     previous = signal.signal(signal.SIGINT, lambda *_: stop.set())
+    previous_term = signal.signal(signal.SIGTERM, lambda *_: stop.set())
     failures = []
     try:
         with output.open("a" if args.resume else "x") as log:
@@ -325,6 +339,7 @@ def slumbot(args):
             print(json.dumps(summary), flush=True)
     finally:
         signal.signal(signal.SIGINT, previous)
+        signal.signal(signal.SIGTERM, previous_term)
     if failures:
         raise SystemExit(f"Slumbot evaluation stopped: {failures}")
 
@@ -332,7 +347,13 @@ def slumbot(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--hands", type=int, default=100)
-    parser.add_argument("--style", type=int, choices=range(9), default=1)
+    policies = parser.add_mutually_exclusive_group()
+    policies.add_argument("--policy", choices=("rules", "fullhouse", "range"),
+                          help="Active policy (default: range)")
+    policies.add_argument("--style", type=int, choices=range(9),
+                          help="Numeric ID, including archived experiments when supported by --library")
+    parser.add_argument("--equity-samples", type=int, choices=(0, 32, 64, 128), default=0,
+                        help="Range policy sampling budget; 0 uses the pinned build default")
     parser.add_argument("--seed", type=int, default=73)
     parser.add_argument("--output", required=True)
     parser.add_argument("--library")
@@ -341,4 +362,9 @@ if __name__ == "__main__":
     parser.add_argument("--games", type=int, default=1)
     parser.add_argument("--contact")
     parser.add_argument("--progress")
-    slumbot(parser.parse_args())
+    args = parser.parse_args()
+    if args.style is None:
+        args.style = {"rules": 1, "fullhouse": 4, "range": 7}[args.policy or "range"]
+    if args.equity_samples and args.style != 7:
+        parser.error("--equity-samples applies to --policy range / --style 7")
+    slumbot(args)

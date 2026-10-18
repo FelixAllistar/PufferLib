@@ -116,7 +116,7 @@ struct Env {
     uint64_t policy_rng;
     uint32_t starting_stack;
     unsigned int rng;
-    int lane, num_agents, tag, boundary_reached, bot_policy;
+    int lane, num_agents, tag, boundary_reached, bot_policy, equity_samples;
     unsigned baseline_mask;
     int8_t opponents[POKER_PLAYERS];
     uint8_t baseline_styles[POKER_PLAYERS];
@@ -141,6 +141,10 @@ void puf_init(Env* env, Dict* kwargs) {
     assert(env->starting_stack >= POKER_BB && env->starting_stack <= 65535);
     assert((int)dict_get(kwargs, "num_players") == POKER_PLAYERS);
     assert(poker_bot_supported(env->bot_policy));
+    DictItem* samples = dict_find(kwargs, "equity_samples");
+    env->equity_samples = samples ? (int)samples->value : 0;
+    assert(env->equity_samples == 0 || env->equity_samples == 32
+        || env->equity_samples == 64 || env->equity_samples == 128);
     DictItem* mix = dict_find(kwargs, "native_baseline_mask");
     env->baseline_mask = mix ? (unsigned)mix->value : 0;
     assert(!(env->baseline_mask & ~POKER_BOT_MASK));
@@ -200,7 +204,8 @@ void poker_field(Env* env) {
         int p = g->actor[t], policy = env->opponents[p];
         int32_t action;
         if (policy < 0) {
-            action = poker_bot_with_history(g, t, &env->policy_rng, env->baseline_styles[p], env->profiles);
+            action = poker_decide(g, t, &env->policy_rng, env->baseline_styles[p],
+                env->equity_samples, env->profiles);
         } else {
             float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
             int32_t amounts[POKER_ACTIONS];

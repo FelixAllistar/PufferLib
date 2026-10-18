@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef POKER_EQUITY_SAMPLES
+#define POKER_EQUITY_SAMPLES (POKER_PLAYERS == 2 ? 128 : 32)
+#endif
+
 // Optional table-local public statistics. The caller records EVERY public
 // action before stepping and begins each hand once. No card/outcome inspection.
 // Priors shrink small samples; these are behavioral heuristics, not human data.
@@ -11,8 +15,6 @@ typedef struct PokerProfile {
 typedef struct PokerEquity {
     float share, payout, eligible_pot, effective_samples;
 } PokerEquity;
-
-int32_t poker_bot(Poker* g, int t, uint64_t* rng, int style);
 
 void poker_profile_begin(PokerProfile* profiles) {
     if (profiles) for (int p = 0; p < POKER_PLAYERS; p++) profiles[p].hands++;
@@ -186,9 +188,9 @@ void poker_equity(Poker* g, int t, uint64_t* rng, int samples, int ranges,
     out->eligible_pot = eligible; out->effective_samples = weights * weights / weights2;
 }
 
-int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int style,
+int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int samples,
     const PokerProfile* profiles) {
-    if (!g->street[t]) return poker_bot(g, t, rng, 5);
+    if (!g->street[t]) return poker_rules_preflop(g, t, rng, 1);
     // One independent simulation seed per decision keeps action RNG consumption
     // the same across 32/128-sample variants and never advances the deal RNG.
     uint64_t simulations = (uint64_t)poker_random(rng) << 32;
@@ -196,7 +198,8 @@ int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int style,
     if (!simulations) simulations = 1;
     unsigned roll = poker_random(rng) % 1000;
     PokerEquity e;
-    poker_equity(g, t, &simulations, style == 8 ? 128 : 32, style != 6, profiles, &e);
+    poker_equity(g, t, &simulations, samples ? samples : POKER_EQUITY_SAMPLES,
+        1, profiles, &e);
     int p = g->actor[t], live = __builtin_popcount(g->live[t]);
     uint32_t call = g->high[t] - g->bet[p][t];
     if (call > g->stack[p][t]) call = g->stack[p][t];
@@ -214,10 +217,4 @@ int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int style,
         return target < maximum ? target : maximum;
     }
     return 0;
-}
-
-int32_t poker_bot_with_history(Poker* g, int t, uint64_t* rng, int style,
-    const PokerProfile* profiles) {
-    return style >= 6 && style <= 8 ? poker_equity_bot(g, t, rng, style, profiles)
-        : poker_bot(g, t, rng, style);
 }

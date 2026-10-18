@@ -1,0 +1,3 @@
+PASS equity: players=2, 2000 unequal-stack hands, 7994 legal decisions, side pots and public profiles
+PASS equity: players=6, 2000 unequal-stack hands, 16822 legal decisions, side pots and public profiles
+PASS equity: players=9, 2000 unequal-stack hands, 24664 legal decisions, side pots and public profiles

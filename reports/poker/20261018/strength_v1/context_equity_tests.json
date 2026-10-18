@@ -1,0 +1,316 @@
+{
+  "river_oracles": [
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "Jh",
+        "Th",
+        "2c",
+        "3d"
+      ],
+      "ranges": false,
+      "exact": 1.0,
+      "sampled": 1.0,
+      "effective_samples": 50000.0
+    },
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "Jh",
+        "Th",
+        "2c",
+        "3d"
+      ],
+      "ranges": true,
+      "exact": 1.0,
+      "sampled": 1.0,
+      "effective_samples": 15668.267578125
+    },
+    {
+      "hole": [
+        "2c",
+        "3d"
+      ],
+      "board": [
+        "As",
+        "Ks",
+        "Qs",
+        "Js",
+        "Ts"
+      ],
+      "ranges": false,
+      "exact": 0.5,
+      "sampled": 0.5,
+      "effective_samples": 50000.0
+    },
+    {
+      "hole": [
+        "2c",
+        "3d"
+      ],
+      "board": [
+        "As",
+        "Ks",
+        "Qs",
+        "Js",
+        "Ts"
+      ],
+      "ranges": true,
+      "exact": 0.5,
+      "sampled": 0.5,
+      "effective_samples": 46214.24609375
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d",
+        "9s",
+        "4c"
+      ],
+      "ranges": false,
+      "exact": 0.8934343434343435,
+      "sampled": 0.89274001121521,
+      "effective_samples": 50000.0
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d",
+        "9s",
+        "4c"
+      ],
+      "ranges": true,
+      "exact": 0.5085973126946882,
+      "sampled": 0.5095968842506409,
+      "effective_samples": 14040.3349609375
+    },
+    {
+      "hole": [
+        "As",
+        "Kd"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c",
+        "3s",
+        "9h"
+      ],
+      "ranges": false,
+      "exact": 0.36464646464646466,
+      "sampled": 0.36344999074935913,
+      "effective_samples": 50000.0
+    },
+    {
+      "hole": [
+        "As",
+        "Kd"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c",
+        "3s",
+        "9h"
+      ],
+      "ranges": true,
+      "exact": 0.06883639119665437,
+      "sampled": 0.06798509508371353,
+      "effective_samples": 15462.369140625
+    }
+  ],
+  "hidden_card_checks": 102,
+  "legal_decisions": 859,
+  "minimum_ess_128": 8.775300025939941,
+  "mean_ess_128": 89.16730755450679,
+  "profile_weak_strong_ratios": [
+    0.0027542917564384686,
+    0.0027542917564384686,
+    0.0007647669799882612,
+    0.01407991915580297
+  ],
+  "equity_vs_tight_loose": [
+    0.6136996746063232,
+    0.756797194480896
+  ],
+  "policy_probes": [
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c"
+      ],
+      "history": "b250b2000c/b100",
+      "style": 1,
+      "decisions": 5000,
+      "folds": 5000,
+      "warm_us_per_decision_with_ctypes": 6.493649602634832
+    },
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c"
+      ],
+      "history": "b250b2000c/b100",
+      "style": 5,
+      "decisions": 5000,
+      "folds": 0,
+      "warm_us_per_decision_with_ctypes": 6.345853203674778
+    },
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c"
+      ],
+      "history": "b250b2000c/b100",
+      "style": 6,
+      "decisions": 5000,
+      "folds": 0,
+      "warm_us_per_decision_with_ctypes": 41.96426839916967
+    },
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c"
+      ],
+      "history": "b250b2000c/b100",
+      "style": 7,
+      "decisions": 5000,
+      "folds": 0,
+      "warm_us_per_decision_with_ctypes": 103.13874020357616
+    },
+    {
+      "hole": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c"
+      ],
+      "history": "b250b2000c/b100",
+      "style": 8,
+      "decisions": 5000,
+      "folds": 0,
+      "warm_us_per_decision_with_ctypes": 100.61115360003896
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d"
+      ],
+      "history": "b250c/b500",
+      "style": 1,
+      "decisions": 5000,
+      "folds": 5000,
+      "warm_us_per_decision_with_ctypes": 25.09684639517218
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d"
+      ],
+      "history": "b250c/b500",
+      "style": 5,
+      "decisions": 5000,
+      "folds": 0,
+      "warm_us_per_decision_with_ctypes": 11.736322200158611
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d"
+      ],
+      "history": "b250c/b500",
+      "style": 6,
+      "decisions": 5000,
+      "folds": 0,
+      "warm_us_per_decision_with_ctypes": 61.75933399936184
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d"
+      ],
+      "history": "b250c/b500",
+      "style": 7,
+      "decisions": 5000,
+      "folds": 1,
+      "warm_us_per_decision_with_ctypes": 69.54161599860527
+    },
+    {
+      "hole": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d"
+      ],
+      "history": "b250c/b500",
+      "style": 8,
+      "decisions": 5000,
+      "folds": 1,
+      "warm_us_per_decision_with_ctypes": 128.3623463998083
+    }
+  ]
+}

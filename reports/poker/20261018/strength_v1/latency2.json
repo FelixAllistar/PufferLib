@@ -1,0 +1,11 @@
+[
+{"players":2,"street":1,"style":1,"calls":20000,"cpu_us_per_decision":0.0554,"wall_us_per_decision":0.0549},
+{"players":2,"street":1,"style":4,"calls":20000,"cpu_us_per_decision":35.7659,"wall_us_per_decision":41.4635},
+{"players":2,"street":1,"style":7,"calls":20000,"cpu_us_per_decision":43.9992,"wall_us_per_decision":47.3117},
+{"players":2,"street":2,"style":1,"calls":20000,"cpu_us_per_decision":0.0539,"wall_us_per_decision":0.0534},
+{"players":2,"street":2,"style":4,"calls":20000,"cpu_us_per_decision":50.5100,"wall_us_per_decision":54.6156},
+{"players":2,"street":2,"style":7,"calls":20000,"cpu_us_per_decision":25.0557,"wall_us_per_decision":28.3515},
+{"players":2,"street":3,"style":1,"calls":20000,"cpu_us_per_decision":0.0496,"wall_us_per_decision":0.0648},
+{"players":2,"street":3,"style":4,"calls":20000,"cpu_us_per_decision":30.5140,"wall_us_per_decision":32.8748},
+{"players":2,"street":3,"style":7,"calls":20000,"cpu_us_per_decision":19.3835,"wall_us_per_decision":24.0609}
+]

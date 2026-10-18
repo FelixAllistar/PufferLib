@@ -1,0 +1,7 @@
+players=2 hands=20032 steps=76152 seconds=0.128356 decisions_s=593288 hands_s=156066 bytes_table=88 showdown_fraction=0.209 mode=checked
+PASS equity: players=2, 2000 unequal-stack hands, 6959 legal decisions, side pots and public profiles
+players=6 hands=20032 steps=188313 seconds=0.366472 decisions_s=513854 hands_s=54662 bytes_table=196 showdown_fraction=0.549 mode=checked
+PASS equity: players=6, 2000 unequal-stack hands, 16536 legal decisions, side pots and public profiles
+players=9 hands=20032 steps=261908 seconds=1.160733 decisions_s=225640 hands_s=17258 bytes_table=277 showdown_fraction=0.596 mode=checked
+PASS equity: players=9, 2000 unequal-stack hands, 24439 legal decisions, side pots and public profiles
+PASS Puffer adapter players=6 learner_decisions=12800 terminal_hands=7891 seconds=0.724520 learner_decisions_s=17667

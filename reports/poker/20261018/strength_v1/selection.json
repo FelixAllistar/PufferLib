@@ -1,0 +1,20 @@
+{
+  "selected": "128-sample HU range policy",
+  "policy_id": 7,
+  "sample_defaults": {
+    "2": 128,
+    "6": 32,
+    "9": 32
+  },
+  "selected_at_utc": "2026-10-18T05:45:20.140406+00:00",
+  "reason": "Lowest development loss and simplest candidate. Context/blind/river changes did not justify retention. Differences are statistically uncertain; confirm on fresh hands. Six-seat default remains the original 32-sample strategy for throughput.",
+  "rejected": [
+    "context",
+    "blind",
+    "river"
+  ],
+  "holdout_hands": 6000,
+  "holdout_seed": 2026101837,
+  "control_prefix": "confirm_control_prefix.json",
+  "no_further_strategy_tuning": true
+}

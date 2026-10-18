@@ -3,10 +3,10 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 mkdir -p build/poker
 for players in 2 6 9; do
-    clang-19 -O3 -march=native -std=c11 -Wall -Wextra -DNDEBUG \
+    clang-19 -O3 -march=native -ffp-contract=off -std=c11 -Wall -Wextra -DNDEBUG \
         -DPOKER_PLAYERS="$players" -shared -fPIC ocean/poker/native.c \
         -o "build/poker/libpoker$players.so"
-    clang-19 -O3 -march=native -std=c11 -DNDEBUG \
+    clang-19 -O3 -march=native -ffp-contract=off -std=c11 -DNDEBUG \
         -DPOKER_PLAYERS="$players" ocean/poker/test.c -o "build/poker/bench$players"
 done
 if [[ "${1:-}" == --test ]]; then
