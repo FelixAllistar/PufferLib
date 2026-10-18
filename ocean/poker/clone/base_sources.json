@@ -1,0 +1,49 @@
+{
+  "commit": "a4bfd971ae4bdc2c46b8bffef2617f368b9be017",
+  "evaluation_support": {
+    "bytes": 24127,
+    "commit": "8ae0b7ed8742a25c89b29a382eaad23442c57120",
+    "git_path": "ocean/poker/eval.py",
+    "sha256": "9f6c584e0ab76c37d7df07fccefd1b3889769e4918c418a829ef4e7fc3353137"
+  },
+  "files": [
+    {
+      "bytes": 1247,
+      "git_path": "ocean/poker/native.c",
+      "path": "native.c",
+      "sha256": "31fe13282f8bea360dfdeb7566028bad5c5fc582468c2f38d85e79ab79cc3837"
+    },
+    {
+      "bytes": 17780,
+      "git_path": "ocean/poker/core.h",
+      "path": "core.h",
+      "sha256": "cfb31b22ab63fb6bd08ac9f84b9f837b527c2d57d03b5b19840de0821db6254b"
+    },
+    {
+      "bytes": 4130,
+      "git_path": "ocean/poker/rules.h",
+      "path": "rules.h",
+      "sha256": "37f36c9c9dc7c235c0df1a7c4e5350e1e8e0f81c133b5276e6eb8218d7f27cf8"
+    },
+    {
+      "bytes": 10224,
+      "git_path": "ocean/poker/equity.h",
+      "path": "equity.h",
+      "sha256": "a8be4cd78aca79c76ab3b26d07b1bb451d460f2d80f3d2387b22bca6bc358e32"
+    },
+    {
+      "bytes": 9483,
+      "git_path": "ocean/poker/fullhouse.h",
+      "path": "fullhouse.h",
+      "sha256": "184cbf43e20ab2bc04376d824cee711a4e4f0c53cbe5fce6f0dab41b2977d9a6"
+    },
+    {
+      "bytes": 12473,
+      "git_path": "ocean/poker/poker.h",
+      "path": "poker.h",
+      "sha256": "61c189abb8e89de05b5e2f6fe339f1a718c83f27a88bd065fbe8dcbae2677c3a"
+    }
+  ],
+  "generated_puffer_sha256": "035c34996dadc9fe86bafd6d6149f9bb49854a7def2cf8f61f6dacccb8a24779",
+  "schema": "poker-clone-base-sources-v1"
+}

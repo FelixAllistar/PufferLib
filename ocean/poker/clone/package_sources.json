@@ -1,0 +1,155 @@
+{
+  "files": [
+    {
+      "bytes": 4280,
+      "path": "MODEL_FORMAT.md",
+      "sha256": "11af4e0322464a447ead1309cc415940d7d3c550e901e966aa1ad84aa6586977"
+    },
+    {
+      "bytes": 10321,
+      "path": "README.md",
+      "sha256": "2981ba91082532b2661572cebf011bcc7685246d13807b76c84462c9c5ce4970"
+    },
+    {
+      "bytes": 2202,
+      "path": "SOURCE_PROVENANCE.md",
+      "sha256": "a04b2c8c55a3c474a02fd73629e44f1f0c659477b6f7be3dea5ccc3837ca7ae3"
+    },
+    {
+      "bytes": 1556,
+      "path": "base_sources.json",
+      "sha256": "6372f635adf23dd6b96caae8240a15ed5e0551bb4a744ba88fa93137baa315dd"
+    },
+    {
+      "bytes": 3147,
+      "path": "bridge/bb_sha256.h",
+      "sha256": "83d6e8d1b6004c275b7d27c902548beb974547ae3b79d622fb13c93b260dfa82"
+    },
+    {
+      "bytes": 16698,
+      "path": "bridge/bridge_native_impl.h",
+      "sha256": "a8fbd7662d44727b45532417d73865c66e1f061c7d55ec93652f656d1a586168"
+    },
+    {
+      "bytes": 6823,
+      "path": "bridge/bridge_public_impl.h",
+      "sha256": "2368c25469657fc2d381683b8485ff11782fc68f3e9714cc377e3cea847f8a32"
+    },
+    {
+      "bytes": 5028,
+      "path": "bridge/clone_bridge.h",
+      "sha256": "a952318d10eb04016fd1a6cf05e4783ff991481c8e1fff551bffcae45ea0373a"
+    },
+    {
+      "bytes": 961,
+      "path": "bridge/clone_input_abi.h",
+      "sha256": "fb04d7098688989e078751a61d5b1f6b59fbaabb871fcd5bc4c1931d6b1e5bda"
+    },
+    {
+      "bytes": 7382,
+      "path": "bridge/clone_public_replay.py",
+      "sha256": "54eec7a2cc748829d16baa0a5ca0e4d88a95fc5dcd3a2df025fa6777ffc6feff"
+    },
+    {
+      "bytes": 16381,
+      "path": "bridge/clone_transport.py",
+      "sha256": "8ddf7a211265750595b36a587726f4e203fe8bc2254b33a0acac116de2e91222"
+    },
+    {
+      "bytes": 467,
+      "path": "bridge/native_clone.c",
+      "sha256": "55b2ef9fe45453f5ffab714ac5421ae23971b9554237ce307cce71294491a9a5"
+    },
+    {
+      "bytes": 857,
+      "path": "bridge/prospective_clone_api.h",
+      "sha256": "936691f6d07faadf50fdbe81e2cfae298a2eb144ef76252d3e59e7914bea6694"
+    },
+    {
+      "bytes": 4644,
+      "path": "bridge/puffer_clone_hooks.h",
+      "sha256": "2e93b303f906a721b5f63106e82c06131ce979305393cc08d933ec57203c2153"
+    },
+    {
+      "bytes": 13561,
+      "path": "build.py",
+      "sha256": "d03117914bb745c7a52177787608c0342fe3721f844ca5d05b89d01711b955d3"
+    },
+    {
+      "bytes": 15854,
+      "path": "evaluation/clone_adapter.py",
+      "sha256": "5f0cb7f89da4ee7dc05205c2f54897f7880c6861e8ee2be6bb9bd9cd68914160"
+    },
+    {
+      "bytes": 10924,
+      "path": "evaluation/clone_audit.py",
+      "sha256": "6a4d562c7a57ade1978fa49fff24aa28a06922404383382f3fc8f1eba32403b5"
+    },
+    {
+      "bytes": 23485,
+      "path": "evaluation/clone_eval.py",
+      "sha256": "1c5a877cdd28f2f94f8f4bdf20adf3dcb249b519524ae1780ed8bbeab5d442d6"
+    },
+    {
+      "bytes": 20290,
+      "path": "evaluation/clone_series.py",
+      "sha256": "13462ccd74feec55c76d77ca65f22e90f4f3be1a4c66d1ddbef7e2972f8af121"
+    },
+    {
+      "bytes": 9490,
+      "path": "evaluation/create_synthetic_plan.py",
+      "sha256": "5107c9f504a42d06c483398269a8f6dd0b1ee378a951e43fab6d954a7f8b8c26"
+    },
+    {
+      "bytes": 696,
+      "path": "evaluation/fixtures/synthetic_decks.json",
+      "sha256": "6549c55f1bec10736bee94a5f323ab3badb7bfd0fcbb95ebb569b5c3f3304a12"
+    },
+    {
+      "bytes": 3341,
+      "path": "evaluation/test_clone_contract.py",
+      "sha256": "593edfa809b3f3b915709c2d43ace6aa8198e378677cf94128ba79a1f06dc9a2"
+    },
+    {
+      "bytes": 13493,
+      "path": "evaluation/test_clone_pipeline.py",
+      "sha256": "d2d05659e2e4a00eef815272d4e0682b85cebdc0f4f641d82a5c6fd7414516d4"
+    },
+    {
+      "bytes": 17537,
+      "path": "evaluation/test_clone_preflight.py",
+      "sha256": "78403fff51608b9cff3cb14fea400b719001351fab5fda32e6bad8233c50c5bd"
+    },
+    {
+      "bytes": 5971,
+      "path": "package_io.py",
+      "sha256": "ee10d1958cbd33942064f09e1de37b910739ba438a910ba209ca685544513c05"
+    },
+    {
+      "bytes": 4106,
+      "path": "prepare_puffer_source.py",
+      "sha256": "a719fa4c8acda36ff7094a8790ec2eba3b858f17b6f2c1c465544c6b4e035802"
+    },
+    {
+      "bytes": 3209,
+      "path": "sampler/bc_sha256.h",
+      "sha256": "f660a2f3fe8d42278ee7a398174f26a594c4815e7d6ac57fa9b3fe70d94fd51f"
+    },
+    {
+      "bytes": 20525,
+      "path": "sampler/clone.c",
+      "sha256": "670d532be06075cff91b1b922c41ff3c560f886c03dae4fea1ca41e88fca9a37"
+    },
+    {
+      "bytes": 3146,
+      "path": "sampler/clone.h",
+      "sha256": "a4725035250de076ab475c4595f6e0d3a1418ac7504e28d20f67b0e5a170f585"
+    },
+    {
+      "bytes": 7276,
+      "path": "sampler/export_model.py",
+      "sha256": "433ae7a0eb61449fbfd6733b8dc74aa9b6b118d6f0982a9ad641c837b43c432b"
+    }
+  ],
+  "schema": "poker-clone-package-sources-v1"
+}
