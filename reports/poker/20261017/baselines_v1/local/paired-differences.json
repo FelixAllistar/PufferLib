@@ -1,0 +1,62 @@
+[
+  {
+    "baseline": "2p_style1_vs_original",
+    "candidate": "2p_style3_vs_original",
+    "gain_bb100": 0.6188,
+    "ci95_half_width_bb100": 3.800639589706418
+  },
+  {
+    "baseline": "2p_style1_vs_original",
+    "candidate": "2p_style4_vs_original",
+    "gain_bb100": 17.748316666666668,
+    "ci95_half_width_bb100": 12.773813408435524
+  },
+  {
+    "baseline": "2p_style1_vs_fullhouse",
+    "candidate": "2p_style3_vs_fullhouse",
+    "gain_bb100": -7.018083333333333,
+    "ci95_half_width_bb100": 6.014815757410453
+  },
+  {
+    "baseline": "2p_style1_vs_fullhouse",
+    "candidate": "2p_style4_vs_fullhouse",
+    "gain_bb100": 33.46471666666667,
+    "ci95_half_width_bb100": 17.048873578953522
+  },
+  {
+    "baseline": "6p_style1_vs_original",
+    "candidate": "6p_style3_vs_original",
+    "gain_bb100": -5.94276666659,
+    "ci95_half_width_bb100": 3.6217100566075158
+  },
+  {
+    "baseline": "6p_style1_vs_original",
+    "candidate": "6p_style4_vs_original",
+    "gain_bb100": -13.092949998069999,
+    "ci95_half_width_bb100": 12.863891558393027
+  },
+  {
+    "baseline": "6p_style1_vs_fullhouse",
+    "candidate": "6p_style3_vs_fullhouse",
+    "gain_bb100": -9.84676666651,
+    "ci95_half_width_bb100": 6.004992555539477
+  },
+  {
+    "baseline": "6p_style1_vs_fullhouse",
+    "candidate": "6p_style4_vs_fullhouse",
+    "gain_bb100": -26.30499999852,
+    "ci95_half_width_bb100": 18.551372121797918
+  },
+  {
+    "baseline": "6p_style1_vs_mixed",
+    "candidate": "6p_style3_vs_mixed",
+    "gain_bb100": -6.5624166666,
+    "ci95_half_width_bb100": 4.633761583731239
+  },
+  {
+    "baseline": "6p_style1_vs_mixed",
+    "candidate": "6p_style4_vs_mixed",
+    "gain_bb100": -20.423083330729998,
+    "ci95_half_width_bb100": 17.891865818142
+  }
+]

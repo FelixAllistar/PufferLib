@@ -1,0 +1,4 @@
+{"metadata": {"style": 1, "seed": 20261015, "hands_requested": 2000, "library_sha256": "f76875ef0a369a41e6bed23f23a64a27785742f6239301fa3b436b79be8bb51a", "opponent": "slumbot.com", "starting_bb": 200}}
+{"hand": 0, "position": 0, "winnings_chips": -100, "action": "b200f"}
+{"hand": 1, "position": 1, "winnings_chips": -233, "action": "ck/kb133b800f"}
+{"interrupted": {"type": "OperatorStop", "reason": "Paused to check public API guidance and add request pacing", "completed_hands": 2, "excluded_from_main_evaluation": true}}

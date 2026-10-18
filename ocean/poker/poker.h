@@ -116,7 +116,9 @@ struct Env {
     uint32_t starting_stack;
     unsigned int rng;
     int lane, num_agents, tag, boundary_reached, bot_policy;
+    unsigned baseline_mask;
     int8_t opponents[POKER_PLAYERS];
+    uint8_t baseline_styles[POKER_PLAYERS];
     uint8_t league_owner;
     Agent agents[1];
     Log log;
@@ -137,7 +139,19 @@ void puf_init(Env* env, Dict* kwargs) {
     env->rules_fraction = dict_get(kwargs, "rules_fraction");
     assert(env->starting_stack >= POKER_BB && env->starting_stack <= 65535);
     assert((int)dict_get(kwargs, "num_players") == POKER_PLAYERS);
-    assert(env->bot_policy >= 0 && env->bot_policy < 3);
+    assert(poker_bot_supported(env->bot_policy));
+    DictItem* mix = dict_find(kwargs, "native_baseline_mask");
+    env->baseline_mask = mix ? (unsigned)mix->value : 0;
+    assert(!(env->baseline_mask & ~POKER_BOT_MASK));
+    for (int p = 1; p < POKER_PLAYERS; p++) {
+        env->baseline_styles[p] = env->bot_policy;
+        if (env->baseline_mask) {
+            unsigned mask = env->baseline_mask;
+            int pick = poker_random(&env->policy_rng) % __builtin_popcount(mask);
+            while (pick--) mask &= mask - 1;
+            env->baseline_styles[p] = __builtin_ctz(mask);
+        }
+    }
     assert(env->rules_fraction >= 0 && env->rules_fraction <= 1);
     if (env->league) {
         env->memories = (float*)calloc((POKER_PLAYERS - 1) * env->league->hidden
@@ -182,7 +196,7 @@ void poker_field(Env* env) {
         int p = g->actor[t], policy = env->opponents[p];
         int32_t action;
         if (policy < 0) {
-            action = poker_bot(g, t, &env->policy_rng, env->bot_policy);
+            action = poker_bot(g, t, &env->policy_rng, env->baseline_styles[p]);
         } else {
             float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
             int32_t amounts[POKER_ACTIONS];
@@ -284,8 +298,10 @@ void puf_step(Env* env) {
 }
 
 void puf_set_bot_policy(Env* env, int policy) {
-    assert(policy >= 0 && policy < 3);
+    assert(poker_bot_supported(policy));
     env->bot_policy = policy;
+    env->baseline_mask = 0;
+    for (int p = 1; p < POKER_PLAYERS; p++) env->baseline_styles[p] = policy;
 }
 
 void puf_log(Log* log, Dict* out) {

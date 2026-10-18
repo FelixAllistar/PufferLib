@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The current PufferTank poker architecture, rules baseline, and Slumbot measurements in a connected local notebook.">
+  <title>Poker · Working notes</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101519; --panel: #171e23; --raised: #1c252c;
+      --ink: #e9eee9; --muted: #a7b4ba; --quiet: #7f929b;
+      --line: #303d44; --teal: #93d6bf; --blue: #a5c5ee;
+      --amber: #e9c18c; --red: #edb0a4;
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 82px; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    a { color: var(--blue); text-underline-offset: 4px; }
+    a:hover { color: #d9e8ff; }
+    a:focus-visible, summary:focus-visible { outline: 2px solid var(--teal); outline-offset: 5px; }
+    .skip { position: absolute; top: -80px; left: 20px; z-index: 4; padding: 12px; background: var(--panel); }
+    .skip:focus { top: 10px; }
+    .wrap { width: min(1280px, calc(100% - 64px)); margin: auto; }
+    .top { border-bottom: 1px solid var(--line); background: var(--bg); }
+    .top .wrap { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .brand { display: flex; gap: 12px; align-items: center; font-weight: 650; letter-spacing: -.02em; }
+    .mark { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid #638174; border-radius: 7px; color: var(--teal); font-family: var(--mono); font-size: 16px; }
+    .subtle, .meta { color: var(--muted); }
+    .meta { font: 11px/1.5 var(--mono); letter-spacing: .035em; text-align: right; }
+    .hero { padding: 42px 0 28px; }
+    .eyebrow { margin: 0 0 10px; color: var(--teal); font: 11px/1.5 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 0 0 10px; font-size: clamp(30px, 4vw, 44px); font-weight: 580; letter-spacing: -.045em; line-height: 1.15; }
+    .intro { max-width: 780px; color: var(--muted); margin: 0; font-size: 16px; }
+    .facts { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 26px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+    .fact { padding: 17px 22px; }
+    .fact + .fact { border-left: 1px solid var(--line); }
+    .fact strong { display: block; font-size: 22px; line-height: 1.3; font-weight: 570; letter-spacing: -.03em; }
+    .fact span { color: var(--muted); font-size: 12px; }
+    .loss { color: var(--red); }
+    .nav { position: sticky; top: 0; z-index: 3; border-bottom: 1px solid var(--line); background: #101519f5; }
+    .nav .wrap { display: flex; align-items: center; overflow-x: auto; gap: 25px; min-height: 51px; }
+    .nav a { color: var(--muted); text-decoration: none; white-space: nowrap; font-size: 12px; padding: 13px 0; }
+    .nav a:hover { color: var(--ink); }
+    main { padding-top: 30px; padding-bottom: 54px; }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+    h2 { font-size: 20px; line-height: 1.35; font-weight: 580; letter-spacing: -.025em; margin: 0; }
+    .section-head p { color: var(--muted); font-size: 12px; margin: 0; }
+    .map-shell { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #141b20; }
+    .map { position: relative; min-width: 1050px; height: 686px; }
+    .wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .wires path { fill: none; stroke: #4f6875; stroke-width: 1.5; }
+    .wires .neural { stroke: #5e9783; }
+    .wires .baseline { stroke: #7c92b0; }
+    .col-label { position: absolute; top: 14px; color: var(--quiet); font: 10px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+    .node { position: absolute; width: 18.6667%; height: 100px; border: 1px solid #42545f; border-radius: 8px; background: #1b252d; padding: 12px 14px; text-decoration: none; color: var(--ink); }
+    .node:hover { background: #24323c; border-color: var(--blue); color: var(--ink); }
+    .node small { display: block; margin-bottom: 4px; color: var(--blue); font: 9px/1.5 var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+    .node strong { display: block; font-size: 14px; font-weight: 600; line-height: 1.5; }
+    .node span { display: block; color: #b3c1c9; font-size: 11px; line-height: 1.5; }
+    .node.neural { border-color: #41695a; background: #1b2b27; }
+    .node.neural:hover { background: #243d34; border-color: var(--teal); }
+    .node.neural small { color: var(--teal); }
+    .node.evidence { border-color: #786345; background: #2b2822; }
+    .node.evidence:hover { background: #3a3329; border-color: var(--amber); }
+    .node.evidence small { color: var(--amber); }
+    .map-caption { display: flex; justify-content: space-between; gap: 24px; margin: 12px 0 30px; color: var(--muted); font-size: 12px; }
+    .map-caption p { margin: 0; }
+    .legend { display: flex; align-items: flex-start; gap: 14px; white-space: nowrap; }
+    .key::before { content: ""; display: inline-block; width: 7px; height: 7px; background: var(--blue); border-radius: 50%; margin-right: 6px; }
+    .key.neural::before { background: var(--teal); }
+    .key.evidence::before { background: var(--amber); }
+    .notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .note { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 24px 26px; min-width: 0; scroll-margin-top: 82px; }
+    .note:target { border-color: var(--teal); box-shadow: 0 0 0 1px #93d6bf22; }
+    .note.wide { grid-column: 1 / -1; }
+    .note-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .number { display: block; font: 10px/1.5 var(--mono); letter-spacing: .08em; color: var(--quiet); margin-bottom: 5px; }
+    .tag { color: var(--muted); font: 10px/1.4 var(--mono); border: 1px solid var(--line); padding: 4px 7px; border-radius: 4px; white-space: nowrap; margin-top: 2px; }
+    .tag.neural { color: var(--teal); border-color: #41695a; }
+    .tag.measured { color: var(--amber); border-color: #786345; }
+    .note p { margin: 11px 0; }
+    .tldr { font-size: 15px; color: #d8e1e3; }
+    .note ul, .note ol { padding-left: 20px; color: #bdc9cd; margin: 12px 0; }
+    .note li { padding-left: 2px; margin: 7px 0; }
+    strong { font-weight: 620; }
+    code { font: .85em/1.6 var(--mono); color: #d4e2e5; overflow-wrap: anywhere; }
+    .formula { background: #10171b; border: 1px solid var(--line); padding: 11px 14px; border-radius: 6px; font-family: var(--mono); font-size: 12px; color: var(--teal); }
+    details { border-top: 1px solid var(--line); margin-top: 17px; padding-top: 12px; font-size: 13px; color: #bdc9cd; }
+    summary { cursor: pointer; color: var(--blue); font-size: 12px; width: fit-content; padding: 3px 0; }
+    details[open] summary { margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 13px 0; text-align: left; }
+    th { color: var(--quiet); font-weight: 500; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 8px; vertical-align: top; }
+    th:first-child, td:first-child { padding-left: 0; }
+    .table-wrap { overflow-x: auto; }
+    .sources { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; }
+    .sources a { color: var(--quiet); }
+    .callout { padding: 12px 14px; border-left: 2px solid var(--amber); background: #29261f; font-size: 12px; color: #ddcdb7; margin: 15px 0; border-radius: 0 5px 5px 0; }
+    .inline-metrics { display: flex; gap: 28px; flex-wrap: wrap; margin: 18px 0; }
+    .inline-metrics strong { font: 23px/1.4 var(--mono); display: block; }
+    .inline-metrics span { display: block; color: var(--muted); font-size: 11px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    h3 { margin: 12px 0 6px; color: var(--ink); font-size: 13px; font-weight: 600; }
+    pre { background: #10171b; border: 1px solid var(--line); border-radius: 6px; padding: 17px; overflow-x: auto; line-height: 1.7; font-size: 12px; }
+    pre code { overflow-wrap: normal; font-size: inherit; }
+    pre.review-prompt { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .next { border-style: dashed; background: transparent; }
+    .next p { margin-bottom: 0; color: var(--muted); font-size: 13px; }
+    footer { color: var(--quiet); font-size: 11px; padding: 22px 0 0; }
+    @media (max-width: 760px) {
+      .wrap { width: calc(100% - 32px); }
+      .hero { padding-top: 27px; }
+      .facts { grid-template-columns: repeat(2, 1fr); }
+      .fact { padding: 16px; }
+      .fact:nth-child(3) { border-left: 0; }
+      .fact:nth-child(n+3) { border-top: 1px solid var(--line); }
+      .fact strong { font-size: 20px; }
+      .notes, .split { grid-template-columns: 1fr; }
+      .note { padding: 21px; }
+      .map-caption { flex-direction: column; gap: 10px; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 5px; }
+      .top .meta { font-size: 9px; }
+      .brand { font-size: 13px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    @media print {
+      :root { color-scheme: light; --bg: white; --panel: white; --ink: #161d22; --muted: #4b555b; --quiet: #5c656b; --line: #ccd1d4; --blue: #245187; --teal: #22664d; --red: #8e3223; --amber: #765720; }
+      body { font-size: 11px; }
+      .nav, .map-shell, .map-caption, .skip { display: none; }
+      .wrap { width: 100%; }
+      .notes { display: block; }
+      .note { margin-bottom: 14px; break-inside: avoid; }
+      .tldr, .note ul, .note ol, details { color: #303a40; }
+      code { color: #263b49; }
+      .formula, pre, .callout { background: #f4f6f5; color: #263b49; }
+      .hero { padding-top: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Living notebook. Edit this file in place; opening it directly and refreshing
+    is sufficient. All note content and styling are inline. No server or build.
+    Keep IDs stable as branches grow. Graph paths declare data-from/data-to;
+    arrows mean feeds/constrains, and must remain acyclic. Keep implemented,
+    measured, and proposed work distinct. Link new evidence rather than erasing
+    old results. Baseline snapshot: 2026-10-15; diagnosis added 2026-10-17.
+    Scores are not fetched automatically.
+  -->
+  <a class="skip" href="#notes">Skip to notes</a>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand"><span class="mark" aria-hidden="true">P</span> Poker <span class="subtle">/ working notes</span></div>
+      <div class="meta">BASELINE · 2026-10-15<br>NOTES UPDATED · 2026-10-17</div>
+    </div>
+  </header>
+  <div class="hero wrap">
+    <p class="eyebrow">001 / Starting state</p>
+    <h1>Where we’re starting.</h1>
+    <p class="intro">A small map of the game engine, decision paths, and evidence so far.
+      The original baseline is a handwritten rules bot. Native Fullhouse and rules revisions are now being measured; the PPO training path remains smoke-tested.</p>
+    <div class="facts" aria-label="Original baseline at a glance">
+      <div class="fact"><strong>4,000</strong><span>original baseline Slumbot hands</span></div>
+      <div class="fact"><strong class="loss">−67.19 BB/100</strong><span>completed-hand score · 23 unresolved attempts</span></div>
+      <div class="fact"><strong>11.82 hands/s</strong><span>original continuation · 50 games</span></div>
+      <div class="fact"><strong>Rules · style 1</strong><span>original frozen baseline · see new experiments below</span></div>
+    </div>
+  </div>
+  <nav class="nav" aria-label="Notebook sections">
+    <div class="wrap">
+      <a href="#map">System map</a><a href="#game">Game &amp; betting</a><a href="#encoder">Encoder</a>
+      <a href="#actions">Actions</a><a href="#rules">Current bot</a><a href="#learner">Neural path</a>
+      <a href="#evaluation">Slumbot setup</a><a href="#results">Results</a><a href="#performance">Speed</a>
+      <a href="#setup">Commands</a><a href="#diagnosis">Loss audit</a><a href="#sixmax">Six-player options</a><a href="#baselines">Native benchmarks</a><a href="#next">Next</a>
+    </div>
+  </nav>
+  <main class="wrap">
+    <section id="map" aria-labelledby="map-title">
+      <div class="section-head"><h2 id="map-title">The system, connected</h2><p>Read left → right. Select a node to jump to its notes.</p></div>
+      <div class="map-shell" tabindex="0" role="region" aria-label="Scrollable directed acyclic system map">
+        <div class="map">
+          <span class="col-label" style="left:1.6667%">01 / Foundation</span>
+          <span class="col-label" style="left:26.6667%">02 / Decision inputs</span>
+          <span class="col-label" style="left:51.6667%">03 / Policy &amp; transport</span>
+          <span class="col-label" style="left:76.6667%">04 / Current evidence</span>
+          <svg class="wires" viewBox="0 0 1200 686" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" style="fill:#7c92b0;stroke:none"/></marker>
+              <marker id="arrow-green" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" style="fill:#5e9783;stroke:none"/></marker>
+            </defs>
+            <path data-from="game" data-to="encoder" d="M244 235 C282 235 282 100 320 100" marker-end="url(#arrow)"/>
+            <path data-from="game" data-to="actions" d="M244 235 C282 235 282 230 320 230" marker-end="url(#arrow)"/>
+            <path data-from="game" data-to="rules" class="baseline" d="M244 235 C282 235 282 356 320 356" marker-end="url(#arrow)"/>
+            <path data-from="encoder" data-to="learner" class="neural" d="M544 100 C582 100 582 150 620 150" marker-end="url(#arrow-green)"/>
+            <path data-from="actions" data-to="learner" class="neural" d="M544 230 C582 230 582 150 620 150" marker-end="url(#arrow-green)"/>
+            <path data-from="rules" data-to="evaluation" class="baseline" d="M544 356 C582 356 582 344 620 344" marker-end="url(#arrow)"/>
+            <path data-from="learner" data-to="training" class="neural" d="M844 150 L920 150" marker-end="url(#arrow-green)"/>
+            <path data-from="evaluation" data-to="results" class="baseline" d="M844 344 L920 344" marker-end="url(#arrow)"/>
+            <path data-from="results" data-to="diagnosis" class="baseline" d="M1032 394 L1032 430" marker-end="url(#arrow)"/>
+            <path data-from="diagnosis" data-to="baselines" class="baseline" d="M1032 530 L1032 566" marker-end="url(#arrow)"/>
+          </svg>
+          <a class="node" data-node="game" href="#game" style="left:1.6667%;top:185px"><small>Implemented · CPU</small><strong>Game &amp; betting</strong><span>Chips, turns, legal bets, settlement</span></a>
+          <a class="node neural" data-node="encoder" href="#encoder" style="left:26.6667%;top:50px"><small>Neural input</small><strong>Float encoder</strong><span>Private view + public event window</span></a>
+          <a class="node neural" data-node="actions" href="#actions" style="left:26.6667%;top:180px"><small>Neural action interface</small><strong>8 slots + legal mask</strong><span>Slot index → exact street commitment</span></a>
+          <a class="node" data-node="rules" href="#rules" style="left:26.6667%;top:306px"><small>Original baseline</small><strong>Rules bot · style 1</strong><span>Direct state → exact bet amount</span></a>
+          <a class="node neural" data-node="learner" href="#learner" style="left:51.6667%;top:100px"><small>Implemented</small><strong>PufferNet / MinGRU</strong><span>Dense input → recurrence → policy/value</span></a>
+          <a class="node" data-node="evaluation" href="#evaluation" style="left:51.6667%;top:294px"><small>Live HTTP evaluation</small><strong>Slumbot runner</strong><span>Replay public history; send one action</span></a>
+          <a class="node neural" data-node="training" href="#training" style="left:76.6667%;top:100px"><small>Smoke-tested</small><strong>PPO + snapshots</strong><span>Pipeline tested; training pending</span></a>
+          <a class="node evidence" data-node="results" href="#results" style="left:76.6667%;top:294px"><small>Measured · 4,000 hands</small><strong>−67.19 BB/100</strong><span>Rules baseline; missing outcomes logged</span></a>
+          <a class="node evidence" data-node="diagnosis" href="#diagnosis" style="left:76.6667%;top:430px"><small>Investigation · Oct 17</small><strong>Why are we losing?</strong><span>Over-folding confirmed in frozen-bot probes</span></a>
+          <a class="node evidence" data-node="baselines" href="#baselines" style="left:76.6667%;top:566px"><small>Experiment · Oct 17</small><strong>Native baselines</strong><span>Fullhouse + rules candidates · HU and six seats</span></a>
+        </div>
+      </div>
+      <div class="map-caption">
+        <p>Arrows mean “feeds or constrains.” The rules branch reads game state directly; it bypasses the float encoder and eight-slot policy head.</p>
+        <div class="legend" aria-label="Map legend"><span class="key">Rules / engine</span><span class="key neural">Neural path</span><span class="key evidence">Measurement</span></div>
+      </div>
+    </section>
+    <div class="section-head" id="notes"><h2>The starting notes</h2><p>TL;DR first. Expand a note for the exact mechanics and sources.</p></div>
+    <div class="notes">
+      <section class="note" id="game" aria-labelledby="game-title">
+        <div class="note-head"><div><span class="number">01 / FOUNDATION</span><h2 id="game-title">Game &amp; betting</h2></div><span class="tag">Implemented</span></div>
+        <p class="tldr">No-limit Texas Hold’em with independent <strong>200 BB hands</strong>, 50/100 blinds, rotating button, no rake or ante. Stacks reset after every hand.</p>
+        <ul>
+          <li>One C engine, compiled for <strong>2, 6, or 9 seats</strong>. The default trainer is six-seat; Slumbot evaluation is heads-up.</li>
+          <li>Tracks stacks, street bets, total contributions, turn order, and who can still act. Supports unequal starting stacks and side pots.</li>
+          <li>A raise is a <strong>total commitment on this street</strong>. Calling pays only the difference; a short stack calls all-in.</li>
+        </ul>
+        <details><summary>Betting rules &amp; correctness evidence</summary>
+          <p>The minimum full raise-to is <code>current high bet + last full raise increment</code>. A full raise updates that increment; a short all-in preserves it. Cumulative short raises can reopen action once a player’s full threshold is met.</p>
+          <p>Example: with the small blind at 50, a raise-to of 250 puts in <strong>200 more chips</strong>, for a total of 2.5 BB on this street.</p>
+          <ul>
+            <li>Folding is unavailable when checking is free. Heads-up: button posts the small blind, acts first preflop, and last postflop.</li>
+            <li>A lone player with chips acts only if facing a call; otherwise the board runs out. A short posted big blind retains the nominal 100-chip opening price when multiple players can still bet.</li>
+            <li>Settlement handles uncalled returns, folded contributions, all-in side pots, and split pots. Odd chips go one at a time clockwise from the button.</li>
+            <li>Exact 5–7 card ranking uses bit masks. The hot path has no allocations or large hand-rank lookup tables.</li>
+          </ul>
+          <p>Recorded checks include 16 Bend model laws, sanitizer runs of 20,032 hands per seat count, 20,000 independent rank samples, and 1,000 PokerKit shared-action hands per seat count. Short-raise and odd-chip convention differences are documented. These are model proofs plus implementation tests, not a proof of the entire C engine.</p>
+        </details>
+        <div class="sources"><a href="../../ocean/poker/core.h" target="_blank" rel="noopener">core.h · engine</a><a href="20261014/implementation.md" target="_blank" rel="noopener">Implementation &amp; verification</a></div>
+      </section>
+
+      <section class="note" id="encoder" aria-labelledby="encoder-title">
+        <div class="note-head"><div><span class="number">02 / REPRESENTATION</span><h2 id="encoder-title">What the neural policy sees</h2></div><span class="tag neural">Implemented</span></div>
+        <p class="tldr">A handwritten <strong>float vector</strong>, relative to the observing seat. It contains own hole cards, the visible board, public chip state, and recent public actions. A learned dense layer projects it into the network.</p>
+        <div class="formula">observation width = 16 + 15 × seats<br>HU: 46 &nbsp;·&nbsp; 6 seats: 106 &nbsp;·&nbsp; 9 seats: 151 floats</div>
+        <ul>
+          <li><strong>16 base fields:</strong> street, pot, high bet, raise increment, relative button, live count, own cards, visible board, turn/count/terminal flags.</li>
+          <li><strong>7 per seat:</strong> stack, street bet, total committed, starting stack, and live/active/pending flags.</li>
+          <li><strong>2 × seats event rows:</strong> four fields per event—relative actor, street, action kind, and street commitment.</li>
+        </ul>
+        <details><summary>Encoding, history &amp; privacy</summary>
+          <p>Cards are scalar IDs <code>4 × rank + suit</code>, with ranks <code>23456789TJQKA</code> and suits <code>cdhs</code>, divided by 52. Unrevealed board cards use the value 1. Chips are divided by a fixed 20,000, even for other starting stack sizes.</p>
+          <p>Street and event kind are divided by 3; live count and event actors by seat count; button by <code>seats − 1</code>; decision count by 1,024. Real event actors use <code>(relative seat + 1) / seats</code>; unused rows use zero.</p>
+          <p>The event window contains actions since this seat’s previous decision, including its own previous action. Recurrent memory stays keyed by <strong>table and seat</strong> and resets at a new hand. Opponent hole cards and future board cards do not enter observations.</p>
+          <p>The legal-action mask is supplied separately. This float encoder serves neural decisions; the handwritten baseline uses the C state directly.</p>
+        </details>
+        <div class="sources"><a href="../../ocean/poker/core.h" target="_blank" rel="noopener">core.h · poker_observe</a><a href="../../ocean/poker/poker.h" target="_blank" rel="noopener">poker.h · dense projection</a></div>
+      </section>
+
+      <section class="note" id="actions" aria-labelledby="actions-title">
+        <div class="note-head"><div><span class="number">03 / ACTION INTERFACE</span><h2 id="actions-title">Exact bets, eight policy choices</h2></div><span class="tag neural">Implemented</span></div>
+        <p class="tldr">The engine accepts exact legal integer bets. The <strong>neural policy chooses one of eight slots</strong>; a per-decision lookup turns that index into the actual chip amount.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Slot</th><th scope="col">Meaning</th><th scope="col">Kernel value</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>Fold</td><td><code>−1</code></td></tr>
+            <tr><td>1</td><td>Check / call</td><td><code>0</code></td></tr>
+            <tr><td>2</td><td>Minimum raise</td><td>High bet + full increment</td></tr>
+            <tr><td>3–6</td><td>⅓, ⅔, 1, 2 × pot</td><td>High bet + fraction of pot after calling</td></tr>
+            <tr><td>7</td><td>All-in</td><td>Own street bet + remaining stack</td></tr>
+          </tbody>
+        </table></div>
+        <details><summary>Legality, clipping &amp; an important distinction</summary>
+          <p>Raise candidates are clamped to the minimum raise and then to the player’s maximum commitment. Duplicate amounts are masked out. Fold is masked out when no call is due; raises are masked out when action is not reopened or no other player can contest a raise.</p>
+          <p>For a pot fraction <code>f</code>, the candidate is <code>high + f × (pot + amount to call)</code>, with integer rounding. The final positive value is a street total, not an incremental payment.</p>
+          <p>Slumbot can send arbitrary legal bet sizes, and the engine can replay them. The rules bot also returns exact amounts directly: its 2.5 BB opening size need not be present among the neural slots.</p>
+        </details>
+        <div class="sources"><a href="../../ocean/poker/core.h" target="_blank" rel="noopener">core.h · poker_actions / poker_step</a><a href="../../ocean/poker/poker.h" target="_blank" rel="noopener">poker.h · slot-to-amount mapping</a></div>
+      </section>
+
+      <section class="note" id="rules" aria-labelledby="rules-title">
+        <div class="note-head"><div><span class="number">04 / CURRENT BOT</span><h2 id="rules-title">A fixed rules baseline</h2></div><span class="tag">Evaluated</span></div>
+        <p class="tldr"><strong>Style 1</strong> is a conservative, randomized heuristic bot. It scores its cards and call price, then folds, calls, or chooses a bet size. It has no search or trained weights.</p>
+        <ul>
+          <li><strong>Preflop:</strong> rank, pair, suitedness, connectivity, and pressure from the current bet.</li>
+          <li><strong>Postflop:</strong> made-hand category, pair quality, draw bonuses, number of live players, and call price.</li>
+          <li><strong>Sizing:</strong> open to 250 chips; preflop re-raise to 3 × the high bet; postflop raise by ⅔ of the pot after calling. Clamp to legal bounds.</li>
+        </ul>
+        <details><summary>Frozen identity &amp; scope</summary>
+          <p>Style 0 is the initial variant; style 2 adds a positional variant. Style 1 was retained as a starting baseline after small pilots, not established as the strongest style. Its strength scores are heuristics, not calibrated equity estimates.</p>
+          <p>The 4,000-hand cumulative measurement pins the same heads-up binary at <code>build/poker/rules_v0.so</code>, with style <code>1</code>. The filename predates the selected style; it does not mean style 0.</p>
+          <p>SHA-256:<br><code>f76875ef0a369a41e6bed23f23a64a27785742f6239301fa3b436b79be8bb51a</code></p>
+          <p>The Slumbot runner calls <code>Native.bot(style)</code>. The original series used the unchanged rules binary. The new Fullhouse library also serves a learned policy through this interface, with weights compiled into C rather than loaded as a Puffer checkpoint.</p>
+        </details>
+        <div class="sources"><a href="../../ocean/poker/core.h" target="_blank" rel="noopener">core.h · poker_bot</a><a href="../../ocean/poker/eval.py" target="_blank" rel="noopener">eval.py · Native.bot</a></div>
+      </section>
+
+      <section class="note" id="learner" aria-labelledby="learner-title">
+        <div class="note-head"><div><span class="number">05 / NEURAL PATH</span><h2 id="learner-title">Encoder → MinGRU → policy/value</h2></div><span class="tag neural">Smoke-tested</span></div>
+        <p class="tldr">The existing Puffer PPO learner is wired to the CPU environment. Default PufferNet configuration: <strong>64 hidden units, 2 MinGRU layers</strong>, eight action logits, and a value output.</p>
+        <ul>
+          <li>Float observation → learned dense projection → recurrent layers → action/value head. The legal mask controls which actions can be sampled.</li>
+          <li>The learner uses the <strong>GPU</strong>; simulation and current frozen-opponent inference run on the <strong>CPU</strong>.</li>
+          <li>Reward is terminal <strong>net chips / 100</strong>, in BB; zero intermediate reward, <code>gamma = 1</code>, no reward shaping.</li>
+        </ul>
+        <details id="training"><summary>PPO adapter &amp; snapshot league</summary>
+          <p>One fixed learner seat per table; the button rotates. Opponents act until the learner’s next turn. A terminal payoff is recorded even when a hand ends before the learner can make a decision, without inventing an RL transition.</p>
+          <p><code>league.py</code> trains in stints. The first field uses rules opponents; later stints add frozen learner snapshots. Opponent identity is sampled once per seat per hand; weights stay frozen during a stint. Default mix is 25% rules, with up to eight snapshots. Learner weights carry forward, but the optimizer restarts between stints.</p>
+          <p>Recorded validation includes two 4,096-step smoke stints: first against rules, then against a field containing a saved network. This verifies the pipeline, not playing strength. No substantial Puffer training run or Puffer-trained policy Slumbot result exists yet. The external Fullhouse learned policy is evaluated separately below.</p>
+          <p>The dense acting-seat request/response API exists for a future collector. GPU batching of frozen opponents, dedicated exploiters, and payoff-matrix scheduling are not implemented.</p>
+        </details>
+        <div class="sources"><a href="../../config/poker.ini" target="_blank" rel="noopener">Default config</a><a href="../../ocean/poker/poker.h" target="_blank" rel="noopener">PPO adapter / CPU inference</a><a href="../../ocean/poker/league.py" target="_blank" rel="noopener">Snapshot runner</a><a href="20261014/league-smoke.jsonl" target="_blank" rel="noopener">Smoke evidence</a></div>
+      </section>
+
+      <section class="note" id="evaluation" aria-labelledby="evaluation-title">
+        <div class="note-head"><div><span class="number">06 / EXTERNAL EVALUATION</span><h2 id="evaluation-title">How we play Slumbot</h2></div><span class="tag">Implemented</span></div>
+        <p class="tldr">Python handles HTTPS; the native heads-up library chooses actions. The client replays Slumbot’s public action history into our engine, asks the rules bot for a move, and sends it back.</p>
+        <ul>
+          <li>Latest run: <strong>one process, 50 concurrent games</strong>. Each game has its own HTTP session, token, state, and policy RNG. Requests within a game are sequential.</li>
+          <li>No fixed request delay. Rate limits honor <code>Retry-After</code>; transient failures back off.</li>
+          <li>Append-only JSONL stores completed results, actions, RNG state, binary hash, errors, and summaries. Progress and ETA update every 25 hands.</li>
+          <li><strong>Added October 17:</strong> schema 2 records cards and decision traces for future runs. The historical 4,000-hand log contains no cards.</li>
+        </ul>
+        <details><summary>Failure handling, resume &amp; contact</summary>
+          <p>An ambiguous failed action is never replayed: record its unknown outcome, back off, and start a fresh game session. Six consecutive failed hand attempts stop the run; non-transient failures also stop it. A later action cannot be used to silently infer a missing payoff.</p>
+          <p><code>--resume</code> keeps completed results and continues to the requested <strong>cumulative</strong> hand count. It verifies the style and library hash. SIGINT finishes active hands before stopping. An even allocation of hand pairs helps balance positions, though interruptions can disturb that balance.</p>
+          <p>Requests identify us as:<br><code>PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)</code></p>
+          <p>The runner uses <code>new_hand</code> and <code>act</code> at <code>https://slumbot.com/slumbot/api/</code>. Dependencies are Python, <code>requests</code>, and the native HU shared library. Networking stays outside training.</p>
+        </details>
+        <div class="sources"><a href="../../ocean/poker/eval.py" target="_blank" rel="noopener">eval.py</a><a href="../../ocean/poker/test_eval.py" target="_blank" rel="noopener">Offline client checks</a><a href="20261015/progress.txt" target="_blank" rel="noopener">Final progress</a><a href="20261015/api-usage.md" target="_blank" rel="noopener">API usage record</a></div>
+      </section>
+
+      <section class="note" id="results" aria-labelledby="results-title">
+        <div class="note-head"><div><span class="number">07 / EVIDENCE</span><h2 id="results-title">The original Slumbot score</h2></div><span class="tag measured">Measured</span></div>
+        <p class="tldr"><strong>4,000 completed hands, cumulative</strong>, with the same style-1 rules bot. The recorded sample lost chips.</p>
+        <div class="inline-metrics"><div><strong class="loss">−2,687.77</strong><span>net big blinds</span></div><div><strong class="loss">−67.19</strong><span>BB per 100 hands</span></div></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Batch</th><th scope="col">Hands</th><th scope="col">Net BB</th><th scope="col">BB/100</th></tr></thead>
+          <tbody><tr><td>Serial → 20 games</td><td>2,000</td><td>−1,334.55</td><td>−66.73</td></tr><tr><td>50 games</td><td>2,000</td><td>−1,353.22</td><td>−67.66</td></tr><tr><td><strong>Cumulative</strong></td><td><strong>4,000</strong></td><td><strong>−2,687.77</strong></td><td><strong>−67.19</strong></td></tr></tbody>
+        </table></div>
+        <div class="callout"><strong>23 additional attempts have unknown outcomes.</strong> They are logged separately and cannot be included in the observed score. The latest run contributed five HTTP 504s.</div>
+        <details><summary>Uncertainty, units &amp; provenance</summary>
+          <p><code>BB/100 = 100 × net BB / completed hands</code>. This measures chips, not the fraction of hands won. One BB is 100 chips.</p>
+          <p>The approximate 95% interval from completed-hand variance is <strong>−110.09 to −24.30 BB/100</strong>. It does not account for missing outcomes.</p>
+          <p>If all 23 unresolved attempts were real 200 BB wins or losses, the all-attempt mean could range from <strong>−181.15 to +47.53 BB/100</strong>. That is a conservative missing-outcome bound, not a confidence interval. Some requests failed before a hand was confirmed started.</p>
+          <p>Unknowns: 19 HTTP 504s, one HTTP 502, one read timeout, one HTTP 400, and one operator restart. The earlier HTTP 400 was not reproduced; its cause remains unknown. The final 50-game run had no fatal failure.</p>
+          <p>The target was reached and all workers stopped. The log intentionally says <code>target_reached=true</code> but <code>complete=false</code> because unknown outcomes remain. The original small pilot matches are separate and are not added to this 4,000-hand series.</p>
+        </details>
+        <div class="sources"><a href="20261015/results.md" target="_blank" rel="noopener">Full results</a><a href="20261015/slumbot_style1_seed20261016_paced.jsonl" target="_blank" rel="noopener">Cumulative raw log</a></div>
+      </section>
+
+      <section class="note" id="performance" aria-labelledby="performance-title">
+        <div class="note-head"><div><span class="number">08 / THROUGHPUT</span><h2 id="performance-title">How fast each part goes</h2></div><span class="tag measured">Measured</span></div>
+        <p class="tldr">Live Slumbot evaluation reached <strong>11.82 hands/s</strong> with 50 games. Local engine throughput is measured in millions of decisions/s; those workloads include very different costs.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Measured workload</th><th scope="col">Rate</th></tr></thead>
+          <tbody>
+            <tr><td>Slumbot · 20 games · final 1,136 hands</td><td>6.76 hands/s</td></tr>
+            <tr><td>Slumbot · 50 games · next 2,000 hands</td><td>11.82 hands/s</td></tr>
+            <tr><td>HU rules engine · one CPU core</td><td>6.65 M decisions/s</td></tr>
+            <tr><td>6-seat adapter · rules opponents</td><td>1.21 M learner decisions/s</td></tr>
+            <tr><td>6-seat adapter · 25% rules + H32/L2 nets</td><td>35.1 K learner decisions/s</td></tr>
+          </tbody>
+        </table></div>
+        <details><summary>Measurement boundaries &amp; memory</summary>
+          <p>The 50-game batch completed 2,000 hands in <strong>169.2 seconds</strong>. The previous 20-game batch completed its final 1,136 hands in 168.0 seconds. These are individual network runs, not a controlled concurrency scaling study or a promised rate.</p>
+          <p>Local engine tests: Intel i5-7400, WSL2, Clang 19, one pinned CPU core, 64 tables, three repeats of one million hands. Rules-mode medians include dealing, rules decisions, stepping, and settlement; they exclude observation writing, neural inference, collection, and optimization.</p>
+          <table><thead><tr><th scope="col">Seats</th><th scope="col">Historical state / table</th><th scope="col">Decisions/s</th><th scope="col">Hands/s</th></tr></thead><tbody><tr><td>2</td><td>84 B</td><td>6.65 M</td><td>1.84 M</td></tr><tr><td>6</td><td>188 B</td><td>6.24 M</td><td>0.740 M</td></tr><tr><td>9</td><td>266 B</td><td>6.91 M</td><td>0.556 M</td></tr></tbody></table>
+          <p>Adapter timings are single runs of 128,000 learner decisions, including observations, masks, opponent play, and resets. CPU frozen-network inference accounts for much of the slowdown. No end-to-end PPO training throughput has been established by these figures.</p>
+          <p>State sizes exclude observations, RNN state, and rollout buffers. Default six-seat H64/L2 frozen weights use 127,744 bytes/model; eight models use about 1.02 MB shared. Opponent recurrent state adds 2,560 bytes/table.</p>
+        </details>
+        <div class="sources"><a href="20261014/implementation.md" target="_blank" rel="noopener">Benchmark interpretation</a><a href="20261014/benchmarks.json" target="_blank" rel="noopener">Raw local timings</a><a href="20261015/slumbot_style1_seed20261016_paced.jsonl" target="_blank" rel="noopener">Live run summaries</a></div>
+      </section>
+
+      <section class="note wide" id="setup" aria-labelledby="setup-title">
+        <div class="note-head"><div><span class="number">09 / REFERENCE</span><h2 id="setup-title">Files &amp; commands</h2></div><span class="tag">Local checkout</span></div>
+        <p class="tldr">Run commands from the <code>pufferlib</code> repository root. The page itself is a single local HTML file: edit it, save it, refresh the browser.</p>
+        <div class="split">
+          <div><h3>Native environment</h3><p class="subtle">Builds the current 2/6/9-seat libraries and benchmark executables.</p><pre><code>bash ocean/poker/build.sh</code></pre><p class="subtle">Outputs: <code>build/poker/libpoker{2,6,9}.so</code>. The measured rules baseline separately pins the retained <code>rules_v0.so</code> artifact.</p></div>
+          <div><h3>Neural learner</h3><p class="subtle">The existing GPU PPO trainer with the CPU poker environment. Default six-seat profile: <code>config/poker.ini</code>.</p><pre><code>bash build.sh poker build/poker/puffer</code></pre><p class="subtle">Snapshot orchestration: <code>ocean/poker/league.py</code>. No training process is running as part of this notebook.</p></div>
+        </div>
+        <details><summary>Exact command used for the 50-game continuation</summary>
+          <p>This is a historical command: it resumed from 2,000 to 4,000 total completed hands. For a future continuation, increase <code>--hands</code> to the desired cumulative total; for a separate series, use a new output file without <code>--resume</code>.</p>
+          <pre><code>python3 ocean/poker/eval.py \
+  --hands 4000 --games 50 --style 1 --seed 20261019 \
+  --library build/poker/rules_v0.so \
+  --request-delay 0 --resume \
+  --contact https://github.com/FelixAllistar \
+  --progress reports/poker/20261015/progress.txt \
+  --output reports/poker/20261015/slumbot_style1_seed20261016_paced.jsonl</code></pre>
+        </details>
+        <div class="sources"><a href="../../ocean/poker/README.md" target="_blank" rel="noopener">Environment README</a><a href="../../ocean/poker/build.sh" target="_blank" rel="noopener">Native build</a><a href="../../config/poker.ini" target="_blank" rel="noopener">Trainer defaults</a><a href="20261014/plan.md" target="_blank" rel="noopener">Original implementation plan</a></div>
+      </section>
+
+      <section class="note wide" id="diagnosis" aria-labelledby="diagnosis-title">
+        <div class="note-head"><div><span class="number">10 / INVESTIGATION 01 · 2026-10-17</span><h2 id="diagnosis-title">The rules bot folds far too readily</h2></div><span class="tag measured">Reproduced offline</span></div>
+        <p class="tldr">The existing sample and frozen-bot probes point to a badly calibrated postflop defense rule. The client audit found no turn-order or bet-amount mismatch in the completed histories. These results concern the handwritten baseline; neural training has not produced this behavior.</p>
+        <div class="split">
+          <div>
+            <h3>What happened in the 4,000 recorded hands</h3>
+            <table><thead><tr><th scope="col">When facing a bet or raise</th><th scope="col">Folded</th><th scope="col">Rate</th></tr></thead><tbody><tr><td>Flop</td><td>496 / 585 decisions</td><td>84.8%</td></tr><tr><td>Turn</td><td>378 / 481 decisions</td><td>78.6%</td></tr><tr><td>River</td><td>180 / 280 decisions</td><td>64.3%</td></tr></tbody></table>
+            <p>Hands ending in a fold netted <strong>−2,180.54 BB</strong> across both players’ folds. Showdowns netted <strong>−507.23 BB</strong>. About 81% of the observed net loss therefore came from pots ending without a showdown.</p>
+            <p>We won 217 showdowns and lost 185, with 24 ties, but losing showdowns were larger on average: 19.61 BB lost versus 14.38 BB won. The big blind lost 88.92 BB/100; the small blind lost 45.14 BB/100.</p>
+          </div>
+          <div>
+            <h3>What the exact frozen binary does</h3>
+            <table><thead><tr><th scope="col">Synthetic legal spot</th><th scope="col">Style-1 action</th></tr></thead><tbody><tr><td>A♥ K♥ on Q♥ 7♥ 2♣; call 1 BB with 41 BB already in the pot</td><td><strong>Fold</strong>, 1,000 / 1,000 RNG states</td></tr><tr><td>A♠ A♦ on K♥ 7♣ 2♦; facing a pot-sized flop bet</td><td><strong>Fold</strong>, 1,000 / 1,000 RNG states</td></tr><tr><td>A♠ K♦ in the BB versus a 2.5 BB open</td><td><strong>Call</strong>, 1,000 / 1,000 RNG states; never re-raise</td></tr></tbody></table>
+            <p>These are reproducible decision probes, not recovered cards from old hands. They show blanket rules that discard strong draws and overpairs, plus very passive preflop re-raising. A particular fold can be correct against a particular range; this bot has no such range model.</p>
+          </div>
+        </div>
+        <div class="callout">Fold losses are accounting, not the amount a fix would recover. We have concrete policy weaknesses, but cannot assign a precise share of the historical loss to each weakness without the missing cards and counterfactual action values.</div>
+        <details><summary>The faulty thresholds and what the audit rules out</summary>
+          <p>The postflop rule compares an arbitrary strength score with <code>integer pot-odds percent + 25</code>, with an extra penalty for large calls. Those scores have never been calibrated to winning probability.</p>
+          <ul>
+            <li>A high-card flush draw receives <code>14 + 12 − 5 = 21</code>. The fold threshold is at least 25 even for a tiny bet, so a bare flush draw always folds when facing a bet. The probe’s call costs just <strong>2.38%</strong> of the pot after calling.</li>
+            <li>An overpair on the dry flop receives <code>43 + 15 − 5 = 53</code>. A pot-sized bet produces a threshold of <code>33 + 25 = 58</code>, so even aces fold. The fold test runs before the randomized raise test.</li>
+            <li>AK offsuit scores 39 preflop; the first randomized re-raise gate starts at 43. The sample made only 36 three-bets across 1,937 opportunities to re-raise a first preflop raise (1.86%).</li>
+          </ul>
+          <p>All <strong>16,836 recorded actions</strong> replayed legally. An independent comparison with Slumbot’s official <code>ParseAction</code> agreed on actor, active street, and current street bet at every action prefix. All <strong>3,574 fold payoffs</strong> matched independently accumulated contributions; all <strong>426 showdown payouts</strong> had a valid stake magnitude.</p>
+          <p>This checks protocol interpretation and chip accounting. It cannot verify the showdown winner without the cards, and it does not prove every engine or client path correct. The original 23 unresolved attempts retain their uncertainty.</p>
+        </details>
+        <details><summary>Logging repair completed; strategy still frozen</summary>
+          <p>The original logger omitted hole cards and boards in all 4,000 historical completed records. Those cards cannot be recovered from the saved betting strings. This was a gap in our evaluation tooling.</p>
+          <p>Schema 2 now records own cards, visible board, public history, pot and call amounts, stack, abstract legal amounts, exact chosen action, and RNG before/after each decision. Terminal records retain opponent cards when revealed. Interrupted attempts retain the same available trace. Session tokens remain excluded.</p>
+          <p>Five offline client tests pass, including an exact two-street decision replay and a check that later board/opponent revelations do not enter an earlier decision’s trace. No new live match or policy change was made for this investigation.</p>
+          <pre><code>python3 reports/poker/20261017/analyze.py</code></pre>
+        </details>
+        <div class="sources"><a href="20261017/analysis.json" target="_blank" rel="noopener">Counts &amp; frozen-bot probes</a><a href="20261017/analyze.py" target="_blank" rel="noopener">Reproducible offline analysis</a><a href="20261017/protocol-audit.json" target="_blank" rel="noopener">Official-parser cross-check</a><a href="../../ocean/poker/core.h" target="_blank" rel="noopener">poker_bot thresholds</a><a href="../../ocean/poker/test_eval.py" target="_blank" rel="noopener">Trace / recovery tests</a></div>
+      </section>
+
+      <section class="note wide" id="sixmax" aria-labelledby="sixmax-title">
+        <div class="note-head"><div><span class="number">11 / SIX-PLAYER DIRECTION · CHECKED 2026-10-17</span><h2 id="sixmax-title">Six-player bots exist; keep six-player evaluation</h2></div><span class="tag">Research notes</span></div>
+        <p class="tldr">Our engine already supports six seats. Slumbot is useful for debugging and an independent heads-up score, but a strong heads-up result alone does not establish six-player strength. Position, opening ranges, multiway hand value, and bluff incentives change.</p>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Project</th><th scope="col">What is available</th><th scope="col">What we know so far</th></tr></thead><tbody>
+          <tr><td><a href="https://www.cs.cmu.edu/news/2019/carnegie-mellon-and-facebook-ai-beats-professionals-six-player-poker" target="_blank" rel="noopener">Pluribus</a></td><td>Published six-player research result against professional humans.</td><td>Establishes that strong six-player AI is possible; not an integrated opponent in our setup.</td></tr>
+          <tr><td><a href="https://github.com/advitrocks9/fullhouse-bot" target="_blank" rel="noopener">fullhouse-bot</a></td><td>Six-max Deep CFR runtime, local benchmark, and <a href="https://github.com/advitrocks9/fullhouse-bot/blob/main/data/deep_cfr_model.npz" target="_blank" rel="noopener">577 KB weight artifact</a>.</td><td>Now ported and benchmarked below. It beats our original bot locally heads-up, but has not established a six-player upgrade or a winning Slumbot result.</td></tr>
+          <tr><td><a href="https://github.com/aeneassoft/QuantPlay" target="_blank" rel="noopener">QuantPlay</a></td><td>Six-max browser/local trainer with a pool of heuristic opponents.</td><td>Useful for playing or assembling a varied test field. Coaching grades compare with its own engine, rather than certifying optimal play.</td></tr>
+          <tr><td><a href="https://github.com/conorarmstrong/noregrets" target="_blank" rel="noopener">NoRegrets</a></td><td>Public Rust implementation for 2–6 players; training and search tools.</td><td>Its current README says pretrained blueprints are commercial-only. Public source can train its own; not a ready free pretrained benchmark.</td></tr>
+        </tbody></table></div>
+        <details><summary>Transfer limits and one misleading repository name</summary>
+          <p>Basic card evaluation, chip accounting, action legality, and the confirmed bad-fold rules matter in both formats. Strategy quality still needs separate tests at six seats. A six-seat hand that gets heads-up retains its original positions and earlier betting information.</p>
+          <p>Our current neural input is 46 floats for HU versus 106 for six seats. Checkpoints are seat-count-specific, so a trained HU network cannot simply be loaded as a six-seat network.</p>
+          <p>The repository now named <a href="https://github.com/dberweger2017/CFR-NLHE-6max" target="_blank" rel="noopener">CFR-NLHE-6max</a> explicitly says its current released models are heads-up and the six-player name is historical. It is not currently the six-player pretrained alternative its name suggests.</p>
+        </details>
+      </section>
+
+      <section class="note wide" id="baselines" aria-labelledby="baselines-title">
+        <div class="note-head"><div><span class="number">12 / NATIVE BASELINES · 2026-10-17</span><h2 id="baselines-title">Native opponents ready; strength gains remain unproven</h2></div><span class="tag measured">Completed experiment</span></div>
+        <p class="tldr">Ran <strong>2.4 million local hands</strong> across 40 matches and <strong>12,000 clean Slumbot hands</strong> across three policies. Fullhouse is now a small native learned opponent. A focused rules revision fixes the reproduced bad folds and scores better in the fresh Slumbot sample, but the gain is uncertain and six-player improvement is unproven. <strong>Keep style 1 as the default; use the alternatives to broaden the opponent field.</strong></p>
+        <h3>Fresh Slumbot comparison · 200 BB</h3>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Policy</th><th scope="col">Hands</th><th scope="col">BB/100</th><th scope="col">Approximate 95% interval</th></tr></thead><tbody>
+          <tr><td>Original rules · style 1</td><td>4,000</td><td>−42.42</td><td>[−76.94, −7.91]</td></tr>
+          <tr><td>Focused defense · style 5</td><td>4,000</td><td>−28.74</td><td>[−72.77, +15.29]</td></tr>
+          <tr><td>Fullhouse · style 4</td><td>4,000</td><td>−73.00</td><td>[−129.94, −16.06]</td></tr>
+        </tbody></table></div>
+        <p>Each row is a separate fresh run, with zero unresolved attempts. Style 5’s estimated gain over the fresh original control is <strong>+13.68 ± 55.94 BB/100</strong>; this does not establish improvement or winning play. The historical −67.19 score above remains a separate, older sample. These are exploratory comparisons with approximate intervals, not multiple-comparison-adjusted promotion tests.</p>
+        <p>When facing a flop bet, the original folded 86.1%, the focused candidate 82.5%, and Fullhouse 43.9%. Fullhouse’s much lower folding rate did not yield a better total score. Changing one aggregate behavior is insufficient; value extraction and losses at showdown also matter.</p>
+        <h3>Local results · fresh duplicate deals and every seat</h3>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Test</th><th scope="col">Fullhouse BB/100</th><th scope="col">Interpretation</th></tr></thead><tbody>
+          <tr><td>HU vs original · 200 BB</td><td>+22.56 ± 10.90</td><td>Clear local advantage in this matchup.</td></tr>
+          <tr><td>Six seats vs five originals · 200 BB</td><td>−20.66 ± 11.59</td><td>Fails to improve on this simple six-player field.</td></tr>
+          <tr><td>HU vs original · 100 BB</td><td>+33.35 ± 7.71</td><td>Advantage persists nearer the model’s training stack.</td></tr>
+          <tr><td>Six seats vs five originals · 100 BB</td><td>−6.84 ± 7.66</td><td>No demonstrated advantage here either.</td></tr>
+        </tbody></table></div>
+        <p>Each displayed match has 60,000 hands; ± values are 95% interval half-widths over independent duplicate-deal block means. The mixed six-player field uses opponent styles 0, 1, 2, 4, 4. Style 5’s paired gains versus style 1 were <strong>+0.54 ± 2.46</strong> against five originals, <strong>−1.75 ± 5.34</strong> against five Fullhouse bots, and <strong>+0.95 ± 3.75</strong> against the mixed field. None establishes a six-player gain. The earlier broad defense candidate (style 3) regressed in several local fields and was rejected.</p>
+        <details><summary>What changed, parity checks, and native speed</summary>
+          <p>Fullhouse is pinned to <a href="https://github.com/advitrocks9/fullhouse-bot/tree/e504793d480b1b975f25258d25939b45c6dbd5a4" target="_blank" rel="noopener">commit e504793</a>. The port preserves its 51 features, two 256-unit trunk layers, five-action menu, regret matching, and short-stack push/fold chart. No separately trained HU checkpoint was supplied; the same runtime accepts two or six seats. Model inputs use public state and own cards only. The port uses the native RNG with the same action probabilities.</p>
+          <p>The final parity suite matched <strong>2,896 feature vectors exactly</strong>, probabilities within <strong>0.00000365</strong>, 2,000 eval7 hand ranks, 910 short-stack decisions, and 71 hidden-card permutations. Expanded testing caught and corrected the upstream dict encoder’s treatment of opening all-ins below one BB. Replaying the corrected port against all <strong>11,048 recorded Fullhouse decisions</strong> changed no action or RNG outcome. All <strong>8,904 fresh original-policy decisions</strong> also replay exactly in the new native library.</p>
+          <p>Embedded fp32 weights and equity tables total <strong>588,180 bytes</strong>. No Python, BLAS, heap allocation, GPU, or network is needed for native decisions. Initial warm latency samples ranged roughly <strong>28–66 µs native</strong> versus <strong>503–1,092 µs Python</strong> on the shared i5-7400 host. A six-player all-Fullhouse match measured <strong>33,012 decisions/s and 2,876 hands/s</strong>. The focused rules candidate against five originals measured <strong>11.74 million decisions/s and 1.38 million hands/s</strong>. These are different match workloads, and host load varied; use them as measured throughput snapshots.</p>
+          <p>Public street aggression counters add two bytes per simulator table, making current native state <strong>86 / 190 / 268 bytes</strong> for 2 / 6 / 9 seats. Observation dimensions and checkpoint shapes are unchanged. The older speed table retains its historical state sizes.</p>
+          <p>Style 5 preserves the old thresholds for most hands, while allowing appropriately priced draws and top-pair/overpair defense and adding AK re-raises. The draw allowance and made-hand thresholds remain heuristics, not range equity or a solved strategy. Both confirmed bad-fold probes now continue for all 1,000 tested RNG states.</p>
+        </details>
+        <details><summary>Ready for native training; limits of human realism</summary>
+          <p><code>build/poker/puffer_baselines</code> builds successfully with the Fullhouse weights embedded. Choose <code>--env.bot_policy=4</code> for Fullhouse, <code>--env.bot_policy=5</code> for the focused candidate, or <code>--env.native_baseline_mask=23</code> to mix styles 0, 1, 2 and 4. Zero preserves the original single-policy selection. Each native style is sampled once per table/opponent seat and remains fixed across hands. The default is still style 1.</p>
+          <p>The snapshot runner exposes <code>--bot-policy</code> and <code>--baseline-mask</code>. Its existing native-versus-snapshot fraction still applies; frozen network identities are sampled per hand as before. The mixed native field passed ASan/UBSan over 12,800 learner decisions / 7,109 terminal hands, with style persistence checked. The focused field passed another 12,800 decisions / 8,222 terminal hands. Engine differential checks against pinned PokerKit 0.7.7 passed 1,000 hands at each of 2, 6 and 9 seats, with the existing known oracle short-raise disagreements explicitly counted.</p>
+          <p>This supplies varied baseline opponents, <strong>not validated human behavior</strong>. Native styles and Fullhouse do not learn from table history; the learner and frozen-network recurrent state reset each hand. Realistic practice still needs persistent opponent statistics/history, stable session identities, plausible bet-size diversity, and evaluation against human behavior or suitable held-out data. No substantial training run was started in this experiment.</p>
+        </details>
+        <details><summary>Connection failures and reproducibility</summary>
+          <p>A 50-game Fullhouse pilot was stopped after connection failures: 262 completed hands and 186 unresolved attempts. It remains a separate incomplete series; its score has severe missing-outcome uncertainty. Subsequent five-game runs completed cleanly at 23.6–32.4 hands/s. Do not interpret the concurrency difference as a controlled scaling benchmark.</p>
+          <p>Source snapshots, binary and weight hashes, seeds, commands, per-deal block returns, and complete decision traces are retained. The 0.7.7 oracle is pinned because an initial verification attempt in an older 0.6.3 environment disagreed on effective-stack raise limits. No engine betting rule was changed to accommodate that older oracle.</p>
+          <pre><code>python3 reports/poker/20261017/summarize_baselines.py
+python3 ocean/poker/benchmark.py --build build/poker/baselines_v2 \
+  --hands 60000 --candidates 1 5 4 --output build/poker/new_baseline_match</code></pre>
+        </details>
+        <div class="sources"><a href="20261017/baseline-comparison.json">Combined measurements</a><a href="20261017/baselines_v2/local/results.json">200 BB local matches</a><a href="20261017/baselines_v2/local100/results.json">100 BB local matches</a><a href="20261017/baselines_v2/local/paired-differences.json">Paired candidate differences</a><a href="20261017/baselines_v1/local/paired-differences.json">Rejected broad revision</a><a href="20261017/baselines_v2/manifest.json">Pinned artifacts</a><a href="20261017/baselines_v2/parity.json">Final parity checks</a><a href="20261017/baselines_v2/fullhouse_live_replay.json">Fullhouse trace replay</a><a href="20261017/baselines_v2/original_live_replay.json">Original trace replay</a><a href="20261017/baselines_v2/engine-verification.txt">Engine verification</a><a href="20261017/baselines_v2/trainer-build.json">Native trainer build / checks</a><a href="20261017/baselines_v1/slumbot_original_control.jsonl">Original Slumbot control</a><a href="20261017/baselines_v2/slumbot_focused.jsonl">Candidate Slumbot log</a><a href="20261017/baselines_v1/slumbot_fullhouse_low_concurrency.jsonl">Clean Fullhouse Slumbot log</a><a href="20261017/baselines_v1/slumbot_fullhouse.jsonl">Interrupted pilot</a><a href="../../ocean/poker/README.md">Build and training commands</a></div>
+      </section>
+
+      <section class="note wide next" id="next" aria-labelledby="next-title">
+        <span class="number">13 / WORKING DIRECTION · 2026-10-17</span><h2 id="next-title">Improve playing strength; keep the approach open.</h2>
+        <p class="tldr">Six-player poker remains the main interest, with Slumbot as a useful heads-up benchmark. We have not committed to hand-written rules, a particular learning method, or an external bot. No formal automated goal has been created. The user has authorized benchmarking native opponents and testing improvements in both formats.</p>
+        <p>The proposed role for the rules bot is a cheap, reproducible baseline and one opponent in a varied field. Fixing its demonstrated mistakes can be useful without making extensive rule tuning the main project. Investigate compact learned policies and available opponents alongside that work. Training cost and inference model size are separate considerations; the small Fullhouse weight artifact above is a concrete example, but does not establish its playing strength.</p>
+        <p>The first native benchmark round is complete. Keep the original default and the measured alternatives available; the focused revision needs stronger evidence before promotion. Longer term, realistic human practice needs persistent opponent tendencies and table history. A large policy count alone would not establish human realism: our present rules and Fullhouse baselines have no cross-hand memory, and the learner currently resets recurrent state at each hand.</p>
+        <h3>Next experiments to review</h3>
+        <ol>
+          <li><strong>Audit the deployed Fullhouse checkpoint.</strong> The supplied <code>deep_cfr_model.npz</code> contains a single advantage network, which our port matches. The pinned training code exports an average-strategy network by default and offers advantage-network export as an option. Check whether an averaged checkpoint is available and whether the supplied artifact matches the intended training/deployment setup before investing in more tuning. This is an open question, not a confirmed defect or explanation of the losses. <a href="https://github.com/advitrocks9/fullhouse-bot/blob/e504793d480b1b975f25258d25939b45c6dbd5a4/training/train.py#L721-L735">Pinned export code</a>. The original Deep CFR algorithm learns an average strategy; its equilibrium guarantee concerns two-player zero-sum games and does not establish six-player strength. <a href="https://proceedings.mlr.press/v97/brown19b/brown19b.pdf">Deep CFR paper</a>.</li>
+          <li><strong>Test bounded equity estimation against opponent ranges.</strong> Replace the rule bot's arbitrary hand-strength score with sampled showdown equity against plausible hands, conditioned on position and public betting. Compare a small fixed budget, such as 32 versus 128 samples, against the same duplicate-deal fields in both formats, measuring native throughput as well as returns. These budgets are proposals, not measured results. Equity alone is not action value: future betting, fold equity, and multiway pots still need separate treatment. Keep an untouched test seed/field for the chosen candidate before another Slumbot comparison.</li>
+          <li><strong>Make opponents persist and adapt across hands.</strong> For human practice, start with a small varied population whose tendencies persist per seat, plus public-history statistics such as voluntary entry, preflop raises, responses to aggression, and bet sizes. Test that changes in table history produce the intended behavior without hidden-card access. Treat strength, behavioral diversity, and similarity to human play as separate measurements; the last requires an actual human reference dataset. A larger population alone does not answer that question.</li>
+        </ol>
+        <details id="review-prompt">
+          <summary>Copyable prompt for a fresh strategy review</summary>
+          <pre class="review-prompt">Review the poker baseline checkpoint in this repository. Start with reports/poker/index.html (especially Diagnosis, Native baselines, and Working direction), ocean/poker/README.md, and reports/poker/20261017/baseline-comparison.json; follow their evidence links. Ask for any files you cannot access rather than assuming their contents.
+
+The main objective is fast native CPU opponents for realistic six-player no-limit Hold'em practice and training. Heads-up Slumbot is a secondary benchmark. We want a useful baseline and varied human-like behavior; neither a large model nor a huge number of policies is a requirement.
+
+Completed evidence: 2.4 million local hands with duplicate-deal comparisons, plus three fresh 4,000-hand Slumbot samples at 200 BB. Original rules: -42.42 BB/100; focused revision: -28.74; native Fullhouse: -73.00. The focused-minus-original difference is +13.68 +/- 55.94 BB/100 (approximate 95% interval): improvement is unproven. Fullhouse beats our original heads-up locally but has not established six-player superiority. A failed 50-concurrent-game pilot and older baseline data remain recorded separately. Do not pool different policies or ignore unresolved outcomes.
+
+The native Fullhouse port matches the supplied Python model and replays all 11,048 completed live decisions exactly. It uses about 0.6 MB of weights/tables and measured about 33,000 decisions/second in a six-player all-Fullhouse match on the shared CPU. Original rules remain the default. No new PPO policy was trained in this round.
+
+Please prioritize concrete improvements and the smallest useful next experiment. Audit whether the supplied single advantage-network artifact is the intended deployment policy: the pinned upstream trainer defaults to exporting an average-strategy network. Also consider range-conditioned equity at bounded CPU cost, feature/action limitations, and persistent public table history. Separate confirmed implementation problems, strategic hypotheses, strength, throughput, and human realism. Do not infer six-player equilibrium guarantees from the Deep CFR label or proven gains from these noisy Slumbot samples.
+
+For your top recommendation, specify the code path to change, an ablation, a held-out evaluation, a native speed measurement, and what result would justify keeping or rejecting it.</pre>
+        </details>
+      </section>
+    </div>
+    <footer>Maintained in <code>reports/poker/index.html</code> · Baseline measured 2026-10-15; loss audit and native baseline experiments added 2026-10-17 · Open directly and refresh after edits. Measurements are recorded snapshots, not a live feed. No build, external assets, or JavaScript required.</footer>
+  </main>
+</body>
+</html>

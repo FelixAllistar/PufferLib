@@ -1,0 +1,6 @@
+PASS Bend/native side pots, short-all-in reopening, short blind
+PASS acting-seat batching tables=64 decisions=591
+PASS exact ranks/order/suit symmetry samples=20000
+PASS shared-action PokerKit players=2 hands=1000 decisions=5063 oracle_raise_disagreements=0
+PASS shared-action PokerKit players=6 hands=1000 decisions=11784 oracle_raise_disagreements=7
+PASS shared-action PokerKit players=9 hands=1000 decisions=15846 oracle_raise_disagreements=21

@@ -31,6 +31,8 @@ typedef struct Poker {
     uint16_t live[POKER_BATCH], active[POKER_BATCH], pending[POKER_BATCH];
     uint8_t hole[POKER_PLAYERS][2][POKER_BATCH], board[5][POKER_BATCH];
     uint8_t actor[POKER_BATCH], button[POKER_BATCH], street[POKER_BATCH];
+    // Public street-local aggression, retained beyond the observation ring.
+    uint8_t raises[POKER_BATCH], last_raiser[POKER_BATCH];
     uint16_t decisions[POKER_BATCH];
     uint16_t seen[POKER_PLAYERS][POKER_BATCH];
     uint32_t history[POKER_HISTORY][POKER_BATCH];
@@ -226,6 +228,8 @@ void poker_advance(Poker* g, int t, int last) {
         return;
     }
     g->street[t]++;
+    g->raises[t] = 0;
+    g->last_raiser[t] = POKER_DONE;
     g->high[t] = 0;
     g->increment[t] = POKER_BB;
     for (int p = 0; p < POKER_PLAYERS; p++) {
@@ -243,6 +247,8 @@ void poker_reset(Poker* g, int t, int button, const uint32_t* stacks,
     assert(button < POKER_PLAYERS);
     g->button[t] = button;
     g->street[t] = 0;
+    g->raises[t] = 0;
+    g->last_raiser[t] = POKER_DONE;
     g->decisions[t] = 0;
     g->pot[t] = 0;
     g->high[t] = POKER_BB;
@@ -364,6 +370,8 @@ void poker_step(Poker* g, int t, int32_t action) {
             uint32_t increase = target - g->high[t];
             if (increase >= g->increment[t]) {
                 g->increment[t] = increase;
+                if (g->raises[t] < 4) g->raises[t]++;
+                g->last_raiser[t] = p;
             }
             g->high[t] = target;
             g->pending[t] = g->active[t] & ~bit;
@@ -419,9 +427,25 @@ void poker_observe(Poker* g, int t, int p, float* obs) {
     }
 }
 
-// Our fixed rule baseline. Style 0 = initial, 1 = conservative, 2 = positional.
+#ifdef POKER_FULLHOUSE_MODEL
+#include "fullhouse.h"
+#define POKER_BOT_MASK 63u
+#else
+#define POKER_BOT_MASK 47u
+#endif
+
+int poker_bot_supported(int style) {
+    return style >= 0 && style <= 5 && (POKER_BOT_MASK & (1u << style));
+}
+
+// 0-2 frozen; 3 broad defense; 4 Fullhouse; 5 focused draw/top-pair defense.
 // Scores below are heuristics, not calibrated equity estimates.
 int32_t poker_bot(Poker* g, int t, uint64_t* rng, int style) {
+#ifdef POKER_FULLHOUSE_MODEL
+    if (style == 4) return poker_fullhouse_bot(g, t, rng);
+#endif
+    assert(poker_bot_supported(style));
+    int repair = style == 3 || style == 5;
     int p = g->actor[t], street = g->street[t];
     int r0 = g->hole[p][0][t] >> 2, r1 = g->hole[p][1][t] >> 2;
     int hi = r0 > r1 ? r0 : r1, lo = r0 < r1 ? r0 : r1;
@@ -438,7 +462,7 @@ int32_t poker_bot(Poker* g, int t, uint64_t* rng, int style) {
     if (!street) {
         int late = (p + POKER_PLAYERS - g->button[t]) % POKER_PLAYERS;
         int threshold = POKER_PLAYERS == 2 ? 13 : 24;
-        threshold += style == 1 ? 4 : 0;
+        threshold += style == 1 || repair ? 4 : 0;
         threshold -= style == 2 && late == 0 ? 5 : 0;
         if (g->high[t] <= 100) {
             fold = strength < threshold && call && roll >= 80;
@@ -450,6 +474,9 @@ int32_t poker_bot(Poker* g, int t, uint64_t* rng, int style) {
                 fold = !(r0 == r1 && hi >= 10) && !(hi == 12 && lo == 11);
             }
             raise = strength >= 57 || (strength >= 43 && g->high[t] <= 400 && roll < 180);
+            if (repair && hi == 12 && lo == 11 && g->high[t] <= 400) {
+                raise = roll < (suited ? 900u : 650u);
+            }
         }
     } else {
         uint8_t cards[7] = {g->hole[p][0][t], g->hole[p][1][t]};
@@ -476,23 +503,49 @@ int32_t poker_bot(Poker* g, int t, uint64_t* rng, int style) {
         if (category == 2) {
             strength -= (r0 < board_hi && r1 < board_hi) ? 10 : 0;
         }
-        int draw = 0;
+        int draw = 0, flush_draw = 0, straight_outs = 0;
         if (street < 3) {
             for (int i = 0; i < 4; i++) {
                 draw |= suit_count[i] == 4 && ((cards[0] & 3) == i || (cards[1] & 3) == i);
             }
+            flush_draw = draw;
             int straight_draw = 0;
             for (int i = 0; i < 9; i++) {
                 straight_draw |= __builtin_popcount((ranks >> i) & 31) == 4;
+            }
+            if (repair) {
+                unsigned missing = 0;
+                for (int i = 0; i < 9; i++) {
+                    unsigned window = 31u << i;
+                    if (__builtin_popcount(ranks & window) == 4) missing |= window & ~ranks;
+                }
+                if (__builtin_popcount(ranks & 0x100f) == 4) missing |= 0x100f & ~ranks;
+                straight_outs = 4 * __builtin_popcount(missing);
+                straight_draw = straight_outs > 0;
             }
             strength += 12 * draw + 6 * straight_draw;
             draw |= straight_draw;
         }
         strength -= 5 * (live - 2);
-        strength -= style == 1 ? 5 : 0;
+        strength -= style == 1 || repair ? 5 : 0;
         int price = 100 * call / (g->pot[t] + call);
         fold = call && strength < price + 25 + 8 * (call > g->pot[t] / 2);
-        if (style && call > g->pot[t] && category < 2) {
+        if (repair) {
+            if (style == 3) fold = call && strength < price + 12 + 8 * (call > g->pot[t] / 2);
+            if (style == 5 && category == 1) {
+                int pair = ((rank >> 16) & 15) - 2;
+                if (pair >= board_hi && (r0 == pair || r1 == pair)) {
+                    fold = call && price > 40 - 5 * (live - 2);
+                }
+            }
+            // Approximate one-card draw coverage plus a small flop allowance.
+            // This is a heuristic, not range equity or a guaranteed +EV call.
+            int outs = 9 * flush_draw + straight_outs;
+            if (flush_draw && straight_outs) outs -= straight_outs / 4;
+            int coverage = 2 * outs + (street == 1 ? 6 : 0) - 3 * (live - 2);
+            if (street < 3 && outs && price <= coverage) fold = 0;
+        }
+        if (style && !repair && call > g->pot[t] && category < 2) {
             fold = 1;
         }
         raise = strength >= 74 || (!call && strength >= 53 && roll < 650)

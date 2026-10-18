@@ -26,6 +26,7 @@ class Native:
         self.players = players
         self.path = Path(library) if library else ROOT / f"build/poker/libpoker{players}.so"
         self.lib = C.CDLL(str(self.path.resolve()))
+        self.styles = self.lib.poker_bot_styles() if hasattr(self.lib, "poker_bot_styles") else 7
         self.lib.poker_bytes.restype = C.c_size_t
         signatures = {
             "poker_seed": [C.c_void_p, C.c_uint64],
@@ -66,6 +67,8 @@ class Native:
         self.lib.poker_step(self.storage, 0, action)
 
     def bot(self, style):
+        if not self.styles & (1 << style):
+            raise ValueError(f"Policy style {style} is unavailable in {self.path}")
         return self.lib.poker_bot(self.storage, 0, C.byref(self.rng), style)
 
 
@@ -91,78 +94,251 @@ def replay(native, response):
 
 
 def slumbot(args):
+    from concurrent.futures import ThreadPoolExecutor
+    from queue import Queue
     import requests
-    session = requests.Session()
-    native = Native(seed=args.seed, library=args.library)
-    token = None
-    results = []
-    started = time.monotonic()
+    import signal
+    from threading import Event
+
+    assert 1 <= args.games <= 50 and args.hands > 0 and args.request_delay >= 0
+    binary = Path(args.library) if args.library else ROOT / "build/poker/libpoker2.so"
+    if not Native(library=binary).styles & (1 << args.style):
+        raise ValueError(f"Policy style {args.style} is unavailable in {binary}")
+    agent = "PufferTank-PokerEval/1.0" + (f" (+{args.contact})" if args.contact else "")
+    metadata = {"style": args.style, "seed": args.seed, "hands_requested": args.hands,
+        "library_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "opponent": "slumbot.com", "starting_bb": 200,
+        "request_delay_seconds": args.request_delay, "concurrent_games": args.games,
+        "user_agent": agent, "log_schema": 2}
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    binary = native.path
-    metadata = {"style": args.style, "seed": args.seed, "hands_requested": args.hands,
-                "library_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
-                "opponent": "slumbot.com", "starting_bb": 200}
-    with output.open("x") as log:
-        log.write(json.dumps({"metadata": metadata}) + "\n")
-        failure = None
-        try:
-            for hand in range(args.hands):
-                stage = "new_hand"
-                response = session.post("https://slumbot.com/slumbot/api/new_hand",
-                    json={"token": token} if token else {}, timeout=60)
+    progress = Path(args.progress) if args.progress else output.with_suffix(".progress.txt")
+    results, rngs = [], {}
+    unresolved = 0
+    if args.resume:
+        records = [json.loads(line) for line in output.read_text().splitlines()]
+        original = records[0]["metadata"]
+        assert all(original[k] == metadata[k] for k in ("style", "library_sha256"))
+        hands = [r for r in records if "winnings_chips" in r]
+        results = [r["winnings_chips"] / 100 for r in hands]
+        unresolved = sum("interrupted" in r for r in records)
+        rngs = {r.get("game", 0): r["policy_rng"] for r in hands if "policy_rng" in r}
+    initial = len(results)
+    assert initial <= args.hands
+    started = time.monotonic()
+    events, stop = Queue(), Event()
+
+    def play(game, quota):
+        session = requests.Session()
+        session.headers["User-Agent"] = agent
+        native = Native(seed=args.seed + game * 1000003, library=binary)
+        if game in rngs:
+            native.rng.value = rngs[game]
+        token, failure = None, None
+        completed = failures = 0
+
+        def backoff(response, attempt):
+            delay = min(60, 2 ** attempt)
+            if response is not None and response.headers.get("Retry-After"):
+                from email.utils import parsedate_to_datetime
+                value = response.headers["Retry-After"]
+                try:
+                    requested = float(value)
+                except ValueError:
+                    requested = parsedate_to_datetime(value).timestamp() - time.time()
+                delay = max(delay, requested)
+            events.put(("backoff", {"game": game, "seconds": delay,
+                "status": response.status_code if response is not None else None}))
+            stop.wait(delay)
+
+        def post(endpoint, data):
+            for attempt in range(6):
+                if args.request_delay:
+                    time.sleep(args.request_delay)
+                response = session.post(f"https://slumbot.com/slumbot/api/{endpoint}",
+                    json=data, timeout=60)
+                if response.status_code == 429 and attempt < 5:
+                    backoff(response, attempt)
+                    if not stop.is_set():
+                        continue
                 response.raise_for_status()
-                data = response.json()
-                while True:
-                    if "error_msg" in data:
-                        raise RuntimeError("Slumbot returned error_msg")
-                    token = data.get("token", token)
-                    if "winnings" in data:
+                return response.json()
+
+        try:
+            while completed < quota and not stop.is_set():
+                decisions, observed = [], {}
+                try:
+                    stage = "new_hand"
+                    data = post("new_hand", {"token": token} if token else {})
+                    while True:
+                        if "error_msg" in data:
+                            raise RuntimeError("Slumbot returned error_msg")
+                        token = data.get("token", token)
+                        for key in ("hole_cards", "board", "slumbot_hole_cards",
+                                "session_num_hands", "session_total"):
+                            if key in data:
+                                observed[key] = data[key]
+                        if "winnings" in data:
+                            break
+                        state, rows, _ = replay(native, data)
+                        assert state[0] == data["client_pos"], (state, data["action"])
+                        rng_before = native.rng.value
+                        action = native.bot(args.style)
+                        if action < 0:
+                            move = "f"
+                        elif action:
+                            move = f"b{action}"
+                        else:
+                            move = "c" if state[3] > rows[state[0]][3] else "k"
+                        hero = rows[state[0]]
+                        # Only decision-time visible cards enter this trace.
+                        # Opponent revelations belong to the terminal record.
+                        decisions.append({"client_pos": data["client_pos"],
+                            "hole_cards": list(data["hole_cards"]),
+                            "board": list(data["board"]), "action": data["action"],
+                            "street": state[1], "pot_chips": state[2],
+                            "call_chips": min(state[3] - hero[3], hero[0]),
+                            "stack_chips": hero[0], "street_commitment_chips": hero[3],
+                            "high_bet_chips": state[3], "full_raise_increment_chips": state[4],
+                            "legal_abstract_amounts": native.actions(),
+                            "sent": move, "native_action": action,
+                            "policy_rng_before": rng_before, "policy_rng_after": native.rng.value})
+                        stage = "act"
+                        data = post("act", {"token": token, "incr": move})
+                    events.put(("result", {"game": game, "position": data["client_pos"],
+                        "winnings_chips": data["winnings"], "action": data["action"],
+                        "policy_rng": native.rng.value, **observed, "decisions": decisions}))
+                    completed += 1
+                    failures = 0
+                except (requests.RequestException, RuntimeError) as error:
+                    # A failed act may already have been applied. Record it,
+                    # then back off and start a new session without replaying it.
+                    response = getattr(error, "response", None)
+                    status = response.status_code if response is not None else None
+                    event = {"game": game, "type": type(error).__name__,
+                        "stage": stage, "game_hand": completed, "status": status,
+                        **observed, "decisions": decisions}
+                    body = {}
+                    if response is not None:
+                        try:
+                            body = response.json()
+                        except ValueError:
+                            pass
+                    elif isinstance(error, RuntimeError):
+                        body = data
+                    message = body.get("error_msg", body.get("error"))
+                    if message is None and isinstance(error, requests.RequestException):
+                        message = str(error)
+                    if isinstance(message, str):
+                        event["message"] = message.replace(token or "<none>", "<token>")[:500]
+                    if stage == "act":
+                        event.update(action_before=data.get("action"),
+                            client_pos=data.get("client_pos"), sent=move)
+                    events.put(("interrupted", event))
+                    transient = isinstance(error, (requests.ConnectionError, requests.Timeout))
+                    transient |= status in (500, 502, 503, 504)
+                    failures += 1
+                    if not transient or failures >= 6:
+                        failure = event
+                        stop.set()
                         break
-                    state, rows, _ = replay(native, data)
-                    assert state[0] == data["client_pos"], (state, data["action"])
-                    action = native.bot(args.style)
-                    if action < 0:
-                        move = "f"
-                    elif action:
-                        move = f"b{action}"
+                    backoff(response, failures - 1)
+                    token = None
+        finally:
+            session.close()
+        return failure
+
+    active = 0
+
+    def report():
+        elapsed = time.monotonic() - started
+        rate = (len(results) - initial) / elapsed if elapsed else 0
+        eta = (args.hands - len(results)) / rate if rate else None
+        summary = {**metadata, "hands": len(results),
+            "target_reached": len(results) == args.hands,
+            "unresolved_hands": unresolved, "net_bb": sum(results),
+            "bb100": 100 * statistics.mean(results) if results else None,
+            "ci95_half_width_bb100": 196 * statistics.stdev(results) / math.sqrt(len(results))
+                if len(results) > 1 else None,
+            "seconds_this_process": elapsed, "hands_per_second": rate,
+            "eta_seconds": eta, "active_games": active}
+        if unresolved:
+            count = len(results) + unresolved
+            summary["bb100_bounds_for_unresolved"] = [
+                100 * (sum(results) + direction * 200 * unresolved) / count
+                for direction in (-1, 1)]
+        eta_text = f"{eta / 60:.1f} min" if eta is not None else "measuring"
+        line = (f"hands={len(results)}/{args.hands} net_bb={sum(results):.2f} "
+            f"bb100={summary['bb100'] or 0:.2f} active_games={active} "
+            f"unresolved={unresolved} eta={eta_text}")
+        print(line, flush=True)
+        progress.write_text(time.strftime("%Y-%m-%d %H:%M:%S UTC\n", time.gmtime())
+            + line + "\n")
+        return summary
+
+    # SIGINT stops between hands, allowing later concurrency changes without
+    # abandoning an in-flight game. Workers keep independent tokens and RNGs.
+    previous = signal.signal(signal.SIGINT, lambda *_: stop.set())
+    failures = []
+    try:
+        with output.open("a" if args.resume else "x") as log:
+            log.write(json.dumps({"resumed" if args.resume else "metadata": metadata}) + "\n")
+            log.flush()
+            pairs, odd = divmod(args.hands - initial, 2)
+            with ThreadPoolExecutor(max_workers=args.games) as pool:
+                jobs = {}
+                for game in range(args.games):
+                    quota = 2 * (pairs // args.games + (game < pairs % args.games))
+                    quota += odd if game == 0 else 0
+                    if quota:
+                        jobs[pool.submit(play, game, quota)] = game
+                active = len(jobs)
+                for job in jobs:
+                    job.add_done_callback(lambda job: events.put(("done", job)))
+                report()
+                while active:
+                    kind, data = events.get()
+                    if kind == "done":
+                        active -= 1
+                        try:
+                            failure = data.result()
+                        except Exception as error:
+                            failure = {"game": jobs[data], "type": type(error).__name__}
+                            stop.set()
+                        if failure:
+                            failures.append(failure)
+                        continue
+                    if kind == "result":
+                        data["hand"] = len(results)
+                        results.append(data["winnings_chips"] / 100)
+                        log.write(json.dumps(data) + "\n")
                     else:
-                        move = "c" if state[3] > rows[state[0]][3] else "k"
-                    stage = "act"
-                    response = session.post("https://slumbot.com/slumbot/api/act",
-                        json={"token": token, "incr": move}, timeout=60)
-                    response.raise_for_status()
-                    data = response.json()
-                result = {"hand": hand, "position": data["client_pos"],
-                    "winnings_chips": data["winnings"], "action": data["action"]}
-                log.write(json.dumps(result) + "\n")
-                log.flush()
-                results.append(data["winnings"] / 100)
-                if (hand + 1) % 25 == 0:
-                    print(f"style={args.style} hands={hand + 1} "
-                        f"bb100={100 * statistics.mean(results):.2f}", flush=True)
-        except (requests.RequestException, RuntimeError) as error:
-            # An act timeout may occur after the server applied the action.
-            # Preserve completed hands; never retry or invent the missing result.
-            failure = {"type": type(error).__name__, "stage": stage, "hand": hand}
-            log.write(json.dumps({"interrupted": failure}) + "\n")
-        error = (1.96 * statistics.stdev(results) / math.sqrt(len(results))
-                 if len(results) > 1 else None)
-        summary = {**metadata, "hands": len(results), "complete": failure is None,
-                   "bb100": 100 * statistics.mean(results) if results else None,
-                   "ci95_half_width_bb100": None if error is None else 100 * error,
-                   "seconds": time.monotonic() - started}
-        log.write(json.dumps({"summary": summary}) + "\n")
-        print(json.dumps(summary), flush=True)
-    if failure:
-        raise SystemExit(f"Slumbot evaluation incomplete: {failure}")
+                        unresolved += kind == "interrupted"
+                        log.write(json.dumps({kind: data}) + "\n")
+                    log.flush()
+                    if kind == "result" and len(results) % 25 == 0:
+                        report()
+            summary = report()
+            summary["complete"] = summary["target_reached"] and not unresolved and not failures
+            summary["failures"] = failures
+            log.write(json.dumps({"summary": summary}) + "\n")
+            print(json.dumps(summary), flush=True)
+    finally:
+        signal.signal(signal.SIGINT, previous)
+    if failures:
+        raise SystemExit(f"Slumbot evaluation stopped: {failures}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--hands", type=int, default=100)
-    parser.add_argument("--style", type=int, choices=(0, 1, 2), default=1)
+    parser.add_argument("--style", type=int, choices=(0, 1, 2, 3, 4, 5), default=1)
     parser.add_argument("--seed", type=int, default=73)
     parser.add_argument("--output", required=True)
     parser.add_argument("--library")
+    parser.add_argument("--request-delay", type=float, default=0)
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--games", type=int, default=1)
+    parser.add_argument("--contact")
+    parser.add_argument("--progress")
     slumbot(parser.parse_args())

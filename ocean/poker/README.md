@@ -4,8 +4,12 @@ Small C simulator, native rules opponent, acting-seat batch API, and Puffer PPO
 adapter. Compile the same source for 2, 6 or 9 seats. The simulator uses SoA blocks
 of 64 tables, integer chips, bit masks, and a table-free exact hand evaluator.
 There are no allocations during dealing, stepping, observation, or bot inference.
-Simulator state is 84/188/266 bytes per table for 2/6/9 seats; policy and trainer
+Simulator state is 86/190/268 bytes per table for 2/6/9 seats; policy and trainer
 buffers are additional.
+
+Open the [connected working notes](../../reports/poker/index.html) in a browser
+for the starting architecture, decision paths, current Slumbot results, and
+measured throughput. The self-contained HTML page can be refreshed after edits.
 
 Default game: independent 200 BB hands, 50/100 blinds, rotating button, no rake
 or ante. Stacks reset each hand. The kernel accepts unequal starting stacks from
@@ -125,6 +129,75 @@ The fixed initial baseline is style 1: positional/preflop hand features, made
 hands/draws, call-price thresholds and randomized value/semi-bluff sizing. It
 has no search or large tables. Styles 0 and 2 preserve the initial and positional
 pilot variants. Its scores are heuristics, not calibrated equity or GTO claims.
+The [October 17 loss audit](../../reports/poker/index.html#diagnosis) reproduces
+over-folding of strong draws and overpairs in the frozen baseline, and breaks
+down the original 4,000-hand Slumbot sample. The separate
+[native baseline experiment](../../reports/poker/index.html#baselines) compares
+Fullhouse and two defense candidates; see those measurements before choosing a
+replacement. The default remains the original style 1.
+
+### Native Fullhouse and candidate benchmarks
+
+Styles 0/1/2 retain the old policies. Style 3 is a broad defense experiment;
+style 5 makes narrower changes to draws, top pairs/overpairs and AK re-raises.
+Neither candidate is a calibrated equity solver. Style 4 ports the published
+Fullhouse Deep CFR policy, including its five-action abstraction and short-stack
+chart. It supports two or six seats; the published checkpoint was developed for
+six-player play, so heads-up and 200 BB results require separate measurement.
+
+Clone the pinned external source into the ignored build tree and export it:
+
+```sh
+git clone https://github.com/advitrocks9/fullhouse-bot.git build/poker/external/fullhouse-bot
+git -C build/poker/external/fullhouse-bot checkout e504793d480b1b975f25258d25939b45c6dbd5a4
+uv venv build/poker/bench-venv
+uv pip install --python build/poker/bench-venv/bin/python numpy==2.2.6 eval7==0.1.10 requests pokerkit==0.7.7
+OPENBLAS_NUM_THREADS=1 build/poker/bench-venv/bin/python ocean/poker/build_baselines.py
+OPENBLAS_NUM_THREADS=1 build/poker/bench-venv/bin/python ocean/poker/test_baselines.py
+python3 ocean/poker/benchmark.py --hands 60000 --output build/poker/local_baselines
+```
+
+The exporter checks the source revision, records hashes, and embeds 588,180 bytes
+of fp32 weights/tables in each native library. Decision-time inference uses C,
+optional AVX2 and libm; it needs no Python, BLAS, allocations, GPU or network.
+The source license is retained in `third_party/fullhouse-LICENSE.txt`. External
+source and model files stay outside the tracked source tree.
+
+`benchmark.py` rotates the tested policy through every seat on each duplicate
+deal. Intervals use independent deal-block means; candidate differences are
+paired on the same deals and field. It tests original, Fullhouse and mixed
+six-player fields. `--stack 10000` tests 100 BB; `--candidates 1 5 4` selects a
+subset; `--build` selects a frozen build directory. Output directories must be
+new. These opponent fields are baselines, not a validated model of human play.
+
+Fullhouse works with the same Slumbot runner:
+
+```sh
+python3 ocean/poker/eval.py --style 4 --library build/poker/libpoker_fullhouse2.so \
+  --hands 4000 --games 5 --contact https://github.com/FelixAllistar \
+  --output build/poker/slumbot_fullhouse.jsonl
+```
+
+The October 17 experiment stopped its 50-game pilot after connection failures;
+five games then completed cleanly. Logs retain all ambiguous outcomes. An
+unsupported style is rejected before opening an API game.
+
+To embed Fullhouse in the existing PPO environment, build with its generated
+header (replace this absolute example with your build path):
+
+```sh
+NVCC_EXTRA='-DPOKER_FULLHOUSE_MODEL="/home/felix/puffertank/pufferlib/build/poker/baselines_v2/fullhouse_weights.h"' \
+  bash build.sh poker build/poker/puffer_baselines
+```
+
+Use `--env.bot_policy=4` for Fullhouse, or `--env.native_baseline_mask=23` for
+styles 0, 1, 2 and 4 (bit i enables style i). A nonzero mask samples each
+opponent's native style once at table initialization and keeps it across hands.
+Zero preserves the single `bot_policy` selection. The snapshot league accepts
+`--bot-policy` and `--baseline-mask`; `rules_fraction` still controls the native
+baseline fraction versus frozen PufferNet opponents. Those network identities
+are sampled per hand as before. No policy here adapts from cross-hand history;
+learner and frozen-network recurrent state still reset each hand.
 
 ```sh
 python3 ocean/poker/eval.py --hands 1000 --style 1 --seed 991 \
@@ -133,8 +206,25 @@ python3 ocean/poker/eval.py --hands 1000 --style 1 --seed 991 \
 
 Requires `requests` and the native HU library. This plays anonymous live hands
 against Slumbot and saves the binary hash, completed hand actions and raw chip
-returns. HTTP stays outside training. Interrupted runs are marked incomplete;
-ambiguous actions are never retried. The sole completed initial pilot was 100
+returns. Log schema 2 also saves own cards, visible boards, opponent cards when
+revealed, and each decision's public history, chip state, exact action and policy
+RNG before/after sampling. Interrupted attempts retain the same decision trace.
+This supports exact offline replay without exposing future cards to the policy;
+older logs without cards cannot be reconstructed retroactively.
+HTTP stays outside training. `--games 20` runs 20 independent games in
+one client process; each game owns its token, connection and bot RNG. Requests
+within a game are sequential, with no fixed delay by default. `--contact` adds a
+public contact URL to the descriptive User-Agent header. Rate-limit responses
+honor `Retry-After`; transient
+server/transport errors use exponential backoff. Ambiguous actions are never
+replayed: the unresolved hand is logged and play continues in a fresh session.
+Summaries report unresolved counts and worst-case score bounds separately.
+Six consecutive failed hand attempts in a game stop the run. Use `--resume` with the same
+output, style and library to retain completed results and continue to `--hands`
+total hands. Running net BB, BB/100 and ETA print every 25 completed hands and
+are written to a `.progress.txt` file, or the path selected with `--progress`.
+SIGINT drains current hands and then stops, preserving a boundary for resuming.
+The sole completed initial pilot was 100
 hands at −41.4 BB/100, with an approximate 95% half-width of 62.8 BB/100. This
 does not establish opponent strength or a win over Slumbot.
 

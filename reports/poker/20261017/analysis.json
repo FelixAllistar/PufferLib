@@ -1,0 +1,272 @@
+{
+  "log": "reports/poker/20261015/slumbot_style1_seed20261016_paced.jsonl",
+  "log_sha256": "10f0c176075014f07020fefe33ff76be07c9bc65f9f627ab9aae183b9140a591",
+  "library_sha256": "f76875ef0a369a41e6bed23f23a64a27785742f6239301fa3b436b79be8bb51a",
+  "completed_hands": 4000,
+  "net_bb": -2687.77,
+  "coverage": {
+    "hands_with_hole_cards": 0,
+    "hands_with_board": 0
+  },
+  "unresolved_attempts": 23,
+  "audit": {
+    "actions_legally_replayed": 16836,
+    "fold_payoffs_checked": 3574,
+    "showdown_stakes_checked": 426,
+    "mismatches": [],
+    "limit": "No historical cards: cannot verify showdown winners or individual decision EV."
+  },
+  "by_position": {
+    "0": {
+      "hands": 2015,
+      "net_bb": -1791.71,
+      "bb100": -88.91861042183623
+    },
+    "1": {
+      "hands": 1985,
+      "net_bb": -896.06,
+      "bb100": -45.14156171284635
+    }
+  },
+  "by_outcome": {
+    "hero_folds_flop": {
+      "hands": 496,
+      "net_bb": -1262.58,
+      "bb100": -254.55241935483872
+    },
+    "hero_folds_preflop": {
+      "hands": 1675,
+      "net_bb": -1801.5,
+      "bb100": -107.55223880597015
+    },
+    "hero_folds_river": {
+      "hands": 180,
+      "net_bb": -646.35,
+      "bb100": -359.0833333333333
+    },
+    "hero_folds_turn": {
+      "hands": 378,
+      "net_bb": -1030.15,
+      "bb100": -272.52645502645504
+    },
+    "showdown_loss": {
+      "hands": 185,
+      "net_bb": -3627.98,
+      "bb100": -1961.0702702702702
+    },
+    "showdown_tie": {
+      "hands": 24,
+      "net_bb": 0.0,
+      "bb100": 0.0
+    },
+    "showdown_win": {
+      "hands": 217,
+      "net_bb": 3120.75,
+      "bb100": 1438.1336405529953
+    },
+    "slumbot_folds_flop": {
+      "hands": 190,
+      "net_bb": 584.5,
+      "bb100": 307.63157894736844
+    },
+    "slumbot_folds_preflop": {
+      "hands": 400,
+      "net_bb": 323.5,
+      "bb100": 80.875
+    },
+    "slumbot_folds_river": {
+      "hands": 113,
+      "net_bb": 1023.53,
+      "bb100": 905.7787610619469
+    },
+    "slumbot_folds_turn": {
+      "hands": 142,
+      "net_bb": 628.51,
+      "bb100": 442.61267605633805
+    }
+  },
+  "facing_bet": {
+    "preflop": {
+      "decisions": 4238,
+      "folds": 1675,
+      "fold_percent": 39.52336007550731
+    },
+    "flop": {
+      "decisions": 585,
+      "folds": 496,
+      "fold_percent": 84.78632478632478
+    },
+    "turn": {
+      "decisions": 481,
+      "folds": 378,
+      "fold_percent": 78.58627858627858
+    },
+    "river": {
+      "decisions": 280,
+      "folds": 180,
+      "fold_percent": 64.28571428571429
+    }
+  },
+  "hero_actions": {
+    "preflop_b": 1314,
+    "flop_k": 1405,
+    "turn_c": 82,
+    "river_b": 271,
+    "preflop_f": 1675,
+    "preflop_c": 1249,
+    "flop_f": 496,
+    "flop_c": 76,
+    "turn_k": 638,
+    "turn_b": 302,
+    "river_c": 67,
+    "flop_b": 408,
+    "river_k": 295,
+    "turn_f": 378,
+    "river_f": 180
+  },
+  "opportunities": {
+    "vpip_hands": 2462,
+    "preflop_raise_hands": 1306,
+    "face_preflop_raise": 1937,
+    "fold_to_preflop_raise": 1028,
+    "three_bet": 36
+  },
+  "synthetic_frozen_bot_probes": [
+    {
+      "name": "nut_flush_draw_small_bet",
+      "client_pos": 1,
+      "hole_cards": [
+        "Ah",
+        "Kh"
+      ],
+      "board": [
+        "Qh",
+        "7h",
+        "2c"
+      ],
+      "action": "b250b2000c/b100",
+      "pot_before_call_chips": 4100,
+      "call_chips": 100,
+      "call_price": 0.023809523809523808,
+      "actions_over_1000_rng_states": {
+        "-1": 1000
+      }
+    },
+    {
+      "name": "aces_dry_flop_pot_bet",
+      "client_pos": 1,
+      "hole_cards": [
+        "As",
+        "Ad"
+      ],
+      "board": [
+        "Kh",
+        "7c",
+        "2d"
+      ],
+      "action": "b250c/b500",
+      "pot_before_call_chips": 1000,
+      "call_chips": 500,
+      "call_price": 0.3333333333333333,
+      "actions_over_1000_rng_states": {
+        "-1": 1000
+      }
+    },
+    {
+      "name": "ak_offsuit_vs_open",
+      "client_pos": 0,
+      "hole_cards": [
+        "As",
+        "Kd"
+      ],
+      "board": [],
+      "action": "b250",
+      "pot_before_call_chips": 350,
+      "call_chips": 150,
+      "call_price": 0.3,
+      "actions_over_1000_rng_states": {
+        "0": 1000
+      }
+    }
+  ],
+  "largest_losses": [
+    {
+      "game": 11,
+      "position": 1,
+      "winnings_chips": -20000,
+      "action": "b250c/kb333c/kb777c/kb1813b7640b18640c",
+      "policy_rng": 2683715015664107250,
+      "hand": 1163
+    },
+    {
+      "game": 9,
+      "position": 0,
+      "winnings_chips": -20000,
+      "action": "b200c/b266c/kk/b621b2234b5834b19534c",
+      "policy_rng": 11516014562447333998,
+      "hand": 1275
+    },
+    {
+      "game": 17,
+      "position": 1,
+      "winnings_chips": -20000,
+      "action": "b250c/kk/kk/kb333b1250b3250b13250b19750c",
+      "policy_rng": 11971326613815531568,
+      "hand": 1521
+    },
+    {
+      "game": 2,
+      "position": 1,
+      "winnings_chips": -20000,
+      "action": "b250b750c/kk/kb1000b3750b9750b19250c/",
+      "policy_rng": 13518958454085319363,
+      "hand": 2112
+    },
+    {
+      "game": 7,
+      "position": 1,
+      "winnings_chips": -20000,
+      "action": "b250c/kb333c/kb777c/kb1813b8990b18640c",
+      "policy_rng": 13366190210799210410,
+      "hand": 2225
+    },
+    {
+      "game": 20,
+      "position": 1,
+      "winnings_chips": -20000,
+      "action": "b250b750c/kb1000c/kb2333c/kb5444b15917c",
+      "policy_rng": 16972713674236275013,
+      "hand": 3167
+    },
+    {
+      "game": 22,
+      "position": 1,
+      "winnings_chips": -20000,
+      "action": "b250c/kb333c/kk/b917b2917b12917b19417c",
+      "policy_rng": 7305991997281412519,
+      "hand": 3370
+    },
+    {
+      "game": 48,
+      "position": 0,
+      "winnings_chips": -18900,
+      "action": "b200c/b266c/b621c/b1449b7013b17813c",
+      "policy_rng": 12952619980460301422,
+      "hand": 3569
+    },
+    {
+      "hand": 370,
+      "position": 0,
+      "winnings_chips": -16800,
+      "action": "b200b600c/b800c/b1866b5800c/b9600c",
+      "policy_rng": 14870800104486544425
+    },
+    {
+      "hand": 630,
+      "position": 0,
+      "winnings_chips": -15243,
+      "action": "b200c/b266b1000b2600c/b3733c/b8710c",
+      "policy_rng": 476432721097544588
+    }
+  ]
+}

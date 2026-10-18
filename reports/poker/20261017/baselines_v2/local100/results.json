@@ -1,0 +1,490 @@
+[
+  {
+    "label": "2p_style1_vs_original",
+    "players": 2,
+    "hero_style": 1,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 30000,
+    "bb100": 3.991717,
+    "ci95_half_width_bb100": 4.390563,
+    "seconds": 0.031404,
+    "decisions": 215636,
+    "decisions_per_second": 6866416.3,
+    "hands_per_second": 1910557.5,
+    "faced": [
+      52829,
+      4284,
+      3452,
+      3145
+    ],
+    "folds": [
+      19256,
+      3509,
+      2228,
+      1374
+    ],
+    "policy_decisions": [
+      0,
+      215636,
+      0,
+      0,
+      0,
+      0
+    ],
+    "opponents": [
+      1
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench2",
+      "1",
+      "1",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/2p_style1_vs_original.csv",
+      "2p_style1_vs_original"
+    ]
+  },
+  {
+    "label": "2p_style4_vs_original",
+    "players": 2,
+    "hero_style": 4,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 30000,
+    "bb100": 33.346617,
+    "ci95_half_width_bb100": 7.706192,
+    "seconds": 3.259924,
+    "decisions": 263160,
+    "decisions_per_second": 80725.8,
+    "hands_per_second": 18405.3,
+    "faced": [
+      53733,
+      5700,
+      5033,
+      4382
+    ],
+    "folds": [
+      6136,
+      2094,
+      2218,
+      1938
+    ],
+    "policy_decisions": [
+      0,
+      139972,
+      0,
+      0,
+      123188,
+      0
+    ],
+    "opponents": [
+      1
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench2",
+      "4",
+      "1",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/2p_style4_vs_original.csv",
+      "2p_style4_vs_original"
+    ]
+  },
+  {
+    "label": "2p_style1_vs_fullhouse",
+    "players": 2,
+    "hero_style": 1,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 30000,
+    "bb100": -34.3382,
+    "ci95_half_width_bb100": 7.951878,
+    "seconds": 3.033422,
+    "decisions": 262818,
+    "decisions_per_second": 86640.8,
+    "hands_per_second": 19779.6,
+    "faced": [
+      62627,
+      12128,
+      5000,
+      4313
+    ],
+    "folds": [
+      24045,
+      10079,
+      3429,
+      2602
+    ],
+    "policy_decisions": [
+      0,
+      139673,
+      0,
+      0,
+      123145,
+      0
+    ],
+    "opponents": [
+      4
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench2",
+      "1",
+      "4",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/2p_style1_vs_fullhouse.csv",
+      "2p_style1_vs_fullhouse"
+    ]
+  },
+  {
+    "label": "2p_style4_vs_fullhouse",
+    "players": 2,
+    "hero_style": 4,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 30000,
+    "bb100": 0.416667,
+    "ci95_half_width_bb100": 12.146297,
+    "seconds": 8.620721,
+    "decisions": 371718,
+    "decisions_per_second": 43119.1,
+    "hands_per_second": 6960.0,
+    "faced": [
+      65870,
+      19735,
+      10667,
+      8547
+    ],
+    "folds": [
+      8164,
+      7268,
+      4687,
+      4146
+    ],
+    "policy_decisions": [
+      0,
+      0,
+      0,
+      0,
+      371718,
+      0
+    ],
+    "opponents": [
+      4
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench2",
+      "4",
+      "4",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/2p_style4_vs_fullhouse.csv",
+      "2p_style4_vs_fullhouse"
+    ]
+  },
+  {
+    "label": "6p_style1_vs_original",
+    "players": 6,
+    "hero_style": 1,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 10000,
+    "bb100": 1.169217,
+    "ci95_half_width_bb100": 4.088568,
+    "seconds": 0.041869,
+    "decisions": 503946,
+    "decisions_per_second": 12036373.2,
+    "hands_per_second": 1433055.1,
+    "faced": [
+      60575,
+      1670,
+      1613,
+      1421
+    ],
+    "folds": [
+      45125,
+      1316,
+      993,
+      570
+    ],
+    "policy_decisions": [
+      0,
+      503946,
+      0,
+      0,
+      0,
+      0
+    ],
+    "opponents": [
+      1
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench6",
+      "1",
+      "1",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/6p_style1_vs_original.csv",
+      "6p_style1_vs_original"
+    ]
+  },
+  {
+    "label": "6p_style4_vs_original",
+    "players": 6,
+    "hero_style": 4,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 10000,
+    "bb100": -6.84135,
+    "ci95_half_width_bb100": 7.657058,
+    "seconds": 2.294203,
+    "decisions": 516551,
+    "decisions_per_second": 225154.8,
+    "hands_per_second": 26152.9,
+    "faced": [
+      59586,
+      2330,
+      2271,
+      1809
+    ],
+    "folds": [
+      40162,
+      995,
+      1076,
+      895
+    ],
+    "policy_decisions": [
+      0,
+      428962,
+      0,
+      0,
+      87589,
+      0
+    ],
+    "opponents": [
+      1
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench6",
+      "4",
+      "1",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/6p_style4_vs_original.csv",
+      "6p_style4_vs_original"
+    ]
+  },
+  {
+    "label": "6p_style1_vs_fullhouse",
+    "players": 6,
+    "hero_style": 1,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 10000,
+    "bb100": 4.331883,
+    "ci95_half_width_bb100": 7.372809,
+    "seconds": 15.233971,
+    "decisions": 607182,
+    "decisions_per_second": 39857.1,
+    "hands_per_second": 3938.6,
+    "faced": [
+      64591,
+      4013,
+      2056,
+      1783
+    ],
+    "folds": [
+      48205,
+      3135,
+      1296,
+      960
+    ],
+    "policy_decisions": [
+      0,
+      90068,
+      0,
+      0,
+      517114,
+      0
+    ],
+    "opponents": [
+      4
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench6",
+      "1",
+      "4",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/6p_style1_vs_fullhouse.csv",
+      "6p_style1_vs_fullhouse"
+    ]
+  },
+  {
+    "label": "6p_style4_vs_fullhouse",
+    "players": 6,
+    "hero_style": 4,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 10000,
+    "bb100": -2.944967,
+    "ci95_half_width_bb100": 11.321074,
+    "seconds": 15.555786,
+    "decisions": 639345,
+    "decisions_per_second": 41100.1,
+    "hands_per_second": 3857.1,
+    "faced": [
+      64800,
+      7078,
+      4133,
+      3059
+    ],
+    "folds": [
+      41271,
+      2863,
+      1802,
+      1531
+    ],
+    "policy_decisions": [
+      0,
+      0,
+      0,
+      0,
+      639345,
+      0
+    ],
+    "opponents": [
+      4
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench6",
+      "4",
+      "4",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/6p_style4_vs_fullhouse.csv",
+      "6p_style4_vs_fullhouse"
+    ]
+  },
+  {
+    "label": "6p_style1_vs_mixed",
+    "players": 6,
+    "hero_style": 1,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 10000,
+    "bb100": -0.821733,
+    "ci95_half_width_bb100": 6.61046,
+    "seconds": 5.688866,
+    "decisions": 549667,
+    "decisions_per_second": 96621.5,
+    "hands_per_second": 10546.9,
+    "faced": [
+      63907,
+      2701,
+      1888,
+      1516
+    ],
+    "folds": [
+      48289,
+      2103,
+      1148,
+      708
+    ],
+    "policy_decisions": [
+      99176,
+      172565,
+      99324,
+      0,
+      178602,
+      0
+    ],
+    "opponents": [
+      0,
+      1,
+      2,
+      4,
+      4
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench6",
+      "1",
+      "0,1,2,4,4",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/6p_style1_vs_mixed.csv",
+      "6p_style1_vs_mixed"
+    ]
+  },
+  {
+    "label": "6p_style4_vs_mixed",
+    "players": 6,
+    "hero_style": 4,
+    "seed": 202610173,
+    "stack_bb": 100.0,
+    "hands": 60000,
+    "duplicate_blocks": 10000,
+    "bb100": 3.1653,
+    "ci95_half_width_bb100": 9.677973,
+    "seconds": 13.050704,
+    "decisions": 566950,
+    "decisions_per_second": 43442.1,
+    "hands_per_second": 4597.5,
+    "faced": [
+      62085,
+      4098,
+      2891,
+      2091
+    ],
+    "folds": [
+      42574,
+      1794,
+      1331,
+      1006
+    ],
+    "policy_decisions": [
+      102798,
+      86160,
+      100590,
+      0,
+      277402,
+      0
+    ],
+    "opponents": [
+      0,
+      1,
+      2,
+      4,
+      4
+    ],
+    "command": [
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench6",
+      "4",
+      "0,1,2,4,4",
+      "60000",
+      "202610173",
+      "10000",
+      "reports/poker/20261017/baselines_v2/local100/6p_style4_vs_mixed.csv",
+      "6p_style4_vs_mixed"
+    ]
+  }
+]

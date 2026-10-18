@@ -32,5 +32,6 @@ if [[ "${1:-}" == --test ]]; then
         -lm -o build/poker/test_policy
     build/poker/test_policy
     build/poker/test_adapter build/poker/test_league.txt
+    "${POKER_PYTHON:-python3}" ocean/poker/test_eval.py
     "${POKER_PYTHON:-python3}" ocean/poker/verify.py
 fi

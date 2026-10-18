@@ -9,7 +9,8 @@ int main(int argc, char** argv) {
     dict_set(&vk, "num_policies", 1);
     dict_set(&ek, "num_players", POKER_PLAYERS);
     dict_set(&ek, "starting_stack", 20000);
-    dict_set(&ek, "bot_policy", 1);
+    dict_set(&ek, "bot_policy", argc > 3 ? atoi(argv[3]) : 1);
+    dict_set(&ek, "native_baseline_mask", argc > 4 ? atoi(argv[4]) : 0);
     dict_set(&ek, "seed", 73);
     dict_set(&ek, "rules_fraction", 0.25);
     dict_set_str(&ek, "native_league", argc > 1 ? argv[1] : "None");
@@ -18,11 +19,13 @@ int main(int argc, char** argv) {
     float observations[128][OBS_SIZE], actions[128], rewards[128], terminals[128];
     uint8_t masks[128][POKER_ACTIONS];
     uint64_t rng = 91;
+    uint8_t baseline_styles[128][POKER_PLAYERS];
     assert(size == 128 && counts[0] == 64 && starts[1] == 64);
     for (int i = 0; i < size; i++) {
         envs[i].agents[0] = (Agent){observations[i], actions + i,
             rewards + i, terminals + i, masks[i], 0};
         envs[i].tag = 0; // Trainer owns this field and writes policy-group tags.
+        memcpy(baseline_styles[i], envs[i].baseline_styles, POKER_PLAYERS);
         puf_reset(envs + i);
     }
     int finished = 0;
@@ -38,6 +41,7 @@ int main(int argc, char** argv) {
             } while (!masks[i][a]);
             actions[i] = a;
             puf_step(envs + i);
+            assert(!memcmp(baseline_styles[i], envs[i].baseline_styles, POKER_PLAYERS));
             assert(isfinite(rewards[i]));
             assert(terminals[i] || rewards[i] == 0);
             finished += terminals[i] != 0;

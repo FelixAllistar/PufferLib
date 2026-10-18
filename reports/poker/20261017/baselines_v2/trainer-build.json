@@ -1,0 +1,21 @@
+{
+  "binary": "build/poker/puffer_baselines",
+  "sha256": "bf22d8a7b1431b6d0ae3fb1fd4fecbf01694180f10981803918fe994a156ff1e",
+  "weights_header": "build/poker/baselines_v2/fullhouse_weights.h",
+  "training_started": false,
+  "cpu": "Intel Core i5-7400 @ 3.00GHz",
+  "adapter_validation": {
+    "mixed_styles_mask": 23,
+    "learner_decisions": 12800,
+    "terminal_hands": 7109,
+    "asan_ubsan_pass": true,
+    "style5_learner_decisions": 12800,
+    "style5_terminal_hands": 8222,
+    "persistent_styles_checked": true
+  },
+  "source_sha256": {
+    "poker.h": "fc23ce1be1d340b4fcbb71d03882c30840e1c8e4006f0a0dad6f529cd6a568c3",
+    "league.py": "9267a92eec2e5b7ed4b2ad38aa51ad40873140659552f99fc39b040a4b80d5ce",
+    "test_adapter.c": "7935a10aad6968eaba4c2b49fa37dc6391b60b14e885991671a2491ae850e282"
+  }
+}
