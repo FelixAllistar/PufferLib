@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v32 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v33 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -998,6 +998,24 @@ used by visibility, holds the squad at staging for the inter-room charge, faces
 the charge before triggering, covers the opening and recalls the team afterward.
 These driver behaviors are not player assistance. Protected casualties fail the
 scenario immediately rather than waiting until debrief.
+**Pick lock** and **Wedge door** name the visible door and send one capable
+officer from the selected team. Recon and Control carry picks; Entry needs its
+breaching tools. Wedges use the assigned officer's finite stock. Queued orders
+retain the door identity until Execute. The officer approaches a supported work
+position, aims and holds the ordinary tool in physical reach. A gunshot pauses
+work, Hold cancels it, and completion returns the officer to Hold. A blocked ray
+cannot work on a different door. Human takeover cancels queued work.
+`make -C ocean/swat squad-equipment-test` checks capability, stock, cover,
+queue/Execute, cancellation, interruption and target identity without a window.
+`squad-equipment-network-test` checks the authored motel door over real UDP,
+including late human takeover. Native socket checks use
+`bash ocean/swat/run-windows-network-test.sh build/swat/windows/test_encounter.exe equipment-network`.
+`motel-squad-equipment-test` adds queued wedge placement, ordinary removal and checkpoint/restore to the
+full quiet restraint/retrieval/escort mission. The QA executable accepts
+`equipment`. These commands do not implement comprehensive room searches.
+The door references use protocol/replay v33; use matching peers and recreate
+older journals/saves.
+
 Parking stops retain their full mesh collision. NPC navigation treats them as
 permanent obstacles and routes around the raised lip and the space beneath it.
 Captured crowded extraction fixtures retain stance, grounded state and velocity;
@@ -1116,7 +1134,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 31) and the same generated
+Saves require this network/replay version (currently 33) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -1236,7 +1254,7 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **31**; older clients and
+breach. The network geometry contract is version **33**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The motel's east wire fence has actual openings for bullets and porous sound
@@ -1524,8 +1542,8 @@ The original 18-tool source archive is stored once for reuse, alongside compact
 editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
-state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 32 as described above.
+state digests differ. That import used snapshot version 18; the
+current protocol requires version 33 as described above.
 The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
 stands on its eight original skid contacts beside the maintenance shed. Its
 unchanged 2,908-triangle GLB supplies a steel body and two independently removable

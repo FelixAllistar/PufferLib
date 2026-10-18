@@ -167,7 +167,7 @@ bool swat_sim_set_player(SwatSim* s, int slot, bool present) {
     SwatActor* actor=&s->actors[index];
     bool replace_bot=!present && s->config.tactical_rules && slot>0 && slot<=s->config.squad_bots;
     if(actor->present==present && !replace_bot) {
-        if(present){actor->mind.bot=false;actor->mind.pending_order=0;actor->mind.pending_actor=0;actor->mind.queued=false;}
+        if(present){actor->mind.bot=false;actor->mind.pending_order=0;actor->mind.pending_actor=0;actor->mind.pending_door=0;actor->mind.queued=false;}
         return true;
     }
     if(actor->present) b3DestroyBody(actor->controller.body.body);

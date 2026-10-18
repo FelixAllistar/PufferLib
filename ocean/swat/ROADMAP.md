@@ -27,8 +27,9 @@ that complete objective active until every acceptance requirement is verified.
 
 Acceptance work still open:
 
-- Extend squad task completion to room searches, equipment orders and varied
-  occupied layouts, beyond directed restraint, weapon retrieval, recall and escort.
+- Extend squad task completion to room searches, further equipment roles and
+  varied occupied layouts, beyond directed restraint/retrieval, door picks/wedges,
+  recall and escort.
 - Extend hostile-fire squad coordination beyond the inter-room sequence with
   staging holds during demolition. Following officers can cross the commander's
   firing line, and exploratory all-follow runs lost the commander or an officer.
@@ -48,6 +49,47 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+
+Squad door equipment (2026-10-17): Pick lock and Wedge door now select one
+capable officer from the requested team, preserving the visible door and reported
+point through the radio delay and queued Execute. Recon and Control carry picks;
+Entry does not. Human and bot tools share this capability check. Wedges consume
+the selected officer's stock. Supported work positions, ordinary navigation,
+aimed hand rays and held tool durations perform the work. An unrelated door
+cannot accept the assigned tool; Hold cancels, gunshot attention pauses, visible
+threats take priority and human takeover cancels queued work. Other officers keep
+their orders. Completion returns the operator to Hold.
+
+Protocol/replay v33 now carries active/queued door references. Scalar decode and
+map-aware application reject invalid/non-door targets before mutation. Matching
+peers and new journals/saves are required. Clean 23-core/13-view-unit builds cover
+both platforms, including the player, server, replay/performance tools and ten
+QA executables per platform. No graphics window or performance tool is run.
+Both platforms pass 122 broad headless groups. Thirteen equipment cases match all
+3,944 state samples and 136 direct-map/encoded-snapshot roundtrips per platform.
+One negative case directly exercises the tool API against another door; these
+samples are not all independent simulation ticks. The existing frontend input
+suite retains 78 matching states and byte-identical 60-frame journals.
+Real motel UDP checks replicate queued Pick, physically unlock the authored leaf,
+cancel queued work when a human joins, and give the remaining officer one wedge
+placement. Three semantic milestones match across platforms. Native transport
+uses the existing approved executable path and restores the ordinary network QA
+tool under the same lock; five isolated wrapper cases cover that behavior.
+
+The full quiet front route finishes in 25,515 ticks with two arrests, three
+evacuations, both weapons, squad regroup and no casualties/unlawful force. It
+adds a queued wedge with checkpoint/restore, physical placement and ordinary
+human removal. The hostile inter-room/exterior routes retain their 20,268/9,637
+tick results with two lawful suspect deaths each and no protected casualties.
+All three pass full replay, mid-run resume and fresh replicas; native shipping
+replay matches all 55,420 mission frames and the 23,337-frame queued-wedge prefix.
+Motel doors start unlocked, so locked-door Pick remains covered by explicit
+fixtures. An initial
+mission plan also correctly paused work on sight of an unresolved armed suspect;
+the accepted equipment plan accounts for occupants first. Room search, broader
+moving coverage and final visual/performance acceptance remain open. Evidence:
+`tests/receipts/squad-equipment-2026-10-17.json`. The full-slice goal remains
+active and heavy performance testing remains held.
 
 Frontend command delivery (2026-10-17): squad selections survive render-only
 frames and failed input enqueue. They retain the selected team/queue choice and

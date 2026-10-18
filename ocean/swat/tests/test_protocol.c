@@ -25,7 +25,36 @@ static void static_obstacles(const SwatMap* source) {
     }
     puts("PASS static obstacle maps: permanent props roundtrip; breakable, supported, thin, grouped, door and fractured impostors are rejected without mutation");
 }
+static void directed_doors(void) {
+    static SwatSim authority,replica;static SwatMap map,decoded_map;static SwatSnapshot state,decoded,before,after,invalid,untouched;
+    static unsigned char bytes[SWAT_NET_PACKET_MAX],original[SWAT_NET_PACKET_MAX];
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_HOUSE;cfg.randomize=false;cfg.hostile_fire=false;swat_config_human(&cfg);
+    swat_sim_init(&authority,cfg,42);int door=-1,wall=-1;
+    for(int i=1;i<authority.world.count;i++)if(authority.world.objects[i].door)door=i;else if(wall<0)wall=i;
+    assert(door>0 && wall>0);
+    authority.actors[3].mind.order=SWAT_ORDER_PICK;authority.actors[3].mind.order_door=door;
+    authority.actors[3].mind.pending_order=SWAT_ORDER_WEDGE;authority.actors[3].mind.pending_door=door;authority.actors[3].mind.queued=true;
+    swat_capture_map(&authority,1,&map);size_t n=swat_encode_map(bytes,sizeof(bytes),&map);assert(n && swat_decode_map(&decoded_map,bytes,n));swat_apply_map(&replica,&decoded_map);
+    swat_capture_snapshot(&authority,1,&state);n=swat_encode_snapshot(bytes,sizeof(bytes),&state);assert(n && swat_decode_snapshot(&decoded,bytes,n));
+    assert(decoded.actors[3].mind.order_door==door && decoded.actors[3].mind.pending_door==door && swat_apply_snapshot(&replica,&decoded));
+    swat_capture_snapshot(&replica,1,&before);size_t original_size=swat_encode_snapshot(original,sizeof(original),&before);assert(original_size);
+    for(int field=0;field<2;field++)for(int fault=0;fault<4;fault++) {
+        invalid=state;int value=fault==0?wall:fault==1?authority.world.count:fault==2?-1:SWAT_MAX_OBJECTS;
+        if(field)invalid.actors[3].mind.pending_door=value;else invalid.actors[3].mind.order_door=value;
+        invalid.objects[door].locked=!state.objects[door].locked;invalid.tick+=20;
+        n=swat_encode_snapshot(bytes,sizeof(bytes),&invalid);assert(n);
+        if(fault>=2) {
+            untouched=decoded;
+            assert(!swat_decode_snapshot(&decoded,bytes,n) && !memcmp(&decoded,&untouched,sizeof(decoded)));
+        } else {assert(swat_decode_snapshot(&decoded,bytes,n));assert(!swat_apply_snapshot(&replica,&decoded));}
+        swat_capture_snapshot(&replica,1,&after);size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&after);
+        assert(size==original_size && !memcmp(bytes,original,size));
+    }
+    swat_sim_close(&replica);swat_sim_close(&authority);
+    puts("PASS directed door state: active/queued identities survive encoded map/snapshot rebuild; invalid, absent and non-door references reject atomically");
+}
 int main(void) {
+    directed_doors();
     static unsigned char bytes[SWAT_NET_PACKET_MAX],bad[SWAT_NET_PACKET_MAX];
     SwatCommand command={4,99,swat_neutral_input()};
     command.input.forward=1; command.input.yaw_delta=.2f; command.input.fire=true; command.input.weapon=2;

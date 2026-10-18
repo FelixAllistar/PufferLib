@@ -42,7 +42,8 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
             }
             break;
         case SWAT_CONTEXT_LOCKED:
-            action=context.ready ? "Hold [RMB] Pick lock" : "Locked / move closer";
+            action=!swat_kit(actor->gear.kit)->lockpicks ? "Locked / breach required" :
+                (context.ready ? "Hold [RMB] Pick lock" : "Locked / move closer");
             if(context.ready && swat_kit(actor->gear.kit)->optiwand) detail="[G] Mirror under door";
             break;
         case SWAT_CONTEXT_WEDGED: action="Door wedged / [Alt+9] Remove"; break;

@@ -10,9 +10,9 @@ shift
 SWAT_TEST_TRANSIENT=0
 case "$(basename -- "$SWAT_TEST_CANDIDATE")" in
     test_net.exe|test_net_*.exe|test_net-*.exe) SWAT_TEST_NAME=test_net.exe ;;
-    test_frontend_input.exe) SWAT_TEST_NAME=test_net.exe; SWAT_TEST_TRANSIENT=1 ;;
+    test_frontend_input.exe|test_encounter.exe) SWAT_TEST_NAME=test_net.exe; SWAT_TEST_TRANSIENT=1 ;;
     test_wall_support.exe|test_wall_support_*.exe|test_wall_support-*.exe) SWAT_TEST_NAME=test_wall_support.exe ;;
-    *) printf 'Expected a native test_net, test_frontend_input or test_wall_support executable.\n' >&2; exit 2 ;;
+    *) printf 'Expected a native test_net, test_frontend_input, test_encounter or test_wall_support executable.\n' >&2; exit 2 ;;
 esac
 [[ -f $SWAT_TEST_CANDIDATE && -x $SWAT_TEST_CANDIDATE ]] || {
     printf 'Native test executable is missing or not executable: %s\n' "$SWAT_TEST_CANDIDATE" >&2
@@ -41,7 +41,7 @@ swat_test_cleanup() {
     return "$result"
 }
 trap swat_test_cleanup EXIT
-# Frontend transport checks share the approved network-test path temporarily.
+# Focused transport checks share the approved network-test path temporarily.
 # Restore its ordinary QA executable before releasing the same lock.
 if [[ $SWAT_TEST_TRANSIENT == 1 ]]; then
     if [[ -f $SWAT_TEST_STABLE ]]; then

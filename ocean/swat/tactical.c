@@ -96,6 +96,7 @@ SwatContext swat_context(const SwatSim* s,int actor) {
             (door->door_open ? SWAT_CONTEXT_CLOSE : SWAT_CONTEXT_OPEN));
         out.ready=out.hit.distance<=(door->locked ? 1.7f : 2.2f);
         if(door->locked && (door->door_open || door->door_angle>=.01f)) out.ready=false;
+        if(door->locked && !swat_kit(s->actors[actor].gear.kit)->lockpicks)out.ready=false;
     } else {
         const SwatActor* target=&s->actors[out.hit.index];
         out.action=target->gear.restrained ? SWAT_CONTEXT_SECURED :
@@ -139,6 +140,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
     bool allowed=a->alive && a->role==SWAT_OFFICER && !g->inspecting && !g->stunned_ticks &&
         !g->restrained && !g->surrendered && !g->cuff_ticks && !g->throw_cooldown && g->taser_cooldown<=150 &&
         !swat_weapons_busy(&a->arsenal);
+    if(mode==SWAT_LOCKPICK && !swat_kit(g->kit)->lockpicks)allowed=false;
     if(mode>SWAT_DOOR_NONE && mode<SWAT_DOOR_TOOLS) in->fire=in->reload=in->melee=false;
     if(mode==SWAT_DOOR_NONE || mode!=previous)g->door_completed=false;
     if(allowed && mode==SWAT_DETONATE_CHARGE && !g->door_completed) {
@@ -163,6 +165,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
         (mode==SWAT_LOCKPICK ? door->locked : mode==SWAT_PLACE_CHARGE ? ((door->door ? g->breaching_charges : g->wall_charges)>0 && door->max_health>0) :
          mode==SWAT_WEDGE ? (!swat_door_dynamic(door) && door->wedge_owner<0 && g->wedges>0) : mode==SWAT_REMOVE_WEDGE ? door->wedge_owner>=0 :
          (door->trapped && (door->trap_known&(1u<<actor))));
+    if(a->mind.bot && (a->mind.order==SWAT_ORDER_PICK || a->mind.order==SWAT_ORDER_WEDGE) && hit.index!=a->mind.order_door)usable=false;
     if(!usable) { g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return; }
     if(g->door_target!=hit.index || g->door_mode!=mode) g->door_ticks=0;
     g->door_target=hit.index; g->door_mode=mode;
