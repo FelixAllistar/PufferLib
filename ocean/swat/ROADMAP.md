@@ -29,9 +29,10 @@ Acceptance work still open:
 
 - Extend squad task completion to room searches, equipment orders and varied
   occupied layouts, beyond directed restraint, weapon retrieval, recall and escort.
-- Reaccept combined hostile-fire squad restraints/retrieval and escort coverage
-  between rooms. An exploratory inter-room run lost the commander; that combined
-  case is not covered by the successful ordinary combat approaches.
+- Extend hostile-fire squad coordination beyond the inter-room sequence with
+  staging holds during demolition. Following officers can cross the commander's
+  firing line, and exploratory all-follow runs lost the commander or an officer.
+  Broader moving coverage and autonomous protection around equipment remain open.
 - Verify repeated/rejected directed commands in the frontend, including render
   frames without a simulation tick and remote acknowledgements.
 - Isolate ordinary controller contacts at wheel-stop lips. A discarded planner
@@ -47,6 +48,37 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+
+Squad gunshot attention and combined hostile QA (2026-10-17): officers turn
+toward propagated gunshots using only a coarse bearing. Attention expires after
+90 ticks, including while stunned. Formation movement continues beneath the
+bounded view turn; restraints and weapon retrieval pause and then resume.
+Hearing never supplies a shooter identity or hidden position, and actual shots
+still require visual confirmation and the ordinary aimed firing-line check.
+Eight focused cases cover hearing versus footsteps, opaque cover, civilian
+protection, lawful return fire after cover clears, formation movement, retrieval
+resumption and stun expiry. All 1,950 state hashes match across Linux/Windows,
+with 65 fresh map/encoded snapshot checks per platform. The clean v32 tools pass
+108 headless groups per platform, including real UDP and twelve matching encoded
+motel states. One earlier UDP synchronization failure is retained; these checks
+do not qualify adverse-load or packet-loss behavior.
+
+The level-aware QA commander now responds to observed gunfire and visible raised
+weapons aimed at the team, keeps observed threats while visible and armed, and
+aims at the actual exposed perception point. It walks at the existing formation
+pace during hostile delegated-task runs, holds the team at extraction before the
+inter-room charge, faces the charge before triggering, covers the opening and
+recalls officers afterward. These are ordinary QA inputs, not game assistance
+or NPC strength changes. Protected casualties now fail immediately with a closed
+diagnostic journal. The hostile inter-room seed-2026 mission finishes in 20,268
+ticks with three squad civilian restraints/evacuations, two squad weapon recoveries,
+two lawful armed-suspect deaths and no protected deaths or unlawful force. The
+quiet front seed-82 mission retains its 24,220-tick, two-arrest/no-death result.
+Full replay, checkpoint, replica and installed-tool evidence is recorded in
+`tests/receipts/squad-fire-2026-10-17.json`. Earlier failed approaches and the
+firing-line obstruction trace remain in that receipt. Remaining coordination,
+varied layouts, visual quality and performance acceptance stay open. No Python,
+root trainer/CUDA rebuild, graphics or performance test was run.
 
 Directed weapon retrieval and parking-stop navigation (2026-10-17): Secure
 weapon names the visible dropped weapon and assigns one eligible officer from

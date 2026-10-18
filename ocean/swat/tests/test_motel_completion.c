@@ -43,6 +43,12 @@ static void fail(const char* task) {
         fprintf(stderr,"  waypoint %.3f %.3f %.3f replan%d yaw%.3f\n",(float)a->mind.waypoint.x,(float)a->mind.waypoint.y,(float)a->mind.waypoint.z,a->mind.replan_tick,a->controller.yaw);
         fprintf(stderr,"  order%d target%d goal %.3f %.3f %.3f state%d\n",a->mind.order,a->mind.order_actor,
             (float)a->mind.goal.x,(float)a->mind.goal.y,(float)a->mind.goal.z,a->mind.state);
+        if(a->role==SWAT_OFFICER) {
+            fprintf(stderr,"  perception pitch%.6f heard%.6f ttl%d visible%d shots%d\n",a->controller.pitch,a->heard_yaw,a->hearing_ticks,a->target_actor,a->arsenal.shots);
+            SwatHearingMemory probe={0};SwatHeardSound cue;
+            for(int n=0;n<128 && swat_hearing_next(&sim.world,&sim.sounds,sim.tick,swat_controller_eye(&a->controller),i,&probe,&cue);n++)
+                if(cue.kind==SWAT_SOUND_SHOT)fprintf(stderr,"  audible shot id%u gain%.6f bearing%.6f\n",cue.id,cue.gain,cue.bearing);
+        }
     }
     (void)swat_replay_close(&journal);exit(1);
 }
@@ -53,6 +59,8 @@ static void step(SwatInput in) {
     b3Pos after=feet(0);
     if(track_breach && before.x<breach_plane && after.x>=breach_plane && fabsf(after.z+1.17f)<.8f)crossed_breach=true;
     if(!sim.actors[0].alive)fail("officer casualty");
+    for(int i=1;i<sim.actor_count;i++)if(sim.actors[i].present && !sim.actors[i].alive && sim.actors[i].role!=SWAT_SUSPECT)
+        fail("protected occupant or squad casualty");
 }
 static void idle(int ticks) { for(int i=0;i<ticks;i++)step(swat_neutral_input()); }
 static SwatInput look(b3Pos point) {
@@ -67,6 +75,44 @@ static bool launcher_lane(int actor) {
     SwatActor* player=&sim.actors[0];SwatPose pose=swat_pose(&player->controller,&player->arsenal);
     SwatHit hit=swat_world_sphere_cast(&sim.world,pose.muzzle,b3SubPos(chest(actor),pose.muzzle),.04f,player->controller.body.body);
     return hit.kind==SWAT_HIT_ACTOR && hit.index==actor;
+}
+static bool cover_visible_attack(SwatInput* in,float route_yaw) {
+    if(!sim.config.hostile_fire)return false;
+    static bool confirmed[SWAT_MAX_ACTORS];
+    int target=-1;float nearest=24;
+    for(int i=0;i<sim.actor_count;i++) {
+        const SwatActor* a=&sim.actors[i];
+        if(a->role!=SWAT_SUSPECT || !a->present || !a->alive || a->gear.surrendered || a->gear.restrained ||
+           !swat_sim_actor_visible(&sim,0,i,24,60*SWAT_RAD))continue;
+        if(a->last_shot_tick>=0 && sim.tick-a->last_shot_tick<120)confirmed[i]=true;
+        // A visible raised weapon aimed at the team is also an immediate
+        // threat. Use observable pose, never the NPC's private target field.
+        if(a->controller.ads>.5f)for(int j=0;j<sim.actor_count;j++) {
+            const SwatActor* teammate=&sim.actors[j];
+            if(!teammate->present || !teammate->alive || teammate->role!=SWAT_OFFICER)continue;
+            b3Vec3 to=b3SubPos(swat_controller_eye(&teammate->controller),swat_controller_eye(&a->controller));
+            if(b3Dot(swat_controller_aim(&a->controller),swat_normalize(to))>cosf(8*SWAT_RAD))confirmed[i]=true;
+        }
+        // Resolve an observed shooting threat before resuming the route.
+        // A two-second pause between shots does not establish compliance.
+        if(!confirmed[i])continue;
+        float distance=b3Distance(feet(0),feet(i));if(distance<nearest){nearest=distance;target=i;}
+    }
+    if(target<0)return false;
+    static bool covered[SWAT_MAX_ACTORS];
+    if(!covered[target]){printf("Covering visible active shooter %d at tick %d\n",target,sim.tick);fflush(stdout);covered[target]=true;}
+    // The route driver must respond to visible attacks from another room,
+    // using the same ordinary aim, fire, reload and muzzle-clearance rules.
+    // Aim at the exposed point that passed actor visibility, as the ordinary
+    // NPC target tracker does. A visible head need not expose the chest.
+    *in=look(swat_controller_eye(&sim.actors[target].controller));in->aim=true;
+    in->fire=!sim.actors[0].arsenal.last_fire && swat_sim_firing_line_clear(&sim,0,target,24);
+    in->reload=!sim.actors[0].arsenal.slots[sim.actors[0].arsenal.active].chambered;
+    if(sim.actors[0].controller.muzzle_blocked) {
+        in->fire=false;float delta=route_yaw-sim.actors[0].controller.yaw;
+        in->forward=.6f*cosf(delta);in->strafe=.6f*sinf(delta);
+    }
+    return true;
 }
 static void walk_until(b3Pos goal,float radius,int restrained_actor) {
     // A 60 cm cell centre can be sqrt(2)*30 cm from the requested point.
@@ -91,8 +137,12 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
         SwatInput in=look(b3OffsetPos(waypoint,swat_v(0,1.65f,0)));
         float yaw=atan2f(waypoint.z-p.z,waypoint.x-p.x);
         if(fabsf(swat_angle(yaw-sim.actors[0].controller.yaw))<35*SWAT_RAD)in.forward=.8f;
-        in.gait=SWAT_WALK;in.crouch=swat_navigation_crouch(&sim,p)||swat_navigation_crouch(&sim,waypoint);
-        if(watch_actor>=0 && sim.actors[watch_actor].alive && !sim.actors[watch_actor].gear.surrendered) {
+        // Keep this delegated-task route at the team's existing formation
+        // pace, instead of running the commander away from their coverage.
+        in.gait=squad_restraint&&sim.config.hostile_fire?SWAT_SLOW:SWAT_WALK;
+        in.crouch=swat_navigation_crouch(&sim,p)||swat_navigation_crouch(&sim,waypoint);
+        bool defending=cover_visible_attack(&in,yaw);
+        if(!defending && watch_actor>=0 && sim.actors[watch_actor].alive && !sim.actors[watch_actor].gear.surrendered) {
             b3Pos eye=swat_controller_eye(&sim.actors[0].controller);b3Vec3 to=b3SubPos(chest(watch_actor),eye);
             SwatHit visible=swat_world_ray(&sim.world,eye,swat_normalize(to),b3Length(to)+.1f,sim.actors[0].controller.body.body);
             if(visible.kind==SWAT_HIT_ACTOR && visible.index==watch_actor) {
@@ -119,7 +169,7 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
             }
         }
         SwatHit hit=swat_context_hit(&sim,0,1.7f);
-        if(!track_breach && hit.kind==SWAT_HIT_WORLD && hit.index>=0 && sim.world.objects[hit.index].door) {
+        if(!defending && !track_breach && hit.kind==SWAT_HIT_WORLD && hit.index>=0 && sim.world.objects[hit.index].door) {
             SwatObject* door=&sim.world.objects[hit.index];
             if(door->locked) {
                 in.forward=0;
@@ -299,6 +349,20 @@ static void evacuate(int actor,bool exterior) {
     if(!sim.actors[actor].rescued)fail("evacuation");
     printf("Evacuated actor %d at tick %d\n",actor,sim.tick);fflush(stdout);
 }
+static void hold_breach_team(b3Pos charge) {
+    if(!squad_restraint)return;
+    SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_HOLD;step(in);
+    for(int t=0;t<120;t++) {
+        bool held=true;
+        for(int i=3;i<6;i++)held&=sim.actors[i].mind.order==SWAT_ORDER_HOLD && !sim.actors[i].mind.pending_order;
+        if(held) {
+            for(int i=3;i<6;i++)if(b3Distance(chest(i),charge)<3.2f)fail("squad inside planned charge exposure");
+            printf("Squad holding outside charge exposure at tick %d\n",sim.tick);fflush(stdout);return;
+        }
+        idle(1);
+    }
+    fail("squad breach hold acknowledgement");
+}
 static void enter_breach(float wall,b3Pos retreat) {
     // Staging need not occupy a specific 60 cm grid centre beside a surrendered
     // person. Actual tool reach, finite placement and aperture crossing are
@@ -313,7 +377,12 @@ static void enter_breach(float wall,b3Pos retreat) {
     }
     if(sim.actors[0].gear.wall_charges!=charges-1)fail("mount finite charge");
     idle(1);walk(retreat,.4f);
-    SwatInput detonate=swat_neutral_input();detonate.door_tool=SWAT_DETONATE_CHARGE;step(detonate);idle(180);
+    if(squad_restraint)for(int t=0;t<35;t++)step(look(aim));
+    SwatInput detonate=squad_restraint?look(aim):swat_neutral_input();detonate.door_tool=SWAT_DETONATE_CHARGE;step(detonate);
+    if(squad_restraint)for(int t=0;t<180;t++) {
+        SwatInput cover=look(aim);b3Pos p=feet(0);
+        (void)cover_visible_attack(&cover,atan2f(aim.z-p.z,aim.x-p.x));step(cover);
+    } else idle(180);
     if(sim.totals.destroyed<=destroyed)fail("remote masonry breach");
     walk(start,.6f);
     if(wall>-10 && sim.actors[watch_actor].gear.surrendered && b3Distance(feet(0),feet(watch_actor))<2) {
@@ -388,10 +457,15 @@ int main(int argc,char** argv) {
         search_waiting=(b3Pos){doors[i],0,2.5f};
         watch_actor=occupants[i];
         if(i==0 && !strcmp(route,"exterior")) {
-            walk((b3Pos){-13,0,2.5f},.3f);enter_breach(-12,(b3Pos){-15.5f,0,-1.17f});
+            walk((b3Pos){-13,0,2.5f},.3f);hold_breach_team((b3Pos){-12,1,-1.17f});
+            enter_breach(-12,(b3Pos){-15.5f,0,-1.17f});
+            if(squad_restraint){in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
         } else if(i==2 && !strcmp(route,"interroom")) {
-            walk((b3Pos){doors[1],0,2.5f},.3f);walk((b3Pos){doors[1],0,-.85f},.3f);
+            hold_breach_team((b3Pos){-4,1,-1.17f});
+            walk((b3Pos){doors[1],0,2.5f},.3f);
+            walk((b3Pos){doors[1],0,-.85f},.3f);
             enter_breach(-4,(b3Pos){-7.2f,0,2.5f});
+            if(squad_restraint){in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
         } else {walk((b3Pos){doors[i],0,2.5f},.3f);walk((b3Pos){doors[i],0,-.85f},.3f);}
         secure(occupants[i]);
         if(sim.actors[occupants[i]].role==SWAT_CIVILIAN)evacuate(occupants[i],i==0&&!strcmp(route,"exterior"));
@@ -403,7 +477,8 @@ int main(int argc,char** argv) {
     if(sim.end!=SWAT_SUCCESS)fail("completion");
     int dead_suspects=0;
     for(int i=0;i<sim.actor_count;i++)if(sim.actors[i].present && !sim.actors[i].alive) {
-        assert(sim.actors[i].role==SWAT_SUSPECT && !sim.actors[i].gear.restrained);dead_suspects++;
+        if(sim.actors[i].role!=SWAT_SUSPECT || sim.actors[i].gear.restrained)fail("protected casualty at debrief");
+        dead_suspects++;
     }
     if(sim.debrief.arrests+dead_suspects!=2 || sim.debrief.rescued!=3 || sim.debrief.evidence!=2 || sim.debrief.roe_violations) {
         fprintf(stderr,"debrief arrests%d dead%d rescued%d evidence%d roe%d unlawful%.2f\n",sim.debrief.arrests,dead_suspects,sim.debrief.rescued,sim.debrief.evidence,sim.debrief.roe_violations,sim.debrief.unlawful_damage);

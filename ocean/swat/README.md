@@ -149,7 +149,7 @@ records source preservation, import checks and the remaining physics limits.
 `SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
 assembly for comparison. Other rooms retain their accepted art.
 
-Use matching version-31 peers and fresh recordings/saves. Directed squad tasks
+Use matching version-32 peers and fresh recordings/saves. Directed squad tasks
 now retain the selected person; Restrain assigns one officer while the others
 cover, and Fall In keeps moving under visible threat. Jamb damage changes
 door attachments, and queued orders and scripted firing now handle interrupted
@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v31 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v32 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -971,6 +971,21 @@ The order does not search unseen rooms or collect other nearby weapons.
 `make -C ocean/swat motel-squad-search-test` adds actual squad retrieval of both
 weapons to the complete restraint/escort route, including a checkpoint with a
 queued weapon target. The equivalent QA executable accepts optional `search`.
+Officers with no visible threat turn toward a received gunshot's coarse bearing
+for up to 90 ticks. The cue reveals no shooter identity or hidden position.
+Formation movement continues while looking; restraint and weapon retrieval
+pause until attention expires or ordinary visual threat handling takes over.
+Shots still require a visible armed threat and a clear aimed firing line.
+`make -C ocean/swat squad-fire-test` checks hearing, opaque cover, civilian
+protection, actual return fire after cover clears, task resumption and attention
+expiry through stun. `motel-squad-fire-test` combines hostile fire, squad
+restraints/retrieval and the inter-room charge approach. The QA commander walks
+at the team's formation pace and responds to observed gunfire or a visible raised
+weapon aimed at the team, using ordinary inputs. It aims at the exposed point
+used by visibility, holds the squad at staging for the inter-room charge, faces
+the charge before triggering, covers the opening and recalls the team afterward.
+These driver behaviors are not player assistance. Protected casualties fail the
+scenario immediately rather than waiting until debrief.
 Parking stops retain their full mesh collision. NPC navigation treats them as
 permanent obstacles and routes around the raised lip and the space beneath it.
 Captured crowded extraction fixtures retain stance, grounded state and velocity;
@@ -1498,7 +1513,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 31 as described above.
+destruction prototype requires version 32 as described above.
 The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
 stands on its eight original skid contacts beside the maintenance shed. Its
 unchanged 2,908-triangle GLB supplies a steel body and two independently removable

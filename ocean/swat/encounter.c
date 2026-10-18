@@ -937,10 +937,20 @@ static void officer_search(SwatSim* s,int i,SwatInput* in) {
         in->forward=in->strafe=0;in->interact=!a->last_interact;
     }
 }
+static void officer_hearing(SwatSim* s,int i) {
+    SwatActor* a=&s->actors[i];
+    SwatHeardSound heard;
+    for(int n=0;n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,swat_controller_eye(&a->controller),i,&a->hearing,&heard);n++) {
+        if(heard.kind!=SWAT_SOUND_SHOT || heard.gain<.02f)continue;
+        // The hearing consumer supplies no source identity or position.
+        a->heard_yaw=heard.bearing;a->hearing_ticks=90;
+    }
+}
 void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
         if(!a->present || !a->alive || (a->role==SWAT_OFFICER && !mind->bot) || a->role==SWAT_SNIPER) continue;
+        if(a->role==SWAT_OFFICER && a->hearing_ticks>0)a->hearing_ticks--;
         SwatInput* in=&inputs[i];
         if(a->gear.stunned_ticks) continue;
         if(a->gear.restrained) {
@@ -956,6 +966,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
             continue;
         }
         if(a->gear.surrendered) { mind->state=SWAT_SURRENDER; continue; }
+        if(a->role==SWAT_OFFICER)officer_hearing(s,i);
         int target=visible_target(s,i,a->role==SWAT_OFFICER);
         if(target>=0) {
             if(mind->target!=target) a->visible_ticks=0;
@@ -980,7 +991,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
         }
         a->visible_ticks=0; a->target_actor=-1; mind->target=-1;
         SwatHeardSound heard;
-        for(int n=0;n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,swat_controller_eye(&a->controller),i,&a->hearing,&heard);n++) {
+        for(int n=0;a->role!=SWAT_OFFICER && n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,swat_controller_eye(&a->controller),i,&a->hearing,&heard);n++) {
             if(heard.gain<.02f || (heard.kind!=SWAT_SOUND_SHOT && heard.kind!=SWAT_SOUND_BREAK && heard.kind!=SWAT_SOUND_DOOR &&
                heard.kind!=SWAT_SOUND_DOOR_CLOSE && heard.kind!=SWAT_SOUND_BREACH && heard.kind!=SWAT_SOUND_FLASH && heard.kind!=SWAT_SOUND_HANDLE)) continue;
             // Hearing supplies bearing, not a hidden actor location. Investigate a coarse point four metres along it.
@@ -991,14 +1002,19 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
             // Hands-on tasks must not leave recalled or covering officers
             // staring at the floor. Active target/task tracking overrides this.
             in->pitch_delta=swat_clamp(-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD);
+            bool listening=a->hearing_ticks>0;
+            if(listening) {
+                mind->state=SWAT_INVESTIGATE;
+                in->yaw_delta=swat_clamp(swat_angle(a->heard_yaw-a->controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
+            }
             if(mind->order==SWAT_ORDER_FALL_IN || mind->order==0) {
-                officer_follow(s,i,in,false);
+                officer_follow(s,i,in,listening);
             } else if(mind->order==SWAT_ORDER_CUFF) {
-                officer_restrain(s,i,in);
+                if(!listening)officer_restrain(s,i,in);
             } else if(mind->order==SWAT_ORDER_SEARCH) {
-                officer_search(s,i,in);
+                if(!listening)officer_search(s,i,in);
             } else if(mind->order!=SWAT_ORDER_HOLD && mind->order!=SWAT_ORDER_COVER) {
-                officer_move(s,i,in,false);
+                officer_move(s,i,in,listening);
                 SwatContext c=swat_context(s,i);
                 if(mind->order==SWAT_ORDER_PICK && c.action==SWAT_CONTEXT_LOCKED && c.ready) in->door_tool=SWAT_LOCKPICK;
                 if(mind->order==SWAT_ORDER_WEDGE && c.hit.kind==SWAT_HIT_WORLD && c.ready) in->door_tool=SWAT_WEDGE;
