@@ -445,8 +445,15 @@ static void occupied_entry(int route,int mirror,int event) {
 }
 #include "entry_interruptions.h"
 #include "squad_tasks.h"
+#include "squad_search.h"
 int main(int argc,char** argv) {
     setvbuf(stdout,NULL,_IONBF,0);
+    if(argc>=2 && !strcmp(argv[1],"search")) {
+        assert(argc<=3);if(argc==3){task_trace=fopen(argv[2],"w");assert(task_trace);}
+        for(int variant=0;variant<10;variant++)task_search(variant);
+        if(task_trace)assert(!fclose(task_trace));
+        return 0;
+    }
     if(argc>=2 && (!strcmp(argv[1],"tasks") || !strcmp(argv[1],"restrain") || !strcmp(argv[1],"recall") || !strcmp(argv[1],"yield") || !strcmp(argv[1],"escort-yield") || !strcmp(argv[1],"navigation-crowd"))) {
         assert(argc<=3);
         if(argc==3){task_trace=fopen(argv[2],"w");assert(task_trace);}
@@ -455,6 +462,7 @@ int main(int argc,char** argv) {
         if(!strcmp(argv[1],"tasks") || !strcmp(argv[1],"yield"))for(int mirror=-1;mirror<=1;mirror+=2)task_yield(mirror,false);
         if(!strcmp(argv[1],"tasks") || !strcmp(argv[1],"escort-yield"))for(int mirror=-1;mirror<=1;mirror+=2)task_yield(mirror,true);
         if(!strcmp(argv[1],"tasks") || !strcmp(argv[1],"navigation-crowd"))task_crowded_start();
+        if(!strcmp(argv[1],"tasks"))for(int variant=0;variant<10;variant++)task_search(variant);
         if(task_trace)assert(!fclose(task_trace));
         return 0;
     }
@@ -478,5 +486,5 @@ int main(int argc,char** argv) {
         return 0;
     }
     assert(argc==1);
-    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();return 0;
+    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);return 0;
 }

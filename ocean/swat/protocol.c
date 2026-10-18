@@ -171,7 +171,7 @@ bool swat_decode_map(SwatMap* map,const void* bytes,size_t size) {
         if(material>=SWAT_MATERIAL_COUNT || door>3 || door==2 || o->half.x<=0 || o->half.y<=0 || o->half.z<=0) r.ok=false;
         o->material=(SwatMaterial)material; o->door=(door&1)!=0;o->latch_broken=(door&2)!=0;
         o->closed_yaw=getf(&r,-SWAT_PI,SWAT_PI); unsigned int part=get8(&r);
-        if(part>SWAT_PART_FIXTURE) r.ok=false;
+        if(part>SWAT_PART_OBSTACLE) r.ok=false;
         o->part=(SwatPart)part; o->pitch=getf(&r,-SWAT_PI,SWAT_PI);
         o->support_role=(SwatSupportRole)get8(&r);
         if(o->support_role>SWAT_SUPPORT_ANCHOR || (o->support_role && (o->door || o->pitch!=0)) ||
@@ -186,6 +186,8 @@ bool swat_decode_map(SwatMap* map,const void* bytes,size_t size) {
         o->structural_thickness=getf(&r,0,1);
         if((o->part==SWAT_PART_FIXTURE)!=(o->structural_thickness>0) ||
            (o->part==SWAT_PART_FIXTURE && (o->door || o->supports[0]<0 || o->max_health<=0)))r.ok=false;
+        if(o->part==SWAT_PART_OBSTACLE && (o->door || o->max_health!=0 || o->supports[0]>=0 ||
+           o->support_role!=SWAT_SUPPORT_NONE || o->wall_group || fractured))r.ok=false;
         if(fractured>1 || (fractured && (o->door || o->part!=SWAT_PART_SKIN))) r.ok=false;
         o->fractured=fractured!=0;
         if(o->fractured) {

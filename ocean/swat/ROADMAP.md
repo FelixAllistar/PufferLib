@@ -27,8 +27,16 @@ that complete objective active until every acceptance requirement is verified.
 
 Acceptance work still open:
 
-- Extend squad task completion to search/equipment orders and varied occupied
-  layouts, beyond the directed restraint, recall and escort cases below.
+- Extend squad task completion to room searches, equipment orders and varied
+  occupied layouts, beyond directed restraint, weapon retrieval, recall and escort.
+- Reaccept combined hostile-fire squad restraints/retrieval and escort coverage
+  between rooms. An exploratory inter-room run lost the commander; that combined
+  case is not covered by the successful ordinary combat approaches.
+- Verify repeated/rejected directed commands in the frontend, including render
+  frames without a simulation tick and remote acknowledgements.
+- Isolate ordinary controller contacts at wheel-stop lips. A discarded planner
+  experiment produced a large vertical impulse on re-entry; its diagnostic is
+  retained with the weapon-retrieval evidence, and player-contact acceptance is open.
 - Extend the complete front/exterior/inter-room approaches to varied occupant
   positions/populations, beyond the fixed positions and resolve-seed checks
   below, preserving ordinary inputs, replay, mid-run resume and fresh replicas.
@@ -39,6 +47,40 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+
+Directed weapon retrieval and parking-stop navigation (2026-10-17): Secure
+weapon names the visible dropped weapon and assigns one eligible officer from
+the selected team. Queued orders retain that identity and reported position;
+the officer follows real navigation, obtains hand reach and collects through
+ordinary interaction. Other weapons and people retain their interaction rules.
+Nearby evidence cannot stop the officer outside the assigned weapon's reach.
+Completion/cancellation returns to Hold, and idle/recalled officers raise their
+view after hands-on work. Ten focused cases cover queues, interruption, cover,
+threat priority, target identity, team selection and the reach boundary. Their
+3,880 encoded state hashes match on Linux/Windows, with fresh replicas every
+30 ticks. Captured grounded/velocity fixtures reproduce the parking-stop snag.
+The five stops now use a permanent obstacle part: original triangles and contact
+shapes remain, while navigation excludes their tops and underlying footprint.
+The decoder distinguishes these objects from attached breakable fixtures and
+rejects malformed obstacle maps without mutation. Fresh complete-run replicas
+now use encoded/decoded maps as well as snapshots.
+
+Clean v31 Linux/Windows builds pass 100 headless groups per platform across
+encounters, navigation, motel geometry, tactical rules, simulation, protocol and
+real UDP. The separate focused suite also passes. The full quiet front route
+with five squad restraints and both squad weapon recoveries finishes in 24,220
+ticks with two arrests and no deaths. Ordinary hostile inter-room/exterior
+routes finish in 12,599/11,707 ticks, each with one arrest and one lawful armed
+suspect death. All three evacuate the civilians, recover both weapons, regroup
+the officers and record no protected deaths or unlawful force. Every-tick
+replay, mid-run save/resume and final wire replicas pass. Both clean platforms
+replay all 48,526 frames exactly; Windows also verifies the 14,557-frame queued
+weapon checkpoint. The combined hostile squad case remains explicitly open
+above. Matched player/server/replay/performance tools and QA executables are
+installed; performance tools were built only. Use fresh v31 recordings/saves.
+Evidence: `tests/receipts/squad-search-2026-10-17.json`. No Python, root trainer
+rebuild, graphics or performance test was run. Manual playtesting is optional
+feedback, and the full-slice goal remains active.
 
 Motel transport and seed acceptance (2026-10-17): the real UDP suite now adds
 a motel listen host with three remote peers. Fourteen check groups pass on both

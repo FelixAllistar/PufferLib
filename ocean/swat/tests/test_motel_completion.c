@@ -16,7 +16,11 @@ static int contact_overflows;
 static bool track_breach,crossed_breach;
 static bool squad_restraint;
 static int squad_cuffs;
+static bool squad_search;
+static int squad_weapons;
+static const char* search_save;
 static b3Pos squad_waiting;
+static b3Pos search_waiting;
 static float breach_plane;
 static void physics_log(const char* message) {
     if(strstr(message,"triangle buffer capacity")) {
@@ -244,7 +248,37 @@ static void collect(int actor) {
                 move.gait=SWAT_WALK;move.crouch=swat_navigation_crouch(&sim,approach);step(move);
             }
         }
+        if(squad_search && t==61) {
+            // Walking turns the actual view. Finish the bounded input turn
+            // before issuing an order that names what the commander sees.
+            for(int n=0;n<60;n++)step(look(sim.evidence[actor].position));
+            SwatInput order=look(sim.evidence[actor].position);order.squad_order=SWAT_ORDER_SEARCH;order.squad_queue=true;step(order);
+            int recipient=-1;
+            for(int i=3;i<6;i++)if(sim.actors[i].mind.pending_order==SWAT_ORDER_SEARCH && sim.actors[i].mind.pending_actor==actor+1) {
+                if(recipient>=0)fail("multiple search recipients");
+                recipient=i;
+            }
+            if(recipient<0)fail("squad search recipient");
+            if(!squad_weapons) {
+                static SwatSim restored;char error[256];assert(swat_replay_checkpoint(&journal,search_save));
+                assert(swat_replay_restore(&restored,search_save,error,sizeof(error)));
+                assert(swat_replay_digest(&restored)==swat_replay_digest(&sim));
+                assert(restored.actors[recipient].mind.pending_actor==actor+1 && restored.actors[recipient].mind.queued);
+                assert(b3Distance(restored.actors[recipient].mind.pending_goal,sim.actors[recipient].mind.pending_goal)<1e-6f);
+                swat_sim_close(&restored);puts("PASS queued evidence order survives journal checkpoint/restore with its target and reported position");fflush(stdout);
+            }
+            // The commander clears the physical working space, then gives the
+            // queued officer the ordinary Execute pulse from outside the room.
+            walk(search_waiting,.43f);order=look(sim.evidence[actor].position);order.squad_execute=true;step(order);
+            for(int n=0;n<3000 && !sim.evidence[actor].collected;n++)step(look(sim.evidence[actor].position));
+            if(!sim.evidence[actor].collected)fail("squad weapon retrieval");
+            for(int n=0;n<30 && sim.actors[recipient].mind.order!=SWAT_ORDER_HOLD;n++)idle(1);
+            if(sim.actors[recipient].mind.order!=SWAT_ORDER_HOLD || sim.actors[recipient].mind.order_actor)fail("squad search completion");
+            squad_weapons++;order=look(sim.evidence[actor].position);order.squad_order=SWAT_ORDER_FALL_IN;step(order);
+            printf("Squad officer %d recovered weapon %d at tick %d\n",recipient,actor,sim.tick);fflush(stdout);return;
+        }
         SwatInput in=look(sim.evidence[actor].position);SwatContext context=swat_context(&sim,0);
+        if(squad_search){step(in);continue;}
         in.interact=context.action==SWAT_CONTEXT_EVIDENCE && context.hit.index==actor && t%2==0;step(in);
     }
     if(!sim.evidence[actor].collected)fail("collect evidence");
@@ -320,10 +354,11 @@ static void enter_breach(float wall,b3Pos retreat) {
 }
 int main(int argc,char** argv) {
     b3SetLogFcn(physics_log);
-    assert(argc>=2 && argc<=6);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
+    assert(argc>=2 && argc<=7);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"combat"))combat=true;
         else if(!strcmp(argv[i],"squad"))squad_restraint=true;
+        else if(!strcmp(argv[i],"search"))squad_search=true;
         else if(!strcmp(argv[i],"exterior")||!strcmp(argv[i],"interroom"))route=argv[i];
         else if(!strncmp(argv[i],"seed=",5)) {
             const char* digits=argv[i]+5;assert(!seed_given&&digits[0]&&strspn(digits,"0123456789")==strlen(digits));
@@ -335,6 +370,7 @@ int main(int argc,char** argv) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;swat_config_human(&cfg);
     cfg.randomize=false;cfg.hostile_fire=combat;cfg.max_ticks=60000;
     char save[1024];assert(snprintf(save,sizeof(save),"%s.save",argv[1])<(int)sizeof(save));
+    char task_save[1024];assert(snprintf(task_save,sizeof(task_save),"%s.search.save",argv[1])<(int)sizeof(task_save));search_save=task_save;
     int saved_tick=0;uint32_t saved_hash=0;
     swat_sim_init(&sim,cfg,seed);assert(swat_replay_record(&journal,argv[1],&sim));
     printf("Motel QA seed %u initial resolve suspect1=%.6f civilian2=%.6f civilian6=%.6f civilian7=%.6f suspect8=%.6f\n",seed,sim.actors[1].mind.resolve,sim.actors[2].mind.resolve,sim.actors[6].mind.resolve,sim.actors[7].mind.resolve,sim.actors[8].mind.resolve);fflush(stdout);
@@ -349,6 +385,7 @@ int main(int argc,char** argv) {
     for(int i=0;i<5;i++) {
         if(squad_restraint) {in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
         squad_waiting=(b3Pos){doors[i]+1.2f,0,-.65f};
+        search_waiting=(b3Pos){doors[i],0,2.5f};
         watch_actor=occupants[i];
         if(i==0 && !strcmp(route,"exterior")) {
             walk((b3Pos){-13,0,2.5f},.3f);enter_breach(-12,(b3Pos){-15.5f,0,-1.17f});
@@ -377,11 +414,13 @@ int main(int argc,char** argv) {
     // protected deaths, restrained deaths, unlawful force and missing evidence.
     if(!combat)assert(!dead_suspects);
     if(squad_restraint)assert(squad_cuffs==5-dead_suspects);
+    if(squad_search)assert(squad_weapons==2);
     assert(swat_replay_close(&journal));
     printf("PASS motel complete player-input run (%s, %s route): %d ticks, %d arrests, %d armed suspects killed, three evacuations, two weapons, squad regroup, no civilian/officer deaths or unlawful force\n",cfg.hostile_fire?"hostile fire enabled":"interaction isolation",route,sim.tick,sim.debrief.arrests,dead_suspects);fflush(stdout);
-    static SwatSim replica;static SwatMap map;static SwatSnapshot snapshot,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];
-    swat_capture_map(&sim,1,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,1,&snapshot);
-    size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot);assert(size && swat_decode_snapshot(&decoded,bytes,size));
+    static SwatSim replica;static SwatMap map,map_decoded;static SwatSnapshot snapshot,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    swat_capture_map(&sim,1,&map);size_t size=swat_encode_map(bytes,sizeof(bytes),&map);
+    assert(size && swat_decode_map(&map_decoded,bytes,size));swat_apply_map(&replica,&map_decoded);swat_capture_snapshot(&sim,1,&snapshot);
+    size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot);assert(size && swat_decode_snapshot(&decoded,bytes,size));
     assert(swat_apply_snapshot(&replica,&decoded));
     assert(replica.end==SWAT_SUCCESS && !memcmp(&replica.debrief,&sim.debrief,sizeof(sim.debrief)));
     assert(swat_sim_progress(&replica).secured && !swat_sim_progress(&replica).officers_away);

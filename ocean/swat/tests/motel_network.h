@@ -33,8 +33,14 @@ static void motel_network(void){
     static SwatSim authority,replicas[3];SwatNetServer server;SwatNetClient clients[3]={0};
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=cfg.randomize=false;cfg.max_ticks=6000;swat_config_human(&cfg);
     swat_sim_init(&authority,cfg,81);
-    int port=30000+(int)(enet_time_get()%20000),attempt=0;
-    while(!swat_server_open(&server,&authority,port,true)&&++attempt<32)port++;
+    // Windows can reserve whole UDP ranges. Spread retries across the range
+    // instead of trying 32 adjacent ports inside one reservation.
+    uint32_t port_seed=enet_time_get();int port=0;bool opened=false;
+    for(int attempt=0;attempt<32 && !opened;attempt++) {
+        port=30000+(int)((port_seed+(uint32_t)attempt*4729u)%25000u);
+        opened=swat_server_open(&server,&authority,port,true);
+    }
+    if(!opened)fprintf(stderr,"Motel UDP bind failed: %s\n",server.error);
     assert(server.transport&&server.local_slot==0);
     for(int i=3;i<6;i++)authority.actors[i].mind.order=SWAT_ORDER_HOLD;
     swat_sim_spawn_actor(&authority,7,SWAT_CIVILIAN,(b3Pos){1.6f,-.08f,7.2f},0);authority.actors[7].gear.surrendered=true;
