@@ -1,4 +1,5 @@
 #include "net.h"
+#include "motel.h"
 #include "enet/enet.h"
 #include <assert.h>
 #include <stdio.h>
@@ -12,15 +13,19 @@ static void idle(SwatNetServer* server,SwatNetClient* clients,int count) {
 }
 static void ready(SwatNetServer* server,SwatNetClient* clients,int count) {
     uint32_t start=enet_time_get(); bool all=false;
-    while(!all && enet_time_get()-start<5000) {
+    // All replicas share this thread: rebuilding three motel worlds can defer
+    // the next transport poll. Keep the production client's own timeout intact
+    // while allowing this helper to finish servicing the other replicas.
+    while(!all && enet_time_get()-start<15000) {
         idle(server,clients,count); all=true;
         for(int i=0;i<count;i++) all=all && clients[i].status==SWAT_NET_ACTIVE && clients[i].epoch==server->epoch;
     }
     for(int i=0;i<count;i++) {
-        if(clients[i].status!=SWAT_NET_ACTIVE) fprintf(stderr,"client %d status %d error %s\n",i,clients[i].status,clients[i].error);
+        if(!all) fprintf(stderr,"Ready after %u ms: client %d status %d epoch %u/%u revision %u error %s\n",enet_time_get()-start,i,clients[i].status,clients[i].epoch,server->epoch,clients[i].revision,clients[i].error);
         assert(clients[i].status==SWAT_NET_ACTIVE);
         assert(clients[i].epoch==server->epoch);
     }
+    printf("NET_READY peers=%d epoch=%u elapsed_ms=%u\n",count,server->epoch,enet_time_get()-start);fflush(stdout);
 }
 static void ticks(SwatNetServer* server,SwatNetClient* clients,SwatInput* inputs,int count,int steps,const SwatInput* host) {
     for(int t=0;t<steps;t++) {
@@ -60,7 +65,9 @@ static void raw_scenario(SwatNetClient* client,uint32_t epoch,const SwatConfig* 
     enet_host_flush((ENetHost*)client->transport);
 }
 
-int main(void) {
+#include "motel_network.h"
+int main(int argc,char** argv) {
+    if(argc==2&&!strcmp(argv[1],"motel")){motel_network();return 0;}
     SwatConfig config=swat_default_config(); config.max_ticks=6000; config.hostile_fire=false; config.randomize=false;
     static SwatSim authority,replicas[5]; SwatNetServer server; SwatNetClient clients[5]={0};
     swat_sim_init(&authority,config,42);
@@ -259,5 +266,6 @@ int main(void) {
     for(int i=0;i<5;i++) swat_sim_close(&replicas[i]);
     swat_sim_close(&authority);
     puts("PASS real UDP: listen host uses the same authority and closes joining clients cleanly");
+    motel_network();
     return 0;
 }

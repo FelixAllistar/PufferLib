@@ -30,7 +30,8 @@ Acceptance work still open:
 - Extend squad task completion to search/equipment orders and varied occupied
   layouts, beyond the directed restraint, recall and escort cases below.
 - Extend the complete front/exterior/inter-room approaches to varied occupant
-  seeds, preserving ordinary inputs, replay, mid-run resume and fresh replicas.
+  positions/populations, beyond the fixed positions and resolve-seed checks
+  below, preserving ordinary inputs, replay, mid-run resume and fresh replicas.
 - Finish the motel's composition, remaining props, production audio and visible
   equipment handling; integrate approved art and inspect actual rendered output.
 - Establish reproducible officer/enemy policy baselines and held-out evaluation
@@ -38,6 +39,28 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+
+Motel transport and seed acceptance (2026-10-17): the real UDP suite now adds
+a motel listen host with three remote peers. Fourteen check groups pass on both
+Linux and Windows, including queued directed-target handoff to a joining human,
+independent remote movement, late join after separate lid damage and a wall cut,
+physical aperture queries, received sound history and hearing-consumer gating,
+epoch restart and disconnect. Twelve captured encoded simulation states match
+across platforms, excluding sound history, which is tested separately. These
+fixtures directly establish a surrendered occupant, damage, a cut and sound
+events; they do not constitute a four-player ordinary-input mission completion.
+The test helper allows sequential replica rebuilds to finish without changing
+the game's connection timeout. Seed 82 completes the squad front route in 20,584
+ticks with two arrests and no deaths; seed 2026 completes the hostile inter-room
+route in 12,715 ticks with one arrest and one lawful armed-suspect death. Both
+verify all objectives, no protected deaths/force violations, exact every-tick
+replay, mid-run save/resume and final replicas. Windows replays all 33,299 frames
+exactly. These seeds change resolve/RNG with fixed authored occupant positions;
+varied layouts/populations and learned-policy evaluation remain open. Reproduce
+with `net-test`, `net-motel-test` and `motel-seeds-test`; the sealed evidence is
+`tests/receipts/motel-network-seeds-2026-10-17.json`. This increment changes QA
+and documentation only; the installed v30 game remains unchanged. No graphics
+or performance test was run, and manual playtesting remains optional feedback.
 
 Dumpsters and complete approaches (2026-10-17): the approved BC_DUMP01 is now
 placed beside the maintenance shed at (-4.9, -.08, -8.4), yaw pi. All eight skid
