@@ -1,0 +1,2 @@
+2026-10-18 05:49:41 UTC
+hands=6000/6000 net_bb=-1207.99 bb100=-20.13 active_games=0 unresolved=0 eta=0.0 min

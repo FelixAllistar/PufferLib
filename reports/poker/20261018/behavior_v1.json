@@ -1,0 +1,1818 @@
+{
+  "schema": 1,
+  "seed": 202610181,
+  "players": 6,
+  "starting_bb": 200,
+  "history": false,
+  "hands_per_field": 400,
+  "hands_total": 2000,
+  "policy_names": {
+    "0": "initial_rules",
+    "1": "original_rules",
+    "2": "positional_rules",
+    "3": "broad_defense",
+    "4": "fullhouse",
+    "5": "focused_defense",
+    "6": "uniform_equity_32",
+    "7": "range_equity_32",
+    "8": "range_equity_128"
+  },
+  "fields": {
+    "original": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "fullhouse": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "range32": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "range128": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      8
+    ],
+    "mixed": [
+      0,
+      2,
+      4,
+      5,
+      7,
+      8
+    ]
+  },
+  "field_counts": {
+    "original": {
+      "hands": 400,
+      "preflop_states": 2525,
+      "postflop_states": 852
+    },
+    "fullhouse": {
+      "hands": 400,
+      "preflop_states": 2569,
+      "postflop_states": 2051
+    },
+    "range32": {
+      "hands": 400,
+      "preflop_states": 2533,
+      "postflop_states": 974
+    },
+    "range128": {
+      "hands": 400,
+      "preflop_states": 2506,
+      "postflop_states": 874
+    },
+    "mixed": {
+      "hands": 400,
+      "preflop_states": 2572,
+      "postflop_states": 1152
+    }
+  },
+  "coverage": {
+    "street0_live6": 2982,
+    "street0_live5": 2860,
+    "street0_live4": 2648,
+    "street0_live3": 2454,
+    "street0_live2": 1761,
+    "street1_live2": 1517,
+    "street2_live2": 1268,
+    "street3_live2": 1024,
+    "street1_live4": 301,
+    "street2_live4": 183,
+    "street2_live3": 405,
+    "street1_live5": 65,
+    "street2_live5": 53,
+    "street1_live3": 697,
+    "street3_live3": 262,
+    "street3_live4": 105,
+    "street3_live5": 23
+  },
+  "library": "/home/felix/puffertank/pufferlib/build/poker/equity_v2/libpoker_fullhouse6.so",
+  "library_sha256": "ca1b9643e6d91ea957efde15c8b6be5de60fe40d48b553a99580423cc2e19bc1",
+  "audit_sha256": "3e21f9769150a05cf17bd3f3c0c215a7b979f4b4e6c613191f7609c6c65d4b74",
+  "corpus_sha256": "03db9bd6b20118eee4beaf45c46a8919b461d59368e7653a48cb93d5ce0adda7",
+  "action_sha256": "5f05a1700577434d63310737826c04c1ae434f2e13d06c666fcb282dcb9e28b2",
+  "legal_probe_actions_checked": 334944,
+  "groups": {
+    "all": {
+      "states": 18608,
+      "facing_bet_states": 13943,
+      "can_raise_states": 18560,
+      "policies": {
+        "0": {
+          "actions": {
+            "call": 2851,
+            "fold": 8449,
+            "raise": 3927,
+            "check": 3381
+          },
+          "facing_bet_folds": 8449,
+          "self_exact_disagreements": 1325,
+          "self_kind_disagreements": 1325,
+          "raise_pot_sum": 2335.655134164888,
+          "action_percent": {
+            "call": 15.321367153912297,
+            "fold": 45.40520206362854,
+            "raise": 21.103826311263973,
+            "check": 18.169604471195186
+          },
+          "fold_when_facing_bet_percent": 60.596715197590186,
+          "mean_raise_pot_fraction": 0.5947683051094698,
+          "self_exact_disagreement_percent": 7.1205932932072225,
+          "self_kind_disagreement_percent": 7.1205932932072225
+        },
+        "1": {
+          "actions": {
+            "call": 2114,
+            "fold": 10190,
+            "raise": 2755,
+            "check": 3549
+          },
+          "facing_bet_folds": 10190,
+          "self_exact_disagreements": 1471,
+          "self_kind_disagreements": 1471,
+          "raise_pot_sum": 1680.0210204058778,
+          "action_percent": {
+            "call": 11.360705073086844,
+            "fold": 54.76139294926913,
+            "raise": 14.805460017196905,
+            "check": 19.07244196044712
+          },
+          "fold_when_facing_bet_percent": 73.08326758947142,
+          "mean_raise_pot_fraction": 0.609807992887796,
+          "self_exact_disagreement_percent": 7.905202063628547,
+          "self_kind_disagreement_percent": 7.905202063628547
+        },
+        "2": {
+          "actions": {
+            "call": 3020,
+            "fold": 8036,
+            "raise": 4171,
+            "check": 3381
+          },
+          "facing_bet_folds": 8036,
+          "self_exact_disagreements": 1293,
+          "self_kind_disagreements": 1293,
+          "raise_pot_sum": 2453.6222337319846,
+          "action_percent": {
+            "call": 16.22957867583835,
+            "fold": 43.18572656921754,
+            "raise": 22.415090283748924,
+            "check": 18.169604471195186
+          },
+          "fold_when_facing_bet_percent": 57.634655382629276,
+          "mean_raise_pot_fraction": 0.588257548245501,
+          "self_exact_disagreement_percent": 6.948624247635426,
+          "self_kind_disagreement_percent": 6.948624247635426
+        },
+        "3": {
+          "actions": {
+            "call": 2168,
+            "fold": 10103,
+            "raise": 2792,
+            "check": 3545
+          },
+          "facing_bet_folds": 10103,
+          "self_exact_disagreements": 1489,
+          "self_kind_disagreements": 1489,
+          "raise_pot_sum": 1707.6636053190625,
+          "action_percent": {
+            "call": 11.650902837489252,
+            "fold": 54.29385210662081,
+            "raise": 15.004299226139295,
+            "check": 19.050945829750646
+          },
+          "fold_when_facing_bet_percent": 72.45929857276053,
+          "mean_raise_pot_fraction": 0.6116273658019565,
+          "self_exact_disagreement_percent": 8.001934651762683,
+          "self_kind_disagreement_percent": 8.001934651762683
+        },
+        "4": {
+          "actions": {
+            "fold": 8872,
+            "call": 3349,
+            "raise": 3177,
+            "check": 3210
+          },
+          "facing_bet_folds": 8872,
+          "self_exact_disagreements": 5095,
+          "self_kind_disagreements": 4377,
+          "raise_pot_sum": 1999.5173038146347,
+          "action_percent": {
+            "fold": 47.67841788478074,
+            "call": 17.997635425623386,
+            "raise": 17.07330180567498,
+            "check": 17.250644883920895
+          },
+          "fold_when_facing_bet_percent": 63.630495589184534,
+          "mean_raise_pot_fraction": 0.6293727742570459,
+          "self_exact_disagreement_percent": 27.380696474634565,
+          "self_kind_disagreement_percent": 23.522141014617368
+        },
+        "5": {
+          "actions": {
+            "call": 2125,
+            "fold": 10148,
+            "raise": 2790,
+            "check": 3545
+          },
+          "facing_bet_folds": 10148,
+          "self_exact_disagreements": 1485,
+          "self_kind_disagreements": 1485,
+          "raise_pot_sum": 1706.330691810323,
+          "action_percent": {
+            "call": 11.41981943250215,
+            "fold": 54.535683576956146,
+            "raise": 14.993551160791057,
+            "check": 19.050945829750646
+          },
+          "fold_when_facing_bet_percent": 72.78204116761098,
+          "mean_raise_pot_fraction": 0.611588061580761,
+          "self_exact_disagreement_percent": 7.980438521066208,
+          "self_kind_disagreement_percent": 7.980438521066208
+        },
+        "6": {
+          "actions": {
+            "call": 2791,
+            "fold": 9351,
+            "raise": 3387,
+            "check": 3079
+          },
+          "facing_bet_folds": 9351,
+          "self_exact_disagreements": 1972,
+          "self_kind_disagreements": 1972,
+          "raise_pot_sum": 2100.6302603875265,
+          "action_percent": {
+            "call": 14.998925193465176,
+            "fold": 50.25257953568358,
+            "raise": 18.201848667239897,
+            "check": 16.54664660361135
+          },
+          "fold_when_facing_bet_percent": 67.06591120992613,
+          "mean_raise_pot_fraction": 0.6202037969848027,
+          "self_exact_disagreement_percent": 10.597592433361994,
+          "self_kind_disagreement_percent": 10.597592433361994
+        },
+        "7": {
+          "actions": {
+            "call": 2450,
+            "fold": 9889,
+            "raise": 2918,
+            "check": 3351
+          },
+          "facing_bet_folds": 9889,
+          "self_exact_disagreements": 2018,
+          "self_kind_disagreements": 2018,
+          "raise_pot_sum": 1795.0570402594667,
+          "action_percent": {
+            "call": 13.166380051590714,
+            "fold": 53.143809114359414,
+            "raise": 15.681427343078246,
+            "check": 18.008383490971624
+          },
+          "fold_when_facing_bet_percent": 70.92447823280499,
+          "mean_raise_pot_fraction": 0.6151669089305918,
+          "self_exact_disagreement_percent": 10.844797936371453,
+          "self_kind_disagreement_percent": 10.844797936371453
+        },
+        "8": {
+          "actions": {
+            "call": 2455,
+            "fold": 9895,
+            "raise": 2888,
+            "check": 3370
+          },
+          "facing_bet_folds": 9895,
+          "self_exact_disagreements": 1695,
+          "self_kind_disagreements": 1695,
+          "raise_pot_sum": 1773.251952334681,
+          "action_percent": {
+            "call": 13.193250214961306,
+            "fold": 53.17605331040413,
+            "raise": 15.520206362854687,
+            "check": 18.110490111779878
+          },
+          "fold_when_facing_bet_percent": 70.96751057878505,
+          "mean_raise_pot_fraction": 0.6140069087031443,
+          "self_exact_disagreement_percent": 9.108985382631126,
+          "self_kind_disagreement_percent": 9.108985382631126
+        }
+      },
+      "pairs": {
+        "0:1": {
+          "exact_disagreements": 2912,
+          "kind_disagreements": 2912,
+          "exact_disagreement_percent": 15.649183147033535,
+          "kind_disagreement_percent": 15.649183147033535
+        },
+        "0:2": {
+          "exact_disagreements": 624,
+          "kind_disagreements": 624,
+          "exact_disagreement_percent": 3.353396388650043,
+          "kind_disagreement_percent": 3.353396388650043
+        },
+        "0:3": {
+          "exact_disagreements": 2927,
+          "kind_disagreements": 2927,
+          "exact_disagreement_percent": 15.729793637145313,
+          "kind_disagreement_percent": 15.729793637145313
+        },
+        "0:4": {
+          "exact_disagreements": 8689,
+          "kind_disagreements": 7012,
+          "exact_disagreement_percent": 46.694969905417025,
+          "kind_disagreement_percent": 37.68271711092004
+        },
+        "0:5": {
+          "exact_disagreements": 2932,
+          "kind_disagreements": 2932,
+          "exact_disagreement_percent": 15.756663800515907,
+          "kind_disagreement_percent": 15.756663800515907
+        },
+        "0:6": {
+          "exact_disagreements": 4933,
+          "kind_disagreements": 4933,
+          "exact_disagreement_percent": 26.510103181427343,
+          "kind_disagreement_percent": 26.510103181427343
+        },
+        "0:7": {
+          "exact_disagreements": 4444,
+          "kind_disagreements": 4444,
+          "exact_disagreement_percent": 23.882201203783318,
+          "kind_disagreement_percent": 23.882201203783318
+        },
+        "0:8": {
+          "exact_disagreements": 4360,
+          "kind_disagreements": 4360,
+          "exact_disagreement_percent": 23.430782459157353,
+          "kind_disagreement_percent": 23.430782459157353
+        },
+        "1:2": {
+          "exact_disagreements": 3336,
+          "kind_disagreements": 3336,
+          "exact_disagreement_percent": 17.927773000859844,
+          "kind_disagreement_percent": 17.927773000859844
+        },
+        "1:3": {
+          "exact_disagreements": 121,
+          "kind_disagreements": 121,
+          "exact_disagreement_percent": 0.6502579535683577,
+          "kind_disagreement_percent": 0.6502579535683577
+        },
+        "1:4": {
+          "exact_disagreements": 7526,
+          "kind_disagreements": 6082,
+          "exact_disagreement_percent": 40.444969905417025,
+          "kind_disagreement_percent": 32.68486672398968
+        },
+        "1:5": {
+          "exact_disagreements": 76,
+          "kind_disagreements": 76,
+          "exact_disagreement_percent": 0.40842648323301806,
+          "kind_disagreement_percent": 0.40842648323301806
+        },
+        "1:6": {
+          "exact_disagreements": 2255,
+          "kind_disagreements": 2255,
+          "exact_disagreement_percent": 12.118443680137576,
+          "kind_disagreement_percent": 12.118443680137576
+        },
+        "1:7": {
+          "exact_disagreements": 1735,
+          "kind_disagreements": 1735,
+          "exact_disagreement_percent": 9.323946689595873,
+          "kind_disagreement_percent": 9.323946689595873
+        },
+        "1:8": {
+          "exact_disagreements": 1656,
+          "kind_disagreements": 1656,
+          "exact_disagreement_percent": 8.899398108340499,
+          "kind_disagreement_percent": 8.899398108340499
+        },
+        "2:3": {
+          "exact_disagreements": 3351,
+          "kind_disagreements": 3351,
+          "exact_disagreement_percent": 18.008383490971624,
+          "kind_disagreement_percent": 18.008383490971624
+        },
+        "2:4": {
+          "exact_disagreements": 8930,
+          "kind_disagreements": 7158,
+          "exact_disagreement_percent": 47.99011177987962,
+          "kind_disagreement_percent": 38.46732588134136
+        },
+        "2:5": {
+          "exact_disagreements": 3356,
+          "kind_disagreements": 3356,
+          "exact_disagreement_percent": 18.035253654342217,
+          "kind_disagreement_percent": 18.035253654342217
+        },
+        "2:6": {
+          "exact_disagreements": 5357,
+          "kind_disagreements": 5357,
+          "exact_disagreement_percent": 28.788693035253655,
+          "kind_disagreement_percent": 28.788693035253655
+        },
+        "2:7": {
+          "exact_disagreements": 4868,
+          "kind_disagreements": 4868,
+          "exact_disagreement_percent": 26.16079105760963,
+          "kind_disagreement_percent": 26.16079105760963
+        },
+        "2:8": {
+          "exact_disagreements": 4784,
+          "kind_disagreements": 4784,
+          "exact_disagreement_percent": 25.709372312983664,
+          "kind_disagreement_percent": 25.709372312983664
+        },
+        "3:4": {
+          "exact_disagreements": 7517,
+          "kind_disagreements": 6046,
+          "exact_disagreement_percent": 40.39660361134996,
+          "kind_disagreement_percent": 32.49140154772141
+        },
+        "3:5": {
+          "exact_disagreements": 45,
+          "kind_disagreements": 45,
+          "exact_disagreement_percent": 0.24183147033533964,
+          "kind_disagreement_percent": 0.24183147033533964
+        },
+        "3:6": {
+          "exact_disagreements": 2166,
+          "kind_disagreements": 2166,
+          "exact_disagreement_percent": 11.640154772141015,
+          "kind_disagreement_percent": 11.640154772141015
+        },
+        "3:7": {
+          "exact_disagreements": 1692,
+          "kind_disagreements": 1692,
+          "exact_disagreement_percent": 9.09286328460877,
+          "kind_disagreement_percent": 9.09286328460877
+        },
+        "3:8": {
+          "exact_disagreements": 1611,
+          "kind_disagreements": 1611,
+          "exact_disagreement_percent": 8.657566638005159,
+          "kind_disagreement_percent": 8.657566638005159
+        },
+        "4:5": {
+          "exact_disagreements": 7523,
+          "kind_disagreements": 6052,
+          "exact_disagreement_percent": 40.42884780739467,
+          "kind_disagreement_percent": 32.523645743766124
+        },
+        "4:6": {
+          "exact_disagreements": 7919,
+          "kind_disagreements": 6180,
+          "exact_disagreement_percent": 42.556964746345656,
+          "kind_disagreement_percent": 33.21152192605331
+        },
+        "4:7": {
+          "exact_disagreements": 7557,
+          "kind_disagreements": 5998,
+          "exact_disagreement_percent": 40.611564918314706,
+          "kind_disagreement_percent": 32.23344797936372
+        },
+        "4:8": {
+          "exact_disagreements": 7482,
+          "kind_disagreements": 5918,
+          "exact_disagreement_percent": 40.2085124677558,
+          "kind_disagreement_percent": 31.803525365434222
+        },
+        "5:6": {
+          "exact_disagreements": 2197,
+          "kind_disagreements": 2197,
+          "exact_disagreement_percent": 11.806749785038694,
+          "kind_disagreement_percent": 11.806749785038694
+        },
+        "5:7": {
+          "exact_disagreements": 1685,
+          "kind_disagreements": 1685,
+          "exact_disagreement_percent": 9.055245055889939,
+          "kind_disagreement_percent": 9.055245055889939
+        },
+        "5:8": {
+          "exact_disagreements": 1603,
+          "kind_disagreements": 1603,
+          "exact_disagreement_percent": 8.61457437661221,
+          "kind_disagreement_percent": 8.61457437661221
+        },
+        "6:7": {
+          "exact_disagreements": 1022,
+          "kind_disagreements": 1022,
+          "exact_disagreement_percent": 5.492261392949269,
+          "kind_disagreement_percent": 5.492261392949269
+        },
+        "6:8": {
+          "exact_disagreements": 1135,
+          "kind_disagreements": 1135,
+          "exact_disagreement_percent": 6.099527085124677,
+          "kind_disagreement_percent": 6.099527085124677
+        },
+        "7:8": {
+          "exact_disagreements": 511,
+          "kind_disagreements": 511,
+          "exact_disagreement_percent": 2.7461306964746344,
+          "kind_disagreement_percent": 2.7461306964746344
+        }
+      }
+    },
+    "preflop": {
+      "states": 12705,
+      "facing_bet_states": 12190,
+      "can_raise_states": 12695,
+      "policies": {
+        "0": {
+          "actions": {
+            "call": 2425,
+            "fold": 7323,
+            "raise": 2624,
+            "check": 333
+          },
+          "facing_bet_folds": 7323,
+          "self_exact_disagreements": 588,
+          "self_kind_disagreements": 588,
+          "raise_pot_sum": 1476.495667605031,
+          "action_percent": {
+            "call": 19.08697363242818,
+            "fold": 57.63872491145219,
+            "raise": 20.653286107831562,
+            "check": 2.6210153482880756
+          },
+          "fold_when_facing_bet_percent": 60.07383100902379,
+          "mean_raise_pot_fraction": 0.5626888977153319,
+          "self_exact_disagreement_percent": 4.628099173553719,
+          "self_kind_disagreement_percent": 4.628099173553719
+        },
+        "1": {
+          "actions": {
+            "call": 1727,
+            "fold": 9011,
+            "raise": 1572,
+            "check": 395
+          },
+          "facing_bet_folds": 9011,
+          "self_exact_disagreements": 773,
+          "self_kind_disagreements": 773,
+          "raise_pot_sum": 900.8096286440503,
+          "action_percent": {
+            "call": 13.593073593073592,
+            "fold": 70.92483274301456,
+            "raise": 12.373081463990555,
+            "check": 3.109012199921291
+          },
+          "fold_when_facing_bet_percent": 73.92124692370795,
+          "mean_raise_pot_fraction": 0.5730341149135181,
+          "self_exact_disagreement_percent": 6.084218811491539,
+          "self_kind_disagreement_percent": 6.084218811491539
+        },
+        "2": {
+          "actions": {
+            "call": 2594,
+            "fold": 6910,
+            "raise": 2868,
+            "check": 333
+          },
+          "facing_bet_folds": 6910,
+          "self_exact_disagreements": 556,
+          "self_kind_disagreements": 556,
+          "raise_pot_sum": 1594.4627671721144,
+          "action_percent": {
+            "call": 20.41715859897678,
+            "fold": 54.388036206218025,
+            "raise": 22.57378984651712,
+            "check": 2.6210153482880756
+          },
+          "fold_when_facing_bet_percent": 56.68580803937654,
+          "mean_raise_pot_fraction": 0.5559493609386731,
+          "self_exact_disagreement_percent": 4.376229830775285,
+          "self_kind_disagreement_percent": 4.376229830775285
+        },
+        "3": {
+          "actions": {
+            "call": 1698,
+            "fold": 9011,
+            "raise": 1601,
+            "check": 395
+          },
+          "facing_bet_folds": 9011,
+          "self_exact_disagreements": 778,
+          "self_kind_disagreements": 778,
+          "raise_pot_sum": 923.1232404708198,
+          "action_percent": {
+            "call": 13.364817001180638,
+            "fold": 70.92483274301456,
+            "raise": 12.601338055883511,
+            "check": 3.109012199921291
+          },
+          "fold_when_facing_bet_percent": 73.92124692370795,
+          "mean_raise_pot_fraction": 0.5765916555095689,
+          "self_exact_disagreement_percent": 6.123573396300669,
+          "self_kind_disagreement_percent": 6.123573396300669
+        },
+        "4": {
+          "actions": {
+            "fold": 8078,
+            "call": 2670,
+            "raise": 1522,
+            "check": 435
+          },
+          "facing_bet_folds": 8078,
+          "self_exact_disagreements": 3637,
+          "self_kind_disagreements": 3171,
+          "raise_pot_sum": 1033.130202781024,
+          "action_percent": {
+            "fold": 63.58126721763085,
+            "call": 21.01534828807556,
+            "raise": 11.979535615899252,
+            "check": 3.423848878394333
+          },
+          "fold_when_facing_bet_percent": 66.26743232157506,
+          "mean_raise_pot_fraction": 0.6787977679244573,
+          "self_exact_disagreement_percent": 28.626524990161354,
+          "self_kind_disagreement_percent": 24.958677685950413
+        },
+        "5": {
+          "actions": {
+            "call": 1698,
+            "fold": 9011,
+            "raise": 1601,
+            "check": 395
+          },
+          "facing_bet_folds": 9011,
+          "self_exact_disagreements": 778,
+          "self_kind_disagreements": 778,
+          "raise_pot_sum": 923.1232404708198,
+          "action_percent": {
+            "call": 13.364817001180638,
+            "fold": 70.92483274301456,
+            "raise": 12.601338055883511,
+            "check": 3.109012199921291
+          },
+          "fold_when_facing_bet_percent": 73.92124692370795,
+          "mean_raise_pot_fraction": 0.5765916555095689,
+          "self_exact_disagreement_percent": 6.123573396300669,
+          "self_kind_disagreement_percent": 6.123573396300669
+        },
+        "6": {
+          "actions": {
+            "call": 1698,
+            "fold": 9011,
+            "raise": 1601,
+            "check": 395
+          },
+          "facing_bet_folds": 9011,
+          "self_exact_disagreements": 778,
+          "self_kind_disagreements": 778,
+          "raise_pot_sum": 923.1232404708198,
+          "action_percent": {
+            "call": 13.364817001180638,
+            "fold": 70.92483274301456,
+            "raise": 12.601338055883511,
+            "check": 3.109012199921291
+          },
+          "fold_when_facing_bet_percent": 73.92124692370795,
+          "mean_raise_pot_fraction": 0.5765916555095689,
+          "self_exact_disagreement_percent": 6.123573396300669,
+          "self_kind_disagreement_percent": 6.123573396300669
+        },
+        "7": {
+          "actions": {
+            "call": 1698,
+            "fold": 9011,
+            "raise": 1601,
+            "check": 395
+          },
+          "facing_bet_folds": 9011,
+          "self_exact_disagreements": 778,
+          "self_kind_disagreements": 778,
+          "raise_pot_sum": 923.1232404708198,
+          "action_percent": {
+            "call": 13.364817001180638,
+            "fold": 70.92483274301456,
+            "raise": 12.601338055883511,
+            "check": 3.109012199921291
+          },
+          "fold_when_facing_bet_percent": 73.92124692370795,
+          "mean_raise_pot_fraction": 0.5765916555095689,
+          "self_exact_disagreement_percent": 6.123573396300669,
+          "self_kind_disagreement_percent": 6.123573396300669
+        },
+        "8": {
+          "actions": {
+            "call": 1698,
+            "fold": 9011,
+            "raise": 1601,
+            "check": 395
+          },
+          "facing_bet_folds": 9011,
+          "self_exact_disagreements": 778,
+          "self_kind_disagreements": 778,
+          "raise_pot_sum": 923.1232404708198,
+          "action_percent": {
+            "call": 13.364817001180638,
+            "fold": 70.92483274301456,
+            "raise": 12.601338055883511,
+            "check": 3.109012199921291
+          },
+          "fold_when_facing_bet_percent": 73.92124692370795,
+          "mean_raise_pot_fraction": 0.5765916555095689,
+          "self_exact_disagreement_percent": 6.123573396300669,
+          "self_kind_disagreement_percent": 6.123573396300669
+        }
+      },
+      "pairs": {
+        "0:1": {
+          "exact_disagreements": 2740,
+          "kind_disagreements": 2740,
+          "exact_disagreement_percent": 21.566312475403386,
+          "kind_disagreement_percent": 21.566312475403386
+        },
+        "0:2": {
+          "exact_disagreements": 624,
+          "kind_disagreements": 624,
+          "exact_disagreement_percent": 4.911452184179457,
+          "kind_disagreement_percent": 4.911452184179457
+        },
+        "0:3": {
+          "exact_disagreements": 2769,
+          "kind_disagreements": 2769,
+          "exact_disagreement_percent": 21.79456906729634,
+          "kind_disagreement_percent": 21.79456906729634
+        },
+        "0:4": {
+          "exact_disagreements": 6069,
+          "kind_disagreements": 5177,
+          "exact_disagreement_percent": 47.768595041322314,
+          "kind_disagreement_percent": 40.747737111373475
+        },
+        "0:5": {
+          "exact_disagreements": 2769,
+          "kind_disagreements": 2769,
+          "exact_disagreement_percent": 21.79456906729634,
+          "kind_disagreement_percent": 21.79456906729634
+        },
+        "0:6": {
+          "exact_disagreements": 2769,
+          "kind_disagreements": 2769,
+          "exact_disagreement_percent": 21.79456906729634,
+          "kind_disagreement_percent": 21.79456906729634
+        },
+        "0:7": {
+          "exact_disagreements": 2769,
+          "kind_disagreements": 2769,
+          "exact_disagreement_percent": 21.79456906729634,
+          "kind_disagreement_percent": 21.79456906729634
+        },
+        "0:8": {
+          "exact_disagreements": 2769,
+          "kind_disagreements": 2769,
+          "exact_disagreement_percent": 21.79456906729634,
+          "kind_disagreement_percent": 21.79456906729634
+        },
+        "1:2": {
+          "exact_disagreements": 3164,
+          "kind_disagreements": 3164,
+          "exact_disagreement_percent": 24.903581267217632,
+          "kind_disagreement_percent": 24.903581267217632
+        },
+        "1:3": {
+          "exact_disagreements": 29,
+          "kind_disagreements": 29,
+          "exact_disagreement_percent": 0.22825659189295552,
+          "kind_disagreement_percent": 0.22825659189295552
+        },
+        "1:4": {
+          "exact_disagreements": 4934,
+          "kind_disagreements": 4194,
+          "exact_disagreement_percent": 38.83510428964974,
+          "kind_disagreement_percent": 33.010625737898465
+        },
+        "1:5": {
+          "exact_disagreements": 29,
+          "kind_disagreements": 29,
+          "exact_disagreement_percent": 0.22825659189295552,
+          "kind_disagreement_percent": 0.22825659189295552
+        },
+        "1:6": {
+          "exact_disagreements": 29,
+          "kind_disagreements": 29,
+          "exact_disagreement_percent": 0.22825659189295552,
+          "kind_disagreement_percent": 0.22825659189295552
+        },
+        "1:7": {
+          "exact_disagreements": 29,
+          "kind_disagreements": 29,
+          "exact_disagreement_percent": 0.22825659189295552,
+          "kind_disagreement_percent": 0.22825659189295552
+        },
+        "1:8": {
+          "exact_disagreements": 29,
+          "kind_disagreements": 29,
+          "exact_disagreement_percent": 0.22825659189295552,
+          "kind_disagreement_percent": 0.22825659189295552
+        },
+        "2:3": {
+          "exact_disagreements": 3193,
+          "kind_disagreements": 3193,
+          "exact_disagreement_percent": 25.131837859110586,
+          "kind_disagreement_percent": 25.131837859110586
+        },
+        "2:4": {
+          "exact_disagreements": 6310,
+          "kind_disagreements": 5323,
+          "exact_disagreement_percent": 49.66548602912239,
+          "kind_disagreement_percent": 41.89689098780008
+        },
+        "2:5": {
+          "exact_disagreements": 3193,
+          "kind_disagreements": 3193,
+          "exact_disagreement_percent": 25.131837859110586,
+          "kind_disagreement_percent": 25.131837859110586
+        },
+        "2:6": {
+          "exact_disagreements": 3193,
+          "kind_disagreements": 3193,
+          "exact_disagreement_percent": 25.131837859110586,
+          "kind_disagreement_percent": 25.131837859110586
+        },
+        "2:7": {
+          "exact_disagreements": 3193,
+          "kind_disagreements": 3193,
+          "exact_disagreement_percent": 25.131837859110586,
+          "kind_disagreement_percent": 25.131837859110586
+        },
+        "2:8": {
+          "exact_disagreements": 3193,
+          "kind_disagreements": 3193,
+          "exact_disagreement_percent": 25.131837859110586,
+          "kind_disagreement_percent": 25.131837859110586
+        },
+        "3:4": {
+          "exact_disagreements": 4936,
+          "kind_disagreements": 4171,
+          "exact_disagreement_percent": 38.8508461235734,
+          "kind_disagreement_percent": 32.82959464777647
+        },
+        "3:5": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "3:6": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "3:7": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "3:8": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "4:5": {
+          "exact_disagreements": 4936,
+          "kind_disagreements": 4171,
+          "exact_disagreement_percent": 38.8508461235734,
+          "kind_disagreement_percent": 32.82959464777647
+        },
+        "4:6": {
+          "exact_disagreements": 4936,
+          "kind_disagreements": 4171,
+          "exact_disagreement_percent": 38.8508461235734,
+          "kind_disagreement_percent": 32.82959464777647
+        },
+        "4:7": {
+          "exact_disagreements": 4936,
+          "kind_disagreements": 4171,
+          "exact_disagreement_percent": 38.8508461235734,
+          "kind_disagreement_percent": 32.82959464777647
+        },
+        "4:8": {
+          "exact_disagreements": 4936,
+          "kind_disagreements": 4171,
+          "exact_disagreement_percent": 38.8508461235734,
+          "kind_disagreement_percent": 32.82959464777647
+        },
+        "5:6": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "5:7": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "5:8": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "6:7": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "6:8": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "7:8": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        }
+      }
+    },
+    "postflop": {
+      "states": 5903,
+      "facing_bet_states": 1753,
+      "can_raise_states": 5865,
+      "policies": {
+        "0": {
+          "actions": {
+            "raise": 1303,
+            "check": 3048,
+            "fold": 1126,
+            "call": 426
+          },
+          "facing_bet_folds": 1126,
+          "self_exact_disagreements": 737,
+          "self_kind_disagreements": 737,
+          "raise_pot_sum": 859.1594665598922,
+          "action_percent": {
+            "raise": 22.07352193799763,
+            "check": 51.63476198543113,
+            "fold": 19.07504658648145,
+            "call": 7.216669490089785
+          },
+          "fold_when_facing_bet_percent": 64.23274386765544,
+          "mean_raise_pot_fraction": 0.6593702736453508,
+          "self_exact_disagreement_percent": 12.48517702862951,
+          "self_kind_disagreement_percent": 12.48517702862951
+        },
+        "1": {
+          "actions": {
+            "raise": 1183,
+            "check": 3154,
+            "fold": 1179,
+            "call": 387
+          },
+          "facing_bet_folds": 1179,
+          "self_exact_disagreements": 698,
+          "self_kind_disagreements": 698,
+          "raise_pot_sum": 779.2113917618746,
+          "action_percent": {
+            "raise": 20.040657292901916,
+            "check": 53.430459088599015,
+            "fold": 19.97289513806539,
+            "call": 6.555988480433678
+          },
+          "fold_when_facing_bet_percent": 67.2561323445522,
+          "mean_raise_pot_fraction": 0.6586740420641374,
+          "self_exact_disagreement_percent": 11.824496018973404,
+          "self_kind_disagreement_percent": 11.824496018973404
+        },
+        "2": {
+          "actions": {
+            "raise": 1303,
+            "check": 3048,
+            "fold": 1126,
+            "call": 426
+          },
+          "facing_bet_folds": 1126,
+          "self_exact_disagreements": 737,
+          "self_kind_disagreements": 737,
+          "raise_pot_sum": 859.1594665598922,
+          "action_percent": {
+            "raise": 22.07352193799763,
+            "check": 51.63476198543113,
+            "fold": 19.07504658648145,
+            "call": 7.216669490089785
+          },
+          "fold_when_facing_bet_percent": 64.23274386765544,
+          "mean_raise_pot_fraction": 0.6593702736453508,
+          "self_exact_disagreement_percent": 12.48517702862951,
+          "self_kind_disagreement_percent": 12.48517702862951
+        },
+        "3": {
+          "actions": {
+            "raise": 1191,
+            "check": 3150,
+            "fold": 1092,
+            "call": 470
+          },
+          "facing_bet_folds": 1092,
+          "self_exact_disagreements": 711,
+          "self_kind_disagreements": 711,
+          "raise_pot_sum": 784.540364848291,
+          "action_percent": {
+            "raise": 20.17618160257496,
+            "check": 53.36269693376249,
+            "fold": 18.499068270370998,
+            "call": 7.962053193291546
+          },
+          "fold_when_facing_bet_percent": 62.29321163719338,
+          "mean_raise_pot_fraction": 0.6587240678826961,
+          "self_exact_disagreement_percent": 12.044723022192105,
+          "self_kind_disagreement_percent": 12.044723022192105
+        },
+        "4": {
+          "actions": {
+            "check": 2775,
+            "call": 679,
+            "raise": 1655,
+            "fold": 794
+          },
+          "facing_bet_folds": 794,
+          "self_exact_disagreements": 1458,
+          "self_kind_disagreements": 1206,
+          "raise_pot_sum": 966.3871010336103,
+          "action_percent": {
+            "check": 47.009994917838384,
+            "call": 11.502625783499916,
+            "raise": 28.036591563611722,
+            "fold": 13.450787735049975
+          },
+          "fold_when_facing_bet_percent": 45.2937820878494,
+          "mean_raise_pot_fraction": 0.5839196985097344,
+          "self_exact_disagreement_percent": 24.699305437912926,
+          "self_kind_disagreement_percent": 20.430289683211925
+        },
+        "5": {
+          "actions": {
+            "raise": 1189,
+            "check": 3150,
+            "fold": 1137,
+            "call": 427
+          },
+          "facing_bet_folds": 1137,
+          "self_exact_disagreements": 707,
+          "self_kind_disagreements": 707,
+          "raise_pot_sum": 783.2074513395518,
+          "action_percent": {
+            "raise": 20.1423005251567,
+            "check": 53.36269693376249,
+            "fold": 19.26139251228189,
+            "call": 7.233610028798916
+          },
+          "fold_when_facing_bet_percent": 64.86023958927552,
+          "mean_raise_pot_fraction": 0.6587110608406659,
+          "self_exact_disagreement_percent": 11.976960867355581,
+          "self_kind_disagreement_percent": 11.976960867355581
+        },
+        "6": {
+          "actions": {
+            "raise": 1786,
+            "check": 2684,
+            "call": 1093,
+            "fold": 340
+          },
+          "facing_bet_folds": 340,
+          "self_exact_disagreements": 1194,
+          "self_kind_disagreements": 1194,
+          "raise_pot_sum": 1177.507019916768,
+          "action_percent": {
+            "raise": 30.255802134507878,
+            "check": 45.46840589530747,
+            "call": 18.51600880908013,
+            "fold": 5.759783161104523
+          },
+          "fold_when_facing_bet_percent": 19.39532230462065,
+          "mean_raise_pot_fraction": 0.6592984434024457,
+          "self_exact_disagreement_percent": 20.227003218702354,
+          "self_kind_disagreement_percent": 20.227003218702354
+        },
+        "7": {
+          "actions": {
+            "check": 2956,
+            "fold": 878,
+            "call": 752,
+            "raise": 1317
+          },
+          "facing_bet_folds": 878,
+          "self_exact_disagreements": 1240,
+          "self_kind_disagreements": 1240,
+          "raise_pot_sum": 871.9337997886981,
+          "action_percent": {
+            "check": 50.07623242419109,
+            "fold": 14.873792986616975,
+            "call": 12.739285109266474,
+            "raise": 22.31068947992546
+          },
+          "fold_when_facing_bet_percent": 50.08556759840274,
+          "mean_raise_pot_fraction": 0.6620605920946835,
+          "self_exact_disagreement_percent": 21.00626799932238,
+          "self_kind_disagreement_percent": 21.00626799932238
+        },
+        "8": {
+          "actions": {
+            "check": 2975,
+            "call": 757,
+            "fold": 884,
+            "raise": 1287
+          },
+          "facing_bet_folds": 884,
+          "self_exact_disagreements": 917,
+          "self_kind_disagreements": 917,
+          "raise_pot_sum": 850.1287118639117,
+          "action_percent": {
+            "check": 50.39810265966458,
+            "call": 12.823987802812129,
+            "fold": 14.97543621887176,
+            "raise": 21.802473318651533
+          },
+          "fold_when_facing_bet_percent": 50.42783799201369,
+          "mean_raise_pot_fraction": 0.6605506696689291,
+          "self_exact_disagreement_percent": 15.534473996273082,
+          "self_kind_disagreement_percent": 15.534473996273082
+        }
+      },
+      "pairs": {
+        "0:1": {
+          "exact_disagreements": 172,
+          "kind_disagreements": 172,
+          "exact_disagreement_percent": 2.9137726579705236,
+          "kind_disagreement_percent": 2.9137726579705236
+        },
+        "0:2": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "0:3": {
+          "exact_disagreements": 158,
+          "kind_disagreements": 158,
+          "exact_disagreement_percent": 2.67660511604269,
+          "kind_disagreement_percent": 2.67660511604269
+        },
+        "0:4": {
+          "exact_disagreements": 2620,
+          "kind_disagreements": 1835,
+          "exact_disagreement_percent": 44.38421141792309,
+          "kind_disagreement_percent": 31.085888531255293
+        },
+        "0:5": {
+          "exact_disagreements": 163,
+          "kind_disagreements": 163,
+          "exact_disagreement_percent": 2.7613078095883448,
+          "kind_disagreement_percent": 2.7613078095883448
+        },
+        "0:6": {
+          "exact_disagreements": 2164,
+          "kind_disagreements": 2164,
+          "exact_disagreement_percent": 36.65932576655938,
+          "kind_disagreement_percent": 36.65932576655938
+        },
+        "0:7": {
+          "exact_disagreements": 1675,
+          "kind_disagreements": 1675,
+          "exact_disagreement_percent": 28.37540233779434,
+          "kind_disagreement_percent": 28.37540233779434
+        },
+        "0:8": {
+          "exact_disagreements": 1591,
+          "kind_disagreements": 1591,
+          "exact_disagreement_percent": 26.952397086227343,
+          "kind_disagreement_percent": 26.952397086227343
+        },
+        "1:2": {
+          "exact_disagreements": 172,
+          "kind_disagreements": 172,
+          "exact_disagreement_percent": 2.9137726579705236,
+          "kind_disagreement_percent": 2.9137726579705236
+        },
+        "1:3": {
+          "exact_disagreements": 92,
+          "kind_disagreements": 92,
+          "exact_disagreement_percent": 1.5585295612400474,
+          "kind_disagreement_percent": 1.5585295612400474
+        },
+        "1:4": {
+          "exact_disagreements": 2592,
+          "kind_disagreements": 1888,
+          "exact_disagreement_percent": 43.90987633406743,
+          "kind_disagreement_percent": 31.983737082839234
+        },
+        "1:5": {
+          "exact_disagreements": 47,
+          "kind_disagreements": 47,
+          "exact_disagreement_percent": 0.7962053193291546,
+          "kind_disagreement_percent": 0.7962053193291546
+        },
+        "1:6": {
+          "exact_disagreements": 2226,
+          "kind_disagreements": 2226,
+          "exact_disagreement_percent": 37.7096391665255,
+          "kind_disagreement_percent": 37.7096391665255
+        },
+        "1:7": {
+          "exact_disagreements": 1706,
+          "kind_disagreements": 1706,
+          "exact_disagreement_percent": 28.900559037777402,
+          "kind_disagreement_percent": 28.900559037777402
+        },
+        "1:8": {
+          "exact_disagreements": 1627,
+          "kind_disagreements": 1627,
+          "exact_disagreement_percent": 27.562256479756055,
+          "kind_disagreement_percent": 27.562256479756055
+        },
+        "2:3": {
+          "exact_disagreements": 158,
+          "kind_disagreements": 158,
+          "exact_disagreement_percent": 2.67660511604269,
+          "kind_disagreement_percent": 2.67660511604269
+        },
+        "2:4": {
+          "exact_disagreements": 2620,
+          "kind_disagreements": 1835,
+          "exact_disagreement_percent": 44.38421141792309,
+          "kind_disagreement_percent": 31.085888531255293
+        },
+        "2:5": {
+          "exact_disagreements": 163,
+          "kind_disagreements": 163,
+          "exact_disagreement_percent": 2.7613078095883448,
+          "kind_disagreement_percent": 2.7613078095883448
+        },
+        "2:6": {
+          "exact_disagreements": 2164,
+          "kind_disagreements": 2164,
+          "exact_disagreement_percent": 36.65932576655938,
+          "kind_disagreement_percent": 36.65932576655938
+        },
+        "2:7": {
+          "exact_disagreements": 1675,
+          "kind_disagreements": 1675,
+          "exact_disagreement_percent": 28.37540233779434,
+          "kind_disagreement_percent": 28.37540233779434
+        },
+        "2:8": {
+          "exact_disagreements": 1591,
+          "kind_disagreements": 1591,
+          "exact_disagreement_percent": 26.952397086227343,
+          "kind_disagreement_percent": 26.952397086227343
+        },
+        "3:4": {
+          "exact_disagreements": 2581,
+          "kind_disagreements": 1875,
+          "exact_disagreement_percent": 43.72353040826698,
+          "kind_disagreement_percent": 31.76351007962053
+        },
+        "3:5": {
+          "exact_disagreements": 45,
+          "kind_disagreements": 45,
+          "exact_disagreement_percent": 0.7623242419108928,
+          "kind_disagreement_percent": 0.7623242419108928
+        },
+        "3:6": {
+          "exact_disagreements": 2166,
+          "kind_disagreements": 2166,
+          "exact_disagreement_percent": 36.69320684397764,
+          "kind_disagreement_percent": 36.69320684397764
+        },
+        "3:7": {
+          "exact_disagreements": 1692,
+          "kind_disagreements": 1692,
+          "exact_disagreement_percent": 28.663391495849567,
+          "kind_disagreement_percent": 28.663391495849567
+        },
+        "3:8": {
+          "exact_disagreements": 1611,
+          "kind_disagreements": 1611,
+          "exact_disagreement_percent": 27.291207860409962,
+          "kind_disagreement_percent": 27.291207860409962
+        },
+        "4:5": {
+          "exact_disagreements": 2587,
+          "kind_disagreements": 1881,
+          "exact_disagreement_percent": 43.82517364052177,
+          "kind_disagreement_percent": 31.865153311875318
+        },
+        "4:6": {
+          "exact_disagreements": 2983,
+          "kind_disagreements": 2009,
+          "exact_disagreement_percent": 50.533626969337625,
+          "kind_disagreement_percent": 34.033542266644076
+        },
+        "4:7": {
+          "exact_disagreements": 2621,
+          "kind_disagreements": 1827,
+          "exact_disagreement_percent": 44.40115195663222,
+          "kind_disagreement_percent": 30.950364221582245
+        },
+        "4:8": {
+          "exact_disagreements": 2546,
+          "kind_disagreements": 1747,
+          "exact_disagreement_percent": 43.1306115534474,
+          "kind_disagreement_percent": 29.59512112485177
+        },
+        "5:6": {
+          "exact_disagreements": 2197,
+          "kind_disagreements": 2197,
+          "exact_disagreement_percent": 37.2183635439607,
+          "kind_disagreement_percent": 37.2183635439607
+        },
+        "5:7": {
+          "exact_disagreements": 1685,
+          "kind_disagreements": 1685,
+          "exact_disagreement_percent": 28.54480772488565,
+          "kind_disagreement_percent": 28.54480772488565
+        },
+        "5:8": {
+          "exact_disagreements": 1603,
+          "kind_disagreements": 1603,
+          "exact_disagreement_percent": 27.155683550736914,
+          "kind_disagreement_percent": 27.155683550736914
+        },
+        "6:7": {
+          "exact_disagreements": 1022,
+          "kind_disagreements": 1022,
+          "exact_disagreement_percent": 17.31323056073183,
+          "kind_disagreement_percent": 17.31323056073183
+        },
+        "6:8": {
+          "exact_disagreements": 1135,
+          "kind_disagreements": 1135,
+          "exact_disagreement_percent": 19.22751143486363,
+          "kind_disagreement_percent": 19.22751143486363
+        },
+        "7:8": {
+          "exact_disagreements": 511,
+          "kind_disagreements": 511,
+          "exact_disagreement_percent": 8.656615280365916,
+          "kind_disagreement_percent": 8.656615280365916
+        }
+      }
+    },
+    "postflop_multiway": {
+      "states": 2094,
+      "facing_bet_states": 481,
+      "can_raise_states": 2092,
+      "policies": {
+        "0": {
+          "actions": {
+            "check": 1346,
+            "raise": 303,
+            "fold": 379,
+            "call": 66
+          },
+          "facing_bet_folds": 379,
+          "self_exact_disagreements": 161,
+          "self_kind_disagreements": 161,
+          "raise_pot_sum": 201.689218263319,
+          "action_percent": {
+            "check": 64.27889207258835,
+            "raise": 14.469914040114613,
+            "fold": 18.099331423113657,
+            "call": 3.151862464183381
+          },
+          "fold_when_facing_bet_percent": 78.79417879417879,
+          "mean_raise_pot_fraction": 0.6656409843673894,
+          "self_exact_disagreement_percent": 7.688634192932187,
+          "self_kind_disagreement_percent": 7.688634192932187
+        },
+        "1": {
+          "actions": {
+            "check": 1451,
+            "raise": 188,
+            "fold": 411,
+            "call": 44
+          },
+          "facing_bet_folds": 411,
+          "self_exact_disagreements": 122,
+          "self_kind_disagreements": 122,
+          "raise_pot_sum": 125.07273487439865,
+          "action_percent": {
+            "check": 69.29321872015282,
+            "raise": 8.97803247373448,
+            "fold": 19.62750716332378,
+            "call": 2.1012416427889207
+          },
+          "fold_when_facing_bet_percent": 85.44698544698545,
+          "mean_raise_pot_fraction": 0.6652805046510566,
+          "self_exact_disagreement_percent": 5.826170009551098,
+          "self_kind_disagreement_percent": 5.826170009551098
+        },
+        "2": {
+          "actions": {
+            "check": 1346,
+            "raise": 303,
+            "fold": 379,
+            "call": 66
+          },
+          "facing_bet_folds": 379,
+          "self_exact_disagreements": 161,
+          "self_kind_disagreements": 161,
+          "raise_pot_sum": 201.689218263319,
+          "action_percent": {
+            "check": 64.27889207258835,
+            "raise": 14.469914040114613,
+            "fold": 18.099331423113657,
+            "call": 3.151862464183381
+          },
+          "fold_when_facing_bet_percent": 78.79417879417879,
+          "mean_raise_pot_fraction": 0.6656409843673894,
+          "self_exact_disagreement_percent": 7.688634192932187,
+          "self_kind_disagreement_percent": 7.688634192932187
+        },
+        "3": {
+          "actions": {
+            "check": 1450,
+            "raise": 191,
+            "fold": 365,
+            "call": 88
+          },
+          "facing_bet_folds": 365,
+          "self_exact_disagreements": 125,
+          "self_kind_disagreements": 125,
+          "raise_pot_sum": 127.07241711144981,
+          "action_percent": {
+            "check": 69.24546322827125,
+            "raise": 9.12129894937918,
+            "fold": 17.43075453677173,
+            "call": 4.202483285577841
+          },
+          "fold_when_facing_bet_percent": 75.88357588357589,
+          "mean_raise_pot_fraction": 0.6653006131489518,
+          "self_exact_disagreement_percent": 5.969436485195797,
+          "self_kind_disagreement_percent": 5.969436485195797
+        },
+        "4": {
+          "actions": {
+            "raise": 507,
+            "check": 1150,
+            "fold": 317,
+            "call": 120
+          },
+          "facing_bet_folds": 317,
+          "self_exact_disagreements": 414,
+          "self_kind_disagreements": 339,
+          "raise_pot_sum": 294.01964351290616,
+          "action_percent": {
+            "raise": 24.212034383954155,
+            "check": 54.91881566380134,
+            "fold": 15.138490926456543,
+            "call": 5.730659025787966
+          },
+          "fold_when_facing_bet_percent": 65.9043659043659,
+          "mean_raise_pot_fraction": 0.5799204014061266,
+          "self_exact_disagreement_percent": 19.770773638968482,
+          "self_kind_disagreement_percent": 16.189111747851
+        },
+        "5": {
+          "actions": {
+            "check": 1450,
+            "raise": 190,
+            "fold": 383,
+            "call": 71
+          },
+          "facing_bet_folds": 383,
+          "self_exact_disagreements": 124,
+          "self_kind_disagreements": 124,
+          "raise_pot_sum": 126.40606820773198,
+          "action_percent": {
+            "check": 69.24546322827125,
+            "raise": 9.073543457497612,
+            "fold": 18.290353390639922,
+            "call": 3.390639923591213
+          },
+          "fold_when_facing_bet_percent": 79.62577962577963,
+          "mean_raise_pot_fraction": 0.6652950958301683,
+          "self_exact_disagreement_percent": 5.921680993314231,
+          "self_kind_disagreement_percent": 5.921680993314231
+        },
+        "6": {
+          "actions": {
+            "check": 1320,
+            "call": 255,
+            "fold": 193,
+            "raise": 326
+          },
+          "facing_bet_folds": 193,
+          "self_exact_disagreements": 274,
+          "self_kind_disagreements": 274,
+          "raise_pot_sum": 217.00554142280507,
+          "action_percent": {
+            "check": 63.03724928366762,
+            "call": 12.177650429799426,
+            "fold": 9.216809933142311,
+            "raise": 15.56829035339064
+          },
+          "fold_when_facing_bet_percent": 40.12474012474012,
+          "mean_raise_pot_fraction": 0.6656611700086045,
+          "self_exact_disagreement_percent": 13.085004775549189,
+          "self_kind_disagreement_percent": 13.085004775549189
+        },
+        "7": {
+          "actions": {
+            "check": 1361,
+            "fold": 310,
+            "call": 153,
+            "raise": 270
+          },
+          "facing_bet_folds": 310,
+          "self_exact_disagreements": 264,
+          "self_kind_disagreements": 264,
+          "raise_pot_sum": 179.85194109418572,
+          "action_percent": {
+            "check": 64.99522445081185,
+            "fold": 14.804202483285577,
+            "call": 7.306590257879656,
+            "raise": 12.893982808022923
+          },
+          "fold_when_facing_bet_percent": 64.44906444906445,
+          "mean_raise_pot_fraction": 0.666118300348836,
+          "self_exact_disagreement_percent": 12.607449856733524,
+          "self_kind_disagreement_percent": 12.607449856733524
+        },
+        "8": {
+          "actions": {
+            "check": 1371,
+            "fold": 325,
+            "call": 141,
+            "raise": 257
+          },
+          "facing_bet_folds": 325,
+          "self_exact_disagreements": 189,
+          "self_kind_disagreements": 189,
+          "raise_pot_sum": 171.04691282126998,
+          "action_percent": {
+            "check": 65.4727793696275,
+            "fold": 15.520534861509073,
+            "call": 6.73352435530086,
+            "raise": 12.27316141356256
+          },
+          "fold_when_facing_bet_percent": 67.56756756756756,
+          "mean_raise_pot_fraction": 0.665552189966031,
+          "self_exact_disagreement_percent": 9.025787965616045,
+          "self_kind_disagreement_percent": 9.025787965616045
+        }
+      },
+      "pairs": {
+        "0:1": {
+          "exact_disagreements": 146,
+          "kind_disagreements": 146,
+          "exact_disagreement_percent": 6.9723018147086915,
+          "kind_disagreement_percent": 6.9723018147086915
+        },
+        "0:2": {
+          "exact_disagreements": 0,
+          "kind_disagreements": 0,
+          "exact_disagreement_percent": 0.0,
+          "kind_disagreement_percent": 0.0
+        },
+        "0:3": {
+          "exact_disagreements": 129,
+          "kind_disagreements": 129,
+          "exact_disagreement_percent": 6.160458452722063,
+          "kind_disagreement_percent": 6.160458452722063
+        },
+        "0:4": {
+          "exact_disagreements": 692,
+          "kind_disagreements": 473,
+          "exact_disagreement_percent": 33.046800382043934,
+          "kind_disagreement_percent": 22.588347659980897
+        },
+        "0:5": {
+          "exact_disagreements": 135,
+          "kind_disagreements": 135,
+          "exact_disagreement_percent": 6.446991404011461,
+          "kind_disagreement_percent": 6.446991404011461
+        },
+        "0:6": {
+          "exact_disagreements": 477,
+          "kind_disagreements": 477,
+          "exact_disagreement_percent": 22.77936962750716,
+          "kind_disagreement_percent": 22.77936962750716
+        },
+        "0:7": {
+          "exact_disagreements": 374,
+          "kind_disagreements": 374,
+          "exact_disagreement_percent": 17.860553963705826,
+          "kind_disagreement_percent": 17.860553963705826
+        },
+        "0:8": {
+          "exact_disagreements": 329,
+          "kind_disagreements": 329,
+          "exact_disagreement_percent": 15.71155682903534,
+          "kind_disagreement_percent": 15.71155682903534
+        },
+        "1:2": {
+          "exact_disagreements": 146,
+          "kind_disagreements": 146,
+          "exact_disagreement_percent": 6.9723018147086915,
+          "kind_disagreement_percent": 6.9723018147086915
+        },
+        "1:3": {
+          "exact_disagreements": 47,
+          "kind_disagreements": 47,
+          "exact_disagreement_percent": 2.24450811843362,
+          "kind_disagreement_percent": 2.24450811843362
+        },
+        "1:4": {
+          "exact_disagreements": 661,
+          "kind_disagreements": 521,
+          "exact_disagreement_percent": 31.566380133715377,
+          "kind_disagreement_percent": 24.880611270296082
+        },
+        "1:5": {
+          "exact_disagreements": 29,
+          "kind_disagreements": 29,
+          "exact_disagreement_percent": 1.384909264565425,
+          "kind_disagreement_percent": 1.384909264565425
+        },
+        "1:6": {
+          "exact_disagreements": 524,
+          "kind_disagreements": 524,
+          "exact_disagreement_percent": 25.023877745940784,
+          "kind_disagreement_percent": 25.023877745940784
+        },
+        "1:7": {
+          "exact_disagreements": 404,
+          "kind_disagreements": 404,
+          "exact_disagreement_percent": 19.29321872015282,
+          "kind_disagreement_percent": 19.29321872015282
+        },
+        "1:8": {
+          "exact_disagreements": 367,
+          "kind_disagreements": 367,
+          "exact_disagreement_percent": 17.52626552053486,
+          "kind_disagreement_percent": 17.52626552053486
+        },
+        "2:3": {
+          "exact_disagreements": 129,
+          "kind_disagreements": 129,
+          "exact_disagreement_percent": 6.160458452722063,
+          "kind_disagreement_percent": 6.160458452722063
+        },
+        "2:4": {
+          "exact_disagreements": 692,
+          "kind_disagreements": 473,
+          "exact_disagreement_percent": 33.046800382043934,
+          "kind_disagreement_percent": 22.588347659980897
+        },
+        "2:5": {
+          "exact_disagreements": 135,
+          "kind_disagreements": 135,
+          "exact_disagreement_percent": 6.446991404011461,
+          "kind_disagreement_percent": 6.446991404011461
+        },
+        "2:6": {
+          "exact_disagreements": 477,
+          "kind_disagreements": 477,
+          "exact_disagreement_percent": 22.77936962750716,
+          "kind_disagreement_percent": 22.77936962750716
+        },
+        "2:7": {
+          "exact_disagreements": 374,
+          "kind_disagreements": 374,
+          "exact_disagreement_percent": 17.860553963705826,
+          "kind_disagreement_percent": 17.860553963705826
+        },
+        "2:8": {
+          "exact_disagreements": 329,
+          "kind_disagreements": 329,
+          "exact_disagreement_percent": 15.71155682903534,
+          "kind_disagreement_percent": 15.71155682903534
+        },
+        "3:4": {
+          "exact_disagreements": 667,
+          "kind_disagreements": 527,
+          "exact_disagreement_percent": 31.852913085004776,
+          "kind_disagreement_percent": 25.16714422158548
+        },
+        "3:5": {
+          "exact_disagreements": 18,
+          "kind_disagreements": 18,
+          "exact_disagreement_percent": 0.8595988538681948,
+          "kind_disagreement_percent": 0.8595988538681948
+        },
+        "3:6": {
+          "exact_disagreements": 491,
+          "kind_disagreements": 491,
+          "exact_disagreement_percent": 23.447946513849093,
+          "kind_disagreement_percent": 23.447946513849093
+        },
+        "3:7": {
+          "exact_disagreements": 390,
+          "kind_disagreements": 390,
+          "exact_disagreement_percent": 18.624641833810887,
+          "kind_disagreement_percent": 18.624641833810887
+        },
+        "3:8": {
+          "exact_disagreements": 349,
+          "kind_disagreements": 349,
+          "exact_disagreement_percent": 16.666666666666668,
+          "kind_disagreement_percent": 16.666666666666668
+        },
+        "4:5": {
+          "exact_disagreements": 663,
+          "kind_disagreements": 523,
+          "exact_disagreement_percent": 31.66189111747851,
+          "kind_disagreement_percent": 24.976122254059216
+        },
+        "4:6": {
+          "exact_disagreements": 767,
+          "kind_disagreements": 506,
+          "exact_disagreement_percent": 36.62846227316141,
+          "kind_disagreement_percent": 24.164278892072588
+        },
+        "4:7": {
+          "exact_disagreements": 690,
+          "kind_disagreements": 463,
+          "exact_disagreement_percent": 32.9512893982808,
+          "kind_disagreement_percent": 22.110792741165234
+        },
+        "4:8": {
+          "exact_disagreements": 674,
+          "kind_disagreements": 453,
+          "exact_disagreement_percent": 32.18720152817574,
+          "kind_disagreement_percent": 21.63323782234957
+        },
+        "5:6": {
+          "exact_disagreements": 503,
+          "kind_disagreements": 503,
+          "exact_disagreement_percent": 24.02101241642789,
+          "kind_disagreement_percent": 24.02101241642789
+        },
+        "5:7": {
+          "exact_disagreements": 388,
+          "kind_disagreements": 388,
+          "exact_disagreement_percent": 18.529130850047757,
+          "kind_disagreement_percent": 18.529130850047757
+        },
+        "5:8": {
+          "exact_disagreements": 349,
+          "kind_disagreements": 349,
+          "exact_disagreement_percent": 16.666666666666668,
+          "kind_disagreement_percent": 16.666666666666668
+        },
+        "6:7": {
+          "exact_disagreements": 181,
+          "kind_disagreements": 181,
+          "exact_disagreement_percent": 8.643744030563514,
+          "kind_disagreement_percent": 8.643744030563514
+        },
+        "6:8": {
+          "exact_disagreements": 230,
+          "kind_disagreements": 230,
+          "exact_disagreement_percent": 10.983763132760268,
+          "kind_disagreement_percent": 10.983763132760268
+        },
+        "7:8": {
+          "exact_disagreements": 114,
+          "kind_disagreements": 114,
+          "exact_disagreement_percent": 5.444126074498567,
+          "kind_disagreement_percent": 5.444126074498567
+        }
+      }
+    }
+  },
+  "method": [
+    "Independent 200-BB deals under five fixed six-seat policy fields; all decision states included.",
+    "Each policy sees the identical state and same starting RNG seed per probe; two probes per state.",
+    "Pair differences and action frequencies use the first probe; self differences compare independent seeds.",
+    "Random draws are coupled by seed, but different algorithms may consume or interpret them differently.",
+    "Exact differences include bet size; kind differences compare fold/check/call/raise only.",
+    "Postflop multiway means at least three live players, including players already all-in.",
+    "Counterfactual action frequencies are not trajectory VPIP/PFR or a strength/human-realism score.",
+    "Results describe this corpus; no independence, population confidence interval or personality claim."
+  ]
+}

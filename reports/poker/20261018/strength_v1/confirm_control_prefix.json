@@ -1,0 +1,14 @@
+{
+  "source_log": "reports/poker/20261018/strength_v1/slumbot_confirm_control.jsonl",
+  "source_sha256": "4f47f28586fb8bf07669a3c9330eec8297760f553b347f68c636ea088c636011",
+  "first_hand": 0,
+  "last_hand": 5999,
+  "hands": 6000,
+  "position_counts": [
+    3001,
+    2999
+  ],
+  "first_interrupted_attempt_after_completed_hands": 7650,
+  "selection": "Outcome-independent clean prefix fixed before computing its score; excludes all later outcomes and failed attempts. Full interrupted source retained.",
+  "reason": "DNS outage ended the planned 8000-hand control after 7771 completed hands."
+}

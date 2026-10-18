@@ -33,8 +33,8 @@ int main(void) {
         for (int p = 0; p < POKER_PLAYERS; p++) stacks[p] = 1 + poker_random(&rng)%20000;
         poker_deal(g,0,h%POKER_PLAYERS,stacks); poker_profile_begin(profiles);
         while (g->actor[0]!=POKER_DONE) {
-            int style = 6 + (poker_random(&rng)%3);
-            int32_t a = poker_bot_with_history(g,0,&rng,style,profiles);
+            int samples = 32 << (poker_random(&rng)%3);
+            int32_t a = poker_decide(g,0,&rng,7,samples,profiles);
             poker_profile_update(profiles,g,0,a);poker_step(g,0,a); steps++;
             assert(g->decisions[0]<4096);
         }

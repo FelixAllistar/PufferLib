@@ -12,6 +12,7 @@ int main(int argc, char** argv) {
     dict_set(&ek, "bot_policy", argc > 3 ? atoi(argv[3]) : 1);
     dict_set(&ek, "native_baseline_mask", argc > 4 ? atoi(argv[4]) : 0);
     dict_set(&ek, "native_history", argc > 5 ? atoi(argv[5]) : 0);
+    dict_set(&ek, "equity_samples", argc > 6 ? atoi(argv[6]) : 0);
     dict_set(&ek, "seed", 73);
     dict_set(&ek, "rules_fraction", 0.25);
     dict_set_str(&ek, "native_league", argc > 1 ? argv[1] : "None");

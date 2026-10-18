@@ -3,8 +3,10 @@ import argparse
 from contextlib import redirect_stdout
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
+import signal
 import threading
 import time
 import unittest
@@ -72,6 +74,10 @@ class API:
                     if api.fault == "timeout" and not api.failed:
                         api.failed = True
                         raise requests.ReadTimeout()
+                    if api.fault == "SIGTERM" and not api.failed:
+                        api.failed = True
+                        os.kill(os.getpid(), signal.SIGTERM)
+                        time.sleep(0.05)
                     return Response({"token": self.token, "client_pos": 1,
                         "winnings": 100, "action": "b250f"})
                 finally:
@@ -135,6 +141,39 @@ class EvaluationTests(unittest.TestCase):
         interrupted = next(r["interrupted"] for r in records if "interrupted" in r)
         self.assertEqual(interrupted["hole_cards"], ["Ac", "Kd"])
         self.assertEqual(interrupted["decisions"][-1]["sent"], "b250")
+
+    def test_sigterm_drains_current_hand(self):
+        self.args.games = 1
+        previous = signal.getsignal(signal.SIGTERM)
+        records = self.run_api(API("SIGTERM"))
+        summary = records[-1]['summary']
+        self.assertEqual(summary['hands'], 1)
+        self.assertEqual(summary['unresolved_hands'], 0)
+        self.assertFalse(summary['target_reached'])
+        self.assertEqual(signal.getsignal(signal.SIGTERM), previous)
+
+    def test_resume_rejects_changed_sampling_budget_before_http(self):
+        self.run_api(API())
+        path = Path(self.args.output)
+        records = [json.loads(line) for line in path.read_text().splitlines()]
+        records[0]['metadata']['equity_samples'] = 128
+        path.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        self.args.resume = True
+        with patch('requests.Session') as session:
+            with self.assertRaises(AssertionError):
+                runner.slumbot(self.args)
+            session.assert_not_called()
+
+    def test_unsupported_policy_rejected_before_http(self):
+        native = runner.Native(library=self.args.library)
+        unsupported = next((s for s in range(9) if not native.styles & (1 << s)), None)
+        if unsupported is None:
+            self.skipTest('Archived library supports every experimental ID')
+        self.args.style = unsupported
+        with patch('requests.Session') as session:
+            with self.assertRaises(ValueError):
+                runner.slumbot(self.args)
+            session.assert_not_called()
 
     def test_trace_replays_decisions_without_future_cards(self):
         self.args.games, self.args.hands = 1, 1

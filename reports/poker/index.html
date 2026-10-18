@@ -48,7 +48,7 @@
     h2 { font-size: 20px; line-height: 1.35; font-weight: 580; letter-spacing: -.025em; margin: 0; }
     .section-head p { color: var(--muted); font-size: 12px; margin: 0; }
     .map-shell { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #141b20; }
-    .map { position: relative; min-width: 1050px; height: 822px; }
+    .map { position: relative; min-width: 1050px; height: 1094px; }
     .wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
     .wires path { fill: none; stroke: #4f6875; stroke-width: 1.5; }
     .wires .neural { stroke: #5e9783; }
@@ -153,14 +153,14 @@
   <header class="top">
     <div class="wrap">
       <div class="brand"><span class="mark" aria-hidden="true">P</span> Poker <span class="subtle">/ working notes</span></div>
-      <div class="meta">BASELINE · 2026-10-15<br>NOTES UPDATED · 2026-10-17</div>
+      <div class="meta">BASELINE · 2026-10-15<br>NOTES UPDATED · 2026-10-18</div>
     </div>
   </header>
   <div class="hero wrap">
     <p class="eyebrow">001 / Starting state</p>
     <h1>Where we’re starting.</h1>
     <p class="intro">A small map of the game engine, decision paths, and evidence so far.
-      The original baseline is a handwritten rules bot. Native Fullhouse and rules revisions are now being measured; the PPO training path remains smoke-tested.</p>
+      The original baseline is a handwritten rules bot. Current range opponents use bounded equity estimates; Fullhouse supplies a learned baseline. <a href="#strength">Latest Slumbot iterations and current setup</a>; the PPO path remains smoke-tested.</p>
     <div class="facts" aria-label="Original baseline at a glance">
       <div class="fact"><strong>4,000</strong><span>original baseline Slumbot hands</span></div>
       <div class="fact"><strong class="loss">−67.19 BB/100</strong><span>completed-hand score · 23 unresolved attempts</span></div>
@@ -171,9 +171,9 @@
   <nav class="nav" aria-label="Notebook sections">
     <div class="wrap">
       <a href="#map">System map</a><a href="#game">Game &amp; betting</a><a href="#encoder">Encoder</a>
-      <a href="#actions">Actions</a><a href="#rules">Current bot</a><a href="#learner">Neural path</a>
+      <a href="#actions">Actions</a><a href="#rules">Rules control</a><a href="#learner">Neural path</a>
       <a href="#evaluation">Slumbot setup</a><a href="#results">Results</a><a href="#performance">Speed</a>
-      <a href="#setup">Commands</a><a href="#diagnosis">Loss audit</a><a href="#sixmax">Six-player options</a><a href="#baselines">Native benchmarks</a><a href="#equity">Range equity &amp; history</a><a href="#next">Next</a>
+      <a href="#setup">Commands</a><a href="#diagnosis">Loss audit</a><a href="#sixmax">Six-player options</a><a href="#baselines">Native benchmarks</a><a href="#equity">Range equity &amp; history</a><a href="#behavior">Policies &amp; behavior</a><a href="#strength">Slumbot iterations</a><a href="#next">Next</a>
     </div>
   </nav>
   <main class="wrap">
@@ -185,7 +185,7 @@
           <span class="col-label" style="left:26.6667%">02 / Decision inputs</span>
           <span class="col-label" style="left:51.6667%">03 / Policy &amp; transport</span>
           <span class="col-label" style="left:76.6667%">04 / Current evidence</span>
-          <svg class="wires" viewBox="0 0 1200 822" preserveAspectRatio="none" aria-hidden="true">
+          <svg class="wires" viewBox="0 0 1200 1094" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" style="fill:#7c92b0;stroke:none"/></marker>
               <marker id="arrow-green" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" style="fill:#5e9783;stroke:none"/></marker>
@@ -201,6 +201,8 @@
             <path data-from="results" data-to="diagnosis" class="baseline" d="M1032 394 L1032 430" marker-end="url(#arrow)"/>
             <path data-from="diagnosis" data-to="baselines" class="baseline" d="M1032 530 L1032 566" marker-end="url(#arrow)"/>
             <path data-from="baselines" data-to="equity" class="baseline" d="M1032 666 L1032 702" marker-end="url(#arrow)"/>
+            <path data-from="equity" data-to="behavior" class="baseline" d="M1032 802 L1032 838" marker-end="url(#arrow)"/>
+            <path data-from="behavior" data-to="strength" class="baseline" d="M1032 938 L1032 974" marker-end="url(#arrow)"/>
           </svg>
           <a class="node" data-node="game" href="#game" style="left:1.6667%;top:185px"><small>Implemented · CPU</small><strong>Game &amp; betting</strong><span>Chips, turns, legal bets, settlement</span></a>
           <a class="node neural" data-node="encoder" href="#encoder" style="left:26.6667%;top:50px"><small>Neural input</small><strong>Float encoder</strong><span>Private view + public event window</span></a>
@@ -212,7 +214,9 @@
           <a class="node evidence" data-node="results" href="#results" style="left:76.6667%;top:294px"><small>Measured · 4,000 hands</small><strong>−67.19 BB/100</strong><span>Rules baseline; missing outcomes logged</span></a>
           <a class="node evidence" data-node="diagnosis" href="#diagnosis" style="left:76.6667%;top:430px"><small>Investigation · Oct 17</small><strong>Why are we losing?</strong><span>Over-folding confirmed in frozen-bot probes</span></a>
           <a class="node evidence" data-node="baselines" href="#baselines" style="left:76.6667%;top:566px"><small>Experiment · Oct 17</small><strong>Native baselines</strong><span>Fullhouse + rules candidates · HU and six seats</span></a>
-          <a class="node evidence" data-node="equity" href="#equity" style="left:76.6667%;top:702px"><small>Next experiment · Oct 17</small><strong>Range equity · style 7</strong><span>32 samples + optional public table history</span></a>
+          <a class="node evidence" data-node="equity" href="#equity" style="left:76.6667%;top:702px"><small>Experiment · Oct 17</small><strong>Range equity · 32 samples</strong><span>Policy ID 7 + optional public table history</span></a>
+          <a class="node evidence" data-node="behavior" href="#behavior" style="left:76.6667%;top:838px"><small>Behavior audit · Oct 18</small><strong>What differs by policy?</strong><span>18,608 shared decision states · nine IDs</span></a>
+          <a class="node evidence" data-node="strength" href="#strength" style="left:76.6667%;top:974px"><small>Four trials · Oct 18</small><strong>Range bot · 128 samples</strong><span>Slumbot −20.1 BB/100 · gain uncertain</span></a>
         </div>
       </div>
       <div class="map-caption">
@@ -284,7 +288,7 @@
       </section>
 
       <section class="note" id="rules" aria-labelledby="rules-title">
-        <div class="note-head"><div><span class="number">04 / CURRENT BOT</span><h2 id="rules-title">A fixed rules baseline</h2></div><span class="tag">Evaluated</span></div>
+        <div class="note-head"><div><span class="number">04 / RULES CONTROL</span><h2 id="rules-title">A fixed rules baseline</h2></div><span class="tag">Evaluated</span></div>
         <p class="tldr"><strong>Style 1</strong> is a conservative, randomized heuristic bot. It scores its cards and call price, then folds, calls, or chooses a bet size. It has no search or trained weights.</p>
         <ul>
           <li><strong>Preflop:</strong> rank, pair, suitedness, connectivity, and pressure from the current bet.</li>
@@ -542,38 +546,114 @@ python3 ocean/poker/benchmark.py --build build/poker/equity_v2 \
         <div class="sources"><a href="20261017/equity_v1/comparison.json">All measurements and intervals</a><a href="20261017/equity_v1/evaluation-plan.json">Selection and evaluation plan</a><a href="20261017/equity_v1/holdout/paired-differences.json">Held-out paired gains</a><a href="20261017/equity_v1/final-manifest.json">Source / binary hashes</a><a href="20261017/equity_v1/final-equity-tests.json">Equity, privacy and profile checks</a><a href="20261017/equity_v1/policy-latency6.json">Six-seat native latency</a><a href="20261017/equity_v1/live-replay.json">Live trace replay</a><a href="20261017/equity_v1/slumbot_control.jsonl">Fresh control log</a><a href="20261017/equity_v1/slumbot_range32.jsonl">Range candidate log</a><a href="20261017/equity_v1/trainer-build.json">Trainer build and validation</a><a href="../../ocean/poker/equity.h">Native range / profile implementation</a><a href="../../ocean/poker/README.md">Build and usage</a></div>
       </section>
 
+      <section class="note wide" id="behavior" aria-labelledby="behavior-title">
+        <div class="note-head"><div><span class="number">14 / POLICY IDENTITIES &amp; BEHAVIOR · 2026-10-18</span><h2 id="behavior-title">“Style 7” means the 32-sample range policy</h2></div><span class="tag measured">Measured differences</span></div>
+        <p class="tldr">The numbers select experimental policy implementations. They are <strong>neither difficulty levels nor nine human personalities</strong>. There are meaningful differences between the original rules, Fullhouse and range equity; several other IDs are small revisions or sampling variants.</p>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Descriptive name</th><th>What changes</th></tr></thead><tbody>
+          <tr><td>0 / 1 / 2</td><td>Initial / original / positional rules</td><td>Related heuristics with different entry thresholds; 2 loosens button entry. ID 1 remains the frozen default.</td></tr>
+          <tr><td>3</td><td>Broad defense</td><td>Wider continuation rules; rejected after local regressions.</td></tr>
+          <tr><td>4</td><td>Fullhouse</td><td>External learned policy with its own features and bet-size choices.</td></tr>
+          <tr><td>5</td><td>Focused defense</td><td>Narrow repairs to draws, strong pairs and AK re-raises.</td></tr>
+          <tr><td>6</td><td>Uniform equity · 32 samples</td><td>Focused preflop rules; postflop samples assume uniform opponent hands. A weak ablation.</td></tr>
+          <tr><td>7</td><td>Range equity · 32 samples</td><td>Same preflop rules; postflop samples weight hands by public betting.</td></tr>
+          <tr><td>8</td><td>Range equity · 128 samples</td><td>Same range model, thresholds, bluff rules and sizing as 7; more samples can change individual decisions.</td></tr>
+        </tbody></table></div>
+        <p>IDs 5/6/7/8 make identical preflop decisions given the same RNG state. Public table profiles estimate opponents' tendencies; they do not create different personalities for the acting bots. Existing numeric IDs and defaults are preserved for reproducibility.</p>
+        <h3>How often do their actions actually differ?</h3>
+        <p>The offline audit played <strong>2,000 six-seat hands</strong> at 200 BB: 400 each under original, Fullhouse, range-32, range-128 and mixed fields. Every policy was probed on the same <strong>18,608 decision states</strong>, including 12,705 preflop and 5,903 postflop states. Within each probe they receive the same starting RNG seed. The table measures any difference in the exact fold, check/call or raise-to amount.</p>
+        <div class="table-wrap"><table><thead><tr><th>Comparison</th><th>Preflop actions differ</th><th>Postflop actions differ</th></tr></thead><tbody>
+          <tr><td>Original (1) / focused defense (5)</td><td>0.23%</td><td>0.80%</td></tr>
+          <tr><td>Original (1) / range-32 (7)</td><td>0.23%</td><td>28.90%</td></tr>
+          <tr><td>Fullhouse (4) / range-32 (7)</td><td>38.85%</td><td>44.40%</td></tr>
+          <tr><td>Range-32 (7) / range-128 (8)</td><td>0.00%</td><td>8.66%</td></tr>
+        </tbody></table></div>
+        <p>Fullhouse versus range-32 differs on the broad postflop choice (fold/check/call/raise) in 30.95% of states; the exact-action figure also includes bet-size differences. Of the postflop corpus, 2,094 states have at least three live players; range-32 versus range-128 differs on 5.44% of those states.</p>
+        <p>All policies are stochastic. Repeating range-32 on the same states with an independent seed changes 21.01% of its postflop actions; range-128 changes 15.53%. The between-policy comparison couples seeds, while this repeat uses independent seeds, so these rates are <strong>not a direct measure of strategy diversity</strong>. Coupled draws also have different meanings across algorithms. These descriptive corpus rates are not population estimates, win rates, or evidence of human similarity.</p>
+        <p>The audit checked <strong>334,944 legal probe actions</strong>, unchanged game state during probes, preflop equivalence of 5/6/7/8, and chip conservation after every hand. Probe RNGs do not affect the played trajectories or deals. Public history adaptation was disabled. The artifact records coverage, all policy pairs, independent-seed repeats, source/binary hashes and corpus/action digests.</p>
+        <div class="callout"><strong>User direction, October 18:</strong> defer the proposed personality population. Improve the existing range bot against Slumbot through several measured revisions, then remove redundant policy choices. The nine IDs above describe the frozen behavior audit; the active implementation is being reduced to rules control (1), Fullhouse (4), and range (7), with sampling budget configured separately.</div>
+        <div class="sources"><a href="20261018/behavior_v1.json">Complete behavior audit</a><a href="../../ocean/poker/audit_behavior.py">Reproducible offline audit</a><a href="../../ocean/poker/README.md">Policy ID reference and command</a></div>
+      </section>
+
+      <section class="note wide" id="strength" aria-labelledby="strength-title">
+        <div class="note-head"><div><span class="number">15 / SLUMBOT ITERATIONS · 2026-10-18</span><h2 id="strength-title">Keep the simpler range bot; spend more samples heads-up</h2></div><span class="tag measured">Completed experiment</span></div>
+        <p class="tldr">Tried four revisions and kept <strong>128 samples for heads-up, 32 for six/nine seats</strong>. The new heads-up setting improved in fresh local tests. Its fresh Slumbot score was <strong>-20.13 BB/100</strong> versus -32.33 for the old 32-sample range bot; the live gain remains uncertain. The extra range/preflop rules and exact river enumeration were not retained.</p>
+        <div class="inline-metrics"><div><strong>4</strong><span>development candidates</span></div><div><strong>12,000</strong><span>completed development hands</span></div><div><strong>12,000</strong><span>hands in final comparison</span></div><div><strong>318k</strong><span>native decisions/s · six seats</span></div></div>
+        <h3>Development: ideas tested and rejected</h3>
+        <p>Each candidate received a separate 3,000-hand Slumbot run, plus 300,000 local duplicate-deal hands across five fields. Values below are BB/100 ± approximate 95% half-widths for completed hands; unresolved outcomes add uncertainty beyond those intervals. Development results are exploratory and were used for selection. The first interrupted river attempt is excluded from this table and retained in the artifacts.</p>
+        <div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Completed hands</th><th>Slumbot BB/100</th><th>Unresolved attempts</th></tr></thead><tbody>
+          <tr><td>More samples · 128 HU</td><td>3,000</td><td>-3.91 ± 37.81</td><td>1</td></tr>
+          <tr><td>Bet-size / re-raise range model</td><td>3,000</td><td>-32.92 ± 40.46</td><td>0</td></tr>
+          <tr><td>Context + HU blind rules</td><td>3,000</td><td>-45.11 ± 36.60</td><td>0</td></tr>
+          <tr><td>Original ranges + exact river</td><td>3,000</td><td>-41.06 ± 33.58</td><td>5</td></tr>
+        </tbody></table></div>
+        <p>The context experiment tracked public raise sizes and raise ordinals and changed made-hand likelihoods on paired boards. The next candidate also added heads-up blind defense and value re-raises. Neither justified keeping the extra rules. Exact river enumeration matched eight independent exhaustive oracles, but its live sample did not justify the extra work. All three changes were removed from active source; their frozen sources and results remain available.</p>
+        <h3>Fresh comparison after selection</h3>
+        <div class="table-wrap"><table><thead><tr><th>Policy</th><th>Hands</th><th>BB/100 ± 95% half-width</th><th>Net BB</th></tr></thead><tbody>
+          <tr><td>Old range bot · 32 samples</td><td>6,000</td><td>-32.33 ± 35.72</td><td>-1,939.95</td></tr>
+          <tr><td>Selected range bot · 128 samples</td><td>6,000</td><td>-20.13 ± 32.78</td><td>-1,207.99</td></tr>
+        </tbody></table></div>
+        <p>The independent-sample difference is <strong>+12.20 ± 48.48 BB/100</strong>, an interval of [-36.28, +60.68]. This does not establish a live improvement or a win over Slumbot. The candidate was frozen before its new seed/run; no strategy tuning followed selection. All <strong>13,908 final live decisions</strong> replay exactly, including RNG state.</p>
+        <details><summary>Control window, outages and retained attempts</summary>
+          <p>The first 8,000-hand control process ended externally after 7,011 logged completions without a final summary; pending outcomes are unknown, and it is excluded from the final comparison. A replacement control reached 7,771 completed hands before a temporary DNS outage stopped it. The final control window is its first <strong>6,000 completed hands</strong> (3,001/2,999 positions), all before any failed attempt. This cutoff was fixed from completion counts and the outage, before computing the prefix score. The first interrupted attempt came after 7,650 completed hands. The remaining completed suffix and failed attempts remain in the full log and are unused in the final score.</p>
+          <p>The river trial first stopped after 610 completions and 25 failed attempts during the same DNS outage. Its fresh retry completed 3,000 hands with five unresolved attempts. The final 6,000-hand candidate run completed with zero unresolved outcomes or failures at 29.41 hands/s using five games. The runner now drains active hands on SIGTERM as well as SIGINT; a forced kill can still leave unknown outcomes.</p>
+          <p>All retained logs contain <strong>33,392 completed hands</strong> across distinct policies, development, control attempts and the final run. Counts can be added; these scores are not pooled. No credentials are recorded.</p>
+        </details>
+        <h3>Held-out local strength and six-seat preservation</h3>
+        <p>A fresh seed tests 60,000 hands per arm/field at 200 BB. Each gain compares the selected default against the old 32-sample range bot on shared duplicate-deal blocks. Values are BB/100 ± approximate 95% half-width, unadjusted for multiple comparisons.</p>
+        <div class="table-wrap"><table><thead><tr><th>Format / opponents</th><th>Paired gain over old range bot</th></tr></thead><tbody>
+          <tr><td>2 seats / original</td><td>+7.86 ± 5.77</td></tr>
+          <tr><td>2 seats / fullhouse</td><td>+8.23 ± 7.86</td></tr>
+          <tr><td>6 seats / original</td><td>+0.00 ± 0.00</td></tr>
+          <tr><td>6 seats / fullhouse</td><td>+0.00 ± 0.00</td></tr>
+          <tr><td>6 seats / mixed</td><td>+0.00 ± 0.00</td></tr>
+        </tbody></table></div>
+        <p>The six-seat default deliberately retains 32 samples and the original strategy. Its returns match the frozen control in every duplicate block of these three fields. The iteration series contains <strong>1.86 million local hands</strong>, including development, held-out tests and the 60,000-hand throughput run. These remain baseline opponents rather than a calibrated model of humans.</p>
+        <h3>Three active policies, one sample setting</h3>
+        <p>Active IDs are <strong>1 rules control, 4 Fullhouse, 7 range</strong>. Superseded IDs 0/2/3/5/6/8 were removed from active builds. The range budget is now a setting (32/64/128; zero selects the build default), rather than another policy ID. The training default is range. Frozen historical libraries/sources preserve old evaluations; numeric IDs are not renumbered.</p>
+        <pre><code># Current canonical HU native library; default 128 samples:
+python3 ocean/poker/eval.py --policy range --hands 4000 --games 5 \
+  --output build/poker/new_slumbot.jsonl
+# Optional: --equity-samples 32 / 64 / 128.
+# New compiled six-seat trainer; default 32 samples, no training run started:
+build/poker/puffer_range train --base.eval_episodes=0
+# Optional: --env.equity_samples=128, --env.native_history=1.
+# Mixed native field: --env.native_baseline_mask=146 (with Fullhouse).</code></pre>
+        <h3>Native cost and validation</h3>
+        <p>Six-seat all-range self-play measured <strong>318,048 decisions/s</strong> and 37,263 hands/s on the shared i5-7400. Fixed positions measured 19.4–44.0 μs CPU/decision heads-up at 128 samples and 16.5–28.0 μs with six live players at 32 samples. More HU samples cost more CPU; six-seat strategy and sample cost are preserved. These timing workloads differ and shared-host timings vary.</p>
+        <p>The betting/settlement/observation kernel is byte-for-byte unchanged. Checks passed for eight independent river-equity oracles, 101 hidden-card/runout permutations, all three sample-budget settings, unequal stacks/side pots and public profiles under ASan/UBSan at 2/6/9 seats, engine checks, and a mixed native adapter with history and a 64-sample override. Fullhouse feature/probability parity passed on 2,692 states. All 18,220 decisions from completed control hands also replay exactly with the explicit 32-sample setting. Eight offline HTTP client tests pass; the new trainer compiles. No PPO training was run.</p>
+        <div class="sources"><a href="20261018/strength_v1/comparison.json">All results and uncertainty</a><a href="20261018/strength_v1/selection.json">Frozen selection</a><a href="20261018/strength_v1/confirm_control_prefix.json">Control window definition</a><a href="20261018/strength_v1/final_manifest.json">Source / binary hashes and build commands</a><a href="20261018/strength_v1/slumbot_final.jsonl">Final raw log</a><a href="20261018/strength_v1/slumbot_confirm_control.jsonl">Full replacement control log</a><a href="20261018/strength_v1/final_live_replay.json">Final action replay</a><a href="20261018/strength_v1/final_equity_tests.json">Equity / privacy checks</a><a href="20261018/strength_v1/final_sanitizers.txt">Engine / adapter sanitizers</a><a href="20261018/strength_v1/client_tests.txt">HTTP client tests</a><a href="20261018/strength_v1/build_validation.json">Kernel and trainer validation</a><a href="../../ocean/poker/README.md">Current usage</a></div>
+      </section>
+
       <section class="note wide next" id="next" aria-labelledby="next-title">
-        <span class="number">14 / WORKING DIRECTION · 2026-10-17</span><h2 id="next-title">Improve playing strength; keep the approach open.</h2>
+        <span class="number">16 / WORKING DIRECTION · 2026-10-18</span><h2 id="next-title">Improve the current bot against Slumbot.</h2>
         <p class="tldr">Six-player poker remains the main interest, with Slumbot as a useful heads-up benchmark. We have not committed to hand-written rules, a particular learning method, or an external bot. No formal automated goal has been created. The user has authorized benchmarking native opponents and testing improvements in both formats.</p>
         <p>The proposed role for the rules bot is a cheap, reproducible baseline and one opponent in a varied field. Fixing its demonstrated mistakes can be useful without making extensive rule tuning the main project. Investigate compact learned policies and available opponents alongside that work. Training cost and inference model size are separate considerations; the small Fullhouse weight artifact above is a concrete example, but does not establish its playing strength.</p>
-        <p>The range experiment is complete: public-history plumbing and fast equity estimation are available, local gains have evidence, and Slumbot improvement is still uncertain. Keep the original default and the measured alternatives available. Realistic human practice still needs a reference for human behavior; a large policy count alone would not establish it. The learner currently resets recurrent state at each hand.</p>
+        <p>The current iteration series is complete. Range is now the training default, with 128 samples HU and 32 six/nine seats. Original rules and Fullhouse remain distinct controls; redundant experiments were removed. Local HU gains have evidence, while the fresh Slumbot difference remains uncertain. The learner still resets recurrent state at each hand; human realism remains a separate longer-term requirement.</p>
         <h3>Next experiments to review</h3>
         <ol>
+          <li><strong>Retain the measured baseline.</strong> The four-candidate series selected the simpler larger HU budget. Preserve its fresh comparison and use a new hold-out for any future strategy revision; do not tune on the final 6,000 hands. The user deferred personality populations. <a href="#strength">Completed series and current commands</a>.</li>
           <li><strong>Improve the range and action models.</strong> The uniform/range ablation supports conditioning on public behavior, but the present likelihoods ignore bet size and repeated raises within a street. Compare better public-action likelihoods and a small set of action-value estimates, with new held-out deals. Preserve the distinction between showdown equity and value after future betting. Human calibration would require suitable reference data, with care about the selection bias in revealed showdown hands.</li>
           <li><strong>Spend samples where they matter.</strong> The measured 128-sample policy was stronger in several local comparisons, at about four times the sampling cost. A future candidate could use more work for close decisions or concentrated importance weights. First define the sampling and stopping rule, then measure its statistical bias, speed and playing strength against fixed 32/128 controls. No adaptive sampling policy has been implemented.</li>
-          <li><strong>Build and measure behavioral variety.</strong> Public table profiles now persist for native opponents. Next compare a small explicit population with distinct entry, aggression and sizing tendencies; give the learner access to table context through a versioned observation or memory interface. Treat playing strength, behavioral diversity and similarity to human play as separate measurements. More policy copies alone do not establish realism.</li>
         </ol>
         <details id="review-prompt">
           <summary>Copyable prompt for a fresh strategy review</summary>
-          <pre class="review-prompt">Review the poker baseline checkpoint in this repository. Start with reports/poker/index.html (especially Range equity and history), ocean/poker/equity.h, ocean/poker/README.md, and reports/poker/20261017/equity_v1/comparison.json; follow their evidence links. Ask for any files you cannot access rather than assuming their contents.
+          <pre class="review-prompt">Review the current poker baseline. Start with reports/poker/index.html (Slumbot iterations), ocean/poker/equity.h, ocean/poker/rules.h, ocean/poker/README.md, and reports/poker/20261018/strength_v1/comparison.json. Follow the frozen source/binary and raw-log links. Ask for inaccessible files rather than assuming contents.
 
-The main objective is fast native CPU opponents for realistic six-player no-limit Hold'em practice and training. Heads-up Slumbot is a secondary benchmark. We want a useful baseline and varied human-like behavior; neither a large model nor a huge number of policies is a requirement.
+The user wants fast native opponents for six-player Hold'em training, with current work focused on improving the existing bot against Slumbot. Personality populations are deferred. No formal automated goal was created.
 
-Latest experiment: 2.52 million local hands (development, held-out tests, public-history ablation and throughput) and 8,000 fresh Slumbot hands at 200 BB. Style 7 keeps style 5's preflop policy and uses 32 range-weighted showdown samples postflop; style 8 uses 128. Uniform samples were a poor ablation. The 32-sample candidate was selected before held-out/live evaluation. Its held-out gains over original style 1 were +24.43 +/- 12.56 BB/100 HU versus Fullhouse and +15.24 +/- 12.13 six-player versus five Fullhouse opponents, with weaker or uncertain gains in some other six-player fields. All eight fields are reported, not just these examples. More samples helped several local comparisons at higher cost.
+Four development candidates received 3,000 Slumbot hands each and local duplicate-deal screens: larger sampling budget (-3.91 BB/100, one unresolved), bet-size/re-raise range likelihoods (-32.92, clean), those likelihoods plus HU blind repairs (-45.11, clean), and original ranges with exact river enumeration (-41.06, five unresolved). These are exploratory selected results. The last three changes were rejected. Current range ID 7 uses 128 samples heads-up and 32 at six/nine seats; explicit budgets are 32/64/128. Active IDs are 1 rules control, 4 Fullhouse and 7 range. Old experiments 0/2/3/5/6/8 survive only in historical sources/libraries.
 
-Fresh Slumbot control: -78.29 +/- 31.44 BB/100; style 7: -42.58 +/- 47.76; 4,000 hands each, zero unresolved. Difference +35.71 +/- 57.18 is inconclusive. All 9,528 live candidate decisions replay exactly. Prior rounds remain separate; do not pool different policies or treat this as beating Slumbot.
+Fresh final candidate: -20.13 +/-32.78 BB/100 over 6,000 hands, zero unresolved. Control: -32.33 +/-35.72 over a clean 6,000-hand prefix fixed before its prefix score was computed. Difference +12.20 +/-48.48 is inconclusive. The complete control run later failed during a DNS outage; all unused outcomes and failures remain retained. An earlier externally terminated control was excluded. All 13,908 final and 18,220 old-control decisions replay exactly with the matching sample budget. Do not pool development and final scores.
 
-Style 7 measured about 247,000 decisions/second in a six-player all-range-bot match on an i5-7400. Fixed six-live-player postflop CPU latency was 24-35 microseconds for 32 samples and 89-128 for 128 samples. Public VPIP/PFR/aggression profiles now persist per seat and can adjust ranges, but the history ablation did not show a consistent gain across fields and no human-realism validation exists. The learner still resets recurrent state each hand and does not observe the new profiles. No new PPO policy was trained. Original style 1 and history-off remain defaults.
+Fresh local paired gains over the 32-sample range control: +7.86 +/-5.77 BB/100 HU vs rules and +8.23 +/-7.86 HU vs Fullhouse. Six-seat default returns match the old range policy in every held-out block across three fields. This series includes 1.86M local hands. Six-seat self-play measured 318k native decisions/s on a shared i5-7400. Fixed CPU costs were 19-44 microseconds HU/128 samples and 17-28 with six live players/32 samples; workload and host conditions matter.
 
-The Fullhouse audit found two advantage checkpoints and no average-strategy network checkpoint in all tracked NPZ files in main and 13 public tags. The supplied main model matches the author's stated shipped policy; average-strategy export support in training is not proof of a deployment bug. Fullhouse parity and prior benchmark evidence remain in the notebook.
+The original encoder/action/betting kernel is unchanged. Public per-seat profiles are optional and do not enter the learner's observation. Learner memory resets each hand. The new trainer compiles; no PPO policy was trained. Tests cover card privacy, independent equity oracles, side pots, sample budgets, sanitizers, Fullhouse parity and HTTP recovery.
 
-Please prioritize concrete improvements and the smallest useful next experiment. Inspect the range likelihoods, self-normalized importance sampling and effective sample size, call/pot eligibility, action-value limitations and public-history integration. Separate confirmed implementation problems, strategic hypotheses, strength, throughput and human realism. Avoid inferring six-player equilibrium guarantees from a Deep CFR label or proven live gains from noisy samples.
-
-For your top recommendation, specify the code path to change, an ablation, a held-out evaluation, a native speed measurement, and what result would justify keeping or rejecting it.</pre>
+Prioritize the smallest useful strategic improvement. Explain why it addresses a confirmed weakness, distinguish showdown equity from action value after future betting, and specify an ablation, a fresh held-out comparison, native cost, and rejection criteria. The rejected hand-written range/blind rules should not be restored merely because they sound plausible.</pre>
         </details>
       </section>
     </div>
-    <footer>Maintained in <code>reports/poker/index.html</code> · Baseline measured 2026-10-15; native baselines, range equity and public-history experiments added 2026-10-17 · Open directly and refresh after edits. Measurements are recorded snapshots, not a live feed. No build, external assets, or JavaScript required.</footer>
+    <footer>Maintained in <code>reports/poker/index.html</code> · Baseline measured 2026-10-15; native baselines, range equity and public-history experiments added 2026-10-17; policy identities, behavior audit and Slumbot iteration series added 2026-10-18 · Open directly and refresh after edits. Measurements are recorded snapshots, not a live feed. No build, external assets, or JavaScript required.</footer>
   </main>
 </body>
 </html>

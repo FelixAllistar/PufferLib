@@ -1,0 +1,21 @@
+{
+  "pid": 1134035,
+  "command": [
+    "build/poker/bench-venv/bin/python",
+    "ocean/poker/eval.py",
+    "--policy",
+    "range",
+    "--library",
+    "build/poker/strength_v1/final/libpoker2.so",
+    "--hands",
+    "6000",
+    "--games",
+    "5",
+    "--seed",
+    "2026101837",
+    "--contact",
+    "https://github.com/FelixAllistar",
+    "--output",
+    "reports/poker/20261018/strength_v1/slumbot_final.jsonl"
+  ]
+}

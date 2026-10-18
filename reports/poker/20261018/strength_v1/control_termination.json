@@ -1,0 +1,8 @@
+{
+  "log": "slumbot_control.jsonl",
+  "exit_code": 143,
+  "completed_logged_hands": 7011,
+  "pending_outcomes": "unknown after external SIGTERM; no final summary",
+  "used_in_final_comparison": false,
+  "replacement": "slumbot_confirm_control.jsonl"
+}

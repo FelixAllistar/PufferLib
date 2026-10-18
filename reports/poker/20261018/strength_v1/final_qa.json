@@ -1,0 +1,10 @@
+{
+  "html_unique_ids": 39,
+  "local_links_valid": 107,
+  "dag_nodes": 13,
+  "dag_edges": 13,
+  "acyclic": true,
+  "artifact_totals_verified": true,
+  "live_decisions_replayed": 13908,
+  "live_final_clean": true
+}

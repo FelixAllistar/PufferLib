@@ -1,0 +1,8 @@
+{
+  "log": "reports/poker/20261018/strength_v1/slumbot_confirm_control.jsonl",
+  "library": "build/poker/strength_v1/final/libpoker2.so",
+  "style": 7,
+  "equity_samples": 32,
+  "decisions_checked": 18220,
+  "changed": []
+}

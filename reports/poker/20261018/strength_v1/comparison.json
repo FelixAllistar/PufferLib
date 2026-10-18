@@ -1,0 +1,4288 @@
+{
+  "selection": {
+    "selected": "128-sample HU range policy",
+    "policy_id": 7,
+    "sample_defaults": {
+      "2": 128,
+      "6": 32,
+      "9": 32
+    },
+    "selected_at_utc": "2026-10-18T05:45:20.140406+00:00",
+    "reason": "Lowest development loss and simplest candidate. Context/blind/river changes did not justify retention. Differences are statistically uncertain; confirm on fresh hands. Six-seat default remains the original 32-sample strategy for throughput.",
+    "rejected": [
+      "context",
+      "blind",
+      "river"
+    ],
+    "holdout_hands": 6000,
+    "holdout_seed": 2026101837,
+    "control_prefix": "confirm_control_prefix.json",
+    "no_further_strategy_tuning": true
+  },
+  "development": {
+    "samples": {
+      "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_samples.jsonl",
+      "sha256": "e783194d5315298e1e3acdd79ee147efb7dd3bddbd42fb0592f3345d90dfb1f4",
+      "metadata": {
+        "style": 8,
+        "seed": 2026101821,
+        "hands_requested": 3000,
+        "library_sha256": "5cefce4bb93e00e8dd273de1050ee6582a909907cd16291c5475acad1ab05713",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2
+      },
+      "hands": 3000,
+      "net_bb": -117.41000000000001,
+      "bb100": -3.9136666666666673,
+      "ci95_half_width_bb100": 37.810941654626575,
+      "unresolved_attempts_in_window": 1,
+      "full_run_summary": {
+        "style": 8,
+        "seed": 2026101821,
+        "hands_requested": 3000,
+        "library_sha256": "5cefce4bb93e00e8dd273de1050ee6582a909907cd16291c5475acad1ab05713",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2,
+        "hands": 3000,
+        "target_reached": true,
+        "unresolved_hands": 1,
+        "net_bb": -117.41000000000001,
+        "bb100": -3.9136666666666673,
+        "ci95_half_width_bb100": 37.810941654626575,
+        "seconds_this_process": 432.1199765219935,
+        "hands_per_second": 6.9425163449885305,
+        "eta_seconds": 0.0,
+        "active_games": 0,
+        "bb100_bounds_for_unresolved": [
+          -10.576807730756416,
+          2.752082639120293
+        ],
+        "complete": false,
+        "failures": []
+      },
+      "pending_outcomes_unknown": false,
+      "faced": [
+        3163,
+        428,
+        406,
+        287
+      ],
+      "folds": [
+        1223,
+        175,
+        249,
+        216
+      ],
+      "fold_percent": [
+        38.66582358520392,
+        40.88785046728972,
+        61.330049261083744,
+        75.26132404181185
+      ],
+      "window": "entire retained log"
+    },
+    "context": {
+      "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_context.jsonl",
+      "sha256": "5823961bc6f2fee33799b84d67a9a5723e57c20425829b06f53ea3a1dbe10964",
+      "metadata": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101822,
+        "hands_requested": 3000,
+        "library_sha256": "100725c3a2dd3a3f601d58bf11acca181ff0f47d763b9a3b42d71a9cea4aebe0",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2
+      },
+      "hands": 3000,
+      "net_bb": -987.52,
+      "bb100": -32.91733333333333,
+      "ci95_half_width_bb100": 40.46348868278829,
+      "unresolved_attempts_in_window": 0,
+      "full_run_summary": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101822,
+        "hands_requested": 3000,
+        "library_sha256": "100725c3a2dd3a3f601d58bf11acca181ff0f47d763b9a3b42d71a9cea4aebe0",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2,
+        "hands": 3000,
+        "target_reached": true,
+        "unresolved_hands": 0,
+        "net_bb": -987.52,
+        "bb100": -32.91733333333333,
+        "ci95_half_width_bb100": 40.46348868278829,
+        "seconds_this_process": 378.7504587250005,
+        "hands_per_second": 7.920782485911683,
+        "eta_seconds": 0.0,
+        "active_games": 0,
+        "complete": true,
+        "failures": []
+      },
+      "pending_outcomes_unknown": false,
+      "faced": [
+        3177,
+        404,
+        399,
+        285
+      ],
+      "folds": [
+        1238,
+        202,
+        254,
+        222
+      ],
+      "fold_percent": [
+        38.96757947749449,
+        50.0,
+        63.659147869674186,
+        77.89473684210526
+      ],
+      "window": "entire retained log"
+    },
+    "blind": {
+      "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_blind.jsonl",
+      "sha256": "d9023da2f9e0e0cd61f56dd1038467dcda500a951abc2a8773ad6f6ed1796162",
+      "metadata": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101823,
+        "hands_requested": 3000,
+        "library_sha256": "b75229cb05eebafb654f94f3dfac91ab0293438b0c6b0483627d413e09142388",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2
+      },
+      "hands": 3000,
+      "net_bb": -1353.28,
+      "bb100": -45.10933333333333,
+      "ci95_half_width_bb100": 36.604447921234254,
+      "unresolved_attempts_in_window": 0,
+      "full_run_summary": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101823,
+        "hands_requested": 3000,
+        "library_sha256": "b75229cb05eebafb654f94f3dfac91ab0293438b0c6b0483627d413e09142388",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2,
+        "hands": 3000,
+        "target_reached": true,
+        "unresolved_hands": 0,
+        "net_bb": -1353.28,
+        "bb100": -45.10933333333333,
+        "ci95_half_width_bb100": 36.604447921234254,
+        "seconds_this_process": 189.68635164599982,
+        "hands_per_second": 15.815581743059294,
+        "eta_seconds": 0.0,
+        "active_games": 0,
+        "complete": true,
+        "failures": []
+      },
+      "pending_outcomes_unknown": false,
+      "faced": [
+        3181,
+        483,
+        391,
+        270
+      ],
+      "folds": [
+        1059,
+        271,
+        262,
+        227
+      ],
+      "fold_percent": [
+        33.291417793146806,
+        56.107660455486545,
+        67.0076726342711,
+        84.07407407407408
+      ],
+      "window": "entire retained log"
+    },
+    "river_retry": {
+      "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_river_retry.jsonl",
+      "sha256": "b20aa55e53d7d6f6fd5ed106e76755ff7c793b8abf562555055821b544031085",
+      "metadata": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101826,
+        "hands_requested": 3000,
+        "library_sha256": "ec79dd67e58475cc3ebd69c0d2cf22c2280b7aa777c95515cea1d04d78da17cc",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2
+      },
+      "hands": 3000,
+      "net_bb": -1231.89,
+      "bb100": -41.063,
+      "ci95_half_width_bb100": 33.58419459855247,
+      "unresolved_attempts_in_window": 5,
+      "full_run_summary": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101826,
+        "hands_requested": 3000,
+        "library_sha256": "ec79dd67e58475cc3ebd69c0d2cf22c2280b7aa777c95515cea1d04d78da17cc",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2,
+        "hands": 3000,
+        "target_reached": true,
+        "unresolved_hands": 5,
+        "net_bb": -1231.89,
+        "bb100": -41.063,
+        "ci95_half_width_bb100": 33.58419459855247,
+        "seconds_this_process": 1054.6689687900362,
+        "hands_per_second": 2.844494423156998,
+        "eta_seconds": 0.0,
+        "active_games": 0,
+        "bb100_bounds_for_unresolved": [
+          -74.27254575707155,
+          -7.716805324459238
+        ],
+        "complete": false,
+        "failures": []
+      },
+      "pending_outcomes_unknown": false,
+      "faced": [
+        3182,
+        426,
+        378,
+        306
+      ],
+      "folds": [
+        1224,
+        173,
+        231,
+        225
+      ],
+      "fold_percent": [
+        38.46637335009428,
+        40.610328638497656,
+        61.111111111111114,
+        73.52941176470588
+      ],
+      "window": "entire retained log"
+    }
+  },
+  "incomplete_attempts": {
+    "control": {
+      "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_control.jsonl",
+      "sha256": "68de5c4390fc6e92613e777f4ec9a1e36eb2e7ef7afeaafdcf5d3d1a116c4354",
+      "metadata": {
+        "style": 7,
+        "seed": 2026101820,
+        "hands_requested": 8000,
+        "library_sha256": "5cefce4bb93e00e8dd273de1050ee6582a909907cd16291c5475acad1ab05713",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2
+      },
+      "hands": 7011,
+      "net_bb": -2556.17,
+      "bb100": -36.45942090999858,
+      "ci95_half_width_bb100": 30.48898952556453,
+      "unresolved_attempts_in_window": 0,
+      "full_run_summary": null,
+      "pending_outcomes_unknown": true,
+      "faced": [
+        7426,
+        913,
+        923,
+        615
+      ],
+      "folds": [
+        2921,
+        381,
+        537,
+        430
+      ],
+      "fold_percent": [
+        39.33476972798276,
+        41.73055859802848,
+        58.17984832069339,
+        69.91869918699187
+      ],
+      "window": "entire retained log"
+    },
+    "river": {
+      "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_river.jsonl",
+      "sha256": "6555de27b959241c2f2c041bc4f17b4a19ddc819872f7574915b6baf3128584d",
+      "metadata": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101824,
+        "hands_requested": 3000,
+        "library_sha256": "ec79dd67e58475cc3ebd69c0d2cf22c2280b7aa777c95515cea1d04d78da17cc",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2
+      },
+      "hands": 610,
+      "net_bb": -5.670000000000011,
+      "bb100": -0.9295081967213132,
+      "ci95_half_width_bb100": 56.65173564685827,
+      "unresolved_attempts_in_window": 25,
+      "full_run_summary": {
+        "style": 7,
+        "equity_samples": 0,
+        "seed": 2026101824,
+        "hands_requested": 3000,
+        "library_sha256": "ec79dd67e58475cc3ebd69c0d2cf22c2280b7aa777c95515cea1d04d78da17cc",
+        "opponent": "slumbot.com",
+        "starting_bb": 200,
+        "request_delay_seconds": 0,
+        "concurrent_games": 5,
+        "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+        "log_schema": 2,
+        "hands": 610,
+        "target_reached": false,
+        "unresolved_hands": 25,
+        "net_bb": -5.670000000000011,
+        "bb100": -0.9295081967213132,
+        "ci95_half_width_bb100": 56.65173564685827,
+        "seconds_this_process": 132.25182137300726,
+        "hands_per_second": 4.61241284745362,
+        "eta_seconds": 518.1669722647334,
+        "active_games": 0,
+        "bb100_bounds_for_unresolved": [
+          -788.2944881889764,
+          786.5086614173229
+        ],
+        "complete": false,
+        "failures": [
+          {
+            "game": 1,
+            "type": "ConnectionError",
+            "stage": "new_hand",
+            "game_hand": 98,
+            "status": null,
+            "decisions": [],
+            "message": "HTTPSConnectionPool(host='slumbot.com', port=443): Max retries exceeded with url: /slumbot/api/new_hand (Caused by NameResolutionError(\"HTTPSConnection(host='slumbot.com', port=443): Failed to resolve 'slumbot.com' ([Errno -3] Temporary failure in name resolution)\"))"
+          }
+        ]
+      },
+      "pending_outcomes_unknown": false,
+      "faced": [
+        648,
+        97,
+        73,
+        56
+      ],
+      "folds": [
+        256,
+        44,
+        45,
+        34
+      ],
+      "fold_percent": [
+        39.50617283950617,
+        45.36082474226804,
+        61.64383561643836,
+        60.714285714285715
+      ],
+      "window": "entire retained log"
+    }
+  },
+  "control_prefix": {
+    "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_confirm_control.jsonl",
+    "sha256": "4f47f28586fb8bf07669a3c9330eec8297760f553b347f68c636ea088c636011",
+    "metadata": {
+      "style": 7,
+      "equity_samples": 0,
+      "seed": 2026101830,
+      "hands_requested": 8000,
+      "library_sha256": "5cefce4bb93e00e8dd273de1050ee6582a909907cd16291c5475acad1ab05713",
+      "opponent": "slumbot.com",
+      "starting_bb": 200,
+      "request_delay_seconds": 0,
+      "concurrent_games": 5,
+      "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+      "log_schema": 2
+    },
+    "hands": 6000,
+    "net_bb": -1939.95,
+    "bb100": -32.3325,
+    "ci95_half_width_bb100": 35.724949458180795,
+    "unresolved_attempts_in_window": 0,
+    "full_run_summary": {
+      "style": 7,
+      "equity_samples": 0,
+      "seed": 2026101830,
+      "hands_requested": 8000,
+      "library_sha256": "5cefce4bb93e00e8dd273de1050ee6582a909907cd16291c5475acad1ab05713",
+      "opponent": "slumbot.com",
+      "starting_bb": 200,
+      "request_delay_seconds": 0,
+      "concurrent_games": 5,
+      "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+      "log_schema": 2,
+      "hands": 7771,
+      "target_reached": false,
+      "unresolved_hands": 28,
+      "net_bb": -2526.53,
+      "bb100": -32.51228928065886,
+      "ci95_half_width_bb100": 31.009547503486314,
+      "seconds_this_process": 889.2177282260091,
+      "hands_per_second": 8.739142004628224,
+      "eta_seconds": 26.203945407766835,
+      "active_games": 0,
+      "bb100_bounds_for_unresolved": [
+        -104.19964097961278,
+        39.40851391204001
+      ],
+      "complete": false,
+      "failures": [
+        {
+          "game": 0,
+          "type": "ConnectionError",
+          "stage": "new_hand",
+          "game_hand": 1517,
+          "status": null,
+          "decisions": [],
+          "message": "HTTPSConnectionPool(host='slumbot.com', port=443): Max retries exceeded with url: /slumbot/api/new_hand (Caused by NameResolutionError(\"HTTPSConnection(host='slumbot.com', port=443): Failed to resolve 'slumbot.com' ([Errno -3] Temporary failure in name resolution)\"))"
+        },
+        {
+          "game": 2,
+          "type": "ConnectionError",
+          "stage": "new_hand",
+          "game_hand": 1563,
+          "status": null,
+          "decisions": [],
+          "message": "HTTPSConnectionPool(host='slumbot.com', port=443): Max retries exceeded with url: /slumbot/api/new_hand (Caused by NameResolutionError(\"HTTPSConnection(host='slumbot.com', port=443): Failed to resolve 'slumbot.com' ([Errno -3] Temporary failure in name resolution)\"))"
+        },
+        {
+          "game": 1,
+          "type": "ConnectionError",
+          "stage": "new_hand",
+          "game_hand": 1542,
+          "status": null,
+          "decisions": [],
+          "message": "HTTPSConnectionPool(host='slumbot.com', port=443): Max retries exceeded with url: /slumbot/api/new_hand (Caused by NameResolutionError(\"HTTPSConnection(host='slumbot.com', port=443): Failed to resolve 'slumbot.com' ([Errno -3] Temporary failure in name resolution)\"))"
+        }
+      ]
+    },
+    "pending_outcomes_unknown": false,
+    "faced": [
+      6345,
+      829,
+      771,
+      623
+    ],
+    "folds": [
+      2414,
+      340,
+      420,
+      451
+    ],
+    "fold_percent": [
+      38.045705279747835,
+      41.01326899879373,
+      54.474708171206224,
+      72.39165329052969
+    ],
+    "window": "first 6000 completed hands"
+  },
+  "control_prefix_method": {
+    "source_log": "reports/poker/20261018/strength_v1/slumbot_confirm_control.jsonl",
+    "source_sha256": "4f47f28586fb8bf07669a3c9330eec8297760f553b347f68c636ea088c636011",
+    "first_hand": 0,
+    "last_hand": 5999,
+    "hands": 6000,
+    "position_counts": [
+      3001,
+      2999
+    ],
+    "first_interrupted_attempt_after_completed_hands": 7650,
+    "selection": "Outcome-independent clean prefix fixed before computing its score; excludes all later outcomes and failed attempts. Full interrupted source retained.",
+    "reason": "DNS outage ended the planned 8000-hand control after 7771 completed hands."
+  },
+  "local": {
+    "samples": {
+      "matches": [
+        {
+          "label": "2p_original_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 20.316667,
+          "ci95_half_width_bb100": 9.584934,
+          "seconds": 0.414766,
+          "decisions": 107741,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 259763.4,
+          "hands_per_second": 72329.9,
+          "faced": [
+            26420,
+            2013,
+            1944,
+            1705
+          ],
+          "folds": [
+            9586,
+            1002,
+            1149,
+            1130
+          ],
+          "policy_decisions": [
+            0,
+            53948,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53793,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/2p_original_control.csv",
+            "2p_original_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_original_candidate",
+          "players": 2,
+          "hero_style": 8,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 24.293,
+          "ci95_half_width_bb100": 8.929686,
+          "seconds": 1.485415,
+          "decisions": 107959,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 72679.3,
+          "hands_per_second": 20196.4,
+          "faced": [
+            26420,
+            2030,
+            1936,
+            1709
+          ],
+          "folds": [
+            9586,
+            1042,
+            1174,
+            1133
+          ],
+          "policy_decisions": [
+            0,
+            54003,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53956
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "8",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/2p_original_candidate.csv",
+            "2p_original_candidate"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_fullhouse_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 5.052833,
+          "ci95_half_width_bb100": 16.524001,
+          "seconds": 5.141196,
+          "decisions": 137776,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 26798.4,
+          "hands_per_second": 5835.2,
+          "faced": [
+            30285,
+            5019,
+            3442,
+            3038
+          ],
+          "folds": [
+            11302,
+            2124,
+            1910,
+            2136
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            65199,
+            0,
+            0,
+            72577,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/2p_fullhouse_control.csv",
+            "2p_fullhouse_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_fullhouse_candidate",
+          "players": 2,
+          "hero_style": 8,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 7.146167,
+          "ci95_half_width_bb100": 16.382038,
+          "seconds": 7.919505,
+          "decisions": 137968,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 17421.3,
+          "hands_per_second": 3788.1,
+          "faced": [
+            30285,
+            5014,
+            3474,
+            3064
+          ],
+          "folds": [
+            11302,
+            2098,
+            1990,
+            2148
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            65195,
+            0,
+            0,
+            0,
+            72773
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "8",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/2p_fullhouse_candidate.csv",
+            "2p_fullhouse_candidate"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "6p_original_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 8.088667,
+          "ci95_half_width_bb100": 10.153193,
+          "seconds": 0.241069,
+          "decisions": 253727,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 1052506.8,
+          "hands_per_second": 124445.6,
+          "faced": [
+            30173,
+            807,
+            963,
+            767
+          ],
+          "folds": [
+            22425,
+            338,
+            545,
+            465
+          ],
+          "policy_decisions": [
+            0,
+            211520,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42207,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/6p_original_control.csv",
+            "6p_original_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_original_candidate",
+          "players": 6,
+          "hero_style": 8,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 10.7101,
+          "ci95_half_width_bb100": 9.351055,
+          "seconds": 0.728245,
+          "decisions": 253925,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 348680.7,
+          "hands_per_second": 41194.9,
+          "faced": [
+            30173,
+            811,
+            986,
+            766
+          ],
+          "folds": [
+            22425,
+            335,
+            588,
+            445
+          ],
+          "policy_decisions": [
+            0,
+            211607,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42318
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "8",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/6p_original_candidate.csv",
+            "6p_original_candidate"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_fullhouse_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 21.2845,
+          "ci95_half_width_bb100": 18.116692,
+          "seconds": 15.291353,
+          "decisions": 328922,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 21510.3,
+          "hands_per_second": 1961.9,
+          "faced": [
+            30880,
+            2659,
+            1854,
+            1686
+          ],
+          "folds": [
+            22044,
+            1037,
+            904,
+            1034
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277817,
+            0,
+            0,
+            51105,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/6p_fullhouse_control.csv",
+            "6p_fullhouse_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_fullhouse_candidate",
+          "players": 6,
+          "hero_style": 8,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 29.054067,
+          "ci95_half_width_bb100": 17.852885,
+          "seconds": 21.254002,
+          "decisions": 329031,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 15480.9,
+          "hands_per_second": 1411.5,
+          "faced": [
+            30880,
+            2634,
+            1900,
+            1692
+          ],
+          "folds": [
+            22044,
+            1004,
+            947,
+            1046
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277818,
+            0,
+            0,
+            0,
+            51213
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "8",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/6p_fullhouse_candidate.csv",
+            "6p_fullhouse_candidate"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_mixed_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 30.901133,
+          "ci95_half_width_bb100": 16.296581,
+          "seconds": 9.066298,
+          "decisions": 296856,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 32742.8,
+          "hands_per_second": 3309.0,
+          "faced": [
+            31093,
+            1885,
+            1485,
+            1333
+          ],
+          "folds": [
+            22500,
+            717,
+            760,
+            807
+          ],
+          "policy_decisions": [
+            0,
+            93951,
+            0,
+            0,
+            154968,
+            0,
+            0,
+            47937,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/6p_mixed_control.csv",
+            "6p_mixed_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_mixed_candidate",
+          "players": 6,
+          "hero_style": 8,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 34.368533,
+          "ci95_half_width_bb100": 15.704979,
+          "seconds": 8.253839,
+          "decisions": 297005,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 35983.9,
+          "hands_per_second": 3634.7,
+          "faced": [
+            31093,
+            1868,
+            1547,
+            1337
+          ],
+          "folds": [
+            22500,
+            684,
+            798,
+            812
+          ],
+          "policy_decisions": [
+            0,
+            93968,
+            0,
+            0,
+            154964,
+            0,
+            0,
+            0,
+            48073
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "8",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/samples_local/6p_mixed_candidate.csv",
+            "6p_mixed_candidate"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        }
+      ],
+      "paired": [
+        {
+          "players": 2,
+          "field": "original",
+          "gain_bb100": 3.9763333333333337,
+          "ci95_half_width_bb100": 7.006644133547265,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 2,
+          "field": "fullhouse",
+          "gain_bb100": 2.0933333333333333,
+          "ci95_half_width_bb100": 12.413832685492688,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 6,
+          "field": "original",
+          "gain_bb100": 2.6214333332,
+          "ci95_half_width_bb100": 5.9618406736040415,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "fullhouse",
+          "gain_bb100": 7.76956666676,
+          "ci95_half_width_bb100": 11.66120753406591,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "mixed",
+          "gain_bb100": 3.46739999976,
+          "ci95_half_width_bb100": 10.017209919140134,
+          "independent_duplicate_blocks": 5000
+        }
+      ]
+    },
+    "context": {
+      "matches": [
+        {
+          "label": "2p_original_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 20.316667,
+          "ci95_half_width_bb100": 9.584934,
+          "seconds": 0.558757,
+          "decisions": 107741,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 192822.6,
+          "hands_per_second": 53690.6,
+          "faced": [
+            26420,
+            2013,
+            1944,
+            1705
+          ],
+          "folds": [
+            9586,
+            1002,
+            1149,
+            1130
+          ],
+          "policy_decisions": [
+            0,
+            53948,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53793,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/2p_original_control.csv",
+            "2p_original_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_original_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 19.625367,
+          "ci95_half_width_bb100": 7.84295,
+          "seconds": 1.909802,
+          "decisions": 106903,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 55976.0,
+          "hands_per_second": 15708.4,
+          "faced": [
+            26420,
+            2014,
+            1844,
+            1513
+          ],
+          "folds": [
+            9586,
+            1185,
+            1326,
+            1212
+          ],
+          "policy_decisions": [
+            0,
+            53496,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53407,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/context/baseline_bench2",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/2p_original_candidate.csv",
+            "2p_original_candidate"
+          ],
+          "binary_sha256": "1943057d824dcc4dec04c88139fb7045b02851d2fc76e8937c720f221e6a0e41"
+        },
+        {
+          "label": "2p_fullhouse_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 5.052833,
+          "ci95_half_width_bb100": 16.524001,
+          "seconds": 6.079236,
+          "decisions": 137776,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 22663.4,
+          "hands_per_second": 4934.8,
+          "faced": [
+            30285,
+            5019,
+            3442,
+            3038
+          ],
+          "folds": [
+            11302,
+            2124,
+            1910,
+            2136
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            65199,
+            0,
+            0,
+            72577,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/2p_fullhouse_control.csv",
+            "2p_fullhouse_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_fullhouse_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": -1.038433,
+          "ci95_half_width_bb100": 12.95036,
+          "seconds": 7.348116,
+          "decisions": 135334,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 18417.5,
+          "hands_per_second": 4082.7,
+          "faced": [
+            30285,
+            4992,
+            3232,
+            2740
+          ],
+          "folds": [
+            11302,
+            2580,
+            2177,
+            2260
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            63942,
+            0,
+            0,
+            71392,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/context/baseline_bench2",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/2p_fullhouse_candidate.csv",
+            "2p_fullhouse_candidate"
+          ],
+          "binary_sha256": "1943057d824dcc4dec04c88139fb7045b02851d2fc76e8937c720f221e6a0e41"
+        },
+        {
+          "label": "6p_original_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 8.088667,
+          "ci95_half_width_bb100": 10.153193,
+          "seconds": 0.297737,
+          "decisions": 253727,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 852185.8,
+          "hands_per_second": 100760.2,
+          "faced": [
+            30173,
+            807,
+            963,
+            767
+          ],
+          "folds": [
+            22425,
+            338,
+            545,
+            465
+          ],
+          "policy_decisions": [
+            0,
+            211520,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42207,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/6p_original_control.csv",
+            "6p_original_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_original_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 6.4733,
+          "ci95_half_width_bb100": 8.099313,
+          "seconds": 0.313874,
+          "decisions": 253377,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 807255.8,
+          "hands_per_second": 95579.6,
+          "faced": [
+            30173,
+            806,
+            937,
+            691
+          ],
+          "folds": [
+            22425,
+            383,
+            610,
+            508
+          ],
+          "policy_decisions": [
+            0,
+            211354,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42023,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/context/baseline_bench6",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/6p_original_candidate.csv",
+            "6p_original_candidate"
+          ],
+          "binary_sha256": "ae36962f9fee75fa062845039bc572edfcd0aba3c8149ec9082a612cdc352456"
+        },
+        {
+          "label": "6p_fullhouse_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 21.2845,
+          "ci95_half_width_bb100": 18.116692,
+          "seconds": 19.574868,
+          "decisions": 328922,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 16803.3,
+          "hands_per_second": 1532.6,
+          "faced": [
+            30880,
+            2659,
+            1854,
+            1686
+          ],
+          "folds": [
+            22044,
+            1037,
+            904,
+            1034
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277817,
+            0,
+            0,
+            51105,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/6p_fullhouse_control.csv",
+            "6p_fullhouse_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_fullhouse_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 24.912033,
+          "ci95_half_width_bb100": 15.536105,
+          "seconds": 18.057544,
+          "decisions": 327911,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 18159.2,
+          "hands_per_second": 1661.4,
+          "faced": [
+            30880,
+            2642,
+            1744,
+            1547
+          ],
+          "folds": [
+            22044,
+            1247,
+            1017,
+            1154
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277372,
+            0,
+            0,
+            50539,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/context/baseline_bench6",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/6p_fullhouse_candidate.csv",
+            "6p_fullhouse_candidate"
+          ],
+          "binary_sha256": "ae36962f9fee75fa062845039bc572edfcd0aba3c8149ec9082a612cdc352456"
+        },
+        {
+          "label": "6p_mixed_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 30.901133,
+          "ci95_half_width_bb100": 16.296581,
+          "seconds": 10.17199,
+          "decisions": 296856,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 29183.7,
+          "hands_per_second": 2949.3,
+          "faced": [
+            31093,
+            1885,
+            1485,
+            1333
+          ],
+          "folds": [
+            22500,
+            717,
+            760,
+            807
+          ],
+          "policy_decisions": [
+            0,
+            93951,
+            0,
+            0,
+            154968,
+            0,
+            0,
+            47937,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/6p_mixed_control.csv",
+            "6p_mixed_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_mixed_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 27.795167,
+          "ci95_half_width_bb100": 13.613456,
+          "seconds": 9.498705,
+          "decisions": 296092,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 31171.8,
+          "hands_per_second": 3158.3,
+          "faced": [
+            31093,
+            1881,
+            1401,
+            1210
+          ],
+          "folds": [
+            22500,
+            859,
+            847,
+            893
+          ],
+          "policy_decisions": [
+            0,
+            93886,
+            0,
+            0,
+            154678,
+            0,
+            0,
+            47528,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/context/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/context_local/6p_mixed_candidate.csv",
+            "6p_mixed_candidate"
+          ],
+          "binary_sha256": "ae36962f9fee75fa062845039bc572edfcd0aba3c8149ec9082a612cdc352456"
+        }
+      ],
+      "paired": [
+        {
+          "players": 2,
+          "field": "original",
+          "gain_bb100": -0.6913,
+          "ci95_half_width_bb100": 7.987067519805152,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 2,
+          "field": "fullhouse",
+          "gain_bb100": -6.091266666666666,
+          "ci95_half_width_bb100": 14.328940186460354,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 6,
+          "field": "original",
+          "gain_bb100": -1.6153666665400004,
+          "ci95_half_width_bb100": 7.529551624317603,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "fullhouse",
+          "gain_bb100": 3.6275333329599992,
+          "ci95_half_width_bb100": 13.203723629722065,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "mixed",
+          "gain_bb100": -3.1059666667999997,
+          "ci95_half_width_bb100": 11.323463703798563,
+          "independent_duplicate_blocks": 5000
+        }
+      ]
+    },
+    "blind": {
+      "matches": [
+        {
+          "label": "2p_original_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 20.316667,
+          "ci95_half_width_bb100": 9.584934,
+          "seconds": 0.481105,
+          "decisions": 107741,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 223944.8,
+          "hands_per_second": 62356.4,
+          "faced": [
+            26420,
+            2013,
+            1944,
+            1705
+          ],
+          "folds": [
+            9586,
+            1002,
+            1149,
+            1130
+          ],
+          "policy_decisions": [
+            0,
+            53948,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53793,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/2p_original_control.csv",
+            "2p_original_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_original_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 22.776733,
+          "ci95_half_width_bb100": 8.143236,
+          "seconds": 2.40941,
+          "decisions": 112343,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 46626.8,
+          "hands_per_second": 12451.2,
+          "faced": [
+            26423,
+            2192,
+            2022,
+            1666
+          ],
+          "folds": [
+            8371,
+            1337,
+            1476,
+            1353
+          ],
+          "policy_decisions": [
+            0,
+            56088,
+            0,
+            0,
+            0,
+            0,
+            0,
+            56255,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/blind/baseline_bench2",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/2p_original_candidate.csv",
+            "2p_original_candidate"
+          ],
+          "binary_sha256": "d86bcabb5eee2f9743d50d12581fb2a47a7ee70f14f6bab09becdb6a40100c79"
+        },
+        {
+          "label": "2p_fullhouse_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 5.052833,
+          "ci95_half_width_bb100": 16.524001,
+          "seconds": 6.872985,
+          "decisions": 137776,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 20046.0,
+          "hands_per_second": 4364.9,
+          "faced": [
+            30285,
+            5019,
+            3442,
+            3038
+          ],
+          "folds": [
+            11302,
+            2124,
+            1910,
+            2136
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            65199,
+            0,
+            0,
+            72577,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/2p_fullhouse_control.csv",
+            "2p_fullhouse_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_fullhouse_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 4.414533,
+          "ci95_half_width_bb100": 13.876866,
+          "seconds": 9.466918,
+          "decisions": 142656,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 15068.9,
+          "hands_per_second": 3168.9,
+          "faced": [
+            30300,
+            5556,
+            3537,
+            3033
+          ],
+          "folds": [
+            9746,
+            2996,
+            2416,
+            2536
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            67181,
+            0,
+            0,
+            75475,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/blind/baseline_bench2",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/2p_fullhouse_candidate.csv",
+            "2p_fullhouse_candidate"
+          ],
+          "binary_sha256": "d86bcabb5eee2f9743d50d12581fb2a47a7ee70f14f6bab09becdb6a40100c79"
+        },
+        {
+          "label": "6p_original_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 8.088667,
+          "ci95_half_width_bb100": 10.153193,
+          "seconds": 0.342773,
+          "decisions": 253727,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 740218.8,
+          "hands_per_second": 87521.5,
+          "faced": [
+            30173,
+            807,
+            963,
+            767
+          ],
+          "folds": [
+            22425,
+            338,
+            545,
+            465
+          ],
+          "policy_decisions": [
+            0,
+            211520,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42207,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/6p_original_control.csv",
+            "6p_original_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_original_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 6.4733,
+          "ci95_half_width_bb100": 8.099313,
+          "seconds": 0.278256,
+          "decisions": 253377,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 910588.3,
+          "hands_per_second": 107814.2,
+          "faced": [
+            30173,
+            806,
+            937,
+            691
+          ],
+          "folds": [
+            22425,
+            383,
+            610,
+            508
+          ],
+          "policy_decisions": [
+            0,
+            211354,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42023,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/blind/baseline_bench6",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/6p_original_candidate.csv",
+            "6p_original_candidate"
+          ],
+          "binary_sha256": "c81b7d4df7437b639c4bf94a3991f8a268fc8183327dfcf714e79884c99bc40e"
+        },
+        {
+          "label": "6p_fullhouse_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 21.2845,
+          "ci95_half_width_bb100": 18.116692,
+          "seconds": 20.256752,
+          "decisions": 328922,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 16237.6,
+          "hands_per_second": 1481.0,
+          "faced": [
+            30880,
+            2659,
+            1854,
+            1686
+          ],
+          "folds": [
+            22044,
+            1037,
+            904,
+            1034
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277817,
+            0,
+            0,
+            51105,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/6p_fullhouse_control.csv",
+            "6p_fullhouse_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_fullhouse_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 24.912033,
+          "ci95_half_width_bb100": 15.536105,
+          "seconds": 17.538133,
+          "decisions": 327911,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 18697.0,
+          "hands_per_second": 1710.6,
+          "faced": [
+            30880,
+            2642,
+            1744,
+            1547
+          ],
+          "folds": [
+            22044,
+            1247,
+            1017,
+            1154
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277372,
+            0,
+            0,
+            50539,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/blind/baseline_bench6",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/6p_fullhouse_candidate.csv",
+            "6p_fullhouse_candidate"
+          ],
+          "binary_sha256": "c81b7d4df7437b639c4bf94a3991f8a268fc8183327dfcf714e79884c99bc40e"
+        },
+        {
+          "label": "6p_mixed_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 30.901133,
+          "ci95_half_width_bb100": 16.296581,
+          "seconds": 9.854143,
+          "decisions": 296856,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 30125.0,
+          "hands_per_second": 3044.4,
+          "faced": [
+            31093,
+            1885,
+            1485,
+            1333
+          ],
+          "folds": [
+            22500,
+            717,
+            760,
+            807
+          ],
+          "policy_decisions": [
+            0,
+            93951,
+            0,
+            0,
+            154968,
+            0,
+            0,
+            47937,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/6p_mixed_control.csv",
+            "6p_mixed_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_mixed_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 27.795167,
+          "ci95_half_width_bb100": 13.613456,
+          "seconds": 9.39949,
+          "decisions": 296092,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 31500.9,
+          "hands_per_second": 3191.7,
+          "faced": [
+            31093,
+            1881,
+            1401,
+            1210
+          ],
+          "folds": [
+            22500,
+            859,
+            847,
+            893
+          ],
+          "policy_decisions": [
+            0,
+            93886,
+            0,
+            0,
+            154678,
+            0,
+            0,
+            47528,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/blind/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/blind_local/6p_mixed_candidate.csv",
+            "6p_mixed_candidate"
+          ],
+          "binary_sha256": "c81b7d4df7437b639c4bf94a3991f8a268fc8183327dfcf714e79884c99bc40e"
+        }
+      ],
+      "paired": [
+        {
+          "players": 2,
+          "field": "original",
+          "gain_bb100": 2.460066666666666,
+          "ci95_half_width_bb100": 8.28389800935695,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 2,
+          "field": "fullhouse",
+          "gain_bb100": -0.6382999999999996,
+          "ci95_half_width_bb100": 15.239621126895926,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 6,
+          "field": "original",
+          "gain_bb100": -1.6153666665400004,
+          "ci95_half_width_bb100": 7.529551624317603,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "fullhouse",
+          "gain_bb100": 3.6275333329599992,
+          "ci95_half_width_bb100": 13.203723629722065,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "mixed",
+          "gain_bb100": -3.1059666667999997,
+          "ci95_half_width_bb100": 11.323463703798563,
+          "independent_duplicate_blocks": 5000
+        }
+      ]
+    },
+    "river": {
+      "matches": [
+        {
+          "label": "2p_original_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 20.316667,
+          "ci95_half_width_bb100": 9.584934,
+          "seconds": 0.776377,
+          "decisions": 107741,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 138774.0,
+          "hands_per_second": 38641.0,
+          "faced": [
+            26420,
+            2013,
+            1944,
+            1705
+          ],
+          "folds": [
+            9586,
+            1002,
+            1149,
+            1130
+          ],
+          "policy_decisions": [
+            0,
+            53948,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53793,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/2p_original_control.csv",
+            "2p_original_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_original_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 24.876267,
+          "ci95_half_width_bb100": 9.356674,
+          "seconds": 4.315635,
+          "decisions": 107970,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 25018.3,
+          "hands_per_second": 6951.5,
+          "faced": [
+            26420,
+            2030,
+            1936,
+            1716
+          ],
+          "folds": [
+            9586,
+            1042,
+            1174,
+            1143
+          ],
+          "policy_decisions": [
+            0,
+            54007,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53963,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/river/baseline_bench2",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/2p_original_candidate.csv",
+            "2p_original_candidate"
+          ],
+          "binary_sha256": "ef90de8016c26768aaed05dd86652cb9f1f087612506581b90ac2bc88fb232c9"
+        },
+        {
+          "label": "2p_fullhouse_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 5.052833,
+          "ci95_half_width_bb100": 16.524001,
+          "seconds": 9.592844,
+          "decisions": 137776,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 14362.4,
+          "hands_per_second": 3127.3,
+          "faced": [
+            30285,
+            5019,
+            3442,
+            3038
+          ],
+          "folds": [
+            11302,
+            2124,
+            1910,
+            2136
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            65199,
+            0,
+            0,
+            72577,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/2p_fullhouse_control.csv",
+            "2p_fullhouse_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_fullhouse_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 15000,
+          "bb100": 5.183733,
+          "ci95_half_width_bb100": 15.980883,
+          "seconds": 17.033569,
+          "decisions": 137951,
+          "independent_clusters": 15000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 8098.8,
+          "hands_per_second": 1761.2,
+          "faced": [
+            30285,
+            5014,
+            3474,
+            3078
+          ],
+          "folds": [
+            11302,
+            2098,
+            1990,
+            2176
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            65164,
+            0,
+            0,
+            72787,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/river/baseline_bench2",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/2p_fullhouse_candidate.csv",
+            "2p_fullhouse_candidate"
+          ],
+          "binary_sha256": "ef90de8016c26768aaed05dd86652cb9f1f087612506581b90ac2bc88fb232c9"
+        },
+        {
+          "label": "6p_original_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 8.088667,
+          "ci95_half_width_bb100": 10.153193,
+          "seconds": 0.504833,
+          "decisions": 253727,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 502596.0,
+          "hands_per_second": 59425.6,
+          "faced": [
+            30173,
+            807,
+            963,
+            767
+          ],
+          "folds": [
+            22425,
+            338,
+            545,
+            465
+          ],
+          "policy_decisions": [
+            0,
+            211520,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42207,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/6p_original_control.csv",
+            "6p_original_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_original_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 11.150533,
+          "ci95_half_width_bb100": 9.625477,
+          "seconds": 1.847154,
+          "decisions": 253704,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 137348.6,
+          "hands_per_second": 16241.2,
+          "faced": [
+            30173,
+            807,
+            963,
+            765
+          ],
+          "folds": [
+            22425,
+            338,
+            545,
+            463
+          ],
+          "policy_decisions": [
+            0,
+            211499,
+            0,
+            0,
+            0,
+            0,
+            0,
+            42205,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/river/baseline_bench6",
+            "7",
+            "1",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/6p_original_candidate.csv",
+            "6p_original_candidate"
+          ],
+          "binary_sha256": "06fbf203006838314d5bd936537282a62777d2832e2f638cbba6d061563e6b57"
+        },
+        {
+          "label": "6p_fullhouse_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 21.2845,
+          "ci95_half_width_bb100": 18.116692,
+          "seconds": 22.586127,
+          "decisions": 328922,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 14563.0,
+          "hands_per_second": 1328.2,
+          "faced": [
+            30880,
+            2659,
+            1854,
+            1686
+          ],
+          "folds": [
+            22044,
+            1037,
+            904,
+            1034
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277817,
+            0,
+            0,
+            51105,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/6p_fullhouse_control.csv",
+            "6p_fullhouse_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_fullhouse_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 21.6616,
+          "ci95_half_width_bb100": 17.895443,
+          "seconds": 32.864573,
+          "decisions": 328916,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 10008.2,
+          "hands_per_second": 912.8,
+          "faced": [
+            30880,
+            2659,
+            1854,
+            1700
+          ],
+          "folds": [
+            22044,
+            1037,
+            904,
+            1062
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            277797,
+            0,
+            0,
+            51119,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/river/baseline_bench6",
+            "7",
+            "4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/6p_fullhouse_candidate.csv",
+            "6p_fullhouse_candidate"
+          ],
+          "binary_sha256": "06fbf203006838314d5bd936537282a62777d2832e2f638cbba6d061563e6b57"
+        },
+        {
+          "label": "6p_mixed_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 30.901133,
+          "ci95_half_width_bb100": 16.296581,
+          "seconds": 23.007379,
+          "decisions": 296856,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 12902.6,
+          "hands_per_second": 1303.9,
+          "faced": [
+            31093,
+            1885,
+            1485,
+            1333
+          ],
+          "folds": [
+            22500,
+            717,
+            760,
+            807
+          ],
+          "policy_decisions": [
+            0,
+            93951,
+            0,
+            0,
+            154968,
+            0,
+            0,
+            47937,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/6p_mixed_control.csv",
+            "6p_mixed_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_mixed_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610182,
+          "stack_bb": 200.0,
+          "hands": 30000,
+          "duplicate_blocks": 5000,
+          "bb100": 30.654933,
+          "ci95_half_width_bb100": 16.089423,
+          "seconds": 18.449084,
+          "decisions": 296819,
+          "independent_clusters": 5000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 16088.5,
+          "hands_per_second": 1626.1,
+          "faced": [
+            31093,
+            1885,
+            1485,
+            1326
+          ],
+          "folds": [
+            22500,
+            717,
+            760,
+            820
+          ],
+          "policy_decisions": [
+            0,
+            93947,
+            0,
+            0,
+            154942,
+            0,
+            0,
+            47930,
+            0
+          ],
+          "command": [
+            "build/poker/strength_v1/river/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "30000",
+            "202610182",
+            "20000",
+            "reports/poker/20261018/strength_v1/river_local/6p_mixed_candidate.csv",
+            "6p_mixed_candidate"
+          ],
+          "binary_sha256": "06fbf203006838314d5bd936537282a62777d2832e2f638cbba6d061563e6b57"
+        }
+      ],
+      "paired": [
+        {
+          "players": 2,
+          "field": "original",
+          "gain_bb100": 4.5596000000000005,
+          "ci95_half_width_bb100": 7.356882834532556,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 2,
+          "field": "fullhouse",
+          "gain_bb100": 0.13090000000000032,
+          "ci95_half_width_bb100": 12.320349830835706,
+          "independent_duplicate_blocks": 15000
+        },
+        {
+          "players": 6,
+          "field": "original",
+          "gain_bb100": 3.0618666666000003,
+          "ci95_half_width_bb100": 3.7411801231585606,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "fullhouse",
+          "gain_bb100": 0.3771000001200003,
+          "ci95_half_width_bb100": 5.273931077951479,
+          "independent_duplicate_blocks": 5000
+        },
+        {
+          "players": 6,
+          "field": "mixed",
+          "gain_bb100": -0.24619999983999966,
+          "ci95_half_width_bb100": 5.287727029688827,
+          "independent_duplicate_blocks": 5000
+        }
+      ]
+    },
+    "holdout": {
+      "matches": [
+        {
+          "label": "2p_original_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 30000,
+          "bb100": 21.252483,
+          "ci95_half_width_bb100": 6.873904,
+          "seconds": 1.704399,
+          "decisions": 215623,
+          "independent_clusters": 30000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 126509.7,
+          "hands_per_second": 35203.0,
+          "faced": [
+            52868,
+            3902,
+            3861,
+            3347
+          ],
+          "folds": [
+            19208,
+            1834,
+            2331,
+            2176
+          ],
+          "policy_decisions": [
+            0,
+            107983,
+            0,
+            0,
+            0,
+            0,
+            0,
+            107640,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "1",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/2p_original_control.csv",
+            "2p_original_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_original_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 30000,
+          "bb100": 29.113167,
+          "ci95_half_width_bb100": 6.926289,
+          "seconds": 2.976337,
+          "decisions": 215972,
+          "independent_clusters": 30000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 72563.0,
+          "hands_per_second": 20159.0,
+          "faced": [
+            52868,
+            3916,
+            3879,
+            3411
+          ],
+          "folds": [
+            19208,
+            1977,
+            2410,
+            2149
+          ],
+          "policy_decisions": [
+            0,
+            108017,
+            0,
+            0,
+            0,
+            0,
+            0,
+            107955
+          ],
+          "command": [
+            "build/poker/strength_v1/final/baseline_bench2",
+            "7",
+            "1",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/2p_original_candidate.csv",
+            "2p_original_candidate"
+          ],
+          "binary_sha256": "528f6b3b14b1d49f274f1e48248b9be6d26cbd02107e8df961fabd8e1a1e7685"
+        },
+        {
+          "label": "2p_fullhouse_control",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 30000,
+          "bb100": 2.986817,
+          "ci95_half_width_bb100": 11.397876,
+          "seconds": 8.886522,
+          "decisions": 275803,
+          "independent_clusters": 30000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 31036.1,
+          "hands_per_second": 6751.8,
+          "faced": [
+            60500,
+            9988,
+            6984,
+            6170
+          ],
+          "folds": [
+            22493,
+            4080,
+            3878,
+            4303
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            130467,
+            0,
+            0,
+            145336,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench2",
+            "7",
+            "4",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/2p_fullhouse_control.csv",
+            "2p_fullhouse_control"
+          ],
+          "binary_sha256": "68aecebdd98f93d7d15eeb9a4724771ef412a13862d65957058f39613991b266"
+        },
+        {
+          "label": "2p_fullhouse_candidate",
+          "players": 2,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 30000,
+          "bb100": 11.214333,
+          "ci95_half_width_bb100": 10.776702,
+          "seconds": 12.57104,
+          "decisions": 275749,
+          "independent_clusters": 30000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 21935.3,
+          "hands_per_second": 4772.9,
+          "faced": [
+            60500,
+            10020,
+            7048,
+            6222
+          ],
+          "folds": [
+            22493,
+            4135,
+            4017,
+            4355
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            130184,
+            0,
+            0,
+            145565
+          ],
+          "command": [
+            "build/poker/strength_v1/final/baseline_bench2",
+            "7",
+            "4",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/2p_fullhouse_candidate.csv",
+            "2p_fullhouse_candidate"
+          ],
+          "binary_sha256": "528f6b3b14b1d49f274f1e48248b9be6d26cbd02107e8df961fabd8e1a1e7685"
+        },
+        {
+          "label": "6p_original_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 10000,
+          "bb100": 8.041367,
+          "ci95_half_width_bb100": 6.921134,
+          "seconds": 0.579973,
+          "decisions": 505639,
+          "independent_clusters": 10000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 871831.4,
+          "hands_per_second": 103453.0,
+          "faced": [
+            60436,
+            1554,
+            1863,
+            1561
+          ],
+          "folds": [
+            44919,
+            671,
+            1065,
+            943
+          ],
+          "policy_decisions": [
+            0,
+            421719,
+            0,
+            0,
+            0,
+            0,
+            0,
+            83920,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/6p_original_control.csv",
+            "6p_original_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_original_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 10000,
+          "bb100": 8.041367,
+          "ci95_half_width_bb100": 6.921134,
+          "seconds": 0.654118,
+          "decisions": 505639,
+          "independent_clusters": 10000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 773008.4,
+          "hands_per_second": 91726.5,
+          "faced": [
+            60436,
+            1554,
+            1863,
+            1561
+          ],
+          "folds": [
+            44919,
+            671,
+            1065,
+            943
+          ],
+          "policy_decisions": [
+            0,
+            421719,
+            0,
+            0,
+            0,
+            0,
+            0,
+            83920
+          ],
+          "command": [
+            "build/poker/strength_v1/final/baseline_bench6",
+            "7",
+            "1",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/6p_original_candidate.csv",
+            "6p_original_candidate"
+          ],
+          "binary_sha256": "811d16567526379e312c390a75f2782edaaaefcd8c15b6be6a535dfad608f6c2"
+        },
+        {
+          "label": "6p_fullhouse_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 10000,
+          "bb100": 23.5219,
+          "ci95_half_width_bb100": 12.862508,
+          "seconds": 42.712269,
+          "decisions": 658214,
+          "independent_clusters": 10000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 15410.4,
+          "hands_per_second": 1404.7,
+          "faced": [
+            61654,
+            5228,
+            3710,
+            3465
+          ],
+          "folds": [
+            44164,
+            2074,
+            1811,
+            2206
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            555800,
+            0,
+            0,
+            102414,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "4",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/6p_fullhouse_control.csv",
+            "6p_fullhouse_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_fullhouse_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 10000,
+          "bb100": 23.5219,
+          "ci95_half_width_bb100": 12.862508,
+          "seconds": 41.442183,
+          "decisions": 658214,
+          "independent_clusters": 10000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 15882.7,
+          "hands_per_second": 1447.8,
+          "faced": [
+            61654,
+            5228,
+            3710,
+            3465
+          ],
+          "folds": [
+            44164,
+            2074,
+            1811,
+            2206
+          ],
+          "policy_decisions": [
+            0,
+            0,
+            0,
+            0,
+            555800,
+            0,
+            0,
+            102414
+          ],
+          "command": [
+            "build/poker/strength_v1/final/baseline_bench6",
+            "7",
+            "4",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/6p_fullhouse_candidate.csv",
+            "6p_fullhouse_candidate"
+          ],
+          "binary_sha256": "811d16567526379e312c390a75f2782edaaaefcd8c15b6be6a535dfad608f6c2"
+        },
+        {
+          "label": "6p_mixed_control",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 10000,
+          "bb100": 26.666333,
+          "ci95_half_width_bb100": 11.409628,
+          "seconds": 18.92479,
+          "decisions": 591511,
+          "independent_clusters": 10000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 31255.9,
+          "hands_per_second": 3170.4,
+          "faced": [
+            62300,
+            3669,
+            2943,
+            2651
+          ],
+          "folds": [
+            45292,
+            1437,
+            1479,
+            1601
+          ],
+          "policy_decisions": [
+            0,
+            186741,
+            0,
+            0,
+            309275,
+            0,
+            0,
+            95495,
+            0
+          ],
+          "command": [
+            "build/poker/equity_v2/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/6p_mixed_control.csv",
+            "6p_mixed_control"
+          ],
+          "binary_sha256": "9d34f8d557578cb549a33fb8ccfa4f51c19c95dff0a173cf0ba140c0778b1757"
+        },
+        {
+          "label": "6p_mixed_candidate",
+          "players": 6,
+          "hero_style": 7,
+          "seed": 202610183,
+          "stack_bb": 200.0,
+          "hands": 60000,
+          "duplicate_blocks": 10000,
+          "bb100": 26.666333,
+          "ci95_half_width_bb100": 11.409628,
+          "seconds": 13.119888,
+          "decisions": 591511,
+          "independent_clusters": 10000,
+          "session_blocks": 1,
+          "native_history": 0,
+          "decisions_per_second": 45085.1,
+          "hands_per_second": 4573.2,
+          "faced": [
+            62300,
+            3669,
+            2943,
+            2651
+          ],
+          "folds": [
+            45292,
+            1437,
+            1479,
+            1601
+          ],
+          "policy_decisions": [
+            0,
+            186741,
+            0,
+            0,
+            309275,
+            0,
+            0,
+            95495
+          ],
+          "command": [
+            "build/poker/strength_v1/final/baseline_bench6",
+            "7",
+            "1,4,1,4,4",
+            "60000",
+            "202610183",
+            "20000",
+            "reports/poker/20261018/strength_v1/holdout_local/6p_mixed_candidate.csv",
+            "6p_mixed_candidate"
+          ],
+          "binary_sha256": "811d16567526379e312c390a75f2782edaaaefcd8c15b6be6a535dfad608f6c2"
+        }
+      ],
+      "paired": [
+        {
+          "players": 2,
+          "field": "original",
+          "gain_bb100": 7.860683333333333,
+          "ci95_half_width_bb100": 5.771815492785211,
+          "independent_duplicate_blocks": 30000
+        },
+        {
+          "players": 2,
+          "field": "fullhouse",
+          "gain_bb100": 8.227516666666666,
+          "ci95_half_width_bb100": 7.860000745028397,
+          "independent_duplicate_blocks": 30000
+        },
+        {
+          "players": 6,
+          "field": "original",
+          "gain_bb100": 0.0,
+          "ci95_half_width_bb100": 0.0,
+          "independent_duplicate_blocks": 10000
+        },
+        {
+          "players": 6,
+          "field": "fullhouse",
+          "gain_bb100": 0.0,
+          "ci95_half_width_bb100": 0.0,
+          "independent_duplicate_blocks": 10000
+        },
+        {
+          "players": 6,
+          "field": "mixed",
+          "gain_bb100": 0.0,
+          "ci95_half_width_bb100": 0.0,
+          "independent_duplicate_blocks": 10000
+        }
+      ]
+    }
+  },
+  "interval_note": "Approximate normal 95% intervals. Local differences pair independent duplicate-deal blocks. Live differences use independent samples. Development comparisons are exploratory and unadjusted for selection; final candidate selected before its fresh run.",
+  "local_hands": 1800000,
+  "final": {
+    "log": "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/slumbot_final.jsonl",
+    "sha256": "1afedc5b429fac32d6babb5b2d99a718845878c1dde8f116aa7abee14943a800",
+    "metadata": {
+      "style": 7,
+      "equity_samples": 0,
+      "seed": 2026101837,
+      "hands_requested": 6000,
+      "library_sha256": "8abd8596d6229a38426191e06e7ece2b28bd131d59a7ef75f205bd5a0dcb57e9",
+      "opponent": "slumbot.com",
+      "starting_bb": 200,
+      "request_delay_seconds": 0,
+      "concurrent_games": 5,
+      "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+      "log_schema": 2
+    },
+    "hands": 6000,
+    "net_bb": -1207.99,
+    "bb100": -20.133166666666664,
+    "ci95_half_width_bb100": 32.77726637647426,
+    "unresolved_attempts_in_window": 0,
+    "full_run_summary": {
+      "style": 7,
+      "equity_samples": 0,
+      "seed": 2026101837,
+      "hands_requested": 6000,
+      "library_sha256": "8abd8596d6229a38426191e06e7ece2b28bd131d59a7ef75f205bd5a0dcb57e9",
+      "opponent": "slumbot.com",
+      "starting_bb": 200,
+      "request_delay_seconds": 0,
+      "concurrent_games": 5,
+      "user_agent": "PufferTank-PokerEval/1.0 (+https://github.com/FelixAllistar)",
+      "log_schema": 2,
+      "hands": 6000,
+      "target_reached": true,
+      "unresolved_hands": 0,
+      "net_bb": -1207.99,
+      "bb100": -20.133166666666664,
+      "ci95_half_width_bb100": 32.77726637647426,
+      "seconds_this_process": 203.9898763599922,
+      "hands_per_second": 29.413224357327756,
+      "eta_seconds": 0.0,
+      "active_games": 0,
+      "complete": true,
+      "failures": []
+    },
+    "pending_outcomes_unknown": false,
+    "faced": [
+      6366,
+      824,
+      767,
+      576
+    ],
+    "folds": [
+      2478,
+      355,
+      472,
+      405
+    ],
+    "fold_percent": [
+      38.92554194156456,
+      43.08252427184466,
+      61.53846153846154,
+      70.3125
+    ],
+    "window": "entire retained log"
+  },
+  "final_difference": {
+    "gain_bb100": 12.199333333333339,
+    "ci95_half_width_bb100": 48.483205390154666,
+    "candidate_run_finished": true,
+    "candidate_clean": true
+  },
+  "final_equity_tests": {
+    "river_oracles": [
+      {
+        "hole": [
+          "Ah",
+          "Kh"
+        ],
+        "board": [
+          "Qh",
+          "Jh",
+          "Th",
+          "2c",
+          "3d"
+        ],
+        "ranges": false,
+        "exact": 1.0,
+        "sampled": 1.0,
+        "effective_samples": 50000.0
+      },
+      {
+        "hole": [
+          "Ah",
+          "Kh"
+        ],
+        "board": [
+          "Qh",
+          "Jh",
+          "Th",
+          "2c",
+          "3d"
+        ],
+        "ranges": true,
+        "exact": 1.0,
+        "sampled": 1.0,
+        "effective_samples": 24954.90234375
+      },
+      {
+        "hole": [
+          "2c",
+          "3d"
+        ],
+        "board": [
+          "As",
+          "Ks",
+          "Qs",
+          "Js",
+          "Ts"
+        ],
+        "ranges": false,
+        "exact": 0.5,
+        "sampled": 0.5,
+        "effective_samples": 50000.0
+      },
+      {
+        "hole": [
+          "2c",
+          "3d"
+        ],
+        "board": [
+          "As",
+          "Ks",
+          "Qs",
+          "Js",
+          "Ts"
+        ],
+        "ranges": true,
+        "exact": 0.5,
+        "sampled": 0.5,
+        "effective_samples": 46214.24609375
+      },
+      {
+        "hole": [
+          "As",
+          "Ad"
+        ],
+        "board": [
+          "Kh",
+          "7c",
+          "2d",
+          "9s",
+          "4c"
+        ],
+        "ranges": false,
+        "exact": 0.8934343434343435,
+        "sampled": 0.89274001121521,
+        "effective_samples": 50000.0
+      },
+      {
+        "hole": [
+          "As",
+          "Ad"
+        ],
+        "board": [
+          "Kh",
+          "7c",
+          "2d",
+          "9s",
+          "4c"
+        ],
+        "ranges": true,
+        "exact": 0.67825513956757,
+        "sampled": 0.6781818866729736,
+        "effective_samples": 25644.326171875
+      },
+      {
+        "hole": [
+          "As",
+          "Kd"
+        ],
+        "board": [
+          "Qh",
+          "7h",
+          "2c",
+          "3s",
+          "9h"
+        ],
+        "ranges": false,
+        "exact": 0.36464646464646466,
+        "sampled": 0.36344999074935913,
+        "effective_samples": 50000.0
+      },
+      {
+        "hole": [
+          "As",
+          "Kd"
+        ],
+        "board": [
+          "Qh",
+          "7h",
+          "2c",
+          "3s",
+          "9h"
+        ],
+        "ranges": true,
+        "exact": 0.1215069034911528,
+        "sampled": 0.12016046792268753,
+        "effective_samples": 25425.638671875
+      }
+    ],
+    "hidden_card_checks": 101,
+    "legal_decisions": 861,
+    "minimum_ess_128": 22.138093948364258,
+    "mean_ess_128": 93.38066216270522,
+    "profile_weak_strong_ratios": [
+      0.01513108043509121,
+      0.01513108043509121,
+      0.004607460769651306,
+      0.07076486276737808
+    ],
+    "equity_vs_tight_loose": [
+      0.7047954201698303,
+      0.8133370876312256
+    ],
+    "policy_probes": [
+      {
+        "hole": [
+          "Ah",
+          "Kh"
+        ],
+        "board": [
+          "Qh",
+          "7h",
+          "2c"
+        ],
+        "history": "b250b2000c/b100",
+        "style": 1,
+        "samples": 0,
+        "decisions": 5000,
+        "folds": 5000,
+        "warm_us_per_decision_with_ctypes": 4.293878597673029
+      },
+      {
+        "hole": [
+          "Ah",
+          "Kh"
+        ],
+        "board": [
+          "Qh",
+          "7h",
+          "2c"
+        ],
+        "history": "b250b2000c/b100",
+        "style": 7,
+        "samples": 0,
+        "decisions": 5000,
+        "folds": 0,
+        "warm_us_per_decision_with_ctypes": 84.01641059899703
+      },
+      {
+        "hole": [
+          "Ah",
+          "Kh"
+        ],
+        "board": [
+          "Qh",
+          "7h",
+          "2c"
+        ],
+        "history": "b250b2000c/b100",
+        "style": 7,
+        "samples": 32,
+        "decisions": 5000,
+        "folds": 0,
+        "warm_us_per_decision_with_ctypes": 36.40150799183175
+      },
+      {
+        "hole": [
+          "Ah",
+          "Kh"
+        ],
+        "board": [
+          "Qh",
+          "7h",
+          "2c"
+        ],
+        "history": "b250b2000c/b100",
+        "style": 7,
+        "samples": 64,
+        "decisions": 5000,
+        "folds": 0,
+        "warm_us_per_decision_with_ctypes": 56.15449239267036
+      },
+      {
+        "hole": [
+          "Ah",
+          "Kh"
+        ],
+        "board": [
+          "Qh",
+          "7h",
+          "2c"
+        ],
+        "history": "b250b2000c/b100",
+        "style": 7,
+        "samples": 128,
+        "decisions": 5000,
+        "folds": 0,
+        "warm_us_per_decision_with_ctypes": 112.25939920404926
+      },
+      {
+        "hole": [
+          "As",
+          "Ad"
+        ],
+        "board": [
+          "Kh",
+          "7c",
+          "2d"
+        ],
+        "history": "b250c/b500",
+        "style": 1,
+        "samples": 0,
+        "decisions": 5000,
+        "folds": 5000,
+        "warm_us_per_decision_with_ctypes": 4.485799395479262
+      },
+      {
+        "hole": [
+          "As",
+          "Ad"
+        ],
+        "board": [
+          "Kh",
+          "7c",
+          "2d"
+        ],
+        "history": "b250c/b500",
+        "style": 7,
+        "samples": 0,
+        "decisions": 5000,
+        "folds": 0,
+        "warm_us_per_decision_with_ctypes": 87.61619239812717
+      },
+      {
+        "hole": [
+          "As",
+          "Ad"
+        ],
+        "board": [
+          "Kh",
+          "7c",
+          "2d"
+        ],
+        "history": "b250c/b500",
+        "style": 7,
+        "samples": 32,
+        "decisions": 5000,
+        "folds": 2,
+        "warm_us_per_decision_with_ctypes": 34.23423540079966
+      },
+      {
+        "hole": [
+          "As",
+          "Ad"
+        ],
+        "board": [
+          "Kh",
+          "7c",
+          "2d"
+        ],
+        "history": "b250c/b500",
+        "style": 7,
+        "samples": 64,
+        "decisions": 5000,
+        "folds": 0,
+        "warm_us_per_decision_with_ctypes": 21.50638400344178
+      },
+      {
+        "hole": [
+          "As",
+          "Ad"
+        ],
+        "board": [
+          "Kh",
+          "7c",
+          "2d"
+        ],
+        "history": "b250c/b500",
+        "style": 7,
+        "samples": 128,
+        "decisions": 5000,
+        "folds": 0,
+        "warm_us_per_decision_with_ctypes": 117.98629359109327
+      }
+    ]
+  },
+  "final_fullhouse_parity": {
+    "states": 2692,
+    "rank_checks": 2000,
+    "short_stack_checks": 844,
+    "hidden_card_checks": 66,
+    "max_feature_error": 0.0,
+    "max_probability_error": 5.841255187988281e-06,
+    "latency": {
+      "2": {
+        "native_us_per_decision": 114.71077180467546,
+        "python_us_per_decision": 1586.385953007266
+      },
+      "6": {
+        "native_us_per_decision": 113.08913599932566,
+        "python_us_per_decision": 1365.0367649970576
+      }
+    }
+  },
+  "final_live_replay": {
+    "log": "reports/poker/20261018/strength_v1/slumbot_final.jsonl",
+    "library": "build/poker/strength_v1/final/libpoker2.so",
+    "style": 7,
+    "equity_samples": 0,
+    "decisions_checked": 13908,
+    "changed": []
+  },
+  "final_migration_replay": {
+    "log": "reports/poker/20261018/strength_v1/slumbot_samples.jsonl",
+    "library": "build/poker/strength_v1/final/libpoker2.so",
+    "style": 7,
+    "equity_samples": 0,
+    "decisions_checked": 6978,
+    "changed": []
+  },
+  "final_native_manifest": {
+    "selection": {
+      "selected": "128-sample HU range policy",
+      "policy_id": 7,
+      "sample_defaults": {
+        "2": 128,
+        "6": 32,
+        "9": 32
+      },
+      "selected_at_utc": "2026-10-18T05:45:20.140406+00:00",
+      "reason": "Lowest development loss and simplest candidate. Context/blind/river changes did not justify retention. Differences are statistically uncertain; confirm on fresh hands. Six-seat default remains the original 32-sample strategy for throughput.",
+      "rejected": [
+        "context",
+        "blind",
+        "river"
+      ],
+      "holdout_hands": 6000,
+      "holdout_seed": 2026101837,
+      "control_prefix": "confirm_control_prefix.json",
+      "no_further_strategy_tuning": true
+    },
+    "source_sha256": {
+      "test_adapter.c": "e8e151b4b6254f65f712fc3b330ac36d61d53c09baf5cc500d673a5d112c6148",
+      "eval.py": "3bd77c8e43691cbe7c31dc8dcf247cfa377bb8a21e85e82c576e938ba52f315a",
+      "test_equity.py": "55166798086964ac26f546f6b0198bb8223bf17d1161acc9c91e0bdc07da176f",
+      "poker.h": "61c189abb8e89de05b5e2f6fe339f1a718c83f27a88bd065fbe8dcbae2677c3a",
+      "benchmark_policy.c": "71aafd6ddd77616fe36a7794ec26d0c56a91e68c4d33ec437f0a5b4727021652",
+      "native.c": "31fe13282f8bea360dfdeb7566028bad5c5fc582468c2f38d85e79ab79cc3837",
+      "test_eval.py": "2d6d722606b5a9f73dd30bb7c073232be7befb68f1e1a67a617b6f6b950696cf",
+      "benchmark.py": "ffc0805f957c66b6a72b59d0e25a5c6ce247019dec964f05cc0218fe90c3eab9",
+      "poker.ini": "50855c97148fa98a61f8b38a00eca29fc06478cc8f0b4180e8782f3d8e1eb85c",
+      "test_equity.c": "46caa214540e431f4e5f303a2fe9bde7df1b0a9541df570b89b5b46e782d82ca",
+      "equity.h": "a8be4cd78aca79c76ab3b26d07b1bb451d460f2d80f3d2387b22bca6bc358e32",
+      "fullhouse.h": "184cbf43e20ab2bc04376d824cee711a4e4f0c53cbe5fce6f0dab41b2977d9a6",
+      "core.h": "cfb31b22ab63fb6bd08ac9f84b9f837b527c2d57d03b5b19840de0821db6254b",
+      "rules.h": "37f36c9c9dc7c235c0df1a7c4e5350e1e8e0f81c133b5276e6eb8218d7f27cf8",
+      "benchmark.c": "06aaa2214847c071797d0fdbd7213ac32bdd3565350b910743123a0ba8662c62"
+    },
+    "commands": [
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=2",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker2.so"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=6",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker6.so"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=9",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker9.so"
+      ]
+    ],
+    "binaries": {
+      "libpoker2.so": "8abd8596d6229a38426191e06e7ece2b28bd131d59a7ef75f205bd5a0dcb57e9",
+      "libpoker6.so": "5c636db8d8a9cb309085cbeb632d7c28b8f8c5192aa0a186a3e08741d6ab75bb",
+      "libpoker9.so": "b6cd49237280bf05dcc8b0af90fdad648408ae2f2c455c67ebb40cc1b17cca61"
+    }
+  },
+  "final_manifest": {
+    "selection": {
+      "selected": "128-sample HU range policy",
+      "policy_id": 7,
+      "sample_defaults": {
+        "2": 128,
+        "6": 32,
+        "9": 32
+      },
+      "selected_at_utc": "2026-10-18T05:45:20.140406+00:00",
+      "reason": "Lowest development loss and simplest candidate. Context/blind/river changes did not justify retention. Differences are statistically uncertain; confirm on fresh hands. Six-seat default remains the original 32-sample strategy for throughput.",
+      "rejected": [
+        "context",
+        "blind",
+        "river"
+      ],
+      "holdout_hands": 6000,
+      "holdout_seed": 2026101837,
+      "control_prefix": "confirm_control_prefix.json",
+      "no_further_strategy_tuning": true
+    },
+    "source_sha256": {
+      "test_adapter.c": "e8e151b4b6254f65f712fc3b330ac36d61d53c09baf5cc500d673a5d112c6148",
+      "eval.py": "3bd77c8e43691cbe7c31dc8dcf247cfa377bb8a21e85e82c576e938ba52f315a",
+      "test_equity.py": "55166798086964ac26f546f6b0198bb8223bf17d1161acc9c91e0bdc07da176f",
+      "poker.h": "61c189abb8e89de05b5e2f6fe339f1a718c83f27a88bd065fbe8dcbae2677c3a",
+      "benchmark_policy.c": "71aafd6ddd77616fe36a7794ec26d0c56a91e68c4d33ec437f0a5b4727021652",
+      "native.c": "31fe13282f8bea360dfdeb7566028bad5c5fc582468c2f38d85e79ab79cc3837",
+      "test_eval.py": "2d6d722606b5a9f73dd30bb7c073232be7befb68f1e1a67a617b6f6b950696cf",
+      "benchmark.py": "ffc0805f957c66b6a72b59d0e25a5c6ce247019dec964f05cc0218fe90c3eab9",
+      "poker.ini": "50855c97148fa98a61f8b38a00eca29fc06478cc8f0b4180e8782f3d8e1eb85c",
+      "test_equity.c": "46caa214540e431f4e5f303a2fe9bde7df1b0a9541df570b89b5b46e782d82ca",
+      "equity.h": "a8be4cd78aca79c76ab3b26d07b1bb451d460f2d80f3d2387b22bca6bc358e32",
+      "fullhouse.h": "184cbf43e20ab2bc04376d824cee711a4e4f0c53cbe5fce6f0dab41b2977d9a6",
+      "core.h": "cfb31b22ab63fb6bd08ac9f84b9f837b527c2d57d03b5b19840de0821db6254b",
+      "rules.h": "37f36c9c9dc7c235c0df1a7c4e5350e1e8e0f81c133b5276e6eb8218d7f27cf8",
+      "benchmark.c": "06aaa2214847c071797d0fdbd7213ac32bdd3565350b910743123a0ba8662c62"
+    },
+    "commands": [
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=2",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker2.so"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=6",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker6.so"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=9",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker9.so"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=2",
+        "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v2/fullhouse_weights.h\"",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker_fullhouse2.so"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=2",
+        "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v2/fullhouse_weights.h\"",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/benchmark.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/baseline_bench2"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=2",
+        "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v2/fullhouse_weights.h\"",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/benchmark_policy.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/policy_bench2"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=6",
+        "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v2/fullhouse_weights.h\"",
+        "-shared",
+        "-fPIC",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/native.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/libpoker_fullhouse6.so"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=6",
+        "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v2/fullhouse_weights.h\"",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/benchmark.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/baseline_bench6"
+      ],
+      [
+        "clang-19",
+        "-O3",
+        "-march=native",
+        "-ffp-contract=off",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-DPOKER_PLAYERS=6",
+        "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v2/fullhouse_weights.h\"",
+        "/home/felix/puffertank/pufferlib/reports/poker/20261018/strength_v1/final_source/benchmark_policy.c",
+        "-lm",
+        "-o",
+        "/home/felix/puffertank/pufferlib/build/poker/strength_v1/final/policy_bench6"
+      ]
+    ],
+    "binaries": {
+      "libpoker2.so": "8abd8596d6229a38426191e06e7ece2b28bd131d59a7ef75f205bd5a0dcb57e9",
+      "libpoker6.so": "5c636db8d8a9cb309085cbeb632d7c28b8f8c5192aa0a186a3e08741d6ab75bb",
+      "libpoker9.so": "b6cd49237280bf05dcc8b0af90fdad648408ae2f2c455c67ebb40cc1b17cca61",
+      "libpoker_fullhouse2.so": "c4a7b0a0925dbbf89df3574274f45e65102cb954d5f53681617fd8eb09ac0b37",
+      "baseline_bench2": "528f6b3b14b1d49f274f1e48248b9be6d26cbd02107e8df961fabd8e1a1e7685",
+      "policy_bench2": "906df3387951f26832c1526551de482837a622bf516b3924713456f8c076e53a",
+      "libpoker_fullhouse6.so": "37f516fa19fe067e38aef92af5ca7da762d3908489bcb0fa186335c2cd020337",
+      "baseline_bench6": "811d16567526379e312c390a75f2782edaaaefcd8c15b6be6a535dfad608f6c2",
+      "policy_bench6": "c142f07a02eaf91e8c03bb83684e83007162f1741b52a46cbc95372f0d9e608e"
+    },
+    "weight_header_sha256": "8f7f7ac7430f803bada143b13a925d2fa84fcacba3df0d73ba1a0e1b688eb102",
+    "compiler": "Ubuntu clang version 19.1.1 (1ubuntu1~24.04.2)",
+    "cpu": "Intel Core i5-7400 @ 3.00GHz, shared host",
+    "sample_defaults": {
+      "2": 128,
+      "6": 32,
+      "9": 32
+    },
+    "state_bytes_per_table": {
+      "2": 88,
+      "6": 196,
+      "9": 277
+    },
+    "validation_source_sha256": {
+      "ocean/poker/test_baselines.py": "7470e533d600147cda3b9dc3f96b275fde028e2fae302dbe75a28600ef205b3c",
+      "ocean/poker/test_eval.py": "2d6d722606b5a9f73dd30bb7c073232be7befb68f1e1a67a617b6f6b950696cf",
+      "ocean/poker/test_equity.py": "55166798086964ac26f546f6b0198bb8223bf17d1161acc9c91e0bdc07da176f",
+      "ocean/poker/test_equity.c": "46caa214540e431f4e5f303a2fe9bde7df1b0a9541df570b89b5b46e782d82ca",
+      "ocean/poker/test_adapter.c": "e8e151b4b6254f65f712fc3b330ac36d61d53c09baf5cc500d673a5d112c6148",
+      "ocean/poker/test.c": "0019b23b06ab060663e657b53828d73e2ca5bdce4057010a480a4533e86cea14",
+      "ocean/poker/build.sh": "fc2b5c4a42b01df1911aa048297a3df95101bacfb353d230f7414534a385d7d7"
+    }
+  },
+  "final_control_replay": {
+    "log": "reports/poker/20261018/strength_v1/slumbot_confirm_control.jsonl",
+    "library": "build/poker/strength_v1/final/libpoker2.so",
+    "style": 7,
+    "equity_samples": 32,
+    "decisions_checked": 18220,
+    "changed": []
+  },
+  "build_validation": {
+    "rules_and_transport_kernel_unchanged": true,
+    "kernel_sha256": "6cb55a2ecf132d6024dca6230e4850db53f723b5074fd17ecbafe1e43bdcec5c",
+    "trainer_binary": "build/poker/puffer_range",
+    "trainer_sha256": "8e403506a5c27045698d1d14e93c0307f939cd6dabce72116c1fd863d53bf66d",
+    "training_run": false
+  },
+  "latency2": [
+    {
+      "players": 2,
+      "street": 1,
+      "style": 1,
+      "calls": 20000,
+      "cpu_us_per_decision": 0.0554,
+      "wall_us_per_decision": 0.0549
+    },
+    {
+      "players": 2,
+      "street": 1,
+      "style": 4,
+      "calls": 20000,
+      "cpu_us_per_decision": 35.7659,
+      "wall_us_per_decision": 41.4635
+    },
+    {
+      "players": 2,
+      "street": 1,
+      "style": 7,
+      "calls": 20000,
+      "cpu_us_per_decision": 43.9992,
+      "wall_us_per_decision": 47.3117
+    },
+    {
+      "players": 2,
+      "street": 2,
+      "style": 1,
+      "calls": 20000,
+      "cpu_us_per_decision": 0.0539,
+      "wall_us_per_decision": 0.0534
+    },
+    {
+      "players": 2,
+      "street": 2,
+      "style": 4,
+      "calls": 20000,
+      "cpu_us_per_decision": 50.51,
+      "wall_us_per_decision": 54.6156
+    },
+    {
+      "players": 2,
+      "street": 2,
+      "style": 7,
+      "calls": 20000,
+      "cpu_us_per_decision": 25.0557,
+      "wall_us_per_decision": 28.3515
+    },
+    {
+      "players": 2,
+      "street": 3,
+      "style": 1,
+      "calls": 20000,
+      "cpu_us_per_decision": 0.0496,
+      "wall_us_per_decision": 0.0648
+    },
+    {
+      "players": 2,
+      "street": 3,
+      "style": 4,
+      "calls": 20000,
+      "cpu_us_per_decision": 30.514,
+      "wall_us_per_decision": 32.8748
+    },
+    {
+      "players": 2,
+      "street": 3,
+      "style": 7,
+      "calls": 20000,
+      "cpu_us_per_decision": 19.3835,
+      "wall_us_per_decision": 24.0609
+    }
+  ],
+  "latency6": [
+    {
+      "players": 6,
+      "street": 1,
+      "style": 1,
+      "calls": 20000,
+      "cpu_us_per_decision": 0.0477,
+      "wall_us_per_decision": 0.0474
+    },
+    {
+      "players": 6,
+      "street": 1,
+      "style": 4,
+      "calls": 20000,
+      "cpu_us_per_decision": 37.0847,
+      "wall_us_per_decision": 46.7664
+    },
+    {
+      "players": 6,
+      "street": 1,
+      "style": 7,
+      "calls": 20000,
+      "cpu_us_per_decision": 16.5442,
+      "wall_us_per_decision": 24.441
+    },
+    {
+      "players": 6,
+      "street": 2,
+      "style": 1,
+      "calls": 20000,
+      "cpu_us_per_decision": 0.0502,
+      "wall_us_per_decision": 0.0498
+    },
+    {
+      "players": 6,
+      "street": 2,
+      "style": 4,
+      "calls": 20000,
+      "cpu_us_per_decision": 30.7464,
+      "wall_us_per_decision": 41.0463
+    },
+    {
+      "players": 6,
+      "street": 2,
+      "style": 7,
+      "calls": 20000,
+      "cpu_us_per_decision": 28.0155,
+      "wall_us_per_decision": 33.7576
+    },
+    {
+      "players": 6,
+      "street": 3,
+      "style": 1,
+      "calls": 20000,
+      "cpu_us_per_decision": 0.5351,
+      "wall_us_per_decision": 0.6174
+    },
+    {
+      "players": 6,
+      "street": 3,
+      "style": 4,
+      "calls": 20000,
+      "cpu_us_per_decision": 40.5194,
+      "wall_us_per_decision": 63.5894
+    },
+    {
+      "players": 6,
+      "street": 3,
+      "style": 7,
+      "calls": 20000,
+      "cpu_us_per_decision": 21.6639,
+      "wall_us_per_decision": 24.4443
+    }
+  ],
+  "selfplay6": {
+    "label": "final_range_selfplay",
+    "players": 6,
+    "hero_style": 7,
+    "seed": 2026101839,
+    "stack_bb": 200.0,
+    "hands": 60000,
+    "duplicate_blocks": 10000,
+    "bb100": -3.005733,
+    "ci95_half_width_bb100": 5.825879,
+    "seconds": 1.610176,
+    "decisions": 512113,
+    "independent_clusters": 10000,
+    "session_blocks": 1,
+    "native_history": 0,
+    "decisions_per_second": 318047.8,
+    "hands_per_second": 37263.0,
+    "faced": [
+      60678,
+      2842,
+      1876,
+      1317
+    ],
+    "folds": [
+      45058,
+      1297,
+      1031,
+      830
+    ],
+    "policy_decisions": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      512113
+    ]
+  },
+  "local_hands_including_throughput": 1860000,
+  "retained_completed_live_hands": 33392
+}

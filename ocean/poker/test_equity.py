@@ -91,13 +91,18 @@ def main():
                     other.reset([stack]*players,changed,hand%players)
                     for a in actions: other.step(a)
                     assert bytes(e)==bytes(estimate(other))
-                    for style in (6,7,8):
+                    variants = [(style,0) for style in (6,7,8) if n.styles & (1 << style)]
+                    if hasattr(n.lib, 'poker_decide'):
+                        variants += [(7,samples) for samples in (32,64,128)]
+                    for style,samples in variants:
+                        n.samples=other.samples=samples
                         saved=n.rng.value;other.rng.value=saved
                         assert n.bot(style)==other.bot(style)
                         assert n.rng.value==other.rng.value
                         n.rng.value=saved
+                    n.samples=0
                     privacy+=1
-                action=n.bot(rng.choice((1,5,6,7,8)))
+                action=n.bot(rng.choice([s for s in (1,5,6,7,8) if n.styles & (1 << s)]))
                 if action>0:
                     assert rows[actor][3]+rows[actor][0]>=action>s[3]
                     assert action>=s[3]+s[4] or action==rows[actor][3]+rows[actor][0]
@@ -134,12 +139,16 @@ def main():
     for hole,board,history in [(['Ah','Kh'],['Qh','7h','2c'],'b250b2000c/b100'),
                                (['As','Ad'],['Kh','7c','2d'],'b250c/b500')]:
         replay(n,{'client_pos':1,'hole_cards':hole,'board':board,'action':history})
-        for style in (1,5,6,7,8):
+        variants=[(s,0) for s in (1,5,6,7,8) if n.styles & (1 << s)]
+        if hasattr(n.lib,'poker_decide'):
+            variants += [(7,samples) for samples in (32,64,128)]
+        for style,samples in variants:
+            n.samples=samples
             n.rng.value=29971
             start=time.perf_counter()
             folded=sum(n.bot(style)<0 for _ in range(5000))
             elapsed=time.perf_counter()-start
-            probes.append({'hole':hole,'board':board,'history':history,'style':style,
+            probes.append({'hole':hole,'board':board,'history':history,'style':style,'samples':samples,
                            'decisions':5000,'folds':folded,
                            'warm_us_per_decision_with_ctypes':elapsed*1e6/5000})
     print(json.dumps({'river_oracles':oracles,'hidden_card_checks':privacy,'legal_decisions':legal,

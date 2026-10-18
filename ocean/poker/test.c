@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
                 if (mode == 3) {
                     action = 0;
                 } else if (mode == 4 || (!bench && (h / POKER_BATCH) % 2)) {
-                    action = poker_bot(g, t, policy_rng + t, mode == 4 ? 1 : h % 3);
+                    action = poker_bot(g, t, policy_rng + t, 1);
                 } else {
                     int32_t amounts[8];
                     unsigned mask = poker_actions(g, t, amounts);

@@ -173,7 +173,7 @@ def verify(players, hands):
                 for amount in raises:
                     assert state.can_complete_bet_or_raise_to(amount), (context, amount)
             if hand % 3 == 0:
-                action = native.bot(hand % 3)
+                action = native.bot(1)
             else:
                 action = rng.choices(actions, [1 if a else 5 for a in actions])[0]
                 if action > 0 and rng.randrange(3) == 0:

@@ -1,0 +1,7 @@
+{
+  "rules_and_transport_kernel_unchanged": true,
+  "kernel_sha256": "6cb55a2ecf132d6024dca6230e4850db53f723b5074fd17ecbafe1e43bdcec5c",
+  "trainer_binary": "build/poker/puffer_range",
+  "trainer_sha256": "8e403506a5c27045698d1d14e93c0307f939cd6dabce72116c1fd863d53bf66d",
+  "training_run": false
+}
