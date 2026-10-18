@@ -6,7 +6,10 @@ No Python, BLAS, model loading, allocations or threads in native decisions.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
+import shlex
+import shutil
 import subprocess
 import sys
 import numpy as np
@@ -19,6 +22,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=Path, default=ROOT / 'build/poker/external/fullhouse-bot')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/poker')
+    parser.add_argument('--cc', default=os.environ.get('CC') or shutil.which('clang-19') or 'cc',
+                        help='C compiler command (default: CC, clang-19, then cc)')
     args = parser.parse_args()
     source = args.source.resolve()
     commit = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
@@ -57,7 +62,7 @@ def main():
         out.write('static const unsigned char fh_push_ranges[338] = {' + ','.join(map(str,push)) + '};\n')
     commands = []
     for players in (2, 6):
-        flags = ['clang-19', '-O3', '-march=native', '-ffp-contract=off', '-std=c11', '-Wall', '-Wextra',
+        flags = shlex.split(args.cc) + ['-O3', '-march=native', '-ffp-contract=off', '-std=c11', '-Wall', '-Wextra',
                  f'-DPOKER_PLAYERS={players}', f'-DPOKER_FULLHOUSE_MODEL="{header}"']
         # Keep assertions enabled in the evaluation build.
         for src, extra, dest in [('native.c', ['-shared','-fPIC'],f'libpoker_fullhouse{players}.so'),
@@ -67,6 +72,7 @@ def main():
             subprocess.run(cmd, check=True)
             commands.append(cmd)
     manifest = {'source':'https://github.com/advitrocks9/fullhouse-bot', 'commit':commit,
+                'compiler':subprocess.check_output(shlex.split(args.cc) + ['--version'], text=True).splitlines()[0],
                 'artifacts':artifacts, 'float_weight_bytes':sum(a.nbytes for a in arrays.values()),
                 'commands':commands,
                 'binaries':{p.name:hashlib.sha256(p.read_bytes()).hexdigest()

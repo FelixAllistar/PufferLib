@@ -40,12 +40,31 @@ void poker_profile_update(PokerProfile* profiles, Poker* g, int t, int32_t actio
     }
 }
 
+// Shared exact hand-rank likelihood; the river action model reuses a rank
+// already calculated for showdown rather than ranking the same cards twice.
+static double poker_range_rank_likelihood(uint32_t rank, int r0, int r1,
+    int board_hi, int draw, unsigned action, double aggression) {
+    if (action < 2) return 1;
+    int category = rank >> 24;
+    double made = category >= 2 ? .85 + .025 * (category - 2) : .08;
+    if (category == 1) {
+        int pair = ((rank >> 16) & 15) - 2;
+        made = (pair == r0 || pair == r1) ? (pair >= board_hi ? .65 : .35) : .12;
+    }
+    double likelihood;
+    if (action == 3) {
+        double floor = .025 + .25 * aggression;
+        likelihood = floor + (1 - floor) * made * made + .16 * draw;
+    } else likelihood = .15 + .8 * made + .2 * draw;
+    return likelihood < 1 ? likelihood : 1;
+}
+
 // Approximate action likelihood for sampled cards. It only sees public actions,
 // position, the visible board, and optional public table statistics. It is not
 // trained or calibrated. The equity computation below is separate from this
 // deliberately simple range hypothesis.
-double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
-    const PokerProfile* profiles) {
+static double poker_range_weight_ranked(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
+    const PokerProfile* profiles, uint32_t river_rank) {
     int r0 = c0 >> 2, r1 = c1 >> 2;
     int hi = r0 > r1 ? r0 : r1, lo = r0 < r1 ? r0 : r1;
     int suited = (c0 & 3) == (c1 & 3);
@@ -84,13 +103,7 @@ double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
             if (r > board_hi) board_hi = r;
             ranks |= 1u << r; suits[cards[b + 2] & 3]++;
         }
-        uint32_t rank = poker_rank(cards, street + 4);
-        int category = rank >> 24;
-        double made = category >= 2 ? .85 + .025 * (category - 2) : .08;
-        if (category == 1) {
-            int pair = ((rank >> 16) & 15) - 2;
-            made = (pair == r0 || pair == r1) ? (pair >= board_hi ? .65 : .35) : .12;
-        }
+        uint32_t rank = street == 3 && river_rank ? river_rank : poker_rank(cards, street + 4);
         int draw = 0;
         if (street < 3) {
             for (int s = 0; s < 4; s++)
@@ -98,14 +111,16 @@ double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
             for (int r = 0; r < 9; r++) draw |= __builtin_popcount((ranks >> r) & 31) == 4;
             draw |= __builtin_popcount(ranks & 0x100f) == 4;
         }
-        double likelihood;
-        if (action == 3) {
-            double floor = .025 + .25 * aggression;
-            likelihood = floor + (1 - floor) * made * made + .16 * draw;
-        } else likelihood = .15 + .8 * made + .2 * draw;
-        weight *= likelihood < 1 ? likelihood : 1;
+        weight *= poker_range_rank_likelihood(rank, r0, r1, board_hi, draw, action, aggression);
     }
     return weight;
+}
+
+// Standalone callers have no cached rank. A supplied rank is used only on the
+// fully visible river; earlier streets must never inspect sampled future cards.
+double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
+    const PokerProfile* profiles) {
+    return poker_range_weight_ranked(g, t, p, c0, c1, profiles, 0);
 }
 
 // Self-normalized importance sampling of complete unknown deals. Uniform
@@ -144,6 +159,9 @@ void poker_equity(Poker* g, int t, uint64_t* rng, int samples, int ranges,
         }
         pots[layers] = pot; contenders[layers++] = mask; eligible += pot; lower = upper;
     }
+    // On the river our own cards and the entire board are identical in every
+    // sampled deal. Reuse that exact rank without changing draws or weights.
+    uint32_t hero_river_rank = board_n == 5 ? poker_rank(cards, 7) : 0;
     double weights = 0, weights2 = 0, shares = 0, payouts = 0;
     for (int sample = 0; sample < samples; sample++) {
         uint8_t deck[52]; memcpy(deck, pool, available);
@@ -158,13 +176,14 @@ void poker_equity(Poker* g, int t, uint64_t* rng, int samples, int ranges,
         for (int i = board_n; i < 5; i++) cards[i + 2] = deck[cursor++];
         cards[0] = g->hole[hero][0][t]; cards[1] = g->hole[hero][1][t];
         uint32_t ranks[POKER_PLAYERS] = {0};
-        ranks[hero] = poker_rank(cards, 7);
+        ranks[hero] = hero_river_rank ? hero_river_rank : poker_rank(cards, 7);
         double weight = 1;
         for (int i = 0; i < n; i++) {
             int p = opponents[i];
             cards[0] = deck[cursor++]; cards[1] = deck[cursor++];
             ranks[p] = poker_rank(cards, 7);
-            if (ranges) weight *= poker_range_weight(g, t, p, cards[0], cards[1], profiles);
+            if (ranges) weight *= poker_range_weight_ranked(g, t, p, cards[0], cards[1], profiles,
+                board_n == 5 ? ranks[p] : 0);
         }
         int ties = 1, beaten = 0;
         for (int i = 0; i < n; i++) {
@@ -188,6 +207,22 @@ void poker_equity(Poker* g, int t, uint64_t* rng, int samples, int ranges,
     out->eligible_pot = eligible; out->effective_samples = weights * weights / weights2;
 }
 
+#ifndef POKER_RIVER_VALUE
+#define POKER_RIVER_VALUE (!POKER_RIVER_CFR && POKER_PLAYERS == 2)
+#endif
+#if POKER_RIVER_CFR && (POKER_RIVER_VALUE \
+    || (defined(POKER_RIVER_EXACT) && POKER_RIVER_EXACT) \
+    || (defined(POKER_RIVER_CALIBRATED) && POKER_RIVER_CALIBRATED) \
+    || (defined(POKER_RIVER_RANGE_CALIBRATED) && POKER_RIVER_RANGE_CALIBRATED))
+#error "POKER_RIVER_CFR is a standalone mode; disable the expectimax modes"
+#endif
+#if POKER_RIVER_VALUE
+#include "river_value.h"
+#endif
+#if POKER_RIVER_CFR && POKER_PLAYERS == 2
+#include "river_cfr_adapter.h"
+#endif
+
 int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int samples,
     const PokerProfile* profiles) {
     if (!g->street[t]) return poker_rules_preflop(g, t, rng, 1);
@@ -197,6 +232,15 @@ int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int samples,
     simulations |= poker_random(rng);
     if (!simulations) simulations = 1;
     unsigned roll = poker_random(rng) % 1000;
+#if POKER_RIVER_CFR && POKER_PLAYERS == 2
+    int32_t cfr_action;
+    if (poker_cfr_action(g, t, &simulations, profiles, &cfr_action)) return cfr_action;
+#elif POKER_RIVER_VALUE
+    int32_t river_action;
+    if (poker_river_action_value(g, t, &simulations,
+            samples ? samples : POKER_EQUITY_SAMPLES, profiles, &river_action, NULL))
+        return river_action;
+#endif
     PokerEquity e;
     poker_equity(g, t, &simulations, samples ? samples : POKER_EQUITY_SAMPLES,
         1, profiles, &e);

@@ -11,6 +11,44 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 RANKS, SUITS = "23456789TJQKA", "cdhs"
+HAND_SEED_MODE = "independent_hand_seeds_v1"
+HAND_SEED_DERIVATION = "sha256_poker_policy_hand_seed_v1"
+HAND_RESERVATION_SCHEME = "game_blocks_with_overflow_v1"
+
+
+def game_quotas(hands, games):
+    """Preserve complete alternating-seat pairs within each API game."""
+    pairs, odd = divmod(hands, 2)
+    return [2 * (pairs // games + (game < pairs % games))
+            + (odd if game == 0 else 0) for game in range(games)]
+
+
+def hand_reservation_index(game, attempt, quotas):
+    """Assign from a fixed game block, never from completion order.
+
+    Clean runs cover [0, sum(quotas)). A failed attempt consumes its index;
+    replacement attempts use deterministic, disjoint overflow sequences.
+    Such a run remains incomplete for confirmation because it has an
+    interrupted hand, even when replacement hands reach the requested quota.
+    """
+    if not 0 <= game < len(quotas) or attempt < 0:
+        raise ValueError("Invalid game or hand attempt")
+    if attempt < quotas[game]:
+        return sum(quotas[:game]) + attempt
+    return sum(quotas) + game + len(quotas) * (attempt - quotas[game])
+
+
+def independent_hand_seed(eval_seed, reservation_index):
+    """SHA256 ASCII domain:seed:index, first 8 bytes big-endian; zero -> 1.
+
+    Seeds depend only on the frozen evaluation seed and the hand reservation.
+    The reservation is assigned before new_hand, before cards are observed.
+    Neither game scheduling nor earlier policy RNG consumption enters it.
+    """
+    if reservation_index < 0:
+        raise ValueError("A hand reservation index must be nonnegative")
+    key = f"poker-policy-hand-seed-v1:{eval_seed}:{reservation_index}".encode("ascii")
+    return int.from_bytes(hashlib.sha256(key).digest()[:8], "big") or 1
 
 
 def card(text):
@@ -86,7 +124,8 @@ def replay(native, response):
     hero = response["client_pos"]
     own = [card(c) for c in response["hole_cards"]]
     board = [card(c) for c in response["board"]]
-    other = [card(c) for c in response.get("slumbot_hole_cards", [])]
+    other = [card(c) for c in response.get("slumbot_hole_cards",
+                                          response.get("bot_hole_cards", []))]
     available = iter(c for c in range(52) if c not in own + board + other)
     other = other or [next(available), next(available)]
     board += [next(available) for _ in range(5 - len(board))]
@@ -103,6 +142,24 @@ def replay(native, response):
     return native.snapshot()
 
 
+def verify_terminal(native, response):
+    """Independently check server settlement when terminal cards are revealed.
+
+    This runs only after winnings are returned; revelations never enter a
+    decision trace or a policy call. A fold needs no unknown future runout.
+    """
+    other = response.get("slumbot_hole_cards", response.get("bot_hole_cards"))
+    if not other:
+        return False
+    state, rows, _ = replay(native, response)
+    if state[0] != 255:
+        raise RuntimeError("Server terminal action does not finish the native hand")
+    winnings = rows[response["client_pos"]][0] - 20000
+    if winnings != response["winnings"]:
+        raise RuntimeError(f"Server/native settlement mismatch: {response['winnings']} vs {winnings}")
+    return True
+
+
 def slumbot(args):
     from concurrent.futures import ThreadPoolExecutor
     from queue import Queue
@@ -111,6 +168,10 @@ def slumbot(args):
     from threading import Event
 
     assert 1 <= args.games <= 50 and args.hands > 0 and args.request_delay >= 0
+    independent_seeds = getattr(args, "independent_hand_seeds", False)
+    if independent_seeds and args.resume:
+        raise ValueError("--independent-hand-seeds does not support --resume; "
+                         "start a fresh, fully planned evaluation")
     binary = Path(args.library) if args.library else ROOT / "build/poker/libpoker2.so"
     samples = getattr(args, "equity_samples", 0)
     if not Native(library=binary, samples=samples).styles & (1 << args.style):
@@ -119,25 +180,43 @@ def slumbot(args):
     metadata = {"style": args.style, "equity_samples": samples,
         "seed": args.seed, "hands_requested": args.hands,
         "library_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "opponent": "slumbot.com", "starting_bb": 200,
         "request_delay_seconds": args.request_delay, "concurrent_games": args.games,
-        "user_agent": agent, "log_schema": 2}
+        "user_agent": agent, "log_schema": 3,
+        # The server's field is ALREADY hero winnings minus Slumbot's result
+        # playing the same seat/cards against itself. Do not subtract it again.
+        # Definition: https://slumbot.com/ (FAQ, baseline statistics).
+        "baseline_winnings_semantics": "already_adjusted_hero_minus_slumbot_selfplay"}
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     progress = Path(args.progress) if args.progress else output.with_suffix(".progress.txt")
-    results, rngs = [], {}
+    results, baseline_results, rngs = [], [], {}
     unresolved = 0
     if args.resume:
         records = [json.loads(line) for line in output.read_text().splitlines()]
+        if not records or records[-1].get("summary", {}).get("active_games") != 0:
+            raise ValueError("Cannot resume a log without a drained final summary; "
+                             "pending outcomes are unknown. Start a new output log.")
         original = records[0]["metadata"]
+        if original.get("policy_rng_mode") == HAND_SEED_MODE:
+            raise ValueError("Cannot resume a log created with independent hand seeds")
         assert all(original[k] == metadata[k] for k in ("style", "library_sha256"))
         assert original.get("equity_samples", 0) == samples
         hands = [r for r in records if "winnings_chips" in r]
         results = [r["winnings_chips"] / 100 for r in hands]
+        baseline_results = [r["baseline_winnings_chips"] / 100 for r in hands
+                            if "baseline_winnings_chips" in r]
         unresolved = sum("interrupted" in r for r in records)
         rngs = {r.get("game", 0): r["policy_rng"] for r in hands if "policy_rng" in r}
     initial = len(results)
     assert initial <= args.hands
+    quotas = game_quotas(args.hands - initial, args.games)
+    if independent_seeds:
+        metadata.update(log_schema=4, policy_rng_mode=HAND_SEED_MODE,
+            hand_seed_derivation=HAND_SEED_DERIVATION,
+            hand_reservation_scheme=HAND_RESERVATION_SCHEME,
+            hand_reservation_quotas=quotas)
     started = time.monotonic()
     events, stop = Queue(), Event()
 
@@ -149,6 +228,7 @@ def slumbot(args):
             native.rng.value = rngs[game]
         token, failure = None, None
         completed = failures = 0
+        hand_attempt = 0
 
         def backoff(response, attempt):
             delay = min(60, 2 ** attempt)
@@ -180,6 +260,15 @@ def slumbot(args):
         try:
             while completed < quota and not stop.is_set():
                 decisions, observed = [], {}
+                if independent_seeds:
+                    reservation = hand_reservation_index(game, hand_attempt, quotas)
+                    start_seed = independent_hand_seed(args.seed, reservation)
+                    observed.update(game_hand_attempt=hand_attempt,
+                        hand_reservation_index=reservation,
+                        policy_seed_at_hand_start=start_seed)
+                    native.rng.value = start_seed
+                    events.put(("hand_reserved", {"game": game, **observed}))
+                    hand_attempt += 1
                 try:
                     stage = "new_hand"
                     data = post("new_hand", {"token": token} if token else {})
@@ -188,10 +277,14 @@ def slumbot(args):
                             raise RuntimeError("Slumbot returned error_msg")
                         token = data.get("token", token)
                         for key in ("hole_cards", "board", "slumbot_hole_cards",
-                                "session_num_hands", "session_total"):
+                                "session_num_hands", "session_total", "session_baseline_total"):
                             if key in data:
                                 observed[key] = data[key]
+                        if "bot_hole_cards" in data:
+                            observed["slumbot_hole_cards"] = data["bot_hole_cards"]
                         if "winnings" in data:
+                            if "baseline_winnings" in data:
+                                observed["baseline_winnings_chips"] = data["baseline_winnings"]
                             break
                         state, rows, _ = replay(native, data)
                         assert state[0] == data["client_pos"], (state, data["action"])
@@ -218,6 +311,8 @@ def slumbot(args):
                             "policy_rng_before": rng_before, "policy_rng_after": native.rng.value})
                         stage = "act"
                         data = post("act", {"token": token, "incr": move})
+                    stage = "terminal_verification"
+                    observed["native_terminal_verified"] = verify_terminal(native, {**observed, **data})
                     events.put(("result", {"game": game, "position": data["client_pos"],
                         "winnings_chips": data["winnings"], "action": data["action"],
                         "policy_rng": native.rng.value, **observed, "decisions": decisions}))
@@ -275,6 +370,13 @@ def slumbot(args):
                 if len(results) > 1 else None,
             "seconds_this_process": elapsed, "hands_per_second": rate,
             "eta_seconds": eta, "active_games": active}
+        summary.update(baseline_hands=len(baseline_results),
+            baseline_complete=len(baseline_results) == len(results),
+            baseline_missing_hands=len(results) - len(baseline_results),
+            baseline_net_bb=sum(baseline_results),
+            baseline_bb100=100 * statistics.mean(baseline_results) if baseline_results else None,
+            baseline_ci95_half_width_bb100=196 * statistics.stdev(baseline_results)
+                / math.sqrt(len(baseline_results)) if len(baseline_results) > 1 else None)
         if unresolved:
             count = len(results) + unresolved
             summary["bb100_bounds_for_unresolved"] = [
@@ -298,12 +400,9 @@ def slumbot(args):
         with output.open("a" if args.resume else "x") as log:
             log.write(json.dumps({"resumed" if args.resume else "metadata": metadata}) + "\n")
             log.flush()
-            pairs, odd = divmod(args.hands - initial, 2)
             with ThreadPoolExecutor(max_workers=args.games) as pool:
                 jobs = {}
-                for game in range(args.games):
-                    quota = 2 * (pairs // args.games + (game < pairs % args.games))
-                    quota += odd if game == 0 else 0
+                for game, quota in enumerate(quotas):
                     if quota:
                         jobs[pool.submit(play, game, quota)] = game
                 active = len(jobs)
@@ -325,6 +424,8 @@ def slumbot(args):
                     if kind == "result":
                         data["hand"] = len(results)
                         results.append(data["winnings_chips"] / 100)
+                        if "baseline_winnings_chips" in data:
+                            baseline_results.append(data["baseline_winnings_chips"] / 100)
                         log.write(json.dumps(data) + "\n")
                     else:
                         unresolved += kind == "interrupted"
@@ -359,6 +460,10 @@ if __name__ == "__main__":
     parser.add_argument("--library")
     parser.add_argument("--request-delay", type=float, default=0)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--independent-hand-seeds", action="store_true",
+                        help="Reset policy RNG before each reserved hand using the "
+                             "evaluation seed and fixed per-game reservation blocks; "
+                             "independent of cards and completion order; no resume")
     parser.add_argument("--games", type=int, default=1)
     parser.add_argument("--contact")
     parser.add_argument("--progress")

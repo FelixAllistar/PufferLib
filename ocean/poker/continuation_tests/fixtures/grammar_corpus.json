@@ -1,0 +1,335 @@
+{
+  "schema": "slumbot-source-derived-fixed-grammar-corpus-v1",
+  "created_utc": "2026-10-18T16:33:08.203814+00:00",
+  "official_source_url": "https://slumbot.com/sample_api.py",
+  "official_source_sha256": "17ab1f6c1a25db1822cef7f34ed67b6516ac65ea24897adcc92d8f2db8f71505",
+  "status": "Independently specified from read-only official source; neither sample client nor any network code executed. Candidate parser not yet run.",
+  "cases": [
+    {
+      "id": "valid_00",
+      "history": "",
+      "valid": true,
+      "street": 0,
+      "actor": 1,
+      "board_count": 0
+    },
+    {
+      "id": "valid_01",
+      "history": "c",
+      "valid": true,
+      "street": 0,
+      "actor": 0,
+      "board_count": 0
+    },
+    {
+      "id": "valid_02",
+      "history": "ck",
+      "valid": true,
+      "street": 1,
+      "actor": 0,
+      "board_count": 3
+    },
+    {
+      "id": "valid_03",
+      "history": "ck/",
+      "valid": true,
+      "street": 1,
+      "actor": 0,
+      "board_count": 3
+    },
+    {
+      "id": "valid_04",
+      "history": "ck/kk",
+      "valid": true,
+      "street": 2,
+      "actor": 0,
+      "board_count": 4
+    },
+    {
+      "id": "valid_05",
+      "history": "ck/kk/",
+      "valid": true,
+      "street": 2,
+      "actor": 0,
+      "board_count": 4
+    },
+    {
+      "id": "valid_06",
+      "history": "ck/kk/kk",
+      "valid": true,
+      "street": 3,
+      "actor": 0,
+      "board_count": 5
+    },
+    {
+      "id": "valid_07",
+      "history": "ck/kk/kk/",
+      "valid": true,
+      "street": 3,
+      "actor": 0,
+      "board_count": 5
+    },
+    {
+      "id": "valid_08",
+      "history": "ck/kk/kk/kk",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "valid_09",
+      "history": "b200c/kb400",
+      "valid": true,
+      "street": 1,
+      "actor": 0,
+      "board_count": 3
+    },
+    {
+      "id": "valid_10",
+      "history": "b0200c",
+      "valid": true,
+      "street": 1,
+      "actor": 0,
+      "board_count": 3
+    },
+    {
+      "id": "valid_11",
+      "history": "b20000",
+      "valid": true,
+      "street": 0,
+      "actor": 0,
+      "board_count": 0
+    },
+    {
+      "id": "valid_12",
+      "history": "b20000c",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "valid_13",
+      "history": "b20000c///",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "valid_14",
+      "history": "b200c/b19800",
+      "valid": true,
+      "street": 1,
+      "actor": 1,
+      "board_count": 3
+    },
+    {
+      "id": "valid_15",
+      "history": "b200c/b19800c",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "valid_16",
+      "history": "b200c/b19800c//",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "valid_17",
+      "history": "ck/kk/b19900c/",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "valid_18",
+      "history": "ck/kk/kk/b19900c",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "valid_19",
+      "history": "f",
+      "valid": true,
+      "street": 0,
+      "actor": 255,
+      "board_count": 0
+    },
+    {
+      "id": "valid_20",
+      "history": "b19999b20000c///",
+      "valid": true,
+      "street": 3,
+      "actor": 255,
+      "board_count": 5
+    },
+    {
+      "id": "invalid_00",
+      "history": "k",
+      "valid": false,
+      "reason": "check facing blind"
+    },
+    {
+      "id": "invalid_01",
+      "history": "cc",
+      "valid": false,
+      "reason": "call when check required"
+    },
+    {
+      "id": "invalid_02",
+      "history": "ckkk",
+      "valid": false,
+      "reason": "missing street separator"
+    },
+    {
+      "id": "invalid_03",
+      "history": "ck//",
+      "valid": false,
+      "reason": "extra separator"
+    },
+    {
+      "id": "invalid_04",
+      "history": "ck/kk/kk/kk/",
+      "valid": false,
+      "reason": "extra separator after river"
+    },
+    {
+      "id": "invalid_05",
+      "history": "b",
+      "valid": false,
+      "reason": "missing amount"
+    },
+    {
+      "id": "invalid_06",
+      "history": "b+200",
+      "valid": false,
+      "reason": "non-ASCII-digit prefix"
+    },
+    {
+      "id": "invalid_07",
+      "history": "b-200",
+      "valid": false,
+      "reason": "negative amount"
+    },
+    {
+      "id": "invalid_08",
+      "history": "b200.0",
+      "valid": false,
+      "reason": "decimal amount"
+    },
+    {
+      "id": "invalid_09",
+      "history": "b\uff12\uff10\uff10",
+      "valid": false,
+      "reason": "non-ASCII digits"
+    },
+    {
+      "id": "invalid_10",
+      "history": "b150",
+      "valid": false,
+      "reason": "raise below minimum"
+    },
+    {
+      "id": "invalid_11",
+      "history": "b20001",
+      "valid": false,
+      "reason": "initial raise above stack"
+    },
+    {
+      "id": "invalid_12",
+      "history": "b200c/b19801",
+      "valid": false,
+      "reason": "flop raise exceeds remaining total stack"
+    },
+    {
+      "id": "invalid_13",
+      "history": "b200c/b99",
+      "valid": false,
+      "reason": "flop opening below minimum"
+    },
+    {
+      "id": "invalid_14",
+      "history": "b20000c/",
+      "valid": false,
+      "reason": "partial preflop all-in slash suffix"
+    },
+    {
+      "id": "invalid_15",
+      "history": "b20000c//",
+      "valid": false,
+      "reason": "partial preflop all-in slash suffix"
+    },
+    {
+      "id": "invalid_16",
+      "history": "b20000c////",
+      "valid": false,
+      "reason": "extra preflop all-in slash suffix"
+    },
+    {
+      "id": "invalid_17",
+      "history": "b200c/b19800c/",
+      "valid": false,
+      "reason": "partial flop all-in slash suffix"
+    },
+    {
+      "id": "invalid_18",
+      "history": "b200c/b19800c///",
+      "valid": false,
+      "reason": "extra flop all-in slash suffix"
+    },
+    {
+      "id": "invalid_19",
+      "history": "ck/kk/b19900c//",
+      "valid": false,
+      "reason": "extra turn all-in slash suffix"
+    },
+    {
+      "id": "invalid_20",
+      "history": "ck/kk/kk/b19900c/",
+      "valid": false,
+      "reason": "extra river all-in slash suffix"
+    },
+    {
+      "id": "invalid_21",
+      "history": "ck/f",
+      "valid": false,
+      "reason": "fold without wager"
+    },
+    {
+      "id": "invalid_22",
+      "history": "ff",
+      "valid": false,
+      "reason": "action after terminal fold"
+    },
+    {
+      "id": "invalid_23",
+      "history": "b20000c///k",
+      "valid": false,
+      "reason": "action after terminal all-in"
+    }
+  ],
+  "testing_surface": "Grammar-only _rebuild from native reset; no policy decision or Session own-action receipt shortcuts. The Session layer is tested separately.",
+  "base_board": [
+    50,
+    45,
+    20,
+    11,
+    1
+  ],
+  "own_cards": [
+    48,
+    49
+  ],
+  "hero_seat": 0,
+  "known_scope": "Fixed documented action-grammar edge cases, not full live API/session compatibility."
+}
