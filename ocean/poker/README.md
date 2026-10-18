@@ -6,6 +6,9 @@ of 64 tables, integer chips, bit masks, and a table-free exact hand evaluator.
 There are no allocations during dealing, stepping, observation, or default bot
 inference. The optional heads-up CFR river mode allocates a temporary solver
 workspace for each eligible decision.
+The additive [retained river context](RIVER_CONTINUATION.md) API can keep the
+first accepted river solution for the remainder of one hand. Its Puffer bridge
+is explicitly enabled and defaults to off.
 Simulator state is 88/196/277 bytes per table for 2/6/9 seats; policy and trainer
 buffers are additional.
 
