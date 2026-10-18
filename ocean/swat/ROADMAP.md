@@ -33,8 +33,8 @@ Acceptance work still open:
   staging holds during demolition. Following officers can cross the commander's
   firing line, and exploratory all-follow runs lost the commander or an officer.
   Broader moving coverage and autonomous protection around equipment remain open.
-- Verify repeated/rejected directed commands in the frontend, including render
-  frames without a simulation tick and remote acknowledgements.
+- Confirm native menu-click/focus timing alongside the accepted headless
+  repeated/rejected command, render-only frame and UDP acknowledgement cases.
 - Isolate ordinary controller contacts at wheel-stop lips. A discarded planner
   experiment produced a large vertical impulse on re-entry; its diagnostic is
   retained with the weapon-retrieval evidence, and player-contact acceptance is open.
@@ -48,6 +48,34 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+
+Frontend command delivery (2026-10-17): squad selections survive render-only
+frames and failed input enqueue. They retain the selected team/queue choice and
+are consumed after a local simulation tick or successful reliable submission.
+The same frame's remaining ticks receive neutral order input. A neutral release
+tick also rearms an immediately repeated order, preserving new directed targets.
+Rejected targets do not become sticky requests when the view later crosses a
+valid person/weapon. Newer unsent selections survive older handoffs; cancellation
+clears requests on restore, episode/session changes and restart/scenario changes.
+Nonleaders receive an explicit notice. A failed remote handoff stays in the
+remote dispatch path instead of advancing the read-only replica locally.
+
+Input collection now lives in `frontend_input.c`, shared by the player and
+window-free tests with inert OS input. Eight cases pass on Linux/Windows and all
+78 recorded local state hashes match. A real-house 60-tick journal retains the
+two request pulses, neutral release and Execute; its bytes match across platforms
+and every recorded state replays exactly. Real UDP checks verify delayed cumulative
+acknowledgements and two distinct queued restraint targets; both platforms report
+the same request/release sequences and recipient identities. Four isolated shell
+cases verify temporary approved-path success/failure cleanup, original-tool
+restoration and normal network-candidate installation. Native UDP checks use that
+existing approved path, then restore its ordinary QA tool. CMake builds and runs
+the headless targets without a Raylib library. Player and interactive-QA binaries
+are rebuilt for both platforms; no window is opened by this acceptance pass.
+Gameplay, protocol and saves remain v32. Native OS-event/visual acceptance stays
+open; manual playtesting remains optional feedback. Evidence:
+`tests/receipts/frontend-command-2026-10-17.json`. The full-slice goal remains
+active, and heavy performance testing remains held.
 
 Squad gunshot attention and combined hostile QA (2026-10-17): officers turn
 toward propagated gunshots using only a coarse bearing. Attention expires after

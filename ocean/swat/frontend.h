@@ -34,8 +34,8 @@ typedef struct SwatFrontend {
     SwatRightAction right_action;
     int selected_gadget,gadget_door_action;
     int right_target;
-    bool right_held,debug,squad_pointer,squad_queue;
-    int squad_team,squad_pending;
+    bool right_held,debug,squad_pointer,squad_queue,squad_release;
+    int squad_team,squad_pending,squad_pending_team;
     bool scenario_requested,seed_edit;
     SwatConfig scenario;
     char layout_seed[16];
@@ -52,6 +52,11 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy);
 void swat_frontend_set_screen(SwatFrontend* app, SwatScreen screen);
 bool swat_frontend_playing(const SwatFrontend* app);
 SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim);
+void swat_frontend_squad_request(SwatFrontend* app,int order,bool queued);
+void swat_frontend_cancel_squad(SwatFrontend* app);
+// Call only after a real local tick or successful reliable input enqueue.
+// Also consumes the pulse in the caller's input when a frame has more ticks.
+void swat_frontend_input_submitted(SwatFrontend* app,SwatInput* input);
 // Draw inside the caller's BeginDrawing/EndDrawing pair, after the game view.
 void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* sim, bool policy);
 void swat_frontend_close(SwatFrontend* app);

@@ -7,7 +7,7 @@ CFLAGS ?= -O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra -Werror -Wno-unused-
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
 CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
 CHARACTER := character_runtime.c character_view.c character_asset.c
-CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c sound_view.c spatial_audio.c
+CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c sound_view.c spatial_audio.c
 NET := protocol.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
@@ -180,6 +180,14 @@ lighting-test-build: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_lighting.c lighting.c character_asset.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_lighting
 frontend-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_frontend.c $(CLIENT) $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_frontend
+.PHONY: frontend-input-test-build frontend-input-test
+frontend-input-test-build: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_frontend_input.c frontend_input.c settings.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_frontend_input
+frontend-input-test: frontend-input-test-build
+	ulimit -c 0; $(BUILD)/test_frontend_input trace $(BUILD)/frontend-input.trace
+	ulimit -c 0; $(BUILD)/test_frontend_input network
+	bash tests/test_windows_network_wrapper.sh
+test: frontend-input-test
 
 motel-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_motel
