@@ -797,6 +797,11 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
             if(task_room)task_officer=order_officer(s,goal,in->squad_team);
         }
         bool equipment=in->squad_order==SWAT_ORDER_PICK || in->squad_order==SWAT_ORDER_WEDGE;
+        // Naming a visible leaf is an optical task, like naming a person for
+        // cuffs. Keep an already selected door; otherwise clear glass may
+        // transmit the command's sight line. Workpoints and hands stay physical.
+        if(equipment && !(hit.kind==SWAT_HIT_WORLD && hit.index>0 && s->world.objects[hit.index].door))
+            hit=swat_world_sight_ray(&s->world,eye,swat_controller_aim(&source->controller),24,source->controller.body.body);
         if(equipment && hit.kind==SWAT_HIT_WORLD && hit.index>0 && door_task_valid(&s->world.objects[hit.index],in->squad_order)) {
             // The command names this leaf. Anchor its working point to the
             // leaf, rather than preserving platform-dependent ray rounding.

@@ -476,14 +476,16 @@ int main(int argc,char** argv) {
         if(task_trace)assert(!fclose(task_trace));
         return 0;
     }
-    if(argc>=2 && !strcmp(argv[1],"damaged-equipment")) {
+    if(argc>=2 && (!strcmp(argv[1],"damaged-equipment") || !strcmp(argv[1],"initial-equipment"))) {
         assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}
-        int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_DAMAGED_EQUIPMENT_CASES;assert(first>=0&&last<=SWAT_DAMAGED_EQUIPMENT_CASES);
+        int first=argc==4?atoi(argv[3]):!strcmp(argv[1],"initial-equipment")?60:0,last=argc==4?first+1:SWAT_DAMAGED_EQUIPMENT_CASES;assert(first>=0&&last<=SWAT_DAMAGED_EQUIPMENT_CASES);
         for(int test=first;test<last;test++)task_damaged_equipment(test);
         if(task_trace)assert(!fclose(task_trace));
         return 0;
     }
-    if(argc==2 && !strcmp(argv[1],"equipment-network")){damaged_equipment_network(false);damaged_equipment_network(true);equipment_network();return 0;}
+    if(argc==2 && !strcmp(argv[1],"equipment-network")){damaged_equipment_network(false,false,SWAT_ORDER_PICK);damaged_equipment_network(true,false,SWAT_ORDER_PICK);equipment_network();return 0;}
+    if(argc==2 && !strcmp(argv[1],"initial-equipment-network")){for(int order=SWAT_ORDER_PICK;order<=SWAT_ORDER_WEDGE;order++){damaged_equipment_network(true,true,order);damaged_equipment_network(false,true,order);}return 0;}
+    if(argc==2 && !strcmp(argv[1],"initial-remote-network")){for(int order=SWAT_ORDER_PICK;order<=SWAT_ORDER_WEDGE;order++){initial_equipment_remote_network(true,order);initial_equipment_remote_network(false,order);}return 0;}
     if(argc>=2 && !strcmp(argv[1],"equipment")) {
         assert(argc<=3);if(argc==3){task_trace=fopen(argv[2],"w");assert(task_trace);}
         for(int variant=0;variant<13;variant++)task_equipment(variant);

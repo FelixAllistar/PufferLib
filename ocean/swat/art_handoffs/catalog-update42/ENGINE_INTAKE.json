@@ -1,0 +1,35 @@
+{
+  "catalog": "UPDATE42",
+  "classification": "metadata-only intake",
+  "received_utc": "2026-10-18T21:22:19.314Z",
+  "approved_source": "https://drive.google.com/file/d/10lTaUxgbvqyXnkexBrYWTptUT2EUbNpM/view?usp=drivesdk",
+  "archive": {
+    "path": "build/swat/review/clear-door-selection/catalog-update42/update42.zip",
+    "bytes": 124284,
+    "sha256": "da92671fd6d6d0a634254fe5c28b0797eb4aafa6e73586da94c9b97bae6538f0"
+  },
+  "validation": {
+    "path": "build/swat/review/clear-door-selection/catalog-update42/VALIDATION.json",
+    "sha256": "6b56542e017dda07c15fc594110662edef083c75fa2c522dafe9cbbec632f67e"
+  },
+  "runtime_source_bindings": {
+    "path": "build/swat/review/clear-door-selection/catalog-update42/RUNTIME_SOURCE_BINDINGS.json",
+    "sha256": "9048176c7f2b804f85fe3649bee7b37b0b60f6b495b01c0f4433b1dc84daf12d"
+  },
+  "indexed_payloads_verified": 70,
+  "zip_members": 71,
+  "local_predecessor": "UPDATE41 (archive SHA256 verified)",
+  "local_runtime_exports_verified": 7,
+  "engine_receipt_attribution": {
+    "commit": "b948975e7",
+    "protocol": 39,
+    "receipt": "ocean/swat/tests/receipts/occupied-motel-2026-10-18.json",
+    "receipt_sha256": "50f31149be6a1bc7a18c5a3c92c2824bd00a2c5c4a0037854af08515ac5f8177",
+    "aggregate_metrics_cross_checked": true,
+    "independent_native_tests_by_catalog_builder": false
+  },
+  "source_geometry_uv_material_or_map_changes": false,
+  "recipes_executed": false,
+  "python_executed": false,
+  "scope": "Retained metadata/evidence delta over immutable UPDATE41. Four accepted source packages remain external dependencies. Later engine receipts supersede this historical v39 snapshot. The catalog adds no new runtime geometry and does not close whole-level visual, native driver/focus, performance, vehicle panel-stack or full-slice acceptance."
+}

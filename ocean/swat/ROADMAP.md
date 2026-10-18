@@ -30,9 +30,9 @@ Acceptance work still open:
 - Extend squad task completion across varied occupied layouts and further
   equipment roles, including broader room-search and moving threat coverage,
   beyond directed restraint/retrieval, door picks/wedges, recall and escort.
-- Extend transparent-cover equipment qualification beyond the tested queued
-  task and working-position cases, including initial command selection through
-  panes and moving obstructions.
+- Extend transparent-cover equipment beyond the tested initial/queued selection,
+  physical working-position and explicit pane-relocation cases. Changing people
+  and obstructions during work, more tools and broader world layouts remain open.
 - Extend hostile-fire squad coordination beyond the inter-room sequence with
   staging holds during demolition. Following officers can cross the commander's
   firing line, and exploratory all-follow runs lost the commander or an officer.
@@ -54,6 +54,54 @@ Acceptance work still open:
 - Qualify vehicle cover separately. The delivered sedan has a closed exterior
   coachwork volume, with no hollow passenger interior or suspension model;
   current game material sections do not establish panel-stack ballistics.
+
+Initial door selection through clear glass (2026-10-18): an intact
+pane present before a queued Pick prevented any officer from receiving the
+order, despite a clear sight ray reaching the leaf. Pick/Wedge now fall back to
+the ordinary optical sight ray when physical context did not already name a
+door. Opaque material and intervening people stop the sight ray. A physical
+selection of an existing door keeps its identity. The canonical leaf anchor,
+physical workpoint search, actual hand ray, stock and threat priority remain
+unchanged. Protocol/replay v40 records the changed command semantics; use
+matching peers and fresh saves.
+
+The controlled matrix has 102 damaged-door cases, including 42 initial-selection
+cases across both orders and three rotations. Fully covered glass waits without
+tool progress or stock use. Partial and low-gap glass remain intact while the
+operator performs actual work, including crouching. An explicit pane relocation
+opens physical access without damaging the glass. Opaque cover, glass backed by
+opaque cover and an intervening person reject the initial command. Four new
+host-command/late-peer and four remote-leader/second-peer UDP fixtures cover
+clear/opaque Pick and Wedge, queued identity, waiting, stock and actual completion.
+Remote commands enter through the connected leader while local server input is
+neutral. Before the behavior-version bump,
+all 81,399 preceding broad state samples remained exactly unchanged.
+
+The final v40 cohort passes 243 broad groups per platform. All 137,644 state
+comparisons across ten trace pairs match between Linux and Windows, including
+10,296 initial-selection samples. Adding the remote-client fixtures preserves
+all preceding broad state samples byte for byte in each rebuilt QA executable.
+Seven fresh ordinary-input missions pass complete objectives, clean ROE and
+protected survival, internal exact replay, checkpoint continuation and fresh
+replicas. Both shipping tools match all 156,826 mission frames per platform.
+Native queued room/wedge/search prefixes, independent player journals,
+frontend journals and rejection of v39 saves pass too. The source-coupled
+receipt is `tests/receipts/clear-door-selection-2026-10-18.json`; evidence is
+under `build/swat/review/clear-door-selection`. The preceding v39 root remains
+sealed and unchanged.
+
+The approved UPDATE42 catalog delta is retained with all 70 indexed payloads,
+ZIP CRC and its immutable UPDATE41 dependency verified. All seven referenced
+runtime-export hashes match local source GLBs. Its v39 aggregate attribution
+matches the sealed engine receipt. This metadata intake creates no new geometry
+or native acceptance; later engine receipts supersede its historical snapshot.
+The intake is recorded in `art_handoffs/catalog-update42/ENGINE_INTAKE.json`.
+The existing art queue continues with accepted source packages unchanged.
+
+Broader moving obstructions, network conditions, tool roles and hostile squad
+coverage remain open, alongside the full-slice visual/performance, art/audio,
+policy and vehicle requirements. Native graphical/focus and performance checks
+remain held under the machine-use instruction. This increment is progress.
 
 Selectable motel occupancy (2026-10-18): four situations share the
 accepted geometry and art. Standard preserves the original five starts;
@@ -128,7 +176,7 @@ glass; low gaps require actual crouched work. Tool progress still requires the
 ordinary physical hand hit. Fresh replicas and malformed-state rejection remain
 part of each case. Before the version bump, all 11,996 existing opaque/cut state
 samples remained exactly unchanged by this fix. Initial command targeting
-through clear glass remains a separate qualification task above.
+through clear glass is covered by the later selection increment above.
 
 The v38 cohort passed 199 broad groups per platform, with all 17,439 focused
 and 81,399 encounter state samples exact across Linux/Windows. Movement,
