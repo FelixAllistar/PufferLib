@@ -1,0 +1,1425 @@
+{
+  "created_utc": "2026-10-18T21:33:23.060Z",
+  "baseline_commit": "b948975e7709a63c2bbd1e1b3f94b2e609e29673",
+  "previous_goal_turn": "progress: installed/committed/sealed v39 four motel situations, physical squad approaches and exact cross-platform replay",
+  "full_slice_complete": false,
+  "classification": "progress",
+  "protocol": 40,
+  "scope": "Initial Pick/Wedge commands may name a visible leaf through clear glass. Actual access, working positions, hand rays, stock, physical motion and threat priority remain authoritative. Full slice remains in progress.",
+  "source_files": [
+    {
+      "path": "ocean/swat/CMakeLists.txt",
+      "sha256": "bdb303736a3b979daa256f06c467b130b1c2fe340e36d03462f08bd8195d2adb"
+    },
+    {
+      "path": "ocean/swat/Makefile",
+      "sha256": "55fce8645ed41f5afbc0e0eeaef412368683bb24c19a1e73b690b87e09022fe0"
+    },
+    {
+      "path": "ocean/swat/README.md",
+      "sha256": "bfb994c14fa569dfa814e994f3be8b0c7b28c2d0bd757f5d2e0e545e6cb41750"
+    },
+    {
+      "path": "ocean/swat/ROADMAP.md",
+      "sha256": "84cba64e81cfc1d401224b0ee2e555ea407e551a0dbd02958dee778377359935"
+    },
+    {
+      "path": "ocean/swat/art_handoffs/catalog-update42/ENGINE_INTAKE.json",
+      "sha256": "70baa5f0b6f4e78353e9759aafe6a55ddad74c6e927737c7515c05bd5e43cbce"
+    },
+    {
+      "path": "ocean/swat/encounter.c",
+      "sha256": "8a2311d98afa9b7cb266791fded9f39188a3d37e2adfcac2cdbc4bd12e84ced3"
+    },
+    {
+      "path": "ocean/swat/protocol.h",
+      "sha256": "ab0c2af83785d1d4bde8505d295a26fef154647da71c9cd4545c881eac657db6"
+    },
+    {
+      "path": "ocean/swat/tests/squad_damaged_equipment.h",
+      "sha256": "e1d36b91a14da7cf6f8ec9385e551a9b398d7a2b791213251cc7a3084e34b242"
+    },
+    {
+      "path": "ocean/swat/tests/squad_equipment_network.h",
+      "sha256": "fc3b9b6a14991a1d7f53bd2a951bf108a290794d85c27762f3c6ee9ca6117861"
+    },
+    {
+      "path": "ocean/swat/tests/test_encounter.c",
+      "sha256": "362694e38e81d401a847e43a3fae27467ad812d82d67246f5ce25f319bdc944d"
+    }
+  ],
+  "proof_drivers": [
+    {
+      "path": "build/swat/review/clear-door-selection/check.sh",
+      "sha256": "f174822af2326dde16dc80ffe6b49a9acfc387628e0ee04ed4c984c3791f438f"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/check-native.sh",
+      "sha256": "bda61c32fd612f76614331e4ee5ce97c7010c2463d2f4be29eac506a7c9d6610"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/build-release.sh",
+      "sha256": "3a50d6566a13932286ec2b007a1e9bd9c4b98d325bf98ca3412c90e7ec56a534"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/compile-roadside-art.sh",
+      "sha256": "5d8de8b64125ebccf28af42750cfc5950ea487a58b5c713a1ee1995c94d217c8"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/qualify-functional.sh",
+      "sha256": "acfc865dadc91271620bc68ba6e0c519649dca972e65fa8f8f2b429b7633ab28"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/qualify-missions.sh",
+      "sha256": "9bd1236faf3bb1e0087dc279202bcb214cd1b4222492377cebbffba27d2f3e27"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/refresh-qa.sh",
+      "sha256": "8655417492217eb6b074520990488281ebe7a6c95baa2112c9aa663153d75860"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/registration.sh",
+      "sha256": "6fa45bb5d3a082d31cc4a70c21bba2a57add31ced9fc85a30fc115ebdab9b19b"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/cli-check.sh",
+      "sha256": "3e77a9173f3e943854f28a2760d8865a9e5ae0ffb0e54c965a45f5fc73175ce9"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/run-functional-progress.sh",
+      "sha256": "f753ed5603a3e81ef47e4b5f57c20a705d79c077e239ca5c2f66ccbbc6c85cbc"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/negative-control.sh",
+      "sha256": "b6c4b2e576207da0f4b9d3fa368b607be3f46a64df6d8c5843f39361e0f376cf"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/audit-qualified-groups.cjs",
+      "sha256": "27dd377d982d71a9a7c39cece3cc42106b0987342733e796f4bca0bd68e71bce"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/catalog-update42/verify.cjs",
+      "sha256": "19b4ec52143c90a6910b927686cfaaac101e93554fcade7821843d89b1f7f041"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/install.sh",
+      "sha256": "aec0f9321c3612c3b6b1358209d8ef585db51ce1e7706965bd55026077c96f21"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/record-receipt.cjs",
+      "sha256": "660aa7ac2b28f5e852a0baf93141151b1a80316e73337da0145ce6befcf5f44b"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/verify-receipt.cjs",
+      "sha256": "c6a606d762dd4c3e2213be8e13787cb3f1e8dfcca76c1aad7cdad6337ff97cd9"
+    },
+    {
+      "path": "build/swat/review/clear-door-selection/finalize.sh",
+      "sha256": "b101a495eb530d8084611ee10ebf3074f26e533f2d4fe6e8e2d9f122c73cc3c4"
+    }
+  ],
+  "changes": [
+    "A sight-ray fallback names the visible door only when physical context did not already name a door. Opaque material and intervening people stop selection. Existing door identity and canonical goal anchoring remain in force.",
+    "Forty-two new cases cover both orders, three rotations, initial full/partial/low-gap glass, opaque and layered cover, an intervening person and pane movement. Initial queued selection and encoded replicas preserve the leaf. Full cover waits with zero progress/stock use; partial and low gaps complete around intact glass, with actual crouched work in the low gaps.",
+    "Four host-command/late-peer and four remote-leader/second-peer UDP fixtures cover clear and opaque initial selection for both orders, queued identity, waiting, actual completion and wedge accounting. Remote commands enter through the connected client while the server receives only neutral local input.",
+    "Protocol/replay40 records changed command semantics; matching peers and fresh saves are required. Original art/material/collision geometry is unchanged."
+  ],
+  "checks": {
+    "linux": {
+      "broad_groups": 243,
+      "broad": {
+        "encounter": {
+          "groups": 181,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/encounter-linux.log",
+            "sha256": "d914fbd693114b9fd8ff02f64492c7d7772b2f8be376ac25539d8178d0f1cc2c"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/encounter-linux.stderr.log",
+            "sha256": "80d22682eadb4f5e2468ac3bf291b0bb05e8334e2ac690a891058e2ad76256a3"
+          }
+        },
+        "tactical": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/tactical-linux.log",
+            "sha256": "38e858492b3f2936f3396cc1b9f850da49015d29ff8a71001cb35cbb071e994a"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/tactical-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "groups": 14,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/sim-linux.log",
+            "sha256": "69dd4d7fec0d78c0d9778df1b28df286c66ac0a4a11242258f1f0b90afbe19ea"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/sim-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "groups": 6,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/protocol-linux.log",
+            "sha256": "6ecc529cdf6a506403fc7e0d21812ac04b751cb6b04104b12d15e2c9b837678c"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/protocol-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/motel-linux.log",
+            "sha256": "2a01c59ffb3935d81cee4f86ff634571ec31429a71ae5f417125c5b326091f5c"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/motel-linux.stderr.log",
+            "sha256": "7e52b7b05fe72e558805802c6ddfaa8217e9ef005940f8d9f5705488ef47b059"
+          }
+        },
+        "navigation": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/navigation-linux.log",
+            "sha256": "f77a6a4aaec85991521d980f29c306d4a6fd3ed8d5e635e5b65704b29bc0bb8f"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/navigation-linux.stderr.log",
+            "sha256": "83bfadcc22dfc45ae60533a1290c5a2727ebb9cbdc59b54c5b32e6d342300c09"
+          }
+        },
+        "net": {
+          "groups": 15,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/net-linux.log",
+            "sha256": "513ddd0be95dff4077f6d1d39c2ad3d97f7c5203cc150516cf602c7241ad9298"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/net-linux.stderr.log",
+            "sha256": "ceb374b0adb18cb9cedf711ef576e051ae5aed4fbd275689cca937dfb062bf75"
+          }
+        }
+      },
+      "initial_selection": {
+        "path": "build/swat/review/clear-door-selection/initial-linux.log",
+        "sha256": "025bfc55c43c81876a99e0e4cc7c4f5b45a7fdc1c2ad224c132b13bd59b93e0e"
+      },
+      "initial_selection_stderr": {
+        "path": "build/swat/review/clear-door-selection/initial-linux.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "network": [
+        {
+          "mode": "remote-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/remote-network-linux.log",
+            "sha256": "809bd0b0dee148d3db22f4369b59a634c8cb33f1bd2012c5ba4e137879dea0c9"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/remote-network-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "initial-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/initial-network-linux.log",
+            "sha256": "070ec5b4685f2e7714d4799938676d0147a138eaa16aa322844f4f3c8e88e7df"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/initial-network-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "equipment-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/equipment-network-linux.log",
+            "sha256": "af798b2b458c4549cd4ae6f9b9f9dcf41559038e1cb59cb2bbd0d9093aac1251"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/equipment-network-linux.stderr.log",
+            "sha256": "dbd5fc13da7f39404acb7533bac28b2e0b74d03f5d6c94f685f9e42c6509b270"
+          }
+        },
+        {
+          "mode": "occupancy-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-network-linux.log",
+            "sha256": "f57e6e9263c11409a254e49e23e5d067712279942d3ece7eb54b169af5b1dfd9"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-network-linux.stderr.log",
+            "sha256": "3ad59537e249f472ca715ee852a74db1e6650b7fa2dad9aee49be04099680000"
+          }
+        },
+        {
+          "mode": "room-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/room-network-linux.log",
+            "sha256": "1874f694b5b36b36b46b38f59493fd3031145454f70417f9f50065c181a769f2"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/room-network-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "frontend-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/frontend-network-linux.log",
+            "sha256": "836a15d5f3f7d141b7c91842b0c4f4ca477d95529a9eb497e95fd6fc81ca83a8"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/frontend-network-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "focused": [
+        {
+          "mode": "occupancy",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-linux.log",
+            "sha256": "45fcc273e2eacc29ae1c3ea2d2643aad00233d66aa7d715b425e4a99608a5843"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-restraints",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-restraints-linux.log",
+            "sha256": "5703df47267592d820453ec4ec4cb2b6b963b390fcbf057b5094a69ea4f3bbe4"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-restraints-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-escort",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-escort-linux.log",
+            "sha256": "8454aae4146d0441992495d1d8c95f99a02d1ce86edff4b659115fc0c373791c"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-escort-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-portal-crowd",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-crowd-linux.log",
+            "sha256": "380a71a6fce1130f3106595b9cade74eedc30c9f9bea331da7aaec2f6dde1fdf"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-crowd-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-corner",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-corner-linux.log",
+            "sha256": "f0934c062fff9653d2318537bee59cd9ed1a2d5581bbe4c13292113d533dca96"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-corner-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-portal",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-linux.log",
+            "sha256": "106c0f8a495005c168de7f9393adbffc33037cc03e73ee4e41c1c965be684f74"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-follow",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-follow-linux.log",
+            "sha256": "2e84bb00e3aac14af6aa717755de051121139aabc478106c0295d86330f6f937"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-follow-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "movement": [
+        {
+          "mode": "player",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/player-linux.log",
+            "sha256": "d80ad631a4f7b7888a59be8c85d31741cb818c0c1bb0bd7dbac545fbd662f4a7"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/player-linux.stderr.log",
+            "sha256": "4510002eb708392f296900c1e2df5a38ab9ec96590a0270df69c9f167adbcbb4"
+          }
+        },
+        {
+          "mode": "locomotion",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/locomotion-linux.log",
+            "sha256": "23f7192a7fae0ed78f2bdb7a637b0034566ec89fd0d5c47d6ae92f745e443784"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/locomotion-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "scenarios",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/scenarios-linux.log",
+            "sha256": "982ec76cbeea7b6c1cbb7783a3f7dcdb7c9308cb2e77f7c1f0afb77ac42b2606"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/scenarios-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "foundation",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/foundation-linux.log",
+            "sha256": "df5c1604cb0cbae8f116311cf1aaa12066d3e0b10659ac5f44c8b5ae83cdb172"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/foundation-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ]
+    },
+    "native": {
+      "broad_groups": 243,
+      "broad": {
+        "encounter": {
+          "groups": 181,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/encounter-native.log",
+            "sha256": "2558a19fa36dedaf5dbdee9d456c6718b86b52daf4d178feedde4b145f2fbe88"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/encounter-native.stderr.log",
+            "sha256": "dabdcb00ed1f747a00462b57bb3fd669ceb80e5cc150ac10f7aab75472ba9389"
+          }
+        },
+        "tactical": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/tactical-native.log",
+            "sha256": "e4c179d5b6059b4a5ccb704760db7274f4cd587d9a24617b0ee3fd9334f70966"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/tactical-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "groups": 14,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/sim-native.log",
+            "sha256": "aab148509a8c76de4555b0faf3d46f8c716bd4a730b95d993e07ccf69cbf0345"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/sim-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "groups": 6,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/protocol-native.log",
+            "sha256": "d12363fedd4d48f5413cdac4bf54313b7874452345c6abf8412b24d1cc7b3670"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/protocol-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/motel-native.log",
+            "sha256": "802b1b2425b775222b02e71fc5c65f022d0042a6fd9cf3766e3c6fb8c353a477"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/motel-native.stderr.log",
+            "sha256": "3ebe62ba2dc3ed22cf1b0d37d32eb547529be4f2f1c12185a492e808488045a2"
+          }
+        },
+        "navigation": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/navigation-native.log",
+            "sha256": "4a0574d4578e12e577732616fc505f7c1847987ef0766860dfe422c586cd37ba"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/navigation-native.stderr.log",
+            "sha256": "481bb622a37548165965bf936620ccdc569485da4a0385beb2f734fd3543279e"
+          }
+        },
+        "net": {
+          "groups": 15,
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/net-native.log",
+            "sha256": "7510d8675c4091d1a8ba1a83a23a95e38b5b01d30c4ead9e6af1a4614d655a7e"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/net-native.stderr.log",
+            "sha256": "87f1b78fdef1b3675df530064800e800dbcc84fa77b1ea7b161f0c9ba5a2efca"
+          }
+        }
+      },
+      "initial_selection": {
+        "path": "build/swat/review/clear-door-selection/initial-native.log",
+        "sha256": "b7b75032625fcd03d4546451d76df5a19031451a247564e97b9788520e563c2e"
+      },
+      "initial_selection_stderr": {
+        "path": "build/swat/review/clear-door-selection/initial-native.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "network": [
+        {
+          "mode": "remote-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/remote-network-native.log",
+            "sha256": "e36d64f677b6e833a874c7468cc70729a2b0e0c2a2188a96717c9a089666f1bf"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/remote-network-native.stderr.log",
+            "sha256": "9b60cee13b1f9b0dd6021e38f2d17a4de925e170f072c0b3cb360088b24e63e8"
+          }
+        },
+        {
+          "mode": "initial-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/initial-network-native.log",
+            "sha256": "2637cf8c791b94ebac77e52eabadc45ff7840cc9785695f1efc2ba4d2ed9fc99"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/initial-network-native.stderr.log",
+            "sha256": "9b60cee13b1f9b0dd6021e38f2d17a4de925e170f072c0b3cb360088b24e63e8"
+          }
+        },
+        {
+          "mode": "equipment-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/equipment-network-native.log",
+            "sha256": "bffe8961c3f002db51d88fa6bb6d34164f3281e1f1d8205f5f8680f1008a27b2"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/equipment-network-native.stderr.log",
+            "sha256": "86c3661d0155199b2adc2d3bcce68d3f61ba4178ca6e162ee5380ad5a0c1a95a"
+          }
+        },
+        {
+          "mode": "occupancy-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-network-native.log",
+            "sha256": "ad7858c8dcacfc711e54ee00b069802c8d3008ad871b1ea23532891409ee965d"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-network-native.stderr.log",
+            "sha256": "1d13dbb734ebefde4b2bcd1573e88f5874bdae711bd8b3b6b7393b5f8e4a3cf0"
+          }
+        },
+        {
+          "mode": "room-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/room-network-native.log",
+            "sha256": "2072c71d70aedbbc8333ef27af0f415c3c655439474c9fa3931b3052818d83d0"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/room-network-native.stderr.log",
+            "sha256": "9b60cee13b1f9b0dd6021e38f2d17a4de925e170f072c0b3cb360088b24e63e8"
+          }
+        },
+        {
+          "mode": "frontend-network",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/frontend-network-native.log",
+            "sha256": "5ce4d810d66974ebf9acb56b996d12d425ce935967b1ac934a109ab5586b6083"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/frontend-network-native.stderr.log",
+            "sha256": "87deb33a111ce90017bc23e5bdbfb027b97d332bd98edbb21ef6ea315983c740"
+          }
+        }
+      ],
+      "focused": [
+        {
+          "mode": "occupancy",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-native.log",
+            "sha256": "6bf0195c2bbdcd51ce7bbbd5f658d4891a22dafbb5ba05c79b6920d7eb6dd331"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-restraints",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-restraints-native.log",
+            "sha256": "d7121cc84dc691e2bc2c7e0aa7a5bf136e928b6a3610c651db80828c232c43b1"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-restraints-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-escort",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-escort-native.log",
+            "sha256": "b21f94873ccfefb867c5275b49606c1f07f83027fbbaca7f74d059c4707025fd"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-escort-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-portal-crowd",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-crowd-native.log",
+            "sha256": "b0122336af3fbf48866b1627b677863226c1e187b88160b07578acb60f9ad13d"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-crowd-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-corner",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-corner-native.log",
+            "sha256": "cb1e6c0241db549dfaad5329fa7a2a64a0b88d003698bbd7a0df9ce718f0b852"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-corner-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-portal",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-native.log",
+            "sha256": "7161b097fb3befd64149f195e716438aa21744c6ff7bf87dfbc44ddea4eda6b8"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-portal-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "occupancy-follow",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/occupancy-follow-native.log",
+            "sha256": "edc4cc3bc8fa6847afaa63fe5e9403a808ccf3d4925fcca0673f0afc3bc76999"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/occupancy-follow-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "movement": [
+        {
+          "mode": "player",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/player-native.log",
+            "sha256": "cfd432359ae44df7dffd929a1f7a86014babbe754cd714993ec9c6fd65ad05f4"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/player-native.stderr.log",
+            "sha256": "f930593177131aab30df22a94bf22b6b0a8186fbbd8f0374a94c01358192b826"
+          }
+        },
+        {
+          "mode": "locomotion",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/locomotion-native.log",
+            "sha256": "aa8714d570cc824094053629796d544523097ffa420f519494056d541869998c"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/locomotion-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "scenarios",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/scenarios-native.log",
+            "sha256": "ec847e3d728b475c33bd35a1a443176708e87b368b8d1afbcda34deb00cf3c48"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/scenarios-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "mode": "foundation",
+          "stdout": {
+            "path": "build/swat/review/clear-door-selection/foundation-native.log",
+            "sha256": "5aa5302977a70ffd3c463b3c2118e736760f3882334d1bbf72ce9609ab887d93"
+          },
+          "stderr": {
+            "path": "build/swat/review/clear-door-selection/foundation-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ]
+    }
+  },
+  "cross_platform_traces": [
+    {
+      "name": "initial",
+      "samples": 10296,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/initial-linux.trace",
+        "sha256": "30366ed8d7607b796f0b0a47786dfa7d941707eda3b7fc1412f16b1d0ed8b6fd"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/initial-native.trace",
+        "sha256": "1e3ecc44b1a9952f5503d54f6afbe4a55c55a2583306fa2baca8436a73672f30"
+      }
+    },
+    {
+      "name": "all",
+      "samples": 91695,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/all-linux.trace",
+        "sha256": "6bc823e7773385336f67dc6be37cebf1686f05d91a9bb0341cd45e0a481b2987"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/all-native.trace",
+        "sha256": "debcdf856dfcd890c667a97a9c858d76cf5e12a080458b792d93bcbdf35e1db4"
+      }
+    },
+    {
+      "name": "room-motel",
+      "samples": 4882,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/room-motel-linux.trace",
+        "sha256": "3f85ceb3c1c541dd896fc8fd5588be278533f5dd05d5fa637c506c63a207e204"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/room-motel-native.trace",
+        "sha256": "55b43f0679411f7f8711c5a408601c67d8fe10288887abbd0bcf95d0a9a38263"
+      }
+    },
+    {
+      "name": "roadside",
+      "samples": 38,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/roadside-linux.trace",
+        "sha256": "e0153a94bc8e40ec0773ec71bdc0ae891ffdc4fa42d24d969f2de195238feb26"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/roadside-native.trace",
+        "sha256": "4585cf23bbe29c11faf42fa021e3ee72d971707a70b94cf996c6df446a249ec5"
+      }
+    },
+    {
+      "name": "input",
+      "samples": 78,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/input-linux.trace",
+        "sha256": "ca165c99d5201deecad675509bd20fc311a939f9444334e5c5e58606d7706f2a"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/input-native.trace",
+        "sha256": "75611c55125c35dc16ac8af531d2511c37260d2cabcf61f004e94d83137c2743"
+      }
+    },
+    {
+      "name": "player",
+      "samples": 1751,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/player-linux.trace",
+        "sha256": "25c9407a52b867631fde12175eda71ef3026ae2a60a6b74149c03b42dae671f6"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/player-native.trace",
+        "sha256": "09c9d6f73465e3dbbf412995cdee62bdecd8af5190249e3c8fd96421f0b5c9bb"
+      }
+    },
+    {
+      "name": "occupancy",
+      "samples": 525,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/occupancy-linux.trace",
+        "sha256": "67f4a7e6cb017db6afd88d9deea084d0fb6f77cc90ad5470f6582a4890b5f556"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/occupancy-native.trace",
+        "sha256": "720b8ce597e13e1730fad8bedce9b14044eb95b5372a098755895bc83bdd0af2"
+      }
+    },
+    {
+      "name": "occupancy-restraints",
+      "samples": 5544,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/occupancy-restraints-linux.trace",
+        "sha256": "c18f2d4dbc3320b6a98dd00a5b29ef548594bf731f65a8d33d691e5cea5114b2"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/occupancy-restraints-native.trace",
+        "sha256": "719404c8418b59a580041377d6a33ba549945a7a20b74771732a9a1cd4991830"
+      }
+    },
+    {
+      "name": "occupancy-escort",
+      "samples": 21600,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/occupancy-escort-linux.trace",
+        "sha256": "d2f1256a86a313671448570e3d031b8ed92f5b27b3efb04d6a0e2be9dd7bf409"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/occupancy-escort-native.trace",
+        "sha256": "bf091796509fbc08bd874cd6b667d3203256fff8b4082f0ccb892fc1ee9374c9"
+      }
+    },
+    {
+      "name": "occupancy-portal-crowd",
+      "samples": 1235,
+      "comparison": "Exact samples; CRLF normalization only",
+      "linux": {
+        "path": "build/swat/review/clear-door-selection/occupancy-portal-crowd-linux.trace",
+        "sha256": "77b891381888261d5b633d040fddc49294a9b356108f72beb33a5b4043d41928"
+      },
+      "native": {
+        "path": "build/swat/review/clear-door-selection/occupancy-portal-crowd-native.trace",
+        "sha256": "4a0c4ff81b36d1352a166a9d2de3cd8634bbcbdb6bd6b4dfdf8120edd28d5266"
+      }
+    }
+  ],
+  "cross_platform_audit": {
+    "path": "build/swat/review/clear-door-selection/cross-platform-audit.log",
+    "sha256": "46dcdd4d9a34472445b5de31f23b0ef7a217a88421e7e7a790f2890c5ada32a2"
+  },
+  "cases": {
+    "host_command_network_cases": 4,
+    "remote_leader_network_cases": 4,
+    "damaged_equipment_total": 102,
+    "new_initial_selection": 42,
+    "orders": 2,
+    "rotations": [
+      0,
+      1.5707963705062866,
+      0.3700000047683716
+    ],
+    "variants": [
+      "initial full glass; remove after waiting",
+      "initial opaque rejection",
+      "glass plus opaque rejection",
+      "person before glass rejection",
+      "initial glass moved aside intact",
+      "partial glass, intact completion",
+      "low-gap glass, intact crouched completion"
+    ]
+  },
+  "regression": {
+    "qualification_marker_correction": {
+      "path": "build/swat/review/clear-door-selection/qualification-marker-correction.log",
+      "sha256": "14ced4d41bc584568d22470dfe961cf2c3bab230633e550e6dc1e4e1a81a25ac"
+    },
+    "preceding_runner": {
+      "path": "build/swat/review/clear-door-selection/before-marker-correction/qualify-missions.sh",
+      "sha256": "33b6a36bdc1397074c2ce9afc7046816585eb210355a158418b3a0ea17d6c073"
+    },
+    "preceding_marker": {
+      "path": "build/swat/review/clear-door-selection/before-marker-correction/qualification.log",
+      "sha256": "e6466cccdb67e782c8b131099318d4fceb79ba722111ae8c05d8d9c8fde14cd0"
+    },
+    "original_failure": {
+      "path": "build/swat/review/clear-door-selection/before.stderr.log",
+      "sha256": "325ff5e7035565e7217008531d2cf614d3de3f55ab421ab3952214da8a33b1a0"
+    },
+    "original_encounter_source": {
+      "path": "build/swat/review/clear-door-selection/before-fix/encounter.c",
+      "sha256": "317599e1573755ed1b19b386681e6bbc81cd8c29c4d178ca76a847da4c1207ea"
+    },
+    "initial_failure_fixture": {
+      "path": "build/swat/review/clear-door-selection/before-fix/regression-fixture.h",
+      "sha256": "05d1c4092c147f05a63e596d5b89cf0ea30f38fc7f92221d7e233e36b7b4ee7c"
+    },
+    "current_version_negative": {
+      "path": "build/swat/review/clear-door-selection/negative-control.log",
+      "sha256": "73bb19319a4ed8b8c3f42c1f6b7f690c5f1803b23ba0b812f73a0dcbc9362c72"
+    },
+    "negative_executable": {
+      "path": "build/swat/review/clear-door-selection/negative-test",
+      "sha256": "62eb514b91330f44b05f5cc08556a3ab1e4b00a2bdd538492c1296a24c47d927"
+    },
+    "negative_encounter_object": {
+      "path": "build/swat/review/clear-door-selection/negative-encounter.o",
+      "sha256": "a587ea518e33a7b52ed3488f8ecae029acc0e6c2b3cce15cbec1618ed03a428e"
+    },
+    "current_version_negative_stderr": {
+      "path": "build/swat/review/clear-door-selection/negative.stderr.log",
+      "sha256": "29ba7b12d906be3fc7cb101443cbc882564bdd03749a24559cac81eed085389c"
+    },
+    "unchanged_pre_version_prefix": {
+      "path": "build/swat/review/clear-door-selection/unchanged-v39-prefix.log",
+      "sha256": "e02bb1108fcb6640db2622c0b48e029422472d753c002e37cde356f631ca24b4"
+    },
+    "pre_version_trace": {
+      "path": "build/swat/review/clear-door-selection/all-pre-version.trace",
+      "sha256": "dd3bdb430ea2d68987c3e7de53489fadc96e7d093501d7ab25465efe15b5fa35"
+    },
+    "scope": "All81399 preceding broad state samples were exact before the behavior-version bump at the initial30-case stage. Restoring original command selection under the final cohort reproduces the missing-recipient assertion."
+  },
+  "routes": [
+    {
+      "name": "motel-threat-exterior",
+      "frames": 9497,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-threat-exterior.sgrp",
+        "sha256": "a3f8ef7637c72ccdbc13c148beb7005701eaea653db96fe4557d52c5f5eeef05"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/motel-threat-exterior-linux-replay.log",
+          "sha256": "c3949052470c1d55a292120f160be833a4875320cb751865154e313b5c217a66"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/motel-threat-exterior-native-replay.log",
+          "sha256": "ac3f6f33134fe52cc9dbece17c5859e5952d4899e526bfbdb81b2ad7a278734f"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/motel-threat-exterior.log",
+        "sha256": "2f5c48375f96754424a988486de48c382c61b0042d7878c03690ac71cc4df815"
+      },
+      "stderr": {
+        "path": "build/swat/review/clear-door-selection/motel-threat-exterior.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-dispersed",
+      "frames": 25811,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-dispersed.sgrp",
+        "sha256": "49d90c6fa31c1c3ee85306d746e1e5b2d07bf6c216370afefad764fa1b867784"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/motel-dispersed-linux-replay.log",
+          "sha256": "8059b2af230e8f48b22c4bce135cfe2c4c84cc551d8eff1685d1d76ba834fcd6"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/motel-dispersed-native-replay.log",
+          "sha256": "cfd456c6e452f19859d2ffa7fe517a229c0b56820b7d194bf2e0d168ddbcb155"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/motel-dispersed.log",
+        "sha256": "541059578e897b089ce52a8df36cbd80367b14385fa139a1ab8b963a6fac3e9f"
+      },
+      "stderr": {
+        "path": "build/swat/review/clear-door-selection/motel-dispersed.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-mixed",
+      "frames": 23037,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-mixed.sgrp",
+        "sha256": "a48d0a0716bfbad78cbe81bd0729a2c62360d34377cd93ca0c10a8e78b133c86"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/motel-mixed-linux-replay.log",
+          "sha256": "f1cc856466e4d178faef66753c540f74c1828b1d69838015c76893a61a2e36ce"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/motel-mixed-native-replay.log",
+          "sha256": "2316b23a9ce19555a2b4c49762a772611529769972cdd86f249363c61f308c7f"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/motel-mixed.log",
+        "sha256": "a28ce693a76b281a2bda6398eede5a288963a274a0d9a660a96cab7137668783"
+      },
+      "stderr": {
+        "path": "build/swat/review/clear-door-selection/motel-mixed.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-busy",
+      "frames": 28275,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-busy.sgrp",
+        "sha256": "4b845f1cac784fbc65ee89fa062f79a37d73bd9e47fa35d2f857470b9507fe5b"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/motel-busy-linux-replay.log",
+          "sha256": "565cd9c7d970b58a5433b59bacbc82d6b4ef723db502610d14a0a8a65845100e"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/motel-busy-native-replay.log",
+          "sha256": "2ba65d8c26b909cb58fdaa7773fc9b13a95e5f48da14dabec9f8929244959839"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/motel-busy.log",
+        "sha256": "fe1d2308cc18e7a5a42aeff78a6d52434f6e9006d3b39eec8c553fcf695949e0"
+      },
+      "stderr": {
+        "path": "build/swat/review/clear-door-selection/motel-busy.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-mixed-hostile",
+      "frames": 21658,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-mixed-hostile.sgrp",
+        "sha256": "835878cb31d731e79d822814b50eacbe100dd1cff3378625a37136c5cf0b554b"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/motel-mixed-hostile-linux-replay.log",
+          "sha256": "66901d809033182e0273e1687d18de346bdf32ec19830154dd9d482c3c44981b"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/motel-mixed-hostile-native-replay.log",
+          "sha256": "fb453e08af976d213c31cae73400f595315ce39919f95532a2c775ff91454346"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/motel-mixed-hostile.log",
+        "sha256": "1cc13f26c45e8cb208eeb8777d33bba00c33b59743c13edad091201973761b6e"
+      },
+      "stderr": {
+        "path": "build/swat/review/clear-door-selection/motel-mixed-hostile.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-damaged",
+      "frames": 28019,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged.sgrp",
+        "sha256": "f689a471d71f857ab0718f636c98560dcd554eb31c135fd599ac0bc32a450d93"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/motel-damaged-linux-replay.log",
+          "sha256": "99882af1b36a4c2542a33e523c325026cce70f7143f19eb12e5b7fe2c03a37f4"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/motel-damaged-native-replay.log",
+          "sha256": "5e982d19d70f4065c6f68c78674a22bcde677fbc02bc5e1cd6baae68e0970be2"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged.log",
+        "sha256": "8006d379cb7cd0fa1aae65b86ec65574b4090babab2a918a27cfcfd8c1e6417a"
+      },
+      "stderr": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-threat-interroom",
+      "frames": 20529,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-threat-interroom.sgrp",
+        "sha256": "10e1a364b8e95dae3893595880b886daab4ab647a501f2cfda1241162ab3cd71"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/motel-threat-interroom-linux-replay.log",
+          "sha256": "4d0883e1a75d2d87610275c18ac7e6203c0c256cd70dc290c5ed772f37127832"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/motel-threat-interroom-native-replay.log",
+          "sha256": "9ac4e233859d45ffd5d57ad6571b14b0a12f68adb90e1852578d003f86fea979"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/motel-threat-interroom.log",
+        "sha256": "bc10cd308ce0e71a2563a91371da1dc4836a3b0e05b718006a7c6fbda3cd46f9"
+      },
+      "stderr": {
+        "path": "build/swat/review/clear-door-selection/motel-threat-interroom.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "player-linux",
+      "frames": 1624,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/player-linux.sgrp",
+        "sha256": "e2593560a108b36d8bc7768e942002be3c5b016e7a9bfcd68fa29db92dfec52a"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/player-linux-linux-replay.log",
+          "sha256": "7188ede5ea77593d1f04ed82339442630e5aba0863600e564794dbf57b0ba8f5"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/player-linux-native-replay.log",
+          "sha256": "8fb6978ff4577fb77403fe6ecb41bafaabe3bab41dff1537b2143a00ca2d5a1b"
+        }
+      }
+    },
+    {
+      "name": "player-native",
+      "frames": 1624,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/player-native.sgrp",
+        "sha256": "e2593560a108b36d8bc7768e942002be3c5b016e7a9bfcd68fa29db92dfec52a"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/clear-door-selection/player-native-linux-replay.log",
+          "sha256": "7188ede5ea77593d1f04ed82339442630e5aba0863600e564794dbf57b0ba8f5"
+        },
+        "native": {
+          "path": "build/swat/review/clear-door-selection/player-native-native-replay.log",
+          "sha256": "8fb6978ff4577fb77403fe6ecb41bafaabe3bab41dff1537b2143a00ca2d5a1b"
+        }
+      }
+    }
+  ],
+  "saved_prefixes": [
+    {
+      "kind": "room",
+      "frames": 1590,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged.sgrp.room.save",
+        "sha256": "48e5134ec460fde13d273a798e14cf2de75b86ae3d9ea8308c63d967b997d250"
+      },
+      "native_replay": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged-room-prefix-native-replay.log",
+        "sha256": "f3c0c453440ed0c414f3ea0784fde6ef7e690dc81e4fc79aa46e2706a46c79b5"
+      }
+    },
+    {
+      "kind": "wedge",
+      "frames": 25046,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged.sgrp.wedge.save",
+        "sha256": "9891bf1f0c7e73dbd913dfd543e81e33914d7efa96327b93a082bc7b8e8a2850"
+      },
+      "native_replay": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged-wedge-prefix-native-replay.log",
+        "sha256": "1f90f7e0ec061f3b7f6a0dd3e048e20ed1eadb76271b3a94725731aeb91702dc"
+      }
+    },
+    {
+      "kind": "search",
+      "frames": 15012,
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged.sgrp.search.save",
+        "sha256": "18cd85faa04c770e9b1742f18352aa469566ee66fc36fa6386b3cf0739314681"
+      },
+      "native_replay": {
+        "path": "build/swat/review/clear-door-selection/motel-damaged-search-prefix-native-replay.log",
+        "sha256": "bd6c14ec1b9fa4b3f6248822913103a3fd105d86dd6e76e208b86d3ac7c3302c"
+      }
+    }
+  ],
+  "independent_player_journals_and_checkpoints_byte_identical": true,
+  "frontend_replay": [
+    {
+      "platform": "linux",
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/input-linux.trace.sgrp",
+        "sha256": "41b5a653ba0cc35b3c069e65e2d82f58371a856b648797d805bf84fdb9db2435"
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/input-journal-linux.log",
+        "sha256": "bcc79de299968ad4d927462f44c26ddd5fe4f30881b4003bd3b4340786e026af"
+      }
+    },
+    {
+      "platform": "native",
+      "journal": {
+        "path": "build/swat/review/clear-door-selection/input-native.trace.sgrp",
+        "sha256": "41b5a653ba0cc35b3c069e65e2d82f58371a856b648797d805bf84fdb9db2435"
+      },
+      "stdout": {
+        "path": "build/swat/review/clear-door-selection/input-journal-native.log",
+        "sha256": "7e2ea74bd1d9d2d1e01c53ceed447f27d00170e5b36112789cb5f7f66a3f5158"
+      }
+    }
+  ],
+  "old_v39_rejection": {
+    "journal": {
+      "path": "build/swat/review/occupied-motel/motel-damaged.sgrp",
+      "sha256": "ae8d6d3850c41fec49e5e84b134bf2991bea468ede7f44b49a5da66bb601c995"
+    },
+    "logs": [
+      {
+        "path": "build/swat/review/clear-door-selection/old-v39-linux.log",
+        "sha256": "867e62a34dcea707eccc43f56cade2b150fdde28fc128733f6a54d9c67c0c4aa"
+      },
+      {
+        "path": "build/swat/review/clear-door-selection/old-v39-native.log",
+        "sha256": "85e168a8279bbfacc90e496492ea299f031724a92ceb579c01dd0354c5697b42"
+      }
+    ]
+  },
+  "build": {
+    "linux": {
+      "path": "build/swat/review/clear-door-selection/release-linux.log",
+      "sha256": "5f1c252cdf539ccafa2136b9a92262d9ca7d9a3195a6f677eee92b8f7e0a4313"
+    },
+    "native": {
+      "path": "build/swat/review/clear-door-selection/release-native.log",
+      "sha256": "a3a053e160b684818cd10483b812703cd3860fb25da6228d89e0dede8c6fc2b4"
+    },
+    "final_linux_fixture": {
+      "path": "build/swat/review/clear-door-selection/final-fixture-linux-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "remote_qa_refresh": {
+      "path": "build/swat/review/clear-door-selection/remote-qa-refresh.log",
+      "sha256": "c3067e0f8b428b654d3db23d4d3aa9ce9ce4e180d2d873a86d2f8fc6a5eb7fc2"
+    },
+    "final_qa_relinks": [
+      {
+        "path": "build/swat/review/clear-door-selection/remote-qa-build-linux.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "build/swat/review/clear-door-selection/remote-qa-build-native.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "graphics_qa_compile_only": {
+      "path": "build/swat/review/clear-door-selection/art-compile.log",
+      "sha256": "6d0d1cac2f5e60a5a867eecd19d36bb23d490f0d7bfc95e94bcc8ddeda3129e2"
+    }
+  },
+  "registration": {
+    "stdout": {
+      "path": "build/swat/review/clear-door-selection/registration.log",
+      "sha256": "82d2f0124e0e3b5b4533e684fa50c3b9f819fc21e54c0e54d9a79f0248843c9a"
+    },
+    "cmake": {
+      "path": "build/swat/review/clear-door-selection/cmake-configure.log",
+      "sha256": "72c1700bedd21dc0efee2a1bf60965477b53e581de115742a34d2a2d6dbaa8cc"
+    },
+    "ctest": {
+      "path": "build/swat/review/clear-door-selection/cmake-registration.json",
+      "sha256": "5be0bb6b2331dd08874e985b7a4480a2586da9964b84780289f7b5e9e2aafafc"
+    },
+    "manifest": {
+      "path": "build/swat/review/clear-door-selection/cmake/CTestTestfile.cmake",
+      "sha256": "327ac2fbdd3be2a566784b322082b330241dfb27948e6609304f2df7d6dc4a0d"
+    },
+    "make": {
+      "path": "build/swat/review/clear-door-selection/make-registration.log",
+      "sha256": "646bd31754e4bee6c7bfa1479501c5f9fa61929eaa331a1e57c3297037aefb3f"
+    }
+  },
+  "cli": {
+    "valid_parses": 16,
+    "rejections": 24,
+    "stdout": {
+      "path": "build/swat/review/clear-door-selection/cli-check.log",
+      "sha256": "cd87bcedd623c3578452825d14b126fe650f3b3a5a66a99c284f4c33f1a0a9bb"
+    }
+  },
+  "coordination": {
+    "public_thread_check": {
+      "path": "build/swat/review/clear-door-selection/slack-check.json",
+      "sha256": "7be4e74dfe4c1d740da6a505c6ecb0d02bc49d40f779b7b8b18b25eef51d588a"
+    },
+    "public_followup": {
+      "path": "build/swat/review/clear-door-selection/slack-followup.json",
+      "sha256": "c5f2d6dab48e1008d7ab2d84ddba581ee7113d94c9fb7b77d6720ba80dcd3103"
+    },
+    "catalog_acknowledgement": {
+      "path": "build/swat/review/clear-door-selection/catalog-update42/slack-ack.json",
+      "sha256": "a5116f11dab4a0644f3a6ea359b022c72bd34f8abf6ee73e3c6754380bc4fdaa"
+    },
+    "catalog_intake": {
+      "path": "ocean/swat/art_handoffs/catalog-update42/ENGINE_INTAKE.json",
+      "sha256": "70baa5f0b6f4e78353e9759aafe6a55ddad74c6e927737c7515c05bd5e43cbce"
+    },
+    "catalog_archive": {
+      "path": "build/swat/review/clear-door-selection/catalog-update42/update42.zip",
+      "sha256": "da92671fd6d6d0a634254fe5c28b0797eb4aafa6e73586da94c9b97bae6538f0"
+    },
+    "catalog_predecessor": {
+      "path": "build/swat/review/art-intake-2026-10-18/update41.zip",
+      "sha256": "fca679b439ffc8fafa2f2f970c35a921012c234df91a01090cef695b30b21329"
+    },
+    "catalog_validation": {
+      "path": "build/swat/review/clear-door-selection/catalog-update42/VALIDATION.json",
+      "sha256": "6b56542e017dda07c15fc594110662edef083c75fa2c522dafe9cbbec632f67e"
+    },
+    "catalog_source_bindings": {
+      "path": "build/swat/review/clear-door-selection/catalog-update42/RUNTIME_SOURCE_BINDINGS.json",
+      "sha256": "9048176c7f2b804f85fe3649bee7b37b0b60f6b495b01c0f4433b1dc84daf12d"
+    },
+    "catalog_source_glbs": [
+      {
+        "path": "ocean/swat/assets/environment/motel_room101_hinges/room101_facade_option1.glb",
+        "sha256": "5a9e1ceb65dcc903e954e6870bd384e43d937d90a9f567ebaa6380f547a85e39"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_room101_hinges/room101_failure_remnants.glb",
+        "sha256": "6c7588f6b8635a6b2e7b67f077470223735b81246c1c5161a531019dcbf70a3c"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_room101_hinges/room101_hardware_option1.glb",
+        "sha256": "e2512143d2a3193d3d33b19f18da60b565043c2a902273cbd2d0e461044a909c"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_room101_hinges/room101_leaf_option1.glb",
+        "sha256": "ea55965f7ca1e5a9c3bc0d4ca8dbc4057d72a0cf1882a9cc0078e36a02071b66"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_dumpster/BC_DUMP01_closed.glb",
+        "sha256": "81a00d44395c482fc7e069b6fb6218b0cd6367330522271f2702d1c07d3e74d0"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb",
+        "sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb",
+        "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298"
+      }
+    ]
+  },
+  "inherited": {
+    "receipt": {
+      "path": "ocean/swat/tests/receipts/occupied-motel-2026-10-18.json",
+      "sha256": "50f31149be6a1bc7a18c5a3c92c2824bd00a2c5c4a0037854af08515ac5f8177"
+    },
+    "seal": {
+      "path": "build/swat/review/occupied-motel/SEALED.md",
+      "sha256": "9a7bc96dd86f6d222f1fec46848567f3365ffd5a56ff8c17d4ab5e057e824431"
+    },
+    "audit": {
+      "path": "build/swat/review/clear-door-selection/inherited-seal-audit.log",
+      "sha256": "123c4ecace2e1c4f42bae18e7ebcad9be9452e6b5aacb186a748c9d565ecda7b"
+    },
+    "source_assets": [
+      {
+        "path": "ocean/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb",
+        "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb",
+        "sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+      }
+    ]
+  },
+  "installed": {
+    "executables": 42,
+    "unchanged_glbs": 4,
+    "files": 46,
+    "sha256": {
+      "build/swat/swat": "031edb71159d871021dd479aa438a183484745b342ae22e72d8ceb2494b2f46e",
+      "build/swat/server": "27a79cf7beaeb9229d8b0488f9307ac603728a573eea0b3a96115ae4072078f3",
+      "build/swat/replay_tool": "d8ffea2cd311f3d690b0cc506484543cca77049f1293877f047dcebafd00b4d8",
+      "build/swat/performance_tool": "647014fc053769998996bad38dfbaa20118d85e9642a24b510caeaed3107c58f",
+      "build/swat/test_encounter": "ae3964e8517f4c9d3513f926825d495cf8720c9ef9b457f063b93d15b0fab7e4",
+      "build/swat/test_tactical": "7ee8b9c06cd06791cee6f245e52c6cf82dd64f2fd038d77f4d49008e653a84c1",
+      "build/swat/test_sim": "17a578e097a6f63573a2eaa8f9105511f741b815a60143fd43753a7854fbe428",
+      "build/swat/test_protocol": "d35f307c15da63044fad59fde2cca8c871b52267de35477a3ebd3fa55268e8f9",
+      "build/swat/test_net": "095e121c9f468667544f2093e5a552356f0c602729df02feb6f50fd7acf8019e",
+      "build/swat/test_motel_completion": "8056662f1b59653b2b362570ae8cb2465525aea84e8c9e15c2946f72aa14f24a",
+      "build/swat/test_navigation_search": "0e5fb6e231f42ee873b266d48d6dab1b92e8db57d3c90d595f44587621a422d7",
+      "build/swat/test_motel": "8de90d4c8c48454b04caba8bfe1c0d3c7ba5c1fe02b04d6c821891407235c01a",
+      "build/swat/test_frontend": "3fe70a6f65d9c0e146fa30571e1a711d61fb82d36b46e19a0a6d236c78ab733d",
+      "build/swat/test_frontend_input": "a184e2a9ce697f454c31bd84eee0d69cbec03b095932c82f258b5268adb9ac24",
+      "build/swat/test_motel_roadside": "8eac2a40bada9f852bf1e6eb89755765d6e26a865a3332b9745577c9d11b798b",
+      "build/swat/test_motel_dumpster": "dc0b92c9f3390e0bfa584054ac0a52d94bd187dcc32302ed6cc19cc6daa226e9",
+      "build/swat/test_motel_roadside_art": "faa4a158791c1927643db732da9a47be5a94d3aa8bfc567df82106be27733f0c",
+      "build/swat/test_motel_player_contacts": "a38243bd356d3fe246340473a16af7b27dcfa62cfccc985e8c5d62845a287c92",
+      "build/swat/test_locomotion": "8053d4f80e770413114972e7b79d3c4ce8457dee2930caae76f61d8d68c1ef9a",
+      "build/swat/test_foundation": "965392bd291516e643e3f5229f07373ff5daa4f53cd9408dc181013d8528aa31",
+      "build/swat/test_scenarios": "f534e0a15a5b3903d4ffec4f2879aff1194f452486842040f419d556319ae67e",
+      "build/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "build/swat/windows/swat.exe": "0befbacf6317c823bb13dcb201681716926f24eba95cd6fa0350fb97885b46b5",
+      "build/swat/windows/swat-server.exe": "b6caf554969c7914c658713a64ddca05dcffa367d88dadb367d6ecea2f8a1c7f",
+      "build/swat/windows/replay_tool.exe": "4403bdb30ee6f9d9ccbcee13754bef1fa5bccedfca1c4c963b50a3928e2c2030",
+      "build/swat/windows/performance_tool.exe": "838b1df6235aca344ccb10e33cd9d447b234e4b57cd6f087d66bdad6408fa277",
+      "build/swat/windows/test_encounter.exe": "2236bc5c686f4ef67ad29003e9d7bf46bf94721c4145844d475cc303a10b2475",
+      "build/swat/windows/test_tactical.exe": "d57d010a7844897a726d9669f2651c8b838723f31cc4d8d06f410bf9b88eecc7",
+      "build/swat/windows/test_sim.exe": "fb3d997c824032b47d98547f132adf6bdc6c10f4ec180faabce8821d9341aca7",
+      "build/swat/windows/test_protocol.exe": "84a3866b670ad9a3750c0b678902f17c1077fc512beeb699084e6cd183494adb",
+      "build/swat/windows/test_net.exe": "b21fa60289fab59118fd34cdbe1e98505b78d3191fc0e78f3dde1d495509ee71",
+      "build/swat/windows/test_motel_completion.exe": "1e26cce5bf5b146e15733a833360246e453f0b7457d31c2761dec0820eab7e99",
+      "build/swat/windows/test_navigation_search.exe": "ec7a5037f3d1058999a0ac903f4d5230cb2b87eba15f5dacc30d14eab38123b6",
+      "build/swat/windows/test_motel.exe": "9352aaa162d11c9bb2924cb666cb3d893560a57161860fed46b97828ade6db70",
+      "build/swat/windows/test_frontend.exe": "269c521204cbd810b4b0a97757edb0374ac76189fa22374150b235dbacc8590d",
+      "build/swat/windows/test_frontend_input.exe": "861e7da9983ba8894345ef21193b326b79f0e6fe9d637705c00aa0bb91c32407",
+      "build/swat/windows/test_motel_roadside.exe": "71d672937dbf728322ab34669e4ab3ddc7c1a69404a87143e36018af599eb0f9",
+      "build/swat/windows/test_motel_dumpster.exe": "44a83cfb0fd9286cdee3ccf5916b67a78fc59784e6d8707144e5d34dc2a93cdf",
+      "build/swat/windows/test_motel_roadside_art.exe": "722b4c61f9c16889d5ede5be7b120e4abc65069ea61b058c509cc78728df43e8",
+      "build/swat/windows/test_motel_player_contacts.exe": "739603b6ee6833c54ba30cc9d36490711738438759655a885e42a15ebe554e30",
+      "build/swat/windows/test_locomotion.exe": "9643197c0ea8bcfa069cc837a45ebbf9fb11eebdea04288bc961b106da265b43",
+      "build/swat/windows/test_foundation.exe": "6e5424fd061ae36eaaf808c5eaffb1ae3bafb59167b0d677bd09c61280975cce",
+      "build/swat/windows/test_scenarios.exe": "4b4fc7a8963b947cd049098349bff85138f4f1d143f0d12d186c6728836ff6a1",
+      "build/swat/windows/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/windows/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+    },
+    "stdout": {
+      "path": "build/swat/review/clear-door-selection/install.log",
+      "sha256": "5f8b732002476d69e85e866eb46bcbaff1cefe37760a70ec07fd9e92826efa31"
+    },
+    "launcher": {
+      "path": "build/swat/review/clear-door-selection/installed-help.log",
+      "sha256": "9892057dfd224a3cecae7ff4f3e9bdaf576713434e42f3a02722df849d0ceab9"
+    }
+  },
+  "constraints": {
+    "no_python_execution": true,
+    "no_root_trainer_cuda_or_box3d_rebuild": true,
+    "no_graphical_windows_gpu_or_performance_runs": true,
+    "heavy_cpu_jobs_serialized_with_nice_10": true,
+    "prior_sealed_roots_unchanged": true
+  },
+  "limits": [
+    "Finite controlled geometry and fixed-seed ordinary-input missions do not establish arbitrary layouts, arbitrary network conditions, moving hostile protection or human/learned-policy acceptance.",
+    "Initial glass selection and one explicit pane relocation are covered; broader moving obstructions, tool roles and hostile-fire squad coverage remain open.",
+    "Production art/audio/visible handling, policy baselines, vehicle interiors/panel stacks/suspension, and held native visual/focus/stable-load performance acceptance remain open."
+  ]
+}

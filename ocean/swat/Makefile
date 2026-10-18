@@ -134,6 +134,14 @@ squad-equipment-test: $(ENET_LIB) | $(BUILD)
 squad-equipment-network-test: squad-equipment-test
 	ulimit -c 0; $(BUILD)/test_encounter equipment-network
 .PHONY: squad-damaged-equipment-test motel-damaged-equipment-test
+.PHONY: squad-initial-equipment-test squad-initial-equipment-network-test
+.PHONY: squad-initial-remote-network-test
+squad-initial-remote-network-test: squad-equipment-test
+	ulimit -c 0; $(BUILD)/test_encounter initial-remote-network
+squad-initial-equipment-test: squad-equipment-test
+	ulimit -c 0; $(BUILD)/test_encounter initial-equipment $(BUILD)/squad-initial-equipment.trace
+squad-initial-equipment-network-test: squad-equipment-test
+	ulimit -c 0; $(BUILD)/test_encounter initial-equipment-network
 squad-damaged-equipment-test: squad-equipment-test
 	ulimit -c 0; $(BUILD)/test_encounter damaged-equipment $(BUILD)/squad-damaged-equipment.trace
 motel-damaged-equipment-test: motel-completion-test-build

@@ -64,7 +64,7 @@ static void equipment_net_tick(SwatNetServer* server,SwatNetClient* clients,int 
 }
 // Modified geometry has its own small UDP fixture. The canonical motel check
 // below must retain its complete authored mesh bindings and slow-load coverage.
-static void damaged_equipment_network(bool clear_glass) {
+static void damaged_equipment_network(bool clear_glass,bool initial,int order) {
     task_fixture();equipment_load_delay=0;
     static SwatSim peer;SwatNetServer server;SwatNetClient client={0};
     int port=30000+(int)(enet_time_get()%20000),attempt=0;
@@ -78,26 +78,94 @@ static void damaged_equipment_network(bool clear_glass) {
     place_actor(0,(b3Pos){-4,0,0});place_actor(3,(b3Pos){-3,0,-4});
     place_actor(4,(b3Pos){-2,0,-1.5f});place_actor(5,(b3Pos){-3,0,4});
     int owner=swat_world_box(&sim.world,(b3Pos){0,1.3f,0},swat_v(.04f,1.3f,.8f),SWAT_WOOD,120);
-    SwatObject* door=&sim.world.objects[owner];door->door=door->locked=true;door->hinge=(b3Pos){0,1.3f,-.8f};
+    SwatObject* door=&sim.world.objects[owner];door->door=true;door->locked=order==SWAT_ORDER_PICK;door->hinge=(b3Pos){0,1.3f,-.8f};
     sim.actors[0].controller.yaw=0;sim.actors[0].controller.pitch=0;
     SwatHit seen=swat_context_hit(&sim,0,24);assert(seen.kind==SWAT_HIT_WORLD && seen.index==owner);
-    SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_PICK;in.squad_team=2;in.squad_queue=true;swat_sim_step(&sim,&in);
-    assert(sim.actors[4].mind.pending_door==owner && sim.actors[4].mind.queued);
-    int cover=swat_world_box(&sim.world,door->center,swat_v(.2f,1.3f,.85f),clear_glass?SWAT_GLASS:SWAT_CONCRETE,100);
+    int cover=initial?swat_world_box(&sim.world,door->center,swat_v(.2f,1.3f,.85f),clear_glass?SWAT_GLASS:SWAT_CONCRETE,100):-1;
+    SwatInput in=swat_neutral_input();in.squad_order=order;in.squad_team=2;in.squad_queue=true;swat_sim_step(&sim,&in);
+    bool rejected=initial && !clear_glass;
+    if(!rejected)assert(sim.actors[4].mind.pending_order==order && sim.actors[4].mind.pending_door==owner && sim.actors[4].mind.queued);
+    if(!initial)cover=swat_world_box(&sim.world,door->center,swat_v(.2f,1.3f,.85f),clear_glass?SWAT_GLASS:SWAT_CONCRETE,100);
     assert(swat_client_open(&client,&peer,"127.0.0.1",port));equipment_net_ready(&server,&client,1);
     assert(client.slot==1);
     for(int n=0;n<8;n++)equipment_net_tick(&server,&client,1,swat_neutral_input());
+    if(rejected) {
+        for(int n=0;n<60;n++)equipment_net_tick(&server,&client,1,swat_neutral_input());
+        for(int i=3;i<6;i++)assert(!sim.actors[i].mind.pending_door && !peer.actors[i].mind.pending_door && sim.actors[i].mind.order==SWAT_ORDER_HOLD && !peer.actors[i].mind.pending_order && !sim.actors[i].gear.door_ticks && sim.actors[i].gear.wedges==2);
+        assert(door->locked==(order==SWAT_ORDER_PICK) && door->wedge_owner<0);
+        printf("PASS real UDP initial door order%d: opaque cover rejects selection without task, tool progress or stock mutation on either peer\n",order);
+        swat_client_close(&client);swat_server_close(&server);swat_sim_close(&peer);swat_sim_close(&sim);return;
+    }
     assert(peer.actors[4].mind.pending_door==owner && peer.actors[4].mind.queued);
     in=swat_neutral_input();in.squad_execute=true;equipment_net_tick(&server,&client,1,in);
     for(int n=0;n<120;n++)equipment_net_tick(&server,&client,1,swat_neutral_input());
     assert(sim.actors[4].mind.tool_blocked && peer.actors[4].mind.tool_blocked);
-    assert(door->locked && !sim.actors[4].gear.door_ticks && !sim.actors[4].gear.used_tools);
+    assert(door->locked==(order==SWAT_ORDER_PICK) && door->wedge_owner<0 && !sim.actors[4].gear.door_ticks && !sim.actors[4].gear.used_tools && sim.actors[4].gear.wedges==2);
     assert(swat_world_damage(&sim.world,cover,1000));
-    int t;for(t=0;t<1800 && (door->locked || sim.actors[4].mind.order!=SWAT_ORDER_HOLD || peer.world.objects[owner].locked || peer.actors[4].mind.tool_blocked);t++)equipment_net_tick(&server,&client,1,swat_neutral_input());
+    int t;for(t=0;t<1800 && ((order==SWAT_ORDER_PICK?(door->locked || peer.world.objects[owner].locked):(door->wedge_owner!=4 || peer.world.objects[owner].wedge_owner!=4)) || sim.actors[4].mind.order!=SWAT_ORDER_HOLD || peer.actors[4].mind.tool_blocked);t++)equipment_net_tick(&server,&client,1,swat_neutral_input());
     assert(t<1800 && !peer.world.objects[cover].active && sim.actors[4].gear.used_tools);
     for(int i=0;i<sim.actor_count;i++)assert(sim.actors[i].health==100 && !sim.actors[i].arsenal.shots);
-    printf("PASS real UDP squad equipment: actual obstructed task replicates waiting status without false tool progress, then resumes after cover removal (%s geometry fixture)\n",clear_glass?"clear glass":"opaque");
+    if(order==SWAT_ORDER_WEDGE)assert(sim.actors[4].gear.wedges==1 && peer.actors[4].gear.wedges==1);
+    if(initial)printf("PASS real UDP initial door order%d: visible leaf selected through intact glass before queue, waiting without tool progress, late peer and actual physical completion after access opens\n",order);
+    else printf("PASS real UDP squad equipment: actual obstructed task replicates waiting status without false tool progress, then resumes after cover removal (%s geometry fixture)\n",clear_glass?"clear glass":"opaque");
     swat_client_close(&client);swat_server_close(&server);swat_sim_close(&peer);swat_sim_close(&sim);
+}
+// Remote-leader coverage sends commands only through the connected client.
+// The server receives neutral local input; a second client joins the queued task.
+static void equipment_remote_tick(SwatNetServer* server,SwatNetClient clients[],int count,SwatInput command) {
+    for(int i=0;i<count;i++)if(clients[i].pending_count<8) {
+        SwatInput in=clients[i].slot==0?command:swat_neutral_input();
+        assert(swat_client_input(&clients[i],&in));
+    }
+    SwatInput neutral=swat_neutral_input();
+    equipment_net_poll(server,clients,count);swat_server_tick(server,&neutral);equipment_net_poll(server,clients,count);
+}
+static void initial_equipment_remote_network(bool glass,int order) {
+    task_fixture();equipment_load_delay=0;
+    static SwatSim peers[2];SwatNetServer server;SwatNetClient clients[2]={0};
+    int port=30000+(int)(enet_time_get()%20000),attempt=0;
+    while(!swat_server_open(&server,&sim,port,false) && ++attempt<32)port=30000+(port-30000+4729)%25000;
+    assert(server.transport);swat_sim_close(&sim);task_fixture();sim.tick=240;
+    sim.actors[1].gear.surrendered=sim.actors[2].gear.surrendered=true;
+    place_actor(1,(b3Pos){8,0,8});place_actor(2,(b3Pos){9,0,9});
+    place_actor(0,(b3Pos){-4,0,0});place_actor(3,(b3Pos){-3,0,-4});place_actor(4,(b3Pos){-2,0,-1.5f});place_actor(5,(b3Pos){-3,0,4});
+    int owner=swat_world_box(&sim.world,(b3Pos){0,1.3f,0},swat_v(.04f,1.3f,.8f),SWAT_WOOD,120);
+    SwatObject* door=&sim.world.objects[owner];door->door=true;door->locked=order==SWAT_ORDER_PICK;door->hinge=(b3Pos){0,1.3f,-.8f};
+    int cover=swat_world_box(&sim.world,door->center,swat_v(.2f,1.3f,.85f),glass?SWAT_GLASS:SWAT_CONCRETE,100);
+    sim.actors[0].controller.yaw=sim.actors[0].controller.pitch=0;
+    assert(swat_client_open(&clients[0],&peers[0],"127.0.0.1",port));equipment_net_ready(&server,clients,1);assert(clients[0].slot==0 && sim.commander_actor==0);
+    SwatInput command=swat_neutral_input();command.squad_order=order;command.squad_team=2;command.squad_queue=true;
+    equipment_remote_tick(&server,clients,1,command);
+    for(int n=0;n<40;n++)equipment_remote_tick(&server,clients,1,swat_neutral_input());
+    assert((sim.actors[4].mind.pending_door==owner)==glass);
+    assert(swat_client_open(&clients[1],&peers[1],"127.0.0.1",port));equipment_net_ready(&server,clients,2);assert(clients[1].slot==1);
+    for(int n=0;n<8;n++)equipment_remote_tick(&server,clients,2,swat_neutral_input());
+    if(!glass) {
+        for(int i=3;i<6;i++) {
+            assert(!sim.actors[i].mind.pending_order && !sim.actors[i].mind.pending_door && sim.actors[i].mind.order==SWAT_ORDER_HOLD && !sim.actors[i].gear.door_ticks && sim.actors[i].gear.wedges==2);
+            for(int p=0;p<2;p++)assert(!peers[p].actors[i].mind.pending_order && !peers[p].actors[i].mind.pending_door && peers[p].actors[i].gear.wedges==2);
+        }
+        assert(door->locked==(order==SWAT_ORDER_PICK) && door->wedge_owner<0);
+    } else {
+        for(int p=0;p<2;p++)assert(peers[p].actors[4].mind.pending_order==order && peers[p].actors[4].mind.pending_door==owner && peers[p].actors[4].mind.queued);
+        command=swat_neutral_input();command.squad_execute=true;equipment_remote_tick(&server,clients,2,command);
+        for(int n=0;n<120;n++)equipment_remote_tick(&server,clients,2,swat_neutral_input());
+        assert(sim.actors[4].mind.tool_blocked && !sim.actors[4].gear.door_ticks && !sim.actors[4].gear.used_tools && sim.actors[4].gear.wedges==2);
+        for(int p=0;p<2;p++)assert(peers[p].actors[4].mind.tool_blocked && peers[p].actors[4].gear.wedges==2);
+        assert(swat_world_damage(&sim.world,cover,1000));
+        bool complete=false;
+        for(int n=0;n<1800;n++) {
+            equipment_remote_tick(&server,clients,2,swat_neutral_input());
+            complete=sim.actors[4].mind.order==SWAT_ORDER_HOLD && (order==SWAT_ORDER_PICK?!door->locked:door->wedge_owner==4);
+            for(int p=0;p<2;p++)complete&=peers[p].actors[4].mind.order==SWAT_ORDER_HOLD && !peers[p].actors[4].mind.tool_blocked && (order==SWAT_ORDER_PICK?!peers[p].world.objects[owner].locked:peers[p].world.objects[owner].wedge_owner==4);
+            if(complete)break;
+        }
+        assert(complete && sim.actors[4].gear.used_tools);
+        for(int p=0;p<2;p++)assert(!peers[p].world.objects[cover].active && peers[p].actors[4].gear.wedges==(order==SWAT_ORDER_WEDGE?1:2));
+    }
+    for(int i=0;i<sim.actor_count;i++)assert(sim.actors[i].health==100 && !sim.actors[i].arsenal.shots);
+    printf("PASS real UDP remote leader order%d cover%d: client command, second late peer, queued identity/access/stock and truthful physical result\n",order,glass);fflush(stdout);
+    for(int p=0;p<2;p++){swat_client_close(&clients[p]);swat_sim_close(&peers[p]);}swat_server_close(&server);swat_sim_close(&sim);
 }
 static void equipment_network(void) {
     static SwatSim authority,replicas[2];SwatNetServer server;SwatNetClient clients[2]={0};

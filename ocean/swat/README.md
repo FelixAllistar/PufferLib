@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v39 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v40 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1032,7 +1032,19 @@ The tool planner uses a physical ray: seeing wood through an intact pane does
 not establish hand access. Eighteen clear-glass cases cover complete obstruction
 and resumption after breakage, partial panes and low gaps; bypass cases retain
 the glass without damage. Optical perception still sees through clear glass.
-These task rules and the replicated access status require protocol/replay v39,
+Pick/Wedge commands can name a visible wooden leaf through clear glass. The
+command keeps that leaf's identity when queued; intact glass still blocks the
+actual working position and hand/tool ray. Opaque material and intervening
+people block initial selection. Moving a covering pane out of the way permits
+ordinary work without damaging it. `squad-initial-equipment-test` checks forty-two
+cases across both orders and three rotations; the separate network target
+checks queued selection, late join, waiting, stock and physical completion.
+`squad-initial-remote-network-test` sends the commands through a connected
+leader and adds a second late peer; local server input stays neutral.
+The full damaged-door matrix now has 102 cases. Geometry changes in these
+fixtures are explicit; the officers perform their work through ordinary inputs.
+
+These task rules and the replicated access status require protocol/replay v40,
 matching peers and fresh recordings/saves.
 
 **Search room** selects the room through the visible door or aimed room surface
@@ -1056,7 +1068,7 @@ over real motel UDP. Native transport uses the approved wrapper with
 `test_encounter.exe rooms-network`. `motel-room-search-test` adds a queued
 Room 101 search, checkpoint/restore and ordinary completion to the full quiet
 restraint/retrieval/equipment/escort route. The QA executable accepts `rooms`.
-Room identity/progress and door references use protocol/replay v39; use matching
+Room identity/progress and door references use protocol/replay v40; use matching
 peers and recreate older journals/saves.
 
 Parking stops retain their full mesh collision. NPC navigation treats them as
@@ -1205,7 +1217,7 @@ directly; the dedicated server accepts the same options. Connected sessions let
 the leader choose the situation. The seed selects authored floor bays checked
 against the full physical body and other occupants. Art and room geometry are
 shared across situations. `--env.motel_occupancy=3` also selects it through the
-native environment configuration. Protocol/replay v39 carries the situation in
+native environment configuration. Protocol/replay v40 carries the situation in
 maps, scenario requests and journals; use matching peers and fresh saves.
 
 Aim, weapon transforms and shot spread evaluate sine/cosine at double precision
@@ -1662,7 +1674,13 @@ graphics check; pass an output directory and an asset root containing just the
 `motel_sedan` and `motel_shelter` exports. Its source/fallback silhouette,
 damage and lighting checks can run on an isolated software display. Software
 rendering does not establish native visual or performance acceptance.
-New motel journals/saves and matching v39 peers are required. The Windows build
+The [UPDATE42 catalog intake](art_handoffs/catalog-update42/ENGINE_INTAKE.json)
+retains a metadata-only delta over UPDATE41. All 70 indexed payloads and seven
+referenced runtime-export hashes verify locally. Its attributed v39 receipts do
+not independently accept whole-level visuals or performance; later engine
+receipts supersede that historical snapshot. Original art packages stay unchanged.
+
+New motel journals/saves and matching v40 peers are required. The Windows build
 copies both complete original GLBs into its runtime asset tree.
 
 Ground snapping checks the actual feet hull and leaned capsule before moving
@@ -1672,7 +1690,7 @@ undoing physics separation at a wheel-stop lip. Upward stair handling retains
 the existing stair casts. Named door equipment orders retain the selected leaf's
 identity and canonical centre anchor. Pick/Wedge derive their actual workpoint
 from surviving material as described above. The contact and canonical-anchor
-fixes entered protocol/replay v36; current v39 records the expanded tool rules.
+fixes entered protocol/replay v36; current v40 records the expanded tool rules.
 `make -C ocean/swat motel-player-contacts-test` checks 180 crossing/blocked-approach
 trials across the five original concrete stops, four captured lip departures
 with actual goal arrival, encoded replicas and a recorded twelve-crossing route
