@@ -33,6 +33,9 @@ typedef struct Poker {
     uint8_t actor[POKER_BATCH], button[POKER_BATCH], street[POKER_BATCH];
     // Public street-local aggression, retained beyond the observation ring.
     uint8_t raises[POKER_BATCH], last_raiser[POKER_BATCH];
+    // Strongest public action on each street: 0 none, 1 check, 2 call, 3 raise.
+    // Two bits per street; used by range baselines without reading private cards.
+    uint8_t line[POKER_PLAYERS][POKER_BATCH];
     uint16_t decisions[POKER_BATCH];
     uint16_t seen[POKER_PLAYERS][POKER_BATCH];
     uint32_t history[POKER_HISTORY][POKER_BATCH];
@@ -259,6 +262,7 @@ void poker_reset(Poker* g, int t, int button, const uint32_t* stacks,
         g->stack[p][t] = g->initial[p][t] = stacks[p];
         g->bet[p][t] = g->total[p][t] = g->reopen[p][t] = 0;
         g->seen[p][t] = 0;
+        g->line[p][t] = 0;
         g->hole[p][0][t] = deck[2 * p];
         g->hole[p][1][t] = deck[2 * p + 1];
     }
@@ -359,7 +363,11 @@ void poker_step(Poker* g, int t, int32_t action) {
         g->active[t] &= ~bit;
     } else {
         uint32_t target = action ? action : g->high[t];
-        event |= (action ? 3 : target > g->bet[p][t] ? 2 : 1) << 22;
+        unsigned kind = action ? 3 : target > g->bet[p][t] ? 2 : 1;
+        unsigned shift = 2 * g->street[t];
+        if (kind > ((g->line[p][t] >> shift) & 3u))
+            g->line[p][t] = (g->line[p][t] & ~(3u << shift)) | (kind << shift);
+        event |= kind << 22;
         uint32_t pay = target - g->bet[p][t];
         pay = pay < g->stack[p][t] ? pay : g->stack[p][t];
         assert(!action || (poker_can_raise(g, t) && target > g->high[t]
@@ -429,18 +437,21 @@ void poker_observe(Poker* g, int t, int p, float* obs) {
 
 #ifdef POKER_FULLHOUSE_MODEL
 #include "fullhouse.h"
-#define POKER_BOT_MASK 63u
+#define POKER_BOT_MASK 511u
 #else
-#define POKER_BOT_MASK 47u
+#define POKER_BOT_MASK 495u
 #endif
+#define POKER_BOT_COUNT 9
+#include "equity.h"
 
 int poker_bot_supported(int style) {
-    return style >= 0 && style <= 5 && (POKER_BOT_MASK & (1u << style));
+    return style >= 0 && style < POKER_BOT_COUNT && (POKER_BOT_MASK & (1u << style));
 }
 
 // 0-2 frozen; 3 broad defense; 4 Fullhouse; 5 focused draw/top-pair defense.
 // Scores below are heuristics, not calibrated equity estimates.
 int32_t poker_bot(Poker* g, int t, uint64_t* rng, int style) {
+    if (style >= 6 && style <= 8) return poker_equity_bot(g, t, rng, style, NULL);
 #ifdef POKER_FULLHOUSE_MODEL
     if (style == 4) return poker_fullhouse_bot(g, t, rng);
 #endif

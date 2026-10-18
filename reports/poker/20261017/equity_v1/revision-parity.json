@@ -1,0 +1,4 @@
+{
+  "identical_decisions_and_rng": 6972,
+  "change": "Explicitly sequence simulation-seed RNG calls; policy output unchanged on these checks."
+}

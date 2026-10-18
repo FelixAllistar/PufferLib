@@ -1,0 +1,21 @@
+{
+  "selected_style": 7,
+  "selection_reason": "32-sample ranges improve development results over uniform proposals and have similar measured strength to 128 samples at lower inference cost; select the fast candidate before holdout.",
+  "heldout_seed": 202610174,
+  "heldout_hands_per_match": 60000,
+  "fields": [
+    "original",
+    "fullhouse",
+    "mixed",
+    "positional",
+    "varied"
+  ],
+  "candidates": [
+    1,
+    7,
+    8
+  ],
+  "changes_allowed": "Correctness fixes only; do not tune strategy using held-out results.",
+  "live_plan": "Compare selected style 7 to original style 1 in separate fresh 4000-hand Slumbot runs at 5 concurrent games, preserving all unresolved attempts.",
+  "history_plan": "Separate 50-hand-session clusters, history on/off paired with the same seed and field; not a human-realism validation."
+}

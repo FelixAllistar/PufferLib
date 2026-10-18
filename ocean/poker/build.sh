@@ -22,6 +22,10 @@ if [[ "${1:-}" == --test ]]; then
         clang-19 -O2 -g -std=c11 -Wall -Wextra -fsanitize=address,undefined \
             -DPOKER_PLAYERS="$players" ocean/poker/test.c -o "build/poker/test$players"
         "build/poker/test$players" 20000
+        clang-19 -O2 -g -std=c11 -Wall -Wextra -fsanitize=address,undefined \
+            -DPOKER_PLAYERS="$players" ocean/poker/test_equity.c -lm \
+            -o "build/poker/test_equity$players"
+        "build/poker/test_equity$players"
     done
     clang-19 -O2 -g -std=c11 -fsanitize=address,undefined \
         -Isrc -Iraylib-5.5_linux_amd64/include ocean/poker/test_adapter.c \

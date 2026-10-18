@@ -1,0 +1,98 @@
+[
+  {
+    "baseline": "2p_style1_vs_original",
+    "candidate": "2p_style7_vs_original",
+    "gain_bb100": 31.438483333333334,
+    "ci95_half_width_bb100": 10.487696823616947
+  },
+  {
+    "baseline": "2p_style1_vs_original",
+    "candidate": "2p_style8_vs_original",
+    "gain_bb100": 37.7175,
+    "ci95_half_width_bb100": 10.120074516259505
+  },
+  {
+    "baseline": "2p_style1_vs_fullhouse",
+    "candidate": "2p_style7_vs_fullhouse",
+    "gain_bb100": 24.431666666666665,
+    "ci95_half_width_bb100": 12.56472992752036
+  },
+  {
+    "baseline": "2p_style1_vs_fullhouse",
+    "candidate": "2p_style8_vs_fullhouse",
+    "gain_bb100": 33.97521666666667,
+    "ci95_half_width_bb100": 12.080819409714051
+  },
+  {
+    "baseline": "2p_style1_vs_positional",
+    "candidate": "2p_style7_vs_positional",
+    "gain_bb100": 15.589183333333331,
+    "ci95_half_width_bb100": 12.789839714719758
+  },
+  {
+    "baseline": "2p_style1_vs_positional",
+    "candidate": "2p_style8_vs_positional",
+    "gain_bb100": 22.633466666666667,
+    "ci95_half_width_bb100": 12.289978489917193
+  },
+  {
+    "baseline": "6p_style1_vs_original",
+    "candidate": "6p_style7_vs_original",
+    "gain_bb100": 8.66871666642,
+    "ci95_half_width_bb100": 8.602102035154733
+  },
+  {
+    "baseline": "6p_style1_vs_original",
+    "candidate": "6p_style8_vs_original",
+    "gain_bb100": 11.83761666643,
+    "ci95_half_width_bb100": 7.923737371107474
+  },
+  {
+    "baseline": "6p_style1_vs_fullhouse",
+    "candidate": "6p_style7_vs_fullhouse",
+    "gain_bb100": 15.23715000058,
+    "ci95_half_width_bb100": 12.127699386974149
+  },
+  {
+    "baseline": "6p_style1_vs_fullhouse",
+    "candidate": "6p_style8_vs_fullhouse",
+    "gain_bb100": 24.259866667249998,
+    "ci95_half_width_bb100": 11.409742500435925
+  },
+  {
+    "baseline": "6p_style1_vs_positional",
+    "candidate": "6p_style7_vs_positional",
+    "gain_bb100": -4.28924999982,
+    "ci95_half_width_bb100": 10.488439707802025
+  },
+  {
+    "baseline": "6p_style1_vs_positional",
+    "candidate": "6p_style8_vs_positional",
+    "gain_bb100": 0.4163166669799997,
+    "ci95_half_width_bb100": 9.801237024492202
+  },
+  {
+    "baseline": "6p_style1_vs_mixed",
+    "candidate": "6p_style7_vs_mixed",
+    "gain_bb100": 11.95776666677,
+    "ci95_half_width_bb100": 10.828363585227708
+  },
+  {
+    "baseline": "6p_style1_vs_mixed",
+    "candidate": "6p_style8_vs_mixed",
+    "gain_bb100": 15.21431666701,
+    "ci95_half_width_bb100": 10.13577745791366
+  },
+  {
+    "baseline": "6p_style1_vs_varied",
+    "candidate": "6p_style7_vs_varied",
+    "gain_bb100": 10.201816666829998,
+    "ci95_half_width_bb100": 10.691866476730677
+  },
+  {
+    "baseline": "6p_style1_vs_varied",
+    "candidate": "6p_style8_vs_varied",
+    "gain_bb100": 16.24171666692,
+    "ci95_half_width_bb100": 10.254985586297853
+  }
+]

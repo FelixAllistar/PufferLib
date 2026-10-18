@@ -1,0 +1,85 @@
+{
+  "source": "https://github.com/advitrocks9/fullhouse-bot",
+  "commit": "e504793d480b1b975f25258d25939b45c6dbd5a4",
+  "artifacts": {
+    "deep_cfr_model.npz": {
+      "sha256": "1102326b68da95564de147106612df71cb891b42f0726ba0212d3b9a5bcae295",
+      "bytes": 590758
+    },
+    "preflop_equity.npz": {
+      "sha256": "6b3b74778854fcebcd3179753c0252392e5f4118e6b623375c98fafa372863b3",
+      "bytes": 2160
+    }
+  },
+  "float_weight_bytes": 588180,
+  "commands": [
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=2",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v1/fullhouse_weights.h\"",
+      "-shared",
+      "-fPIC",
+      "/home/felix/puffertank/pufferlib/ocean/poker/native.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/equity_v1/libpoker_fullhouse2.so"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=2",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v1/fullhouse_weights.h\"",
+      "/home/felix/puffertank/pufferlib/ocean/poker/benchmark.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/equity_v1/baseline_bench2"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=6",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v1/fullhouse_weights.h\"",
+      "-shared",
+      "-fPIC",
+      "/home/felix/puffertank/pufferlib/ocean/poker/native.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/equity_v1/libpoker_fullhouse6.so"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=6",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v1/fullhouse_weights.h\"",
+      "/home/felix/puffertank/pufferlib/ocean/poker/benchmark.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/equity_v1/baseline_bench6"
+    ]
+  ],
+  "binaries": {
+    "libpoker_fullhouse6.so": "ca1b9643e6d91ea957efde15c8b6be5de60fe40d48b553a99580423cc2e19bc1",
+    "libpoker_fullhouse2.so": "5cefce4bb93e00e8dd273de1050ee6582a909907cd16291c5475acad1ab05713"
+  }
+}

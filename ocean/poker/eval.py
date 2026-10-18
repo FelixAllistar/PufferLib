@@ -332,7 +332,7 @@ def slumbot(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--hands", type=int, default=100)
-    parser.add_argument("--style", type=int, choices=(0, 1, 2, 3, 4, 5), default=1)
+    parser.add_argument("--style", type=int, choices=range(9), default=1)
     parser.add_argument("--seed", type=int, default=73)
     parser.add_argument("--output", required=True)
     parser.add_argument("--library")

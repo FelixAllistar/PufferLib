@@ -1,0 +1,1096 @@
+{
+  "observed_utc": "2026-10-18T02:26:41.434452+00:00",
+  "source": "https://github.com/advitrocks9/fullhouse-bot",
+  "refs": [
+    {
+      "ref": "HEAD",
+      "commit": "e504793d480b1b975f25258d25939b45c6dbd5a4",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/runtime-overlay",
+      "commit": "e4dfa423f66b599f6476f8b5449ffe2e7e986d1e",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v18",
+      "commit": "77a8be8659a14e8d356cd2c5aa870b843712e5be",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v19",
+      "commit": "7993665214d12b5f12e6dd0026584b6d7627166e",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v20",
+      "commit": "76c1ba75ed2f98841eee5b078012a10db25ca512",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v21",
+      "commit": "345dcde129781109a2dc037c4fde279eec5595d8",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/multiway_equity.npz",
+          "blob": "76890936fdca8ee9b40f7665e2d5dda5a53a0e95"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v22",
+      "commit": "8d3f4e99388505fdf827053b66dd2d4a38d59121",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/multiway_equity.npz",
+          "blob": "76890936fdca8ee9b40f7665e2d5dda5a53a0e95"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v23",
+      "commit": "0fc6eb2e1ed8ee7030162abc7de86d62fc2ba82f",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v24",
+      "commit": "0866ba6f44dab2422f25cb23be252554552c3a2a",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v25",
+      "commit": "4a3e55635b2acda7404b9238f6ea70b5978ab576",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v29-r3-finals",
+      "commit": "d8f1ebfdbf4389d02c08c79d83b7413cadd297d0",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "99a213adf722515e5fa8e163d0286cd209987be4"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v29-r4-finals",
+      "commit": "5c1425b514a680df16c79351848c8b2b3eacb4c2",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "99a213adf722515e5fa8e163d0286cd209987be4"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v30-moonshot",
+      "commit": "76182b1e4ebc8facbfdcc039978130b66ce26a8e",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    },
+    {
+      "ref": "archive/v31-6act-6max",
+      "commit": "7871d9434ac0c273d33b2374c594c99348cd8090",
+      "artifacts": [
+        {
+          "path": "bots/competitors/cfr_equity_v28/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_base.npz",
+          "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_maniac.npz",
+          "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/cfr_vs_nit.npz",
+          "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a"
+        },
+        {
+          "path": "bots/extra/cfr_kmeans_router/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_opp_profiler/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "bots/extra/cfr_variance_guard/data/preflop_cfr_strategy.npz",
+          "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c"
+        },
+        {
+          "path": "data/deep_cfr_model.npz",
+          "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099"
+        },
+        {
+          "path": "data/preflop_equity.npz",
+          "blob": "db42fec2332636e8d9462628de2ab57dc682b90d"
+        }
+      ]
+    }
+  ],
+  "unique_arrays": [
+    {
+      "blob": "19ac0d0f01291c6ef48ffe36bc2530f31971b37c",
+      "sha256": "4bd09544788cd500790b479b7187bb9c214f166c3ad3e73f9ef21e82273e46c1",
+      "bytes": 10875,
+      "format": "table",
+      "shapes": {
+        "ep_vs_bb____opener": [
+          169,
+          2
+        ],
+        "ep_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "ep_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "mp_vs_bb____opener": [
+          169,
+          2
+        ],
+        "mp_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "mp_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "mp_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "mp_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "co_vs_bb____opener": [
+          169,
+          2
+        ],
+        "co_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "co_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "co_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "co_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb____opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "btn_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "btn_vs_sb____opener": [
+          169,
+          2
+        ],
+        "btn_vs_sb__O__defender": [
+          169,
+          3
+        ],
+        "btn_vs_sb__OR__opener": [
+          169,
+          3
+        ],
+        "btn_vs_sb__ORR__defender": [
+          169,
+          3
+        ],
+        "btn_vs_sb__ORRR__opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb____opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "sb_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__ORRR__opener": [
+          169,
+          2
+        ]
+      }
+    },
+    {
+      "blob": "6cf64095b9edff7ac324cdf5ce81d8edc0192e17",
+      "sha256": "b2a2c29135b0c40ed72a30484b2ad641d76db38ed3cd19c984c345425bda1df7",
+      "bytes": 8541,
+      "format": "table",
+      "shapes": {
+        "ep_vs_bb____opener": [
+          169,
+          2
+        ],
+        "ep_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "ep_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb____opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "btn_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb____opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "sb_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__ORRR__opener": [
+          169,
+          2
+        ]
+      }
+    },
+    {
+      "blob": "76890936fdca8ee9b40f7665e2d5dda5a53a0e95",
+      "sha256": "880830068e2cdf91627ca2ddad5db0843c3722134e806c488ce9ecf980d6e6f6",
+      "bytes": 4565,
+      "format": "table",
+      "shapes": {
+        "curve": [
+          4,
+          5,
+          65
+        ],
+        "n_knots": [],
+        "n_opp_max": []
+      }
+    },
+    {
+      "blob": "9600a711fd61ec21acfdb354d76fbe817c17a16b",
+      "sha256": "93b4a5bdde0594b9c39406d09442ce17d5f96142952d86b00c16628ea794eaca",
+      "bytes": 5820,
+      "format": "table",
+      "shapes": {
+        "ep_vs_bb____opener": [
+          169,
+          2
+        ],
+        "ep_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "ep_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "btn_vs_bb____opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "sb_vs_bb____opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__OR__opener": [
+          169,
+          3
+        ]
+      }
+    },
+    {
+      "blob": "99a213adf722515e5fa8e163d0286cd209987be4",
+      "sha256": "1811b7653b9ce3d86ee555adcb3782c0fe9b86b99d9773b36a086343ab3dc265",
+      "bytes": 590758,
+      "format": "advantage",
+      "shapes": {
+        "trunk_w0": [
+          256,
+          51
+        ],
+        "trunk_b0": [
+          256
+        ],
+        "trunk_ln0_g": [
+          256
+        ],
+        "trunk_ln0_b": [
+          256
+        ],
+        "trunk_w1": [
+          256,
+          256
+        ],
+        "trunk_b1": [
+          256
+        ],
+        "trunk_ln1_g": [
+          256
+        ],
+        "trunk_ln1_b": [
+          256
+        ],
+        "val_w0": [
+          128,
+          256
+        ],
+        "val_b0": [
+          128
+        ],
+        "val_w1": [
+          1,
+          128
+        ],
+        "val_b1": [
+          1
+        ],
+        "adv_w0": [
+          128,
+          256
+        ],
+        "adv_b0": [
+          128
+        ],
+        "adv_w1": [
+          5,
+          128
+        ],
+        "adv_b1": [
+          5
+        ]
+      }
+    },
+    {
+      "blob": "db42fec2332636e8d9462628de2ab57dc682b90d",
+      "sha256": "6b3b74778854fcebcd3179753c0252392e5f4118e6b623375c98fafa372863b3",
+      "bytes": 2160,
+      "format": "table",
+      "shapes": {
+        "paired": [
+          13
+        ],
+        "suited": [
+          13,
+          13
+        ],
+        "offsuit": [
+          13,
+          13
+        ]
+      }
+    },
+    {
+      "blob": "e2963405795bdaa2ce2d4f5ff42cb9302574807a",
+      "sha256": "fc77222663d97779d61cb99599e4a231c50044b118cdbe88899f9ad0d593d558",
+      "bytes": 6378,
+      "format": "table",
+      "shapes": {
+        "ep_vs_bb____opener": [
+          169,
+          2
+        ],
+        "ep_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "ep_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "ep_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "btn_vs_bb____opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "btn_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "btn_vs_bb__OR__opener": [
+          169,
+          3
+        ],
+        "sb_vs_bb____opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb__ORRR__opener": [
+          169,
+          2
+        ],
+        "sb_vs_bb__O__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__ORR__defender": [
+          169,
+          3
+        ],
+        "sb_vs_bb__OR__opener": [
+          169,
+          3
+        ]
+      }
+    },
+    {
+      "blob": "eb5efe1e7396f14bf2ce9f9ae00e73c18a5a5099",
+      "sha256": "1102326b68da95564de147106612df71cb891b42f0726ba0212d3b9a5bcae295",
+      "bytes": 590758,
+      "format": "advantage",
+      "shapes": {
+        "trunk_w0": [
+          256,
+          51
+        ],
+        "trunk_b0": [
+          256
+        ],
+        "trunk_ln0_g": [
+          256
+        ],
+        "trunk_ln0_b": [
+          256
+        ],
+        "trunk_w1": [
+          256,
+          256
+        ],
+        "trunk_b1": [
+          256
+        ],
+        "trunk_ln1_g": [
+          256
+        ],
+        "trunk_ln1_b": [
+          256
+        ],
+        "val_w0": [
+          128,
+          256
+        ],
+        "val_b0": [
+          128
+        ],
+        "val_w1": [
+          1,
+          128
+        ],
+        "val_b1": [
+          1
+        ],
+        "adv_w0": [
+          128,
+          256
+        ],
+        "adv_b0": [
+          128
+        ],
+        "adv_w1": [
+          5,
+          128
+        ],
+        "adv_b1": [
+          5
+        ]
+      }
+    }
+  ],
+  "other_checkpoints": [],
+  "interpretation": "Tracked artifacts in these refs only; not every historical commit or private checkpoint. The shipped model is an advantage network. Training code supporting average-strategy export does not make the supplied checkpoint an implementation bug."
+}

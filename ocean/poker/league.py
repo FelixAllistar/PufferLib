@@ -39,6 +39,7 @@ def run(args):
                 "env.native_league": manifest if bank else "None",
                 "env.rules_fraction": args.rules_fraction, "env.bot_policy": args.bot_policy,
                 "env.native_baseline_mask": args.baseline_mask,
+                "env.native_history": int(args.native_history),
                 "policy.hidden_size": args.hidden, "policy.num_layers": args.layers,
                 "train.total_timesteps": args.steps, "selfplay.enabled": 0,
                 "vec.total_agents": args.agents, "vec.num_buffers": 1,
@@ -78,10 +79,12 @@ if __name__ == "__main__":
     parser.add_argument("--horizon", type=int, default=32)
     parser.add_argument("--seed", type=int, default=73)
     parser.add_argument("--rules-fraction", type=float, default=0.25)
-    parser.add_argument("--bot-policy", type=int, choices=(0,1,2,3,4,5), default=1,
+    parser.add_argument("--bot-policy", type=int, choices=range(9), default=1,
         help="Native baseline for the fixed-opponent fraction; Fullhouse (4) needs its compiled weights")
     parser.add_argument("--baseline-mask", type=int, default=0,
         help="Bit i enables native style i; fixed per table/seat. Zero uses --bot-policy")
+    parser.add_argument("--native-history", action="store_true",
+        help="Track public table statistics across hands for range baselines")
     parser.add_argument("--learner", type=Path)
     parser.add_argument("--opponents", type=Path, nargs="*", default=[])
     run(parser.parse_args())

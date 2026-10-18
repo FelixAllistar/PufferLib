@@ -1,0 +1,18 @@
+{
+  "states": 2896,
+  "rank_checks": 2000,
+  "short_stack_checks": 910,
+  "hidden_card_checks": 71,
+  "max_feature_error": 0.0,
+  "max_probability_error": 3.643333911895752e-06,
+  "latency": {
+    "2": {
+      "native_us_per_decision": 55.42191520216875,
+      "python_us_per_decision": 929.1836110060103
+    },
+    "6": {
+      "native_us_per_decision": 72.94042200082913,
+      "python_us_per_decision": 1160.2510399825405
+    }
+  }
+}

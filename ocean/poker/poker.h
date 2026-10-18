@@ -111,6 +111,7 @@ struct Env {
     Poker* game;
     PokerLeague* league;
     float* memories;
+    PokerProfile* profiles;
     float rules_fraction;
     uint64_t policy_rng;
     uint32_t starting_stack;
@@ -143,6 +144,9 @@ void puf_init(Env* env, Dict* kwargs) {
     DictItem* mix = dict_find(kwargs, "native_baseline_mask");
     env->baseline_mask = mix ? (unsigned)mix->value : 0;
     assert(!(env->baseline_mask & ~POKER_BOT_MASK));
+    DictItem* history = dict_find(kwargs, "native_history");
+    if (history && history->value)
+        env->profiles = (PokerProfile*)calloc(POKER_PLAYERS, sizeof(PokerProfile));
     for (int p = 1; p < POKER_PLAYERS; p++) {
         env->baseline_styles[p] = env->bot_policy;
         if (env->baseline_mask) {
@@ -196,7 +200,7 @@ void poker_field(Env* env) {
         int p = g->actor[t], policy = env->opponents[p];
         int32_t action;
         if (policy < 0) {
-            action = poker_bot(g, t, &env->policy_rng, env->baseline_styles[p]);
+            action = poker_bot_with_history(g, t, &env->policy_rng, env->baseline_styles[p], env->profiles);
         } else {
             float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
             int32_t amounts[POKER_ACTIONS];
@@ -225,6 +229,7 @@ void poker_field(Env* env) {
             }
             action = amounts[selected];
         }
+        poker_profile_update(env->profiles, g, t, action);
         poker_step(g, t, action);
     }
 }
@@ -270,6 +275,7 @@ void puf_reset(Env* env) {
             }
         }
         poker_deal(g, t, (g->button[t] + 1) % POKER_PLAYERS, stacks);
+        poker_profile_begin(env->profiles);
         poker_field(env);
         if (g->actor[t] != POKER_DONE) {
             break;
@@ -285,6 +291,7 @@ void puf_step(Env* env) {
     unsigned mask = poker_actions(env->game, env->lane, amounts);
     int action = env->agents[0].actions[0];
     assert(action >= 0 && action < POKER_ACTIONS && (mask & (1u << action)));
+    poker_profile_update(env->profiles, env->game, env->lane, amounts[action]);
     poker_step(env->game, env->lane, amounts[action]);
     poker_field(env);
     env->agents[0].rewards[0] = 0;
@@ -314,6 +321,7 @@ void puf_log(Log* log, Dict* out) {
 
 void puf_close(Env* env) {
     free(env->memories);
+    free(env->profiles);
     if (env->league_owner && env->league) {
         free(env->league->weights);
         free(env->league);
