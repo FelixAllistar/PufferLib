@@ -76,5 +76,14 @@
       "sha256": "88da227bf0305f57846d50b60b9e7b79808b3bac28d4232f68e3f7dcbef9f12e"
     },
     "notes": "All supplied source/provenance/preview/audit files are retained unchanged. Original runtime entries are resolved to canonical assets/environment paths."
+  },
+  "committed_payload_audit": {
+    "commit": "99988e402",
+    "verified_payloads": 118,
+    "stdout": {
+      "path": "build/swat/review/art-intake-2026-10-18/committed-payload-audit.log",
+      "sha256": "ad263a0c056b8b65e22df919b0d4e4f601f22e1ccb338d858f70f5eb413544a0"
+    },
+    "note": "Verified original hashes against committed Git blob bytes, including five supplied logs excluded by the general log-file ignore rule until explicitly retained."
   }
 }
