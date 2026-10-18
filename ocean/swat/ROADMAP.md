@@ -30,9 +30,9 @@ Acceptance work still open:
 - Extend squad task completion across varied occupied layouts and further
   equipment roles, including broader room-search and moving threat coverage,
   beyond directed restraint/retrieval, door picks/wedges, recall and escort.
-- Qualify equipment access feedback with transparent cover. The damaged-leaf
-  fixtures below use cut wood and opaque obstacles; actual hand reach remains
-  physical, and clear-glass approach selection still needs a focused probe.
+- Extend transparent-cover equipment qualification beyond the tested queued
+  task and working-position cases, including initial command selection through
+  panes and moving obstructions.
 - Extend hostile-fire squad coordination beyond the inter-room sequence with
   staging holds during demolition. Following officers can cross the commander's
   firing line, and exploratory all-follow runs lost the commander or an officer.
@@ -54,6 +54,42 @@ Acceptance work still open:
 - Qualify vehicle cover separately. The delivered sedan has a closed exterior
   coachwork volume, with no hollow passenger interior or suspension model;
   current game material sections do not establish panel-stack ballistics.
+
+Physical tool access through clear glass (2026-10-18): a queued Pick behind
+an intact clear pane reproduced an officer stuck in Approaching with a planned
+position and zero tool progress. Optical sight correctly reached the wooden
+leaf, while the real hand ray hit glass. Working-position selection now uses
+the physical ray. The separate optical perception query is unchanged.
+The original probe and a current-rule negative control restoring optical-only
+access both reproduce the false approach status.
+
+The damaged-door matrix now has 60 cases: the existing 42 plus 18 clear-glass
+cases across Pick/Wedge, three orientations and full/partial/low-gap cover.
+Fully covered tasks publish Waiting for access, spend no stock and resume when
+the pane is removed. Partial and low-gap cases complete with intact, undamaged
+glass; low gaps require actual crouched work. Tool progress still requires the
+ordinary physical hand hit. Fresh replicas and malformed-state rejection remain
+part of each case. Before the version bump, all 11,996 existing opaque/cut state
+samples remained exactly unchanged by this fix. Initial command targeting
+through clear glass remains a separate qualification task above.
+
+The final cohort passes 199 broad groups per platform, with all 17,439 focused
+and 81,399 encounter state samples exact across Linux/Windows. Movement,
+foundation/scenario, real UDP room/equipment/frontend and canonical motel
+slow-join checks also pass. Both independently recorded player journals and
+checkpoints are byte-identical. Four fresh ordinary-input missions complete in
+25,741 / 25,730 / 20,457 / 9,513 ticks, with exact internal replay, mid-run
+save/resume, fresh replicas and no protected casualties or unlawful force.
+Shipping Linux/Windows tools match all 81,441 mission frames, all four native
+saved prefixes and the 60-frame frontend recordings; prior v37 files reject.
+The source-coupled receipt is
+`tests/receipts/transparent-door-access-2026-10-18.json`.
+
+Current peers and recordings/saves require protocol/replay v38. Prior v37 source,
+artifact and deployment evidence remains sealed under
+`build/swat/review/damaged-door-tasks`; this candidate uses
+`build/swat/review/transparent-door-access`. Native graphical/focus and
+performance acceptance remain held. The full-slice goal remains active.
 
 Damaged-door squad equipment (2026-10-18): a retained leaf with its centre
 removed exposed a real task failure: the officer remained at the old centre

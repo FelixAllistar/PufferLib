@@ -64,7 +64,7 @@ static void equipment_net_tick(SwatNetServer* server,SwatNetClient* clients,int 
 }
 // Modified geometry has its own small UDP fixture. The canonical motel check
 // below must retain its complete authored mesh bindings and slow-load coverage.
-static void damaged_equipment_network(void) {
+static void damaged_equipment_network(bool clear_glass) {
     task_fixture();equipment_load_delay=0;
     static SwatSim peer;SwatNetServer server;SwatNetClient client={0};
     int port=30000+(int)(enet_time_get()%20000),attempt=0;
@@ -83,7 +83,7 @@ static void damaged_equipment_network(void) {
     SwatHit seen=swat_context_hit(&sim,0,24);assert(seen.kind==SWAT_HIT_WORLD && seen.index==owner);
     SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_PICK;in.squad_team=2;in.squad_queue=true;swat_sim_step(&sim,&in);
     assert(sim.actors[4].mind.pending_door==owner && sim.actors[4].mind.queued);
-    int cover=swat_world_box(&sim.world,door->center,swat_v(.2f,1.3f,.85f),SWAT_CONCRETE,100);
+    int cover=swat_world_box(&sim.world,door->center,swat_v(.2f,1.3f,.85f),clear_glass?SWAT_GLASS:SWAT_CONCRETE,100);
     assert(swat_client_open(&client,&peer,"127.0.0.1",port));equipment_net_ready(&server,&client,1);
     assert(client.slot==1);
     for(int n=0;n<8;n++)equipment_net_tick(&server,&client,1,swat_neutral_input());
@@ -96,7 +96,7 @@ static void damaged_equipment_network(void) {
     int t;for(t=0;t<1800 && (door->locked || sim.actors[4].mind.order!=SWAT_ORDER_HOLD || peer.world.objects[owner].locked || peer.actors[4].mind.tool_blocked);t++)equipment_net_tick(&server,&client,1,swat_neutral_input());
     assert(t<1800 && !peer.world.objects[cover].active && sim.actors[4].gear.used_tools);
     for(int i=0;i<sim.actor_count;i++)assert(sim.actors[i].health==100 && !sim.actors[i].arsenal.shots);
-    puts("PASS real UDP squad equipment: actual obstructed task replicates waiting status without false tool progress, then resumes after cover removal (explicit geometry fixture)");
+    printf("PASS real UDP squad equipment: actual obstructed task replicates waiting status without false tool progress, then resumes after cover removal (%s geometry fixture)\n",clear_glass?"clear glass":"opaque");
     swat_client_close(&client);swat_server_close(&server);swat_sim_close(&peer);swat_sim_close(&sim);
 }
 static void equipment_network(void) {
