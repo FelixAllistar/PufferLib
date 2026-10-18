@@ -9,7 +9,7 @@ static const SwatMotelInstance dumpster_instances[]={
 static const float dumpster_sections[]={.017f,.020f,.020f};
 bool swat_motel_dumpster(const SwatWorld* w,int owner,SwatMotelInstance* out) {
     int index=owner-SWAT_MOTEL_DUMPSTER_FIRST;
-    if(!w->motel || w->count<SWAT_MOTEL_OBJECTS || index<0 || index>=SWAT_MOTEL_DUMPSTER_PARTS)return false;
+    if(!w->motel || w->count<SWAT_MOTEL_DUMPSTER_END || index<0 || index>=SWAT_MOTEL_DUMPSTER_PARTS)return false;
     *out=dumpster_instances[index];return true;
 }
 static float dumpster_health(int index) {
@@ -37,7 +37,7 @@ static bool dumpster_supports(const SwatWorld* w,int index,int supports[SWAT_MAX
 }
 static bool dumpster_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_DUMPSTER_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int i=0;i<SWAT_MOTEL_DUMPSTER_PARTS;i++) {
         const SwatObject* o=&w->objects[SWAT_MOTEL_DUMPSTER_FIRST+i];const SwatMotelAsset* a=&dumpster_data[i];
         int supports[SWAT_MAX_SUPPORTS];
@@ -49,7 +49,7 @@ static bool dumpster_validate(const SwatWorld* w) {
     return true;
 }
 static void dumpster_bind(SwatWorld* w) {
-    if(w->count<SWAT_MOTEL_OBJECTS)return;
+    if(w->count<SWAT_MOTEL_DUMPSTER_END)return;
     for(int i=0;i<SWAT_MOTEL_DUMPSTER_PARTS;i++) {
         SwatObject* o=&w->objects[SWAT_MOTEL_DUMPSTER_FIRST+i];if(!o->active)continue;
         b3DestroyShape(o->shape,false);b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);

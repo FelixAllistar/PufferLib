@@ -37,6 +37,10 @@ typedef struct SwatNetClient {
     SwatCommand pending[128];
     int pending_head,pending_count;
     float pending_yaw,pending_pitch;
+    // Optional loading UI/other transports. Called synchronously during map
+    // construction; never poll this client recursively or touch its replica.
+    SwatBuildProgress loading_service;
+    void* loading_context;
     char error[160];
 } SwatNetClient;
 
@@ -45,6 +49,9 @@ typedef struct SwatNetClient {
 bool swat_server_open(SwatNetServer* server,SwatSim* sim,int port,bool local_player);
 void swat_server_poll(SwatNetServer* server);
 void swat_server_tick(SwatNetServer* server,const SwatInput* local);
+// Publish current authority/acks while servicing loading or paused simulation.
+// This advances only transport revision; it never steps or resets gameplay.
+void swat_server_publish(SwatNetServer* server);
 void swat_server_restart(SwatNetServer* server);
 void swat_server_scenario(SwatNetServer* server,const SwatConfig* config);
 void swat_server_close(SwatNetServer* server);

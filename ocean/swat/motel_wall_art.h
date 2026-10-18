@@ -33,7 +33,7 @@ typedef struct SwatWallMeshCache {
     size_t polygon_tests;
 } SwatWallMeshCache;
 typedef struct SwatMotelWallArt {
-    SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5],windows[5];
+    SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5],windows[5],roadside[2];
     SwatWallMeshCache faces[SWAT_MOTEL_INSTANCES][2];
     bool core_batch_disabled,core_batch_requested,cores_drawn;
     bool face_batch_disabled,faces_drawn[SWAT_MOTEL_INSTANCES][2];
@@ -56,6 +56,7 @@ static void wall_art_close(SwatEnvironmentArt* art) {
     for(int i=0;i<3;i++)wall_mesh_close(&art->motel_wall_art->fences[i]);
     for(int i=0;i<5;i++)wall_mesh_close(&art->motel_wall_art->banks[i]);
     for(int i=0;i<5;i++)wall_mesh_close(&art->motel_wall_art->windows[i]);
+    for(int i=0;i<2;i++)wall_mesh_close(&art->motel_wall_art->roadside[i]);
     for(int i=0;i<SWAT_MOTEL_INSTANCES;i++)for(int j=0;j<2;j++)wall_mesh_close(&art->motel_wall_art->faces[i][j]);
     free(art->motel_wall_art);art->motel_wall_art=NULL;
 }

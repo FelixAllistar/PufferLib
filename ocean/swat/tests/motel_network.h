@@ -48,7 +48,15 @@ static void motel_network(void){
     authority.actors[0].controller.yaw=b3Atan2(aim.z,aim.x);authority.actors[0].controller.pitch=b3Atan2(aim.y,hypotf(aim.x,aim.z));
     SwatConfig placeholder=swat_default_config();placeholder.hostile_fire=false;
     for(int i=0;i<3;i++)swat_sim_init(&replicas[i],placeholder,(uint32_t)(100+i));
+    // Force more loading time than the unmodified six-second peer deadline.
+    // Production progress services this client's socket; QA services only the
+    // separate authority/other hosts while the same thread is constructing it.
+    loading_pause_budget=6500;loading_pause_services=0;
     assert(swat_client_open(&clients[0],&replicas[0],"127.0.0.1",port));ready(&server,clients,1);assert(clients[0].slot==1);
+    assert(!loading_pause_budget && loading_pause_services>=100 && loading_pause_elapsed>=6500);
+    assert(authority.tick==0 && replicas[0].tick==0);
+    assert(!replicas[0].world.build_progress && !replicas[0].world.build_context);
+    printf("PASS real UDP slow motel load: %u ms across %d serviced construction boundaries, ordinary six-second deadlines, tick zero and cleared hooks\n",loading_pause_elapsed,loading_pause_services);
     SwatInput inputs[3];for(int i=0;i<3;i++)inputs[i]=swat_neutral_input();
     SwatInput host=swat_neutral_input();host.squad_order=SWAT_ORDER_CUFF;host.squad_team=1;host.squad_queue=true;
     ticks(&server,clients,inputs,1,2,&host);host=swat_neutral_input();ticks(&server,clients,inputs,1,2,&host);synchronize(&server,clients,1);

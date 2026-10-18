@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 34
+#define SWAT_NET_VERSION 35
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32
@@ -105,6 +105,9 @@ bool swat_decode_scenario(const void* bytes,size_t size,uint32_t* epoch,SwatConf
 void swat_capture_map(const SwatSim* sim,uint32_t epoch,SwatMap* map);
 void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state);
 void swat_apply_map(SwatSim* sim,const SwatMap* map);
+// Progress may service transport/UI only; it must not step or inspect the
+// partially constructed replica. Hooks are cleared before this function returns.
+void swat_apply_map_progress(SwatSim*,const SwatMap*,SwatBuildProgress,void* context);
 bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state);
 
 #ifdef __cplusplus

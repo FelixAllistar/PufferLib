@@ -617,7 +617,7 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
         if(sim->tick-e->tick<=SWAT_SOUND_LIFETIME) state->sounds[state->sound_count++]=*e;
     }
 }
-void swat_apply_map(SwatSim* sim,const SwatMap* map) {
+void swat_apply_map_progress(SwatSim* sim,const SwatMap* map,SwatBuildProgress progress,void* context) {
     free(sim->navigation);
     sim->navigation=NULL;
 #pragma omp critical(swat_world_lifecycle)
@@ -630,9 +630,11 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
             sim->layout.seed=map->config.layout_seed; sim->layout.policy_id=map->layout_policy_id;
         }
         sim->sounds.next_id=map->sound_floor+1; swat_world_init(&sim->world);
+        sim->world.build_progress=progress;sim->world.build_context=context;
         if(map->config.mission==SWAT_BUILDING) swat_building_plan(&sim->layout,map->config.layout_seed,map->config.difficulty);
         sim->world.room_count=map->room_count; memcpy(sim->world.rooms,map->rooms,sizeof(map->rooms));
         for(int i=0;i<map->count;i++) {
+            if(i%32==0)swat_world_build_progress(&sim->world);
             const SwatMapObject* source=&map->objects[i];
             int id=swat_world_box(&sim->world,source->center,source->half,source->material,source->max_health);
             SwatObject* o=&sim->world.objects[id]; o->hinge=source->hinge; o->yaw=source->yaw; o->door=source->door;
@@ -653,8 +655,10 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
         }
         swat_world_support_setup(&sim->world);
         for(int i=0;i<map->count;i++)if(map->objects[i].latch_broken)swat_world_break_latch(&sim->world,i);
+        swat_world_build_progress(&sim->world);sim->world.build_progress=NULL;sim->world.build_context=NULL;
     }
 }
+void swat_apply_map(SwatSim* sim,const SwatMap* map){swat_apply_map_progress(sim,map,NULL,NULL);}
 bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->object_count!=sim->world.count) return false;
     for(int i=0;i<SWAT_MAX_ACTORS;i++)if(state->actors[i].present) {

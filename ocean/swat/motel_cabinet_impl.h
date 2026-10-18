@@ -8,7 +8,7 @@ static bool cabinet_supports(const SwatWorld* w,int supports[SWAT_MAX_SUPPORTS])
 }
 static bool cabinet_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_CABINET_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_CABINET_FIRST];int supports[SWAT_MAX_SUPPORTS];
     return cabinet_supports(w,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(o->center,b3OffsetPos(cabinet_instance.origin,cabinet_asset.center))<1e-4f && b3Length(b3Sub(o->half,cabinet_asset.half))<1e-5f &&

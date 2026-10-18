@@ -34,7 +34,7 @@ static void window_part_recipe(int parent,int index,b3Pos* center,b3Vec3* half,f
 }
 static bool windows_validate(const SwatWorld* w){
     if(w->count<=SWAT_MOTEL_WINDOWS_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int bay=0;bay<5;bay++){
         int parent=pane_parents[bay],first=swat_motel_window_first(parent);const SwatWindowModel* m=&window_r1_models[bay?0:1];
         for(int i=0;i<m->part_count;i++){
@@ -58,6 +58,7 @@ static void windows_bind(SwatWorld* w){
     for(int kind=0;kind<2;kind++){
         const SwatWindowModel* m=&window_r1_models[kind];
         for(int part=0;part<m->part_count;part++){
+            swat_world_build_progress(w);
             const SwatWindowPart* p=&m->parts[part];int triangles=0;for(int t=0;t<m->triangle_count;t++)triangles+=m->triangle_parts[t]==part;
             b3Vec3* v=malloc((size_t)triangles*3*sizeof(*v));int32_t* indices=malloc((size_t)triangles*3*sizeof(*indices));assert(v && indices);int n=0;
             for(int t=0;t<m->triangle_count;t++)if(m->triangle_parts[t]==part)for(int k=0;k<3;k++){

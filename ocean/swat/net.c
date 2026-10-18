@@ -49,7 +49,8 @@ static void server_map_to(SwatNetServer* server,ENetPeer* peer) {
     net_send(peer,CHANNEL_CONTROL,bytes,swat_encode_map(bytes,sizeof(bytes),&map),true);
     server_snapshot_to(server,peer);
 }
-static void server_broadcast(SwatNetServer* server) {
+void swat_server_publish(SwatNetServer* server) {
+    if(!server->transport)return;
     SwatSnapshot state; unsigned char bytes[SWAT_NET_PACKET_MAX];
     server_capture(server,&state);
     size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&state);
@@ -188,7 +189,7 @@ void swat_server_tick(SwatNetServer* server,const SwatInput* local) {
         }
         swat_sim_step_inputs(server->sim,inputs);
     }
-    if(++server->pulses%2==0) server_broadcast(server);
+    if(++server->pulses%2==0) swat_server_publish(server);
     enet_host_flush((ENetHost*)server->transport);
 }
 void swat_server_close(SwatNetServer* server) {
@@ -224,6 +225,13 @@ static void client_fail(SwatNetClient* client,const char* reason) {
     client->status=SWAT_NET_FAILED;
     snprintf(client->error,sizeof(client->error),"%s",reason);
 }
+static void client_loading_service(void* context) {
+    SwatNetClient* client=context;
+    // Queue application events while continuing real ACKs/pings and fragments.
+    // Event dispatch resumes after the new world is completely constructed.
+    enet_host_service((ENetHost*)client->transport,NULL,0);
+    if(client->loading_service)client->loading_service(client->loading_context);
+}
 void swat_client_poll(SwatNetClient* client) {
     if(!client->transport || client->status==SWAT_NET_FAILED) return;
     ENetHost* host=(ENetHost*)client->transport; ENetEvent event;
@@ -240,7 +248,8 @@ void swat_client_poll(SwatNetClient* client) {
             } else if(type==SWAT_MSG_MAP && event.channelID==CHANNEL_CONTROL) {
                 SwatMap map; valid=swat_decode_map(&map,bytes,size);
                 if(valid) {
-                    swat_apply_map(client->replica,&map); client->has_map=true;
+                    client->status=SWAT_NET_CONNECTING;client->has_map=false;
+                    swat_apply_map_progress(client->replica,&map,client_loading_service,client);client->has_map=true;
                     client->epoch=map.epoch; client->revision=client->sequence=client->ack=0;
                     client->pending_head=client->pending_count=0;
                     client->pending_yaw=client->pending_pitch=0;

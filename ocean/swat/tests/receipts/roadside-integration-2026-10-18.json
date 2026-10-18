@@ -1,0 +1,1004 @@
+{
+  "created_utc": "2026-10-18T09:30:33.139Z",
+  "baseline_commit": "e01afc907",
+  "previous_goal_turn": {
+    "classification": "progress",
+    "evidence": "e01afc907 accepted physical squad room search and matching v34 builds; subsequent interrupted work added the roadside candidate and passing Linux/native focused physical evidence, directing work toward reset/loading robustness and actual rendering."
+  },
+  "protocol": 35,
+  "evidence_root": "build/swat/review/roadside-integration/",
+  "source_files": [
+    {
+      "path": "ocean/swat/CMakeLists.txt",
+      "sha256": "90f34198cec6ec822c70c22fd15afc12cfbb4fc54dfbd2de2bfc74f7593e560b"
+    },
+    {
+      "path": "ocean/swat/Makefile",
+      "sha256": "db0b795049fab6692064cdac53fdcf4aac213e60a0a0f8a020678415b23a0800"
+    },
+    {
+      "path": "ocean/swat/README.md",
+      "sha256": "aa8d81ea0236d0100f86b6d1bc71f92517becc46e56188c76e89b68df8e1964b"
+    },
+    {
+      "path": "ocean/swat/ROADMAP.md",
+      "sha256": "6fd832cec1e95df8bc03e479844b25f5f281c4f1b57019ab57500d2b7c0bb139"
+    },
+    {
+      "path": "ocean/swat/art_handoffs/README.md",
+      "sha256": "034e33d36e0e5d6d80df32b12f6a57130c8f76caf93060cc63ae7fc57e76c46c"
+    },
+    {
+      "path": "ocean/swat/art_handoffs/motel-sedan/ENGINE_INTAKE.md",
+      "sha256": "9c5ebc7da7901a1fc136d9ae7162fc61578ed9fa75a25264fa3343827151070d"
+    },
+    {
+      "path": "ocean/swat/art_handoffs/motel-shelter/ENGINE_INTAKE.md",
+      "sha256": "37d64f11ec48fdde59b3d3d1eaf5f8ff9de875ab68d689f8046ef9203ecf4c12"
+    },
+    {
+      "path": "ocean/swat/build-windows.sh",
+      "sha256": "3a3110ad9c54555f85344360b11f3fe48576ac5786e0cadc1e2a75780b158fcb"
+    },
+    {
+      "path": "ocean/swat/environment_art.c",
+      "sha256": "68e46dce3b37d6829f9a474118ef50ab23451bb8fc01cef4b24eb21665ad8478"
+    },
+    {
+      "path": "ocean/swat/environment_art.h",
+      "sha256": "00929d242b4532c8726ddecc4f4b879790abfa38d99ec963401c8d7f042899d3"
+    },
+    {
+      "path": "ocean/swat/motel.c",
+      "sha256": "be2051713d44987f0a858d17b66b3ed4fd69d88d96024d3896191fc17a2d3fe9"
+    },
+    {
+      "path": "ocean/swat/motel.h",
+      "sha256": "bfca29a7cc42353207f66046626c6a04982ad3c6ce2eec24b34a1eda030c3203"
+    },
+    {
+      "path": "ocean/swat/motel_bag_impl.h",
+      "sha256": "b469974e1fd42dc595aa1f29d873af07673078e7af173d0a36a33bc4e78fb076"
+    },
+    {
+      "path": "ocean/swat/motel_cabinet_impl.h",
+      "sha256": "b64068a3c480380507daca8062574946f61355fa0c339bbb0fc51014634a253c"
+    },
+    {
+      "path": "ocean/swat/motel_dumpster_impl.h",
+      "sha256": "853f1aa216998be82c5f99508b76629439e3b2af0fe066f99333b63d8aea63fb"
+    },
+    {
+      "path": "ocean/swat/motel_screwdriver_impl.h",
+      "sha256": "bb9d267f8b965da6e7ecec99e68768d20a1b00ce3c7e55c5cbc658b908c19c14"
+    },
+    {
+      "path": "ocean/swat/motel_seating_impl.h",
+      "sha256": "18d96a087f97b966945159d0a9eafc67a5a6969ce4b399b8d3cab0dc2316eff0"
+    },
+    {
+      "path": "ocean/swat/motel_service_impl.h",
+      "sha256": "24511578e8898d77c2a5181fd9aab154de2701f31b04f033b4229ab418ca3729"
+    },
+    {
+      "path": "ocean/swat/motel_wall_art.h",
+      "sha256": "ccc7b7a78dd68f0b21c2c51edf3c36fbcdabbb915c32e9f8177617da6317a25e"
+    },
+    {
+      "path": "ocean/swat/motel_windows_impl.h",
+      "sha256": "f868fa42d09f62710881852f1a418ae5eccea5e882d17d149b17d0dd7851d2b3"
+    },
+    {
+      "path": "ocean/swat/net.c",
+      "sha256": "38c2f7bcff23e7df04940537cbc223a894de468c8418c2b115104c51b7159ba8"
+    },
+    {
+      "path": "ocean/swat/net.h",
+      "sha256": "ca8c14c5399db4885dde49d3edc79f82c583fb9456d9aae71e7248dacd4195a7"
+    },
+    {
+      "path": "ocean/swat/play.sh",
+      "sha256": "1744fe7dccd216e61063efebe1f0298044c2eccd44b2f9ca41e83718f50c340b"
+    },
+    {
+      "path": "ocean/swat/protocol.c",
+      "sha256": "0ac6be108592acfc44712de5963c0aebbf77a60ae53ecdf815cec66af17cba52"
+    },
+    {
+      "path": "ocean/swat/protocol.h",
+      "sha256": "8324856305fb458d2552510a68cc06eba0c8f117901ab7235fae2ed51a656346"
+    },
+    {
+      "path": "ocean/swat/sim.c",
+      "sha256": "288026e7bdc02a4632924f7cbddd2e4f3014bab290d15da642e3f4f51ab1fd79"
+    },
+    {
+      "path": "ocean/swat/tests/motel_network.h",
+      "sha256": "bb990fa87d23089d283d6a8f4aa89414e7e21d4e53168556ca132c5df75fd3d5"
+    },
+    {
+      "path": "ocean/swat/tests/test_motel_completion.c",
+      "sha256": "0085b83c8ab66e64b041e320a8ac6d098f7bcdb49bfa4800efbb9545a4d2e2fc"
+    },
+    {
+      "path": "ocean/swat/tests/test_net.c",
+      "sha256": "2f7ac6ee79cc9e0c3e0c2fb12697a8ab567a615321b9ebc3c7df9c2217f17b61"
+    },
+    {
+      "path": "ocean/swat/tests/test_tactical.c",
+      "sha256": "6b3efdd2a46b5f101b59513839e5aa43ddd7bac965b76508b3d909cfaa453bc8"
+    },
+    {
+      "path": "ocean/swat/world.h",
+      "sha256": "e9d4d4cef043b2576477c0818fa826901f6fa53d0857219c83b29f476870ca01"
+    },
+    {
+      "path": "ocean/swat/motel_roadside_count.h",
+      "sha256": "5e11616e8a3ea18ac44e18d489cecfea66a5799243aacccc3cbac4e005e7751e"
+    },
+    {
+      "path": "ocean/swat/motel_roadside_data.h",
+      "sha256": "f24b12866df846fd6e449366f2a445053ca5b5dcb5c927057126b39c10b2f822"
+    },
+    {
+      "path": "ocean/swat/motel_roadside_impl.h",
+      "sha256": "436601853706db7873b253922c5aa6dcb383756c9ead1ea6c53034160574a1d6"
+    },
+    {
+      "path": "ocean/swat/tools/import_motel_roadside.cjs",
+      "sha256": "eec853167b73db0ed0da3030aa7e0bd803c480b2e85862cda64869cdf80a5029"
+    },
+    {
+      "path": "ocean/swat/tests/test_motel_roadside.c",
+      "sha256": "9245cda6d8b26202e2b8292690df02c3c26802302bbb939b7daba3315cafd695"
+    },
+    {
+      "path": "ocean/swat/tests/test_motel_roadside_art.c",
+      "sha256": "02ff6e29764e69aa9077627566187a0f2675b848ce8a5582b29d53c40d6dab35"
+    },
+    {
+      "path": "ocean/swat/art_handoffs/roadside-engine-ownership.json",
+      "sha256": "fb806619d68bdb782a871cbf0c66d62b96afac2e576640f77b0dc0a187fd8962"
+    },
+    {
+      "path": "ocean/swat/art_handoffs/ROADSIDE_ENGINE_INTEGRATION.md",
+      "sha256": "d1e0c4533204e00c9d012c640cc3720e1a6c4e6d025bbf0be2b9944eed409093"
+    }
+  ],
+  "scope": "Approved original parked sedan and waiting shelter integrated into the connected motel level, with source-preserving sparse physical/material owners, damage/supports, shared render banks and automated correctness evidence. Full vertical-slice goal remains active.",
+  "changes": [
+    "All 311 source solids match their supplied audit bounds; all 20,992 original triangles map to 50 sedan and 28 shelter physical/material owners. No local authoring/Python recipes run.",
+    "Sedan parks at (-6,-.08,6.65), facing the guest rooms. Shelter stands at (-8,-.08,34.75), facing the connected road. Actual tire/baseplate contacts and highest existing support surface are checked. Ordinary controller navigation connects court to shelter.",
+    "At most 240 cooked source triangles per contact shape retain full sparse query meshes and adjacency. Independent glazing, timber, its steel fixings and screen removal preserve other owners and real openings.",
+    "One first-surviving owner submits each shared 12/3-primitive render bank. Only that leader computes the damage mask; filtered geometry updates on damage while source UVs/normals/materials/maps remain shared. Missing-art fallback draws the same physical triangles.",
+    "Protocol/replay v35 records added physical objects. Older canonical map prefixes retain original IDs; malformed candidates retain explicit map boxes. Matching peers and fresh recordings are required.",
+    "Production map construction services client ACKs/pings/fragments between geometry chunks. Temporary world-construction hooks are cleared before returning; optional caller-owned UI/other-transport callbacks must not touch the partial replica. Current-state publication advances transport revision without stepping gameplay.",
+    "QA uses bounded dispersed port probes and services independent transports while replicas load. A forced >6.5-second constructor delay requires a reliable ping acknowledgement under unchanged six-second deadlines, with tick-zero authority/replica and cleared callbacks."
+  ],
+  "source_preservation": {
+    "ownership": {
+      "path": "ocean/swat/art_handoffs/roadside-engine-ownership.json",
+      "sha256": "fb806619d68bdb782a871cbf0c66d62b96afac2e576640f77b0dc0a187fd8962"
+    },
+    "import": {
+      "path": "build/swat/review/roadside-integration/import.log",
+      "sha256": "22b9e03bd2effe94572c7ace2887a71183c6f00d5371a7667db7408c17592d96"
+    },
+    "previous_intake": {
+      "path": "ocean/swat/tests/receipts/roadside-intake-2026-10-18.json",
+      "sha256": "3cd3b70a98fa12f739a0fee983c4fcf8104f7c2650aa0cfb79c51573770b995e"
+    }
+  },
+  "checks": {
+    "linux": {
+      "headless_groups": 139,
+      "groups": {
+        "encounter": {
+          "pass_groups": 79,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/encounter-linux.log",
+            "sha256": "7347e020c1bb922a596c9b18913a0123490d12acdf6a6ba723aace9d50e264de"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/encounter-linux.stderr.log",
+            "sha256": "53d013b362fe0a637fe236efda52f06fc7c1e96f0a33ef910f45007b22511e65"
+          }
+        },
+        "tactical": {
+          "pass_groups": 12,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/tactical-linux.log",
+            "sha256": "38e858492b3f2936f3396cc1b9f850da49015d29ff8a71001cb35cbb071e994a"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/tactical-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "pass_groups": 13,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/sim-linux.log",
+            "sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/sim-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "pass_groups": 5,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/protocol-linux.log",
+            "sha256": "1ccbf0cfa8c8f9b61fe2084c08443beceaf901f4fa5342d4c6e92017e5e010bc"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/protocol-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "pass_groups": 12,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/motel-linux.log",
+            "sha256": "510ea838c7f5f7370d2cfcb28027aebbc5300e97b8c33b8841f3dc803b018824"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/motel-linux.stderr.log",
+            "sha256": "7e52b7b05fe72e558805802c6ddfaa8217e9ef005940f8d9f5705488ef47b059"
+          }
+        },
+        "navigation": {
+          "pass_groups": 3,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/navigation-linux.log",
+            "sha256": "f77a6a4aaec85991521d980f29c306d4a6fd3ed8d5e635e5b65704b29bc0bb8f"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/navigation-linux.stderr.log",
+            "sha256": "7e6127a96938d64567cc8466dc7c8c0eb7a660eecfc513430324162564e592a5"
+          }
+        },
+        "net": {
+          "pass_groups": 15,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/net-linux.log",
+            "sha256": "7712fe58afe10ede717979b4e50af4b5a54c21a8cc8befb79373a346aa128d2d"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/net-linux.stderr.log",
+            "sha256": "a5283393dc97dad9ccef11594f09608ef930f0eb3b81c26d1f9621c645ce6179"
+          }
+        }
+      },
+      "roadside": {
+        "cases": 7,
+        "stdout": {
+          "path": "build/swat/review/roadside-integration/roadside-linux.log",
+          "sha256": "7782ed26840ab7ebd1fe5a24b7a0b2e273aa34bc5b34258f40da4413353a9d2a"
+        },
+        "stderr": {
+          "path": "build/swat/review/roadside-integration/roadside-linux.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "trace": {
+          "path": "build/swat/review/roadside-integration/roadside-linux.trace",
+          "sha256": "e64ba84af388fe6b5ecf54ca27bf8afac89b76ef8d7a0996ba5e7196d35f6f91"
+        }
+      },
+      "collateral_dumpster": {
+        "groups": 4,
+        "stdout": {
+          "path": "build/swat/review/roadside-integration/dumpster-linux.log",
+          "sha256": "9dfe60503dfc33e08ba2e8b2e07f2a4b85bcc4c796ed7688f5b8acdcdcede2ab"
+        },
+        "stderr": {
+          "path": "build/swat/review/roadside-integration/dumpster-linux.stderr.log",
+          "sha256": "cd91368acfdea60afe34739a159d7bd6fb737e472ee3f6724863b6e9460d9352"
+        }
+      },
+      "slow_load": {
+        "held_ms": 6753,
+        "construction_boundaries": 163,
+        "production_peer_and_packet_deadline_ms": 6000,
+        "authority_and_replica_tick": 0,
+        "callbacks_cleared": true
+      },
+      "build": {
+        "path": "build/swat/review/roadside-integration/build-progress-linux.log",
+        "sha256": "61d2e00cbef45a49482dcac8a998eadb07f14d4f5fcb2da6a2460ce69c1b2b5d"
+      },
+      "runtime_relink": {
+        "path": "build/swat/review/roadside-integration/relink-runtime-linux.log",
+        "sha256": "a6866f359f3bc1a92bc73cbb70ab76524aed94a1e83158ac2d98ff9bbf655771"
+      },
+      "roadside_driver_build": {
+        "path": "build/swat/review/roadside-integration/roadside-recompile-linux.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "completion_driver_build": {
+        "path": "build/swat/review/roadside-integration/completion-recompile-linux.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_audio_build": {
+        "path": "build/swat/review/roadside-integration/handle-build-linux.log",
+        "sha256": "c937dbffbd33fc425b4451f67070af9e53506e66e2fc10341365efc61123f2ae"
+      }
+    },
+    "native": {
+      "headless_groups": 139,
+      "groups": {
+        "encounter": {
+          "pass_groups": 79,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/encounter-native.log",
+            "sha256": "a8f2728aace1bfde470e187c39a49a186852b53a962e2811f6b56f1d20279df7"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/encounter-native.stderr.log",
+            "sha256": "67c5f680accd3f4f71454e6eec7efe344096aa5d742706d8abb86f3271a1e27a"
+          }
+        },
+        "tactical": {
+          "pass_groups": 12,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/tactical-native.log",
+            "sha256": "e4c179d5b6059b4a5ccb704760db7274f4cd587d9a24617b0ee3fd9334f70966"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/tactical-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "pass_groups": 13,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/sim-native.log",
+            "sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/sim-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "pass_groups": 5,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/protocol-native.log",
+            "sha256": "2540c55d137bfe90c478acbe859b33d74e6b5212f70b2d42126d916a7646da6c"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/protocol-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "pass_groups": 12,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/motel-native.log",
+            "sha256": "f07f516380b2585aed891873258fe9448bc3fc304a64b5ef05a52ae184ca46cd"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/motel-native.stderr.log",
+            "sha256": "3ebe62ba2dc3ed22cf1b0d37d32eb547529be4f2f1c12185a492e808488045a2"
+          }
+        },
+        "navigation": {
+          "pass_groups": 3,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/navigation-native.log",
+            "sha256": "4a0574d4578e12e577732616fc505f7c1847987ef0766860dfe422c586cd37ba"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/navigation-native.stderr.log",
+            "sha256": "20979940b4a597cbb4c641985c2d840323015d72ea972547f7b737da064b9a47"
+          }
+        },
+        "net": {
+          "pass_groups": 15,
+          "stdout": {
+            "path": "build/swat/review/roadside-integration/net-native.log",
+            "sha256": "b0e94f9748fa1ca6184dbf25d01ff9f42a66da70fb1f865b524d4d43b452f7ef"
+          },
+          "stderr": {
+            "path": "build/swat/review/roadside-integration/net-native.stderr.log",
+            "sha256": "24a5f115491f7ce396e7aa822c90453cec4e59e101cb7f69a76128ee59df605a"
+          }
+        }
+      },
+      "roadside": {
+        "cases": 7,
+        "stdout": {
+          "path": "build/swat/review/roadside-integration/roadside-native.log",
+          "sha256": "f2eea7692b59e4a57ab362bad450d6a96ead8d9bdfc9cb24534b3905731b8b71"
+        },
+        "stderr": {
+          "path": "build/swat/review/roadside-integration/roadside-native.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "trace": {
+          "path": "build/swat/review/roadside-integration/roadside-native.trace",
+          "sha256": "2fe3bc9055634dbc34482e8efc4ca875f1e97642908b7175be19d5fe0e048817"
+        }
+      },
+      "collateral_dumpster": {
+        "groups": 4,
+        "stdout": {
+          "path": "build/swat/review/roadside-integration/dumpster-native.log",
+          "sha256": "4f33328e578cd5b3ebb81bf9b88f7bf102bd0e66b8e87fffa80eea34f6142334"
+        },
+        "stderr": {
+          "path": "build/swat/review/roadside-integration/dumpster-native.stderr.log",
+          "sha256": "89751161b9c7a74d8531889ce6eddd1dc4e49fd69f4e7e02ca467a074c50c0e6"
+        }
+      },
+      "slow_load": {
+        "held_ms": 8223,
+        "construction_boundaries": 163,
+        "production_peer_and_packet_deadline_ms": 6000,
+        "authority_and_replica_tick": 0,
+        "callbacks_cleared": true
+      },
+      "build": {
+        "path": "build/swat/review/roadside-integration/build-progress-native.log",
+        "sha256": "f403a0621f3fd489d81af0b09336b7dbfd25290e40ca2df30f33cd3ecb59cf3f"
+      },
+      "runtime_relink": {
+        "path": "build/swat/review/roadside-integration/relink-runtime-native.log",
+        "sha256": "1af353a92247fcf77896f04e4d7f239281fbb2262861bcaf6a753ea13d42367f"
+      },
+      "roadside_driver_build": {
+        "path": "build/swat/review/roadside-integration/roadside-recompile-native.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "completion_driver_build": {
+        "path": "build/swat/review/roadside-integration/completion-recompile-native.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_audio_build": {
+        "path": "build/swat/review/roadside-integration/handle-build-native.log",
+        "sha256": "b183d061cefce8dce1e9ffb7d2daecfbdce8049dd59001e3222374440144979d"
+      }
+    }
+  },
+  "cross_platform": {
+    "traces": {
+      "all": {
+        "samples": 63938,
+        "linux": {
+          "path": "build/swat/review/roadside-integration/all-linux.trace",
+          "sha256": "e2d6b8ab4367e3c0e35bf96fbb97d8c70d577e2cec83e95ac7ef3eeb79c2851a"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/all-native.trace",
+          "sha256": "f39e65215addbf359e56fceefc3affac72f4070a463ed57447c362cb9bc40fc6"
+        }
+      },
+      "room-motel": {
+        "samples": 6382,
+        "linux": {
+          "path": "build/swat/review/roadside-integration/room-motel-linux.trace",
+          "sha256": "0ca54c8566d07a14c3d8d71736ce30753e7a34396d94a9085631e991c9ea71ae"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/room-motel-native.trace",
+          "sha256": "9f5e35760c1361103a8ab5fe983f43325e04cc84f18b62118a8774ba74276d1b"
+        }
+      },
+      "roadside": {
+        "samples": 38,
+        "linux": {
+          "path": "build/swat/review/roadside-integration/roadside-linux.trace",
+          "sha256": "e64ba84af388fe6b5ecf54ca27bf8afac89b76ef8d7a0996ba5e7196d35f6f91"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/roadside-native.trace",
+          "sha256": "2fe3bc9055634dbc34482e8efc4ca875f1e97642908b7175be19d5fe0e048817"
+        }
+      },
+      "input": {
+        "samples": 78,
+        "linux": {
+          "path": "build/swat/review/roadside-integration/input-linux.trace",
+          "sha256": "cf393213f6c1a5cbea44a5d73362f18540b38f96fca2ec1789eaae0f7d497725"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/input-native.trace",
+          "sha256": "0597426c2b1ce1cb442509ea5344be740742bcd4271883058d1248afa4136a19"
+        }
+      },
+      "dumpster": {
+        "samples": 27,
+        "linux": {
+          "path": "build/swat/review/roadside-integration/dumpster-linux.trace",
+          "sha256": "cbd9e6d389285115516de60480b25d66e50693d10f522986cb007ab5a1f342d5"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/dumpster-native.trace",
+          "sha256": "3144745082091262953504868a76b64698b9a60f71454dd90428b90aedd84f42"
+        }
+      }
+    },
+    "frontend_journal_frames": 60,
+    "frontend_journals_byte_identical": true,
+    "room_udp": [
+      "ROOM_NET queued_takeover room2 actor4 pending0",
+      "ROOM_NET active_takeover room2 actor5 progress0",
+      "ROOM_NET completed room2 actor5 points9 cuffed2 moved2"
+    ],
+    "equipment_udp": [
+      "EQUIPMENT_NET queued_pick door16 actor4",
+      "EQUIPMENT_NET takeover door16 actor4 pending0",
+      "EQUIPMENT_NET wedged door16 actor5 stock1"
+    ],
+    "frontend_udp": [
+      "FRONTEND_ACK first 1 release 2 target2 team1 queued1",
+      "FRONTEND_ACK second 7 release 8 target3 team1 queued1"
+    ],
+    "motel_udp": [
+      "MOTEL_STATE 0 4 f3ea0df0",
+      "MOTEL_STATE 1 6 683d197c",
+      "MOTEL_STATE 1 6 683d197c",
+      "MOTEL_STATE 2 40 ecfb5b1a",
+      "MOTEL_STATE 2 40 ecfb5b1a",
+      "MOTEL_STATE 2 40 ecfb5b1a",
+      "MOTEL_STATE 3 46 25785f0f",
+      "MOTEL_STATE 3 46 25785f0f",
+      "MOTEL_STATE 3 46 25785f0f",
+      "MOTEL_STATE 4 0 ea95366a",
+      "MOTEL_STATE 4 0 ea95366a",
+      "MOTEL_STATE 4 0 ea95366a"
+    ]
+  },
+  "negative_control": {
+    "reason": "The identical forced-load case fails reliable-control delivery when only production construction socket servicing is removed. QA services other hosts, not the constructing client.",
+    "stdout": {
+      "path": "build/swat/review/roadside-integration/negative-loading.stdout.log",
+      "sha256": "c222d770f150e8f27ea8709a7d886131958ace47752036e546fa7632c35e5d7e"
+    },
+    "stderr": {
+      "path": "build/swat/review/roadside-integration/negative-loading.stderr.log",
+      "sha256": "d449117f4c0038881507d6cb2d910da3ee2bbf4b0df8788a012a0d8bb59d5350"
+    },
+    "result": {
+      "path": "build/swat/review/roadside-integration/negative-loading-result.log",
+      "sha256": "45f1fbc6510aca978bf9b86b4517e0ba20f48c9ab64f011d4b96b4372487d6d9"
+    },
+    "initial_wrapper": {
+      "path": "build/swat/review/roadside-integration/negative-loading.log",
+      "sha256": "ead6dc14053b8632f8e9e45c98f34000781e5c5743a6c6e2d3bd6ee9607f667b"
+    },
+    "source": {
+      "path": "build/swat/review/roadside-integration/net-no-construction-service.c",
+      "sha256": "0dbf24ba1039f5850c6af37b76f63f02b54182da961b8845d8f1b3e4afb69224"
+    }
+  },
+  "graphics": {
+    "scope": "Linux isolated Xvfb/llvmpipe correctness; native graphics QA compiled but not launched. Windows visual/driver/performance acceptance remains open.",
+    "stdout": {
+      "path": "build/swat/review/roadside-integration/visual.log",
+      "sha256": "977d098d313e4f9630263fe799ae6da130f001d8f799c75948e68f869d0e071a"
+    },
+    "renderer": {
+      "path": "build/swat/review/roadside-integration/software-display/renderer.log",
+      "sha256": "c558ba2453318e37988a13fd38fd071e84ad4ca8e98a57b0398eb27aea45df3f"
+    },
+    "images": [
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-damaged-lit.png",
+        "sha256": "fa35f366e84f517b0109424c902bbeb76e1cc682b97096a706ad4b95935ff47f"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-intact-lit.png",
+        "sha256": "412a2bfa62459210a400ae074388b5756b1d9e9d4ba417e21ca8b44817315bf6"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side0-damaged-art.png",
+        "sha256": "92ba3e3e65abb4b73466c26b037600dd3e0800b9a302d0465587b21bda7f53e4"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side0-damaged-fallback.png",
+        "sha256": "e46759ab264221d53416784b7a173f28e8806d515c5b28bdfdcb918806f6ae23"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side0-intact-art.png",
+        "sha256": "92ba3e3e65abb4b73466c26b037600dd3e0800b9a302d0465587b21bda7f53e4"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side0-intact-fallback.png",
+        "sha256": "e46759ab264221d53416784b7a173f28e8806d515c5b28bdfdcb918806f6ae23"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side1-damaged-art.png",
+        "sha256": "15e91cf891013df6c23a92166467d26b0a2821b944e7f9a7227070647e4d03a9"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side1-damaged-fallback.png",
+        "sha256": "c342e60f7d8d83ee9ade1923d06a552ac75671d47a5ff52dc5576bc02a2ca5a0"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side1-intact-art.png",
+        "sha256": "35c307d432894eccbbb757afb29326b38eea6fb06eac1a5ad2cc6ec5fadcd1d6"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model0-side1-intact-fallback.png",
+        "sha256": "22b9da364cec336c91ddc34c4d512f64161f564caba3857380aa972c4586ffdf"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-damaged-lit.png",
+        "sha256": "62d46a78b6d41181731adee419fc9fb8facc656823231536f7c146fc7b631899"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-intact-lit.png",
+        "sha256": "fac90b73a2663cf06586d720ecc23aaae1fb753552452cfa382920b1bcf28c09"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side0-damaged-art.png",
+        "sha256": "6fb80ed651ca32f0834677a934ecc6828bd2c7804b3454b9fe5c173518faa77c"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side0-damaged-fallback.png",
+        "sha256": "86229479dea7759d1b6d6a74713481abc744373b566d780e78254a976ce20a84"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side0-intact-art.png",
+        "sha256": "fc324df09261798c318ff7d647e7e40fd1b96b522a29743401b86d17f46c3b76"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side0-intact-fallback.png",
+        "sha256": "8ad1afc02257e5e2008249b4c9e79a48de90f14603a549867f0feb2d2bd0d797"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side1-damaged-art.png",
+        "sha256": "efda315f9662a3e446a10921a9754414185412389925e598cb1dc7c90d1ccac7"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side1-damaged-fallback.png",
+        "sha256": "983e9b8e6b0fee2d642f8fa832865083d049fda0a0e9a7f557307e247e9e056b"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side1-intact-art.png",
+        "sha256": "da997c29a3c5f5f8d8e61726efc9611ac6f909576e076d437f44206e77795c42"
+      },
+      {
+        "path": "build/swat/review/roadside-integration/visual/model1-side1-intact-fallback.png",
+        "sha256": "d739e064d1427d37028be3060dfc2a699fb251ac76741eefae2304b6f85683a9"
+      }
+    ],
+    "review": {
+      "path": "build/swat/review/roadside-integration/visual-review.txt",
+      "sha256": "f9dcd24efc2ce5d9b1eaf1ff731ee779726f49a396b4ca02932d177590e498c3"
+    },
+    "physical_raster_cases": 16,
+    "original_embedded_maps": 10,
+    "authority_immutable": true,
+    "textures_released": true,
+    "compile": {
+      "path": "build/swat/review/roadside-integration/art-compile.log",
+      "sha256": "6d0d1cac2f5e60a5a867eecd19d36bb23d490f0d7bfc95e94bcc8ddeda3129e2"
+    },
+    "triangle_matching": "Every original oriented triangle is consumed exactly once within its assigned physical owner; physical storage groups solids whose triangles may interleave in the render primitive.",
+    "isolation": "Bubblewrap gives Xvfb private writable temporary storage and a local-only abstract X11 socket. The keyboard compiler and other dependencies are extracted locally; no system packages installed."
+  },
+  "routes": {
+    "motel-room-search": {
+      "ticks": 25571,
+      "arrests": 2,
+      "lawful_suspect_deaths": 0,
+      "journal": {
+        "path": "build/swat/review/roadside-integration/motel-room-search.sgrp",
+        "sha256": "7f9bf8fa5af0ca14f17d6d4aa13657afa2f8c2af89579743a593485bd1b24195"
+      },
+      "stdout": {
+        "path": "build/swat/review/roadside-integration/motel-room-search.log",
+        "sha256": "fcde755324a80ad0f135dd04f8688b31d8217cf00aa05c2bc8684a7985563d75"
+      },
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/motel-room-search.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_shipping_replays": {
+        "linux": {
+          "path": "build/swat/review/roadside-integration/motel-room-search-linux-replay.log",
+          "sha256": "b119a387a5afafe6909936900cca0e56857cb43105593215066260b7bd6882dc"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/motel-room-search-native-replay.log",
+          "sha256": "74f17581427661481266c1351c0e1fd5390bc1de2ee476d61a7eb22eb79b3d9b"
+        }
+      }
+    },
+    "motel-threat-interroom": {
+      "ticks": 20819,
+      "arrests": 0,
+      "lawful_suspect_deaths": 2,
+      "journal": {
+        "path": "build/swat/review/roadside-integration/motel-threat-interroom.sgrp",
+        "sha256": "8d87a3fc47f661978672059022bfeb2fa3573fb6b665df911deaf97fc423ee90"
+      },
+      "stdout": {
+        "path": "build/swat/review/roadside-integration/motel-threat-interroom.log",
+        "sha256": "079af8940a0df848c9a025d21f0c9db3fb0daec4df0fb55be58a255c7d865201"
+      },
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/motel-threat-interroom.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_shipping_replays": {
+        "linux": {
+          "path": "build/swat/review/roadside-integration/motel-threat-interroom-linux-replay.log",
+          "sha256": "c08bb05940e2bb711522dad59aa8e5eb73e877beb8fdb827e2c97cdad2dab6cd"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/motel-threat-interroom-native-replay.log",
+          "sha256": "489f01ac81ed44ad504473be4e7329178adf69ef5ae05cffc902f665ff88a015"
+        }
+      }
+    },
+    "motel-threat-exterior": {
+      "ticks": 9512,
+      "arrests": 0,
+      "lawful_suspect_deaths": 2,
+      "journal": {
+        "path": "build/swat/review/roadside-integration/motel-threat-exterior.sgrp",
+        "sha256": "ee1cd38eba724c8921b6eb2f3e876d2a5b08b5beb7351c5df079f0a5c71027e3"
+      },
+      "stdout": {
+        "path": "build/swat/review/roadside-integration/motel-threat-exterior.log",
+        "sha256": "89661cee4fc6da99c9c731479f8bca5f357ac6516710830e082eabcdd7e9aaea"
+      },
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/motel-threat-exterior.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_shipping_replays": {
+        "linux": {
+          "path": "build/swat/review/roadside-integration/motel-threat-exterior-linux-replay.log",
+          "sha256": "34aab173bd2a660c1a6a5874a54692737c35c870dbcdf1dbd3dea01531dea375"
+        },
+        "native": {
+          "path": "build/swat/review/roadside-integration/motel-threat-exterior-native-replay.log",
+          "sha256": "ab2d1d5c1c7f8fc9b373f9bfc93ac6133e3c41ddbb94b681722277075988403c"
+        }
+      }
+    }
+  },
+  "regressions_retained": [
+    {
+      "reason": "Initial tire-center ray met the steel wheel cover; probe moved to the actual rubber shoulder above it.",
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/fixture-wheel-disc.stderr.log",
+        "sha256": "23b08f732caec7ce783f25c3b88a1b1a5e9fadb3920a5352fff66d15400205fe"
+      }
+    },
+    {
+      "reason": "Adjacent 32-port probes failed before clients joined; Windows has larger reserved UDP blocks. Same bounded attempts now span the range.",
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/before-spread-net-native.stderr.log",
+        "sha256": "355f6aa4335a9c868182bb7439b14f8259a34df98ccca0aec4fd70debe271f66"
+      },
+      "windows_reservations": {
+        "path": "build/swat/review/roadside-integration/windows-udp-exclusions.log",
+        "sha256": "22f0543c5b310b08888fec1b9ea9194c5598744235b753ad0c378d3b4f2a0c1f"
+      }
+    },
+    {
+      "reason": "Synchronous native replica builds starved transport and paused-state publication. Server-only pumping and earlier-peer pumping were insufficient; individual builds also exceeded six seconds. Real production cooperative construction plus current-state publication resolves the tested boundary without deadline relaxation.",
+      "first_reset_failure": {
+        "path": "build/swat/review/roadside-integration/before-map-pump-net-native.stderr.log",
+        "sha256": "e7dc82c1d569d7ee1d5d592ada840a02d00a4921129059c347d4d8629e66508e"
+      },
+      "server_only": {
+        "path": "build/swat/review/roadside-integration/before-earlier-peer-pump-net-native.stderr.log",
+        "sha256": "1bfbf17048e73694ec4c291864b6aa23bcebce99bcb66a2d0b0835e684a9a033"
+      },
+      "earlier_peers_only": {
+        "path": "build/swat/review/roadside-integration/before-loading-publish-net-native.stderr.log",
+        "sha256": "44f8f0e10d3bed3ebd4e2baa7234e6f734ebdd5846680fc68dab38ddb31dcce7"
+      },
+      "individual_slow_build": {
+        "path": "build/swat/review/roadside-integration/before-build-progress/net-native.stderr.log",
+        "sha256": "97fbd3570136754988c1dfa283b3192939691dd60456bc12508334cc623d844c"
+      }
+    },
+    {
+      "reason": "Platform libm atan2f in the standalone roadside steering driver produced slightly different ordinary inputs and transient state/sound digests. The driver now uses the engine deterministic b3Atan2 contract; the final complete traces must match exactly.",
+      "linux": {
+        "path": "build/swat/review/roadside-integration/before-roadside-steering/roadside-linux.trace",
+        "sha256": "6e97887d43fc4c4be0c9730f5f648897e900a16094c18481bea377fb4f8663eb"
+      },
+      "native": {
+        "path": "build/swat/review/roadside-integration/before-roadside-steering/roadside-native.trace",
+        "sha256": "ee90881318b90a62dc43078cf963ecf04b825902312d0ea5f1f3250f78e32d84"
+      },
+      "result": {
+        "path": "build/swat/review/roadside-integration/roadside-final.log",
+        "sha256": "910b36f431d34a35b3f8ba01d9547ccfd5590cd7f6a4d0a898dccf5845e55f1c"
+      }
+    },
+    {
+      "reason": "The original commander stopped the team before its car-detoured approach finished. A search officer then correctly covered a visible armed suspect in another room. Restored-recording probes confirm supported routes remain clear. The revised ordinary-input driver waits for physical regroup before Hold/Search; gameplay threat and navigation rules remain unchanged.",
+      "stdout": {
+        "path": "build/swat/review/roadside-integration/before-court-nav/motel-room-search.log",
+        "sha256": "1786f4c83520184bb392c1b344efe54760be31b0986a157522a237725bdcb352"
+      },
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/before-court-nav/motel-room-search.stderr.log",
+        "sha256": "dec52e185c91a56062e06669f5722e5806aab0af304deda35d6676b5f69bba9b"
+      },
+      "journal": {
+        "path": "build/swat/review/roadside-integration/before-court-nav/motel-room-search.sgrp",
+        "sha256": "ec2b209fe4507668093d3f2a2a33ac6f1150f2499ec74c8d7e6b609f7a852630"
+      },
+      "diagnostic": {
+        "path": "build/swat/review/roadside-integration/court-nav-diagnostic.log",
+        "sha256": "3cdb50c720c0e56ef40acedba0c2f07577781872402e7b4ffb5ed70557ed85fb"
+      }
+    },
+    {
+      "reason": "The car detour put hostile shots outside the QA commander route-facing view. The original driver kept walking and died. Its combat-only hearing consumer now supplies a coarse bearing for a bounded look turn; it still needs real visible threat confirmation before firing and changes no gameplay/AI/weapon rules. Quiet-route inputs are unaffected by this combat-only branch.",
+      "stdout": {
+        "path": "build/swat/review/roadside-integration/before-combat-hearing/motel-threat-interroom.log",
+        "sha256": "ffe7cab451e6b4979ef23e016b594eb800a0708e9e44bfd613476f4025186b0c"
+      },
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/before-combat-hearing/motel-threat-interroom.stderr.log",
+        "sha256": "ed3dfbf772ff6e8f76dc59e3d25ff4b9fb4708475a14f3b5cdd7b86148538994"
+      },
+      "journal": {
+        "path": "build/swat/review/roadside-integration/before-combat-hearing/motel-threat-interroom.sgrp",
+        "sha256": "659410afa0ba846015cb5cf2716f096aa5230ac7a5c7d99553ba55fe548d742a"
+      }
+    },
+    {
+      "reason": "A hearing-only turn acquired the shooter but still died before completing the turn/shot. The combat route now surveys the known guest-room facade with ordinary strafing/backward movement while following actual court waypoints. It names no hidden occupant; actual visibility and observed threatening pose still gate engagement. Quiet-route inputs and gameplay rules remain unchanged.",
+      "stdout": {
+        "path": "build/swat/review/roadside-integration/before-court-survey/motel-threat-interroom.log",
+        "sha256": "0e34883b90f0ee22d93c2d7c15c3c8d5d5309c5c2b0019e24e020f206e98a2df"
+      },
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/before-court-survey/motel-threat-interroom.stderr.log",
+        "sha256": "8de70836acb00aa8fbaebcfc3df9a46236aa254bbd41e2122ff56e97aeb4e136"
+      },
+      "journal": {
+        "path": "build/swat/review/roadside-integration/before-court-survey/motel-threat-interroom.sgrp",
+        "sha256": "2cc7d0855bbe01dc052e48f89b0ac356328d79543097b9bc67cd939eb3782f65"
+      }
+    },
+    {
+      "reason": "Final Windows replay diverged at tick 23,563 solely in one ULP of blocked-handle sound Y; actor/object state matched. Trying a locked/wedged/charged door now anchors handle feedback to the leaf centre, like ordinary open/close cues. A real ordinary-interact regression covers all three blocked states, high/low aimed contacts, single-press audio and unchanged lock/tool state.",
+      "native_replay": {
+        "path": "build/swat/review/roadside-integration/before-native-wedge-divergence/motel-room-search-native-replay.log",
+        "sha256": "3ff427656ad501d646ee6de70f613b1c29e036778c5fcc67647fa0fc855746b7"
+      },
+      "linux_snapshot": {
+        "path": "build/swat/review/roadside-integration/diagnostic-linux.snapshot",
+        "sha256": "8a6546ae29c1faed9f8fc92152f68a0ee9a393da031639972f490f5b714a1eab"
+      },
+      "native_snapshot": {
+        "path": "build/swat/review/roadside-integration/diagnostic-native.snapshot",
+        "sha256": "3249b1af0632ec26128cb3a7cdc2b75080dd9f9883a3ff723b822587934cd546"
+      },
+      "comparison": {
+        "path": "build/swat/review/roadside-integration/diagnostic-compare.log",
+        "sha256": "dac15e3cc295c9b2043dda601560b8cfa9e0f37ba1415da8817bc8782046181f"
+      },
+      "encoded_comparison": {
+        "path": "build/swat/review/roadside-integration/diagnostic-encoded-diff.json",
+        "sha256": "9f9b5c92ff7afc41c8ab2aaed6ee9dfdea29efcae2ccfc7975a814991c5145c5"
+      },
+      "context": {
+        "path": "build/swat/review/roadside-integration/diagnostic-tool-context.log",
+        "sha256": "a98e1c39b9dd744a7608402f419c374298aba3c527f3c5f22f0d150ef76bc8ce"
+      }
+    },
+    {
+      "reason": "The first geometry verifier assumed identical per-owner triangle order; delivered shelter primitives interleave disconnected solids. The final oriented-multiset comparison consumes every triangle once without changing runtime/source geometry.",
+      "stderr": {
+        "path": "build/swat/review/roadside-integration/visual-before-triangle-multiset.log",
+        "sha256": "e3e164179888f63b5f8259eb422e0170976ee33598fc4f328bdc0db9c1af24db"
+      }
+    }
+  ],
+  "build_registration": {
+    "cmake": {
+      "path": "build/swat/review/roadside-integration/cmake-configure.log",
+      "sha256": "e54e2c048fac703d301c22fdbc6c540d82fca40721e8961478d8ededb141df5d"
+    },
+    "test_registration": {
+      "path": "build/swat/review/roadside-integration/cmake-registration.log",
+      "sha256": "b3ae2990a9c0c94d05fe8075c6c87916fa3cd37dca59c58a8c7203be68af0409"
+    },
+    "make": {
+      "path": "build/swat/review/roadside-integration/make-registration.log",
+      "sha256": "4bccc953f468a03388457b231072981fe781d326c3672321ab8759846260d647"
+    },
+    "python_disabled": true,
+    "windows_build_script_syntax": true
+  },
+  "installed": {
+    "files": 38,
+    "executables": 34,
+    "deployed_glbs": 4,
+    "sha256": {
+      "build/swat/swat": "96644f20eaf14933ad8e1aed2851d66dbe77cf2c85d1e5eb4b4b888a82521086",
+      "build/swat/server": "0a10d61646315e447ce52a6a791dbff34f2cdd0c5091415edfed7f635ab3d544",
+      "build/swat/replay_tool": "4c5458bd598f2b9b67ca53c51dbf64650905c17cac3b59db6d31aaebada31ead",
+      "build/swat/performance_tool": "50a5c333ed4362aac7aad4723f026a1ef1992b4f17d9509513207e21d89a54ab",
+      "build/swat/test_encounter": "27d932f7c48159decebb6216cb84963c2903e069995b9ab4a9ccdfbead02a639",
+      "build/swat/test_tactical": "5c45ecb66700c8ff4f715c3289f42c49838be92de362132628a0370453884471",
+      "build/swat/test_sim": "d852cbf6ebe3a6cb806e6ef3bb003c86f6838afc88dcd4788343b0f709e91ab1",
+      "build/swat/test_protocol": "746b8f12cb620d1927f09d60149dc77d7102ade621f987b0f4d2a949deec8f5d",
+      "build/swat/test_net": "0a86f45f5ebb54b742a6a11390f1648a46463e9b4222ac4546d90f7df61f690c",
+      "build/swat/test_motel_completion": "65396cc4763f75e3962f06ebdfec399a2dcd0828bfa61e065fa687c7e67a682c",
+      "build/swat/test_navigation_search": "5071c131b8fc4a50af182ddc8c23f3efaf5171e56dc119748206128413752701",
+      "build/swat/test_motel": "4184a8e6a2df60eed04a1c3ef37a4efac0baca8506ae40adcfc10c85dda8300b",
+      "build/swat/test_frontend": "13bfc23052262d624e134223bb90fa8b3bdfb27579f55c7edec0dbd5e5d9238e",
+      "build/swat/test_frontend_input": "8493b9145518f5b0df27ae7646e52ad4fec1ca5f8e16f948b4b802f03e084846",
+      "build/swat/test_motel_roadside": "01c6dd34baa75addd0ed75393b1734a851383a5be5c81607b4e1dfd4939594af",
+      "build/swat/test_motel_dumpster": "3c5d4ca9d1e7e0812aea3c3c4355f928cb0f567f1d9589d9b27aaed13c373cbb",
+      "build/swat/test_motel_roadside_art": "e9d3c192240d45195109c324aa782e28c9eb1a4c70539385a26a63b79bf77e7d",
+      "build/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "build/swat/windows/swat.exe": "4f70f20a8ce58edbc143c2505f181146048e93fa1bfd7c62aad10f8adbba3445",
+      "build/swat/windows/swat-server.exe": "76495578cb0ea5e94a892cc36fe521176f7e1925d150bb57307494cc1322a6ce",
+      "build/swat/windows/replay_tool.exe": "4e419cf83e19741235cc963576357a48724420115b2de354328f5c22f6f08116",
+      "build/swat/windows/performance_tool.exe": "47f95d839b890490282fa8d2fe5e835e73cef9673e5fdbb82fdebb6864f42d7d",
+      "build/swat/windows/test_encounter.exe": "554cf8e89a3c9b81712ab4448b1d7caf0176a826a7c9fa30cdc4727526b7cf84",
+      "build/swat/windows/test_tactical.exe": "d914e2c5c813c986c58a331aa9bd4aaba47bbce881e6379b3c347caf825140b7",
+      "build/swat/windows/test_sim.exe": "825c14d7437ef1f928d8434542da498d0ff118a601521386c4893342d96c7bd8",
+      "build/swat/windows/test_protocol.exe": "9e888183c4d905b415f5c92ff8da14bb40dbc952e1fe82b3d9e97c87f23a8d5d",
+      "build/swat/windows/test_net.exe": "bc9910edd9634faaf297c6fa84cbeff8d870d02c8eaf6f187a4b7748f39ef11a",
+      "build/swat/windows/test_motel_completion.exe": "8984ae07a6744215e128f15197f44848202b6d1aa93e66c3a05bbc820f3054ca",
+      "build/swat/windows/test_navigation_search.exe": "c98ce0ce337e81e1f8c6dba7b15799eca5fe9b5f7f5569a95dae491d1c48d3fd",
+      "build/swat/windows/test_motel.exe": "f5e6bb52ef496c200e1000c65672dc5b9ca8006e40dc4dd15076429b18c7288a",
+      "build/swat/windows/test_frontend.exe": "3e3c968925d2de061a80f5ce9aff7aa9946eacd3772ab4fcc3388830876bb2fb",
+      "build/swat/windows/test_frontend_input.exe": "71bfb1a13ba2d0c637bc6bbb4083964250b0de7aa12c1bfde2f9f71b2be7be96",
+      "build/swat/windows/test_motel_roadside.exe": "2f816594b38fe26432fd80233c75701df26797c79298ac974ecb1adc446eade1",
+      "build/swat/windows/test_motel_dumpster.exe": "84230c19a40270365ca91ed186b7432ddeb59cc3bbca03fb506677d99417517c",
+      "build/swat/windows/test_motel_roadside_art.exe": "0509f567dc055e78fa60d32dfa5adad4d003aa2dcd6e6604f267db74442eb79f",
+      "build/swat/windows/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/windows/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+    },
+    "log": {
+      "path": "build/swat/review/roadside-integration/install.log",
+      "sha256": "dc0d67f7083ae2aa13f365b42c4da4eb76c86d9f459a36bad2fb7018cd3d3ba4"
+    },
+    "launcher": {
+      "path": "build/swat/review/roadside-integration/installed-help.log",
+      "sha256": "8d7213a59eca19b8f6cac58ed3875d6bdf3b5910a521c022a3bf8fe8746d070a"
+    }
+  },
+  "compatibility": {
+    "old_v34_rejected_each": true,
+    "linux": {
+      "path": "build/swat/review/roadside-integration/old-v34-linux.log",
+      "sha256": "867e62a34dcea707eccc43f56cade2b150fdde28fc128733f6a54d9c67c0c4aa"
+    },
+    "native": {
+      "path": "build/swat/review/roadside-integration/old-v34-native.log",
+      "sha256": "85e168a8279bbfacc90e496492ea299f031724a92ceb579c01dd0354c5697b42"
+    }
+  },
+  "constraints": {
+    "no_python_execution": true,
+    "no_root_trainer_cuda_rebuild": true,
+    "no_windows_graphics_executable_launched": true,
+    "no_desktop_window_or_focus_change": true,
+    "no_windows_gpu_or_heavy_performance_run": true,
+    "software_render_one_thread": true,
+    "dependencies_extracted_locally_only": true
+  },
+  "remaining": [
+    "Native Windows visual/interaction and stable-load frame-time acceptance remain held. CPU software rendering does not establish those results.",
+    "The sedan retains an exterior-only closed coachwork volume. Vehicle panel-stack ballistics and suspension remain unqualified; these game material sections are not fabrication-strength evidence.",
+    "Broader occupied layouts/moving hostile squad protection, further equipment roles, low-prop controller contacts, remaining level composition/art/audio and visible handling, policy baselines and held-out evaluation remain open."
+  ],
+  "coordination": {
+    "channel_id": "C0C5TN3AA8K",
+    "thread_ts": "1791078311.943659",
+    "message_ts": "1792313740.465369",
+    "url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792313740465369?thread_ts=1791078311.943659&cid=C0C5TN3AA8K",
+    "scope": "Public engine progress on original source preservation, actual physical/software-render checks, held native visual/performance and unqualified vehicle cover. No source edit requested."
+  }
+}

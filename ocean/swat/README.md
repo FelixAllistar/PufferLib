@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v34 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v35 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1036,7 +1036,7 @@ over real motel UDP. Native transport uses the approved wrapper with
 `test_encounter.exe rooms-network`. `motel-room-search-test` adds a queued
 Room 101 search, checkpoint/restore and ordinary completion to the full quiet
 restraint/retrieval/equipment/escort route. The QA executable accepts `rooms`.
-Room identity/progress and door references use protocol/replay v34; use matching
+Room identity/progress and door references use protocol/replay v35; use matching
 peers and recreate older journals/saves.
 
 Parking stops retain their full mesh collision. NPC navigation treats them as
@@ -1566,7 +1566,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the
-current protocol requires version 34 as described above.
+current protocol requires version 35 as described above.
 The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
 stands on its eight original skid contacts beside the maintenance shed. Its
 unchanged 2,908-triangle GLB supplies a steel body and two independently removable
@@ -1582,6 +1582,25 @@ walking lanes, blocked body passage, damage, replicas and legacy map prefixes.
 existing output directory and an asset root containing only
 `motel_dumpster/BC_DUMP01_closed.glb` to keep its graphics footprint bounded.
 The ordinary Windows build also supplies both check executables.
+The approved [sedan and shelter](art_handoffs/roadside-engine-ownership.json)
+now occupy a parking bay and the connected street shoulder. Their unchanged
+GLBs supply 13,124/7,868 triangles, mapped to 50/28 material and attachment
+owners. Physical contact subsets retain openings, tire profiles and bench gaps;
+the full source mesh supplies thickness queries. Broken parts disappear from
+the shared render bank while surviving parts keep the original textures and UVs.
+Eight tire contacts and the four original baseplates anchor the static poses.
+The existing steel, rubber, glass and timber rules are game approximations.
+The sedan's exterior-only closed coachwork retains its supplied solid volume;
+vehicle panel-stack ballistics and suspension have not been qualified.
+`make -C ocean/swat motel-roadside-test` checks ordinary movement from the motel
+court to the shelter, cover/aperture response, support damage, encoded replicas,
+reset and older canonical maps. `motel-roadside-art-test-build` builds the
+graphics check; pass an output directory and an asset root containing just the
+`motel_sedan` and `motel_shelter` exports. Its source/fallback silhouette,
+damage and lighting checks can run on an isolated software display. Software
+rendering does not establish native visual or performance acceptance.
+New motel journals/saves and matching v35 peers are required. The Windows build
+copies both complete original GLBs into its runtime asset tree.
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native
