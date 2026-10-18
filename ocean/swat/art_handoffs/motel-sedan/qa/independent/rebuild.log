@@ -1,0 +1,24 @@
+Extensions: writing cache failed ([Errno 30] Read-only file system: '/home/agent/.config/blender').
+Info: Saved "BC_SEDAN01_editable.blend"
+ERROR Draco mesh compression is not available because library could not be found at /usr/bin/4.3/python/lib/python3.13/site-packages/libextern_draco.so
+20:03:07 | INFO: Starting glTF 2.0 export
+20:03:07 | INFO: Extracting primitive: BC_SEDAN01_body
+20:03:07 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+20:03:07 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+20:03:07 | INFO: Primitives created: 3
+20:03:07 | INFO: Extracting primitive: BC_SEDAN01_wheel_front_left
+20:03:07 | INFO: Primitives created: 2
+20:03:07 | INFO: Extracting primitive: BC_SEDAN01_wheel_front_right
+20:03:07 | INFO: Primitives created: 2
+20:03:07 | INFO: Extracting primitive: BC_SEDAN01_wheel_rear_left
+20:03:07 | INFO: Primitives created: 2
+20:03:07 | INFO: Extracting primitive: BC_SEDAN01_wheel_rear_right
+20:03:07 | INFO: Primitives created: 2
+20:03:07 | INFO: Extracting primitive: BC_SEDAN01_windows
+20:03:07 | INFO: Primitives created: 1
+20:03:07 | INFO: Finished glTF 2.0 export in 0.18974828720092773 s
+
+SEDAN_BUILD_DONE {"source_mesh_objects": 151, "wheel_centers": [{"name": "wheel_front_left", "radius": 0.315, "width": 0.2, "blender_center": [0.765, -1.28, 0.315], "gltf_center": [0.765, 0.315, 1.28]}, {"name": "wheel_front_right", "radius": 0.315, "width": 0.2, "blender_center": [-0.765, -1.28, 0.315], "gltf_center": [-0.765, 0.315, 1.28]}, {"name": "wheel_rear_left", "radius": 0.315, "width": 0.2, "blender_center": [0.765, 1.28, 0.315], "gltf_center": [0.765, 0.315, -1.28]}, {"name": "wheel_rear_right", "radius": 0.315, "width": 0.2, "blender_center": [-0.765, 1.28, 0.315], "gltf_center": [-0.765, 0.315, -1.28]}], "blender_version": "4.3.2", "groups": {"body": 85, "wheel_front_left": 15, "wheel_front_right": 15, "wheel_rear_left": 15, "wheel_rear_right": 15, "windows": 6}, "materials": ["BC_SEDAN_Paint_SageGrey", "BC_SEDAN_Rubber_Trim", "BC_SEDAN_Opaque_Glass", "BC_SEDAN_Detail_Atlas"], "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298"}
+Blender 4.3.2
+
+Blender quit
