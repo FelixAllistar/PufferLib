@@ -63,8 +63,8 @@ static double poker_range_rank_likelihood(uint32_t rank, int r0, int r1,
 // position, the visible board, and optional public table statistics. It is not
 // trained or calibrated. The equity computation below is separate from this
 // deliberately simple range hypothesis.
-double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
-    const PokerProfile* profiles) {
+static double poker_range_weight_ranked(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
+    const PokerProfile* profiles, uint32_t river_rank) {
     int r0 = c0 >> 2, r1 = c1 >> 2;
     int hi = r0 > r1 ? r0 : r1, lo = r0 < r1 ? r0 : r1;
     int suited = (c0 & 3) == (c1 & 3);
@@ -103,7 +103,7 @@ double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
             if (r > board_hi) board_hi = r;
             ranks |= 1u << r; suits[cards[b + 2] & 3]++;
         }
-        uint32_t rank = poker_rank(cards, street + 4);
+        uint32_t rank = street == 3 && river_rank ? river_rank : poker_rank(cards, street + 4);
         int draw = 0;
         if (street < 3) {
             for (int s = 0; s < 4; s++)
@@ -114,6 +114,13 @@ double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
         weight *= poker_range_rank_likelihood(rank, r0, r1, board_hi, draw, action, aggression);
     }
     return weight;
+}
+
+// Standalone callers have no cached rank. A supplied rank is used only on the
+// fully visible river; earlier streets must never inspect sampled future cards.
+double poker_range_weight(Poker* g, int t, int p, uint8_t c0, uint8_t c1,
+    const PokerProfile* profiles) {
+    return poker_range_weight_ranked(g, t, p, c0, c1, profiles, 0);
 }
 
 // Self-normalized importance sampling of complete unknown deals. Uniform
@@ -152,6 +159,9 @@ void poker_equity(Poker* g, int t, uint64_t* rng, int samples, int ranges,
         }
         pots[layers] = pot; contenders[layers++] = mask; eligible += pot; lower = upper;
     }
+    // On the river our own cards and the entire board are identical in every
+    // sampled deal. Reuse that exact rank without changing draws or weights.
+    uint32_t hero_river_rank = board_n == 5 ? poker_rank(cards, 7) : 0;
     double weights = 0, weights2 = 0, shares = 0, payouts = 0;
     for (int sample = 0; sample < samples; sample++) {
         uint8_t deck[52]; memcpy(deck, pool, available);
@@ -166,13 +176,14 @@ void poker_equity(Poker* g, int t, uint64_t* rng, int samples, int ranges,
         for (int i = board_n; i < 5; i++) cards[i + 2] = deck[cursor++];
         cards[0] = g->hole[hero][0][t]; cards[1] = g->hole[hero][1][t];
         uint32_t ranks[POKER_PLAYERS] = {0};
-        ranks[hero] = poker_rank(cards, 7);
+        ranks[hero] = hero_river_rank ? hero_river_rank : poker_rank(cards, 7);
         double weight = 1;
         for (int i = 0; i < n; i++) {
             int p = opponents[i];
             cards[0] = deck[cursor++]; cards[1] = deck[cursor++];
             ranks[p] = poker_rank(cards, 7);
-            if (ranges) weight *= poker_range_weight(g, t, p, cards[0], cards[1], profiles);
+            if (ranges) weight *= poker_range_weight_ranked(g, t, p, cards[0], cards[1], profiles,
+                board_n == 5 ? ranks[p] : 0);
         }
         int ties = 1, beaten = 0;
         for (int i = 0; i < n; i++) {
