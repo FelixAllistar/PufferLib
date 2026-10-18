@@ -10,7 +10,9 @@
 // All hero decisions aggregate hidden holdings before maximizing their values.
 // The river has finite two-card ranges: exact integration is an optional mode.
 // Exact mode changes numerical integration. A separate flag below controls
-// the optional first-response calibration.
+// the optional first-response calibration. A further guarded flag can temper
+// the initial marginal opponent range; descendant response updates retain
+// their existing likelihoods.
 #ifndef POKER_RIVER_EXACT
 #define POKER_RIVER_EXACT 0
 #endif
@@ -25,6 +27,16 @@
 #error "POKER_RIVER_CALIBRATED requires POKER_RIVER_EXACT=1"
 #endif
 #include "river_response.h"
+#endif
+
+#ifndef POKER_RIVER_RANGE_CALIBRATED
+#define POKER_RIVER_RANGE_CALIBRATED 0
+#endif
+#if POKER_RIVER_RANGE_CALIBRATED
+#if !POKER_RIVER_EXACT || !POKER_RIVER_CALIBRATED
+#error "POKER_RIVER_RANGE_CALIBRATED requires exact and response-calibrated modes"
+#endif
+#include "river_range.h"
 #endif
 
 #ifndef POKER_RIVER_DEPTH
@@ -332,6 +344,11 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
             if ((cards[b + 2] >> 2) > board_hi) board_hi = cards[b + 2] >> 2;
         weights[i] = prior_weight * poker_range_rank_likelihood(rank, cards[0] >> 2,
             cards[1] >> 2, board_hi, 0, g->line[o][t] >> 6, aggression);
+#if POKER_RIVER_RANGE_CALIBRATED
+        // Apply once to the initial hero-marginal range. Reference equities
+        // and later response-conditioned posterior updates stay unchanged.
+        if (ctx.calibrated) weights[i] = poker_river_range_weight(weights[i]);
+#endif
         int low = 0, high = reference_samples;
         while (low < high) {
             int mid = (low + high) / 2;
