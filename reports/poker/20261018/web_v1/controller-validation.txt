@@ -1,0 +1,3 @@
+Stock Bend 2.0.6: All terms check. Eight laws proved.
+PASS: 5204 Bend browser control boundary checks and session accounting.
+Guard: MemoryMax=2147483648; MemorySwapMax=0; TasksMax=128; CPUQuota=100%.

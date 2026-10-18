@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/FelixAllistar/PufferLib",
+  "pull_request": 5,
+  "commit": "59e06c0f92aa6f62909522d5d8b24eaba5ad8cfb",
+  "files": {
+    "rules.h": "e35d4999d205047826b21d8efd3b59959da346f3b0a968f0fddaddaf2adb9490",
+    "equity.h": "b92c72eed89442faad7b8af5b356e063b2a5e82b4666d62d7a68973b379c9901",
+    "preflop_minraise.h": "cf891bcf0a1c39dd1c5c9e81db34843b62af12bf745ac1c9e62248676139c04a",
+    "river_value.h": "478f110435f8aa740a37b6ab3d2f320540891609c761dc53a102f0fb83178867"
+  },
+  "mode": "Default sampled HU river action values; exact, calibration, CFR and clone modes disabled."
+}
