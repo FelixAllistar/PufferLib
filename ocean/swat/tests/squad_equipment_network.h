@@ -1,7 +1,42 @@
 #include "net.h"
 #include "enet/enet.h"
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <time.h>
+#endif
+typedef struct EquipmentLoading {SwatNetServer* server;SwatNetClient* clients;int count,own;uint32_t published;} EquipmentLoading;
+static uint32_t equipment_load_delay,equipment_load_started,equipment_load_elapsed;
+static int equipment_load_services;
+static void equipment_loading(void* context) {
+    EquipmentLoading* p=context;uint32_t now=enet_time_get();
+    // Other processes keep running while this replica constructs its world.
+    // Pump only their sockets here; production must service its own client.
+    if(now-p->published>=250){swat_server_publish(p->server);p->published=now;}
+    assert(enet_host_service((ENetHost*)p->server->transport,NULL,0)>=0);
+    for(int i=0;i<p->count;i++)if(i!=p->own && p->clients[i].transport)
+        assert(enet_host_service((ENetHost*)p->clients[i].transport,NULL,0)>=0);
+    if(equipment_load_delay && p->own==1) {
+        if(!equipment_load_services)equipment_load_started=enet_time_get();
+        uint32_t delay=equipment_load_delay<40?equipment_load_delay:40;
+#ifdef _WIN32
+        Sleep(delay);
+#else
+        struct timespec duration={0,(long)delay*1000000};nanosleep(&duration,NULL);
+#endif
+        equipment_load_delay-=delay;equipment_load_services++;
+        equipment_load_elapsed=enet_time_get()-equipment_load_started;
+    }
+}
 static void equipment_net_poll(SwatNetServer* server,SwatNetClient* clients,int count) {
+    EquipmentLoading loading[SWAT_MAX_PLAYERS];assert(count<=SWAT_MAX_PLAYERS);
+    for(int i=0;i<count;i++) {
+        assert(!clients[i].loading_service && !clients[i].loading_context);
+        loading[i]=(EquipmentLoading){server,clients,count,i,enet_time_get()};
+        clients[i].loading_service=equipment_loading;clients[i].loading_context=&loading[i];
+    }
     swat_server_poll(server);for(int i=0;i<count;i++)swat_client_poll(&clients[i]);
+    for(int i=0;i<count;i++){clients[i].loading_service=NULL;clients[i].loading_context=NULL;}
     enet_uint32 condition=ENET_SOCKET_WAIT_RECEIVE;enet_socket_wait(((ENetHost*)server->transport)->socket,&condition,1);
 }
 static void equipment_net_ready(SwatNetServer* server,SwatNetClient* clients,int count) {
@@ -67,7 +102,12 @@ static void equipment_network(void) {
     puts("PASS real UDP squad equipment: queued source-door identity replicates and one officer physically unlocks the authored motel door");
     in=swat_neutral_input();in.squad_order=SWAT_ORDER_WEDGE;in.squad_team=2;in.squad_queue=true;equipment_net_tick(&server,clients,1,in);
     assert(authority.actors[4].mind.pending_door==owner && authority.actors[4].mind.queued);
+    // Keep the already connected peer alive across a late map load longer
+    // than the unchanged shipping six-second deadline, without stepping play.
+    equipment_load_delay=6500;equipment_load_services=0;int before_join=authority.tick;
     assert(swat_client_open(&clients[1],&replicas[1],"127.0.0.1",port));equipment_net_ready(&server,clients,2);assert(clients[1].slot==2);
+    assert(!equipment_load_delay && equipment_load_services>=100 && equipment_load_elapsed>=6500 && authority.tick==before_join);
+    printf("EQUIPMENT_NET slow_late_join elapsed_ms%u services%d unchanged_tick%d\n",equipment_load_elapsed,equipment_load_services,authority.tick);
     for(int n=0;n<8;n++)equipment_net_tick(&server,clients,2,swat_neutral_input());
     assert(!authority.actors[4].mind.bot && !authority.actors[4].mind.pending_order && !authority.actors[4].mind.pending_door && door->wedge_owner<0);
     for(int n=0;n<2;n++)assert(!replicas[n].actors[4].mind.pending_door && !replicas[n].actors[4].mind.pending_order);

@@ -1,0 +1,1060 @@
+{
+  "created_utc": "2026-10-18T11:54:18.619Z",
+  "baseline_commit": "8bcadd5d5c260a5c5c225249a14b7b6c4a0cc311",
+  "previous_goal_turn": {
+    "classification": "progress",
+    "evidence": "8bcadd5d5 installed approved roadside props with139 broad groups/platform, three exact cross-platform mission journals and sealed original asset/render/transport evidence."
+  },
+  "protocol": 36,
+  "scope": "Correct downward ground snaps at low-prop lips using actual physical feet/capsule clearance; ordinary-input qualification and whole-slice regression. Full vertical-slice goal remains active.",
+  "source_files": [
+    {
+      "path": "ocean/swat/CMakeLists.txt",
+      "sha256": "bbfab424e3f1df7763324ff37ee0a2390759ee3cdf6cf55560cdfb9d1fdd4fa2"
+    },
+    {
+      "path": "ocean/swat/Makefile",
+      "sha256": "5daf75c06476e99c574b1cc5f3c246972bcf9dc350e23850edd5e8f534d55f5e"
+    },
+    {
+      "path": "ocean/swat/README.md",
+      "sha256": "d94ce40e004bb59a4032adec6a651fd4ae4b3a13b17c95abef41a346a20d029a"
+    },
+    {
+      "path": "ocean/swat/ROADMAP.md",
+      "sha256": "a27bef37f1fbcbb8207ee156af00ad8ced6d723eefe0c238cddcfaa259ce90a4"
+    },
+    {
+      "path": "ocean/swat/body.c",
+      "sha256": "8f39b62a5554862e33b750a7af68a03428666e18bd15630574a38eb35ddb63f5"
+    },
+    {
+      "path": "ocean/swat/build-windows.sh",
+      "sha256": "1b722ddb8a46812620c67e06d9ff80ae6c9097fe1735ee2e28002a00be26656a"
+    },
+    {
+      "path": "ocean/swat/encounter.c",
+      "sha256": "3027280000eaea3f7313fd0c3af282759c16b204933d192cb0e78dea154c7459"
+    },
+    {
+      "path": "ocean/swat/protocol.h",
+      "sha256": "0ed189ad18a38dc83affaf6770c64e38c0a01af7ca8f8d036dde32a61b0bb449"
+    },
+    {
+      "path": "ocean/swat/tests/squad_equipment.h",
+      "sha256": "e9591446bdac6baa12a16cd2d45fbe3d71013f73e56c9656d2f487ff1a4535da"
+    },
+    {
+      "path": "ocean/swat/tests/squad_equipment_network.h",
+      "sha256": "62a7a1ebba9f36e8077437d2affd34686b9da6844053a7993ce09d49f950b870"
+    },
+    {
+      "path": "ocean/swat/tests/test_motel_completion.c",
+      "sha256": "b37be670644e2cf23867834746acf3535c334665569d445ac54f730f8e71b767"
+    },
+    {
+      "path": "ocean/swat/tests/test_motel_player_contacts.c",
+      "sha256": "265067064d725c75e49d914c2ce63dc64f8141880e0538c16e884416d504749a"
+    }
+  ],
+  "proof_drivers": [
+    {
+      "path": "build/swat/review/player-contacts/build-release.sh",
+      "sha256": "32a97ae0b3bd630c0c5b87250035c7093c36ef90d195e1d249b2d1578926c0d1"
+    },
+    {
+      "path": "build/swat/review/player-contacts/refresh-body.sh",
+      "sha256": "788e4f109899de28ffcc378ab101d5e1a7e6ba1c5c5b2929618355c53832993b"
+    },
+    {
+      "path": "build/swat/review/player-contacts/refresh-body-and-aim.sh",
+      "sha256": "090f223ffd73d7152e5a5b8e430a8ede9b5d250fd172517f1a5b796a7993fa54"
+    },
+    {
+      "path": "build/swat/review/player-contacts/run-final-checks.sh",
+      "sha256": "0ab77de511d6124d3a28f007233384b60e6de187fb1e568f35c18ea780a45178"
+    },
+    {
+      "path": "build/swat/review/player-contacts/run-pitch-regression.sh",
+      "sha256": "877ca26f2cadcb9017cde2d53e306f77bc871b59e3aef9d2f2b7ed664e393557"
+    },
+    {
+      "path": "build/swat/review/player-contacts/pitch-regression.c",
+      "sha256": "8e3f88824e6f5d743988d34a2c3fccae031cd4df62715573ba3b685ce2c5e522"
+    },
+    {
+      "path": "build/swat/review/player-contacts/compile-roadside-art.sh",
+      "sha256": "e1c798e1f382bd56b0997bb682e1a34dba8aaa06857070d5ef7fe77e96814dbc"
+    },
+    {
+      "path": "build/swat/review/player-contacts/check.sh",
+      "sha256": "8a26dd00572b32d7691dcd6c0f64fb14f4f6d12505e4abf5de510c7f04b32d36"
+    },
+    {
+      "path": "build/swat/review/player-contacts/check-native.sh",
+      "sha256": "a920b29e917ed522fa18dcf74ab1cf52f8ba4d12a09be72bf7857f36f5da3701"
+    },
+    {
+      "path": "build/swat/review/player-contacts/run-missions.sh",
+      "sha256": "7e20732a9a0a6f5b219d4e073d785eddc82440482400000ec4b905a960d716ea"
+    },
+    {
+      "path": "build/swat/review/player-contacts/verify-journals.sh",
+      "sha256": "8fd8016a61cda4777c09b56e09eb5786871882c461f241204067d96c08423c10"
+    },
+    {
+      "path": "build/swat/review/player-contacts/negative-control.sh",
+      "sha256": "35223b4cdc850c4c9da8cb4471d53ad891a55be33d35f5125628d4469c56774a"
+    },
+    {
+      "path": "build/swat/review/player-contacts/registration.sh",
+      "sha256": "eca66c99e7c55ec7479c61457533a294d25fc3035d6a2f7782aeb9418f751d96"
+    },
+    {
+      "path": "build/swat/review/player-contacts/install.sh",
+      "sha256": "c2da19536498974485cedeeac9f36261eb258265ae14b06b2c16d4f8819959d8"
+    },
+    {
+      "path": "build/swat/review/player-contacts/record-receipt.cjs",
+      "sha256": "e7d44529828d43c69782916b83337b03a9f2851ad5f6c26a34caf1b3b831864b"
+    },
+    {
+      "path": "build/swat/review/player-contacts/verify-receipt.cjs",
+      "sha256": "651a67eadeefd608106feb4c6336a71fbeff9ac4ac3b740c2f7c5ee10c3e0036"
+    },
+    {
+      "path": "build/swat/review/player-contacts/replay-frame-snapshot.c",
+      "sha256": "19dec6fe2bd32098ba5e10171169f85ba0c8c0e71e3f503fd17c05b39babb92a"
+    },
+    {
+      "path": "build/swat/review/player-contacts/compare-replay-states.c",
+      "sha256": "bab3e6f4cadcc676ce01bad84bdc37ec786e3de5549dc6d7ae1faca81b671830"
+    },
+    {
+      "path": "build/swat/review/player-contacts/pitch-private-diagnostic.c",
+      "sha256": "e2577e31d6e54e54114f680747f22afc44a8bc4d6bebdde6499e3937127fcf46"
+    }
+  ],
+  "change": {
+    "cause": "A shrunken support probe could find floor beyond a concrete lip; post-physics downward snapping repeatedly pushed the full feet back into contact after solver separation. Direct ordinary player input reproduced67.964m/s upward velocity without the discarded planner.",
+    "behavior": "Before a downward correction larger than controller skin, query actual feet hull and leaned capsule with mesh rest offset. Retain the solver pose if it cannot fit. Upward stair casts, geometry, speeds, mass, gravity and collision masks remain unchanged.",
+    "fixture": "180 original-mesh trials; 9-ray footprint clearance relocates18 car-side starts instead of embedding players in the sedan. Four captured lip departures require actual goal arrival; a recorded default-spawn route crosses/reverses twelve times in1624ticks.",
+    "commander": "Full quiet run exposed a distant cuff operator correctly covering a separate armed suspect. Quiet ordinary commander now regroups physically in the court before entering for directed restraint, using the existing room-task regroup routine. An interior regroup left no valid trailing formation slots; the retained failed route establishes why regrouping occurs before entry. Combat retains its previous paced moving coverage; the quiet regroup pause exposed an officer to fatal fire in an exploratory combat route. No AI threat-priority relaxation.",
+    "task_anchor": "First Windows quiet playback differs only in officer3 pitch by two ULPs at23212. Direct planning diagnostics identify a one-ULP stored camera-ray target-height difference while eye and distance calculations match. Named door equipment commands now retain the leaf centre as their workpoint. Original angle math is retained; the ineffective math-only attempt is preserved."
+  },
+  "checks": {
+    "linux": {
+      "broad_groups": 139,
+      "broad": {
+        "encounter": {
+          "groups": 79,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/encounter-linux.log",
+            "sha256": "7347e020c1bb922a596c9b18913a0123490d12acdf6a6ba723aace9d50e264de"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/encounter-linux.stderr.log",
+            "sha256": "53d013b362fe0a637fe236efda52f06fc7c1e96f0a33ef910f45007b22511e65"
+          }
+        },
+        "tactical": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/tactical-linux.log",
+            "sha256": "38e858492b3f2936f3396cc1b9f850da49015d29ff8a71001cb35cbb071e994a"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/tactical-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "groups": 13,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/sim-linux.log",
+            "sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/sim-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "groups": 5,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/protocol-linux.log",
+            "sha256": "1ccbf0cfa8c8f9b61fe2084c08443beceaf901f4fa5342d4c6e92017e5e010bc"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/protocol-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/motel-linux.log",
+            "sha256": "62d9a7a5803d5e96f064e387068a85e5919df80fd3dcacd168c7edee7a576ca8"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/motel-linux.stderr.log",
+            "sha256": "7e52b7b05fe72e558805802c6ddfaa8217e9ef005940f8d9f5705488ef47b059"
+          }
+        },
+        "navigation": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/navigation-linux.log",
+            "sha256": "f77a6a4aaec85991521d980f29c306d4a6fd3ed8d5e635e5b65704b29bc0bb8f"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/navigation-linux.stderr.log",
+            "sha256": "83bfadcc22dfc45ae60533a1290c5a2727ebb9cbdc59b54c5b32e6d342300c09"
+          }
+        },
+        "net": {
+          "groups": 15,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/net-linux.log",
+            "sha256": "abbc93d72f26e3f6459b5289913f14e8b4ebbe762678e45c6b5950d3762fd110"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/net-linux.stderr.log",
+            "sha256": "39a5b09c2730f3c1f3c30efc0324010291191597fd5071149716107dce90b9e6"
+          }
+        }
+      },
+      "named_door_aim_heights": {
+        "groups": 13,
+        "stdout": {
+          "path": "build/swat/review/player-contacts/equipment-anchor-linux.log",
+          "sha256": "350589411ba7a37e0ec5bf76b7b3ec053aaa99bdafc954a204102ad12baad589"
+        },
+        "trace": {
+          "path": "build/swat/review/player-contacts/equipment-anchor-linux.trace",
+          "sha256": "e6ec4112f260c9404440ca00cf74b324abfab459c6fbad659e772507e8a5826c"
+        }
+      },
+      "equipment_late_join": {
+        "elapsed_ms": 6743,
+        "construction_services": 163,
+        "unchanged_tick": 212,
+        "stdout": {
+          "path": "build/swat/review/player-contacts/equipment-network-linux.log",
+          "sha256": "7df24ba212075a6674b7b2f96c6ebb002db7da2230d2151d26858b602e756062"
+        },
+        "stderr": {
+          "path": "build/swat/review/player-contacts/equipment-network-linux.stderr.log",
+          "sha256": "dbd5fc13da7f39404acb7533bac28b2e0b74d03f5d6c94f685f9e42c6509b270"
+        },
+        "qa_build": {
+          "path": "build/swat/review/player-contacts/equipment-qa-build-linux.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "focused": {
+        "groups": 4,
+        "matrix_cases": 180,
+        "lip_reentry_cases": 4,
+        "ordinary_journal_crossings": 12,
+        "samples": 1751,
+        "max_feet_y_m": 0.149044,
+        "max_abs_vertical_speed_m_s": 2.481589,
+        "stdout": {
+          "path": "build/swat/review/player-contacts/player-linux.log",
+          "sha256": "d80ad631a4f7b7888a59be8c85d31741cb818c0c1bb0bd7dbac545fbd662f4a7"
+        },
+        "stderr": {
+          "path": "build/swat/review/player-contacts/player-linux.stderr.log",
+          "sha256": "4510002eb708392f296900c1e2df5a38ab9ec96590a0270df69c9f167adbcbb4"
+        }
+      },
+      "collateral": {
+        "locomotion": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/locomotion-linux.log",
+            "sha256": "23f7192a7fae0ed78f2bdb7a637b0034566ec89fd0d5c47d6ae92f745e443784"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/locomotion-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "foundation": {
+          "groups": 6,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/foundation-linux.log",
+            "sha256": "df5c1604cb0cbae8f116311cf1aaa12066d3e0b10659ac5f44c8b5ae83cdb172"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/foundation-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "scenarios": {
+          "groups": 4,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/scenarios-linux.log",
+            "sha256": "2962247111e289aa4e97c7d5cc55321e2965f1c33af7f97b8a83faf0cf14ec4b"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/scenarios-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      },
+      "clean_build": {
+        "path": "build/swat/review/player-contacts/build-linux.log",
+        "sha256": "d185b8f9273f1e6171a91e1505db91e481ccfc26ffb8f5ff0cc9419926a09ee8"
+      },
+      "final_body_build": {
+        "path": "build/swat/review/player-contacts/body-build-linux.log",
+        "sha256": "34e8b1c03445d78a89dc835d12127a35214e9f7cc08779c16a4c487b4775ad25"
+      },
+      "final_cohort_build": {
+        "path": "build/swat/review/player-contacts/final-build-linux.log",
+        "sha256": "073ef7bed905587080aae32808df7e753a274fd2f12a64d592b11afda429dd7e"
+      }
+    },
+    "native": {
+      "broad_groups": 139,
+      "broad": {
+        "encounter": {
+          "groups": 79,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/encounter-native.log",
+            "sha256": "a8f2728aace1bfde470e187c39a49a186852b53a962e2811f6b56f1d20279df7"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/encounter-native.stderr.log",
+            "sha256": "67c5f680accd3f4f71454e6eec7efe344096aa5d742706d8abb86f3271a1e27a"
+          }
+        },
+        "tactical": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/tactical-native.log",
+            "sha256": "e4c179d5b6059b4a5ccb704760db7274f4cd587d9a24617b0ee3fd9334f70966"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/tactical-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "groups": 13,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/sim-native.log",
+            "sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/sim-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "groups": 5,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/protocol-native.log",
+            "sha256": "2540c55d137bfe90c478acbe859b33d74e6b5212f70b2d42126d916a7646da6c"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/protocol-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/motel-native.log",
+            "sha256": "752dc6094dbe81b25b91b12ed0dd95b4baa3d122e817cada7477a7cfdc4efa9e"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/motel-native.stderr.log",
+            "sha256": "3ebe62ba2dc3ed22cf1b0d37d32eb547529be4f2f1c12185a492e808488045a2"
+          }
+        },
+        "navigation": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/navigation-native.log",
+            "sha256": "4a0574d4578e12e577732616fc505f7c1847987ef0766860dfe422c586cd37ba"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/navigation-native.stderr.log",
+            "sha256": "481bb622a37548165965bf936620ccdc569485da4a0385beb2f734fd3543279e"
+          }
+        },
+        "net": {
+          "groups": 15,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/net-native.log",
+            "sha256": "701d033d4920e19cc3d1e38dc03daf7effa73334ea16aedab40905082be602e5"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/net-native.stderr.log",
+            "sha256": "d4b1bf2f70ddc9f49f41eaaa31983294dd022b7a3986c382fcfa16c778737d3b"
+          }
+        }
+      },
+      "named_door_aim_heights": {
+        "groups": 13,
+        "stdout": {
+          "path": "build/swat/review/player-contacts/equipment-anchor-native.log",
+          "sha256": "d9b10a90cea71cabed10381b885f7c55c45a27e295f9a60aa43ff91dbbf485d8"
+        },
+        "trace": {
+          "path": "build/swat/review/player-contacts/equipment-anchor-native.trace",
+          "sha256": "3ea0c0e662435e9c21a2a9330ed2bb61c834690cd64291e9855ee5b140dade71"
+        }
+      },
+      "equipment_late_join": {
+        "elapsed_ms": 8178,
+        "construction_services": 163,
+        "unchanged_tick": 212,
+        "stdout": {
+          "path": "build/swat/review/player-contacts/equipment-network-native.log",
+          "sha256": "1a5781221ff45f0b6a370658e95ea66a3ec8c33c22973ace46cbdfa055571bf2"
+        },
+        "stderr": {
+          "path": "build/swat/review/player-contacts/equipment-network-native.stderr.log",
+          "sha256": "042bdd7d9f72e4b7b998aaee20c0f4a5d901b6c86ca642f95a65e8ce0a0f4fb9"
+        },
+        "qa_build": {
+          "path": "build/swat/review/player-contacts/equipment-qa-build-native.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "focused": {
+        "groups": 4,
+        "matrix_cases": 180,
+        "lip_reentry_cases": 4,
+        "ordinary_journal_crossings": 12,
+        "samples": 1751,
+        "max_feet_y_m": 0.149044,
+        "max_abs_vertical_speed_m_s": 2.481589,
+        "stdout": {
+          "path": "build/swat/review/player-contacts/player-native.log",
+          "sha256": "cfd432359ae44df7dffd929a1f7a86014babbe754cd714993ec9c6fd65ad05f4"
+        },
+        "stderr": {
+          "path": "build/swat/review/player-contacts/player-native.stderr.log",
+          "sha256": "f930593177131aab30df22a94bf22b6b0a8186fbbd8f0374a94c01358192b826"
+        }
+      },
+      "collateral": {
+        "locomotion": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/locomotion-native.log",
+            "sha256": "aa8714d570cc824094053629796d544523097ffa420f519494056d541869998c"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/locomotion-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "foundation": {
+          "groups": 6,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/foundation-native.log",
+            "sha256": "5aa5302977a70ffd3c463b3c2118e736760f3882334d1bbf72ce9609ab887d93"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/foundation-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "scenarios": {
+          "groups": 4,
+          "stdout": {
+            "path": "build/swat/review/player-contacts/scenarios-native.log",
+            "sha256": "ddfb5d895dd2362a616b2e091b5d7a6081e9180ef834861c865a7b2c51758cd3"
+          },
+          "stderr": {
+            "path": "build/swat/review/player-contacts/scenarios-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      },
+      "clean_build": {
+        "path": "build/swat/review/player-contacts/build-native.log",
+        "sha256": "a4cdd144cc0de13122782e3a5e9b2c6d8acc5494ea3a324c88540a21c391b0c3"
+      },
+      "final_body_build": {
+        "path": "build/swat/review/player-contacts/body-build-native.log",
+        "sha256": "7c203bf3235a17484965993f565f12b4dff6a9e33012cdf28902f58f6d4b6add"
+      },
+      "final_cohort_build": {
+        "path": "build/swat/review/player-contacts/final-build-native.log",
+        "sha256": "f5822c146fe90734a2fa00e384cfb1da6ec3c5c6d83e4b68161c0c710223664b"
+      }
+    }
+  },
+  "task_pitch_regression": {
+    "private_planning": {
+      "path": "build/swat/review/player-contacts/private-anchor-diagnostic.json",
+      "sha256": "6475314402c93ca9dc9274e236acdc3c71bfa1b1e5ff2eb2ca6eec0e85b7a3e4"
+    },
+    "private_linux": {
+      "path": "build/swat/review/player-contacts/private-linux.log",
+      "sha256": "9a3d33bbea6ebb22385c92e4396df479947503c0c995fc282441ff8eb5086998"
+    },
+    "private_native": {
+      "path": "build/swat/review/player-contacts/private-native.log",
+      "sha256": "c2f39c9f7c53a41854206e92f5cfc5a0f91f63c2da6face4fea0ee5ca21b428a"
+    },
+    "frames": 23212,
+    "oracle": "Replay the original inputs under corrected rules on both hosts; compare complete current-state hashes at every frame. Stored hashes from the unreleased pre-fix candidate describe its old workpoint and are not the new-rule oracle. Fresh full mission journals separately require exact shipping-tool replay against their own recorded hashes.",
+    "source_input_journal": {
+      "path": "build/swat/review/player-contacts/before-task-pitch/motel-room-search.sgrp",
+      "sha256": "f0e3b811c7587a15d7759cc197c9c8123ac40757f92b0c426a5fdbb96fbac7a7"
+    },
+    "result": {
+      "path": "build/swat/review/player-contacts/pitch-regression.log",
+      "sha256": "bfeaa06d6f6ed3619d0801d75fbe3e8430228020a8b7f148cf11178958db9a36"
+    },
+    "linux_trace": {
+      "path": "build/swat/review/player-contacts/pitch-linux.trace",
+      "sha256": "14856bc5b2a9548e727e650ec91249a075567a8b3fde38e8654634834b9faa2c"
+    },
+    "native_trace": {
+      "path": "build/swat/review/player-contacts/pitch-native.trace",
+      "sha256": "28a2577c128fa9195841ec78889d3880492b4131d820ed6044da66b618e2b601"
+    },
+    "linux_state": {
+      "path": "build/swat/review/player-contacts/pitch-linux.snapshot",
+      "sha256": "4fbe51347b94f12d9744674052308d3cd070a36defd86e481e69c909b6f30d92"
+    },
+    "native_state": {
+      "path": "build/swat/review/player-contacts/pitch-native.snapshot",
+      "sha256": "4fbe51347b94f12d9744674052308d3cd070a36defd86e481e69c909b6f30d92"
+    }
+  },
+  "graphics_qa_build": {
+    "path": "build/swat/review/player-contacts/art-compile.log",
+    "sha256": "6d0d1cac2f5e60a5a867eecd19d36bb23d490f0d7bfc95e94bcc8ddeda3129e2"
+  },
+  "cross_platform": {
+    "traces": {
+      "all": {
+        "samples": 63942,
+        "linux": {
+          "path": "build/swat/review/player-contacts/all-linux.trace",
+          "sha256": "e967f3ef2a25bb6d3725a17a881ca497cf945a7675088cdc8054bab05482843b"
+        },
+        "native": {
+          "path": "build/swat/review/player-contacts/all-native.trace",
+          "sha256": "479b2b762e41bb55161e13e63f2807c265b0147d12675fadc1fe539d21db28f5"
+        }
+      },
+      "room-motel": {
+        "samples": 6382,
+        "linux": {
+          "path": "build/swat/review/player-contacts/room-motel-linux.trace",
+          "sha256": "d7ae446271bcef5ed84c75ea0de7cb4c359eec9d54f0d566d3f71674f04a5f92"
+        },
+        "native": {
+          "path": "build/swat/review/player-contacts/room-motel-native.trace",
+          "sha256": "a3ce56ed17522edbab883a295ab1093f3f2084706beec34787903528b0daf24b"
+        }
+      },
+      "roadside": {
+        "samples": 38,
+        "linux": {
+          "path": "build/swat/review/player-contacts/roadside-linux.trace",
+          "sha256": "45a0aa04b5397eaff79b3f0258caedf9243b63f36b9e7661fb8a0da27a8583e2"
+        },
+        "native": {
+          "path": "build/swat/review/player-contacts/roadside-native.trace",
+          "sha256": "9c198f4b8998edba43e5b56d35657728d90a114722d56259fbbf5caed176ea6d"
+        }
+      },
+      "input": {
+        "samples": 78,
+        "linux": {
+          "path": "build/swat/review/player-contacts/input-linux.trace",
+          "sha256": "8fab5b057149618d75c2995be94de9a7cfabed6d7a72c3672eb786f19aff59c6"
+        },
+        "native": {
+          "path": "build/swat/review/player-contacts/input-native.trace",
+          "sha256": "7d85fe1e53d0769b6385100e536afbc92e3d5c53343a658aba5686f60e440bd3"
+        }
+      },
+      "player": {
+        "samples": 1751,
+        "linux": {
+          "path": "build/swat/review/player-contacts/player-linux.trace",
+          "sha256": "6c373fe5846253bf8d8681a910d3d58a25db48f89b0e88935625fa9b5859caf0"
+        },
+        "native": {
+          "path": "build/swat/review/player-contacts/player-native.trace",
+          "sha256": "69d673c6fb4f7f5be89c02ba5bc77404e00b0e2c24884f640a1823f1126c4abe"
+        }
+      }
+    },
+    "focused_journal_frames": 1624,
+    "independent_journals_and_checkpoints_byte_identical": true,
+    "frontend_journal_frames": 60,
+    "frontend_journals_byte_identical": true,
+    "replay_evidence": {
+      "journals": [
+        {
+          "path": "build/swat/review/player-contacts/player-linux.sgrp",
+          "sha256": "f139511ab3382bcb59af23dc30f6260fa91adfdc535001b649455512e708143e"
+        },
+        {
+          "path": "build/swat/review/player-contacts/player-native.sgrp",
+          "sha256": "f139511ab3382bcb59af23dc30f6260fa91adfdc535001b649455512e708143e"
+        },
+        {
+          "path": "build/swat/review/player-contacts/player-linux.sgrp.save",
+          "sha256": "b2a08a6cf980164533ebdec3de8f26526b79df33fb68f450b38cfd116c8bc54d"
+        },
+        {
+          "path": "build/swat/review/player-contacts/player-native.sgrp.save",
+          "sha256": "b2a08a6cf980164533ebdec3de8f26526b79df33fb68f450b38cfd116c8bc54d"
+        }
+      ],
+      "shipping_replays": [
+        {
+          "path": "build/swat/review/player-contacts/player-linux-linux-replay.log",
+          "sha256": "7188ede5ea77593d1f04ed82339442630e5aba0863600e564794dbf57b0ba8f5"
+        },
+        {
+          "path": "build/swat/review/player-contacts/player-linux-native-replay.log",
+          "sha256": "8fb6978ff4577fb77403fe6ecb41bafaabe3bab41dff1537b2143a00ca2d5a1b"
+        },
+        {
+          "path": "build/swat/review/player-contacts/player-native-linux-replay.log",
+          "sha256": "7188ede5ea77593d1f04ed82339442630e5aba0863600e564794dbf57b0ba8f5"
+        },
+        {
+          "path": "build/swat/review/player-contacts/player-native-native-replay.log",
+          "sha256": "8fb6978ff4577fb77403fe6ecb41bafaabe3bab41dff1537b2143a00ca2d5a1b"
+        }
+      ],
+      "frontend_journals": [
+        {
+          "path": "build/swat/review/player-contacts/input-linux.trace.sgrp",
+          "sha256": "1e8ac5ad72d9aaa0eb8428532fe82f0a7cfc5e3a4d1dc063fc54b7700937a567"
+        },
+        {
+          "path": "build/swat/review/player-contacts/input-native.trace.sgrp",
+          "sha256": "1e8ac5ad72d9aaa0eb8428532fe82f0a7cfc5e3a4d1dc063fc54b7700937a567"
+        }
+      ],
+      "frontend_replays": [
+        {
+          "path": "build/swat/review/player-contacts/input-journal-linux.log",
+          "sha256": "bcc79de299968ad4d927462f44c26ddd5fe4f30881b4003bd3b4340786e026af"
+        },
+        {
+          "path": "build/swat/review/player-contacts/input-journal-native.log",
+          "sha256": "7e2ea74bd1d9d2d1e01c53ceed447f27d00170e5b36112789cb5f7f66a3f5158"
+        }
+      ],
+      "native_prefixes": {
+        "room": {
+          "frames": 1237,
+          "journal": {
+            "path": "build/swat/review/player-contacts/motel-room-search.sgrp.room.save",
+            "sha256": "a1191fc080cdd6ad6d8a617017936996af7d686cdc73d33168aa05e2715c03b7"
+          },
+          "replay": {
+            "path": "build/swat/review/player-contacts/motel-room-prefix-native-replay.log",
+            "sha256": "e290ae59f4f974ad14462efa032dea0494b5e2f7110137eaff95ff83df8b04f0"
+          }
+        },
+        "wedge": {
+          "frames": 23144,
+          "journal": {
+            "path": "build/swat/review/player-contacts/motel-room-search.sgrp.wedge.save",
+            "sha256": "8ddb1766add02b1a66751fe9b7850456c1a220f086a5c424a6fc982cc6ae3a82"
+          },
+          "replay": {
+            "path": "build/swat/review/player-contacts/motel-wedge-prefix-native-replay.log",
+            "sha256": "5393e16516aaac63d8f0e67da27f6a7e91f6b1e20d20ea80bf7962d41e311632"
+          }
+        }
+      },
+      "prior_version_rejections": [
+        {
+          "path": "build/swat/review/player-contacts/old-v35-linux.log",
+          "sha256": "867e62a34dcea707eccc43f56cade2b150fdde28fc128733f6a54d9c67c0c4aa"
+        },
+        {
+          "path": "build/swat/review/player-contacts/old-v35-native.log",
+          "sha256": "85e168a8279bbfacc90e496492ea299f031724a92ceb579c01dd0354c5697b42"
+        }
+      ],
+      "summary": {
+        "path": "build/swat/review/player-contacts/final-replays.log",
+        "sha256": "d2f289361f9a18a3afa5406395d8730b84033b3190a5d96b101256eacad0924a"
+      }
+    }
+  },
+  "negative_control": {
+    "removed": "Only downward Reground landing-clearance guard",
+    "upward_velocity_m_s": 67.9642639,
+    "result": {
+      "path": "build/swat/review/player-contacts/negative-control.log",
+      "sha256": "2d0130b0b44793618d33f66cb88a9401c19136eba357deafc89a37424fea4af3"
+    },
+    "stderr": {
+      "path": "build/swat/review/player-contacts/negative.stderr.log",
+      "sha256": "0e5200693465dd383cd3cdb45e0e152a2987527c7c9e8b621509b26c0300e76e"
+    },
+    "source": {
+      "path": "build/swat/review/player-contacts/body-no-reground-guard.c",
+      "sha256": "0267387562b00370f0f38bdb6375e8db39f3ee7362759564980a7c895f6c3c28"
+    }
+  },
+  "routes": {
+    "motel-room-search": {
+      "qa_driver": {
+        "path": "build/swat/review/player-contacts/test_motel_completion",
+        "sha256": "b20b92dd40608ea2a416285baa8b8ee8b506f3f369ce4990ae9d5bef6b807fdc"
+      },
+      "qa_driver_source": {
+        "path": "ocean/swat/tests/test_motel_completion.c",
+        "sha256": "b37be670644e2cf23867834746acf3535c334665569d445ac54f730f8e71b767"
+      },
+      "driver_scope": "Final QA driver and gameplay cohort, ordinary inputs.",
+      "ticks": 25620,
+      "arrests": 2,
+      "lawful_suspect_deaths": 0,
+      "journal": {
+        "path": "build/swat/review/player-contacts/motel-room-search.sgrp",
+        "sha256": "f5ae436613b6a099460a704743135f60b72198275e1a318151a20c7f4171faac"
+      },
+      "stdout": {
+        "path": "build/swat/review/player-contacts/motel-room-search.log",
+        "sha256": "2ef6fc85c1ddb04d4ffe0d7bffdd3adb0a92a4d6dc0540211aa2a4b9ae5fa67f"
+      },
+      "stderr": {
+        "path": "build/swat/review/player-contacts/motel-room-search.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "linux_replay": {
+        "path": "build/swat/review/player-contacts/motel-room-search-linux-replay.log",
+        "sha256": "a0c179129ab7d5c978a9056093f8e42ff0b51560f870b9d24c973be99c290314"
+      },
+      "native_replay": {
+        "path": "build/swat/review/player-contacts/motel-room-search-native-replay.log",
+        "sha256": "5b6b81f99d8fb7052724111002c0e2235f48f76993f63bf73c598014d2fbc77e"
+      }
+    },
+    "motel-threat-interroom": {
+      "qa_driver": {
+        "path": "build/swat/review/player-contacts/test_motel_completion",
+        "sha256": "b20b92dd40608ea2a416285baa8b8ee8b506f3f369ce4990ae9d5bef6b807fdc"
+      },
+      "qa_driver_source": {
+        "path": "ocean/swat/tests/test_motel_completion.c",
+        "sha256": "b37be670644e2cf23867834746acf3535c334665569d445ac54f730f8e71b767"
+      },
+      "driver_scope": "Final QA driver and gameplay cohort, ordinary inputs.",
+      "ticks": 20457,
+      "arrests": 0,
+      "lawful_suspect_deaths": 2,
+      "journal": {
+        "path": "build/swat/review/player-contacts/motel-threat-interroom.sgrp",
+        "sha256": "9ec4b99365198c0e1ce6dcf23be89098c09eb25a552e126eccf1c4fb5d3c0157"
+      },
+      "stdout": {
+        "path": "build/swat/review/player-contacts/motel-threat-interroom.log",
+        "sha256": "9cbf0c7a35cadf8126bd8e542e77f756dc17a95ffd261f4091424109ca7cb033"
+      },
+      "stderr": {
+        "path": "build/swat/review/player-contacts/motel-threat-interroom.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "linux_replay": {
+        "path": "build/swat/review/player-contacts/motel-threat-interroom-linux-replay.log",
+        "sha256": "39dfc5263a1c7677c1e314d201b4330b3dd91d8370c90259cd2729231eec3d25"
+      },
+      "native_replay": {
+        "path": "build/swat/review/player-contacts/motel-threat-interroom-native-replay.log",
+        "sha256": "3cb4b53051d0b74314943803de091577989abd24cf131ece79b7613fbc9e4622"
+      }
+    },
+    "motel-threat-exterior": {
+      "qa_driver": {
+        "path": "build/swat/review/player-contacts/test_motel_completion",
+        "sha256": "b20b92dd40608ea2a416285baa8b8ee8b506f3f369ce4990ae9d5bef6b807fdc"
+      },
+      "qa_driver_source": {
+        "path": "ocean/swat/tests/test_motel_completion.c",
+        "sha256": "b37be670644e2cf23867834746acf3535c334665569d445ac54f730f8e71b767"
+      },
+      "driver_scope": "Final QA driver and gameplay cohort, ordinary inputs.",
+      "ticks": 9513,
+      "arrests": 0,
+      "lawful_suspect_deaths": 2,
+      "journal": {
+        "path": "build/swat/review/player-contacts/motel-threat-exterior.sgrp",
+        "sha256": "22242dd3e46ab25bddca7023d7b69a2d59bb1012bf6327807063e3267dd3c312"
+      },
+      "stdout": {
+        "path": "build/swat/review/player-contacts/motel-threat-exterior.log",
+        "sha256": "d18d33e04cf33b6775d6bc76ee727ba7240a2b56d521cf1282bec0b681847d1f"
+      },
+      "stderr": {
+        "path": "build/swat/review/player-contacts/motel-threat-exterior.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "linux_replay": {
+        "path": "build/swat/review/player-contacts/motel-threat-exterior-linux-replay.log",
+        "sha256": "00e4f83dd7a1045dca27b1941380c7f4ab3310de061bc31e4378af8c45bc3fac"
+      },
+      "native_replay": {
+        "path": "build/swat/review/player-contacts/motel-threat-exterior-native-replay.log",
+        "sha256": "ea087e85100192516bf569483f0d72336c4cf233bafa2113f93cc15bb10a84e9"
+      }
+    }
+  },
+  "registration": {
+    "cmake": {
+      "path": "build/swat/review/player-contacts/cmake-configure.log",
+      "sha256": "bd06ec01bcea0f1663d4a32ae39a4651b77ff58b8a624f5a3c2e2939795867a4"
+    },
+    "ctest": {
+      "path": "build/swat/review/player-contacts/cmake-registration.log",
+      "sha256": "4146b44db059bc89557510228e365b86a88e37b7ff7da1a19f7873d04b7566d5"
+    },
+    "make": {
+      "path": "build/swat/review/player-contacts/make-registration.log",
+      "sha256": "c708508757cdac8c53382081a56026341d6feb480ebfedd0ed77954606c6565f"
+    },
+    "python_discovery_disabled": true,
+    "native_builder_syntax_checked": true
+  },
+  "retained_findings": [
+    {
+      "reason": "First probe placed two unstable actors inside the parked car. Valid-start probe and final9-ray footprint/settling checks establish supported starts; all180 final trials still run.",
+      "initial": {
+        "path": "build/swat/review/player-contacts/probe.log",
+        "sha256": "485cd7267ee0607c321521c30392e26f75379ffa30305dbbcb7f765783bf00d8"
+      },
+      "valid_probe": {
+        "path": "build/swat/review/player-contacts/probe-valid.log",
+        "sha256": "50beb456e88ea9f9ffa5d3476ae56279a41a13598745b5be9443259878734629"
+      }
+    },
+    {
+      "reason": "Real valid lip departure launches with old ground snapping. Debug log shows repeated downward pose correction undoing solver separation.",
+      "stdout": {
+        "path": "build/swat/review/player-contacts/debug.log",
+        "sha256": "1197c7d7a9415674e8fdf3ca265911f002d1cc334b47646be34e3b4ef97e6d24"
+      },
+      "stderr": {
+        "path": "build/swat/review/player-contacts/debug.stderr.log",
+        "sha256": "72d39d11c058c38e76c9da272210ee0a7315bc282405b529fa23436ecedb16a7"
+      },
+      "pre_fix": {
+        "path": "build/swat/review/player-contacts/before-fix/player-linux.stderr.log",
+        "sha256": "7d0fbd1e5151c6665df2bdda10dd2b2fbacf178d52390ff10b23328601cac5e9"
+      }
+    },
+    {
+      "reason": "Guarding step-up/upward corrections overconstrained normal stairs. Final fix guards only downward Reground; unchanged locomotion course passes.",
+      "initial_stairs": {
+        "path": "build/swat/review/player-contacts/before-stair-correction/locomotion-diagnostic.stderr.log",
+        "sha256": "ce4bb69006b53b0d696174bca99130e2deb404bdf89c5f55af4a441c5c41e30c"
+      },
+      "upward_guard": {
+        "path": "build/swat/review/player-contacts/before-stair-correction/ground-up-guard.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "reason": "Initial full quiet cuff attempt correctly paused for a distant observed armed suspect. Regroup task setup uses ordinary commands; failed journal retained.",
+      "stderr": {
+        "path": "build/swat/review/player-contacts/before-cuff-regroup/motel-room-search.stderr.log",
+        "sha256": "4f2980f28ecb97ecf85cdc96e452439cf2b68fee5b9725b24e8751c4e164ff60"
+      },
+      "journal": {
+        "path": "build/swat/review/player-contacts/before-cuff-regroup/motel-room-search.sgrp",
+        "sha256": "c7b838196d0298410ef3704f26bc94ffecc5fb6f8e9f82f52b4313a251014b7d"
+      }
+    },
+    {
+      "reason": "Regrouping inside the furnished room leaves no valid trailing formation slot. Final ordinary route regroups in the open court before entering; no navigation or occupancy exception.",
+      "stderr": {
+        "path": "build/swat/review/player-contacts/before-interior-regroup/motel-room-search.stderr.log",
+        "sha256": "e0121f8c4156020c434c3aa6e6ea09a48caaefc0bb02890408422518d6d8bfb0"
+      },
+      "journal": {
+        "path": "build/swat/review/player-contacts/before-interior-regroup/motel-room-search.sgrp",
+        "sha256": "35c49a1977a0d0d14d57104f208af80b28667b3980ddfe91cc3889604058a7e9"
+      }
+    },
+    {
+      "reason": "Applying the quiet courtyard regroup pause in combat changes team exposure and loses an officer during evacuation. Final driver retains the original combat pacing; no casualty rule was waived.",
+      "stderr": {
+        "path": "build/swat/review/player-contacts/before-combat-regroup/motel-threat-interroom.stderr.log",
+        "sha256": "3229150c5e1205381a7c020a08e0f369ad467feb88b3875b226cac6675fb4a2f"
+      },
+      "journal": {
+        "path": "build/swat/review/player-contacts/before-combat-regroup/motel-threat-interroom.sgrp",
+        "sha256": "a7dcf1652919fb04ba32b0bdd50e4a3f2b5bf10aae1028bae0d82129b78d55be"
+      }
+    },
+    {
+      "reason": "Initial native quiet replay diverges at23212 only in officer3 pitch by two ULPs. Final named door equipment workpoints use the selected leaf centre; original aim math is retained. No state field is omitted from replay hashing.",
+      "linux": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/quiet-linux-state.bin",
+        "sha256": "8b930b7405cb991997836244aacb9575200544dc77c4e08b8f5e82b8cb46efa1"
+      },
+      "native": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/quiet-native-state.bin",
+        "sha256": "c166307d03a38927db80132a2d6b9c2583042c883b145a1a6cec654085e338e1"
+      },
+      "diff": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/quiet-state-diff.log",
+        "sha256": "1e7b57762975c0bed8a59f085abfdad49848147d858c1afc7b04755a5f7e1e08"
+      },
+      "encoded_byte_comparison": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/quiet-byte-diff.json",
+        "sha256": "1061744b30ba9cd88aa0fe452c432f85f024df43e1b3e5ecd67b6777c8b88ccd"
+      },
+      "native_replay": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/motel-room-search-native-replay.log",
+        "sha256": "4a28ab86b7a568123a93764ff93ba69abdc4228e14665cd449f13ff45258a934"
+      },
+      "journal": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/motel-room-search.sgrp",
+        "sha256": "f0e3b811c7587a15d7759cc197c9c8123ac40757f92b0c426a5fdbb96fbac7a7"
+      },
+      "old_task_source": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/encounter.c",
+        "sha256": "ca532d0b866058659475c3c80249e51a03110de26748a8f20d94010e33afcaf6"
+      },
+      "old_room_task_source": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/encounter_room.h",
+        "sha256": "ddcbe1fe2529af2077c83628fac4d3f315d04f9f4ec68e4de996ed1f6ba81b7f"
+      },
+      "old_native_replay_tool": {
+        "path": "build/swat/review/player-contacts/before-task-pitch/replay_tool.exe",
+        "sha256": "6302921539278094d4bb5713b2a2914499af5422541b46656060241abe015370"
+      }
+    },
+    {
+      "reason": "Shared-thread native equipment late join timed out once; an unchanged retry passed. Fixture lacked service for its separate authority/other peers during map construction. Final fixture pumps only those other sockets, relies on production for the loading client, and forces6500ms of late-peer construction on each platform with unchanged gameplay tick and shipping deadlines.",
+      "initial": {
+        "path": "build/swat/review/player-contacts/before-equipment-join-retry/equipment-network-native.stderr.log",
+        "sha256": "7866729c35d13dac8de663a5ea3ac029875a2e4792f29c48d34ee790593f0c73"
+      },
+      "unchanged_retry": {
+        "path": "build/swat/review/player-contacts/before-equipment-loading-service/equipment-network-native.log",
+        "sha256": "57a9a58e3d146d80befef049b03c461a2dbc80479f19a5065e889f2a55c6b797"
+      },
+      "old_fixture": {
+        "path": "build/swat/review/player-contacts/before-equipment-loading-service/squad_equipment_network.h",
+        "sha256": "09028698393a84b34a0d076bb156f7b771b0de940d6c1e8cc4ca75d80697191e"
+      }
+    },
+    {
+      "reason": "Replacing hypot with square-root math alone still reproduced the23212 pitch mismatch. Removed after direct private-target diagnostics isolated ray-point rounding.",
+      "failed_trace_linux": {
+        "path": "build/swat/review/player-contacts/before-anchor-diagnostic/pitch-linux.trace",
+        "sha256": "cbd7171749285b862fa072e72942bef4b4f659df0d1928e72ea51ebf4930d188"
+      },
+      "failed_trace_native": {
+        "path": "build/swat/review/player-contacts/before-anchor-diagnostic/pitch-native.trace",
+        "sha256": "a4a37ab502e8a8e168be973cee6256d959ac50fc907f6de3d6422222f0509d60"
+      },
+      "attempted_source": {
+        "path": "build/swat/review/player-contacts/before-anchor-diagnostic/encounter.c",
+        "sha256": "e1df44555941874ed7a3d772ef4e9203f3da2ab5c91623f897830b602f73adca"
+      }
+    }
+  ],
+  "inherited_render_and_asset_evidence": {
+    "scope": "Static geometry and renderer are unchanged from8bcadd5d5; prior source/raster/lighting evidence applies to those props. v36 graphics QA is compiled only. Character contact/native visual acceptance is not inferred from static prop images.",
+    "receipt": {
+      "path": "ocean/swat/tests/receipts/roadside-integration-2026-10-18.json",
+      "sha256": "0b26d77efdbe761c64eb9f1b771a033eea4df413c1e775749f2f11d4e444c083"
+    },
+    "sealed_artifact_audit": {
+      "path": "build/swat/review/player-contacts/inherited-seal-audit.log",
+      "sha256": "b0316f3dbb0b9b61acc8ad845f62f3b22c864efb332a70495bcc1432704ce1af"
+    }
+  },
+  "installed": {
+    "executables": 42,
+    "unchanged_deployed_glbs": 4,
+    "files": 46,
+    "sha256": {
+      "build/swat/swat": "b602f2be3f6ab0e4469280fa4ff400c0079a1c75bc6be5592c44b9af15cea1c9",
+      "build/swat/server": "943a0dad893f4ed812193d8a83ec50f6b7ac007725e111fed9878bd824a3e614",
+      "build/swat/replay_tool": "d9fb754bb5158cdb74907b9abfbad101b0f5f18ae65d518d7e6f9362ad3c546e",
+      "build/swat/performance_tool": "5db1ea25d1334d7752addbbab2955cc72c31208fae05c10a093f00a96a7a078d",
+      "build/swat/test_encounter": "a3ed888c3bee94ee06d9c8a27c11e93846004c228e1b8740e3ebb729ef44abc8",
+      "build/swat/test_tactical": "c2e791145ec85d39dbdce00d987f9b3727d26fb713c5e1c8b27e80301d9c7941",
+      "build/swat/test_sim": "c3e240f15e34a3f71a56a2b19d5e0316f759207e77c188a516e492d11bb7f7d9",
+      "build/swat/test_protocol": "2d13117995c666f327f80e0ad01c3522545f67072e78a22f3f40afbdc85ad334",
+      "build/swat/test_net": "2237e727b01f5333cade9300784edd78282b78078356c8d70ce0096c6c202b4f",
+      "build/swat/test_motel_completion": "b20b92dd40608ea2a416285baa8b8ee8b506f3f369ce4990ae9d5bef6b807fdc",
+      "build/swat/test_navigation_search": "78f761c915c4fb7b21d6f84d96f6bfaf9197976cc5bfb17f9033c9d328d27adb",
+      "build/swat/test_motel": "bc3dc772b2e2c42fafede6ff695a3b563f72c71f0a03d93e988da7c3f3d2b8df",
+      "build/swat/test_frontend": "cca62174b5e55e1a3a814e4d23e59aaa79b2d978e809e35a8b2a856e01cbb730",
+      "build/swat/test_frontend_input": "4d1831a2d32619254627d6e3f05d1fe00ea1c47114022e2e6400a03185b5baa1",
+      "build/swat/test_motel_roadside": "a8e7f3c4c985705b547c4bb3d7f17ab22c56d3305f254e69f72f39a9e557a734",
+      "build/swat/test_motel_dumpster": "c6dff6dcc05ccb912b5f6de53bb7f896d7909f6fe0a340d365269b1eb87ce09d",
+      "build/swat/test_motel_roadside_art": "dce2206fe86b502661c04632c237eed98b8b129ccb6e6b5fd925593b323bce0b",
+      "build/swat/test_motel_player_contacts": "5ddb20655a8cf720309e2f71979c018811bda44466c740f73ff1013301e73fc7",
+      "build/swat/test_locomotion": "ca2a76e13846e1a4376e9d8d209390e8aefc1100b02e0becbeb2e8eac25ee59c",
+      "build/swat/test_foundation": "df3d72f610b751c6bdf64103e817f5b457db9400ff99c629f3804e912b342287",
+      "build/swat/test_scenarios": "27c3792f1d6173b01792439ac429c0862e92b24f30acd37b391fd8e39746535c",
+      "build/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "build/swat/windows/swat.exe": "33f1bd2dbf074a46c3bae15f410643c6263f1da9cda7935f4ee12fd97b64ad10",
+      "build/swat/windows/swat-server.exe": "18248d591e0e5a9ead30c7bcd18e8721e2a08d352e33e0463e083c0df1f29181",
+      "build/swat/windows/replay_tool.exe": "60b4f89b38ed556b733682e0df56159956e070dac275c2914d231da70c4b9cd5",
+      "build/swat/windows/performance_tool.exe": "262d42bc11e8cc7b5429bc3620498657197a0f887cd9102c0ef19dac71f1d145",
+      "build/swat/windows/test_encounter.exe": "0639955a0c4c86c76fef5cd1a90fa553e943b9091025a27014d5fdbc397103d6",
+      "build/swat/windows/test_tactical.exe": "1923463ba4e48422f4256f8de8377d1bf58953511d93ab4a02cfbd583d71b33a",
+      "build/swat/windows/test_sim.exe": "7ade25d428e62dab80f68d8d34d231069959ab91d8cb51fecdebc60e105fca8e",
+      "build/swat/windows/test_protocol.exe": "17dedcd63b21455cd8f6def6d2b0c0b6f4b3b92eeaeeb9cbeaa77f19b21e7500",
+      "build/swat/windows/test_net.exe": "0ed21ecb52c35ab83179be028d5f8b83c8f6e6f80f54780f777bdde428608673",
+      "build/swat/windows/test_motel_completion.exe": "04f365a0d60e166ab2df3a7a698cc09e58acf61299e4243588fcb2609bdf89a1",
+      "build/swat/windows/test_navigation_search.exe": "86a1fcd418ded806b0c2c114e70dd2df7d04919369c9d0777975d8afb93b37f1",
+      "build/swat/windows/test_motel.exe": "a72e3757fc18b0a9a80d152e080caf7666ff0ff44183625383fe2acd74c2df65",
+      "build/swat/windows/test_frontend.exe": "c3a4d151907b65b513075698d3efad071b9dcd1121c532c30fb898bc87209174",
+      "build/swat/windows/test_frontend_input.exe": "b7fa542082786a00fb235f625ca3df638eb6c1c7ed9f0f1849de4b62aac0a006",
+      "build/swat/windows/test_motel_roadside.exe": "c800210ba72ee35c0a73f0a1e8472848cfebf0e2747d147d32e38f500af4ed83",
+      "build/swat/windows/test_motel_dumpster.exe": "1410d908f877519d7a24f02d1e7dda3275c7d8b1b8fe6e89c204cda13dcd6736",
+      "build/swat/windows/test_motel_roadside_art.exe": "63d5d79279e2afa6aeec191b7abd883accf85a62af71c08586329b40278bc351",
+      "build/swat/windows/test_motel_player_contacts.exe": "7d173918cd5db76d06d255c2a50dfcf5fcfb69319205ec8cf829fd8eb52af47d",
+      "build/swat/windows/test_locomotion.exe": "73c8da601a8c8fac22930bba087d7b530cc6801b518b74434be57ada7c4f9278",
+      "build/swat/windows/test_foundation.exe": "c2a1f88fd1ec44be6bdb286a20b18df78faa546f1b3c4b8f90cba4012dd765f0",
+      "build/swat/windows/test_scenarios.exe": "8ea149070d71379822eec2cd78e789f84d525a055e10f71e2ab1155e0bc3177a",
+      "build/swat/windows/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/windows/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+    },
+    "log": {
+      "path": "build/swat/review/player-contacts/install.log",
+      "sha256": "78e4f50c65e2490369702311288f40e980026b7d55bbae26477957bf3d78f407"
+    },
+    "launcher": {
+      "path": "build/swat/review/player-contacts/installed-help.log",
+      "sha256": "8d7213a59eca19b8f6cac58ed3875d6bdf3b5910a521c022a3bf8fe8746d070a"
+    }
+  },
+  "constraints": {
+    "no_python_execution": true,
+    "no_root_trainer_cuda_or_box3d_rebuild": true,
+    "no_native_graphics_game_or_test_launched": true,
+    "no_gpu_or_heavy_performance_test": true,
+    "serialized_low_priority_cpu_checks": true,
+    "earlier_sealed_roots_unchanged": true
+  },
+  "remaining": [
+    "Native Windows visual/interaction and stable-load frame-time acceptance remain held.",
+    "Other contact boundaries/varied occupied layouts, moving-threat squad coordination and additional equipment roles remain open.",
+    "Vehicle panel-stack ballistics/suspension, remaining composition/art/audio/visible handling and reproducible policy baselines/held-out evaluation remain open."
+  ]
+}

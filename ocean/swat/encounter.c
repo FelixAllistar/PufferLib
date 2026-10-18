@@ -778,8 +778,12 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
             if(task_room)task_officer=order_officer(s,goal,in->squad_team);
         }
         bool equipment=in->squad_order==SWAT_ORDER_PICK || in->squad_order==SWAT_ORDER_WEDGE;
-        if(equipment && hit.kind==SWAT_HIT_WORLD && hit.index>0 && door_task_valid(&s->world.objects[hit.index],in->squad_order))
-            task_officer=door_task_officer(s,hit.point,in->squad_team,in->squad_order);
+        if(equipment && hit.kind==SWAT_HIT_WORLD && hit.index>0 && door_task_valid(&s->world.objects[hit.index],in->squad_order)) {
+            // The command names this leaf. Anchor its working point to the
+            // leaf, rather than preserving platform-dependent ray rounding.
+            goal=s->world.objects[hit.index].center;
+            task_officer=door_task_officer(s,goal,in->squad_team,in->squad_order);
+        }
         if(in->squad_order==SWAT_ORDER_CUFF) {
             // The leader names a visible person, not a location that might
             // later contain someone else. Clear glass transmits the order's

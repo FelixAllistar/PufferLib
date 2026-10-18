@@ -16,6 +16,13 @@ static void task_equipment(int variant) {
     if(variant==8)for(int i=3;i<6;i++)sim.actors[i].gear.wedges=0;
     if(variant==11)swat_world_box(&sim.world,(b3Pos){-1,1.5f,0},swat_v(.04f,1.5f,5),SWAT_CONCRETE,0);
     sim.actors[0].controller.yaw=0;sim.actors[0].controller.pitch=0;
+    if(variant<2) {
+        // Different visible contact heights still name the same door task.
+        float height=variant?1.8f:.8f;
+        sim.actors[0].controller.pitch=b3Atan2(height-swat_controller_eye(&sim.actors[0].controller).y,4);
+        SwatHit seen=swat_context_hit(&sim,0,24);
+        assert(seen.kind==SWAT_HIT_WORLD && seen.index==door && fabsf(seen.point.y-target->center.y)>.25f);
+    }
     SwatInput in=swat_neutral_input();in.squad_order=order;in.squad_queue=variant==2 || variant==4 || variant==12;
     swat_sim_step(&sim,&in);
     int recipient=-1,recipients=0;
@@ -36,6 +43,7 @@ static void task_equipment(int variant) {
     }
     assert(recipients==1 && recipient==((variant==5 || variant==7)?4:3));
     assert(sim.actors[recipient].mind.pending_door==door);
+    assert(b3Distance(sim.actors[recipient].mind.pending_goal,target->center)<1e-6f);
     if(variant==10) {
         for(int t=0;t<20;t++)swat_sim_step(&sim,&(SwatInput){0});
         assert(sim.actors[recipient].mind.order==SWAT_ORDER_PICK && sim.actors[recipient].mind.order_door==door);

@@ -231,8 +231,8 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
     fail("walking timeout");
 }
 static void walk(b3Pos goal,float radius) {walk_until(goal,radius,-1);}
-static void delegate_room(float door_x) {
-    b3Pos point={door_x,1.1f,0};SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);
+static void regroup_for_task(b3Pos point) {
+    SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);
     // Let the real team finish its approach before assigning hands-on work.
     // Parking geometry changes their route; an officer left across the court
     // can correctly stop a search to cover an armed contact in another room.
@@ -242,8 +242,11 @@ static void delegate_room(float door_x) {
         if(regrouped)break;
         in=look(point);cover_visible_attack(&in,sim.actors[0].controller.yaw);step(in);
     }
-    if(!regrouped)fail("room search team approach");
-    in=look(point);in.squad_order=SWAT_ORDER_HOLD;step(in);idle(20);
+    if(!regrouped)fail("hands-on team approach");
+}
+static void delegate_room(float door_x) {
+    b3Pos point={door_x,1.1f,0};regroup_for_task(point);
+    SwatInput in=look(point);in.squad_order=SWAT_ORDER_HOLD;step(in);idle(20);
     for(int n=0;n<60;n++)step(look(point));
     in=look(point);in.squad_order=SWAT_ORDER_ROOM_SEARCH;in.squad_queue=true;step(in);
     int recipient=-1;
@@ -612,6 +615,11 @@ int main(int argc,char** argv) {
             if(squad_restraint){in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
         } else {
             walk((b3Pos){doors[i],0,2.5f},.3f);
+            // Quiet task setup regroups in the open court before entering.
+            // A furnished room may have no valid trailing formation slot.
+            // Combat keeps its paced moving coverage rather than an exposed
+            // regroup pause while other rooms still contain armed threats.
+            if(squad_restraint && !sim.config.hostile_fire)regroup_for_task((b3Pos){doors[i],1.1f,0});
             if(squad_rooms && i==0)delegate_room(doors[i]);
             walk((b3Pos){doors[i],0,-.85f},.3f);
         }

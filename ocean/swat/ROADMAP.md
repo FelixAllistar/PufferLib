@@ -36,9 +36,8 @@ Acceptance work still open:
   Broader moving coverage and autonomous protection around equipment remain open.
 - Confirm native menu-click/focus timing alongside the accepted headless
   repeated/rejected command, render-only frame and UDP acknowledgement cases.
-- Isolate ordinary controller contacts at wheel-stop lips. A discarded planner
-  experiment produced a large vertical impulse on re-entry; its diagnostic is
-  retained with the weapon-retrieval evidence, and player-contact acceptance is open.
+- Extend contact qualification to boundaries introduced by further authored
+  layouts and props; the ordinary-player wheel-stop regression is covered below.
 - Extend the complete front/exterior/inter-room approaches to varied occupant
   positions/populations, beyond the fixed positions and resolve-seed checks
   below, preserving ordinary inputs, replay, mid-run resume and fresh replicas.
@@ -52,6 +51,69 @@ Acceptance work still open:
 - Qualify vehicle cover separately. The delivered sedan has a closed exterior
   coachwork volume, with no hollow passenger interior or suspension model;
   current game material sections do not establish panel-stack ballistics.
+
+Player contact at wheel-stop lips (2026-10-18): direct ordinary player input
+reproduces the retained launch without the discarded departure planner. A valid
+grounded lip departure/re-entry reaches 67.964 m/s upward velocity. Ground
+snapping was repeatedly pulling the full feet box into concrete after the
+solver had separated it, because a shrunken support probe could find the floor
+beyond the lip. Downward corrections now require clearance for the actual feet
+hull and leaned capsule, including mesh rest offset. Velocity remains under
+the existing controller/solver rules. Upward stair casts and source geometry
+retain their behavior.
+
+Both platforms pass 180 crossing/blocked-approach trials over all five original
+stop meshes, both directions, three lanes, three gaits and both stances. All
+starts check the entire footprint and settle on supported clear ground; eighteen
+car-side starts move beyond the actual sedan rather than spawning inside it.
+Four captured departure/re-entry cases finish at their destination on the court
+floor. A default-spawn ordinary-input route completes twelve crossings/reversals
+in 1,624 ticks, with checkpoint restore and fresh encoded replicas. All 1,751
+focused state samples match across Linux/Windows; independently recorded journals
+and checkpoints are byte-identical. Maximum observed feet Y is 0.149044 m and
+absolute vertical speed 2.481589 m/s. Removing only the downward-snap guard
+reproduces the 67.964 m/s launch.
+
+The unchanged locomotion, foundation and scenario suites pass on both platforms,
+including all five training stages/both roles, 1,000 sweep equivalence checks,
+6,000 movement decisions, stairs/ramps, commanded upper-storey squad ascent,
+entry replay and atomic mission save/continuation. The existing 139 broad
+functional groups also pass on each platform with matching recorded states,
+including real UDP room search, equipment, frontend and slow map construction.
+The quiet mission's automated commander regroups in the court before entering
+for hands-on work. A distant officer correctly covered a separate armed suspect;
+an interior regroup had no valid trailing formation slot. Retained failed
+journals explain the route change, which uses ordinary commands and movement.
+Combat retains its paced moving coverage; an exploratory court regroup exposed
+an officer to fatal fire during evacuation and is retained as failed evidence.
+Late Windows playback also exposed a two-ULP officer pitch difference during
+the wedge approach; positions, velocities, gear and sounds matched. Private
+planning diagnostics isolate a one-ULP difference in the stored ray-hit target
+height, with identical eye and distance calculations. Named door equipment
+orders now anchor to the selected leaf centre. The ineffective math-only change
+was removed. Different aimed contact heights still select a single capable
+operator, retain the leaf identity and require actual tool reach/completion.
+Failed journals, first-divergence snapshots and planning diagnostics are retained.
+The shared-process squad network fixture now services the authority and other
+peers while a replica constructs its world. The loading client still relies on
+production socket service. A deliberate late join adds more than 6.5 seconds of
+construction delay without advancing gameplay or changing shipping deadlines;
+the original timeout and unchanged successful retry are retained as well.
+Fresh v36 quiet, hostile inter-room and hostile exterior routes complete in
+25,620 / 20,457 / 9,513 ticks. The quiet route arrests both suspects; the hostile
+routes resolve two armed threats lawfully. Every route evacuates all three
+civilians, recovers both weapons and regroups the squad without protected
+casualties or unlawful force. All three pass exact whole-mission playback,
+mid-run save/resume, fresh replicas and no contact-buffer overflow. The final
+Linux and Windows shipping tools each replay all 55,590 mission frames exactly;
+native queued room/wedge saves match 1,237 / 23,144 frames. Independent player
+journals/checkpoints and frontend journals are byte-identical, with exact shipping
+playback; both platforms reject v35 recordings. All 42 executables and four
+unchanged deployed sedan/shelter GLBs have matching installed hashes. Native
+graphics and heavy performance acceptance remain held.
+Protocol/replay v36 requires matching peers and fresh recordings/saves. Evidence
+is retained under `build/swat/review/player-contacts`; the source-coupled receipt
+is `tests/receipts/player-contacts-2026-10-18.json`.
 
 Roadside engine integration (2026-10-18): the original approved parked sedan
 faces the guest rooms from (-6, -0.08, 6.65); the waiting shelter faces the road
@@ -101,7 +163,7 @@ Matching v35 peers and new recordings are required; native graphics/performance
 and vehicle-cover qualification remain open. Evidence is retained under
 `build/swat/review/roadside-integration`.
 
-The current quiet front route finishes in 25,571 ticks with two arrests, three
+The v35 quiet front route finishes in 25,571 ticks with two arrests, three
 evacuations, both weapons recovered and squad regroup. Hostile inter-room and
 exterior routes finish in 20,819/9,512 ticks with two lawful suspect deaths each.
 All three preserve replay/save/resume, fresh replicas, truthful debrief and no

@@ -11,6 +11,7 @@
 // Build with -DSWAT_BODY_DEBUG=1 to trace TryStep decisions to stdout.
 
 #include "body.h"
+#include "box3d/constants.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -219,6 +220,37 @@ static void CategorizeGround( SwatBody* c )
 
 // Stick to ground: snap down onto surfaces when walking off small ledges /
 // descending slopes so we don't go airborne every step.
+static bool LandingOverlap( b3ShapeId shape, void* context )
+{
+	CastContext* query = context;
+	for ( int i = 0; i < query->ignoreCount; i++ )
+	{
+		if ( B3_ID_EQUALS( shape, query->ignoreShapes[i] ) ) return true;
+	}
+	query->hit = true;
+	return false;
+}
+
+static bool LandingClear( const SwatBody* c, b3Pos center )
+{
+	CastContext query = {0};
+	query.ignoreCount = c->ownShapeCount;
+	for ( int i = 0; i < c->ownShapeCount; i++ ) query.ignoreShapes[i] = c->ownShapes[i];
+	b3QueryFilter filter = b3DefaultQueryFilter();
+	filter.maskBits = c->queryMask;
+	// The support search may shrink its hull around an edge. The physical feet
+	// and leaned capsule cannot shrink, and mesh contacts keep a rest offset.
+	const b3HullData* feet = b3Shape_GetHull( c->feetBoxId );
+	b3ShapeProxy lower = { b3GetHullPoints( feet ), feet->vertexCount, B3_MESH_REST_OFFSET };
+	b3World_OverlapShape( c->world, center, &lower, filter, LandingOverlap, &query );
+	if ( query.hit ) return false;
+	b3Capsule capsule = b3Shape_GetCapsule( c->capsuleId );
+	b3Vec3 points[2] = { capsule.center1, capsule.center2 };
+	b3ShapeProxy upper = { points, 2, capsule.radius + B3_MESH_REST_OFFSET };
+	b3World_OverlapShape( c->world, center, &upper, filter, LandingOverlap, &query );
+	return !query.hit;
+}
+
 static void Reground( SwatBody* c, float stepSize )
 {
 	if ( !c->onGround )
@@ -250,6 +282,9 @@ static void Reground( SwatBody* c, float stepSize )
 		b3Pos targetPos =
 			p_offset( tr.endPosition, v3( 0.0f, c->totalHeight * 0.5f + 0.01f, 0.0f ) );
 		float deltaY = targetPos.y - pos.y;
+		// Do not undo the solver's separation by snapping the full feet box
+		// into a lip that only the shrunken support probe could clear.
+		if ( deltaY < -c->skin && !LandingClear( c, targetPos ) ) return;
 
 		b3Quat rot = b3Body_GetRotation( c->body );
 		b3Body_SetTransform( c->body, targetPos, rot );
