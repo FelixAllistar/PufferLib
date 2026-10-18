@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v40 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v41 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1044,7 +1044,25 @@ leader and adds a second late peer; local server input stays neutral.
 The full damaged-door matrix now has 102 cases. Geometry changes in these
 fixtures are explicit; the officers perform their work through ordinary inputs.
 
-These task rules and the replicated access status require protocol/replay v40,
+Moving bot officers avoid the firing lanes of nearby, visibly observed friendly
+officers with an aimed or recently fired, ready and loaded weapon. Routes can
+go behind the muzzle or wait for a safe opening. Clear glass transmits the
+lane; the first opaque world surface bounds it. Weapon posture, spread and the
+moving officer's stance contribute to clearance. Bots whose gunfire is disabled
+by the scenario do not reserve firing lanes; player weapons still do. Cached waypoints and local
+movement are checked again as aim changes. Actual bodies, bullets, damage and
+human movement remain authoritative. Hidden fire, penetration beyond opaque
+cover and explosive exposure are outside this rule.
+
+`squad-fire-lanes-test` checks queued movement, live shots, mirrored/rotated
+routes, changing aim, two shooters, clear/opaque cover and crouched clearance.
+An additional case uses ordinary hostile shots into a backstop and actual
+covering-officer AI return fire.
+`squad-fire-lanes-network-test` sends Move and firing inputs from a connected
+commander and joins a second peer mid-route. Native UDP checks use the approved
+wrapper with `test_encounter.exe fire-lanes-network`.
+
+These task rules and the replicated access status require protocol/replay v41,
 matching peers and fresh recordings/saves.
 
 **Search room** selects the room through the visible door or aimed room surface
@@ -1068,11 +1086,16 @@ over real motel UDP. Native transport uses the approved wrapper with
 `test_encounter.exe rooms-network`. `motel-room-search-test` adds a queued
 Room 101 search, checkpoint/restore and ordinary completion to the full quiet
 restraint/retrieval/equipment/escort route. The QA executable accepts `rooms`.
-Room identity/progress and door references use protocol/replay v40; use matching
+Room identity/progress and door references use protocol/replay v41; use matching
 peers and recreate older journals/saves.
 
 Parking stops retain their full mesh collision. NPC navigation treats them as
 permanent obstacles and routes around the raised lip and the space beneath it.
+A commander facing a nearby furnished exit can need clearance before reaching
+the doorway: recalled officers choose supported outside flanks up to 3.5 metres
+away. Escorted people retain their existing doorway clearance distance.
+`motel-occupancy-deep-exit-test` preserves the captured rear-bay positions,
+original bed and ordinary movement from a post-combat mission stall.
 Captured crowded extraction fixtures retain stance, grounded state and velocity;
 `make -C ocean/swat navigation-escort-test` checks it without running a benchmark.
 
@@ -1217,7 +1240,7 @@ directly; the dedicated server accepts the same options. Connected sessions let
 the leader choose the situation. The seed selects authored floor bays checked
 against the full physical body and other occupants. Art and room geometry are
 shared across situations. `--env.motel_occupancy=3` also selects it through the
-native environment configuration. Protocol/replay v40 carries the situation in
+native environment configuration. Protocol/replay v41 carries the situation in
 maps, scenario requests and journals; use matching peers and fresh saves.
 
 Aim, weapon transforms and shot spread evaluate sine/cosine at double precision
@@ -1680,7 +1703,7 @@ referenced runtime-export hashes verify locally. Its attributed v39 receipts do
 not independently accept whole-level visuals or performance; later engine
 receipts supersede that historical snapshot. Original art packages stay unchanged.
 
-New motel journals/saves and matching v40 peers are required. The Windows build
+New motel journals/saves and matching v41 peers are required. The Windows build
 copies both complete original GLBs into its runtime asset tree.
 
 Ground snapping checks the actual feet hull and leaned capsule before moving
@@ -1690,7 +1713,7 @@ undoing physics separation at a wheel-stop lip. Upward stair handling retains
 the existing stair casts. Named door equipment orders retain the selected leaf's
 identity and canonical centre anchor. Pick/Wedge derive their actual workpoint
 from surviving material as described above. The contact and canonical-anchor
-fixes entered protocol/replay v36; current v40 records the expanded tool rules.
+fixes entered protocol/replay v36; current v41 also records observed friendly-fire routing.
 `make -C ocean/swat motel-player-contacts-test` checks 180 crossing/blocked-approach
 trials across the five original concrete stops, four captured lip departures
 with actual goal arrival, encoded replicas and a recorded twelve-crossing route

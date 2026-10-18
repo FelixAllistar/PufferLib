@@ -186,6 +186,9 @@ SwatHit swat_world_ray(const SwatWorld* world, b3Pos origin, b3Vec3 direction,
                        float range, b3BodyId ignore);
 // Optical queries transmit clear glass; weapons/tools/movers use physical casts.
 SwatHit swat_world_sight_ray(const SwatWorld*,b3Pos,b3Vec3,float,b3BodyId ignore);
+// First opaque world/rubble surface, ignoring actors. Used to bound an
+// observed friendly muzzle corridor; never used to authorize a shot or tool.
+SwatHit swat_world_sight_surface(const SwatWorld*,b3Pos,b3Vec3,float);
 bool swat_world_sight_clear(const SwatWorld*,b3Pos from,b3Pos to);
 // Ignore only the caller's currently occupied ballistic layers. The caller
 // limits this cast to their nearest exit, then restores those objects.

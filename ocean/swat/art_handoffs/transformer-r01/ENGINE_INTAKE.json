@@ -1,0 +1,69 @@
+{
+  "asset_id": "BC_XFMR01",
+  "revision": "r01",
+  "drive_url": "https://drive.google.com/file/d/183t_xAwUkyqzbb___ebjkeBtA7QQ05yw/view?usp=drivesdk",
+  "approval": "Blenderbot reported Felix approved the candidate in the established public project thread.",
+  "acknowledgement": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792361286270859?thread_ts=1791078311.943659&cid=C0C5TN3AA8K",
+  "archive": {
+    "path": "build/swat/review/transformer-intake/source.zip",
+    "bytes": 17382610,
+    "sha256": "f68670cbff980213126d68d7ae45b2d09c4433a04721b0d0be4e847a6b654c8c"
+  },
+  "safe_members": 43,
+  "indexed_payload_hashes": 42,
+  "zip_crc": "pass",
+  "runtime": {
+    "path": "build/swat/review/transformer-intake/extracted/runtime/BC_XFMR01_closed.glb",
+    "sha256": "17c4e6cd6cd17cd625855d0870c0d54eaec0ab34885ca5cb609a871175d15975",
+    "bytes": 926728,
+    "triangles": 4784,
+    "owners": [
+      "BC_XFMR01_Cabinet",
+      "BC_XFMR01_Door_Left",
+      "BC_XFMR01_Door_Right",
+      "BC_XFMR01_Plinth"
+    ],
+    "bounds": [
+      [
+        -0.800000011920929,
+        0,
+        -0.699999988079071
+      ],
+      [
+        0.800000011920929,
+        1.5,
+        0.699999988079071
+      ]
+    ],
+    "materials": 1,
+    "embedded_images": 2,
+    "decoded_vertices": 11004,
+    "decoded_finite_positions_normals_uvs": true,
+    "vertex_bounds_match_accessors": true,
+    "maps": [
+      {
+        "name": "BC_XFMR01_basecolor",
+        "width": 1024,
+        "height": 1024,
+        "color": "opaque RGB",
+        "sha256": "4b8632523990719c529e0caeef7c6255cde356d3e98033fcb30e79bd22563573"
+      },
+      {
+        "name": "BC_XFMR01_orm",
+        "width": 1024,
+        "height": 1024,
+        "color": "opaque RGB",
+        "sha256": "66b68d35374b8c12e76ae17995bb523a85505d63f38c278c6a85a538c4da6459"
+      }
+    ]
+  },
+  "recipes_executed": false,
+  "python_executed": false,
+  "engine_integration": false,
+  "native_acceptance": "open",
+  "visual_review": {
+    "source": "previews/contact_sheet.jpg",
+    "observation": "Reviewed supplied actual-export contact sheet: closed cabinet and two static front doors on concrete plinth; seated latch/hinges/anchor details visible. This is source render review, not native engine rendering."
+  },
+  "status": "Archive intake verified; gameplay integration and native acceptance remain open."
+}
