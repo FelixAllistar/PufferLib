@@ -394,7 +394,26 @@ static void test_reset_and_limits(void) {
     puts("PASS exact timeout and full character/weapon/scene reset");
 }
 
+static void test_direction_precision(void) {
+    // Fixed float vectors from independent double-precision reference results.
+    // Volatile arguments exercise runtime libm rather than constant folding.
+    const struct {float angle;int component;uint32_t bits;} vectors[]={
+        {0x1.57bcd8p+4f,1,0x3ef8d93f},{-0x1.8f4412p+3f,1,0x3db6aa97},
+        {0x1.b6e5bcp+1f,1,0xbe91143b},{-0x1.6fc9fcp+4f,0,0xbf0b4009},
+        {0x1.e8be1cp+4f,0,0x3f252bbc},{-0x1.ed922cp-1f,0,0x3f11fad9},
+        {0x1.ed8bdp+2f,0,0x3e113f55}
+    };
+    for(int i=0;i<7;i++){
+        volatile float angle=vectors[i].angle;b3Vec3 d=swat_direction(angle,0);
+        float component=vectors[i].component?d.z:d.x;uint32_t bits;memcpy(&bits,&component,4);
+        if(bits!=vectors[i].bits)fprintf(stderr,"Direction precision angle%a component%d actual%08x expected%08x\n",(double)angle,vectors[i].component,bits,vectors[i].bits);
+        assert(bits==vectors[i].bits && fabsf(b3Length(d)-1)<.000001f);
+    }
+    assert(signbit(swat_direction(0,-0.0f).y));
+    puts("PASS precise directions: seven runtime float vectors retain reference bits and signed zero across supported platforms");
+}
 int main(void) {
+    test_direction_precision();
     test_movement_and_gates();
     test_stance_clearance();
     test_lean_collision_and_exposure();

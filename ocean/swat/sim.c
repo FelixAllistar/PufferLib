@@ -4,6 +4,7 @@
 #include "storefront.h"
 #include "door_damage.h"
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,8 +44,11 @@ void swat_sim_init(SwatSim* s, SwatConfig config, uint32_t seed) {
     swat_sim_reset(s);
 }
 
+#include "motel_occupancy_impl.h"
+
 void swat_sim_reset(SwatSim* s) {
     SwatConfig config = s->config;
+    if(config.motel_occupancy<0 || config.motel_occupancy>=SWAT_MOTEL_OCCUPANCIES)config.motel_occupancy=SWAT_MOTEL_STANDARD;
     uint32_t rng = s->rng;
     int episode = s->episode+1;
     free(s->navigation);
@@ -107,12 +111,8 @@ void swat_sim_reset(SwatSim* s) {
         }
         if(config.mission==SWAT_MOTEL) {
             swat_sim_spawn_actor(s,0,SWAT_OFFICER,s->mission.staging,-SWAT_PI*.5f);
-            swat_sim_spawn_actor(s,1,SWAT_SUSPECT,(b3Pos){-2,0,-2},SWAT_PI*.5f);
-            swat_sim_spawn_actor(s,2,SWAT_CIVILIAN,(b3Pos){-6,0,-2},SWAT_PI*.5f);
-            swat_sim_spawn_actor(s,6,SWAT_CIVILIAN,(b3Pos){2,0,-2},SWAT_PI*.5f);
-            swat_sim_spawn_actor(s,7,SWAT_CIVILIAN,(b3Pos){-10,0,-1.4f},SWAT_PI*.5f);
-            swat_sim_spawn_actor(s,8,SWAT_SUSPECT,(b3Pos){6,0,-1.4f},SWAT_PI*.5f);
-            s->actor_count=9; s->extraction=s->mission.extraction;
+            if(!motel_spawn_occupants(s))abort();
+            s->extraction=s->mission.extraction;
         }
         if(config.mission==SWAT_STOREFRONT) {
             swat_sim_spawn_actor(s,0,SWAT_OFFICER,s->mission.staging,-SWAT_PI*.5f);

@@ -23,6 +23,8 @@ typedef struct SwatMind {
     bool entry_settled;
     bool tool_goal,tool_blocked,tool_crouch;
     int tool_replan_tick,tool_generation,tool_scan; // Bounded private surface search.
+    bool restraint_goal;
+    int restraint_replan_tick,restraint_actor; // Private approach cache; replay reconstructs it.
     b3Pos memory,goal,waypoint,pending_goal,task_point,room_point; // Authority planning state, reconstructed by input replay.
     int room_tool_ticks;
 } SwatMind;

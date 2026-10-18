@@ -57,6 +57,7 @@ typedef struct SwatConfig {
     int mission;
     uint32_t layout_seed;
     int generator,difficulty,squad_bots;
+    int motel_occupancy;
 } SwatConfig;
 
 #define SWAT_STAGING_RADIUS 2.5f

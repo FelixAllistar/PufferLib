@@ -119,7 +119,9 @@ static void raw_scenario(SwatNetClient* client,uint32_t epoch,const SwatConfig* 
 }
 
 #include "motel_network.h"
+#include "motel_occupancy_network.h"
 int main(int argc,char** argv) {
+    if(argc==2&&!strcmp(argv[1],"occupancy")){motel_occupancy_network();return 0;}
     if(argc==2&&!strcmp(argv[1],"motel")){motel_network();return 0;}
     SwatConfig config=swat_default_config(); config.max_ticks=6000; config.hostile_fire=false; config.randomize=false;
     static SwatSim authority,replicas[5]; SwatNetServer server; SwatNetClient clients[5]={0};

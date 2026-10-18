@@ -47,6 +47,8 @@ void puf_init(Env* env, Dict* kwargs) {
     if (item) config.randomize = item->value != 0;
     item = dict_find(kwargs,"hostile_fire");
     if (item) config.hostile_fire = item->value != 0;
+    item = dict_find(kwargs,"motel_occupancy");
+    if (item) config.motel_occupancy = (int)item->value;
     // Simulation owns stable storage: native vector setup may realloc Env.
     swat_sim_init(env->sim,config,env->rng);
 }

@@ -22,6 +22,7 @@ static void usage(const char* path) {
         "  --resume FILE.sgrp          Restore a verified solo mission journal\n"
         "  --mission house|annex|generated|building|range|breach-lab|motel|storefront  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
+        "  --motel-occupancy 0|1|2|3    Standard, dispersed, mixed rooms, or busy\n"
         "  --layout-model FILE          Optional trained house policy\n"
         "  --locomotion-policy FILE     Native SWAT movement FP32 checkpoint (.bin)\n"
         "  --capture-screen SCREEN      game, main, pause, settings, weapon, plan, or overwatch\n"
@@ -64,7 +65,7 @@ int main(int argc, char** argv) {
     SwatReplay recording={0}; bool record_started=false;
     const char* join_address=NULL; bool start_host=false;
     int port=SWAT_DEFAULT_PORT;
-    int mission=-1,preview=0,difficulty=1,generator=SWAT_LAYOUT_NEURAL;
+    int mission=-1,preview=0,difficulty=1,generator=SWAT_LAYOUT_NEURAL,motel_occupancy=-1;
     uint32_t layout_seed=1;
     SwatScreen capture_screen=SWAT_SCREEN_GAME;
     bool eval=false,deterministic=false,max_ticks_override=false,weapon_settings_capture=false;
@@ -90,12 +91,13 @@ int main(int argc, char** argv) {
         } else if(!strcmp(argv[i],"--generator")) {
             if(++i>=argc || (strcmp(argv[i],"neural") && strcmp(argv[i],"uniform"))) { usage(argv[0]); free(overrides); return 1; }
             generator=!strcmp(argv[i],"neural") ? SWAT_LAYOUT_NEURAL : SWAT_LAYOUT_UNIFORM;
-        } else if(!strcmp(argv[i],"--layout-seed") || !strcmp(argv[i],"--difficulty")) {
+        } else if(!strcmp(argv[i],"--layout-seed") || !strcmp(argv[i],"--difficulty") || !strcmp(argv[i],"--motel-occupancy")) {
             bool seed_option=!strcmp(argv[i],"--layout-seed");
+            bool occupancy_option=!strcmp(argv[i],"--motel-occupancy");
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             char* end; unsigned long long n=strtoull(argv[i],&end,10);
-            if(end==argv[i] || *end || argv[i][0]=='-' || n>(seed_option ? UINT32_MAX : 2u)) { usage(argv[0]); free(overrides); return 1; }
-            if(seed_option) layout_seed=(uint32_t)n; else difficulty=(int)n;
+            if(end==argv[i] || *end || argv[i][0]=='-' || n>(seed_option ? UINT32_MAX : occupancy_option ? SWAT_MOTEL_OCCUPANCIES-1u : 2u)) { usage(argv[0]); free(overrides); return 1; }
+            if(seed_option) layout_seed=(uint32_t)n; else if(occupancy_option) motel_occupancy=(int)n; else difficulty=(int)n;
         } else if(!strcmp(argv[i],"--port")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             char* end; long parsed=strtol(argv[i],&end,10);
@@ -173,6 +175,7 @@ int main(int argc, char** argv) {
     env.sim->config.mission=mission<0 ? (model ? SWAT_ANNEX : SWAT_HOUSE) : mission;
     if(!model)swat_config_human(&env.sim->config);
     env.sim->config.layout_seed=layout_seed; env.sim->config.generator=generator; env.sim->config.difficulty=difficulty;
+    if(motel_occupancy>=0)env.sim->config.motel_occupancy=motel_occupancy;
     if(!model && !max_ticks_override && env.sim->config.max_ticks==1800) env.sim->config.max_ticks=18000;
     puf_reset(&env);
     if(resume_path) {

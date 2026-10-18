@@ -113,6 +113,9 @@ SwatTraceResult swat_body_trace_body( const SwatBody* c, b3Pos from, b3Pos to,
 
 b3Pos swat_body_feet_position( const SwatBody* c );
 b3Pos swat_body_eye_position( const SwatBody* c ); // stance-dependent height
+// Query the current physical feet/capsule at another feet position, including
+// mesh rest offset and other bodies. Does not move or resize the character.
+bool swat_body_clear_at( const SwatBody* c, b3Pos feet );
 
 // Move the real upper-body capsule, sweeping its volume against the world.
 // Returns the achieved offset. Rotation is locked, so offsets are world-space.

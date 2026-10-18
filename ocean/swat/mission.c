@@ -1,6 +1,12 @@
 #include "mission.h"
 #include <assert.h>
 
+const char* swat_motel_occupancy_name(int profile) {
+    static const char* names[]={"Standard","Dispersed","Mixed rooms","Busy"};
+    return names[profile>=0 && profile<SWAT_MOTEL_OCCUPANCIES?profile:0];
+}
+int swat_motel_occupancy_civilians(int profile) {return profile==SWAT_MOTEL_BUSY?4:3;}
+
 static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
     {"Training annex","Clear the range and extract.",{0,0,0},{21,0,0},0,{{0}}},
     {"Cedar House","Two reported gunmen. Three hostages. Secure occupants and return to staging.",

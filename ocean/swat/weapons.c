@@ -168,8 +168,9 @@ SwatShot swat_weapons_step(SwatArsenal* a, const SwatInput* in,
     // Uniform disk around the aim direction, independent RNG for each actor.
     float angle = swat_rand01(&a->rng)*2.0f*SWAT_PI;
     float radius = sqrtf(swat_rand01(&a->rng))*spread*SWAT_RAD;
-    shot.pitch_offset = sinf(angle)*radius;
-    shot.yaw_offset = cosf(angle)*radius;
+    b3CosSin spread_angle=swat_sincos(angle);
+    shot.pitch_offset = spread_angle.sine*radius;
+    shot.yaw_offset = spread_angle.cosine*radius;
     shot.recoil_yaw = (swat_rand01(&a->rng)-0.5f)*def->recoil*0.5f*SWAT_RAD;
     return shot;
 }

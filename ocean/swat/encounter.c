@@ -2,6 +2,7 @@
 #include "locomotion.h"
 #include "door_damage.h"
 #include "fracture_geometry.h"
+#include "motel.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -49,13 +50,22 @@ static b3Pos grid_position(const SwatNavigation* nav,int index) {
     return (b3Pos){nav->min_x+(index%nav->width+.5f)*.6f,0,nav->min_z+(index/nav->width+.5f)*.6f};
 }
 typedef struct NavQuery { const SwatWorld* world; bool blocked,fixtures_only; } NavQuery;
-static bool nav_obstacle(const SwatObject* o){return o->part==SWAT_PART_FIXTURE || o->part==SWAT_PART_OBSTACLE;}
+static bool nav_obstacle(const SwatWorld* world,const SwatObject* o) {
+    if(o->part==SWAT_PART_FIXTURE || o->part==SWAT_PART_OBSTACLE)return true;
+    // Original furniture predates fixture tags. Its low chair seats and desk
+    // frames are still obstacles, not stair treads or walking floors. Keep
+    // the accepted object schema and collision/material geometry unchanged.
+    const SwatMotelInstance* p=world && world->motel?swat_motel_instance(o->tag.index-1):NULL;
+    if(!p)return false;
+    return (p->asset>=13 && p->asset<=16) || (p->asset>=23 && p->asset<=31) ||
+        (p->asset>=34 && p->asset<=39);
+}
 static bool obstacle(b3ShapeId shape,void* context) {
     NavQuery* query=context;
     SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape));
     if(!tag || tag->kind!=SWAT_HIT_WORLD) return true;
     const SwatObject* o=&query->world->objects[tag->index];
-    if(query->fixtures_only && !nav_obstacle(o))return true;
+    if(query->fixtures_only && !nav_obstacle(query->world,o))return true;
     // Damaged moving leaves are checked in their achieved pose per route,
     // like ordinary opening doors, without resampling the static floor grid.
     if(swat_door_dynamic(o))return true;
@@ -68,7 +78,7 @@ static float floor_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,
     if(!tag || tag->kind!=SWAT_HIT_WORLD || normal.y<.70f) return 1;
     // Furnishing tops are not authored walking floors. A low cushion must not
     // create a stair route through the furniture below it.
-    if(floors->world && nav_obstacle(&floors->world->objects[tag->index]))return 1;
+    if(floors->world && nav_obstacle(floors->world,&floors->world->objects[tag->index]))return 1;
     if(floors->world && swat_door_dynamic(&floors->world->objects[tag->index]))return 1;
     for(int i=0;i<floors->count;i++) if(fabsf(floors->y[i]-(float)point.y)<.05f) return 1;
     if(floors->count<SWAT_NAV_LAYERS) floors->y[floors->count++]=(float)point.y;
@@ -370,7 +380,9 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     }
     int from=swat_navigation_nearest(nav,start),to=swat_navigation_nearest(nav,goal); if(from<0 || to<0) return false;
     if(!search_room_route(searched,limit!=NULL,cell_position(nav,from)) || !search_room_route(searched,limit!=NULL,cell_position(nav,to)))return false;
-    if(!door_leaves_clear(&s->world,doors,door_count,start,cell_position(nav,from))) {
+    float start_height=(nav->walkable[from]&2)?1.8288f:1.016f;
+    if(!door_leaves_clear(&s->world,doors,door_count,start,cell_position(nav,from)) ||
+       !nav_edge(&s->world,start,cell_position(nav,from),start_height)) {
         float best=2;from=-1;
         for(int i=0;i<nav->nodes;i++)if(nav->walkable[i]) {
             b3Pos p=cell_position(nav,i);float distance=b3Distance(start,p);
@@ -458,6 +470,11 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
            !door_leaves_clear(&s->world,doors,door_count,start,target))break;
         route--;at=ahead;
     }
+    // Static links begin at the sampled centre, not the actor's actual feet.
+    // A displaced start can cut a solid corner even when that grid edge is
+    // clear. Join the checked start sample before following such an edge.
+    float next_height=(nav->walkable[from]&nav->walkable[at]&2)?1.8288f:1.016f;
+    if(!nav_edge(&s->world,start,cell_position(nav,at),next_height))at=from;
     *next=cell_position(nav,at); return true;
 }
 static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next) {
@@ -840,6 +857,7 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
         mind->order=mind->pending_order; mind->goal=mind->pending_goal;mind->order_yaw=mind->pending_yaw;mind->order_door=mind->pending_door;mind->order_actor=mind->pending_actor;mind->entry_settled=false; mind->pending_order=0;mind->pending_actor=0;mind->pending_door=0; mind->queued=false; mind->replan_tick=0;
         mind->task_point=mind->goal;
         mind->tool_goal=mind->tool_blocked=false;mind->tool_replan_tick=mind->tool_scan=0;mind->tool_generation=s->world.generation;
+        mind->restraint_goal=false;mind->restraint_replan_tick=mind->restraint_actor=0;
         mind->order_room=mind->pending_room;mind->pending_room=0;mind->room_step=mind->room_task=mind->room_scan=0;mind->room_goal=mind->room_blocked=false;
         mind->room_tool_ticks=0;
         swat_sound_emit(&s->sounds,s->tick,i,SWAT_SOUND_COMMAND,swat_controller_eye(&s->actors[i].controller),.5f,12);
@@ -900,10 +918,24 @@ static b3Pos follower_clear_portal(SwatSim* s,int i,int leader,b3Pos goal) {
         b3CosSin frame=b3ComputeCosSin(door->closed_yaw);
         b3Vec3 normal=swat_v(frame.cosine,0,-frame.sine),tangent=swat_v(frame.sine,0,frame.cosine);
         b3Vec3 at=b3SubPos(feet,portal),wanted=b3SubPos(goal,portal);
-        bool in_lane=fabsf(at.y)<.6f && fabsf(b3Dot(at,normal))<1 && fabsf(b3Dot(at,tangent))<door->half.z+.4f;
-        bool wants_lane=fabsf(wanted.y)<.6f && fabsf(b3Dot(wanted,normal))<1 && fabsf(b3Dot(wanted,tangent))<door->half.z+.4f;
+        // Furniture can funnel the doorway into a side aisle: a recalled
+        // worker nearly two metres inside still seals the leader's approach.
+        // Reserve that local approach while the leader is near the portal,
+        // using the same supported, connected outside flank positions.
+        bool in_lane=fabsf(at.y)<.6f && fabsf(b3Dot(at,normal))<2.6f && fabsf(b3Dot(at,tangent))<door->half.z+1.1f;
+        bool wants_lane=fabsf(wanted.y)<.6f && fabsf(b3Dot(wanted,normal))<2.6f && fabsf(b3Dot(wanted,tangent))<door->half.z+1.1f;
         if(!in_lane && !wants_lane)continue;
         float side=b3Dot(b3SubPos(source,portal),normal)>=0?-1:1,best=1e9f;
+        int front_room=swat_world_room(&s->world,b3OffsetPos(portal,swat_add(swat_mul(normal,.9f),swat_v(0,.9f,0))));
+        int back_room=swat_world_room(&s->world,b3OffsetPos(portal,swat_add(swat_mul(normal,-.9f),swat_v(0,.9f,0))));
+        float exterior=front_room<0 && back_room>=0?1:back_room<0 && front_room>=0?-1:0;
+        if(exterior) {
+            // Do not pull a recalled worker back inside when its normal
+            // formation goal already clears this outside doorway. A needed
+            // sidestep also belongs outside, whichever side the leader is on.
+            if(!wants_lane && b3Dot(wanted,normal)*exterior>0)continue;
+            side=exterior;
+        }
         b3Pos exit=b3OffsetPos(portal,swat_mul(normal,side*.5f));bool found=false;
         for(int flank=-1;flank<=1;flank+=2) {
             b3Pos candidate=b3OffsetPos(portal,swat_add(swat_mul(normal,side*.9f),swat_mul(tangent,flank*(door->half.z+.8f))));
@@ -911,6 +943,19 @@ static b3Pos follower_clear_portal(SwatSim* s,int i,int leader,b3Pos goal) {
                !nav_edge(&s->world,exit,candidate,1.8288f))continue;
             float distance=b3Distance(feet,candidate);
             if(distance<best){best=distance;goal=candidate;found=true;}
+        }
+        if(!found)for(int depth=0;depth<3;depth++)for(int spread=0;spread<3;spread++) {
+            if(!depth && !spread)continue;
+            // Two occupied flanks cannot clear a three-officer column. Give
+            // the remaining follower a bounded wider/deeper sidestep rather
+            // than leaving its trailing goal in the commander's doorway.
+            for(int flank=-1;flank<=1;flank+=2) {
+                b3Pos candidate=b3OffsetPos(portal,swat_add(swat_mul(normal,side*(.9f+depth*.7f)),swat_mul(tangent,flank*(door->half.z+.8f+spread*.7f))));
+                if(!order_support(&s->world,&candidate) || !actor_lane_clear(s,i,candidate,candidate) ||
+                   !nav_edge(&s->world,exit,candidate,1.8288f))continue;
+                float distance=b3Distance(feet,candidate);
+                if(distance<best){best=distance;goal=candidate;found=true;}
+            }
         }
         if(found)break;
     }
@@ -939,8 +984,14 @@ static void officer_follow(SwatSim* s,int i,SwatInput* in,bool tracking) {
             float lateral=attempt==0?(rank&1?.45f:-.45f):0;
             b3Pos candidate=b3OffsetPos(source,swat_add(swat_mul(forward,-depth),swat_mul(right,lateral)));
             if(attempt>=3) {
-                if(!staging)break;
-                if(attempt==3) {
+                if(!staging) {
+                    if(attempt>=11)break;
+                    // A bed, wall or wheel stop can block all three trailing
+                    // samples. Try a bounded set of rear flank positions,
+                    // still locally connected to the leader's actual floor.
+                    float flank=(attempt&1?1:-1)*(.9f+((attempt-3)/2)*.35f);
+                    candidate=b3OffsetPos(source,swat_add(swat_mul(forward,-(.75f+rank*.2f)),swat_mul(right,flank)));
+                } else if(attempt==3) {
                     b3Vec3 inward=b3SubPos(s->extraction,source);inward.y=0;
                     candidate=b3OffsetPos(source,swat_mul(swat_normalize(inward),.9f+rank*.6f));
                 } else {
@@ -952,6 +1003,7 @@ static void officer_follow(SwatSim* s,int i,SwatInput* in,bool tracking) {
             // extraction volume, including the last officer in the column.
             if(staging && b3Distance(candidate,s->extraction)>=SWAT_STAGING_RADIUS-.6f)continue;
             if(!order_support(&s->world,&candidate) || !nav_edge(&s->world,source,candidate,1.8288f))continue;
+            if(!staging && attempt>=3 && !actor_lane_clear(s,i,candidate,candidate))continue;
             if(staging) {
                 // Rescued occupants keep their physical bodies at staging.
                 // Choose a free reachable slot, not a point across that crowd.
@@ -964,6 +1016,29 @@ static void officer_follow(SwatSim* s,int i,SwatInput* in,bool tracking) {
         mind->goal=follower_clear_portal(s,i,leader,goal);
     }
     move_to_input(s,i,mind->goal,in,tracking);
+}
+static bool restraint_at(SwatSim* s,int actor,int target,b3Pos* point) {
+    SwatActor* a=&s->actors[actor];
+    if(!order_support(&s->world,point) || !actor_lane_clear(s,actor,*point,*point) || !swat_body_clear_at(&a->controller.body,*point))return false;
+    b3Pos eye=b3OffsetPos(*point,swat_v(0,a->controller.eye_height,0));
+    b3Vec3 aim=b3SubPos(swat_controller_eye(&s->actors[target].controller),eye);
+    if(b3Length(aim)>1.65f)return false;
+    SwatHit hand=swat_world_ray(&s->world,eye,swat_normalize(aim),1.7f,a->controller.body.body);
+    b3Pos next;return hand.kind==SWAT_HIT_ACTOR && hand.index==target && swat_navigation_next_for_actor(s,actor,*point,&next);
+}
+static bool restraint_position(SwatSim* s,int actor,int target,b3Pos* point) {
+    b3Pos feet=swat_body_feet_position(&s->actors[actor].controller.body),person=swat_body_feet_position(&s->actors[target].controller.body);
+    b3Vec3 away=b3SubPos(feet,person);away.y=0;
+    *point=b3OffsetPos(person,swat_mul(swat_normalize(away),1));
+    if(restraint_at(s,actor,target,point))return true;
+    float best=1e9f;bool found=false;
+    for(int ring=0;ring<3;ring++)for(int side=0;side<16;side++) {
+        float angle=side*SWAT_PI*.125f,radius=.85f+ring*.25f;
+        b3Pos candidate=b3OffsetPos(person,swat_v(cosf(angle)*radius,0,sinf(angle)*radius));
+        float score=b3Distance(feet,candidate);if(score>=best || !restraint_at(s,actor,target,&candidate))continue;
+        *point=candidate;best=score;found=true;
+    }
+    return found;
 }
 static void officer_restrain(SwatSim* s,int i,SwatInput* in) {
     SwatActor* a=&s->actors[i];SwatMind* mind=&a->mind;int target=mind->order_actor-1;
@@ -980,13 +1055,24 @@ static void officer_restrain(SwatSim* s,int i,SwatInput* in) {
     face_target(s,i,target,in);
     if(s->actors[target].role!=SWAT_SUSPECT)in->fire=false;
     if(s->actors[target].gear.surrendered)in->fire=in->reload=false;
-    b3Pos person=swat_body_feet_position(&s->actors[target].controller.body);
-    // Stop a metre short, rather than sending the planner into the occupied
-    // capsule. All approach positions still require physical clearance.
-    b3Pos feet=swat_body_feet_position(&a->controller.body);
-    b3Vec3 away=b3SubPos(feet,person);away.y=0;
-    mind->goal=b3OffsetPos(person,swat_mul(swat_normalize(away),1));
-    move_to_input(s,i,mind->goal,in,true);
+    // Only a currently seen person may update this private approach cache.
+    // Keep the original one-metre point when usable; furniture and walls may
+    // require a supported side approach with actual physical hand access.
+    if(mind->restraint_actor!=target+1){mind->restraint_actor=target+1;mind->restraint_replan_tick=0;mind->restraint_goal=false;}
+    if(s->tick>=mind->restraint_replan_tick) {
+        b3Pos goal;mind->restraint_goal=restraint_position(s,i,target,&goal);mind->restraint_replan_tick=s->tick+30;
+        if(mind->restraint_goal){mind->goal=goal;mind->replan_tick=0;}
+    }
+    if(mind->restraint_goal)move_to_input(s,i,mind->goal,in,true);
+    // General route arrival is wider than hand reach. Finish the last few
+    // centimetres with ordinary movement; the real context still owns cuffs.
+    b3Pos feet=swat_body_feet_position(&a->controller.body);b3Vec3 approach=b3SubPos(mind->goal,feet);
+    float remaining=hypotf(approach.x,approach.z);
+    if(mind->restraint_goal && remaining<.45f && remaining>.06f && fabsf(approach.y)<.45f &&
+       actor_lane_clear(s,i,feet,mind->goal) && nav_edge(&s->world,feet,mind->goal,a->controller.body.crouched?1.016f:1.8288f)) {
+        b3CosSin turn=b3ComputeCosSin(swat_angle(b3Atan2(approach.z,approach.x)-a->controller.yaw-in->yaw_delta));
+        in->forward=.25f*turn.cosine;in->strafe=.25f*turn.sine;
+    }
     SwatContext context=swat_context(s,i);
     if(context.hit.kind!=SWAT_HIT_ACTOR || context.hit.index!=target)return;
     if(context.action==SWAT_CONTEXT_CUFF && context.ready) {

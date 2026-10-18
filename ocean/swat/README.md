@@ -37,7 +37,7 @@ bash build.sh swat --cpu
 
 `./swat` opens a main menu with solo play, **Settings**, **Host co-op**,
 **Join co-op**, and **Quit game**. **Plan the mission** opens Briefing, Loadout,
-Snipers and Houses tabs; **Deploy** captures the mouse. **Escape** or **Tab** opens
+Snipers and Scenarios tabs; **Deploy** captures the mouse. **Escape** or **Tab** opens
 the pause menu, releases the cursor, and freezes the solo simulation. Resume captures
 it again; losing window focus automatically pauses. The pause menu also offers
 restart, settings, return to the main menu, and quit. Menu clicks and capture
@@ -492,7 +492,7 @@ The [equipment comparison and gadget shortlist](EQUIPMENT.md) records SWAT 4,
 Elite Force/First Responders, Ready or Not, and manufacturer sources for the
 next equipment choices.
 
-In **P > Houses**, choose a seed, difficulty and Learned/Random generator, then
+In **P > Scenarios**, choose a seed, difficulty and Learned/Random generator, then
 **Build this seed** or **Next house**. Accepted layouts have connected rooms,
 clear door frames, reachable occupants and a checked collider budget. The three
 arrangements have 3–5 rooms; difficulty places 1–3 suspects and three hostages.
@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v38 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v39 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -947,6 +947,10 @@ edge flags and ballistic thickness in bounded shared mesh components.
 Windows builds the equivalent `test_motel_completion.exe`; pass an output
 `.sgrp` path, optional `combat`, and optional `exterior` or `interroom` argument.
 Optional `seed=N` selects the recorded episode RNG seed (default 81).
+Optional `occupancy=0|1|2|3` and `layout-seed=N` select the motel situation and
+its initial positions. `motel-occupancy-completion-test` runs the three alternate
+quiet situations and a hostile Mixed rooms inter-room route (episode seed 2026,
+layout seed 7), with squad restraints, weapon recovery and every civilian escort.
 `make -C ocean/swat motel-seeds-test` runs seed 82 with squad restraints and
 seed 2026 with hostile fire and the inter-room charge route. These vary initial
 resolve and subsequent RNG while retaining authored occupant positions. Both
@@ -1028,7 +1032,7 @@ The tool planner uses a physical ray: seeing wood through an intact pane does
 not establish hand access. Eighteen clear-glass cases cover complete obstruction
 and resumption after breakage, partial panes and low gaps; bypass cases retain
 the glass without damage. Optical perception still sees through clear glass.
-These task rules and the replicated access status require protocol/replay v38,
+These task rules and the replicated access status require protocol/replay v39,
 matching peers and fresh recordings/saves.
 
 **Search room** selects the room through the visible door or aimed room surface
@@ -1052,7 +1056,7 @@ over real motel UDP. Native transport uses the approved wrapper with
 `test_encounter.exe rooms-network`. `motel-room-search-test` adds a queued
 Room 101 search, checkpoint/restore and ordinary completion to the full quiet
 restraint/retrieval/equipment/escort route. The QA executable accepts `rooms`.
-Room identity/progress and door references use protocol/replay v38; use matching
+Room identity/progress and door references use protocol/replay v39; use matching
 peers and recreate older journals/saves.
 
 Parking stops retain their full mesh collision. NPC navigation treats them as
@@ -1173,7 +1177,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 33) and the same generated
+Saves require this network/replay version (currently 39) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -1183,6 +1187,49 @@ time snapshot restore or crash recovery guarantee. Policy mode does not save.
 Scenarios define geometry, occupants, equipment and initial conditions. There
 are no required action sequences, scheduled enemy waves or mandated entry tools.
 The player chooses how to resolve the situation with the available tools.
+
+The motel has four situations in **Planning > Scenarios**. Selecting one starts
+a fresh round. **Reset situation** repeats its layout seed; **Next seed** keeps
+the motel and situation while advancing the seed. Standard keeps its original
+positions; the other situations use the seed to select positions.
+
+| Situation | Initial population |
+| --- | --- |
+| Standard (0) | Original positions: two armed occupants and three civilians |
+| Dispersed (1) | Same room assignments, deeper positions |
+| Mixed rooms (2) | Different armed/civilian room assignments and varied positions |
+| Busy (3) | Two armed occupants and four civilians; two civilians share Room 101 |
+
+`./swat --mission motel --motel-occupancy 3 --layout-seed 7` selects a situation
+directly; the dedicated server accepts the same options. Connected sessions let
+the leader choose the situation. The seed selects authored floor bays checked
+against the full physical body and other occupants. Art and room geometry are
+shared across situations. `--env.motel_occupancy=3` also selects it through the
+native environment configuration. Protocol/replay v39 carries the situation in
+maps, scenario requests and journals; use matching peers and fresh saves.
+
+Aim, weapon transforms and shot spread evaluate sine/cosine at double precision
+before rounding components to float. This prevents the supported Linux/Windows
+float math paths from moving a shot's impact, tracer and sound point by a few
+bits. Replays still require exact state hashes.
+
+`motel-occupancy-test` checks seeded placement and the reception corner route;
+`motel-occupancy-network-test` checks leader changes, late join and removal of
+the extra civilian over real UDP. These checks run without a window.
+
+Squad restraint checks supported side approaches when the direct working point
+is blocked by furniture. The actual body, sight, hand reach and cuff duration
+remain authoritative. Original motel furniture also blocks navigation at its
+low seats/frames; those surfaces are not walking floors. Recalled officers can
+choose supported rear flank positions when their normal trailing slots are
+blocked, and leave room near an open doorway for the commander to pass.
+If both doorway flanks are occupied, a bounded search checks wider/deeper
+supported sidesteps. Outside doors use exterior flanks and keep an already-clear
+outside formation goal, so a recalled worker can leave a room while the
+commander waits outside. Focused checks cover three doorway situations and a
+three-officer reception exit with an escorted civilian. The full QA route uses
+ordinary Move/Hold staging before an exposed charge and queues a late cuff
+handoff so the commander can leave the narrow aisle before the operator enters.
 
 ```sh
 ./swat --mission building --layout-seed 7 --difficulty 1
@@ -1582,7 +1629,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the
-current protocol requires version 37 as described above.
+current protocol requires version 39 as described above.
 The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
 stands on its eight original skid contacts beside the maintenance shed. Its
 unchanged 2,908-triangle GLB supplies a steel body and two independently removable
@@ -1615,7 +1662,7 @@ graphics check; pass an output directory and an asset root containing just the
 `motel_sedan` and `motel_shelter` exports. Its source/fallback silhouette,
 damage and lighting checks can run on an isolated software display. Software
 rendering does not establish native visual or performance acceptance.
-New motel journals/saves and matching v38 peers are required. The Windows build
+New motel journals/saves and matching v39 peers are required. The Windows build
 copies both complete original GLBs into its runtime asset tree.
 
 Ground snapping checks the actual feet hull and leaned capsule before moving
@@ -1625,7 +1672,7 @@ undoing physics separation at a wheel-stop lip. Upward stair handling retains
 the existing stair casts. Named door equipment orders retain the selected leaf's
 identity and canonical centre anchor. Pick/Wedge derive their actual workpoint
 from surviving material as described above. The contact and canonical-anchor
-fixes entered protocol/replay v36; current v38 records the expanded tool rules.
+fixes entered protocol/replay v36; current v39 records the expanded tool rules.
 `make -C ocean/swat motel-player-contacts-test` checks 180 crossing/blocked-approach
 trials across the five original concrete stops, four captured lip departures
 with actual goal arrival, encoded replicas and a recorded twelve-crossing route

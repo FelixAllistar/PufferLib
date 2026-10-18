@@ -26,8 +26,15 @@ static inline b3Vec3 swat_normalize(b3Vec3 a) {
     float n = b3Length(a);
     return n > 1e-6f ? swat_mul(a,1.0f/n) : swat_v(1,0,0);
 }
+// The supported float libm paths can disagree in the last bit, moving a
+// ballistic hit and its sound position. Evaluate at double precision and
+// round each component once before the ordinary float vector arithmetic.
+static inline b3CosSin swat_sincos(float angle) {
+    return (b3CosSin){(float)cos((double)angle),(float)sin((double)angle)};
+}
 static inline b3Vec3 swat_direction(float yaw, float pitch) {
-    return swat_v(cosf(yaw)*cosf(pitch), sinf(pitch), sinf(yaw)*cosf(pitch));
+    b3CosSin y=swat_sincos(yaw),p=swat_sincos(pitch);
+    return swat_v(y.cosine*p.cosine,p.sine,y.sine*p.cosine);
 }
 static inline float swat_angle(float radians) {
     return remainderf(radians, 2.0f*SWAT_PI);

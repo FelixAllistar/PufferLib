@@ -251,6 +251,11 @@ static bool LandingClear( const SwatBody* c, b3Pos center )
 	return !query.hit;
 }
 
+bool swat_body_clear_at( const SwatBody* c, b3Pos feet )
+{
+	return LandingClear( c, p_offset( feet, v3( 0.0f, c->totalHeight * 0.5f, 0.0f ) ) );
+}
+
 static void Reground( SwatBody* c, float stepSize )
 {
 	if ( !c->onGround )

@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "replay.h"
 #include "door_damage.h"
+#include "motel.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -453,8 +454,16 @@ static void occupied_entry(int route,int mirror,int event) {
 #include "squad_equipment_network.h"
 #include "squad_room_search.h"
 #include "squad_room_network.h"
+#include "motel_occupancy.h"
 int main(int argc,char** argv) {
     setvbuf(stdout,NULL,_IONBF,0);
+    if(argc==2 && !strcmp(argv[1],"occupancy-corner")){test_motel_occupancy_corner();return 0;}
+    if(argc==2 && !strcmp(argv[1],"occupancy-portal")){for(int i=0;i<3;i++)test_motel_occupancy_portal(i);return 0;}
+    if((argc==2 || argc==3) && !strcmp(argv[1],"occupancy-portal-crowd")){test_motel_occupancy_portal_crowd(argc==3?argv[2]:NULL);return 0;}
+    if(argc>=2 && !strcmp(argv[1],"occupancy-escort")){assert(argc<=4);test_motel_occupancy_escort(argc>=3?argv[2]:NULL,argc==4?atoi(argv[3]):-1);return 0;}
+    if(argc==2 && !strcmp(argv[1],"occupancy-follow")){test_motel_occupancy_follow();return 0;}
+    if(argc>=2 && !strcmp(argv[1],"occupancy-restraints")){assert(argc<=4);test_motel_occupancy_restraints(argc>=3?argv[2]:NULL,argc==4?atoi(argv[3]):-1);return 0;}
+    if(argc>=2 && !strcmp(argv[1],"occupancy")){assert(argc<=3);test_motel_occupancy(argc==3?argv[2]:NULL);return 0;}
     if(argc>=2 && !strcmp(argv[1],"rooms-motel")) {
         assert(argc<=3);if(argc==3){task_trace=fopen(argv[2],"w");assert(task_trace);}
         task_room_motel();if(task_trace)assert(!fclose(task_trace));return 0;
