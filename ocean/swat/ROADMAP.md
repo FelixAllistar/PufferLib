@@ -50,6 +50,19 @@ Acceptance work still open:
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
 
+Approved roadside art intake (2026-10-18): the sedan, shelter and UPDATE41
+catalog are retrieved from Blenderbot's approved public handoffs. Their archive
+hashes and all 849 indexed payloads verify. Fresh runtime inventory matches
+13,124 sedan triangles / four opaque materials and 7,868 shelter triangles /
+three opaque materials. The supplied export contact sheets were inspected;
+source/provenance files remain unchanged and no authoring recipes were run.
+These static candidates await engine placement, collision/navigation,
+material/destruction binding, native rendering and performance acceptance.
+UPDATE41 is a metadata/evidence index, not a complete runtime bundle; later
+handoffs and engine receipts supersede its frozen statuses. The public thread
+has an engine acknowledgement; no private searches were made. Receipt:
+`tests/receipts/roadside-intake-2026-10-18.json`.
+
 Squad door equipment (2026-10-17): Pick lock and Wedge door now select one
 capable officer from the requested team, preserving the visible door and reported
 point through the radio delay and queued Execute. Recon and Control carry picks;
