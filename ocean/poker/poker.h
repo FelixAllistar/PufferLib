@@ -1,5 +1,11 @@
 #pragma once
 #include "core.h"
+#ifndef POKER_RIVER_CONTINUATION
+#define POKER_RIVER_CONTINUATION 0
+#endif
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+#include "river_continuation_impl.h"
+#endif
 typedef float obs_t;
 #define PUF_HAS_BOT_POLICY
 #include "pufferenv.h"
@@ -121,10 +127,72 @@ struct Env {
     int8_t opponents[POKER_PLAYERS];
     uint8_t baseline_styles[POKER_PLAYERS];
     uint8_t league_owner;
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+    // The learner is not a context-controlled policy. Each possible native
+    // opponent owns its own context, receiving every actual table action.
+    PcContext* river_context[POKER_PLAYERS];
+    unsigned char river_owner[POKER_PLAYERS][32];
+    uint64_t river_namespace, river_generation, river_request[POKER_PLAYERS];
+#endif
     Agent agents[1];
     Log log;
     Client* client;
 };
+
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+static void poker_context_require(int condition) { if(!condition) abort(); }
+static void poker_context_init(Env* env, int seed) {
+    for(int p=1;p<POKER_PLAYERS;p++) {
+        PcSha256 hash;pc_sha_domain(&hash,"poker-puffer-context-owner-v1");
+        pc_sha_u64(&hash,env->river_namespace);
+        pc_sha_u64(&hash,(uint64_t)(unsigned)seed);pc_sha_u64(&hash,env->rng);
+        pc_sha_u64(&hash,(uint64_t)env->lane);pc_sha_u64(&hash,(uint64_t)p);
+        pc_sha_finish(&hash,env->river_owner[p]);
+        env->river_context[p]=pc_create(env->river_owner[p],p);poker_context_require(env->river_context[p]!=NULL);
+    }
+}
+static void poker_context_begin(Env* env) {
+    poker_context_require(env->river_generation<UINT64_MAX);env->river_generation++;
+    for(int p=1;p<POKER_PLAYERS;p++) {
+        PcAudit audit;poker_context_require(pc_audit(env->river_context[p],&audit));
+        if(audit.phase==PC_UNANCHORED || audit.phase==PC_FOLLOWING || audit.phase==PC_DISABLED)
+            poker_context_require(pc_end(env->river_context[p],env->river_owner[p],audit.generation,PC_ABANDONED));
+        poker_context_require(audit.phase!=PC_ERROR);
+        env->river_request[p]=0;
+        if(env->opponents[p]<0)
+            poker_context_require(pc_begin(env->river_context[p],env->river_owner[p],env->river_generation,
+                env->baseline_styles[p],env->equity_samples));
+    }
+}
+static void poker_context_start(Env* env) {
+    PcPublic initial;int ok=pc_public_from_game(env->game,env->lane,&initial);
+    for(int p=1;p<POKER_PLAYERS;p++)if(env->opponents[p]<0) {
+        if(!ok) {poker_context_require(pc_end(env->river_context[p],env->river_owner[p],env->river_generation,PC_ABANDONED));continue;}
+        poker_context_require(pc_own(env->river_context[p],env->river_owner[p],env->river_generation,
+            env->game->hole[p][0][env->lane],env->game->hole[p][1][env->lane]));
+        poker_context_require(pc_start(env->river_context[p],env->river_owner[p],env->river_generation,&initial));
+    }
+}
+static void poker_context_step(Env* env,int32_t action) {
+    Poker* g=env->game;int lane=env->lane;PcPublic before,after;
+    poker_context_require(pc_public_from_game(g,lane,&before));
+    // Compute an UNSETTLED transition before native winner payouts. Only newly
+    // visible cards enter that transition; future cards remain hidden.
+    int64_t board[5];for(int i=0;i<5;i++)board[i]=g->board[i][lane];
+    poker_profile_update(env->profiles,g,lane,action);poker_step(g,lane,action);
+    int count=g->street[lane]?g->street[lane]+2:0;
+    poker_context_require(pc_public_next(&before,action,board,count,&after));
+    if(g->actor[lane]!=POKER_DONE){PcPublic actual;poker_context_require(pc_public_from_game(g,lane,&actual));poker_context_require(!memcmp(&after,&actual,sizeof(after)));}
+    for(int p=1;p<POKER_PLAYERS;p++)if(env->opponents[p]<0) {
+        // Every response, including terminal, binds the immutable own pair.
+        poker_context_require(pc_own(env->river_context[p],env->river_owner[p],env->river_generation,
+            g->hole[p][0][lane],g->hole[p][1][lane]));
+        poker_context_require(pc_observe(env->river_context[p],env->river_owner[p],env->river_generation,&before,action,&after));
+        if(g->actor[lane]==POKER_DONE)
+            poker_context_require(pc_end(env->river_context[p],env->river_owner[p],env->river_generation,PC_TERMINAL));
+    }
+}
+#endif
 
 void puf_init(Env* env, Dict* kwargs) {
     if (!env->game) {
@@ -167,6 +235,16 @@ void puf_init(Env* env, Dict* kwargs) {
     }
     env->num_agents = 1;
     env->agents[0].policy = 0;
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+    // Opt-in caller assigns a unique job/worker/vector namespace. It travels
+    // exactly through the existing numeric dictionary (integers <= 2^53-1).
+    DictItem* context_namespace=dict_find(kwargs,"river_context_namespace");
+    poker_context_require(context_namespace!=NULL && isfinite(context_namespace->value)
+        && context_namespace->value>=1 && context_namespace->value<=9007199254740991.0
+        && floor(context_namespace->value)==context_namespace->value);
+    env->river_namespace=(uint64_t)context_namespace->value;
+    poker_context_init(env,seed);
+#endif
 }
 
 #define MY_VEC_INIT
@@ -204,8 +282,14 @@ void poker_field(Env* env) {
         int p = g->actor[t], policy = env->opponents[p];
         int32_t action;
         if (policy < 0) {
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+            poker_context_require(env->river_request[p]<UINT64_MAX);
+            poker_context_require(pc_decide(env->river_context[p],env->river_owner[p],env->river_generation,
+                g,t,&env->policy_rng,env->profiles,++env->river_request[p],&action));
+#else
             action = poker_decide(g, t, &env->policy_rng, env->baseline_styles[p],
                 env->equity_samples, env->profiles);
+#endif
         } else {
             float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
             int32_t amounts[POKER_ACTIONS];
@@ -234,8 +318,12 @@ void poker_field(Env* env) {
             }
             action = amounts[selected];
         }
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+        poker_context_step(env,action);
+#else
         poker_profile_update(env->profiles, g, t, action);
         poker_step(g, t, action);
+#endif
     }
 }
 
@@ -279,7 +367,13 @@ void puf_reset(Env* env) {
                 env->opponents[p] = poker_random(&env->policy_rng) % env->league->count;
             }
         }
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+        poker_context_begin(env); // Real hand identity begins BEFORE the deal.
+#endif
         poker_deal(g, t, (g->button[t] + 1) % POKER_PLAYERS, stacks);
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+        poker_context_start(env);
+#endif
         poker_profile_begin(env->profiles);
         poker_field(env);
         if (g->actor[t] != POKER_DONE) {
@@ -296,8 +390,12 @@ void puf_step(Env* env) {
     unsigned mask = poker_actions(env->game, env->lane, amounts);
     int action = env->agents[0].actions[0];
     assert(action >= 0 && action < POKER_ACTIONS && (mask & (1u << action)));
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+    poker_context_step(env,amounts[action]);
+#else
     poker_profile_update(env->profiles, env->game, env->lane, amounts[action]);
     poker_step(env->game, env->lane, amounts[action]);
+#endif
     poker_field(env);
     env->agents[0].rewards[0] = 0;
     env->agents[0].terminals[0] = env->game->actor[env->lane] == POKER_DONE;
@@ -311,9 +409,22 @@ void puf_step(Env* env) {
 
 void puf_set_bot_policy(Env* env, int policy) {
     assert(poker_bot_supported(policy));
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+    // Policy change invalidates any pending receipt and retained strategy;
+    // the next real deal starts the replacement policy under a new generation.
+    for(int p=1;p<POKER_PLAYERS;p++) {
+        PcAudit audit;poker_context_require(pc_audit(env->river_context[p],&audit));
+        if(audit.phase==PC_UNANCHORED || audit.phase==PC_FOLLOWING || audit.phase==PC_DISABLED)
+            poker_context_require(pc_end(env->river_context[p],env->river_owner[p],audit.generation,PC_POLICY_CHANGE));
+    }
+#endif
     env->bot_policy = policy;
     env->baseline_mask = 0;
     for (int p = 1; p < POKER_PLAYERS; p++) env->baseline_styles[p] = policy;
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+    // A policy change is a true-hand reset, not a hidden mid-hand re-anchor.
+    puf_reset(env);
+#endif
 }
 
 void puf_log(Log* log, Dict* out) {
@@ -325,6 +436,9 @@ void puf_log(Log* log, Dict* out) {
 }
 
 void puf_close(Env* env) {
+#if POKER_RIVER_CONTINUATION && POKER_PLAYERS == 2
+    for(int p=1;p<POKER_PLAYERS;p++)pc_free(env->river_context[p]);
+#endif
     free(env->memories);
     free(env->profiles);
     if (env->league_owner && env->league) {
