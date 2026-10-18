@@ -41,9 +41,9 @@ Acceptance work still open:
   repeated/rejected command, render-only frame and UDP acknowledgement cases.
 - Extend contact qualification to boundaries introduced by further authored
   layouts and props; the ordinary-player wheel-stop regression is covered below.
-- Extend the complete front/exterior/inter-room approaches to varied occupant
-  positions/populations, beyond the fixed positions and resolve-seed checks
-  below, preserving ordinary inputs, replay, mid-run resume and fresh replicas.
+- Extend varied-occupant full completions beyond the three alternate quiet
+  front-entry situations and hostile Mixed rooms inter-room route below,
+  preserving ordinary inputs, replay, mid-run resume and fresh replicas.
 - Finish the motel's composition, remaining props, production audio and visible
   equipment handling; integrate approved art and inspect actual rendered output.
 - Establish reproducible officer/enemy policy baselines and held-out evaluation
@@ -54,6 +54,63 @@ Acceptance work still open:
 - Qualify vehicle cover separately. The delivered sedan has a closed exterior
   coachwork volume, with no hollow passenger interior or suspension model;
   current game material sections do not establish panel-stack ballistics.
+
+Selectable motel occupancy (2026-10-18): four situations share the
+accepted geometry and art. Standard preserves the original five starts;
+Dispersed uses deeper floor bays, Mixed rooms changes armed/civilian assignments,
+and Busy adds a fourth civilian in Room 101. A private hash of layout seed,
+actor and situation chooses authored bays without consuming the encounter RNG.
+Alternate starts require supported feet, full physical feet/capsule clearance
+and separation. Planning, player/server CLI, native environment configuration,
+maps, scenario requests and journals carry the selection in protocol/replay v39.
+
+Ordinary-input iteration exposed route connections that cut a static corner,
+invalid radial cuff workpoints inside furniture, and recalled workers blocking
+room approaches or holding position when all three trailing samples failed.
+Navigation checks the actual start connection, searches bounded physical
+cuff approaches, reserves the local portal approach and tries supported rear
+flanks. A separate escort snag was the original folding-chair seat being treated
+as step-over cover: navigation now recognizes legacy furniture without changing
+its object schema, material or triangles. Hand reach/duration, body collision,
+perception, finite equipment and threat priority remain in force.
+
+The hostile Mixed rooms inter-room route (episode 2026, layout 7) then reproduced
+crowd reversals when both doorway flanks were occupied. Sixteen extra bounded
+sidesteps clear the third worker. A recalled officer also held an inside flank
+when the leader waited just outside: exterior-door clearing now chooses the
+outside side and preserves a formation goal already clear outside. Three portal
+fixtures and a crowded reception/escort fixture cover these cases. The full QA
+plan stages the team through ordinary Move/Hold before a charge and queues its
+late cuff handoff until the commander has physically left the single-person
+aisle. Covering sectors remain held while weapons are outstanding; the trial
+that lost an officer with moving cover is retained as a failure. The fixed seed
+and route subsequently completed in 21,658 ticks with lawful response to both shooters,
+three rescues, both weapons and exact replay/save/resume/fresh-replica checks.
+
+An independent Windows exterior replay exposed a float-libm aim discrepancy at
+tick 6,366 despite identical inputs and pre-shot snapshots. One aim component
+differed by one ULP, moving the impact/tracer/sound point by two ULPs. Aim,
+weapon transforms and spread now evaluate double sine/cosine and round once to
+float. Seven fixed runtime reference vectors regress the old path. The same
+seed 81 exterior mission now completes and replays all 9,497 ticks exactly in both
+shipping tools. This is supported-build evidence; exact hashes remain required.
+
+The final cohort passes 201 broad groups per platform, with all 117,052 state
+samples across nine trace pairs exact between Linux and Windows. Focused checks
+cover 84 placement starts, eight rear restraints, twelve rear escorts, three
+portal situations and a crowded reception exit. Seven old-behavior controls
+reproduce their original physical failures. Real UDP verifies leader selection,
+late join, task resets and removal of the extra civilian.
+
+Seven fresh ordinary-input missions complete in 25,811 / 23,037 / 28,275 /
+21,658 / 28,019 / 20,529 / 9,497 ticks, with exact internal replay, checkpoint
+continuation, fresh replicas, clean rules of engagement and no protected deaths.
+Both shipping tools match all 156,826 mission frames per platform. Independently
+recorded player journals and checkpoints are byte-identical. The source-coupled
+receipt is `tests/receipts/occupied-motel-2026-10-18.json`; artifacts are under
+`build/swat/review/occupied-motel`. This finite matrix is progress toward the
+full slice. Further seeds, routes, moving threats, tool roles, art/audio/policy
+and held native visual/focus/performance acceptance remain open.
 
 Physical tool access through clear glass (2026-10-18): a queued Pick behind
 an intact clear pane reproduced an officer stuck in Approaching with a planned
@@ -73,7 +130,7 @@ part of each case. Before the version bump, all 11,996 existing opaque/cut state
 samples remained exactly unchanged by this fix. Initial command targeting
 through clear glass remains a separate qualification task above.
 
-The final cohort passes 199 broad groups per platform, with all 17,439 focused
+The v38 cohort passed 199 broad groups per platform, with all 17,439 focused
 and 81,399 encounter state samples exact across Linux/Windows. Movement,
 foundation/scenario, real UDP room/equipment/frontend and canonical motel
 slow-join checks also pass. Both independently recorded player journals and
@@ -85,7 +142,7 @@ saved prefixes and the 60-frame frontend recordings; prior v37 files reject.
 The source-coupled receipt is
 `tests/receipts/transparent-door-access-2026-10-18.json`.
 
-Current peers and recordings/saves require protocol/replay v38. Prior v37 source,
+The transparent-access increment used protocol/replay v38. Prior v37 source,
 artifact and deployment evidence remains sealed under
 `build/swat/review/damaged-door-tasks`; this candidate uses
 `build/swat/review/transparent-door-access`. Native graphical/focus and

@@ -104,11 +104,13 @@ bool swat_decode_command(SwatCommand* c,const void* bytes,size_t size) {
 }
 
 size_t swat_encode_map(void* bytes,size_t size,const SwatMap* map) {
+    if(map->config.motel_occupancy<0 || map->config.motel_occupancy>=SWAT_MOTEL_OCCUPANCIES)return 0;
     Writer w={bytes,size,true}; header(&w,SWAT_MSG_MAP,map->epoch);
     put32(&w,map->sound_floor); put32(&w,(uint32_t)map->config.max_ticks);
     put8(&w,map->config.randomize); put8(&w,map->config.hostile_fire); put8(&w,map->config.tactical_rules); put8(&w,map->config.squad_bots);
     put8(&w,map->config.mission);
     put32(&w,map->config.layout_seed); put8(&w,map->config.generator); put8(&w,map->config.difficulty);
+    put8(&w,map->config.motel_occupancy);
     putpos(&w,map->mission.staging); put8(&w,map->mission.overwatch_count);
     for(int i=0;i<map->mission.overwatch_count;i++) { putpos(&w,map->mission.overwatch[i].position); putpos(&w,map->mission.overwatch[i].target); }
     if(map->config.mission==SWAT_GENERATED) {
@@ -143,7 +145,8 @@ bool swat_decode_map(SwatMap* map,const void* bytes,size_t size) {
     unsigned int tactical=get8(&r); if(tactical>1) r.ok=false; tmp.config.tactical_rules=tactical!=0; tmp.config.squad_bots=(int)get8(&r); if(tmp.config.squad_bots>3) r.ok=false;
     tmp.config.mission=(int)get8(&r); if(tmp.config.mission>=SWAT_MISSION_COUNT) r.ok=false;
     tmp.config.layout_seed=get32(&r); tmp.config.generator=(int)get8(&r); tmp.config.difficulty=(int)get8(&r);
-    if(tmp.config.generator>=SWAT_GENERATORS || tmp.config.difficulty>2 || !r.ok) return false;
+    tmp.config.motel_occupancy=(int)get8(&r);
+    if(tmp.config.generator>=SWAT_GENERATORS || tmp.config.difficulty>2 || tmp.config.motel_occupancy>=SWAT_MOTEL_OCCUPANCIES || !r.ok) return false;
     tmp.mission=*swat_mission(tmp.config.mission); tmp.mission.staging=getpos(&r);
     tmp.mission.overwatch_count=(int)get8(&r); if(tmp.mission.overwatch_count>3) return false;
     for(int i=0;i<tmp.mission.overwatch_count;i++) { tmp.mission.overwatch[i].position=getpos(&r); tmp.mission.overwatch[i].target=getpos(&r); }
@@ -533,9 +536,11 @@ bool swat_decode_control(const void* bytes,size_t size,SwatMessage type,uint32_t
 }
 
 size_t swat_encode_scenario(void* bytes,size_t size,uint32_t epoch,const SwatConfig* config) {
+    if(config->motel_occupancy<0 || config->motel_occupancy>=SWAT_MOTEL_OCCUPANCIES)return 0;
     Writer w={bytes,size,true}; header(&w,SWAT_MSG_SCENARIO,epoch);
     put8(&w,config->mission); put32(&w,config->layout_seed);
     put8(&w,config->generator); put8(&w,config->difficulty); put8(&w,config->tactical_rules); put8(&w,config->squad_bots);
+    put8(&w,config->motel_occupancy);
     return w.ok ? size-w.left : 0;
 }
 bool swat_decode_scenario(const void* bytes,size_t size,uint32_t* epoch,SwatConfig* config) {
@@ -544,7 +549,8 @@ bool swat_decode_scenario(const void* bytes,size_t size,uint32_t* epoch,SwatConf
     tmp.mission=(int)get8(&r); tmp.layout_seed=get32(&r);
     tmp.generator=(int)get8(&r); tmp.difficulty=(int)get8(&r);
     unsigned int tactical=get8(&r); if(tactical>1) r.ok=false; tmp.tactical_rules=tactical!=0; tmp.squad_bots=(int)get8(&r); if(tmp.squad_bots>3) r.ok=false;
-    if(!r.ok || r.left || tmp.mission>=SWAT_MISSION_COUNT || tmp.generator>=SWAT_GENERATORS || tmp.difficulty>2) return false;
+    tmp.motel_occupancy=(int)get8(&r);
+    if(!r.ok || r.left || tmp.mission>=SWAT_MISSION_COUNT || tmp.generator>=SWAT_GENERATORS || tmp.difficulty>2 || tmp.motel_occupancy>=SWAT_MOTEL_OCCUPANCIES) return false;
     *epoch=e; *config=tmp; return true;
 }
 

@@ -154,7 +154,9 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
     radius=fmaxf(radius,.43f);
     b3Pos waypoint=goal;int replan=0;
     for(int t=0;t<3000;t++) {
-        if(restrained_actor>=0 && sim.actors[restrained_actor].gear.restrained)return;
+        if(sim.end==SWAT_SUCCESS)return;
+        if(restrained_actor>=0 && sim.actors[restrained_actor].gear.restrained &&
+           (sim.config.motel_occupancy==SWAT_MOTEL_STANDARD || feet(0).z>.6f))return;
         b3Pos p=feet(0);b3Vec3 d=b3SubPos(goal,p);
         if(hypotf(d.x,d.z)<radius && fabsf(d.y)<.4f)return;
         SwatInput yield=swat_neutral_input();
@@ -189,7 +191,10 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
         if(!defending && watch_actor>=0 && sim.actors[watch_actor].alive && !sim.actors[watch_actor].gear.surrendered) {
             b3Pos eye=swat_controller_eye(&sim.actors[0].controller);b3Vec3 to=b3SubPos(chest(watch_actor),eye);
             SwatHit visible=swat_world_ray(&sim.world,eye,swat_normalize(to),b3Length(to)+.1f,sim.actors[0].controller.body.body);
-            if(visible.kind==SWAT_HIT_ACTOR && visible.index==watch_actor) {
+            // Seeing a distant occupant is not yet command/taser reach. Keep
+            // approaching until the ordinary seven-metre aiming query below
+            // can name them; otherwise the driver stares forever across court.
+            if(visible.kind==SWAT_HIT_ACTOR && visible.index==watch_actor && b3Length(to)<6.9f) {
                 in=look(chest(watch_actor)); // Stop and cover the exposed occupant before advancing.
                 SwatHit aimed=swat_world_ray(&sim.world,eye,swat_controller_aim(&sim.actors[0].controller),7,sim.actors[0].controller.body.body);
                 if(aimed.kind==SWAT_HIT_ACTOR && aimed.index==watch_actor) {
@@ -361,6 +366,35 @@ static void delegate_wedge(float door_x) {
     in=look(door->center);in.squad_order=SWAT_ORDER_FALL_IN;step(in);
     printf("Squad officer %d wedged door %d at tick %d\n",recipient,owner,sim.tick);fflush(stdout);
 }
+static void approach_person(int actor) {
+    if(sim.config.motel_occupancy==SWAT_MOTEL_STANDARD){walk(feet(actor),1.45f);return;}
+    // The alternate plan includes rear corners. Merely stopping within a
+    // radius of somebody can select the far side of a solid wall. Choose a
+    // supported working position with an actual hand ray, as a player must.
+    b3Pos ignored;assert(swat_navigation_next(&sim,feet(0),feet(actor),&ignored));
+    b3Pos approach={0};float best=1e9f;bool found=false;
+    b3Vec3 eye_offset=b3SubPos(swat_controller_eye(&sim.actors[0].controller),feet(0));
+    for(int n=0;n<sim.navigation->nodes;n++)if(sim.navigation->walkable[n]&2) {
+        b3Pos p={sim.navigation->x[n],sim.navigation->height[n],sim.navigation->z[n]};
+        if(hypotf(p.x-feet(actor).x,p.z-feet(actor).z)>1.45f)continue;
+        SwatHit floor=swat_world_ray(&sim.world,b3OffsetPos(p,swat_v(0,.3f,0)),swat_v(0,-1,0),.6f,sim.actors[0].controller.body.body);
+        if(floor.kind!=SWAT_HIT_WORLD || floor.normal.y<.7f)continue;
+        p.y=floor.point.y+.015f;
+        if(!swat_body_clear_at(&sim.actors[0].controller.body,p))continue;
+        b3Pos eye=b3OffsetPos(p,eye_offset);b3Vec3 delta=b3SubPos(chest(actor),eye);
+        if(b3Length(delta)>1.65f)continue;
+        SwatHit hand=swat_world_ray(&sim.world,eye,swat_normalize(delta),1.7f,sim.actors[0].controller.body.body);
+        if(hand.kind!=SWAT_HIT_ACTOR || hand.index!=actor)continue;
+        float distance=b3Distance(feet(0),p);if(distance<best){best=distance;approach=p;found=true;}
+    }
+    if(!found)fail("supported hand approach to occupant");
+    walk(approach,.43f);
+    for(int n=0;n<180 && hypotf(feet(0).x-approach.x,feet(0).z-approach.z)>.10f;n++) {
+        SwatInput in=look(b3OffsetPos(approach,eye_offset));float yaw=atan2f(approach.z-feet(0).z,approach.x-feet(0).x);
+        if(fabsf(swat_angle(yaw-sim.actors[0].controller.yaw))<20*SWAT_RAD)in.forward=.25f;
+        in.gait=SWAT_WALK;step(in);
+    }
+}
 static void secure(int actor) {
     if(!sim.actors[actor].alive) {
         if(sim.actors[actor].role!=SWAT_SUSPECT)fail("protected occupant killed");
@@ -382,11 +416,15 @@ static void secure(int actor) {
     }
     if(!sim.actors[actor].alive){if(sim.actors[actor].role!=SWAT_SUSPECT)fail("protected occupant killed");return;}
     if(!sim.actors[actor].gear.surrendered)fail("compliance");
-    walk(feet(actor),1.45f);
+    approach_person(actor);
     for(int t=0;t<60;t++)step(look(chest(actor)));
     if(squad_restraint) {
-        SwatInput hold=look(chest(actor));hold.squad_order=SWAT_ORDER_HOLD;step(hold);idle(20);
-        SwatInput order=look(chest(actor));order.squad_order=SWAT_ORDER_CUFF;step(order);
+        // Keep covering sectors while weapons remain outstanding. After both
+        // reported weapons are recovered, unassigned members can yield through
+        // alternate furnished-room portals while one worker cuffs.
+        bool queued=sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD && sim.debrief.evidence==2;
+        SwatInput cover=look(chest(actor));cover.squad_order=queued?SWAT_ORDER_FALL_IN:SWAT_ORDER_HOLD;step(cover);idle(20);
+        SwatInput order=look(chest(actor));order.squad_order=SWAT_ORDER_CUFF;order.squad_queue=queued;step(order);
         int recipient=-1;
         for(int i=3;i<6;i++)if(sim.actors[i].mind.pending_order==SWAT_ORDER_CUFF && sim.actors[i].mind.pending_actor==actor+1) {
             if(recipient>=0)fail("multiple cuff recipients");
@@ -398,13 +436,25 @@ static void secure(int actor) {
         // officer to pass; the test never grants collision exceptions.
         // Stop clearing space as soon as the real cuff completes; a blocked
         // furniture-adjacent waiting point cannot invalidate a finished task.
-        walk_until(squad_waiting,.43f,actor);
+        if(queued) {
+            // This late handoff uses a one-person aisle. Name the visible
+            // target first, leave while the team yields, then Execute so the
+            // operator enters after the commander has physically cleared it.
+            walk(squad_waiting,.43f);
+            SwatInput execute=look(chest(actor));execute.squad_execute=true;step(execute);
+        }else walk_until(squad_waiting,.43f,actor);
         for(int t=0;t<2400 && !sim.actors[actor].gear.restrained;t++)step(look(chest(actor)));
         if(!sim.actors[actor].gear.restrained || sim.actors[recipient].gear.cuff_target!=actor)fail("squad cuffing");
         squad_cuffs++;
         // Release the covering positions before escorting through the same
         // narrow entrance; a completed restraint deliberately holds position.
         SwatInput follow=look(chest(actor));follow.squad_order=SWAT_ORDER_FALL_IN;step(follow);
+        if(sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD) {
+            // The rear-furniture route exchanges places in a one-person aisle.
+            // Stay outside while the recalled worker actually leaves it.
+            for(int n=0;n<1200 && feet(recipient).z<.6f;n++)step(look(chest(actor)));
+            if(feet(recipient).z<.6f)fail("recalled worker clears furnished room");
+        }
         printf("Squad officer %d secured actor %d at tick %d\n",recipient,actor,sim.tick);fflush(stdout);
         return;
     }
@@ -416,25 +466,30 @@ static void secure(int actor) {
     idle(1);
     printf("Secured actor %d at tick %d\n",actor,sim.tick);fflush(stdout);
 }
+static bool secured_person_in_reach(int actor) {
+    SwatContext context=swat_context(&sim,0);
+    return context.hit.kind==SWAT_HIT_ACTOR && context.hit.index==actor && context.action==SWAT_CONTEXT_SECURED && context.ready;
+}
 static void collect(int actor) {
     // This QA plan moves arrested suspects clear before recovering weapons.
     // Use normal escort/hold commands; body interaction keeps its priority.
     if(sim.actors[actor].alive && sim.actors[actor].gear.restrained) {
         // Keep the actual 1.7 m hand-ray test below as the reach authority.
         // A supported cell beside a bed/person need not be within 1 m of feet.
-        walk(feet(actor),1.45f);
+        approach_person(actor);
         for(int n=0;n<120 && sim.actors[actor].mind.escort_owner!=0;n++) {
-            SwatInput follow=look(chest(actor));follow.interact=n%2==0;step(follow);
+            SwatInput follow=look(chest(actor));follow.interact=n%2==0 && secured_person_in_reach(actor);step(follow);
         }
         if(sim.actors[actor].mind.escort_owner!=0)fail("clear evidence escort");
         walk(sim.extraction,.35f);
         for(int n=0;n<3000 && b3Distance(feet(0),feet(actor))>1.0f;n++)idle(1);
         if(b3Distance(feet(0),feet(actor))>1.3f)fail("suspect did not clear room");
         for(int n=0;n<120 && sim.actors[actor].mind.escort_owner==0;n++) {
-            SwatInput hold=look(chest(actor));hold.interact=n%2==0;step(hold);
+            SwatInput hold=look(chest(actor));hold.interact=n%2==0 && secured_person_in_reach(actor);step(hold);
         }
         if(sim.actors[actor].mind.escort_owner==0)fail("hold suspect clear of evidence");
     }
+    if(squad_search && sim.evidence[actor].collected)fail("weapon recovered before directed search");
     for(int t=0;t<240 && !sim.evidence[actor].collected;t++) {
         if(t==60) {
             b3Pos evidence=sim.evidence[actor].position;
@@ -505,8 +560,9 @@ static void collect(int actor) {
     if(!sim.evidence[actor].collected)fail("collect evidence");
 }
 static void evacuate(int actor,bool exterior) {
+    if(sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD)approach_person(actor);
     for(int t=0;t<120 && sim.actors[actor].mind.escort_owner!=0;t++) {
-        SwatInput in=look(chest(actor));in.interact=t%2==0;step(in);
+        SwatInput in=look(chest(actor));in.interact=t%2==0 && secured_person_in_reach(actor);step(in);
     }
     if(sim.actors[actor].mind.escort_owner!=0)fail("start escort");
     if(exterior) {
@@ -522,6 +578,26 @@ static void evacuate(int actor,bool exterior) {
 }
 static void hold_breach_team(b3Pos charge) {
     if(!squad_restraint)return;
+    bool exposed=false;for(int i=3;i<6;i++)exposed|=b3Distance(chest(i),charge)<3.2f;
+    if(exposed) {
+        // A worker from an alternate occupied room can still be beside the
+        // next charge surface. Acknowledge an ordinary Move to clear court
+        // floor before Hold, rather than freezing someone in the entry door.
+        b3Pos staging=feet(0);b3Vec3 away=b3SubPos(staging,charge);away.y=0;
+        staging=b3OffsetPos(staging,swat_mul(swat_normalize(away),2));staging.y-=.015f;
+        for(int t=0;t<40;t++)step(look(staging));
+        SwatHit floor=swat_context_hit(&sim,0,24);
+        if(floor.kind!=SWAT_HIT_WORLD || floor.normal.y<.7f || b3Distance(floor.point,staging)>.4f)fail("visible clear breach staging floor");
+        SwatInput recall=look(staging);recall.squad_order=SWAT_ORDER_MOVE;step(recall);
+        bool settled=false;
+        for(int t=0;t<2400;t++) {
+            exposed=false;settled=true;
+            for(int i=3;i<6;i++){SwatMind* mind=&sim.actors[i].mind;exposed|=b3Distance(chest(i),charge)<3.2f;settled&=mind->order==SWAT_ORDER_MOVE && !mind->pending_order && b3Distance(feet(i),mind->goal)<.6f;}
+            if(!exposed && settled)break;
+            recall=look(charge);cover_visible_attack(&recall,sim.actors[0].controller.yaw);step(recall);
+        }
+        if(exposed || !settled)fail("squad failed to reach clear breach staging");
+    }
     SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_HOLD;step(in);
     for(int t=0;t<120;t++) {
         bool held=true;
@@ -594,7 +670,7 @@ static void enter_breach(float wall,b3Pos retreat) {
 }
 int main(int argc,char** argv) {
     b3SetLogFcn(physics_log);
-    assert(argc>=2 && argc<=10);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
+    assert(argc>=2 && argc<=12);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81,layout_seed=1;int occupancy=0;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"combat"))combat=true;
         else if(!strcmp(argv[i],"squad"))squad_restraint=true;
@@ -603,6 +679,13 @@ int main(int argc,char** argv) {
         else if(!strcmp(argv[i],"damaged-equipment"))damaged_equipment=squad_equipment=true;
         else if(!strcmp(argv[i],"rooms"))squad_rooms=true;
         else if(!strcmp(argv[i],"exterior")||!strcmp(argv[i],"interroom"))route=argv[i];
+        else if(!strncmp(argv[i],"occupancy=",10)) {
+            const char* digits=argv[i]+10;assert(strlen(digits)==1 && digits[0]>='0' && digits[0]<'0'+SWAT_MOTEL_OCCUPANCIES);occupancy=digits[0]-'0';
+        }
+        else if(!strncmp(argv[i],"layout-seed=",12)) {
+            const char* digits=argv[i]+12;assert(digits[0] && strspn(digits,"0123456789")==strlen(digits));
+            errno=0;char* end;unsigned long long value=strtoull(digits,&end,10);assert(!errno && !*end && value<=UINT32_MAX);layout_seed=(uint32_t)value;
+        }
         else if(!strncmp(argv[i],"seed=",5)) {
             const char* digits=argv[i]+5;assert(!seed_given&&digits[0]&&strspn(digits,"0123456789")==strlen(digits));
             errno=0;char* end;unsigned long value=strtoul(digits,&end,10);assert(!errno&&!*end&&value<=UINT32_MAX);
@@ -612,6 +695,7 @@ int main(int argc,char** argv) {
     }
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;swat_config_human(&cfg);
     cfg.randomize=false;cfg.hostile_fire=combat;cfg.max_ticks=60000;
+    cfg.motel_occupancy=occupancy;cfg.layout_seed=layout_seed;
     char save[1024];assert(snprintf(save,sizeof(save),"%s.save",argv[1])<(int)sizeof(save));
     char task_save[1024];assert(snprintf(task_save,sizeof(task_save),"%s.search.save",argv[1])<(int)sizeof(task_save));search_save=task_save;
     char wedge_save[1024];assert(snprintf(wedge_save,sizeof(wedge_save),"%s.wedge.save",argv[1])<(int)sizeof(wedge_save));equipment_save=wedge_save;
@@ -620,7 +704,10 @@ int main(int argc,char** argv) {
     assert(!damaged_equipment || (!combat && !strcmp(route,"front")));
     int saved_tick=0;uint32_t saved_hash=0;
     swat_sim_init(&sim,cfg,seed);assert(swat_replay_record(&journal,argv[1],&sim));
+    printf("Motel situation %s, layout seed %u, %d civilians\n",swat_motel_occupancy_name(occupancy),layout_seed,swat_motel_occupancy_civilians(occupancy));
     printf("Motel QA seed %u initial resolve suspect1=%.6f civilian2=%.6f civilian6=%.6f civilian7=%.6f suspect8=%.6f\n",seed,sim.actors[1].mind.resolve,sim.actors[2].mind.resolve,sim.actors[6].mind.resolve,sim.actors[7].mind.resolve,sim.actors[8].mind.resolve);fflush(stdout);
+    const int occupants[]={7,2,1,6,8,9};const float doors[]={-10.9f,-7.2f,-3.2f,.8f,4.8f};
+    int assigned[6];for(int n=0;n<6;n++)assigned[n]=sim.actors[occupants[n]].present?swat_world_room(&sim.world,b3OffsetPos(feet(occupants[n]),swat_v(0,.9f,0))):-1;
     SwatInput in=swat_neutral_input();in.squad_order=squad_restraint?SWAT_ORDER_FALL_IN:SWAT_ORDER_HOLD;
     if(strcmp(route,"front")) {
         in.loadout=3; // Entry's actual finite wall stock and ram.
@@ -628,17 +715,16 @@ int main(int argc,char** argv) {
     }
     step(in);idle(30);
     if(strcmp(route,"front"))assert(sim.actors[0].gear.kit==2 && sim.actors[0].arsenal.primary==(combat?0:2));
-    const int occupants[]={7,2,1,6,8};const float doors[]={-10.9f,-7.2f,-3.2f,.8f,4.8f};
-    for(int i=0;i<5;i++) {
+    for(int i=0;i<5;i++)for(int n=0,visit=0;n<6;n++)if(assigned[n]==i) {
         if(squad_restraint) {in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
-        squad_waiting=(b3Pos){doors[i]+1.2f,0,-.65f};
+        squad_waiting=occupancy==SWAT_MOTEL_STANDARD?(b3Pos){doors[i]+1.2f,0,-.65f}:(b3Pos){doors[i]+1.5f,0,3.2f};
         search_waiting=(b3Pos){doors[i],0,2.5f};
-        watch_actor=occupants[i];
-        if(i==0 && !strcmp(route,"exterior")) {
+        watch_actor=occupants[n];
+        if(i==0 && !visit && !strcmp(route,"exterior")) {
             walk((b3Pos){-13,0,2.5f},.3f);hold_breach_team((b3Pos){-12,1,-1.17f});
             enter_breach(-12,(b3Pos){-15.5f,0,-1.17f});
             if(squad_restraint){in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
-        } else if(i==2 && !strcmp(route,"interroom")) {
+        } else if(i==2 && !visit && !strcmp(route,"interroom")) {
             hold_breach_team((b3Pos){-4,1,-1.17f});
             walk((b3Pos){doors[1],0,2.5f},.3f);
             walk((b3Pos){doors[1],0,-.85f},.3f);
@@ -651,18 +737,20 @@ int main(int argc,char** argv) {
             // Combat keeps its paced moving coverage rather than an exposed
             // regroup pause while other rooms still contain armed threats.
             if(squad_restraint && !sim.config.hostile_fire)regroup_for_task((b3Pos){doors[i],1.1f,0});
-            if(squad_rooms && i==0)delegate_room(doors[i]);
+            if(squad_rooms && i==0 && !visit)delegate_room(doors[i]);
             walk((b3Pos){doors[i],0,-.85f},.3f);
         }
-        secure(occupants[i]);
-        if(sim.actors[occupants[i]].role==SWAT_CIVILIAN)evacuate(occupants[i],i==0&&!strcmp(route,"exterior"));
-        else {collect(occupants[i]);walk((b3Pos){doors[i],0,2.5f},.3f);}
+        secure(occupants[n]);
+        if(sim.actors[occupants[n]].role==SWAT_CIVILIAN)evacuate(occupants[n],i==0&&!strcmp(route,"exterior"));
+        else {collect(occupants[n]);walk((b3Pos){doors[i],0,2.5f},.3f);}
         if(i==2) {assert(swat_replay_checkpoint(&journal,save));saved_tick=sim.tick;saved_hash=swat_replay_digest(&sim);}
+        visit++;
     }
     // Account for armed suspects before asking an officer to put its hands on
     // equipment. Visible threats correctly interrupt this work.
     if(squad_equipment) {watch_actor=-1;walk((b3Pos){doors[1],0,2.5f},.3f);delegate_wedge(doors[1]);}
-    walk(sim.extraction,.35f);in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);
+    if(sim.end==SWAT_RUNNING)walk(sim.extraction,.35f);
+    if(sim.end==SWAT_RUNNING){in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
     for(int t=0;t<3000 && sim.end==SWAT_RUNNING;t++)idle(1);
     if(sim.end!=SWAT_SUCCESS)fail("completion");
     int dead_suspects=0;
@@ -670,7 +758,8 @@ int main(int argc,char** argv) {
         if(sim.actors[i].role!=SWAT_SUSPECT || sim.actors[i].gear.restrained)fail("protected casualty at debrief");
         dead_suspects++;
     }
-    if(sim.debrief.arrests+dead_suspects!=2 || sim.debrief.rescued!=3 || sim.debrief.evidence!=2 || sim.debrief.roe_violations) {
+    int civilians=swat_motel_occupancy_civilians(occupancy);
+    if(sim.debrief.arrests+dead_suspects!=2 || sim.debrief.rescued!=civilians || sim.debrief.evidence!=2 || sim.debrief.roe_violations) {
         fprintf(stderr,"debrief arrests%d dead%d rescued%d evidence%d roe%d unlawful%.2f\n",sim.debrief.arrests,dead_suspects,sim.debrief.rescued,sim.debrief.evidence,sim.debrief.roe_violations,sim.debrief.unlawful_damage);
         fail("truthful lawful debrief");
     }
@@ -678,13 +767,13 @@ int main(int argc,char** argv) {
     // lawful squad return fire on any approach; the checks above still reject
     // protected deaths, restrained deaths, unlawful force and missing evidence.
     if(!combat)assert(!dead_suspects);
-    if(squad_restraint)assert(squad_cuffs==5-dead_suspects);
+    if(squad_restraint)assert(squad_cuffs==2+civilians-dead_suspects);
     if(squad_search)assert(squad_weapons==2);
     if(squad_equipment)assert(squad_wedges==1);
     if(damaged_equipment)assert(damaged_door_shots>0);
     if(squad_rooms)assert(squad_room_routes==1);
     assert(swat_replay_close(&journal));
-    printf("PASS motel complete player-input run (%s, %s route): %d ticks, %d arrests, %d armed suspects killed, three evacuations, two weapons, squad regroup, no civilian/officer deaths or unlawful force\n",cfg.hostile_fire?"hostile fire enabled":"interaction isolation",route,sim.tick,sim.debrief.arrests,dead_suspects);fflush(stdout);
+    printf("PASS motel complete player-input run (%s, %s route, %s): %d ticks, %d arrests, %d armed suspects killed, %d evacuations, two weapons, squad regroup, no civilian/officer deaths or unlawful force\n",cfg.hostile_fire?"hostile fire enabled":"interaction isolation",route,swat_motel_occupancy_name(occupancy),sim.tick,sim.debrief.arrests,dead_suspects,civilians);fflush(stdout);
     static SwatSim replica;static SwatMap map,map_decoded;static SwatSnapshot snapshot,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];
     swat_capture_map(&sim,1,&map);size_t size=swat_encode_map(bytes,sizeof(bytes),&map);
     assert(size && swat_decode_map(&map_decoded,bytes,size));swat_apply_map(&replica,&map_decoded);swat_capture_snapshot(&sim,1,&snapshot);

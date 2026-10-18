@@ -2,6 +2,9 @@
 #define SWAT_MISSION_H
 #include "world.h"
 typedef enum SwatMission { SWAT_ANNEX, SWAT_HOUSE, SWAT_GENERATED, SWAT_RANGE, SWAT_MOTEL, SWAT_STOREFRONT, SWAT_BUILDING, SWAT_BREACH_LAB, SWAT_MISSION_COUNT } SwatMission;
+typedef enum SwatMotelOccupancy { SWAT_MOTEL_STANDARD,SWAT_MOTEL_DISPERSED,SWAT_MOTEL_MIXED,SWAT_MOTEL_BUSY,SWAT_MOTEL_OCCUPANCIES } SwatMotelOccupancy;
+const char* swat_motel_occupancy_name(int profile);
+int swat_motel_occupancy_civilians(int profile);
 typedef struct SwatOverwatch {
     const char* name;
     b3Pos position, target;

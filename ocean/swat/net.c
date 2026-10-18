@@ -97,11 +97,13 @@ void swat_server_restart(SwatNetServer* server) {
 }
 void swat_server_scenario(SwatNetServer* server,const SwatConfig* config) {
     if(!server->transport || config->mission<0 || config->mission>=SWAT_MISSION_COUNT ||
-       config->generator<0 || config->generator>=SWAT_GENERATORS || config->difficulty<0 || config->difficulty>2) return;
+       config->generator<0 || config->generator>=SWAT_GENERATORS || config->difficulty<0 || config->difficulty>2 ||
+       config->motel_occupancy<0 || config->motel_occupancy>=SWAT_MOTEL_OCCUPANCIES) return;
     server->sim->config.mission=config->mission;
     server->sim->config.layout_seed=config->layout_seed;
     server->sim->config.generator=config->generator;
     server->sim->config.difficulty=config->difficulty;
+    server->sim->config.motel_occupancy=config->motel_occupancy;
     swat_server_restart(server);
 }
 void swat_server_poll(SwatNetServer* server) {

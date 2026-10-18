@@ -103,9 +103,11 @@ void swat_controller_recoil(SwatController* c, float vertical, float horizontal)
 
 void swat_controller_view(const SwatController* c, b3Vec3* forward, b3Vec3* right, b3Vec3* up) {
     *forward = swat_controller_aim(c);
-    b3Vec3 r = swat_v(-sinf(c->yaw+c->recoil_yaw),0,cosf(c->yaw+c->recoil_yaw));
+    b3CosSin heading=swat_sincos(c->yaw+c->recoil_yaw);
+    b3Vec3 r = swat_v(-heading.sine,0,heading.cosine);
     b3Vec3 u = b3Cross(r,*forward);
     float angle = -c->lean*8.0f*SWAT_RAD;
-    *right = swat_add(swat_mul(r,cosf(angle)),swat_mul(u,-sinf(angle)));
-    *up = swat_add(swat_mul(u,cosf(angle)),swat_mul(r,sinf(angle)));
+    b3CosSin roll=swat_sincos(angle);
+    *right = swat_add(swat_mul(r,roll.cosine),swat_mul(u,-roll.sine));
+    *up = swat_add(swat_mul(u,roll.cosine),swat_mul(r,roll.sine));
 }

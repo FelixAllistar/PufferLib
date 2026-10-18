@@ -22,6 +22,7 @@ int main(int argc,char** argv) {
             puts("SWAT dedicated server: --port 27474 --seed 42 --max-ticks 18000\n"
                  "  --mission house|annex|generated|building|motel|storefront  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
                  "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform --layout-model FILE\n"
+                 "  --motel-occupancy 0|1|2|3  Standard, dispersed, mixed rooms, or busy\n"
                  "Four player slots; first connected officer leads/restarts. Ctrl+C stops the server.");
             return 0;
         }
@@ -52,6 +53,7 @@ int main(int argc,char** argv) {
         else if(!strcmp(key,"--hostile-fire") && n<=1) config.hostile_fire=n!=0;
         else if(!strcmp(key,"--randomize") && n<=1) config.randomize=n!=0;
         else if(!strcmp(key,"--difficulty") && n<=2) config.difficulty=(int)n;
+        else if(!strcmp(key,"--motel-occupancy") && n<SWAT_MOTEL_OCCUPANCIES) config.motel_occupancy=(int)n;
         else if(!strcmp(key,"--run-ticks")) run_ticks=(int)n;
         else { fprintf(stderr,"Unknown or invalid option %s\n",key); return 2; }
     }

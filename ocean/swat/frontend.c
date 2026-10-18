@@ -392,7 +392,8 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         y+=52;
         if(app->plan_tab==0) {
             const char* report=(sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? TextFormat("%d reported gunmen / three hostages",1+sim->config.difficulty) :
-                (sim->config.mission==SWAT_HOUSE || sim->config.mission==SWAT_MOTEL || sim->config.mission==SWAT_STOREFRONT ? "Two armed occupants / three civilians" : "One armed target / one civilian");
+                sim->config.mission==SWAT_MOTEL ? TextFormat("Two armed occupants / %d civilians",swat_motel_occupancy_civilians(sim->config.motel_occupancy)) :
+                (sim->config.mission==SWAT_HOUSE || sim->config.mission==SWAT_STOREFRONT ? "Two armed occupants / three civilians" : "One armed target / one civilian");
             DrawText(report,(int)x,(int)y,16,menu_paper); y+=30;
             DrawText(sim->config.tactical_rules ? "Secure occupants. Recover weapons." : "Clear the annex. Extract at the far end.",(int)x,(int)y,16,menu_muted); y+=21;
             if(sim->config.tactical_rules)DrawText("Escort civilians and regroup at staging.",(int)x,(int)y,16,menu_muted);
@@ -477,30 +478,38 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             DrawText("Officer: X execute / H clear marks",(int)x,(int)y+24,15,menu_muted);
             if(!app->leader) DrawText("The session leader controls overwatch.",(int)x,(int)y+48,15,menu_gold);
         } else {
-            DrawText("SCENARIO GENERATION",(int)x,(int)y,20,menu_gold); y+=28;
+            DrawText(sim->config.mission==SWAT_MOTEL ? "MOTEL SITUATIONS" : "SCENARIO GENERATION",(int)x,(int)y,20,menu_gold); y+=28;
             if(!app->leader) GuiDisable();
             DrawText("Seed",(int)x,(int)y+9,18,menu_paper);
             if(GuiTextBox((Rectangle){x+66,y,310,30},app->layout_seed,sizeof(app->layout_seed),app->seed_edit)) app->seed_edit=!app->seed_edit;
             y+=40;
-            const char* difficulty[]={"Compact","Standard","Complex"};
-            for(int i=0;i<3;i++) if(GuiButton((Rectangle){x+i*127,y,122,30},TextFormat("%s%s",app->layout_difficulty==i ? "> " : "",difficulty[i]))) app->layout_difficulty=i;
-            y+=40;
-            for(int i=0;i<2;i++) if(GuiButton((Rectangle){x+i*192,y,184,30},TextFormat("%s%s",app->layout_generator==i ? "> " : "",i ? "House: learned" : "House: random"))) app->layout_generator=i;
-            y+=40;
+            int occupancy=-1;
+            if(sim->config.mission==SWAT_MOTEL) {
+                for(int i=0;i<SWAT_MOTEL_OCCUPANCIES;i++)
+                    if(GuiButton((Rectangle){x+(i%2)*192,y+(i/2)*40,184,30},TextFormat("%s%s",sim->config.motel_occupancy==i ? "> " : "",swat_motel_occupancy_name(i))))occupancy=i;
+                y+=80;
+            } else {
+                const char* difficulty[]={"Compact","Standard","Complex"};
+                for(int i=0;i<3;i++) if(GuiButton((Rectangle){x+i*127,y,122,30},TextFormat("%s%s",app->layout_difficulty==i ? "> " : "",difficulty[i]))) app->layout_difficulty=i;
+                y+=40;
+                for(int i=0;i<2;i++) if(GuiButton((Rectangle){x+i*192,y,184,30},TextFormat("%s%s",app->layout_generator==i ? "> " : "",i ? "House: learned" : "House: random"))) app->layout_generator=i;
+                y+=40;
+            }
             bool building=GuiButton((Rectangle){x,y,376,30},"Generate two-story building scenario"); y+=40;
-            bool build=GuiButton((Rectangle){x,y,184,34},"Build this seed");
+            bool build=GuiButton((Rectangle){x,y,184,34},sim->config.mission==SWAT_MOTEL ? "Reset situation" : "Build this seed");
             bool next=GuiButton((Rectangle){x+192,y,184,34},"Next seed"); y+=40;
             bool cedar=GuiButton((Rectangle){x,y,184,30},"Cedar House");
             bool motel=GuiButton((Rectangle){x+192,y,184,30},"Briar Court motel"); y+=40;
             bool storefront=GuiButton((Rectangle){x,y,376,30},"Morrow Block storefronts"); y+=40;
-            if(build || next || cedar || motel || storefront || building) {
+            if(build || next || cedar || motel || storefront || building || occupancy>=0) {
                 char* end; errno=0; unsigned long long seed=strtoull(app->layout_seed,&end,10);
-                if(!cedar && !motel && !storefront && (errno || end==app->layout_seed || *end || app->layout_seed[0]=='-' || seed>UINT32_MAX))
+                if(!cedar && !storefront && (errno || end==app->layout_seed || *end || app->layout_seed[0]=='-' || seed>UINT32_MAX))
                     snprintf(app->notice,sizeof(app->notice),"Use a seed from 0 to 4294967295.");
                 else {
-                    app->scenario=sim->config; app->scenario.mission=(building || (next && sim->config.mission==SWAT_BUILDING)) ? SWAT_BUILDING : storefront ? SWAT_STOREFRONT : motel ? SWAT_MOTEL : (cedar ? SWAT_HOUSE : SWAT_GENERATED);
+                    app->scenario=sim->config; app->scenario.mission=(building || (next && sim->config.mission==SWAT_BUILDING)) ? SWAT_BUILDING : storefront ? SWAT_STOREFRONT : (motel || occupancy>=0 || ((build || next) && sim->config.mission==SWAT_MOTEL)) ? SWAT_MOTEL : (cedar ? SWAT_HOUSE : SWAT_GENERATED);
                     app->scenario.layout_seed=(uint32_t)seed+(next ? 1u : 0u);
                     app->scenario.generator=app->layout_generator; app->scenario.difficulty=app->layout_difficulty;
+                    if(occupancy>=0)app->scenario.motel_occupancy=occupancy;
                     app->scenario_requested=true; app->plan_preview=0; app->seed_edit=false;
                     app->notice[0]=0;
                 }
@@ -512,6 +521,11 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             if(sim->config.mission==SWAT_BUILDING) {
                 DrawText("Choose your entry and tools.",(int)x,(int)y,15,menu_gold);
                 DrawText("The seed sets the initial situation.",(int)x,(int)y+25,14,menu_muted);
+            } else if(sim->config.mission==SWAT_MOTEL) {
+                DrawText(TextFormat("Situation: %s / 2 armed / %d civilians",swat_motel_occupancy_name(sim->config.motel_occupancy),swat_motel_occupancy_civilians(sim->config.motel_occupancy)),(int)x,(int)y,15,menu_paper);
+                DrawText(sim->config.motel_occupancy==SWAT_MOTEL_STANDARD ? "Standard keeps original positions." : "The seed changes initial positions.",(int)x,(int)y+25,14,menu_muted);
+                DrawText("Choose your approach and account for everyone.",(int)x,(int)y+50,14,menu_muted);
+                if(app->notice[0])DrawText(app->notice,(int)x,(int)y+78,14,menu_gold);
             } else {
                 DrawText("WHICH HOUSE WAS MORE FUN?",(int)x,(int)y,18,menu_gold); y+=26;
                 bool ready=swat_feedback_ready(&app->feedback);

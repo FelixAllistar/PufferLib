@@ -61,6 +61,23 @@ net-test: net-test-build
 	ulimit -c 0; $(BUILD)/test_net
 net-motel-test: net-test-build
 	ulimit -c 0; $(BUILD)/test_net motel
+.PHONY: motel-occupancy-test motel-occupancy-network-test motel-occupancy-completion-test
+motel-occupancy-network-test: net-test-build
+	ulimit -c 0; $(BUILD)/test_net occupancy
+motel-occupancy-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter occupancy $(BUILD)/motel-occupancy.trace
+	ulimit -c 0; $(BUILD)/test_encounter occupancy-corner
+	ulimit -c 0; $(BUILD)/test_encounter occupancy-portal
+	ulimit -c 0; $(BUILD)/test_encounter occupancy-portal-crowd $(BUILD)/motel-crowded-portal.trace
+	ulimit -c 0; $(BUILD)/test_encounter occupancy-restraints $(BUILD)/motel-rear-restraints.trace
+	ulimit -c 0; $(BUILD)/test_encounter occupancy-escort $(BUILD)/motel-rear-escort.trace
+	ulimit -c 0; $(BUILD)/test_encounter occupancy-follow
+motel-occupancy-completion-test: motel-completion-test-build
+	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-dispersed.sgrp squad search seed=82 occupancy=1
+	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-mixed.sgrp squad search seed=82 occupancy=2
+	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-busy.sgrp squad search seed=82 occupancy=3
+	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-mixed-hostile.sgrp combat interroom squad search seed=2026 occupancy=2 layout-seed=7
 net-probe: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) net_probe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/net_probe
 test: breach-geometry-test door-support-test door-frame-test wall-support-test

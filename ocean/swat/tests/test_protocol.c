@@ -87,7 +87,32 @@ static void directed_rooms(void) {
     swat_sim_close(&replica);swat_sim_close(&authority);
     puts("PASS directed rooms: active/queued room identity, progress and subtask replicate; missing/out-of-map/scalar-invalid references reject atomically; room commands roundtrip");
 }
+static void occupancy_codec(void) {
+    static SwatSim sim;static SwatMap map,copy,untouched;static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=cfg.hostile_fire=false;
+    swat_sim_init(&sim,cfg,81);swat_capture_map(&sim,42,&map);
+    for(int p=0;p<SWAT_MOTEL_OCCUPANCIES;p++) {
+        cfg.motel_occupancy=map.config.motel_occupancy=p;SwatConfig decoded={0};uint32_t epoch=0;
+        size_t size=swat_encode_scenario(bytes,sizeof(bytes),42,&cfg);assert(size && swat_decode_scenario(bytes,size,&epoch,&decoded));
+        assert(epoch==42 && decoded.motel_occupancy==p && decoded.mission==SWAT_MOTEL);
+        SwatConfig before=decoded;
+        for(size_t cut=0;cut<size;cut++){epoch=73;assert(!swat_decode_scenario(bytes,cut,&epoch,&decoded));assert(epoch==73 && !memcmp(&before,&decoded,sizeof(decoded)));}
+        bytes[size-1]=SWAT_MOTEL_OCCUPANCIES;assert(!swat_decode_scenario(bytes,size,&epoch,&decoded) && epoch==73 && !memcmp(&before,&decoded,sizeof(decoded)));
+        size=swat_encode_map(bytes,sizeof(bytes),&map);assert(size && swat_decode_map(&copy,bytes,size));assert(copy.config.motel_occupancy==p);untouched=copy;
+        // Version 39: field follows header, sound floor, timer, flags, mission,
+        // layout seed, generator and difficulty. Corrupt the actual packet.
+        bytes[31]=255;assert(!swat_decode_map(&copy,bytes,size) && !memcmp(&copy,&untouched,sizeof(copy)));
+    }
+    const int invalid[]={-1,SWAT_MOTEL_OCCUPANCIES,256,65536};
+    for(int n=0;n<4;n++) {
+        cfg.motel_occupancy=map.config.motel_occupancy=invalid[n];
+        assert(!swat_encode_scenario(bytes,sizeof(bytes),42,&cfg) && !swat_encode_map(bytes,sizeof(bytes),&map));
+    }
+    swat_sim_close(&sim);
+    puts("PASS occupancy codec: four map/scenario profiles, complete truncation rejection, invalid wire values and wide input integers reject atomically");
+}
 int main(void) {
+    occupancy_codec();
     directed_rooms();
     directed_doors();
     static unsigned char bytes[SWAT_NET_PACKET_MAX],bad[SWAT_NET_PACKET_MAX];
