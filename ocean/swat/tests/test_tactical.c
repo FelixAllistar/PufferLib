@@ -314,6 +314,30 @@ static void context(void) {
     swat_sim_close(&sim);
     puts("PASS contextual use: narrow aim tolerance, larger misses rejected, intact-wall blocking, forward-only compliance, close cuff reach, look-away interruption and authority held-target isolation");
 }
+static void restraint_audio(void) {
+    b3Pos attached[2];
+    for(int view=0;view<2;view++) {
+        fixture(SWAT_CONCRETE);sim.config.mission=SWAT_HOUSE;sim.config.tactical_rules=true;
+        sim.actors[1].gear.surrendered=sim.actors[2].gear.surrendered=true;
+        step(swat_neutral_input(),20);place(0,(b3Pos){1.8f,0,0},0);
+        b3Pos target=swat_body_feet_position(&sim.actors[1].controller.body);
+        float height=sim.actors[1].controller.body.totalHeight;
+        sim.actors[0].controller.pitch=atan2f((float)target.y+(view?.55f:.85f)-swat_controller_eye(&sim.actors[0].controller).y,1.2f);
+        SwatInput in=swat_neutral_input();in.interact=true;step(in,72);
+        assert(sim.actors[1].gear.restrained);int count=0;
+        for(int i=0;i<sim.sounds.count;i++) {
+            const SwatSoundEvent* e=swat_sound_at(&sim.sounds,i);
+            if(e->source_actor!=0 || e->kind!=SWAT_SOUND_HANDLE)continue;
+            attached[view]=e->position;count++;
+        }
+        assert(count==1 && fabsf(attached[view].x-target.x)<.3f && fabsf(attached[view].z-target.z)<.3f);
+        assert(attached[view].y>target.y+.25f*height && attached[view].y<target.y+.8f*height);
+        assert(sim.actors[0].health==100 && sim.actors[1].health==100 && !sim.debrief.roe_violations);
+        swat_sim_close(&sim);
+    }
+    assert(b3Distance(attached[0],attached[1])<1e-6f);
+    puts("PASS restraint audio: ordinary held cuffs emit one body-attached handling sound independent of aimed head/torso contact");
+}
 static void wedges_spray_traps(void) {
     SwatConfig config=swat_default_config(); config.mission=SWAT_HOUSE; config.hostile_fire=false;
     swat_sim_init(&sim,config,71); place(0,(b3Pos){3.3f,0,-2},0);
@@ -401,4 +425,4 @@ static void light_switches(void) {
     swat_sim_init(&sim,cfg,87);assert(!sim.world.room_light_off_mask);swat_sim_close(&sim);
     puts("PASS light switches: all four mounts, press/release, narrow targeting, reach, real cover, destroyed support, late-join snapshot, invalid state rejection and reset");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); doors(); network(); context(); wedges_spray_traps(); light_switches(); return 0; }
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); doors(); network(); context(); restraint_audio(); wedges_spray_traps(); light_switches(); return 0; }

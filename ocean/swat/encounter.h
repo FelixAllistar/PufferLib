@@ -6,7 +6,9 @@
 #define SWAT_NAV_LAYERS 4
 #define SWAT_NAV_NODES (SWAT_NAV_CELLS*SWAT_NAV_LAYERS)
 typedef enum SwatBehavior { SWAT_IDLE,SWAT_INVESTIGATE,SWAT_ENGAGE,SWAT_FLEE,SWAT_SURRENDER,SWAT_ESCORT,SWAT_DETAINED } SwatBehavior;
-typedef enum SwatSquadOrder { SWAT_ORDER_NONE,SWAT_ORDER_FALL_IN,SWAT_ORDER_HOLD,SWAT_ORDER_MOVE,SWAT_ORDER_STACK,SWAT_ORDER_CLEAR,SWAT_ORDER_PICK,SWAT_ORDER_WEDGE,SWAT_ORDER_CUFF,SWAT_ORDER_SEARCH,SWAT_ORDER_COVER,SWAT_SQUAD_ORDERS } SwatSquadOrder;
+typedef enum SwatSquadOrder { SWAT_ORDER_NONE,SWAT_ORDER_FALL_IN,SWAT_ORDER_HOLD,SWAT_ORDER_MOVE,SWAT_ORDER_STACK,SWAT_ORDER_CLEAR,SWAT_ORDER_PICK,SWAT_ORDER_WEDGE,SWAT_ORDER_CUFF,SWAT_ORDER_SEARCH,SWAT_ORDER_COVER,SWAT_ORDER_ROOM_SEARCH,SWAT_SQUAD_ORDERS } SwatSquadOrder;
+#define SWAT_ROOM_SEARCH_POINTS 9
+typedef enum SwatRoomTask { SWAT_ROOM_TASK_NONE,SWAT_ROOM_TASK_PERSON,SWAT_ROOM_TASK_WEAPON,SWAT_ROOM_TASK_ESCORT,SWAT_ROOM_TASK_REPOSITION,SWAT_ROOM_TASK_CLOSE_DOOR,SWAT_ROOM_TASKS } SwatRoomTask;
 typedef struct SwatMind {
     SwatBehavior state;
     bool bot,queued;
@@ -15,8 +17,12 @@ typedef struct SwatMind {
     float order_yaw,pending_yaw; // Authority planning state, reconstructed by input replay.
     int order_door,pending_door; // Zero is no doorway; world object zero is the floor.
     int order_actor,pending_actor; // Person/evidence owner + 1; zero is no directed task.
+    int order_room,pending_room,room_step,room_task; // Room IDs + 1; completion is a searched route, not an all-clear claim.
+    int room_scan; // Authority scan dwell, reconstructed by input replay.
+    bool room_goal,room_blocked;
     bool entry_settled;
-    b3Pos memory,goal,waypoint,pending_goal,task_point; // Authority planning state, reconstructed by input replay.
+    b3Pos memory,goal,waypoint,pending_goal,task_point,room_point; // Authority planning state, reconstructed by input replay.
+    int room_tool_ticks;
 } SwatMind;
 typedef struct SwatNavigation {
     // A single lazy heap allocation owns the grid and route scratch. Small

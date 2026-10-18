@@ -22,6 +22,9 @@ static const char* search_save;
 static bool squad_equipment;
 static const char* equipment_save;
 static int squad_wedges;
+static bool squad_rooms;
+static const char* room_save;
+static int squad_room_routes;
 static b3Pos squad_waiting;
 static b3Pos search_waiting;
 static float breach_plane;
@@ -108,7 +111,14 @@ static bool cover_visible_attack(SwatInput* in,float route_yaw) {
     // using the same ordinary aim, fire, reload and muzzle-clearance rules.
     // Aim at the exposed point that passed actor visibility, as the ordinary
     // NPC target tracker does. A visible head need not expose the chest.
-    *in=look(swat_controller_eye(&sim.actors[target].controller));in->aim=true;
+    b3Pos exposed=swat_controller_eye(&sim.actors[target].controller);
+    *in=look(exposed);in->aim=true;
+    // Track the actual reticle with ordinary bounded mouse input. Leaving the
+    // nominal camera on the target while recoil lifts the reticle delayed
+    // follow-up shots until the controller recovered by itself.
+    const SwatController* camera=&sim.actors[0].controller;b3Vec3 aim=b3SubPos(exposed,swat_controller_eye(camera));
+    in->yaw_delta=swat_clamp(swat_angle(atan2f(aim.z,aim.x)-camera->yaw-camera->recoil_yaw),-6*SWAT_RAD,6*SWAT_RAD);
+    in->pitch_delta=swat_clamp(atan2f(aim.y,hypotf(aim.x,aim.z))-camera->pitch-camera->recoil_pitch,-6*SWAT_RAD,6*SWAT_RAD);
     in->fire=!sim.actors[0].arsenal.last_fire && swat_sim_firing_line_clear(&sim,0,target,24);
     in->reload=!sim.actors[0].arsenal.slots[sim.actors[0].arsenal.active].chambered;
     if(sim.actors[0].controller.muzzle_blocked) {
@@ -193,6 +203,35 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
     fail("walking timeout");
 }
 static void walk(b3Pos goal,float radius) {walk_until(goal,radius,-1);}
+static void delegate_room(float door_x) {
+    b3Pos point={door_x,1.1f,0};SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_HOLD;step(in);idle(20);
+    for(int n=0;n<60;n++)step(look(point));
+    in=look(point);in.squad_order=SWAT_ORDER_ROOM_SEARCH;in.squad_queue=true;step(in);
+    int recipient=-1;
+    for(int i=3;i<6;i++)if(sim.actors[i].mind.pending_order==SWAT_ORDER_ROOM_SEARCH) {
+        if(recipient>=0)fail("multiple room search recipients");
+        recipient=i;
+    }
+    if(recipient<0 || sim.actors[recipient].mind.pending_room!=1)fail("authored room search recipient");
+    static SwatSim restored;char error[256];assert(swat_replay_checkpoint(&journal,room_save));
+    assert(swat_replay_restore(&restored,room_save,error,sizeof(error)));
+    assert(swat_replay_digest(&restored)==swat_replay_digest(&sim));
+    assert(restored.actors[recipient].mind.pending_room==1 && restored.actors[recipient].mind.queued);
+    swat_sim_close(&restored);
+    puts("PASS queued room search survives journal checkpoint/restore with its room identity");fflush(stdout);
+    bool restrained[SWAT_MAX_ACTORS];for(int i=0;i<sim.actor_count;i++)restrained[i]=sim.actors[i].gear.restrained;
+    in=look(point);in.squad_execute=true;step(in);
+    SwatMind* mind=&sim.actors[recipient].mind;
+    for(int n=0;n<8000 && (mind->order!=SWAT_ORDER_HOLD || mind->room_step!=SWAT_ROOM_SEARCH_POINTS);n++) {
+        in=look(point);cover_visible_attack(&in,sim.actors[0].controller.yaw);step(in);
+    }
+    if(mind->order!=SWAT_ORDER_HOLD || mind->room_step!=SWAT_ROOM_SEARCH_POINTS || mind->order_room!=1)fail("authored room route search");
+    int cuffs=0;
+    for(int i=0;i<sim.actor_count;i++)if(!restrained[i] && sim.actors[i].gear.restrained){cuffs++;squad_cuffs++;}
+    squad_room_routes++;
+    printf("Squad officer %d searched room route 1 at tick %d with %d observed restraints\n",recipient,sim.tick,cuffs);fflush(stdout);
+    if(squad_restraint){in=look(point);in.squad_order=SWAT_ORDER_FALL_IN;step(in);idle(30);}
+}
 static void delegate_wedge(float door_x) {
     int owner=-1;
     for(int i=1;i<sim.world.count;i++)if(sim.world.objects[i].door) {
@@ -484,12 +523,13 @@ static void enter_breach(float wall,b3Pos retreat) {
 }
 int main(int argc,char** argv) {
     b3SetLogFcn(physics_log);
-    assert(argc>=2 && argc<=8);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
+    assert(argc>=2 && argc<=9);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"combat"))combat=true;
         else if(!strcmp(argv[i],"squad"))squad_restraint=true;
         else if(!strcmp(argv[i],"search"))squad_search=true;
         else if(!strcmp(argv[i],"equipment"))squad_equipment=true;
+        else if(!strcmp(argv[i],"rooms"))squad_rooms=true;
         else if(!strcmp(argv[i],"exterior")||!strcmp(argv[i],"interroom"))route=argv[i];
         else if(!strncmp(argv[i],"seed=",5)) {
             const char* digits=argv[i]+5;assert(!seed_given&&digits[0]&&strspn(digits,"0123456789")==strlen(digits));
@@ -503,6 +543,8 @@ int main(int argc,char** argv) {
     char save[1024];assert(snprintf(save,sizeof(save),"%s.save",argv[1])<(int)sizeof(save));
     char task_save[1024];assert(snprintf(task_save,sizeof(task_save),"%s.search.save",argv[1])<(int)sizeof(task_save));search_save=task_save;
     char wedge_save[1024];assert(snprintf(wedge_save,sizeof(wedge_save),"%s.wedge.save",argv[1])<(int)sizeof(wedge_save));equipment_save=wedge_save;
+    char route_save[1024];assert(snprintf(route_save,sizeof(route_save),"%s.room.save",argv[1])<(int)sizeof(route_save));room_save=route_save;
+    assert(!squad_rooms || !strcmp(route,"front"));
     int saved_tick=0;uint32_t saved_hash=0;
     swat_sim_init(&sim,cfg,seed);assert(swat_replay_record(&journal,argv[1],&sim));
     printf("Motel QA seed %u initial resolve suspect1=%.6f civilian2=%.6f civilian6=%.6f civilian7=%.6f suspect8=%.6f\n",seed,sim.actors[1].mind.resolve,sim.actors[2].mind.resolve,sim.actors[6].mind.resolve,sim.actors[7].mind.resolve,sim.actors[8].mind.resolve);fflush(stdout);
@@ -531,6 +573,7 @@ int main(int argc,char** argv) {
             if(squad_restraint){in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
         } else {
             walk((b3Pos){doors[i],0,2.5f},.3f);
+            if(squad_rooms && i==0)delegate_room(doors[i]);
             walk((b3Pos){doors[i],0,-.85f},.3f);
         }
         secure(occupants[i]);
@@ -560,6 +603,7 @@ int main(int argc,char** argv) {
     if(squad_restraint)assert(squad_cuffs==5-dead_suspects);
     if(squad_search)assert(squad_weapons==2);
     if(squad_equipment)assert(squad_wedges==1);
+    if(squad_rooms)assert(squad_room_routes==1);
     assert(swat_replay_close(&journal));
     printf("PASS motel complete player-input run (%s, %s route): %d ticks, %d arrests, %d armed suspects killed, three evacuations, two weapons, squad regroup, no civilian/officer deaths or unlawful force\n",cfg.hostile_fire?"hostile fire enabled":"interaction isolation",route,sim.tick,sim.debrief.arrests,dead_suspects);fflush(stdout);
     static SwatSim replica;static SwatMap map,map_decoded;static SwatSnapshot snapshot,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];

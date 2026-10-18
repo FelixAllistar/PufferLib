@@ -27,6 +27,9 @@ typedef struct SwatContext {
 // A narrow ray fan tolerates small reticle errors. Every sample checks real
 // cover; physical interactions still use their original reach limits.
 SwatHit swat_context_hit(const struct SwatSim* sim,int actor,float range);
+// Proposed supported work pose, using the ordinary interaction fan. Does not
+// move an actor, collect evidence or relax actual interaction checks.
+bool swat_context_evidence_clear(const struct SwatSim* sim,int actor,b3Pos eye,b3Pos point);
 SwatContext swat_context(const struct SwatSim* sim,int actor);
 // Throws use a sphere sweep for hand clearance, then the authoritative Box3D
 // world integrates flight, bounce, rolling and contact impulses.

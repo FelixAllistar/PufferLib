@@ -16,24 +16,33 @@ static bool contextual_hit(const SwatSim* s,SwatHit hit) {
     return a->present && a->alive && (a->role==SWAT_SUSPECT || a->role==SWAT_CIVILIAN);
 }
 
-SwatHit swat_context_hit(const SwatSim* s,int actor,float range) {
-    if(actor<0 || actor>=s->actor_count || !s->actors[actor].present) return (SwatHit){.index=-1};
-    const SwatController* c=&s->actors[actor].controller;
-    b3Pos eye=swat_controller_eye(c); b3Vec3 aim=swat_controller_aim(c);
-    SwatHit direct=swat_world_ray(&s->world,eye,aim,range,c->body.body);
+static SwatHit context_hit_at(const SwatSim* s,b3Pos eye,b3Vec3 aim,float yaw,float pitch,float range,b3BodyId ignore) {
+    SwatHit direct=swat_world_ray(&s->world,eye,aim,range,ignore);
     if(contextual_hit(s,direct)) return direct;
     // Three degrees, not a magnet to the nearest person. An intervening wall
     // or actor is still the first hit for each individual sample.
-    b3Vec3 right=swat_v(-sinf(c->yaw),0,cosf(c->yaw));
-    b3Vec3 up=swat_direction(c->yaw,c->pitch+SWAT_PI*.5f);
+    b3Vec3 right=swat_v(-sinf(yaw),0,cosf(yaw));
+    b3Vec3 up=swat_direction(yaw,pitch+SWAT_PI*.5f);
     const float radius=.0524f;
     for(int i=0;i<8;i++) {
         float angle=i*SWAT_PI*.25f;
         b3Vec3 offset=swat_add(swat_mul(right,cosf(angle)*radius),swat_mul(up,sinf(angle)*radius));
-        SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(swat_add(aim,offset)),range,c->body.body);
+        SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(swat_add(aim,offset)),range,ignore);
         if(contextual_hit(s,hit)) return hit;
     }
     return direct;
+}
+SwatHit swat_context_hit(const SwatSim* s,int actor,float range) {
+    if(actor<0 || actor>=s->actor_count || !s->actors[actor].present)return (SwatHit){.index=-1};
+    const SwatController* c=&s->actors[actor].controller;
+    return context_hit_at(s,swat_controller_eye(c),swat_controller_aim(c),c->yaw,c->pitch,range,c->body.body);
+}
+bool swat_context_evidence_clear(const SwatSim* s,int actor,b3Pos eye,b3Pos point) {
+    b3Vec3 delta=b3SubPos(point,eye);
+    if(actor<0 || actor>=s->actor_count || b3Length(delta)>2.15f)return false;
+    float yaw=b3Atan2(delta.z,delta.x),pitch=b3Atan2(delta.y,hypotf(delta.x,delta.z));
+    SwatHit hit=context_hit_at(s,eye,swat_direction(yaw,pitch),yaw,pitch,9,s->actors[actor].controller.body.body);
+    return !contextual_hit(s,hit) && clear_to(s,eye,point,-1);
 }
 
 SwatContext swat_context(const SwatSim* s,int actor) {

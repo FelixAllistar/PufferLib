@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 static SwatSim sim,replica;
 static FILE* occupied_trace;
 static void fixture(void) {
@@ -449,8 +450,22 @@ static void occupied_entry(int route,int mirror,int event) {
 #include "squad_fire.h"
 #include "squad_equipment.h"
 #include "squad_equipment_network.h"
+#include "squad_room_search.h"
+#include "squad_room_network.h"
 int main(int argc,char** argv) {
     setvbuf(stdout,NULL,_IONBF,0);
+    if(argc>=2 && !strcmp(argv[1],"rooms-motel")) {
+        assert(argc<=3);if(argc==3){task_trace=fopen(argv[2],"w");assert(task_trace);}
+        task_room_motel();if(task_trace)assert(!fclose(task_trace));return 0;
+    }
+    if(argc>=2 && !strcmp(argv[1],"rooms-network")){assert(argc<=3);room_network_failure_prefix=argc==3?argv[2]:NULL;room_network();return 0;}
+    if(argc>=2 && !strcmp(argv[1],"rooms")) {
+        assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}
+        int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:13;assert(first>=0 && last<=13);
+        for(int variant=first;variant<last;variant++)task_room_search(variant);
+        if(task_trace)assert(!fclose(task_trace));
+        return 0;
+    }
     if(argc==2 && !strcmp(argv[1],"equipment-network")){equipment_network();return 0;}
     if(argc>=2 && !strcmp(argv[1],"equipment")) {
         assert(argc<=3);if(argc==3){task_trace=fopen(argv[2],"w");assert(task_trace);}
@@ -501,6 +516,9 @@ int main(int argc,char** argv) {
         if(occupied_trace)assert(!fclose(occupied_trace));
         return 0;
     }
+    if(argc==3 && !strcmp(argv[1],"all")){task_trace=fopen(argv[2],"w");assert(task_trace);argc=1;}
     assert(argc==1);
-    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);return 0;
+    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);for(int variant=0;variant<13;variant++)task_room_search(variant);
+    if(task_trace)assert(!fclose(task_trace));
+    return 0;
 }

@@ -339,7 +339,7 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         if(!policy) swat_camera_draw(app,view,sim);
         if(app->notice_seconds>0 && app->notice[0]) swat_hud_text(view,app->notice,24,86,15,menu_gold);
         if(app->squad_pointer) {
-            int x=(int)(GetScreenWidth()*.63f),y=GetScreenHeight()/2-105;
+            int x=(int)(GetScreenWidth()*.63f),y=GetScreenHeight()/2-(SWAT_SQUAD_ORDERS-1)*23/2;
             const char* teams[]={"Gold","Red","Blue"};
             for(int team=0;team<3;team++) {
                 Rectangle r={(float)(x+team*70),(float)(y-32),65,24};
@@ -351,7 +351,16 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
                 swat_hud_text(view,swat_squad_order_name(order),x,(int)r.y,15,hover ? menu_gold : menu_paper);
                 if(hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { swat_frontend_squad_request(app,order,IsKeyDown(KEY_LEFT_SHIFT)); app->wait_for_release=true; }
             }
-            swat_hud_text(view,"Shift: queue / J: execute",x,y+237,13,menu_muted);
+            swat_hud_text(view,"Shift: queue / J: execute",x,y+(SWAT_SQUAD_ORDERS-1)*23+7,13,menu_muted);
+            int status_row=0;
+            for(int i=0;i<sim->actor_count;i++) {
+                const SwatActor* officer=&sim->actors[i];const SwatMind* mind=&officer->mind;
+                if(!officer->present || !officer->alive || !mind->bot || !mind->order_room)continue;
+                const char* status=mind->order==SWAT_ORDER_HOLD && mind->room_step==SWAT_ROOM_SEARCH_POINTS?"Room route searched":
+                    mind->room_blocked?"Room search blocked":mind->room_task==SWAT_ROOM_TASK_CLOSE_DOOR?"Clearing doorway":mind->room_task>=SWAT_ROOM_TASK_ESCORT?"Moving occupant aside":mind->room_task==SWAT_ROOM_TASK_PERSON?"Securing occupant":
+                    mind->room_task==SWAT_ROOM_TASK_WEAPON?"Securing weapon":"Searching room";
+                swat_hud_text(view,TextFormat("%s: %s",mind->team==1?"Red":"Blue",status),24,120+status_row++*20,15,menu_paper);
+            }
         }
         if(app->selected_gadget) {
             const char* gadgets[]={"Weapon","Pepper spray","Door wedge","Disarm kit","Throwable camera","Ground robot","Communication ball","Drone"};

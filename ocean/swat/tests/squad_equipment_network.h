@@ -5,15 +5,26 @@ static void equipment_net_poll(SwatNetServer* server,SwatNetClient* clients,int 
     enet_uint32 condition=ENET_SOCKET_WAIT_RECEIVE;enet_socket_wait(((ENetHost*)server->transport)->socket,&condition,1);
 }
 static void equipment_net_ready(SwatNetServer* server,SwatNetClient* clients,int count) {
-    uint32_t start=enet_time_get();bool ready=false;
+    uint32_t start=enet_time_get();bool ready=false;unsigned int maps=0;
+    for(int i=0;i<count;i++)if(clients[i].has_map)maps|=1u<<i;
     while(!ready && enet_time_get()-start<15000) {
         equipment_net_poll(server,clients,count);ready=true;
+        unsigned int rebuilt=0;for(int i=0;i<count;i++)if(clients[i].has_map)rebuilt|=1u<<i;
+        // Rebuilding a full motel replica can occupy this shared test thread.
+        // Give transport another bounded phase after a newly applied map;
+        // production connection/packet deadlines remain unchanged.
+        if(rebuilt!=maps){maps=rebuilt;start=enet_time_get();}
         for(int i=0;i<count;i++)ready&=clients[i].status==SWAT_NET_ACTIVE && clients[i].epoch==server->epoch;
     }
+    if(!ready)for(int i=0;i<count;i++)fprintf(stderr,"Equipment UDP peer%d status%d epoch%u expected%u error=%s\n",i,clients[i].status,clients[i].epoch,server->epoch,clients[i].error);
     assert(ready);
 }
 static void equipment_net_tick(SwatNetServer* server,SwatNetClient* clients,int count,SwatInput host) {
-    for(int i=0;i<count;i++)if(clients[i].pending_count<8)assert(swat_client_input(&clients[i],&(SwatInput){0}));
+    for(int i=0;i<count;i++)if(clients[i].pending_count<8) {
+        bool sent=swat_client_input(&clients[i],&(SwatInput){0});
+        if(!sent)fprintf(stderr,"Equipment UDP input peer%d tick%d status%d revision%u error=%s\n",i,server->sim->tick,clients[i].status,clients[i].revision,clients[i].error);
+        assert(sent);
+    }
     equipment_net_poll(server,clients,count);swat_server_tick(server,&host);equipment_net_poll(server,clients,count);
 }
 static void equipment_network(void) {
