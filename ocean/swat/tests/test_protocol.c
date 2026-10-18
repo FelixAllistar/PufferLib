@@ -53,7 +53,42 @@ static void directed_doors(void) {
     swat_sim_close(&replica);swat_sim_close(&authority);
     puts("PASS directed door state: active/queued identities survive encoded map/snapshot rebuild; invalid, absent and non-door references reject atomically");
 }
+static void directed_rooms(void) {
+    static SwatSim authority,replica;static SwatMap map;static SwatSnapshot state,decoded,untouched,before,after,invalid;
+    static unsigned char bytes[SWAT_NET_PACKET_MAX],original[SWAT_NET_PACKET_MAX];
+    SwatConfig cfg=swat_default_config();cfg.mission=SWAT_HOUSE;cfg.randomize=false;cfg.hostile_fire=false;swat_config_human(&cfg);
+    swat_sim_init(&authority,cfg,42);assert(authority.world.room_count>0 && authority.world.room_count<SWAT_MAX_ROOMS);
+    SwatMind* mind=&authority.actors[3].mind;mind->order=SWAT_ORDER_ROOM_SEARCH;mind->order_room=1;
+    mind->pending_order=SWAT_ORDER_ROOM_SEARCH;mind->pending_room=1;mind->queued=true;
+    mind->room_step=2;mind->room_task=SWAT_ROOM_TASK_WEAPON;mind->order_actor=2;
+    swat_capture_map(&authority,1,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&authority,1,&state);
+    size_t n=swat_encode_snapshot(bytes,sizeof(bytes),&state);assert(n && swat_decode_snapshot(&decoded,bytes,n) && swat_apply_snapshot(&replica,&decoded));
+    assert(replica.actors[3].mind.order_room==1 && replica.actors[3].mind.pending_room==1 && replica.actors[3].mind.room_step==2 && replica.actors[3].mind.room_task==SWAT_ROOM_TASK_WEAPON);
+    swat_capture_snapshot(&replica,1,&before);size_t original_size=swat_encode_snapshot(original,sizeof(original),&before);assert(original_size);
+    for(int fault=0;fault<8;fault++) {
+        invalid=state;SwatMind* bad=&invalid.actors[3].mind;invalid.tick+=20;
+        if(fault==0)bad->order_room=authority.world.room_count+1;
+        if(fault==1)bad->pending_room=authority.world.room_count+1;
+        if(fault==2)bad->order_room=-1;
+        if(fault==3)bad->pending_room=SWAT_MAX_ROOMS+1;
+        if(fault==4)bad->room_step=SWAT_ROOM_SEARCH_POINTS+1;
+        if(fault==5)bad->room_task=SWAT_ROOM_TASKS;
+        if(fault==6)bad->order_room=0;
+        if(fault==7)bad->pending_room=0;
+        n=swat_encode_snapshot(bytes,sizeof(bytes),&invalid);assert(n);untouched=decoded;
+        if(fault>=2 && fault<=5)assert(!swat_decode_snapshot(&decoded,bytes,n) && !memcmp(&decoded,&untouched,sizeof(decoded)));
+        else {assert(swat_decode_snapshot(&decoded,bytes,n));assert(!swat_apply_snapshot(&replica,&decoded));}
+        assert(!swat_apply_snapshot(&replica,&invalid));
+        swat_capture_snapshot(&replica,1,&after);size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&after);assert(size==original_size && !memcmp(bytes,original,size));
+    }
+    SwatCommand request={1,1,swat_neutral_input()},command;request.input.squad_order=SWAT_ORDER_ROOM_SEARCH;request.input.squad_team=2;request.input.squad_queue=true;
+    n=swat_encode_command(bytes,sizeof(bytes),&request);assert(n && swat_decode_command(&command,bytes,n));
+    assert(command.input.squad_order==SWAT_ORDER_ROOM_SEARCH && command.input.squad_team==2 && command.input.squad_queue);
+    swat_sim_close(&replica);swat_sim_close(&authority);
+    puts("PASS directed rooms: active/queued room identity, progress and subtask replicate; missing/out-of-map/scalar-invalid references reject atomically; room commands roundtrip");
+}
 int main(void) {
+    directed_rooms();
     directed_doors();
     static unsigned char bytes[SWAT_NET_PACKET_MAX],bad[SWAT_NET_PACKET_MAX];
     SwatCommand command={4,99,swat_neutral_input()};

@@ -1,0 +1,750 @@
+{
+  "created_utc": "2026-10-18T07:11:40.722Z",
+  "baseline_commit": "2da9609d6",
+  "previous_goal_turn": {
+    "classification": "progress",
+    "evidence": "fd378c35b verified the approved roadside archives. Preceding work also produced a passing authored furnished-room case through ordinary entry/cuff/escort/stop with encoded replicas. The prior engine baseline is 2da9609d6."
+  },
+  "protocol": 34,
+  "source_files": [
+    {
+      "path": "ocean/swat/CMakeLists.txt",
+      "sha256": "621da43523535ad9907f31ec2614aefd9a863d27f8c34f037020fec9c150218b"
+    },
+    {
+      "path": "ocean/swat/Makefile",
+      "sha256": "40910182ab3f39af6f0b8ae81da5bb9112989d5e58025c762db0479ad7d0160b"
+    },
+    {
+      "path": "ocean/swat/encounter.c",
+      "sha256": "ca532d0b866058659475c3c80249e51a03110de26748a8f20d94010e33afcaf6"
+    },
+    {
+      "path": "ocean/swat/encounter.h",
+      "sha256": "db8c6c6e3b6e3fc1022aa74acee7b7098c34a30c4112dd763675dccc30942284"
+    },
+    {
+      "path": "ocean/swat/encounter_room.h",
+      "sha256": "ddcbe1fe2529af2077c83628fac4d3f315d04f9f4ec68e4de996ed1f6ba81b7f"
+    },
+    {
+      "path": "ocean/swat/frontend.c",
+      "sha256": "5c9cd28af6fc305ba05372bf603f310c6c07b5b6ec1f4edb67274636d1c61998"
+    },
+    {
+      "path": "ocean/swat/protocol.c",
+      "sha256": "e1444517422f690ca1cadd22cc971f798461358bbf70b82a39aa9074d6505ddf"
+    },
+    {
+      "path": "ocean/swat/protocol.h",
+      "sha256": "864566043a7fb88e984e06652fcd9136b29a67cc2d5392064c374f36b8ad143b"
+    },
+    {
+      "path": "ocean/swat/sim.c",
+      "sha256": "a03baf42d13dc30555e9b7cedd826b2626f23e3c32f2ded9e16bdc57c52cead1"
+    },
+    {
+      "path": "ocean/swat/tactical.c",
+      "sha256": "ff54d567c83df57be27f1901117f5551435837e27f0b87cd7f19450873ffb539"
+    },
+    {
+      "path": "ocean/swat/tactical.h",
+      "sha256": "28b81fbd3f3c540f6d90edfc5440795f2d9a95997d0206d43f397c5300daf7a9"
+    },
+    {
+      "path": "ocean/swat/tests/squad_equipment_network.h",
+      "sha256": "09028698393a84b34a0d076bb156f7b771b0de940d6c1e8cc4ca75d80697191e"
+    },
+    {
+      "path": "ocean/swat/tests/squad_room_search.h",
+      "sha256": "65f8f5c984103ad0d4bb4f464dc19172d0fa8ec929ff315d614b98ec84ceb013"
+    },
+    {
+      "path": "ocean/swat/tests/squad_room_network.h",
+      "sha256": "441384226f09bca8ad65e05197afaa1856ea322abdf6f553d5a3801fda9d1282"
+    },
+    {
+      "path": "ocean/swat/tests/test_encounter.c",
+      "sha256": "adaae107a28e16f7994c70d21abb8aa2435d1269d92a4e85524a8e0a0c023f24"
+    },
+    {
+      "path": "ocean/swat/tests/test_frontend.c",
+      "sha256": "3626a9969693b8f5b90daf5846d5a035d6a3ba3c0beb8e8c9d62f5d3c4b5b026"
+    },
+    {
+      "path": "ocean/swat/tests/test_motel_completion.c",
+      "sha256": "f2052d824744483f7bf5c2908ce2ab154fca223dd922b625cdd59ed313f872d8"
+    },
+    {
+      "path": "ocean/swat/tests/test_protocol.c",
+      "sha256": "b3065a7abb881fbbcae79b399e357fc32aea39cda6814cade7c277981c8623d3"
+    },
+    {
+      "path": "ocean/swat/tests/test_tactical.c",
+      "sha256": "30cf29264ee45dca20d1cb749e9728e080a2f5006b8f6f332cfd837f0e72ac60"
+    }
+  ],
+  "evidence_root": "build/swat/review/room-search/",
+  "scope": "One assigned officer physically searches supported room coverage, acts only on observed occupants/weapons, clears a leaf or cuffed aisle occupant through ordinary interactions, resumes after interruption and reports route completion. The full vertical-slice goal remains active.",
+  "changes": [
+    "Search room selects a visible room surface or door and captures its room identity through radio delay and queued Execute, assigning one eligible officer while others retain their tasks.",
+    "Nine supported coverage regions with eight bounded views each; visible people/weapons use ordinary restraint/retrieval. Opaque cover hides targets, visual threats and received gunshots pause search, and Hold/human takeover cancel it.",
+    "Routes stay on the room floor. Stale open-leaf routes revalidate, actual hand interaction can close the leaf, and a currently seen cuffed occupant can be escorted to an actual holding bay and stopped before resuming. Inaccessible coverage is never counted complete.",
+    "Door opening aims at the leaf and checks both the shared displayed context and actual physical interaction query, preventing a short-fan casing selection from pulsing indefinitely. Door retreat uses the controller deterministic heading and scales clearance with leaf width.",
+    "Protocol/replay v34 replicates active/queued room identity, route step, subtask and blocked state with scalar and atomic map-aware rejection. Private planning is reconstructed by ordinary input replay.",
+    "The squad menu distinguishes searching, blocked, moving an occupant, securing a target and route searched. Route completion makes no all-clear or hidden-occupant claim."
+  ],
+  "baseline_failure": {
+    "reason": "v33 has no room search order; requesting the appended order selects no recipient.",
+    "stderr": {
+      "path": "build/swat/review/room-search/baseline.stderr.log",
+      "sha256": "e31bd77568d3990da1dbe1bd203b462c4cf14674169512a4cdd0348326d016ac"
+    }
+  },
+  "checks": {
+    "linux": {
+      "headless_groups": 137,
+      "groups": {
+        "encounter": {
+          "pass_groups": 79,
+          "stdout": {
+            "path": "build/swat/review/room-search/encounter-linux.log",
+            "sha256": "7347e020c1bb922a596c9b18913a0123490d12acdf6a6ba723aace9d50e264de"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/encounter-linux.stderr.log",
+            "sha256": "53d013b362fe0a637fe236efda52f06fc7c1e96f0a33ef910f45007b22511e65"
+          }
+        },
+        "tactical": {
+          "pass_groups": 11,
+          "stdout": {
+            "path": "build/swat/review/room-search/tactical-linux.log",
+            "sha256": "adf6914b1ebb2fb6d278bf4b7904a57a563a0c557739dc449945e0534832cfa5"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/tactical-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "pass_groups": 13,
+          "stdout": {
+            "path": "build/swat/review/room-search/sim-linux.log",
+            "sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/sim-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "pass_groups": 5,
+          "stdout": {
+            "path": "build/swat/review/room-search/protocol-linux.log",
+            "sha256": "1ccbf0cfa8c8f9b61fe2084c08443beceaf901f4fa5342d4c6e92017e5e010bc"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/protocol-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "pass_groups": 12,
+          "stdout": {
+            "path": "build/swat/review/room-search/motel-linux.log",
+            "sha256": "3c56fae3f87e4e3c300bf22f049b318b2d65b3fc55c88c772e4e7be559bca8fe"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/motel-linux.stderr.log",
+            "sha256": "7e52b7b05fe72e558805802c6ddfaa8217e9ef005940f8d9f5705488ef47b059"
+          }
+        },
+        "navigation": {
+          "pass_groups": 3,
+          "stdout": {
+            "path": "build/swat/review/room-search/navigation-linux.log",
+            "sha256": "f77a6a4aaec85991521d980f29c306d4a6fd3ed8d5e635e5b65704b29bc0bb8f"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/navigation-linux.stderr.log",
+            "sha256": "7e6127a96938d64567cc8466dc7c8c0eb7a660eecfc513430324162564e592a5"
+          }
+        },
+        "net": {
+          "pass_groups": 14,
+          "stdout": {
+            "path": "build/swat/review/room-search/net-linux.log",
+            "sha256": "ffd293aee222a6423374983ede3f08225bdbb5b060728ab083d7c1d43e2402ee"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/net-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      },
+      "room_cases": 13,
+      "actual_motel_room": {
+        "stdout": {
+          "path": "build/swat/review/room-search/room-motel-linux.log",
+          "sha256": "940bf716a471fc4248c25b3a33091147b241e6483e149bd4f18b630ab26d7c80"
+        },
+        "stderr": {
+          "path": "build/swat/review/room-search/room-motel-linux.stderr.log",
+          "sha256": "fb294ae580fd60087d20fe2aa54ee5055e7a2e9d37f9e17822f2a87cbe07f8e7"
+        },
+        "trace": {
+          "path": "build/swat/review/room-search/room-motel-linux.trace",
+          "sha256": "953d3a558b3b4f03d9c1cf1196db6fa32512a3f0c0576964baaee05faa598480"
+        }
+      },
+      "all_trace": {
+        "path": "build/swat/review/room-search/all-linux.trace",
+        "sha256": "984198cbcafdd74787042f298a10d6ca3e1b22993a03d4bff94b05fc1322fbbf"
+      },
+      "room_udp": {
+        "path": "build/swat/review/room-search/room-network-linux.log",
+        "sha256": "1874f694b5b36b36b46b38f59493fd3031145454f70417f9f50065c181a769f2"
+      },
+      "equipment_udp": {
+        "path": "build/swat/review/room-search/equipment-network-linux.log",
+        "sha256": "a2f80a4c3c77b7f3fc72cf59dc7071d350ef474ee544a0b2170f4ba42fa8897f"
+      },
+      "frontend_trace": {
+        "path": "build/swat/review/room-search/input-linux.trace",
+        "sha256": "09ffba4aa6dedb11abbc3d4a89a79e982c06dc9c599f009b1b92c2f457e67a81"
+      },
+      "frontend_udp": {
+        "path": "build/swat/review/room-search/frontend-network-linux.log",
+        "sha256": "836a15d5f3f7d141b7c91842b0c4f4ca477d95529a9eb497e95fd6fc81ca83a8"
+      },
+      "frontend_journal_replay": {
+        "path": "build/swat/review/room-search/input-journal-linux.log",
+        "sha256": "bcc79de299968ad4d927462f44c26ddd5fe4f30881b4003bd3b4340786e026af"
+      },
+      "mission_driver_relink": {
+        "path": "build/swat/review/room-search/mission-driver-relink-linux.log",
+        "sha256": "55daecd7ffd5f77dfd0e0542bbdd772b1ec7b6c82424435431c3456d86563d8b"
+      },
+      "build": {
+        "path": "build/swat/review/room-search/build-linux.log",
+        "sha256": "4541b903700b427be6a126b803a0b9d9e42d87f81664724cc3053f4fddbd2dfe"
+      },
+      "restraint_event_relink": {
+        "path": "build/swat/review/room-search/relink-after-sound-linux.log",
+        "sha256": "990b3631f83aab4b29954ddd13d282d433408aecc8c4a51fe31dfa1492fc2cd2"
+      },
+      "current_source_relink": {
+        "path": "build/swat/review/room-search/relink-current-source-linux.log",
+        "sha256": "990b3631f83aab4b29954ddd13d282d433408aecc8c4a51fe31dfa1492fc2cd2"
+      },
+      "comment_refresh_equivalence": {
+        "path": "build/swat/review/room-search/current-source-refresh.log",
+        "sha256": "99e2b0ae743d236bb127b3b09a49ccc2de572539c3f5e1dab7f617017476eb65"
+      }
+    },
+    "native": {
+      "headless_groups": 137,
+      "groups": {
+        "encounter": {
+          "pass_groups": 79,
+          "stdout": {
+            "path": "build/swat/review/room-search/encounter-native.log",
+            "sha256": "a8f2728aace1bfde470e187c39a49a186852b53a962e2811f6b56f1d20279df7"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/encounter-native.stderr.log",
+            "sha256": "67c5f680accd3f4f71454e6eec7efe344096aa5d742706d8abb86f3271a1e27a"
+          }
+        },
+        "tactical": {
+          "pass_groups": 11,
+          "stdout": {
+            "path": "build/swat/review/room-search/tactical-native.log",
+            "sha256": "12c0a2683388564b3cbfc8d232c63951c17f4ee73a1864609082e864b7d913bf"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/tactical-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "pass_groups": 13,
+          "stdout": {
+            "path": "build/swat/review/room-search/sim-native.log",
+            "sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/sim-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "pass_groups": 5,
+          "stdout": {
+            "path": "build/swat/review/room-search/protocol-native.log",
+            "sha256": "2540c55d137bfe90c478acbe859b33d74e6b5212f70b2d42126d916a7646da6c"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/protocol-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "pass_groups": 12,
+          "stdout": {
+            "path": "build/swat/review/room-search/motel-native.log",
+            "sha256": "658e1e9d97280d1573bbd331d5e4d0d494aa4382791f1c6a068e7f143450ab3d"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/motel-native.stderr.log",
+            "sha256": "3ebe62ba2dc3ed22cf1b0d37d32eb547529be4f2f1c12185a492e808488045a2"
+          }
+        },
+        "navigation": {
+          "pass_groups": 3,
+          "stdout": {
+            "path": "build/swat/review/room-search/navigation-native.log",
+            "sha256": "4a0574d4578e12e577732616fc505f7c1847987ef0766860dfe422c586cd37ba"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/navigation-native.stderr.log",
+            "sha256": "20979940b4a597cbb4c641985c2d840323015d72ea972547f7b737da064b9a47"
+          }
+        },
+        "net": {
+          "pass_groups": 14,
+          "stdout": {
+            "path": "build/swat/review/room-search/net-native.log",
+            "sha256": "146c6aa09128669dcee897bafacbfbcc1a2cec31f8ad4d6d9d9d1e09560a47fc"
+          },
+          "stderr": {
+            "path": "build/swat/review/room-search/net-native.stderr.log",
+            "sha256": "16274316feeb228b2e636a4253174242213458b1ae5484bb0577ea64a0450b43"
+          }
+        }
+      },
+      "room_cases": 13,
+      "actual_motel_room": {
+        "stdout": {
+          "path": "build/swat/review/room-search/room-motel-native.log",
+          "sha256": "767fb020e2a4c42b673f03bad137f1d79af8a5446c1f1423144f2eeb1aec2d26"
+        },
+        "stderr": {
+          "path": "build/swat/review/room-search/room-motel-native.stderr.log",
+          "sha256": "e570f59852c9f9589cc844d71d8b855d99493ff27dceb44e6e5c4caad24c0fc8"
+        },
+        "trace": {
+          "path": "build/swat/review/room-search/room-motel-native.trace",
+          "sha256": "7142430e2434640321ca3805cdccb54ae34b7a074a5def0c74c5c9330b63a1de"
+        }
+      },
+      "all_trace": {
+        "path": "build/swat/review/room-search/all-native.trace",
+        "sha256": "737bb1c035fbabc6c678f38ab63520898f3d991b2831e06d9ebfd91860c2fad1"
+      },
+      "room_udp": {
+        "path": "build/swat/review/room-search/room-network-native.log",
+        "sha256": "2072c71d70aedbbc8333ef27af0f415c3c655439474c9fa3931b3052818d83d0"
+      },
+      "equipment_udp": {
+        "path": "build/swat/review/room-search/equipment-network-native.log",
+        "sha256": "57a9a58e3d146d80befef049b03c461a2dbc80479f19a5065e889f2a55c6b797"
+      },
+      "frontend_trace": {
+        "path": "build/swat/review/room-search/input-native.trace",
+        "sha256": "7863ed3400e12812540aab15aaab5fd970130fbb90a9c0ab915f150ed45c69c8"
+      },
+      "frontend_udp": {
+        "path": "build/swat/review/room-search/frontend-network-native.log",
+        "sha256": "5ce4d810d66974ebf9acb56b996d12d425ce935967b1ac934a109ab5586b6083"
+      },
+      "frontend_journal_replay": {
+        "path": "build/swat/review/room-search/input-journal-native.log",
+        "sha256": "7e2ea74bd1d9d2d1e01c53ceed447f27d00170e5b36112789cb5f7f66a3f5158"
+      },
+      "mission_driver_relink": {
+        "path": "build/swat/review/room-search/mission-driver-relink-native.log",
+        "sha256": "3054435f53261d98e49a415236a5b578bdb68590b2686c987685a6a73011d8c7"
+      },
+      "build": {
+        "path": "build/swat/review/room-search/build-native.log",
+        "sha256": "32e5a951e016be4350b4fadebcd34c246797b147d9f0572d1f62bd3675788421"
+      },
+      "restraint_event_relink": {
+        "path": "build/swat/review/room-search/relink-after-sound-native.log",
+        "sha256": "3bd7ed823433108128f63badd4ab34c099ccb16fd99cd3f6548753f2af04523f"
+      },
+      "current_source_relink": {
+        "path": "build/swat/review/room-search/relink-current-source-native.log",
+        "sha256": "3bd7ed823433108128f63badd4ab34c099ccb16fd99cd3f6548753f2af04523f"
+      },
+      "comment_refresh_equivalence": {
+        "path": "build/swat/review/room-search/current-source-refresh.log",
+        "sha256": "99e2b0ae743d236bb127b3b09a49ccc2de572539c3f5e1dab7f617017476eb65"
+      }
+    }
+  },
+  "cross_platform": {
+    "all_state_samples": 63938,
+    "room_state_samples": 45663,
+    "room_fresh_direct_map_encoded_snapshot_roundtrips_each": 1527,
+    "room_cases": 13,
+    "actual_motel_room_state_samples": 6077,
+    "actual_motel_room_encoded_snapshot_roundtrips_each": 204,
+    "actual_motel_room_fresh_maps_each": 2,
+    "actual_motel_fixture_scope": "Initial compliant occupants and staging positions isolate ordinary search/cuff/escort/stop and replicas. Armed-threat priority is covered by separate fixtures; this is not a full-room combat acceptance.",
+    "note": "Early cancellation, invalid selection and human takeover have fewer or no sampled ticks. Samples are authoritative state observations, not thirteen complete mission routes.",
+    "retained_equipment_samples": 3944,
+    "frontend_samples": 78,
+    "frontend_journal_frames": 60,
+    "frontend_journals_byte_identical": true,
+    "room_udp_milestones": [
+      "ROOM_NET queued_takeover room2 actor4 pending0",
+      "ROOM_NET active_takeover room2 actor5 progress0",
+      "ROOM_NET completed room2 actor5 points9 cuffed2 moved2"
+    ],
+    "equipment_udp_milestones": [
+      "EQUIPMENT_NET queued_pick door16 actor4",
+      "EQUIPMENT_NET takeover door16 actor4 pending0",
+      "EQUIPMENT_NET wedged door16 actor5 stock1"
+    ],
+    "frontend_udp_milestones": [
+      "FRONTEND_ACK first 1 release 2 target2 team1 queued1",
+      "FRONTEND_ACK second 7 release 8 target3 team1 queued1"
+    ],
+    "motel_udp_states": [
+      "MOTEL_STATE 0 4 8a05f8f6",
+      "MOTEL_STATE 1 6 953fae5e",
+      "MOTEL_STATE 1 6 953fae5e",
+      "MOTEL_STATE 2 40 04e612e6",
+      "MOTEL_STATE 2 40 04e612e6",
+      "MOTEL_STATE 2 40 04e612e6",
+      "MOTEL_STATE 3 46 6d8663ff",
+      "MOTEL_STATE 3 46 6d8663ff",
+      "MOTEL_STATE 3 46 6d8663ff",
+      "MOTEL_STATE 4 0 3ad6ada4",
+      "MOTEL_STATE 4 0 3ad6ada4",
+      "MOTEL_STATE 4 0 3ad6ada4"
+    ]
+  },
+  "routes": {
+    "motel-room-search": {
+      "ticks": 25155,
+      "arrests": 2,
+      "lawful_suspect_deaths": 0,
+      "journal": {
+        "path": "build/swat/review/room-search/motel-room-search.sgrp",
+        "sha256": "f9024fa518b9bb6d6c0a3ed3aff1739e53902930e8dce60010a0632654704c8d"
+      },
+      "stdout": {
+        "path": "build/swat/review/room-search/motel-room-search.log",
+        "sha256": "285a5e492cda87135d0c9d7e6844bdb6ff9766e9cb9fdf2ece9dd9a16a4334b4"
+      },
+      "stderr": {
+        "path": "build/swat/review/room-search/motel-room-search.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_shipping_replays": {
+        "linux": {
+          "path": "build/swat/review/room-search/motel-room-search-linux-replay.log",
+          "sha256": "a6712ff8a6ea82677cadbbabd15c82b23c587d985e6a2a341cc8b1909a911859"
+        },
+        "native": {
+          "path": "build/swat/review/room-search/motel-room-search-native-replay.log",
+          "sha256": "b9989064056e038c42349bd4e8be1eac3c09d863d909d140ad859d7da9ecbb7d"
+        }
+      },
+      "queued_room_checkpoint": {
+        "path": "build/swat/review/room-search/motel-room-search.sgrp.room.save",
+        "sha256": "82c79883ad12c953428118e6125c8ce3d84becad4ac2c1727d82e000e1e5a68d"
+      },
+      "native_room_prefix": {
+        "path": "build/swat/review/room-search/motel-room-prefix-native-replay.log",
+        "sha256": "9c10680a97549a77d56b2e527fa381d59b06e14b0f54fc4a791438753c26d590"
+      },
+      "queued_wedge_checkpoint": {
+        "path": "build/swat/review/room-search/motel-room-search.sgrp.wedge.save",
+        "sha256": "dc268f2500466c5c2688735596b0fa2d4f7a14554bf90f4dce63a8f4783de58a"
+      },
+      "native_wedge_prefix": {
+        "path": "build/swat/review/room-search/motel-wedge-prefix-native-replay.log",
+        "sha256": "b1c3f00509d1aa9c6e807c8a669250cf353ffe98e1815fd69870f3eb96cd3483"
+      }
+    },
+    "motel-threat-interroom": {
+      "ticks": 20644,
+      "arrests": 0,
+      "lawful_suspect_deaths": 2,
+      "journal": {
+        "path": "build/swat/review/room-search/motel-threat-interroom.sgrp",
+        "sha256": "481f4830204f98b4b50b3cf71851580a8e5d66d3f3f55f3812ca017462ba7730"
+      },
+      "stdout": {
+        "path": "build/swat/review/room-search/motel-threat-interroom.log",
+        "sha256": "96b0920fdbc6d8c7d5ecc19bee466641191febc85bc564a6e8ed481a50d40532"
+      },
+      "stderr": {
+        "path": "build/swat/review/room-search/motel-threat-interroom.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_shipping_replays": {
+        "linux": {
+          "path": "build/swat/review/room-search/motel-threat-interroom-linux-replay.log",
+          "sha256": "6d6bfb34f5c92d10a31f49e005102b8117a21837188f7267cb6e34f57beb7754"
+        },
+        "native": {
+          "path": "build/swat/review/room-search/motel-threat-interroom-native-replay.log",
+          "sha256": "edee8d3b877007739d87379e89248157916e1455581bec72ea968a3d92a924f2"
+        }
+      }
+    },
+    "motel-threat-exterior": {
+      "ticks": 9637,
+      "arrests": 0,
+      "lawful_suspect_deaths": 2,
+      "journal": {
+        "path": "build/swat/review/room-search/motel-threat-exterior.sgrp",
+        "sha256": "e0067f9032d05b327de23f62872052f5890b9df39ecb4e64cc7832880aac7c7f"
+      },
+      "stdout": {
+        "path": "build/swat/review/room-search/motel-threat-exterior.log",
+        "sha256": "9322a7b81905c96fcda969bd330faa6c818fb209a805ea72266c772bee66f481"
+      },
+      "stderr": {
+        "path": "build/swat/review/room-search/motel-threat-exterior.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "final_shipping_replays": {
+        "linux": {
+          "path": "build/swat/review/room-search/motel-threat-exterior-linux-replay.log",
+          "sha256": "28cfd813adf8d9d0e7c15f5a51b127dc7972d294b5eef8ed65d0058b95e3b334"
+        },
+        "native": {
+          "path": "build/swat/review/room-search/motel-threat-exterior-native-replay.log",
+          "sha256": "8a737c6e1aa058b9e7fc9025ee068c6cc91a8ca082d942e9aa32f0ea81a8a430"
+        }
+      }
+    }
+  },
+  "regressions_retained": [
+    {
+      "reason": "A cuff-completion sound used the aim-ray contact point. At quiet mission frame 11280, Linux/native body, gear and door states matched while the sound height differed by one float bit. The sound now uses a body-relative restraint point; head/torso aim contacts share one origin through ordinary held cuffs.",
+      "linux_snapshot": {
+        "path": "build/swat/review/room-search/quiet-divergence-linux.snapshot",
+        "sha256": "b48d3e42510c25c35d13b575d8a8ee2f4f415440ccab7d308387beef25f94f26"
+      },
+      "native_snapshot": {
+        "path": "build/swat/review/room-search/quiet-divergence-native.snapshot",
+        "sha256": "b66d03cd9e5237c19890f5d191ea0d0f3a3d708f300b02655fac9e5c6a884f23"
+      },
+      "comparison": {
+        "path": "build/swat/review/room-search/quiet-divergence-comparison.log",
+        "sha256": "df33eb4196d2542d86200681f1230a87aa65ef4b00dcacec44c67b9f73090364"
+      },
+      "linux_regression": {
+        "path": "build/swat/review/room-search/restraint-audio-linux.log",
+        "sha256": "adf6914b1ebb2fb6d278bf4b7904a57a563a0c557739dc449945e0534832cfa5"
+      }
+    },
+    {
+      "reason": "The updated mission timing exposed a brittle QA firefight: two material-attenuated head hits left the suspect with 4.8 health, then nominal camera tracking waited out recoil and a follow-up hit cover. Exact failed-prefix replay and bounded actual-reticle mouse correction resolve the same encounter without changing gameplay weapon/AI/damage rules.",
+      "failed_journal": {
+        "path": "build/swat/review/room-search/failed-combat-retreat/motel-threat-interroom.sgrp",
+        "sha256": "73a69bbfcd959b4e204f0a6c1d972119afa2426f7890b5f0daf531f0ebb1e6c0"
+      },
+      "stderr": {
+        "path": "build/swat/review/room-search/failed-combat-retreat/motel-threat-interroom.stderr.log",
+        "sha256": "9efac070236849e972e8380c98cf78e459952704123fd406684a0971765dbea1"
+      },
+      "exact_replay_diagnostic": {
+        "path": "build/swat/review/room-search/combat-replay-diagnostic.log",
+        "sha256": "11d562f9b21154b3703ed6d951670638c13873517014d5abf519c637b3ae87fa"
+      },
+      "same_prefix_candidate_before_restraint_audio_fix": {
+        "path": "build/swat/review/room-search/reticle-check.sgrp",
+        "sha256": "a181a1f7681c674d633d2116a9d6cfcdee6b252b3b74c66078980f3996570a27"
+      },
+      "candidate_result_before_restraint_audio_fix": {
+        "path": "build/swat/review/room-search/reticle-check.log",
+        "sha256": "73cf92dd7e8e50f9136ec1b890728ef6948b859a298be3f3cf69b071babbadff"
+      }
+    },
+    {
+      "reason": "Room arrival tolerance was narrower than navigation stopping tolerance.",
+      "stderr": {
+        "path": "build/swat/review/room-search/rooms-stopping-radius.stderr.log",
+        "sha256": "62bb7da4b65e915adbaf890a20e71526433855131201a4882d190917c4b114c4"
+      }
+    },
+    {
+      "reason": "Cuffed owner occluded the ordinary evidence interaction fan; supported approach must pass that same fan.",
+      "stderr": {
+        "path": "build/swat/review/room-search/weapon-diagnostic.stderr.log",
+        "sha256": "54dee20f8158ae284288581e958ea147e70594e59885bb4d5340ddfe34ce9aa3"
+      }
+    },
+    {
+      "reason": "Authored motel bed top was sampled as a room walking floor.",
+      "stderr": {
+        "path": "build/swat/review/room-search/room-network-bed-waypoint.stderr.log",
+        "sha256": "90d5d62ad6aeb9caedb319c80a767a75f0d77949c46363cd37b5dd936291007c"
+      }
+    },
+    {
+      "reason": "A real cuffed occupant blocked the only furnished-room aisle; actual escort and verified resumed route are required.",
+      "stderr": {
+        "path": "build/swat/review/room-search/room-network-first-relocation.stderr.log",
+        "sha256": "cea17cb2c72432d88701afddbcacd05ffa6b29b2735ac777a231a88ac567cbdc"
+      }
+    },
+    {
+      "reason": "Threat fixture used a fixed withdrawal tick that could precede threat appearance; it now waits for confirmed tracking.",
+      "stderr": {
+        "path": "build/swat/review/room-search/broad-threat-stall.stderr.log",
+        "sha256": "224bd55b05a184898eb3c425c42b99875ad02a167fde4f15f75600df18472ecd"
+      }
+    },
+    {
+      "reason": "Short navigation fan selected the leaf while the actual interaction selected nearby geometry; frozen map/snapshot and query reproduce it.",
+      "stderr": {
+        "path": "build/swat/review/room-search/room-entry-geometry-repeat.stderr.log",
+        "sha256": "3ce90af789d5193ef0ba9acca2508806de3b43932dd799dae25f82bb077c3830"
+      },
+      "map": {
+        "path": "build/swat/review/room-search/entry-failure.map",
+        "sha256": "2d9f0bfdb13f38cf9181c5329ca57f5aa0d0c7b32b2ceb292e47b1c2cdf8544f"
+      },
+      "snapshot": {
+        "path": "build/swat/review/room-search/entry-failure.snapshot",
+        "sha256": "64513a3058ba1f9cde068db79d41257981e372c81bb4c8a69356efce70257591"
+      },
+      "query": {
+        "path": "build/swat/review/room-search/entry-query.log",
+        "sha256": "1717b37536816ef1745489e3f3ea9718696c723311d9575e78fc73169b8137b4"
+      }
+    },
+    {
+      "reason": "Native/Linux door retreat differed in one transient velocity component. Deterministic controller heading restores exact sampled states.",
+      "linux": {
+        "path": "build/swat/review/room-search/diagnostic-linux.snapshot",
+        "sha256": "795a860c5b579287e72130a4748015f250ce718140f8a937d17b8c0300241658"
+      },
+      "native": {
+        "path": "build/swat/review/room-search/diagnostic-native.snapshot",
+        "sha256": "9a6be2bc1588aa752b5b82ae89bfc9d6b1e48e76fb102e7512d7919b05d5eb90"
+      },
+      "before_linux": {
+        "path": "build/swat/review/room-search/all-before-deterministic-yield-linux.trace",
+        "sha256": "301e5893a6a143aac6b842ced6000f479daac815ee7be00c27f44f2d813aef51"
+      },
+      "before_native": {
+        "path": "build/swat/review/room-search/all-before-deterministic-yield-native.trace",
+        "sha256": "579b3222a7f242115bee2544f75e35c6c6a0771f0ee43cbd6591e3378ccbf9db"
+      }
+    },
+    {
+      "reason": "A slow same-thread map rebuild exhausted a fixed QA setup deadline before the next packet poll. The helper now starts a bounded phase after a newly applied map; fixed tick assertions also wait for actual replica delivery. Production timeouts remain unchanged.",
+      "stderr": {
+        "path": "build/swat/review/room-search/map-build-deadline.stderr.log",
+        "sha256": "b1c3a9cd76aa99f4051fea26ef61e02651422eb29660dcef3d9f37c601506733"
+      }
+    }
+  ],
+  "wrapper": {
+    "cases": 5,
+    "stdout": {
+      "path": "build/swat/review/room-search/wrapper.log",
+      "sha256": "33277d94f13c51e4d16727f6271f45dcc9dff3d4ce34d1ed1fbacc100da2decd"
+    }
+  },
+  "compatibility": {
+    "older_v33_replay_rejected_each": true,
+    "linux": {
+      "path": "build/swat/review/room-search/old-v33-linux.log",
+      "sha256": "867e62a34dcea707eccc43f56cade2b150fdde28fc128733f6a54d9c67c0c4aa"
+    },
+    "native": {
+      "path": "build/swat/review/room-search/old-v33-native.log",
+      "sha256": "85e168a8279bbfacc90e496492ea299f031724a92ceb579c01dd0354c5697b42"
+    }
+  },
+  "build_registration": {
+    "cmake": {
+      "path": "build/swat/review/room-search/cmake-configure.log",
+      "sha256": "5484d4cf4e526efe5089f61689dbef6d5a78df7cf7f2f72fe3c59e6762e0e781"
+    },
+    "tests": {
+      "path": "build/swat/review/room-search/cmake-registration.log",
+      "sha256": "dc6bc33f736fc05b30059c863fb328bb94b2c9c295c659369acc4176676e373d"
+    },
+    "make": {
+      "path": "build/swat/review/room-search/make-registration.log",
+      "sha256": "b37157764f4fd767d99e1af8dc61636b5877f440be21db8b634de32a93d88edf"
+    },
+    "python_disabled": true,
+    "note": "CTest/Make registration checked; final executables were built and invoked by the recorded direct build/check scripts."
+  },
+  "installed": {
+    "matches": true,
+    "sha256": {
+      "build/swat/swat": "6ba7cbf9abb7ca3253f3d971cadef4403b81165b73f4c6b9a04c4542bac7ac12",
+      "build/swat/server": "113004b8953f47c9f6626c6aa17002b4c41d9bdb6d74df4fe699ac1d3e041e13",
+      "build/swat/replay_tool": "f47e74ef92abc333f35c597b8076a5fd85bfa91ee9464ca87ccbe14d0651fb7b",
+      "build/swat/performance_tool": "e6513a41369b091eeca153eb8abaa9835b885cabb5d391e130a5560d3f9bab19",
+      "build/swat/windows/swat.exe": "554467c753d61dee20118636ef21518d5198402e59efd65d545dd9b941fc5662",
+      "build/swat/windows/swat-server.exe": "7a7cb8da885994cec6ae8c640fd234e157015e367778f4b595607cc9ffc1f494",
+      "build/swat/windows/replay_tool.exe": "0ad2cd73cad04e40ccdc9bc970facc039bc4e8fe6308aa7a99dc9ee1999adaa4",
+      "build/swat/windows/performance_tool.exe": "86440e1525153d7ad0096b9f6146194b15d0e143f76cd9efef4eb5477f535b16",
+      "build/swat/test_encounter": "96920e8c2ad976642cece8a7b370d81086ec326b27e85f5fa19b1037f4c8d5d5",
+      "build/swat/windows/test_encounter.exe": "ce57088bbd4429e8d8f8801a93bf1c26a91076dec4debb244ef637f20cb89edc",
+      "build/swat/test_tactical": "d7618b5cdd46808404cfe6f6a09b6c5c9902d4d76fa4796adddfb323fecb07a9",
+      "build/swat/windows/test_tactical.exe": "14eb589e20d2ddf4e1e71209da1b9ccd06d058fbb1f1c2152e4d9a90bef187bf",
+      "build/swat/test_sim": "cf744f0c989ff1dc62f1bae7ff73f5b5144fde0caeda2faa4a410b45cb9f94a3",
+      "build/swat/windows/test_sim.exe": "ba246b905479941c411536a199e7d46ca96279dd5d16ee8859f28c585989bb8e",
+      "build/swat/test_protocol": "6508151ef40c5bacdd28053187dbf7dc8ee1d36c5f375dc283884082ac439eeb",
+      "build/swat/windows/test_protocol.exe": "f83822b4fbf55ae6c223d49e621ef74d88d81c1a988ddda659a9027bdb772753",
+      "build/swat/test_net": "a6b302f190167a9fb3ae35afd631d19bbcc8a66e265050797b4854ebfbc28af7",
+      "build/swat/windows/test_net.exe": "e241497ccb32da46f49b7c00c0d74af6cd8209d08f0a01bed0858e25af794f4a",
+      "build/swat/test_motel_completion": "ae1185a82c67214337db751d2484cf43a45a474645b4019839e18c109da1aab1",
+      "build/swat/windows/test_motel_completion.exe": "452b4e360ea23c99e6c299bb2a90627f7b3b4476f03c6018bb157a0d8b8466e4",
+      "build/swat/test_navigation_search": "1707659c26992517dd730832efbea42962fe320646bbf0a7381944668adafa72",
+      "build/swat/windows/test_navigation_search.exe": "76b6b6b7fa5df44dc5c163d6b97b1a1d0bfd12dff68f18768bae77ab50b1433c",
+      "build/swat/test_motel": "c67b6560bb3868de4eba87a1ce307778b5af84529b8ad85ddbaf918323b0aaaf",
+      "build/swat/windows/test_motel.exe": "a4a8abb1f3f093b581945ac4299c334ac55a50ea7b456b889ccb63f24a8f044e",
+      "build/swat/test_frontend": "20955aeb5a17e0c2db3cc256b10258099fe9185c60babb7145a25f024a564ca2",
+      "build/swat/windows/test_frontend.exe": "0a2263ae0af43f9dfbd44e9eded25fab26bce267e36a47fcdca95e02facb9cab",
+      "build/swat/test_frontend_input": "6689dcf91d3f374318315db8c182b61941308973cbc0c2c3ccd59a366eb73b56",
+      "build/swat/windows/test_frontend_input.exe": "a0e80ee1af3951c93d491b044a918f515039967300aa56b041dd012fb00ed06b"
+    },
+    "log": {
+      "path": "build/swat/review/room-search/install.log",
+      "sha256": "66fa934a499cae785c7d264ff9a05e34dc961f63834de1dc01901dcfbf49d971"
+    },
+    "launcher_help": {
+      "path": "build/swat/review/room-search/installed-help.log",
+      "sha256": "2b5667e3af52054ab154c0bddf83ce9a93961684ba482e7352fa26cdf53348c5"
+    }
+  },
+  "constraints": {
+    "no_python_execution": true,
+    "no_root_trainer_cuda_rebuild": true,
+    "no_graphics_window_or_focus_change": true,
+    "no_gpu_or_heavy_performance_run": true,
+    "final_network_suites_serialized": true
+  },
+  "art_intake": {
+    "path": "ocean/swat/tests/receipts/roadside-intake-2026-10-18.json",
+    "sha256": "3cd3b70a98fa12f739a0fee983c4fcf8104f7c2650aa0cfb79c51573770b995e"
+  },
+  "slack": {
+    "public_thread_read": true,
+    "new_approved_packages": true,
+    "private_search": false,
+    "acknowledgement": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792299097423699?thread_ts=1791078311.943659&cid=C0C5TN3AA8K"
+  },
+  "remaining": [
+    "Broader moving hostile squad protection and varied room/occupant layouts, further equipment roles, low-prop player contacts, sedan/shelter level integration, remaining art/production audio and visible handling, policy baselines, native visual interaction and stable-load frame-time acceptance remain open.",
+    "Headless functional completion does not establish final visual quality or performance. Heavy performance testing remains held."
+  ]
+}

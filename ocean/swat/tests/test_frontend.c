@@ -428,7 +428,7 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     event(TEST_KEY_DOWN,KEY_M,0); frames(app,view,sim,3);
     CHECK(app->squad_pointer && !app->captured && !confined_to_window());
     Image squad_picture=LoadImageFromScreen(); CHECK(ExportImage(squad_picture,"build/swat/windows/squad-menu.png")); UnloadImage(squad_picture);
-    click(app,view,sim,(int)(GetScreenWidth()*.63f)+45,GetScreenHeight()/2-105+23+8);
+    click(app,view,sim,(int)(GetScreenWidth()*.63f)+45,GetScreenHeight()/2-(SWAT_SQUAD_ORDERS-1)*23/2+23+8);
     CHECK(sim->actors[0].arsenal.shots==officer_shots && app->screen==SWAT_SCREEN_GAME);
     event(TEST_KEY_UP,KEY_M,0); frames(app,view,sim,5);
     CHECK(!app->squad_pointer && app->captured && confined_to_window() && !app->wait_for_release);

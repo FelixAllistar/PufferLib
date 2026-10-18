@@ -27,9 +27,9 @@ that complete objective active until every acceptance requirement is verified.
 
 Acceptance work still open:
 
-- Extend squad task completion to room searches, further equipment roles and
-  varied occupied layouts, beyond directed restraint/retrieval, door picks/wedges,
-  recall and escort.
+- Extend squad task completion across varied occupied layouts and further
+  equipment roles, including broader room-search and moving threat coverage,
+  beyond directed restraint/retrieval, door picks/wedges, recall and escort.
 - Extend hostile-fire squad coordination beyond the inter-room sequence with
   staging holds during demolition. Following officers can cross the commander's
   firing line, and exploratory all-follow runs lost the commander or an officer.
@@ -49,6 +49,49 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+
+Physical squad room search (2026-10-18): Search room captures the room selected
+through a visible surface or door, assigns one officer from the selected team
+and retains that identity through queue/Execute. The officer physically visits
+nine supported coverage regions and turns through eight views at each. Actual
+views can reveal people to restrain and weapons to recover. Gunshots and visible
+threats interrupt the task; Hold and human takeover cancel it. An obstructing
+leaf can be closed through actual hand interaction. A seen cuffed occupant
+blocking a furnished aisle can be escorted to a supported holding bay and
+stopped before the search resumes. Planning verifies the actual resulting route;
+it never moves bodies or ignores their physical occupancy. Unreachable coverage
+stays unfinished, and the menu reports route searched without an all-clear claim.
+
+Protocol/replay v34 replicates active/queued room IDs, progress, subtask and
+blocked state, with scalar and atomic map-aware rejection. Private planning is
+reconstructed by input replay. Clean 23-core/13-view-unit builds cover Linux and
+Windows player/server/replay/performance tools and ten QA executables per
+platform. Both platforms pass 137 broad headless groups, including thirteen
+room cases with 45,663 matching state samples and 1,527 fresh-map/encoded-snapshot
+roundtrips each. The actual furnished motel fixture matches another 6,077 states,
+204 encoded snapshot applications and two fresh maps per platform. It starts
+with compliant occupants; visual threat priority is covered separately. Actual
+queued/active human takeover and completion also pass three semantic milestones
+over real motel UDP on each platform. The existing equipment, frontend and
+transport checks pass; frontend journals remain byte-identical at 60 frames.
+No graphics window or GPU/performance tool is run. A contended same-process
+cold join initially timed out before game inputs; final serialized functional
+runs pass with shipping timeouts intact. Stable-load responsiveness and visual
+acceptance remain open. Evidence is retained under `build/swat/review/room-search`.
+
+The full quiet front route adds queued Room 101 search with journal
+checkpoint/restore to restraint, weapon recovery, escort and queued wedge work.
+It finishes in 25,155 ticks with two arrests, three evacuations, both weapons,
+squad regroup and no casualties or unlawful force. Fresh hostile inter-room and
+exterior routes finish in 20,644/9,637 ticks with two lawful suspect deaths each
+and no civilian/officer deaths or unlawful force. All three journals replay
+exactly in both shipping platforms, including every authoritative sound state.
+A retained one-bit cuff-sound height divergence is fixed by attaching restraint
+handling to the target's body rather than the aimed ray contact. A head/torso
+aim regression checks this through ordinary held cuffs. The QA combat driver
+now corrects actual reticle recoil through bounded mouse inputs; gameplay weapon,
+damage and AI rules are unchanged. Matching v34 peers and new journals/saves are
+required. Receipt: `tests/receipts/room-search-2026-10-18.json`.
 
 Approved roadside art intake (2026-10-18): the sedan, shelter and UPDATE41
 catalog are retrieved from Blenderbot's approved public handoffs. Their archive

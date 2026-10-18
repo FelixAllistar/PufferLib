@@ -167,7 +167,10 @@ bool swat_sim_set_player(SwatSim* s, int slot, bool present) {
     SwatActor* actor=&s->actors[index];
     bool replace_bot=!present && s->config.tactical_rules && slot>0 && slot<=s->config.squad_bots;
     if(actor->present==present && !replace_bot) {
-        if(present){actor->mind.bot=false;actor->mind.pending_order=0;actor->mind.pending_actor=0;actor->mind.pending_door=0;actor->mind.queued=false;}
+        if(present){
+            SwatMind* mind=&actor->mind;mind->bot=false;mind->pending_order=0;mind->pending_actor=0;mind->pending_door=0;mind->pending_room=0;mind->queued=false;
+            if(mind->order_room){mind->order=SWAT_ORDER_HOLD;mind->order_room=mind->room_step=mind->room_task=mind->room_scan=mind->room_tool_ticks=0;mind->order_actor=mind->order_door=0;mind->room_goal=mind->room_blocked=false;}
+        }
         return true;
     }
     if(actor->present) b3DestroyBody(actor->controller.body.body);
@@ -448,6 +451,10 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
         swat_world_ray(&s->world,swat_controller_eye(&a->controller),
             swat_controller_aim(&a->controller),2.2f,a->controller.body.body) : swat_context_hit(s,actor,2.2f);
     if(hit.kind==SWAT_HIT_ACTOR && hit.index>=0 && a->role==SWAT_OFFICER && hit.distance<1.7f) {
+        if(a->mind.bot && a->mind.order==SWAT_ORDER_ROOM_SEARCH &&
+           (a->mind.room_task==SWAT_ROOM_TASK_NONE || a->mind.room_task==SWAT_ROOM_TASK_WEAPON || a->mind.order_actor!=hit.index+1)) {
+            a->gear.cuff_ticks=0;a->gear.cuff_target=-1;return;
+        }
         SwatActor* target=&s->actors[hit.index];
         if(s->config.tactical_rules && pressed && target->alive &&
            (target->role==SWAT_CIVILIAN || target->role==SWAT_SUSPECT) && target->gear.restrained) {
@@ -462,7 +469,11 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
             a->gear.cuff_target=hit.index;
             if(++a->gear.cuff_ticks>=72) {
                 target->gear.restrained=true; a->gear.cuff_ticks=0;
-                swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.3f,10);
+                // Restraint handling belongs near the target's hands. A ray
+                // contact can land on the head and varies with aim/ray rounding.
+                b3Pos restraint=b3OffsetPos(swat_body_feet_position(&target->controller.body),
+                    swat_v(0,target->controller.body.totalHeight*.55f,0));
+                swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,restraint,.3f,10);
             }
             return;
         }
