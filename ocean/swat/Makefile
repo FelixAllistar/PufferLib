@@ -109,6 +109,15 @@ squad-fire-test: $(ENET_LIB) | $(BUILD)
 navigation-search-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_navigation_search.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_navigation_search
 	$(BUILD)/test_navigation_search
+
+.PHONY: squad-equipment-test squad-equipment-network-test motel-squad-equipment-test
+squad-equipment-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter equipment $(BUILD)/squad-equipment.trace
+squad-equipment-network-test: squad-equipment-test
+	ulimit -c 0; $(BUILD)/test_encounter equipment-network
+motel-squad-equipment-test: motel-completion-test-build
+	$(BUILD)/test_motel_completion $(BUILD)/motel-squad-equipment.sgrp squad search equipment seed=82
 navigation-escort-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_navigation_search.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_navigation_search
 	ulimit -c 0; $(BUILD)/test_navigation_search escort

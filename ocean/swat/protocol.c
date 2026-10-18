@@ -250,6 +250,7 @@ static void putactor(Writer* w,const SwatActorState* a) {
     put8(w,a->mind.bot | (a->rescued<<1)); put8(w,a->mind.state); put8(w,a->mind.team);
     put8(w,a->mind.order); put8(w,a->mind.pending_order); put8(w,a->mind.queued); put8(w,a->mind.escort_owner+1);
     put8(w,a->mind.order_actor);put8(w,a->mind.pending_actor);
+    put32(w,(uint32_t)a->mind.order_door);put32(w,(uint32_t)a->mind.pending_door);
     put8(w,a->role); putpos(w,a->position); putvec(w,a->velocity); putvec(w,a->upper_offset);
     putf(w,a->health); putf(w,a->yaw); putf(w,a->pitch); putf(w,a->ads); putf(w,a->stamina);
     putf(w,a->eye_height); putf(w,a->recoil_pitch); putf(w,a->recoil_yaw); putf(w,a->lean); putf(w,a->ready_blend); put8(w,a->ready);
@@ -282,6 +283,7 @@ static SwatActorState getactor(Reader* r) {
     a.mind.state=(SwatBehavior)get8(r); a.mind.team=(int)get8(r); a.mind.order=(int)get8(r); a.mind.pending_order=(int)get8(r);
     unsigned int queued=get8(r); a.mind.queued=queued!=0; a.mind.escort_owner=(int)get8(r)-1;
     a.mind.order_actor=(int)get8(r);a.mind.pending_actor=(int)get8(r);
+    a.mind.order_door=geti(r,0,SWAT_MAX_OBJECTS-1);a.mind.pending_door=geti(r,0,SWAT_MAX_OBJECTS-1);
     if(a.mind.order_actor>SWAT_MAX_ACTORS || a.mind.pending_actor>SWAT_MAX_ACTORS)r->ok=false;
     if(behavior_flags>3 || a.mind.state>SWAT_DETAINED || a.mind.team>2 || a.mind.order>=SWAT_SQUAD_ORDERS || a.mind.pending_order>=SWAT_SQUAD_ORDERS || queued>1 || a.mind.escort_owner>=SWAT_MAX_ACTORS) r->ok=false;
     unsigned int role=get8(r); if(role>SWAT_SNIPER) r->ok=false; a.role=(SwatRole)role;
@@ -651,6 +653,10 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
 }
 bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->object_count!=sim->world.count) return false;
+    for(int i=0;i<SWAT_MAX_ACTORS;i++)if(state->actors[i].present) {
+        int doors[2]={state->actors[i].mind.order_door,state->actors[i].mind.pending_door};
+        for(int n=0;n<2;n++)if(doors[n]<0 || doors[n]>=sim->world.count || (doors[n] && !sim->world.objects[doors[n]].door))return false;
+    }
     if(state->room_light_off_mask&~((1u<<sim->world.room_count)-1u))return false;
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i]; const SwatObjectState* in=&state->objects[i];

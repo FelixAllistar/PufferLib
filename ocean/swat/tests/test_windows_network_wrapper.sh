@@ -22,6 +22,10 @@ if bash "$SWAT_WRAPPER_RUN" "$SWAT_WRAPPER_CANDIDATE" 23 > /dev/null 2>&1; then 
 cmp "$SWAT_WRAPPER_TEST_ROOT/original" "$SWAT_WRAPPER_STABLE"
 for SWAT_WRAPPER_LEFTOVER in "$SWAT_WRAPPER_STABLE".stage.* "$SWAT_WRAPPER_STABLE".restore.*; do [[ ! -e $SWAT_WRAPPER_LEFTOVER ]]; done
 printf 'PASS network wrapper: transient failure preserves exit status and restores original QA bytes\n'
+cp -- "$SWAT_WRAPPER_CANDIDATE" "$SWAT_WRAPPER_TEST_ROOT/candidates/test_encounter.exe"
+bash "$SWAT_WRAPPER_RUN" "$SWAT_WRAPPER_TEST_ROOT/candidates/test_encounter.exe" 0 > /dev/null 2>&1
+cmp "$SWAT_WRAPPER_TEST_ROOT/original" "$SWAT_WRAPPER_STABLE"
+printf 'PASS network wrapper: equipment transport check restores the ordinary QA executable\n'
 rm -- "$SWAT_WRAPPER_STABLE"
 bash "$SWAT_WRAPPER_RUN" "$SWAT_WRAPPER_CANDIDATE" 0 > /dev/null 2>&1
 [[ ! -e $SWAT_WRAPPER_STABLE ]]

@@ -3,9 +3,9 @@
 // Ordinary C data is the mod surface. Add slots/profiles here as the equipment
 // ecosystem grows; mass, movement and protection remain authority-owned.
 static const SwatKitDef kits[SWAT_KIT_COUNT]={
-    {"Recon","Carbine / wand / taser / picks / flash + CS",11,1,0,false,true,false,false,1,1,2,0,0},
-    {"Control","Impact / wand / taser / picks / 1 door charge",16,.92f,.12f,true,true,false,true,1,2,3,1,0},
-    {"Entry","Carbine / ram / plates / 2 door charges / wall breacher",25,.78f,.38f,false,false,true,true,2,1,0,2,1},
+    {"Recon","Carbine / wand / taser / picks / flash + CS",11,1,0,false,true,false,false,1,1,2,0,0,true},
+    {"Control","Impact / wand / taser / picks / 1 door charge",16,.92f,.12f,true,true,false,true,1,2,3,1,0,true},
+    {"Entry","Carbine / ram / plates / 2 door charges / wall breacher",25,.78f,.38f,false,false,true,true,2,1,0,2,1,false},
 };
 const SwatKitDef* swat_kit(int kit) { return &kits[kit>=0 && kit<SWAT_KIT_COUNT ? kit : 0]; }
 void swat_equipment_kit(SwatEquipment* gear,int kit) {

@@ -11,6 +11,7 @@ typedef struct SwatKitDef {
     bool gas_mask;
     int flashbangs, gas_grenades, taser_charges;
     int breaching_charges,wall_charges;
+    bool lockpicks;
 } SwatKitDef;
 #define SWAT_KIT_COUNT 3
 typedef enum SwatWandMode { SWAT_WAND_FORWARD, SWAT_WAND_UNDER,
