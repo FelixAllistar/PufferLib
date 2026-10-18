@@ -84,6 +84,15 @@ static bool launcher_lane(int actor) {
 }
 static bool cover_visible_attack(SwatInput* in,float route_yaw) {
     if(!sim.config.hostile_fire)return false;
+    static SwatHearingMemory hearing;
+    static int listen_until;
+    static float heard_bearing;
+    SwatHeardSound heard;
+    for(int n=0;n<8 && swat_hearing_next(&sim.world,&sim.sounds,sim.tick,swat_controller_eye(&sim.actors[0].controller),0,&hearing,&heard);n++) {
+        if(heard.kind!=SWAT_SOUND_SHOT || heard.gain<.02f)continue;
+        if(sim.tick>=listen_until){printf("Turning toward audible gunfire at tick %d bearing %.3f\n",sim.tick,heard.bearing);fflush(stdout);}
+        heard_bearing=heard.bearing;listen_until=sim.tick+90;
+    }
     static bool confirmed[SWAT_MAX_ACTORS];
     int target=-1;float nearest=24;
     for(int i=0;i<sim.actor_count;i++) {
@@ -104,7 +113,16 @@ static bool cover_visible_attack(SwatInput* in,float route_yaw) {
         if(!confirmed[i])continue;
         float distance=b3Distance(feet(0),feet(i));if(distance<nearest){nearest=distance;target=i;}
     }
-    if(target<0)return false;
+    if(target<0) {
+        if(sim.tick>=listen_until)return false;
+        // A court detour can put gunfire outside the route-facing view.
+        // Hearing supplies only coarse bearing: turn and look, then require
+        // actual visual threat confirmation before the ordinary firing path.
+        *in=swat_neutral_input();
+        in->yaw_delta=swat_clamp(swat_angle(heard_bearing-sim.actors[0].controller.yaw),-6*SWAT_RAD,6*SWAT_RAD);
+        in->pitch_delta=swat_clamp(-sim.actors[0].controller.pitch,-6*SWAT_RAD,6*SWAT_RAD);
+        return true;
+    }
     static bool covered[SWAT_MAX_ACTORS];
     if(!covered[target]){printf("Covering visible active shooter %d at tick %d\n",target,sim.tick);fflush(stdout);covered[target]=true;}
     // The route driver must respond to visible attacks from another room,
@@ -154,6 +172,16 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
         // pace, instead of running the commander away from their coverage.
         in.gait=squad_restraint&&sim.config.hostile_fire?SWAT_SLOW:SWAT_WALK;
         in.crouch=swat_navigation_crouch(&sim,p)||swat_navigation_crouch(&sim,waypoint);
+        if(sim.config.hostile_fire && p.z>3 && p.z<12) {
+            // Survey the known guest-room facade while crossing the court.
+            // Ordinary strafe/backward inputs still follow the physical route;
+            // this view names no occupant or unseen contact. Waiting for the
+            // first audible shot can be too late for a close exposed crossing.
+            SwatInput view=look((b3Pos){p.x,1.5f,0});
+            float angle=yaw-sim.actors[0].controller.yaw-view.yaw_delta;
+            in.yaw_delta=view.yaw_delta;in.pitch_delta=view.pitch_delta;
+            in.forward=.8f*cosf(angle);in.strafe=.8f*sinf(angle);
+        }
         bool defending=cover_visible_attack(&in,yaw);
         if(!defending && watch_actor>=0 && sim.actors[watch_actor].alive && !sim.actors[watch_actor].gear.surrendered) {
             b3Pos eye=swat_controller_eye(&sim.actors[0].controller);b3Vec3 to=b3SubPos(chest(watch_actor),eye);
@@ -204,7 +232,18 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
 }
 static void walk(b3Pos goal,float radius) {walk_until(goal,radius,-1);}
 static void delegate_room(float door_x) {
-    b3Pos point={door_x,1.1f,0};SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_HOLD;step(in);idle(20);
+    b3Pos point={door_x,1.1f,0};SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);
+    // Let the real team finish its approach before assigning hands-on work.
+    // Parking geometry changes their route; an officer left across the court
+    // can correctly stop a search to cover an armed contact in another room.
+    bool regrouped=false;
+    for(int n=0;n<2400;n++) {
+        regrouped=true;for(int i=3;i<6;i++)regrouped&=b3Distance(feet(i),feet(0))<3.5f;
+        if(regrouped)break;
+        in=look(point);cover_visible_attack(&in,sim.actors[0].controller.yaw);step(in);
+    }
+    if(!regrouped)fail("room search team approach");
+    in=look(point);in.squad_order=SWAT_ORDER_HOLD;step(in);idle(20);
     for(int n=0;n<60;n++)step(look(point));
     in=look(point);in.squad_order=SWAT_ORDER_ROOM_SEARCH;in.squad_queue=true;step(in);
     int recipient=-1;

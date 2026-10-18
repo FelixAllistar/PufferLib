@@ -23,9 +23,13 @@ recipes, provenance, export views and audit evidence. Their original runtime
 GLBs have canonical copies under `assets/environment/motel_sedan` and
 `assets/environment/motel_shelter`. Run
 `node ocean/swat/tools/check_roadside_candidates.cjs` to verify all 118 indexed
-payloads and the decoded geometry/material inventories. These are static
-candidates awaiting scene placement, collision/navigation, native rendering
-and performance acceptance. Authoring recipes were not executed locally.
+payloads and the decoded geometry/material inventories. The separate
+[engine integration](ROADSIDE_ENGINE_INTEGRATION.md) places both static
+candidates in the connected level, with source-preserving collision,
+material/attachment ownership, navigation and damage. Native rendering and
+performance acceptance remain open. The sedan retains its supplied closed
+exterior coachwork volume; vehicle panel-stack ballistics and suspension are
+unqualified. Authoring recipes were not executed locally.
 
 The 2026-10-11 maintenance deliveries are retained as complete source archives:
 [tied refuse bag](motel-maintenance-bag/source.zip) and

@@ -49,6 +49,68 @@ Acceptance work still open:
 - Complete native visual/interaction review and stable-load frame-time acceptance
   when the machine-use constraint permits it. Automated evidence must state its
   scope; headless success alone does not accept visual quality or performance.
+- Qualify vehicle cover separately. The delivered sedan has a closed exterior
+  coachwork volume, with no hollow passenger interior or suspension model;
+  current game material sections do not establish panel-stack ballistics.
+
+Roadside engine integration (2026-10-18): the original approved parked sedan
+faces the guest rooms from (-6, -0.08, 6.65); the waiting shelter faces the road
+from (-8, -0.08, 34.75). All 311 delivered solids and 20,992 source triangles
+retain their original geometry, maps, UVs and provenance. Separate generated
+descriptors assign 50 sedan and 28 shelter material/attachment owners. Actual
+tire and baseplate contacts seat them on existing ground. Sparse physical
+meshes preserve wheel arches and shelter openings; contact subsets stay within
+240 triangles. Shared original model banks render through their first surviving
+owner, with cached ownership filtering after damage. Normal runtime installation
+includes both GLBs. No authoring/Python recipes are executed.
+
+Protocol/replay v35 adds these physical objects while retaining old canonical
+map prefixes and object IDs. Map construction now services the client's own
+transport between geometry chunks. Optional external loading callbacks must not
+access the partial replica; temporary world hooks are cleared before construction
+returns. Current-state
+publication advances transport revision without stepping gameplay. Forced
+Linux/native construction delays exceeding 6.5 seconds pass with reliable ping acknowledgement,
+tick-zero authority/replica and unchanged six-second shipping deadlines. Removing
+only the production construction service reproduces failed reliable control
+delivery after an 8.224-second load. QA services other hosts separately, so its
+hook cannot hide missing production socket service.
+
+Both platforms pass 139 broad headless groups with 63,938 matching state samples,
+plus seven roadside cases and 6,382 actual furnished-room states. Ordinary
+controller input reaches the shelter from the court in 602 ticks. Glass, timber,
+steel fixings and the screen remove independently, retain encoded/fresh replicas
+and reset correctly. Existing room/equipment/frontend real-UDP cases pass.
+An isolated Linux Xvfb/llvmpipe display checks every original oriented triangle
+exactly once within its physical owner, ten embedded textures, and sixteen
+source/fallback raster cases against physical rays before and after damage.
+Four additional production-lit views are inspected. Rendering leaves authority
+unchanged and releases its textures. This is a one-thread CPU correctness check
+with two isolated props and a reference plane, not full-scene native acceptance.
+The final native quiet replay exposed a one-ULP blocked-handle sound height
+difference; actor/object state matched. Feedback when trying a locked, wedged or
+charged door now attaches to the leaf centre, like ordinary open/close cues.
+Actual aimed reach and all blocking/tool rules remain unchanged. Ordinary held
+interaction checks three blocked states at two aim heights, with one cue and no
+state/tool consumption. The QA commander also waits for physical team regroup
+before assigning room search, surveys the known facade while strafing along
+court waypoints and turns toward coarse audible gunfire before requiring actual
+visual threat confirmation. Retained failures show why these ordinary-input
+plans changed; gameplay AI, navigation and weapon rules are unchanged.
+Matching v35 peers and new recordings are required; native graphics/performance
+and vehicle-cover qualification remain open. Evidence is retained under
+`build/swat/review/roadside-integration`.
+
+The current quiet front route finishes in 25,571 ticks with two arrests, three
+evacuations, both weapons recovered and squad regroup. Hostile inter-room and
+exterior routes finish in 20,819/9,512 ticks with two lawful suspect deaths each.
+All three preserve replay/save/resume, fresh replicas, truthful debrief and no
+contact-buffer overflow; no civilian/officer dies and no unlawful force occurs.
+Their complete journals replay exactly in the final Linux and Windows shipping
+tools. Native queued room/wedge prefixes match 1,301/22,907 frames, and frontend
+journals remain byte-identical with exact 60-frame replays. Older v34 recordings
+are rejected on both platforms. Receipt:
+`tests/receipts/roadside-integration-2026-10-18.json`.
 
 Physical squad room search (2026-10-18): Search room captures the room selected
 through a visible surface or door, assigns one officer from the selected team

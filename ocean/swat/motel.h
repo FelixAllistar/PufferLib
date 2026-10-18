@@ -34,7 +34,11 @@
 #define SWAT_MOTEL_SCREWDRIVER_END (SWAT_MOTEL_SCREWDRIVER_FIRST+1)
 #define SWAT_MOTEL_DUMPSTER_FIRST SWAT_MOTEL_SCREWDRIVER_END
 #define SWAT_MOTEL_DUMPSTER_PARTS 3
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_DUMPSTER_FIRST+SWAT_MOTEL_DUMPSTER_PARTS)
+#define SWAT_MOTEL_DUMPSTER_END (SWAT_MOTEL_DUMPSTER_FIRST+SWAT_MOTEL_DUMPSTER_PARTS)
+#include "motel_roadside_count.h"
+#define SWAT_MOTEL_SEDAN_FIRST SWAT_MOTEL_DUMPSTER_END
+#define SWAT_MOTEL_SHELTER_FIRST (SWAT_MOTEL_SEDAN_FIRST+SWAT_SEDAN_PARTS)
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_SHELTER_FIRST+SWAT_SHELTER_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -77,6 +81,20 @@ const SwatMotelInstance* swat_motel_instance(int index);
 bool swat_motel_service(const SwatWorld*,int owner,SwatMotelInstance*);
 // Static closed-lid refuse container: steel body and two dependent soft lids.
 bool swat_motel_dumpster(const SwatWorld*,int owner,SwatMotelInstance*);
+// Static roadside candidates retain their source triangles, independent material
+// owners and attachment graph. No driving, suspension or shelter occupancy rig.
+typedef struct SwatRoadsidePart {
+    const char* name;b3Vec3 center,half; b3Vec3* vertices;int vertex_count;
+    int32_t* indices;int triangle_count;SwatMaterial material;float section;
+    int parents[SWAT_MAX_SUPPORTS];
+    const b3Vec3* anchors;int anchor_count;
+} SwatRoadsidePart;
+const SwatRoadsidePart* swat_motel_roadside_part(int model,int part);
+int swat_motel_roadside_count(int model);
+int swat_motel_roadside_triangle(int model,int triangle);
+int swat_motel_roadside_first(int model);
+bool swat_motel_roadside(const SwatWorld*,int owner,SwatMotelInstance*);
+uint64_t swat_motel_roadside_mask(const SwatWorld*,int model);
 // Small visual fixtures inherit a real support; they add no hidden colliders.
 // Returns the current supporting object, or -1 when that support is gone.
 int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* placement);

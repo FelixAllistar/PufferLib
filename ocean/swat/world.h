@@ -108,6 +108,7 @@ struct SwatRubblePool {
     SwatRubble pieces[SWAT_RUBBLE_CAPACITY];
 };
 
+typedef void (*SwatBuildProgress)(void* context);
 typedef struct SwatWorld {
     b3WorldId id;
     b3BodyId door_reference; // Unshaped fixed joint reference, created on demand.
@@ -128,7 +129,11 @@ typedef struct SwatWorld {
     SwatRoom rooms[SWAT_MAX_ROOMS];
     int room_count;
     unsigned int room_light_off_mask; // Authoritative switches; support loss is evaluated separately.
+    // Temporary map-construction service hook; never serialized or simulated.
+    SwatBuildProgress build_progress;
+    void* build_context;
 } SwatWorld;
+static inline void swat_world_build_progress(SwatWorld* world){if(world->build_progress)world->build_progress(world->build_context);}
 
 static inline b3Quat swat_door_rotation(float yaw,float pitch) {
     // Share the linked physics library's deterministic trig contract across

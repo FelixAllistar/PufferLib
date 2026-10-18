@@ -23,3 +23,7 @@ automated checks without requiring manual playtests between increments.
 
 New work is project-scoped original art. Preserve [PROVENANCE.json](PROVENANCE.json)
 and all inherited notices; the complete asset has no blanket CC0 dedication.
+
+The later [engine candidate integration](../ROADSIDE_ENGINE_INTEGRATION.md)
+records placement, physical ownership and validation scope. This intake record
+retains the original pre-integration status and source evidence.

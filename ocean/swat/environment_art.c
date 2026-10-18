@@ -143,6 +143,7 @@ static void room101_close(SwatEnvironmentArt* art) {
     for(int i=0;i<3;i++) {swat_art_model_close(art->motel_numbers[i]);art->motel_numbers[i]=(Model){0};}
     swat_art_model_close(art->motel_reception);art->motel_reception=(Model){0};
     swat_art_model_close(art->motel_roadside);art->motel_roadside=(Model){0};
+    for(int i=0;i<2;i++){swat_art_model_close(art->roadside_props[i]);art->roadside_props[i]=(Model){0};}
     for(int i=0;i<2;i++) {swat_art_model_close(art->motel_personal[i]);art->motel_personal[i]=(Model){0};}
     for(int i=0;i<SWAT_ROOM101_ASSETS;i++) { swat_art_model_close(art->room101[i]); art->room101[i]=(Model){0}; }
     art->room101_ready=false;
@@ -296,6 +297,8 @@ static void motel_dressing_load(SwatEnvironmentArt* art) {
     if(!room101_model_load(&art->motel_roadside,art->motel_roadside_normal_scale,"motel_roadside/roadside_sign.glb")) {
         swat_art_model_close(art->motel_roadside);art->motel_roadside=(Model){0};
     }
+    const char* roadside[]={"motel_sedan/BC_SEDAN01_parked.glb","motel_shelter/BC_SHELTER01_static.glb"};
+    for(int i=0;i<2;i++)if(!room101_model_load(&art->roadside_props[i],art->roadside_props_normal_scale[i],roadside[i])){swat_art_model_close(art->roadside_props[i]);art->roadside_props[i]=(Model){0};}
     const char* style=getenv("SWAT_ENVIRONMENT_STYLE"),*pbr=getenv("SWAT_ENVIRONMENT_PBR");
     if(!style || strcmp(style,"legacy")) {
         SwatSurfaceMaps* m=&art->motel_asphalt;m->tile=(Vector2){2.1f,2.1f};
@@ -881,6 +884,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             for(int n=0;n<2;n++)if(source==&art->motel_windows[n])normal_scale=art->motel_windows_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->motel_reception)normal_scale=art->motel_reception_normal_scale[model->meshMaterial[i]];
             if(source==&art->motel_roadside)normal_scale=art->motel_roadside_normal_scale[model->meshMaterial[i]];
+            for(int n=0;n<2;n++)if(source==&art->roadside_props[n])normal_scale=art->roadside_props_normal_scale[n][model->meshMaterial[i]];
             for(int n=0;n<2;n++)if(source==&art->motel_personal[n])normal_scale=art->motel_personal_normal_scale[n][model->meshMaterial[i]];
             for(int n=0;n<3;n++)if(source==&art->motel_numbers[n])normal_scale=art->motel_number_normal_scale[n][model->meshMaterial[i]];
             if(source==&art->masonry_edge)normal_scale=art->masonry_edge_normal_scale[model->meshMaterial[i]];
@@ -1107,6 +1111,8 @@ static bool window_fallback(const SwatObject* o,bool shadow) {
     }
     rlEnd();rlSetTexture(0);rlPopMatrix();return true;
 }
+static int sedan_triangle_owner(int triangle){return swat_motel_roadside_triangle(0,triangle);}
+static int shelter_triangle_owner(int triangle){return swat_motel_roadside_triangle(1,triangle);}
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel)return false;
     // Enabled party walls use the original shared board/timber surfaces.
@@ -1149,6 +1155,20 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         if(!art->motel_wall_art || !source->meshCount)return window_fallback(o,shadow);
         const Model* model=window_mesh_art(art->motel_wall_art,source,world,o->tag.index);
         return location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),model,source,shadow,cutaway,false,NULL);
+    }
+    SwatMotelInstance roadside;
+    if(swat_motel_roadside(world,o->tag.index,&roadside)) {
+        const Model* source=&art->roadside_props[roadside.asset];
+        if(source->meshCount!=(roadside.asset?3:12) || !art->motel_wall_art)return mounted_fallback(o,shadow);
+        int first=swat_motel_roadside_first(roadside.asset),count=swat_motel_roadside_count(roadside.asset);
+        // Only the first surviving owner submits the shared bank. Most owners
+        // return after one check, and only that leader computes a damage mask.
+        for(int i=first;i<o->tag.index;i++)if(world->objects[i].active)return true;
+        uint64_t mask=swat_motel_roadside_mask(world,roadside.asset);
+        const Model* model=source;
+        if(mask!=((UINT64_C(1)<<count)-1))model=filtered_mesh(&art->motel_wall_art->roadside[roadside.asset],source,mask,roadside.asset?shelter_triangle_owner:sedan_triangle_owner,0);
+        if(!model->meshCount)return true;
+        return location_mesh_draw(art,o,&roadside,model,source,shadow,cutaway,false,NULL);
     }
     SwatMotelInstance mounted;
     if(swat_motel_mounted(world,o->tag.index,&mounted) || swat_motel_prop(world,o->tag.index,&mounted)) {

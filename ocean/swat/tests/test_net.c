@@ -4,10 +4,63 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <time.h>
+#endif
+static uint32_t loading_pause_budget,loading_pause_started,loading_pause_elapsed;
+static int loading_pause_services;
 
+static void loading_transport(SwatNetServer* server,SwatNetClient* clients,int count,int skip) {
+    static uint32_t published;uint32_t now=enet_time_get();
+    if(now-published>=250) {
+        static SwatSnapshot before,after;swat_capture_snapshot(server->sim,1,&before);
+        swat_server_publish(server);swat_capture_snapshot(server->sim,1,&after);
+        assert(!memcmp(&before,&after,sizeof(before)));published=now;
+    }
+    // ENet explicitly supports servicing sockets with a NULL event: ACKs and
+    // fragments progress while application events remain queued for each client.
+    assert(enet_host_service((ENetHost*)server->transport,NULL,0)>=0);
+    for(int i=0;i<count;i++)if(i!=skip && clients[i].transport)assert(enet_host_service((ENetHost*)clients[i].transport,NULL,0)>=0);
+}
+typedef struct LoadingPeers {SwatNetServer* server;SwatNetClient* clients;int count,own;} LoadingPeers;
+static void loading_peers(void* context) {
+    LoadingPeers* p=context;
+    if(loading_pause_budget && !loading_pause_services) {
+        int slot=p->clients[p->own].slot;assert(slot>=0 && slot<SWAT_MAX_PLAYERS && p->server->slots[slot].peer);
+        // Require an actual reliable ping acknowledgement during the forced
+        // load, even while ordinary snapshots are flowing on another channel.
+        enet_peer_ping((ENetPeer*)p->server->slots[slot].peer);
+        loading_pause_started=enet_time_get();
+    }
+    // The production client must service its own socket. This hook pumps only
+    // the other same-thread transports, matching independent real processes.
+    loading_transport(p->server,p->clients,p->count,p->own);
+    if(loading_pause_budget) {
+        uint32_t delay=loading_pause_budget<40?loading_pause_budget:40;
+#ifdef _WIN32
+        Sleep(delay);
+#else
+        struct timespec duration={0,(long)delay*1000000};nanosleep(&duration,NULL);
+#endif
+        loading_pause_budget-=delay;loading_pause_services++;
+        loading_pause_elapsed=enet_time_get()-loading_pause_started;
+    }
+}
 static void idle(SwatNetServer* server,SwatNetClient* clients,int count) {
-    swat_server_poll(server);
-    for(int i=0;i<count;i++) swat_client_poll(&clients[i]);
+    LoadingPeers loading[5];assert(count<=5);
+    for(int i=0;i<count;i++){loading[i]=(LoadingPeers){server,clients,count,i};clients[i].loading_service=loading_peers;clients[i].loading_context=&loading[i];}
+    swat_server_poll(server);loading_transport(server,clients,count,-1);
+    for(int i=0;i<count;i++) {
+        swat_server_poll(server);uint32_t start=enet_time_get();swat_client_poll(&clients[i]);uint32_t elapsed=enet_time_get()-start;
+        if(elapsed>100)fprintf(stderr,"NET_POLL peer%d epoch%u revision%u elapsed_ms%u\n",i,clients[i].epoch,clients[i].revision,elapsed);
+        swat_server_poll(server);loading_transport(server,clients,count,-1);
+        // Completed replicas keep applying actual state packets. Pending maps
+        // build only in the outer pass, preventing nested batches of rebuilds.
+        for(int ready=0;ready<count;ready++)if(ready!=i && clients[ready].has_map && clients[ready].epoch==server->epoch)swat_client_poll(&clients[ready]);
+    }
+    for(int i=0;i<count;i++){clients[i].loading_service=NULL;clients[i].loading_context=NULL;}
     enet_uint32 condition=ENET_SOCKET_WAIT_RECEIVE;
     enet_socket_wait(((ENetHost*)server->transport)->socket,&condition,1);
 }
@@ -71,9 +124,13 @@ int main(int argc,char** argv) {
     SwatConfig config=swat_default_config(); config.max_ticks=6000; config.hostile_fire=false; config.randomize=false;
     static SwatSim authority,replicas[5]; SwatNetServer server; SwatNetClient clients[5]={0};
     swat_sim_init(&authority,config,42);
-    int port=30000+(int)(enet_time_get()%20000),attempt=0;
-    while(!swat_server_open(&server,&authority,port,false) && ++attempt<32) port++;
+    int port=30000+(int)(enet_time_get()%20000),initial_port=port,attempt=0;
+    // Reserved/busy ranges can cover many adjacent ports. Keep the same bounded
+    // attempt count while probing across the candidate range, as the motel QA does.
+    while(!swat_server_open(&server,&authority,port,false) && ++attempt<32)port=30000+(port-30000+4729)%25000;
+    if(!server.transport)fprintf(stderr,"UDP bind failed initial%d last%d attempts%d: %s\n",initial_port,port,attempt,server.error);
     assert(server.transport && server.player_mask==0);
+    printf("NET_BIND initial%d selected%d attempts%d\n",initial_port,port,attempt+1);fflush(stdout);
     int cover=swat_world_box(&authority.world,(b3Pos){2,1.5f,0},swat_v(.1f,.4f,.4f),SWAT_WOOD,30);
     for(int i=0;i<5;i++) swat_sim_init(&replicas[i],config,(uint32_t)(100+i));
     for(int i=0;i<2;i++) assert(swat_client_open(&clients[i],&replicas[i],"127.0.0.1",port));

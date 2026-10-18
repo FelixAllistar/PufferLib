@@ -60,6 +60,33 @@ static void door_sounds(void) {
     assert(received);swat_sim_close(&replica);swat_sim_close(&sim);
     puts("PASS door sound timing: opening cue, silent closing obstruction, one actual frame-contact close event, no repeats and late-replica sound codec");
 }
+static void blocked_handle_audio(void) {
+    for(int blocked=0;blocked<3;blocked++) {
+        b3Pos attached[2];
+        for(int view=0;view<2;view++) {
+            fixture(SWAT_CONCRETE);
+            int owner=swat_world_box(&sim.world,(b3Pos){-3.7f,1.3f,0},swat_v(.04f,1.3f,.8f),SWAT_WOOD,120);
+            SwatObject* door=&sim.world.objects[owner];door->door=true;door->hinge=(b3Pos){-3.7f,1.3f,-.8f};
+            if(blocked==0)door->locked=true;
+            if(blocked==1)door->wedge_owner=0;
+            if(blocked==2)door->breach_owner=0;
+            sim.actors[0].controller.pitch=atan2f((view?1.6f:.8f)-swat_controller_eye(&sim.actors[0].controller).y,1.3f);
+            SwatInput in=swat_neutral_input();in.interact=true;step(in,4);
+            int count=0;
+            for(int i=0;i<sim.sounds.count;i++) {
+                const SwatSoundEvent* e=swat_sound_at(&sim.sounds,i);
+                if(e->source_actor!=0 || e->kind!=SWAT_SOUND_HANDLE)continue;
+                attached[view]=e->position;count++;
+            }
+            assert(count==1 && b3Distance(attached[view],door->center)<1e-6f);
+            assert(!door->door_open && door->door_angle==0 && !sim.actors[0].gear.used_tools);
+            assert(door->locked==(blocked==0) && door->wedge_owner==(blocked==1?0:-1) && door->breach_owner==(blocked==2?0:-1));
+            swat_sim_close(&sim);
+        }
+        assert(b3Distance(attached[0],attached[1])<1e-6f);
+    }
+    puts("PASS blocked handle audio: locked, wedged and charged leaves retain state and emit one leaf-attached cue independent of aimed contact");
+}
 static float bounce(SwatMaterial material) {
     fixture(material); assert(swat_throw(&sim,0,SWAT_FLASHBANG));
     SwatProjectile* p=&sim.projectiles[0];
@@ -425,4 +452,4 @@ static void light_switches(void) {
     swat_sim_init(&sim,cfg,87);assert(!sim.world.room_light_off_mask);swat_sim_close(&sim);
     puts("PASS light switches: all four mounts, press/release, narrow targeting, reach, real cover, destroyed support, late-join snapshot, invalid state rejection and reset");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); doors(); network(); context(); restraint_audio(); wedges_spray_traps(); light_switches(); return 0; }
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); blocked_handle_audio(); doors(); network(); context(); restraint_audio(); wedges_spray_traps(); light_switches(); return 0; }
