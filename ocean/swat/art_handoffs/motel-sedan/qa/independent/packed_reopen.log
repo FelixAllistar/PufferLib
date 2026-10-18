@@ -1,0 +1,23 @@
+ERROR Draco mesh compression is not available because library could not be found at /usr/bin/4.3/python/lib/python3.13/site-packages/libextern_draco.so
+20:03:01 | INFO: Starting glTF 2.0 export
+20:03:01 | INFO: Extracting primitive: BC_SEDAN01_body
+20:03:01 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+20:03:01 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+20:03:01 | INFO: Primitives created: 3
+20:03:01 | INFO: Extracting primitive: BC_SEDAN01_wheel_front_left
+20:03:01 | INFO: Primitives created: 2
+20:03:01 | INFO: Extracting primitive: BC_SEDAN01_wheel_front_right
+20:03:01 | INFO: Primitives created: 2
+20:03:01 | INFO: Extracting primitive: BC_SEDAN01_wheel_rear_left
+20:03:01 | INFO: Primitives created: 2
+20:03:01 | INFO: Extracting primitive: BC_SEDAN01_wheel_rear_right
+20:03:01 | INFO: Primitives created: 2
+20:03:01 | INFO: Extracting primitive: BC_SEDAN01_windows
+20:03:01 | INFO: Primitives created: 1
+20:03:01 | INFO: Finished glTF 2.0 export in 0.13994646072387695 s
+
+INDEPENDENT_PACKED_REOPEN_OK
+Blender 4.3.2
+Read blend: "/workspace/shared/parked_sedan_01/independent/isolation/BC_SEDAN01_editable.blend"
+
+Blender quit
