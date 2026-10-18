@@ -194,3 +194,28 @@ static void test_motel_occupancy(const char* trace_path) {
     if(trace)assert(!fclose(trace));
     printf("PASS motel occupancy: %d real-world starts, four populations, seven layout seeds, exact repeats, reset-independent placement, full standing clearance and separated occupants\n",cases);
 }
+static void test_motel_occupancy_deep_exit(const char* trace_path) {
+    static SwatSim s;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.motel_occupancy=SWAT_MOTEL_MIXED;cfg.layout_seed=7;
+    cfg.randomize=cfg.hostile_fire=false;cfg.max_ticks=6000;swat_config_human(&cfg);swat_sim_init(&s,cfg,2026);
+    for(int n=0;n<s.world.count;n++)if(s.world.objects[n].door){s.world.objects[n].locked=false;s.world.objects[n].door_open=true;}
+    for(int n=0;n<120;n++)swat_world_step_doors(&s.world);
+    for(int i=1;i<s.actor_count;i++)if(s.actors[i].present && s.actors[i].role!=SWAT_OFFICER)s.actors[i].gear.surrendered=s.actors[i].gear.restrained=true;
+    // Starts captured from the post-combat Mixed failure. Original furniture
+    // and full capsule collisions stay in place; this is fixture setup only.
+    swat_sim_spawn_actor(&s,0,SWAT_OFFICER,(b3Pos){5.807599068f,.014999986f,-2.604274988f},1.486f);swat_equipment_kit(&s.actors[0].gear,2);
+    const b3Pos starts[]={{4.027945995f,.016238511f,.909071267f},{6.107934952f,.014999986f,1.211516857f},{5.033127308f,.014999986f,.497940004f}};
+    for(int i=3;i<6;i++){swat_sim_spawn_actor(&s,i,SWAT_OFFICER,starts[i-3],0);s.actors[i].mind.bot=true;s.actors[i].mind.order=SWAT_ORDER_FALL_IN;}
+    FILE* trace=trace_path?fopen(trace_path,"w"):NULL;assert(!trace_path || trace);b3Pos goal={6.3f,0,3.2f},waypoint=goal;int replan=0,t=0;
+    for(;t<1200;t++) {
+        b3Pos p=swat_body_feet_position(&s.actors[0].controller.body);if(b3Distance(p,goal)<.45f)break;
+        SwatInput in=swat_neutral_input();if(!swat_navigation_yield_door(&s,0,&in)) {
+            bool route=true;if(t>=replan || b3Distance(p,waypoint)<.3f){route=swat_navigation_next_for_actor(&s,0,goal,&waypoint);if(route)replan=t+30;}
+            b3Vec3 d=b3SubPos(route?waypoint:goal,p);float yaw=b3Atan2(d.z,d.x);in.yaw_delta=swat_clamp(swat_angle(yaw-s.actors[0].controller.yaw),-6*SWAT_RAD,6*SWAT_RAD);
+            in.forward=route && fabsf(swat_angle(yaw-s.actors[0].controller.yaw))<35*SWAT_RAD?.8f:0;in.gait=SWAT_SLOW;in.crouch=swat_navigation_crouch(&s,p)||swat_navigation_crouch(&s,waypoint);
+        }else replan=0;
+        swat_sim_step(&s,&in);if(trace)fprintf(trace,"DEEP_EXIT %d %08x\n",s.tick,swat_replay_digest(&s));
+    }
+    b3Pos p=swat_body_feet_position(&s.actors[0].controller.body);printf("DEEP_EXIT tick%d %.9f %.9f %.9f\n",t,p.x,p.y,p.z);fflush(stdout);assert(t<1200);for(int i=0;i<s.actor_count;i++)if(s.actors[i].present)assert(s.actors[i].health==100);
+    if(trace){assert(!fclose(trace));}
+    swat_sim_close(&s);puts("PASS furnished rear exit: three recalled officers clear the doorway before the commander leaves the rear bay, original bed and ordinary movement intact");
+}

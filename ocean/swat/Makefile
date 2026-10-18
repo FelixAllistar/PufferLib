@@ -123,6 +123,16 @@ squad-search-test: $(ENET_LIB) | $(BUILD)
 squad-fire-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	ulimit -c 0; $(BUILD)/test_encounter fire $(BUILD)/squad-fire.trace
+.PHONY: squad-fire-lanes-test squad-fire-lanes-network-test
+squad-fire-lanes-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter fire-lanes $(BUILD)/squad-fire-lanes.trace
+squad-fire-lanes-network-test: squad-fire-lanes-test
+	ulimit -c 0; $(BUILD)/test_encounter fire-lanes-network
+.PHONY: motel-occupancy-deep-exit-test
+motel-occupancy-deep-exit-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter occupancy-deep-exit $(BUILD)/motel-deep-exit.trace
 navigation-search-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_navigation_search.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_navigation_search
 	$(BUILD)/test_navigation_search

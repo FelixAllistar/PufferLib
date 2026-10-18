@@ -33,9 +33,9 @@ Acceptance work still open:
 - Extend transparent-cover equipment beyond the tested initial/queued selection,
   physical working-position and explicit pane-relocation cases. Changing people
   and obstructions during work, more tools and broader world layouts remain open.
-- Extend hostile-fire squad coordination beyond the inter-room sequence with
-  staging holds during demolition. Following officers can cross the commander's
-  firing line, and exploratory all-follow runs lost the commander or an officer.
+- Extend hostile-fire squad coordination beyond observed friendly muzzle lanes
+  and the inter-room sequence with demolition staging holds. Earlier all-follow
+  runs lost protected actors, and a stationary covering-officer duel still fails.
   Broader moving coverage and autonomous protection around equipment remain open.
 - Confirm native menu-click/focus timing alongside the accepted headless
   repeated/rejected command, render-only frame and UDP acknowledgement cases.
@@ -54,6 +54,64 @@ Acceptance work still open:
 - Qualify vehicle cover separately. The delivered sedan has a closed exterior
   coachwork volume, with no hollow passenger interior or suspension model;
   current game material sections do not establish panel-stack ballistics.
+
+Observed friendly muzzle lanes (2026-10-18): an ordinary queued Move
+crossed the commander's actual gunfire in a small open fixture, leaving the
+officer at 49 health. Bot officers now route behind, or wait for, nearby
+visibly observed ready/loaded friendly officer weapons that are aimed or have
+recently fired. Planning and cached/local movement use current muzzle, stance,
+spread and first opaque world-surface bounds; clear glass transmits the lane.
+Actual bullets, damage, collision and human movement remain authoritative.
+Bots whose fire is disabled by the scenario cannot reserve a firing lane;
+player firearms still work in that mode. A first candidate overblocked a
+fallen-leaf entry; that failure and the unchanged original six entry limits
+are retained and pass after the configuration fix.
+
+Seventeen controlled human-source movement cases cover mirrored/rotated
+frames, cached paths, changing aim/readiness, two shooters, glass/opaque
+cover, elevation, crouching and safe/empty weapons. An additional case uses
+actual covering-officer AI after ordinary hostile shots scripted toward an
+overhead backstop. The worker arrives at full health without entering the
+central firing ray. Two real UDP mirrors use a remote commander's Move and
+shots, join a second peer mid-route, and preserve exact final wire-float poses.
+An unrestricted stationary duel killed the covering officer before return
+fire; that failed trial remains recorded as an open broader combat problem.
+The isolated bot-lane case does not accept stationary duel survival.
+A full hostile Mixed run then exposed a furnished rear-exit stall after both
+threats were handled. Exact journal reconstruction found no active firing
+lane: the commander was outside the old 2.6 m follower-clearance radius,
+while the bed and three recalled officers prevented a route to the portal.
+Recalled officers clear an exit up to 3.5 m away when the commander faces it; inward
+entry keeps ordinary trailing behavior. The captured-position fixture fails
+its original limit of 1,200 ticks before the fix and passes in 672 ticks afterward.
+Escorted people retain the original 2.6 m clearance rule: an overbroad candidate
+stalled the existing room-search escort case, and the narrowed rule passes it.
+The full hostile Mixed mission is freshly completed and replayed below.
+
+The final v41 cohort passes 263 broad groups per platform and 157,038 exact
+state comparisons across twelve Linux/Windows trace pairs. Seven newly
+generated ordinary-input missions complete lawful objectives and protected
+survival, internal replay, checkpoint continuation and fresh replicas; both
+shipping replay tools match all 157,202 mission frames per platform. Saved
+room/wedge/search prefixes, independent player checkpoints, frontend journals
+and v40 rejection pass. All 42 installed executables match the qualified
+cohort; four deployed GLBs are unchanged. Matching peers and fresh v41 saves
+are required. Receipt: `tests/receipts/squad-fire-lanes-2026-10-18.json`;
+sealed evidence: `build/swat/review/squad-fire-lanes`. The v40 proof root
+remains unchanged. No graphical, GPU/performance, Python, root trainer/CUDA
+or Box3D rebuild was run. Hidden fire, penetration beyond opaque cover,
+explosives, sniper roles, sudden aim sweeps and broader all-follow combat
+remain unqualified. The complete vertical-slice goal remains active.
+
+Blenderbot's approved BC_XFMR01 closed transformer archive was retrieved and
+independently checked: 43 safe ZIP members, all 42 indexed hashes and CRC;
+4,784 triangles, 11,004 decoded vertices, four static owners, one opaque
+material, two embedded 1024 RGB maps, finite geometry/UVs and measured bounds.
+The supplied actual-export contact sheet was inspected. Source recipes were
+not executed. Intake is recorded in
+`art_handoffs/transformer-r01/ENGINE_INTAKE.json`. Placement, collision,
+navigation, damage and native visual acceptance remain open; the source
+geometry and accepted motel composition are unchanged by this intake.
 
 Initial door selection through clear glass (2026-10-18): an intact
 pane present before a queued Pick prevented any officer from receiving the

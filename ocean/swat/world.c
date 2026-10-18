@@ -126,8 +126,9 @@ static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
 }
 
 static SwatHit cast_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,
-                       float range,b3BodyId ignore,bool sight,const int* layers,int count) {
+                       float range,b3BodyId ignore,bool sight,bool world_only,const int* layers,int count) {
     SwatRayContext c = {0}; c.ignore = ignore;
+    c.world_only=world_only;
     c.layers=layers;c.layer_count=count;
     if(sight)c.optical=w;
     c.result.fraction = 1; c.result.index = -1;
@@ -138,13 +139,16 @@ static SwatHit cast_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,
     return c.result;
 }
 SwatHit swat_world_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore) {
-    return cast_ray(w,origin,direction,range,ignore,false,NULL,0);
+    return cast_ray(w,origin,direction,range,ignore,false,false,NULL,0);
 }
 SwatHit swat_world_sight_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore) {
-    return cast_ray(w,origin,direction,range,ignore,true,NULL,0);
+    return cast_ray(w,origin,direction,range,ignore,true,false,NULL,0);
+}
+SwatHit swat_world_sight_surface(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range) {
+    return cast_ray(w,origin,direction,range,b3_nullBodyId,true,true,NULL,0);
 }
 SwatHit swat_world_layer_ray(const SwatWorld* w,b3Pos origin,b3Vec3 direction,float range,b3BodyId ignore,const int* layers,int count) {
-    return cast_ray(w,origin,direction,range,ignore,false,layers,count);
+    return cast_ray(w,origin,direction,range,ignore,false,false,layers,count);
 }
 
 SwatHit swat_world_sphere_cast(const SwatWorld* w, b3Pos origin,
