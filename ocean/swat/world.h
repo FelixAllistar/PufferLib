@@ -26,7 +26,8 @@ typedef struct SwatRubblePool SwatRubblePool;
 typedef struct SwatWallSupport SwatWallSupport;
 typedef struct SwatSupportPlan SwatSupportPlan;
 typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT, SWAT_PART_LIGHT,
-    SWAT_PART_FENCE_WIRE,SWAT_PART_FENCE_RAIL,SWAT_PART_FENCE_POST,SWAT_PART_FIXTURE } SwatPart;
+    SWAT_PART_FENCE_WIRE,SWAT_PART_FENCE_RAIL,SWAT_PART_FENCE_POST,SWAT_PART_FIXTURE,
+    SWAT_PART_OBSTACLE } SwatPart; // Permanent solid prop; no walking floor or structural attachment.
 typedef struct SwatRoom {
     b3Pos center;
     b3Vec3 half;

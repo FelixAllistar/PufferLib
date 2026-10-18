@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test door-frame-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
+.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test door-frame-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test motel-squad-search-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 lighting-bake: | $(BUILD)
@@ -100,11 +100,19 @@ entry-interruptions-test: $(ENET_LIB) | $(BUILD)
 squad-tasks-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	ulimit -c 0; $(BUILD)/test_encounter tasks $(BUILD)/squad-tasks.trace
+squad-search-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter search $(BUILD)/squad-search.trace
 navigation-search-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_navigation_search.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_navigation_search
 	$(BUILD)/test_navigation_search
+navigation-escort-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_navigation_search.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_navigation_search
+	ulimit -c 0; $(BUILD)/test_navigation_search escort
 motel-completion-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_completion.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_completion
+motel-squad-search-test: motel-completion-test-build
+	$(BUILD)/test_motel_completion $(BUILD)/motel-squad-search.sgrp squad search seed=82
 motel-seeds-test: motel-completion-test-build
 	$(BUILD)/test_motel_completion $(BUILD)/motel-seed82-squad.sgrp squad seed=82
 	$(BUILD)/test_motel_completion $(BUILD)/motel-seed2026-interroom.sgrp combat interroom seed=2026

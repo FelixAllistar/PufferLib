@@ -346,12 +346,7 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
     in.squad_order=app->squad_pending; in.squad_team=app->squad_team; in.squad_queue=app->squad_queue;
     in.squad_execute=IsKeyDown(KEY_J);
     if(app->squad_pending) {
-        bool accepted=true,has_bot=false;
-        for(int i=0;i<sim->actor_count;i++) if(sim->actors[i].present && sim->actors[i].mind.bot && sim->actors[i].role==SWAT_OFFICER &&
-            (!app->squad_team || sim->actors[i].mind.team==app->squad_team)) {
-            has_bot=true; if(sim->actors[i].mind.order!=app->squad_pending && sim->actors[i].mind.pending_order!=app->squad_pending) accepted=false;
-        }
-        if(accepted || !has_bot) app->squad_pending=0;
+        if(swat_squad_order_accepted(sim,app->squad_team,app->squad_pending))app->squad_pending=0;
     }
     if(app->loadout_pending) {
         in.loadout=app->selected_kit+1;

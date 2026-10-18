@@ -149,7 +149,7 @@ records source preservation, import checks and the remaining physics limits.
 `SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
 assembly for comparison. Other rooms retain their accepted art.
 
-Use matching version-30 peers and fresh recordings/saves. Directed squad tasks
+Use matching version-31 peers and fresh recordings/saves. Directed squad tasks
 now retain the selected person; Restrain assigns one officer while the others
 cover, and Fall In keeps moving under visible threat. Jamb damage changes
 door attachments, and queued orders and scripted firing now handle interrupted
@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v30 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v31 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -958,6 +958,24 @@ The QA driver knows the room plan. These checks establish functional behavior,
 not RL improvement, rendered visual quality or a stable-load performance budget.
 Further development does not wait on manual playtesting.
 
+The squad menu's **Secure weapon** order names the dropped weapon under the
+commander's aim and assigns one eligible officer from the selected team. The
+officer keeps that identity through the radio delay and queued Execute, finds
+a supported approach, looks down and collects it through ordinary interaction.
+Other officers keep their tasks. Glass can transmit the command's sight line
+while blocking reach; opaque cover prevents selection. A visible armed threat
+pauses retrieval, Hold cancels it, and collection returns the officer to Hold
+with its view raised again.
+The order does not search unseen rooms or collect other nearby weapons.
+`make -C ocean/swat squad-search-test` checks these cases and replicas.
+`make -C ocean/swat motel-squad-search-test` adds actual squad retrieval of both
+weapons to the complete restraint/escort route, including a checkpoint with a
+queued weapon target. The equivalent QA executable accepts optional `search`.
+Parking stops retain their full mesh collision. NPC navigation treats them as
+permanent obstacles and routes around the raised lip and the space beneath it.
+Captured crowded extraction fixtures retain stance, grounded state and velocity;
+`make -C ocean/swat navigation-escort-test` checks it without running a benchmark.
+
 Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
 **End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows
@@ -1071,7 +1089,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 25) and the same generated
+Saves require this network/replay version (currently 31) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -1191,7 +1209,7 @@ controller rather than teleporting along the route. Wall destruction updates nea
 the shared navigation graph. Acoustic spatial queries share an exactly validated
 thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
 stair traversal, finite/interruptible charges and traversal through a replicated
-breach. The network geometry contract is version **22**; older clients and
+breach. The network geometry contract is version **31**; older clients and
 journals are incompatible, so use a fresh recording for this build.
 
 The motel's east wire fence has actual openings for bullets and porous sound
@@ -1480,7 +1498,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the current
-destruction prototype requires version 30 as described above.
+destruction prototype requires version 31 as described above.
 The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
 stands on its eight original skid contacts beside the maintenance shed. Its
 unchanged 2,908-triangle GLB supplies a steel body and two independently removable

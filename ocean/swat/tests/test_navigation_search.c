@@ -1,8 +1,10 @@
 #include "sim.h"
+#include "motel.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 static int exhaustive(const SwatNavigation* nav,b3Pos point) {
     int best=-1;float distance=2;
     for(int i=0;i<nav->nodes;i++)if(nav->walkable[i]) {
@@ -36,25 +38,59 @@ static void low_fixture(void) {
     assert(b3Distance(point,(b3Pos){2,.015f,2})<.43f);
     swat_sim_close(&sim);puts("PASS low fixture navigation: routes avoid the seat and ground beneath it; authoritative removal restores floor access");
 }
-static void low_support_escort(void) {
+static void low_support_escort(int variant) {
     static SwatSim sim;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;
-    cfg.randomize=false;cfg.hostile_fire=false;cfg.squad_bots=0;cfg.max_ticks=1200;cfg.tactical_rules=true;
+    cfg.randomize=false;cfg.hostile_fire=false;cfg.max_ticks=2400;cfg.tactical_rules=true;cfg.squad_bots=variant?3:0;
     swat_sim_init(&sim,cfg,81);
-    const b3Pos positions[]={{-2.9,-.065,6.3},{-2.385337114,.064999998,4.499994278}};
-    for(int i=0;i<2;i++) {
-        SwatController* c=&sim.actors[i].controller;
-        b3Body_SetTransform(c->body.body,b3OffsetPos(positions[i],swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
-        b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=SWAT_PI;
+    int stops=0;
+    for(int owner=1;owner<=SWAT_MOTEL_INSTANCES;owner++)if(swat_motel_instance(owner-1)->asset==SWAT_MOTEL_PARKING_STOP_ASSET) {
+        const SwatObject* stop=&sim.world.objects[owner];
+        assert(stop->part==SWAT_PART_OBSTACLE && b3Shape_GetType(stop->shape)==b3_meshShape);
+        assert(sim.world.motel_meshes[SWAT_MOTEL_PARKING_STOP_ASSET]->triangleCount==swat_motel_asset(SWAT_MOTEL_PARKING_STOP_ASSET)->triangle_count);
+        SwatHit hit=swat_world_ray(&sim.world,b3OffsetPos(stop->center,swat_v(0,.5f,0)),swat_v(0,-1,0),1,b3_nullBodyId);
+        assert(hit.hit && hit.index==owner);stops++;
     }
-    sim.actors[1].gear.surrendered=sim.actors[1].gear.restrained=true;sim.actors[1].mind.escort_owner=0;
-    SwatInput neutral=swat_neutral_input();for(int i=0;i<360;i++)swat_sim_step(&sim,&neutral);
-    b3Pos end=swat_body_feet_position(&sim.actors[1].controller.body);
-    assert(end.z>5.5 && b3Distance(end,positions[0])<1.4f);
-    swat_sim_close(&sim);puts("PASS escort over low support: original parking-stop collision, ordinary NPC movement leaves the rim and rejoins the officer");
+    assert(stops==5);
+    const b3Pos original[]={{-2.9,-.065,6.3},{-2.385337114,.064999998,4.499994278}};
+    // Captured full-route failure: retain grounded state and approach velocity.
+    // Dropping fresh stationary bodies at rounded coordinates misses the snag.
+    const b3Pos crowded[]={{.100002378,-.065000057,9.672427177},{.800554872,-.064999968,10.225691795},{-2.374074221,-.064999998,9.242354393},{-.525001526,-.064999998,10.288771629},{.099925950,-.064999998,8.482886314},{-2.855974436,.064999998,4.499983311},{1.144464493,.064999998,4.499990463},{1.300004363,-.064999908,7.879238605},{6,.014999986,-1.399999976}};
+    const b3Pos crowded_other[]={{.1,-.065,9.630},{-2,.015,-2},{-1.616,.065,4.5},{.234,-.065,8.738},{-1.696,-.065,11.102},{-.539,-.065,11.234},{2,.015,-2},{-1.055,-.065,7.749},{6,.015,-1.4}};
+    const b3Pos* positions=variant==2?crowded_other:variant?crowded:original;int count=variant?9:2,target=variant==2?2:variant?6:1;
+    for(int i=0;i<count;i++) {
+        SwatController* c=&sim.actors[i].controller;
+        if((variant==1 && (i==1 || i==2)) || (variant && i==7))swat_body_set_crouch(&c->body,true);
+        b3Body_SetTransform(c->body.body,b3OffsetPos(positions[i],swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
+        b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);c->yaw=variant?(i==0?SWAT_PI*.5f:0):SWAT_PI;
+        if(variant)c->body.onGround=true;
+        if(variant==1 && i==5)b3Body_SetLinearVelocity(c->body.body,swat_v(-.202664942f,-.494241685f,.000013716f));
+        if(variant && i==target)b3Body_SetLinearVelocity(c->body.body,swat_v(-.161651954f,-.250439614f,.000012911f));
+        if(variant && i>=3 && i<=5)sim.actors[i].mind.order=SWAT_ORDER_FALL_IN;
+        if((variant==1 && (i==1 || i==2)) || (variant && i==7)) {
+            sim.actors[i].gear.surrendered=sim.actors[i].gear.restrained=true;
+            sim.actors[i].rescued=i!=1;sim.actors[i].mind.escort_owner=-1;
+        }
+    }
+    sim.actors[target].gear.surrendered=sim.actors[target].gear.restrained=true;sim.actors[target].mind.escort_owner=0;
+    if(variant){b3Pos next;assert(swat_navigation_next_for_actor(&sim,target,positions[0],&next));fprintf(stderr,"Crowded first waypoint %.9f %.9f %.9f\n",next.x,next.y,next.z);}
+    SwatInput neutral=swat_neutral_input();for(int i=0;i<(variant?1200:360);i++)swat_sim_step(&sim,&neutral);
+    b3Pos end=swat_body_feet_position(&sim.actors[target].controller.body);
+    fprintf(stderr,"Low support variant%d end %.3f %.3f %.3f rescued%d distance%.3f\n",variant,(float)end.x,(float)end.y,(float)end.z,sim.actors[target].rescued,b3Distance(end,positions[0]));
+    // The exact side of the officer is not prescribed. Leave the stop's raised
+    // surface and reach the real follow distance / civilian extraction gate.
+    assert(end.z>5.2 && end.y<.02 && (variant?sim.actors[target].rescued:b3Distance(end,positions[0])<1.4f));
+    if(variant)for(int i=3;i<6;i++) {
+        b3Pos officer=swat_body_feet_position(&sim.actors[i].controller.body);
+        assert(officer.z>5.2 && officer.y<.02 && b3Distance(officer,sim.extraction)<SWAT_STAGING_RADIUS);
+    }
+    swat_sim_close(&sim);printf("PASS escort over low support variant%d: original parking-stop collision, ordinary NPC movement leaves the rim and reaches its officer/extraction\n",variant);
 }
-int main(void) {
+
+int main(int argc,char** argv) {
+    if(argc==2 && !strcmp(argv[1],"escort")){for(int i=0;i<3;i++)low_support_escort(i);return 0;}
+    assert(argc==1);
     low_fixture();
-    low_support_escort();
+    for(int i=0;i<3;i++)low_support_escort(i);
     static SwatSim sim;SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;
     swat_sim_init(&sim,cfg,42);b3Pos next;
     swat_navigation_next(&sim,(b3Pos){0,-.08f,20},(b3Pos){0,-.08f,30},&next);

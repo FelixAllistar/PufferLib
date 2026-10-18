@@ -14,9 +14,9 @@ typedef struct SwatMind {
     float resolve;
     float order_yaw,pending_yaw; // Authority planning state, reconstructed by input replay.
     int order_door,pending_door; // Zero is no doorway; world object zero is the floor.
-    int order_actor,pending_actor; // Target actor + 1; zero is no directed task.
+    int order_actor,pending_actor; // Person/evidence owner + 1; zero is no directed task.
     bool entry_settled;
-    b3Pos memory,goal,waypoint,pending_goal;
+    b3Pos memory,goal,waypoint,pending_goal,task_point; // Authority planning state, reconstructed by input replay.
 } SwatMind;
 typedef struct SwatNavigation {
     // A single lazy heap allocation owns the grid and route scratch. Small
@@ -47,4 +47,6 @@ bool swat_navigation_next_for_actor(struct SwatSim* sim,int actor,b3Pos goal,b3P
 bool swat_navigation_yield_door(const struct SwatSim* sim,int actor,SwatInput* input);
 bool swat_collect_evidence(struct SwatSim* sim,int actor);
 const char* swat_squad_order_name(int order);
+// Directed tasks acknowledge one recipient; formation orders need the team.
+bool swat_squad_order_accepted(const struct SwatSim* sim,int team,int order);
 #endif

@@ -3,6 +3,28 @@
 #include <stdio.h>
 #include <string.h>
 
+static void static_obstacles(const SwatMap* source) {
+    static SwatMap candidate,decoded,untouched;static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    candidate=*source;SwatMapObject* o=&candidate.objects[1];
+    o->part=SWAT_PART_OBSTACLE;o->max_health=0;o->door=o->latch_broken=o->fractured=false;
+    o->structural_thickness=0;o->support_role=SWAT_SUPPORT_NONE;o->wall_group=0;
+    for(int i=0;i<SWAT_MAX_SUPPORTS;i++)o->supports[i]=-1;
+    size_t size=swat_encode_map(bytes,sizeof(bytes),&candidate);assert(size && swat_decode_map(&decoded,bytes,size));
+    assert(decoded.objects[1].part==SWAT_PART_OBSTACLE);untouched=decoded;
+    SwatMapObject valid=*o;
+    for(int fault=0;fault<6;fault++) {
+        *o=valid;
+        if(fault==0)o->max_health=1;
+        if(fault==1)o->supports[0]=0;
+        if(fault==2)o->structural_thickness=.01f;
+        if(fault==3)o->wall_group=1;
+        if(fault==4)o->door=true;
+        if(fault==5)o->fractured=true;
+        size=swat_encode_map(bytes,sizeof(bytes),&candidate);assert(size);
+        assert(!swat_decode_map(&decoded,bytes,size) && !memcmp(&decoded,&untouched,sizeof(decoded)));
+    }
+    puts("PASS static obstacle maps: permanent props roundtrip; breakable, supported, thin, grouped, door and fractured impostors are rejected without mutation");
+}
 int main(void) {
     static unsigned char bytes[SWAT_NET_PACKET_MAX],bad[SWAT_NET_PACKET_MAX];
     SwatCommand command={4,99,swat_neutral_input()};
@@ -29,6 +51,7 @@ int main(void) {
     static SwatSim server,replica; swat_sim_init(&server,config,42); memset(&replica,0,sizeof(replica));
     assert(swat_sim_set_player(&server,1,true));
     static SwatMap map,copy; swat_capture_map(&server,3,&map);
+    static_obstacles(&map);
     length=swat_encode_map(bytes,sizeof(bytes),&map); assert(length && swat_decode_map(&copy,bytes,length));
     assert(copy.count==server.world.count && copy.config.max_ticks==config.max_ticks);
     for(size_t i=0;i<length;i++) assert(!swat_decode_map(&copy,bytes,i));
