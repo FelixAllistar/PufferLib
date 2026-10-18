@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v35 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v36 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1036,7 +1036,7 @@ over real motel UDP. Native transport uses the approved wrapper with
 `test_encounter.exe rooms-network`. `motel-room-search-test` adds a queued
 Room 101 search, checkpoint/restore and ordinary completion to the full quiet
 restraint/retrieval/equipment/escort route. The QA executable accepts `rooms`.
-Room identity/progress and door references use protocol/replay v35; use matching
+Room identity/progress and door references use protocol/replay v36; use matching
 peers and recreate older journals/saves.
 
 Parking stops retain their full mesh collision. NPC navigation treats them as
@@ -1566,7 +1566,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the
-current protocol requires version 35 as described above.
+current protocol requires version 36 as described above.
 The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
 stands on its eight original skid contacts beside the maintenance shed. Its
 unchanged 2,908-triangle GLB supplies a steel body and two independently removable
@@ -1599,8 +1599,25 @@ graphics check; pass an output directory and an asset root containing just the
 `motel_sedan` and `motel_shelter` exports. Its source/fallback silhouette,
 damage and lighting checks can run on an isolated software display. Software
 rendering does not establish native visual or performance acceptance.
-New motel journals/saves and matching v35 peers are required. The Windows build
+New motel journals/saves and matching v36 peers are required. The Windows build
 copies both complete original GLBs into its runtime asset tree.
+
+Ground snapping checks the actual feet hull and leaned capsule before moving
+the body down. The support probe can shrink around an edge; the physical body
+keeps its full clearance and mesh rest offset. This prevents the snap from
+undoing physics separation at a wheel-stop lip. Upward stair handling retains
+the existing stair casts. Named door equipment orders use the selected leaf's
+centre as their working point, avoiding stored camera-ray rounding differences.
+Protocol/replay v36 records these rules.
+`make -C ocean/swat motel-player-contacts-test` checks 180 crossing/blocked-approach
+trials across the five original concrete stops, four captured lip departures
+with actual goal arrival, encoded replicas and a recorded twelve-crossing route
+from normal motel staging. The route uses both stances and all three gaits.
+Fixture starts check the full footprint so a start inside the parked sedan
+cannot masquerade as an ordinary player contact.
+The [qualification receipt](tests/receipts/player-contacts-2026-10-18.json)
+records the source, retained failures, cross-platform checks and installed hashes.
+
 The unchanged compact zoning authoring excerpt is preserved with its source
 hashes and 18 measured controls; no Python execution is required for validation.
 Distant masonry face speckling now uses a core-only depth offset; the native
