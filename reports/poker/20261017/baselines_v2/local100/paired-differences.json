@@ -1,0 +1,32 @@
+[
+  {
+    "baseline": "2p_style1_vs_original",
+    "candidate": "2p_style4_vs_original",
+    "gain_bb100": 29.3549,
+    "ci95_half_width_bb100": 8.786853190969527
+  },
+  {
+    "baseline": "2p_style1_vs_fullhouse",
+    "candidate": "2p_style4_vs_fullhouse",
+    "gain_bb100": 34.754866666666665,
+    "ci95_half_width_bb100": 14.256858250965847
+  },
+  {
+    "baseline": "6p_style1_vs_original",
+    "candidate": "6p_style4_vs_original",
+    "gain_bb100": -8.010566663099999,
+    "ci95_half_width_bb100": 8.715511928730429
+  },
+  {
+    "baseline": "6p_style1_vs_fullhouse",
+    "candidate": "6p_style4_vs_fullhouse",
+    "gain_bb100": -7.276849996159999,
+    "ci95_half_width_bb100": 12.842799186125644
+  },
+  {
+    "baseline": "6p_style1_vs_mixed",
+    "candidate": "6p_style4_vs_mixed",
+    "gain_bb100": 3.9870333374600007,
+    "ci95_half_width_bb100": 11.616689713743071
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "official_sample_url": "https://slumbot.com/sample_api.py",
+  "sample_sha256": "17ab1f6c1a25db1822cef7f34ed67b6516ac65ea24897adcc92d8f2db8f71505",
+  "action_prefixes_checked": 16836,
+  "actor_street_high_mismatches": 0,
+  "method": "Extracted and evaluated only official ParseAction function; no API hand requests."
+}

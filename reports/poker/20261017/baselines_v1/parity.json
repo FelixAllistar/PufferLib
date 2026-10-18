@@ -1,0 +1,15 @@
+{
+  "states": 2913,
+  "rank_checks": 2000,
+  "short_stack_checks": 937,
+  "hidden_card_checks": 72,
+  "max_feature_error": 0.0,
+  "max_probability_error": 3.3974647521972656e-06,
+  "latency_us": {
+    "native_hu": 66.66095,
+    "native_six": 65.64275,
+    "python_hu": 1055.35531,
+    "python_six": 1092.45715
+  },
+  "condition": "Warm single-position timing, 5000 native and 1000 Python decisions; one thread, shared host; seed 2026101701."
+}

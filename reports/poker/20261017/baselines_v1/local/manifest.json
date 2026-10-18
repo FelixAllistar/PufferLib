@@ -1,0 +1,93 @@
+{
+  "source": "https://github.com/advitrocks9/fullhouse-bot",
+  "commit": "e504793d480b1b975f25258d25939b45c6dbd5a4",
+  "artifacts": {
+    "deep_cfr_model.npz": {
+      "sha256": "1102326b68da95564de147106612df71cb891b42f0726ba0212d3b9a5bcae295",
+      "bytes": 590758
+    },
+    "preflop_equity.npz": {
+      "sha256": "6b3b74778854fcebcd3179753c0252392e5f4118e6b623375c98fafa372863b3",
+      "bytes": 2160
+    }
+  },
+  "float_weight_bytes": 588180,
+  "commands": [
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=2",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/fullhouse_weights.h\"",
+      "-shared",
+      "-fPIC",
+      "/home/felix/puffertank/pufferlib/ocean/poker/native.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/libpoker_fullhouse2.so"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=2",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/fullhouse_weights.h\"",
+      "/home/felix/puffertank/pufferlib/ocean/poker/benchmark.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/baseline_bench2"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=6",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/fullhouse_weights.h\"",
+      "-shared",
+      "-fPIC",
+      "/home/felix/puffertank/pufferlib/ocean/poker/native.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/libpoker_fullhouse6.so"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=6",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/fullhouse_weights.h\"",
+      "/home/felix/puffertank/pufferlib/ocean/poker/benchmark.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/baseline_bench6"
+    ]
+  ],
+  "binaries": {
+    "libpoker_fullhouse6.so": "57b62c099ebe38abd291c4fda1f43c7ce4bb1ccc472fb07ab4149b19818b380b",
+    "libpoker_fullhouse2.so": "f8a23367a371ed44e47a85dce3877638681325fbbeb67b5b9902d4bd9c958a8a"
+  },
+  "hands_per_match": 60000,
+  "seed": 202610171,
+  "method": "Same independent deal across a block of seat rotations; 95% normal intervals over block means. Paired differences use the same deals and opponent field.",
+  "conditions": "200 BB, 50/100, no rake, stacks reset each hand. Warm CPU timing includes dealing, all decisions, settlement and CSV output.",
+  "programs": {
+    "baseline_bench2": "8fb7ccdb64025d57368c22e665d7e6b3b352b2c929c748c87d9c311cf991e1ad",
+    "baseline_bench6": "8ea6a8ab4c1463263df81ee56fdb693e2b6c129e4616e2c4e82e8872478c7ae7"
+  }
+}

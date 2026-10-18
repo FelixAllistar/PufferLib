@@ -1,0 +1,97 @@
+{
+  "source": "https://github.com/advitrocks9/fullhouse-bot",
+  "commit": "e504793d480b1b975f25258d25939b45c6dbd5a4",
+  "artifacts": {
+    "deep_cfr_model.npz": {
+      "sha256": "1102326b68da95564de147106612df71cb891b42f0726ba0212d3b9a5bcae295",
+      "bytes": 590758
+    },
+    "preflop_equity.npz": {
+      "sha256": "6b3b74778854fcebcd3179753c0252392e5f4118e6b623375c98fafa372863b3",
+      "bytes": 2160
+    }
+  },
+  "float_weight_bytes": 588180,
+  "commands": [
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=2",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/baselines_v2/fullhouse_weights.h\"",
+      "-shared",
+      "-fPIC",
+      "/home/felix/puffertank/pufferlib/ocean/poker/native.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/libpoker_fullhouse2.so"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=2",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/baselines_v2/fullhouse_weights.h\"",
+      "/home/felix/puffertank/pufferlib/ocean/poker/benchmark.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench2"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=6",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/baselines_v2/fullhouse_weights.h\"",
+      "-shared",
+      "-fPIC",
+      "/home/felix/puffertank/pufferlib/ocean/poker/native.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/libpoker_fullhouse6.so"
+    ],
+    [
+      "clang-19",
+      "-O3",
+      "-march=native",
+      "-ffp-contract=off",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-DPOKER_PLAYERS=6",
+      "-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/baselines_v2/fullhouse_weights.h\"",
+      "/home/felix/puffertank/pufferlib/ocean/poker/benchmark.c",
+      "-lm",
+      "-o",
+      "/home/felix/puffertank/pufferlib/build/poker/baselines_v2/baseline_bench6"
+    ]
+  ],
+  "binaries": {
+    "libpoker_fullhouse6.so": "23d111f4c1b30bb1fd3dcf2e01517caac05ce691ad96e57d7af023421621fcf2",
+    "libpoker_fullhouse2.so": "81a7f6a8232f6cfdfa65c6eef46a36dde9f76428d361554c30329f0c1dc396de"
+  },
+  "source_sha256": {
+    "core.h": "d971ee26472ab2dc77cdb8faea26b1a65782d42ce0b5d3d233fc4f03ca5e0eaf",
+    "native.c": "1f4f2b21ffe51b74336d09f5c6167618880a32c2803159525875b74f09787b3a",
+    "fullhouse.h": "184cbf43e20ab2bc04376d824cee711a4e4f0c53cbe5fce6f0dab41b2977d9a6",
+    "benchmark.c": "91168dd101594bf7f47c2bee726981c994646fce0b43a8fd2df8f8bb802fa587",
+    "build_baselines.py": "ed5503d75acc06d35c5e8129dfd2bcc8ef0da442cc2d5f19aed156c46ec06904",
+    "test_baselines.py": "c6eee44b30aeca6d7b8c5ca88cb901590e0838a8b34c41913815962721b1d8a0",
+    "benchmark.py": "3531577820de830bfbbfa8937f1268fc6d3208aedbd2dd59d905f07cb34324eb",
+    "eval.py": "45e496e46a98fa0b7959bf13451dce84db8a4a1efb24792c2474964546a626a8",
+    "poker.h": "d4950c2b3b0e7db1a0bc0d9a58076bde880f12e5ef0ae67a814b074a41e213c4",
+    "league.py": "b79097fdbb1dfd3ab2d4ecd49a996498cc6f218c8db7d4470471ed73251d1592"
+  }
+}

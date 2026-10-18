@@ -1,0 +1,7 @@
+{
+  "log": "reports/poker/20261017/baselines_v1/slumbot_fullhouse_low_concurrency.jsonl",
+  "library": "build/poker/baselines_v2/libpoker_fullhouse2.so",
+  "style": 4,
+  "decisions_checked": 11048,
+  "changed": []
+}

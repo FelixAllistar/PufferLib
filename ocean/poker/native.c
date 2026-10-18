@@ -1,5 +1,14 @@
 #include "core.h"
 
+unsigned poker_bot_styles(void) {
+    return POKER_BOT_MASK;
+}
+
+void poker_aggression(Poker* g, int t, uint32_t* out) {
+    out[0] = g->raises[t];
+    out[1] = g->last_raiser[t];
+}
+
 size_t poker_bytes(void) {
     return sizeof(Poker);
 }
