@@ -6,12 +6,17 @@ compiler="${CC:-}"
 if [[ -z "$compiler" ]]; then
     compiler="$(command -v clang-19 || command -v cc)"
 fi
+river_exact="${POKER_RIVER_EXACT:-0}"
+if [[ "$river_exact" != 0 && "$river_exact" != 1 ]]; then
+    echo 'POKER_RIVER_EXACT must be 0 or 1' >&2
+    exit 2
+fi
 for players in 2 6 9; do
     "$compiler" -O3 -march=native -ffp-contract=off -std=c11 -Wall -Wextra -DNDEBUG \
-        -DPOKER_PLAYERS="$players" -shared -fPIC ocean/poker/native.c \
+        -DPOKER_PLAYERS="$players" -DPOKER_RIVER_EXACT="$river_exact" -shared -fPIC ocean/poker/native.c \
         -o "build/poker/libpoker$players.so"
     "$compiler" -O3 -march=native -ffp-contract=off -std=c11 -DNDEBUG \
-        -DPOKER_PLAYERS="$players" ocean/poker/test.c -o "build/poker/bench$players"
+        -DPOKER_PLAYERS="$players" -DPOKER_RIVER_EXACT="$river_exact" ocean/poker/test.c -o "build/poker/bench$players"
 done
 if [[ "${1:-}" == --test ]]; then
     # Reuse the checked stock CPU compiler and the same serialized cgroup guard.
@@ -40,9 +45,15 @@ if [[ "${1:-}" == --test || "${1:-}" == --native-test ]]; then
             -o "build/poker/test_river$players"
         "build/poker/test_river$players"
     done
-    for test in test_eval test_poker_audit test_slumbot_series test_dual_bench test_audit_archived_series; do
+    for test in test_eval test_hand_seeds test_poker_audit test_slumbot_series test_dual_bench test_audit_archived_series; do
         "${POKER_PYTHON:-python3}" "ocean/poker/$test.py"
     done
+    "$compiler" -O2 -g -std=c11 -Wall -Wextra -fsanitize=address,undefined \
+        -DPOKER_PLAYERS=2 ocean/poker/test_river_exact.c -lm -o build/poker/test_river_exact
+    build/poker/test_river_exact
+    POKER_FIRST_DIVERGENCE_SOURCE="$PWD/ocean/poker" \
+        POKER_FIRST_DIVERGENCE_LIBRARY="$PWD/build/poker/libpoker2.so" \
+        "${POKER_PYTHON:-python3}" ocean/poker/test_first_divergence.py
 fi
 if [[ "${1:-}" == --test ]]; then
     "$compiler" -O2 -g -std=c11 -fsanitize=address,undefined \

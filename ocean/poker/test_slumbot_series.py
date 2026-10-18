@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-from slumbot_series import analyze, fingerprint, freeze, run, write_new
+from slumbot_series import analyze, check_job, fingerprint, freeze, load_manifest, run, write_new
 
 
 FAKE_RUNNER = '''import argparse, hashlib, json
@@ -16,6 +16,7 @@ from pathlib import Path
 p = argparse.ArgumentParser()
 for key in ("library", "style", "equity-samples", "hands", "games", "seed", "output", "contact"):
     p.add_argument("--" + key)
+p.add_argument("--independent-hand-seeds", action="store_true")
 a = p.parse_args()
 n, seed = int(a.hands), int(a.seed)
 candidate = Path(a.library).read_text() == "candidate"
@@ -27,6 +28,17 @@ events = [{"metadata": {
     "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     "opponent": "slumbot.com", "starting_bb": 200, "log_schema": 3,
     "baseline_winnings_semantics": "already_adjusted_hero_minus_slumbot_selfplay"}}]
+if a.independent_hand_seeds:
+    pairs, odd = divmod(n, 2)
+    games = int(a.games)
+    quotas = [2 * (pairs // games + (game < pairs % games))
+              + (odd if game == 0 else 0) for game in range(games)]
+    planned = [(game, attempt) for game, quota in enumerate(quotas) for attempt in range(quota)]
+    events[0]["metadata"].update(
+        log_schema=4, policy_rng_mode="independent_hand_seeds_v1",
+        hand_seed_derivation="sha256_poker_policy_hand_seed_v1",
+        hand_reservation_scheme="game_blocks_with_overflow_v1",
+        hand_reservation_quotas=quotas)
 values = []
 for i in range(n):
     value = (-2, -1, 1, 2)[i % 4] + candidate
@@ -36,6 +48,14 @@ for i in range(n):
                    "baseline_winnings_chips": 7 + i,
                    "action": "b200f", "decisions": [],
                    "native_terminal_verified": i % 3 != 0})
+    if a.independent_hand_seeds:
+        game, attempt = planned[i]
+        policy_seed = int.from_bytes(hashlib.sha256(
+            f"poker-policy-hand-seed-v1:{seed}:{i}".encode("ascii")).digest()[:8], "big") or 1
+        reservation = {"game": game, "game_hand_attempt": attempt,
+                       "hand_reservation_index": i, "policy_seed_at_hand_start": policy_seed}
+        events[-1].update(reservation, policy_rng=policy_seed)
+        events.insert(len(events) - 1, {"hand_reserved": reservation})
 if dirty:
     events.append({"interrupted": {"game": 0, "stage": "act", "type": "Timeout", "decisions": []}})
 events.append({"summary": {"hands": n, "net_bb": sum(values),
@@ -60,7 +80,7 @@ class SeriesTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def prepare(self, dirty_seed=-1, bad_exit_seed=-1):
+    def prepare(self, dirty_seed=-1, bad_exit_seed=-1, divergence=False):
         self.runner.write_text(FAKE_RUNNER.replace("DIRTY_SEED", str(dirty_seed))
                                .replace("BAD_EXIT_SEED", str(bad_exit_seed)))
         args = argparse.Namespace(control=self.control, candidate=self.candidate,
@@ -68,6 +88,9 @@ class SeriesTests(unittest.TestCase):
                                   output_dir=self.directory / "jobs", hands_per_job=4,
                                   games=5, start_seed=202610185000,
                                   control_samples=0, candidate_samples=0, contact="offline-test")
+        if divergence:
+            args.first_divergence_analyzer = self.directory / "first_divergence.py"
+            args.first_divergence_analyzer.write_text("# offline fixture; never executed\n")
         manifest = freeze(args)
         write_new(self.manifest, manifest)
         return manifest
@@ -143,6 +166,55 @@ class SeriesTests(unittest.TestCase):
         self.assertIn("metadata mismatch: equity_samples", result["jobs"][0]["errors"])
         self.assertIn("missing output", result["jobs"][-1]["errors"])
         self.assertIn("log differs from completed execution: 00_control", result["execution"]["errors"])
+
+    def test_paired_seed_mode_routes_flag_but_requires_separate_primary_analysis(self):
+        manifest = self.prepare(divergence=True)
+        self.assertEqual([j["seed"] for j in manifest["jobs"]],
+                         [202610185000 + i // 2 for i in range(8)])
+        self.assertEqual(self.launch(), 0)
+        result = analyze(self.manifest)
+        self.assertTrue(result["all_planned_jobs_complete_and_eligible"])
+        self.assertEqual(result["conclusion"], "first_divergence_analysis_required")
+        self.assertEqual(result["declared_primary_metric"], "first_divergence_gain_bb100")
+        self.assertEqual(result["raw_difference_role"], "secondary")
+        events = [json.loads(line) for line in self.manifest.with_suffix(".execution.jsonl").read_text().splitlines()]
+        self.assertTrue(all("--independent-hand-seeds" in event["command"]
+                            for event in events if "job_started" in event))
+
+    def test_new_mode_rejects_unpaired_seed_or_quotas(self):
+        manifest = self.prepare(divergence=True)
+        for field, value in (("seed", 999), ("quota", 6), ("games", 4)):
+            changed = json.loads(json.dumps(manifest))
+            changed["jobs"][1][field] = value
+            self.manifest.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, "pair|Pair"):
+                load_manifest(self.manifest)
+
+    def test_changed_analyzer_refused_before_any_live_child(self):
+        manifest = self.prepare(divergence=True)
+        Path(manifest["first_divergence"]["analyzer"]).write_text("# changed baseline\n")
+        with self.assertRaisesRegex(ValueError, "analyzer source changed"):
+            self.launch()
+        self.assertFalse(Path(manifest["jobs"][0]["output"]).exists())
+
+    def test_paired_seeds_are_not_silently_allowed_in_old_raw_protocol(self):
+        manifest = self.prepare()
+        manifest["jobs"][1]["seed"] = manifest["jobs"][0]["seed"]
+        self.manifest.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, "distinct seed"):
+            load_manifest(self.manifest)
+
+    def test_seed_integrity_failure_is_detected_by_per_job_gate(self):
+        manifest = self.prepare(divergence=True)
+        self.assertEqual(self.launch(), 0)
+        job = manifest["jobs"][0]
+        output = Path(job["output"])
+        records = [json.loads(line) for line in output.read_text().splitlines()]
+        first = next(row for row in records if "winnings_chips" in row)
+        first["policy_rng"] += 1
+        output.write_text("\n".join(json.dumps(row) for row in records) + "\n")
+        _, errors = check_job(job, manifest)
+        self.assertIn("hand seed integrity: terminal RNG differs from final decision", errors)
 
 
 if __name__ == "__main__":
