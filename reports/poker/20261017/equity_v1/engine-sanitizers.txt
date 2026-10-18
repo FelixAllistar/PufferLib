@@ -1,0 +1,2 @@
+players=2 hands=20032 steps=84528 seconds=0.121654 decisions_s=694824 hands_s=164664 bytes_table=88 showdown_fraction=0.233 mode=checked
+players=6 hands=20032 steps=195558 seconds=0.451810 decisions_s=432832 hands_s=44337 bytes_table=196 showdown_fraction=0.561 mode=checked

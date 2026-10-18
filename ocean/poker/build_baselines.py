@@ -61,7 +61,8 @@ def main():
                  f'-DPOKER_PLAYERS={players}', f'-DPOKER_FULLHOUSE_MODEL="{header}"']
         # Keep assertions enabled in the evaluation build.
         for src, extra, dest in [('native.c', ['-shared','-fPIC'],f'libpoker_fullhouse{players}.so'),
-                                  ('benchmark.c', [], f'baseline_bench{players}')]:
+                                  ('benchmark.c', [], f'baseline_bench{players}'),
+                                  ('benchmark_policy.c', [], f'policy_bench{players}')]:
             cmd = flags + extra + [str(ROOT/'ocean/poker'/src), '-lm', '-o', str(build/dest)]
             subprocess.run(cmd, check=True)
             commands.append(cmd)

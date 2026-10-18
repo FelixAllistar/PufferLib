@@ -1,0 +1,20 @@
+[
+  {
+    "baseline": "2p_style1_vs_fullhouse",
+    "candidate": "2p_style7_vs_fullhouse",
+    "gain_bb100": 37.673233333333336,
+    "ci95_half_width_bb100": 12.04062645842972
+  },
+  {
+    "baseline": "6p_style1_vs_fullhouse",
+    "candidate": "6p_style7_vs_fullhouse",
+    "gain_bb100": 15.2795666675,
+    "ci95_half_width_bb100": 12.361678994477042
+  },
+  {
+    "baseline": "6p_style1_vs_varied",
+    "candidate": "6p_style7_vs_varied",
+    "gain_bb100": 6.594583330999999,
+    "ci95_half_width_bb100": 9.798701659135526
+  }
+]

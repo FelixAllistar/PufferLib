@@ -11,6 +11,7 @@ int main(int argc, char** argv) {
     dict_set(&ek, "starting_stack", 20000);
     dict_set(&ek, "bot_policy", argc > 3 ? atoi(argv[3]) : 1);
     dict_set(&ek, "native_baseline_mask", argc > 4 ? atoi(argv[4]) : 0);
+    dict_set(&ek, "native_history", argc > 5 ? atoi(argv[5]) : 0);
     dict_set(&ek, "seed", 73);
     dict_set(&ek, "rules_fraction", 0.25);
     dict_set_str(&ek, "native_league", argc > 1 ? argv[1] : "None");
@@ -40,7 +41,14 @@ int main(int argc, char** argv) {
                 a = poker_random(&rng) % POKER_ACTIONS;
             } while (!masks[i][a]);
             actions[i] = a;
+            uint64_t hands = envs[i].profiles ? envs[i].profiles[0].hands : 0;
             puf_step(envs + i);
+            if (envs[i].profiles) {
+                assert(envs[i].profiles[0].hands >= hands);
+                assert(!terminals[i] || envs[i].profiles[0].hands > hands);
+                assert(envs[i].profiles[0].vpip <= envs[i].profiles[0].hands);
+                assert(envs[i].profiles[0].pfr <= envs[i].profiles[0].vpip);
+            }
             assert(!memcmp(baseline_styles[i], envs[i].baseline_styles, POKER_PLAYERS));
             assert(isfinite(rewards[i]));
             assert(terminals[i] || rewards[i] == 0);

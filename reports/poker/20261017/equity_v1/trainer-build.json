@@ -1,0 +1,15 @@
+{
+  "binary": "build/poker/puffer_equity",
+  "sha256": "eefa9ecc467376eed192b84fa73c796cc414fc99d6ee15b95121bd330b07fc53",
+  "command": "NVCC_EXTRA='-DPOKER_FULLHOUSE_MODEL=\"/home/felix/puffertank/pufferlib/build/poker/equity_v2/fullhouse_weights.h\"' bash build.sh poker build/poker/puffer_equity",
+  "status": "build succeeded; no PPO training performed",
+  "adapter_test": "ASan/UBSan, 12800 learner decisions, style 7, native_history=1; 7741 terminal hands; profiles persist across resets",
+  "default_bot_policy": 1,
+  "default_native_history": 0,
+  "simulator_bytes_per_table": {
+    "2": 88,
+    "6": 196,
+    "9": 277
+  },
+  "history_bytes_per_seat": 64
+}

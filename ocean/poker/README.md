@@ -4,7 +4,7 @@ Small C simulator, native rules opponent, acting-seat batch API, and Puffer PPO
 adapter. Compile the same source for 2, 6 or 9 seats. The simulator uses SoA blocks
 of 64 tables, integer chips, bit masks, and a table-free exact hand evaluator.
 There are no allocations during dealing, stepping, observation, or bot inference.
-Simulator state is 86/190/268 bytes per table for 2/6/9 seats; policy and trainer
+Simulator state is 88/196/277 bytes per table for 2/6/9 seats; policy and trainer
 buffers are additional.
 
 Open the [connected working notes](../../reports/poker/index.html) in a browser
@@ -196,8 +196,66 @@ opponent's native style once at table initialization and keeps it across hands.
 Zero preserves the single `bot_policy` selection. The snapshot league accepts
 `--bot-policy` and `--baseline-mask`; `rules_fraction` still controls the native
 baseline fraction versus frozen PufferNet opponents. Those network identities
-are sampled per hand as before. No policy here adapts from cross-hand history;
-learner and frozen-network recurrent state still reset each hand.
+are sampled per hand as before. The optional range baselines below can use public
+table history; learner and frozen-network recurrent state still reset each hand.
+
+### Bounded range equity and public table history
+
+Styles 6/7/8 keep style 5's preflop policy and replace its postflop strength score
+with sampled showdown equity. Style 6 samples 32 uniform opponent hands (a weak
+ablation). Style 7 uses 32 range-weighted samples; style 8 uses 128. Ranges depend
+on position and each seat's strongest public action on each visible street.
+The joint sampler accounts for card removal, ties, folded contributions and
+side-pot eligibility. Simulation RNG is separate from dealing; no opponent
+cards or unrevealed board are read. Range likelihoods and the betting rule are
+still heuristics: this is not CFR, a calibrated human model, or full action EV.
+
+These styles work in the ordinary native build and in the Fullhouse build.
+The [range experiment](../../reports/poker/index.html#equity) records held-out
+matches, Slumbot, throughput and the uniform/range/sample-budget ablations.
+Use `--env.bot_policy=7` for the faster range baseline, or 8 for more samples.
+The original style 1 remains available and is still the default.
+
+Set `--env.native_history=1` (or league `--native-history`) to allocate a public
+profile per seat, retained across hands until the table is destroyed. Styles
+7/8 use shrunk VPIP, preflop-raise and postflop-raise rates to adjust ranges.
+Facing-bet folds and bet-size statistics are also recorded for inspection, but
+are not yet policy inputs. All learner and opponent actions update the profiles;
+they never inspect cards or results. Memory costs 64 bytes per seat when enabled
+(384 bytes for six seats), in addition to simulator and trainer buffers. The
+feature is off by default. This is the beginning of behavioral adaptation;
+human realism and a consistent strength gain from history have not been established.
+
+```sh
+# After the pinned Fullhouse export above:
+build/poker/bench-venv/bin/python ocean/poker/test_equity.py --build build/poker
+python3 ocean/poker/benchmark.py --build build/poker --candidates 1 7 8 \
+  --fields original fullhouse positional mixed varied --hands 60000 \
+  --seed 202610174 --output build/poker/range_holdout
+python3 ocean/poker/benchmark.py --build build/poker --candidates 1 7 \
+  --fields fullhouse varied --hands 60000 --session-blocks 50 --native-history \
+  --seed 202610175 --output build/poker/history_comparison
+build/poker/policy_bench6
+```
+
+With `--session-blocks 50`, confidence intervals use independent sessions of
+50 duplicate-deal blocks. Each seat rotation has its own table profiles, so no
+profile observes the other rotations of the same deal. To measure history's
+effect, run the same session configuration once with and once without
+`--native-history`; compare paired session returns. Fixed-position latency from
+`policy_bench2`/`policy_bench6` reports process CPU time and wall time separately.
+
+The [checkpoint audit](../../reports/poker/20261017/equity_v1/checkpoint-audit.json)
+checked all tracked NPZ files in the published main revision and 13 archive
+tags: two advantage-network artifacts, no average-strategy network. The supplied
+model matches the author's stated shipped policy. The trainer's newer default
+average-strategy export is not evidence of a deployment bug. To repeat after
+fetching the external repository's tags:
+
+```sh
+build/poker/bench-venv/bin/python ocean/poker/audit_fullhouse.py \
+  --output build/poker/checkpoint-audit.json
+```
 
 ```sh
 python3 ocean/poker/eval.py --hands 1000 --style 1 --seed 991 \

@@ -1,0 +1,1 @@
+PASS Puffer adapter players=6 learner_decisions=12800 terminal_hands=7741 seconds=0.625314 learner_decisions_s=20470

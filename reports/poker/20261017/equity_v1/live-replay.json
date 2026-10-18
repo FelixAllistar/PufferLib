@@ -1,0 +1,7 @@
+{
+  "log": "reports/poker/20261017/equity_v1/slumbot_range32.jsonl",
+  "library": "build/poker/equity_v2/libpoker_fullhouse2.so",
+  "style": 7,
+  "decisions_checked": 9528,
+  "changed": []
+}
