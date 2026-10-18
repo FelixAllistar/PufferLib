@@ -169,6 +169,11 @@ bool swat_sim_set_player(SwatSim* s, int slot, bool present) {
     if(actor->present==present && !replace_bot) {
         if(present){
             SwatMind* mind=&actor->mind;mind->bot=false;mind->pending_order=0;mind->pending_actor=0;mind->pending_door=0;mind->pending_room=0;mind->queued=false;
+            mind->tool_goal=mind->tool_blocked=false;mind->tool_replan_tick=mind->tool_scan=0;
+            if(mind->order==SWAT_ORDER_PICK || mind->order==SWAT_ORDER_WEDGE) {
+                mind->order=SWAT_ORDER_HOLD;mind->order_door=0;
+                actor->gear.door_ticks=0;actor->gear.door_target=-1;actor->gear.door_mode=actor->gear.last_door_tool=SWAT_DOOR_NONE;actor->gear.door_completed=false;
+            }
             if(mind->order_room){mind->order=SWAT_ORDER_HOLD;mind->order_room=mind->room_step=mind->room_task=mind->room_scan=mind->room_tool_ticks=0;mind->order_actor=mind->order_door=0;mind->room_goal=mind->room_blocked=false;}
         }
         return true;

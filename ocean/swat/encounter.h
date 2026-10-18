@@ -21,6 +21,8 @@ typedef struct SwatMind {
     int room_scan; // Authority scan dwell, reconstructed by input replay.
     bool room_goal,room_blocked;
     bool entry_settled;
+    bool tool_goal,tool_blocked,tool_crouch;
+    int tool_replan_tick,tool_generation,tool_scan; // Bounded private surface search.
     b3Pos memory,goal,waypoint,pending_goal,task_point,room_point; // Authority planning state, reconstructed by input replay.
     int room_tool_ticks;
 } SwatMind;

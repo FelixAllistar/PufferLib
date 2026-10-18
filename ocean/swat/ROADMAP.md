@@ -30,6 +30,9 @@ Acceptance work still open:
 - Extend squad task completion across varied occupied layouts and further
   equipment roles, including broader room-search and moving threat coverage,
   beyond directed restraint/retrieval, door picks/wedges, recall and escort.
+- Qualify equipment access feedback with transparent cover. The damaged-leaf
+  fixtures below use cut wood and opaque obstacles; actual hand reach remains
+  physical, and clear-glass approach selection still needs a focused probe.
 - Extend hostile-fire squad coordination beyond the inter-room sequence with
   staging holds during demolition. Following officers can cross the commander's
   firing line, and exploratory all-follow runs lost the commander or an officer.
@@ -51,6 +54,67 @@ Acceptance work still open:
 - Qualify vehicle cover separately. The delivered sedan has a closed exterior
   coachwork volume, with no hollow passenger interior or suspension model;
   current game material sections do not establish panel-stack ballistics.
+
+Damaged-door squad equipment (2026-10-18): a retained leaf with its centre
+removed exposed a real task failure: the officer remained at the old centre
+workpoint for 1,200 ticks while an ordinary human Pick succeeded on visible
+material. Pick/Wedge now scan actual surviving convex sections for deterministic
+workpoints and find supported, body/person-clear standing or crouched working
+positions with physical sight and a navigable approach. The ordinary hand ray,
+capability, finite stock and threat priority still control progress. Missing
+workpoints invalidate after damage. Fully obstructed work waits and retries in
+batches of at most sixteen material targets, retaining the scan cursor rather
+than dropping later fragments. The squad menu replicates “Waiting for access.”
+Cancellation, completion and human takeover clear that state.
+
+Both platforms pass all 42 cases: Pick/Wedge across seven cut/cover/change/
+cancellation conditions and three orientations. The lower-gap cases require
+actual crouched work; fragmented searches advance beyond sixteen candidates.
+Fresh encoded replicas preserve the access state and reject malformed state
+without mutation. All 11,996 focused state hashes match after host text-line
+ending normalization. The fixtures establish explicit geometry and cover events;
+they are distinct from the ordinary-input complete motel journal below.
+A first cross-platform mismatch was only two ULPs in the handling sound's ray-hit
+position; actor state, private goals and aim matched. Named squad tool handling
+now originates at the stable planned material point. Reach still uses the real
+ray, and replay hashing still includes the full sound state. The first differing
+snapshots, private diagnostics and earlier traces are retained.
+
+The ordinary-input damaged-door mission removes the centre with two settled
+shots from the real finite magazine, retains the leaf/hardware, queues a squad
+wedge, saves/restores the queued task, uses surviving material, removes the
+wedge normally and completes the full mission. Rapid firing initially produced
+scattered recoil holes instead of the intended centre aperture; that failed
+journal is retained and only the QA commander's firing cadence changed.
+
+The complete route finishes in 25,741 ticks with no protected casualties or
+unlawful force, exact every-tick internal replay, mid-run save/resume and fresh
+encoded replicas. Shipping Linux and native Windows tools also match all 25,741
+frames exactly, including the ordinary human wedge removal.
+
+The final v37 cohort passes 181 broad groups on each platform, plus the
+unchanged locomotion/foundation/scenario and player-contact checks. All 75,956
+encounter samples and 1,751 player-contact samples match across platforms;
+independently recorded player journals and checkpoints are byte-identical.
+Fresh quiet, hostile inter-room and hostile exterior missions finish in
+25,730 / 20,457 / 9,513 ticks. Together with the damaged-door route, shipping
+Linux and Windows tools match all 81,441 recorded mission frames exactly.
+
+Real UDP checks also replicate blocked status and actual resumption after cover
+removal in an explicit geometry fixture. The separate canonical motel case
+retains all authored collision meshes on its replicas and passes the unchanged
+slow-join/takeover/tool-stock checks, including more than 6.5 seconds of injected
+construction delay with a fixed gameplay tick. An earlier test wall invalidated
+strict motel source binding and shortened that loading path; its failure and
+diagnostics are retained. The correction separates the two fixtures, preserves
+the production deadline and asserts actual mesh binding.
+
+Protocol/replay v37 requires matching peers and fresh recordings/saves. The
+status display and complete native graphics cohort are compiled; native visual,
+focus and stable-load frame-time acceptance remain held. Evidence is retained
+under `build/swat/review/damaged-door-tasks`; the source-coupled receipt is
+`tests/receipts/damaged-door-tasks-2026-10-18.json`. The full-slice goal remains
+active, with transparent-cover qualification and the broader gaps above open.
 
 Player contact at wheel-stop lips (2026-10-18): direct ordinary player input
 reproduces the retained launch without the discarded departure planner. A valid

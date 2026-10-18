@@ -1,6 +1,7 @@
 #include "sim.h"
 #include "locomotion.h"
 #include "door_damage.h"
+#include "fracture_geometry.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -638,7 +639,7 @@ bool swat_squad_order_accepted(const SwatSim* s,int team,int order) {
     }
     return !has_bot || ((order==SWAT_ORDER_CUFF || order==SWAT_ORDER_SEARCH || order==SWAT_ORDER_PICK || order==SWAT_ORDER_WEDGE || order==SWAT_ORDER_ROOM_SEARCH)?any:all);
 }
-static bool order_support(const SwatWorld* world,b3Pos* point) {
+static bool order_support_height(const SwatWorld* world,b3Pos* point,float height) {
     NavFloors floors={.world=world};
     b3World_CastRay(world->id,b3OffsetPos(*point,swat_v(0,.5f,0)),swat_v(0,-1,0),b3DefaultQueryFilter(),floor_hit,&floors);
     float best=.4572f,support=0;
@@ -647,8 +648,9 @@ static bool order_support(const SwatWorld* world,b3Pos* point) {
     }
     if(best==.4572f)return false;
     point->y=support+.015f;
-    return nav_clear(world,*point,1.8288f);
+    return nav_clear(world,*point,height);
 }
+static bool order_support(const SwatWorld* world,b3Pos* point) {return order_support_height(world,point,1.8288f);}
 static bool order_separated(b3Pos point,const b3Pos assigned[],int count) {
     for(int i=0;i<count;i++)if(b3Distance(point,assigned[i])<.9f)return false;
     return true;
@@ -837,6 +839,7 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
         if(!mind->pending_order || mind->command_tick>s->tick || mind->queued) continue;
         mind->order=mind->pending_order; mind->goal=mind->pending_goal;mind->order_yaw=mind->pending_yaw;mind->order_door=mind->pending_door;mind->order_actor=mind->pending_actor;mind->entry_settled=false; mind->pending_order=0;mind->pending_actor=0;mind->pending_door=0; mind->queued=false; mind->replan_tick=0;
         mind->task_point=mind->goal;
+        mind->tool_goal=mind->tool_blocked=false;mind->tool_replan_tick=mind->tool_scan=0;mind->tool_generation=s->world.generation;
         mind->order_room=mind->pending_room;mind->pending_room=0;mind->room_step=mind->room_task=mind->room_scan=0;mind->room_goal=mind->room_blocked=false;
         mind->room_tool_ticks=0;
         swat_sound_emit(&s->sounds,s->tick,i,SWAT_SOUND_COMMAND,swat_controller_eye(&s->actors[i].controller),.5f,12);
@@ -1041,36 +1044,93 @@ static void officer_search(SwatSim* s,int i,SwatInput* in) {
         in->forward=in->strafe=0;in->interact=!a->last_interact;
     }
 }
-static bool door_task_position(SwatSim* s,int i,b3Pos point,int door,b3Pos* goal) {
+static bool door_task_at(SwatSim* s,int i,b3Pos point,int door,b3Pos* goal,bool* crouch) {
     const SwatActor* a=&s->actors[i];b3Pos feet=swat_body_feet_position(&a->controller.body);float best=1e9f;bool found=false;
-    for(int ring=0;ring<3;ring++)for(int side=0;side<16;side++) {
+    for(int stance=0;stance<2;stance++)for(int ring=0;ring<3;ring++)for(int side=0;side<16;side++) {
         float angle=side*SWAT_PI*.125f,radius=.65f+ring*.2f;
         b3Pos candidate=b3OffsetPos(point,swat_v(cosf(angle)*radius,0,sinf(angle)*radius));candidate.y=feet.y;
-        if(!order_support(&s->world,&candidate) || !actor_lane_clear(s,i,candidate,candidate))continue;
-        b3Pos eye=b3OffsetPos(candidate,swat_v(0,a->controller.eye_height,0));b3Vec3 delta=b3SubPos(point,eye);float reach=b3Length(delta);
+        float height=stance?a->controller.body.crouchHeight:a->controller.body.standHeight;
+        if(!order_support_height(&s->world,&candidate,height) || !actor_lane_clear(s,i,candidate,candidate))continue;
+        b3Pos eye=b3OffsetPos(candidate,swat_v(0,height-.2032f,0));b3Vec3 delta=b3SubPos(point,eye);float reach=b3Length(delta);
         if(reach>1.55f)continue;
         SwatHit hit=swat_world_sight_ray(&s->world,eye,swat_normalize(delta),reach+.05f,a->controller.body.body);
         if(hit.kind!=SWAT_HIT_WORLD || hit.index!=door)continue;
-        float score=b3Distance(feet,candidate);
-        if(score<best){best=score;*goal=candidate;found=true;}
+        float score=b3Distance(feet,candidate)+stance*.05f;
+        if(score<best){
+            b3Pos next;if(!navigation_next_actor(s,i,feet,candidate,&next))continue;
+            best=score;*goal=candidate;*crouch=stance!=0;found=true;
+        }
     }
     return found;
+}
+static int door_task_sections(const SwatObject* door) {
+    return door->cuts?door->cuts->section_count:door->latch_broken?SWAT_DOOR_SECTIONS:1;
+}
+static const SwatFracturePolygon* door_task_section(const SwatObject* door,int index,SwatFracturePolygon* scratch) {
+    if(door->cuts)return &door->cuts->sections[index];
+    if(door->latch_broken){memset(scratch,0,sizeof(*scratch));scratch->count=4;swat_door_section(door,index,scratch->vertices);}
+    else swat_source_polygon(door,scratch);
+    return scratch;
+}
+static int door_task_points(const SwatObject* door) {
+    int count=door_task_sections(door),points=1+count;
+    for(int s=0;s<count;s++){SwatFracturePolygon scratch;points+=door_task_section(door,s,&scratch)->count;}
+    return points;
+}
+static bool door_task_point(const SwatObject* door,int index,b3Pos* point) {
+    float y=0,z=0;int count=door_task_sections(door);
+    if(index) {
+        int section=index-1,vertex=-1;
+        if(section>=count) {
+            int offset=section-count;section=0;
+            for(;section<count;section++){SwatFracturePolygon scratch;int n=door_task_section(door,section,&scratch)->count;if(offset<n){vertex=offset;break;}offset-=n;}
+        }
+        if(section>=count)return false;
+        SwatFracturePolygon scratch;const SwatFracturePolygon* p=door_task_section(door,section,&scratch);
+        if(p->count<3)return false;
+        for(int v=0;v<p->count;v++){y+=p->vertices[v][0];z+=p->vertices[v][1];}y/=p->count;z/=p->count;
+        // Convex retained polygons give interior targets, never ray-hit noise
+        // or points inside missing material. Insets also cover partial cover.
+        if(vertex>=0){y=.35f*y+.65f*p->vertices[vertex][0];z=.35f*z+.65f*p->vertices[vertex][1];}
+    }
+    if(!swat_fracture_contains(door,y,z))return false;
+    *point=b3OffsetPos(door->center,b3RotateVector(swat_object_rotation(door),swat_v(0,y,z)));
+    return true;
 }
 static void officer_door_task(SwatSim* s,int i,SwatInput* in) {
     SwatActor* a=&s->actors[i];SwatMind* mind=&a->mind;int owner=mind->order_door;
     if(owner<=0 || owner>=s->world.count || !s->world.objects[owner].active || !s->world.objects[owner].door ||
        !door_task_valid(&s->world.objects[owner],mind->order) || !door_task_capable(a,mind->order)) {
-        mind->order=SWAT_ORDER_HOLD;mind->order_door=0;mind->order_actor=0;return;
+        mind->order=SWAT_ORDER_HOLD;mind->order_door=0;mind->order_actor=0;mind->tool_goal=mind->tool_blocked=false;return;
     }
-    if(!mind->replan_tick || s->tick%30==0) {
-        b3Pos goal;if(!door_task_position(s,i,mind->task_point,owner,&goal))return;
-        mind->goal=goal;mind->replan_tick=0;
+    const SwatObject* door=&s->world.objects[owner];
+    if(mind->tool_generation!=s->world.generation) {
+        mind->tool_generation=s->world.generation;mind->tool_scan=0;
+        b3Vec3 local=b3InvRotateVector(swat_object_rotation(door),b3SubPos(mind->task_point,door->center));
+        if(!swat_fracture_contains(door,local.y,local.z)){mind->tool_goal=false;mind->tool_replan_tick=0;}
     }
+    if(s->tick>=mind->tool_replan_tick) {
+        if(mind->tool_goal)mind->tool_scan=0;
+        mind->tool_goal=false;int count=door_task_points(door);
+        // Search all surviving regions over bounded batches. An occluded or
+        // heavily fragmented leaf cannot trigger an unbounded per-frame scan.
+        for(int n=0;n<16 && mind->tool_scan<count;n++) {
+            b3Pos point,goal;bool crouch;
+            if(door_task_point(door,mind->tool_scan++,&point) && door_task_at(s,i,point,owner,&goal,&crouch)) {
+                mind->task_point=point;mind->goal=goal;mind->tool_crouch=crouch;mind->replan_tick=0;mind->tool_goal=true;break;
+            }
+        }
+        if(mind->tool_scan>=count)mind->tool_scan=0;
+        mind->tool_replan_tick=s->tick+(mind->tool_goal?30:15);
+    }
+    mind->tool_blocked=!mind->tool_goal;
+    if(!mind->tool_goal)return;
     b3Vec3 aim=b3SubPos(mind->task_point,swat_controller_eye(&a->controller));
     in->yaw_delta=swat_clamp(swat_angle(b3Atan2(aim.z,aim.x)-a->controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
     in->pitch_delta=swat_clamp(b3Atan2(aim.y,hypotf(aim.x,aim.z))-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD);
     move_to_input(s,i,mind->goal,in,true);
     b3Pos feet=swat_body_feet_position(&a->controller.body);b3Vec3 approach=b3SubPos(mind->goal,feet);float remaining=hypotf(approach.x,approach.z);
+    if(mind->tool_crouch && remaining<.7f && fabsf(approach.y)<.45f)in->crouch=true;
     if(remaining<.45f && remaining>.06f && fabsf(approach.y)<.45f && actor_lane_clear(s,i,feet,mind->goal)) {
         b3CosSin turn=b3ComputeCosSin(swat_angle(b3Atan2(approach.z,approach.x)-a->controller.yaw-in->yaw_delta));
         in->forward=.25f*turn.cosine;in->strafe=.25f*turn.sine;
@@ -1093,6 +1153,7 @@ static void officer_hearing(SwatSim* s,int i) {
 void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
+        if(a->role!=SWAT_OFFICER || !mind->bot || !a->alive || (mind->order!=SWAT_ORDER_PICK && mind->order!=SWAT_ORDER_WEDGE))mind->tool_goal=mind->tool_blocked=false;
         if(!a->present || !a->alive || (a->role==SWAT_OFFICER && !mind->bot) || a->role==SWAT_SNIPER) continue;
         if(a->role==SWAT_OFFICER && a->hearing_ticks>0)a->hearing_ticks--;
         SwatInput* in=&inputs[i];
