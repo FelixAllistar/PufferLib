@@ -79,7 +79,7 @@ class API:
                         os.kill(os.getpid(), signal.SIGTERM)
                         time.sleep(0.05)
                     return Response({"token": self.token, "client_pos": 1,
-                        "winnings": 100, "action": "b250f"})
+                        "winnings": 100, "baseline_winnings": -50, "action": "b250f"})
                 finally:
                     with api.lock:
                         api.active -= 1
@@ -119,11 +119,18 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(set(r["game"] for r in hands), set(range(4)))
         self.assertTrue(records[-1]["summary"]["complete"])
         self.assertEqual(records[-1]["summary"]["net_bb"], 12)
+        # The API value is already adjusted: -50 chips, not 100 - (-50).
+        self.assertEqual(records[-1]["summary"]["baseline_hands"], 12)
+        self.assertEqual(records[-1]["summary"]["baseline_bb100"], -50)
+        self.assertEqual(records[-1]["summary"]["baseline_net_bb"], -6)
+        self.assertTrue(all(h["baseline_winnings_chips"] == -50 for h in hands))
         self.args.resume, self.args.hands = True, 20
         records = self.run_api(API())
         hands = [r for r in records if "winnings_chips" in r]
         self.assertEqual([r["hand"] for r in hands], list(range(20)))
         self.assertTrue(records[-1]["summary"]["complete"])
+        self.assertEqual(records[-1]["summary"]["baseline_hands"], 20)
+        self.assertEqual(records[-1]["summary"]["baseline_net_bb"], -10)
         progress = Path(self.args.output).with_suffix(".progress.txt").read_text()
         self.assertIn("hands=20/20", progress)
 
@@ -164,6 +171,17 @@ class EvaluationTests(unittest.TestCase):
                 runner.slumbot(self.args)
             session.assert_not_called()
 
+    def test_resume_rejects_undrained_process_before_http(self):
+        self.run_api(API())
+        path = Path(self.args.output)
+        records = [json.loads(line) for line in path.read_text().splitlines()]
+        path.write_text(''.join(json.dumps(r) + '\n' for r in records[:-1]))
+        self.args.resume = True
+        with patch('requests.Session') as session:
+            with self.assertRaisesRegex(ValueError, "pending outcomes are unknown"):
+                runner.slumbot(self.args)
+            session.assert_not_called()
+
     def test_unsupported_policy_rejected_before_http(self):
         native = runner.Native(library=self.args.library)
         unsupported = next((s for s in range(9) if not native.styles & (1 << s)), None)
@@ -182,7 +200,7 @@ class EvaluationTests(unittest.TestCase):
             Response({**common, "action": "", "board": []}),
             Response({**common, "action": "b250c/b500", "board": ["Kh", "7c", "2d"]}),
             Response({**common, "action": "b250c/b500f", "board": ["Kh", "7c", "2d"],
-                "slumbot_hole_cards": ["Ks", "Qc"], "winnings": -250}),
+                "bot_hole_cards": ["Ks", "Qc"], "winnings": -250}),
         ]
         with patch("requests.Session") as factory, redirect_stdout(io.StringIO()):
             factory.return_value.headers = {}
@@ -192,6 +210,9 @@ class EvaluationTests(unittest.TestCase):
         self.assertNotIn("private-", contents)
         records = [json.loads(line) for line in contents.splitlines()]
         hand = next(r for r in records if "winnings_chips" in r)
+        self.assertNotIn("baseline_winnings_chips", hand)
+        self.assertEqual(records[-1]["summary"]["baseline_hands"], 0)
+        self.assertIsNone(records[-1]["summary"]["baseline_bb100"])
         self.assertEqual(hand["slumbot_hole_cards"], ["Ks", "Qc"])
         self.assertEqual([d["board"] for d in hand["decisions"]], [[], ["Kh", "7c", "2d"]])
         native = runner.Native(library=self.args.library)
@@ -209,6 +230,15 @@ class EvaluationTests(unittest.TestCase):
         records = self.run_api(API("429"))
         self.assertEqual([r["backoff"]["seconds"] for r in records if "backoff" in r], [1])
         self.assertTrue(records[-1]["summary"]["complete"])
+
+    def test_terminal_verification_and_mismatch(self):
+        native = runner.Native(library=self.args.library)
+        response = {"client_pos": 1, "hole_cards": ["As", "Ad"],
+            "bot_hole_cards": ["Ks", "Qc"], "board": ["Kh", "7c", "2d"],
+            "action": "b250c/b500f", "winnings": -250}
+        self.assertTrue(runner.verify_terminal(native, response))
+        with self.assertRaisesRegex(RuntimeError, "settlement mismatch"):
+            runner.verify_terminal(native, {**response, "winnings": 250})
 
     def test_bad_request_records_reason_without_token(self):
         self.args.games, self.args.hands = 1, 1

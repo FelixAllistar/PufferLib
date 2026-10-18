@@ -1,5 +1,9 @@
 #pragma once
 
+#if POKER_PLAYERS == 2
+#include "preflop_minraise.h"
+#endif
+
 // Shared preflop scaffold. The range policy includes the focused AK repair;
 // the original rules control keeps its historical decisions and RNG sequence.
 int32_t poker_rules_preflop(Poker* g, int t, uint64_t* rng, int focused) {
@@ -24,6 +28,17 @@ int32_t poker_rules_preflop(Poker* g, int t, uint64_t* rng, int focused) {
         if (focused && hi == 12 && lo == 11 && g->high[t] <= 400)
             raise = roll < (suited ? 900u : 650u);
     }
+#if POKER_PLAYERS == 2
+    // One frozen policy-improvement lookup, limited to the price and stack
+    // format evaluated offline. Preserve the original rules control and all
+    // existing raises; the baseline's RNG draw has already been consumed.
+    if (focused && fold && p != g->button[t] && g->decisions[t] == 1
+        && g->high[t] == 200 && g->initial[p][t] == 20000
+        && g->initial[1 - p][t] == 20000) {
+        int cell = suited ? 13 * hi + lo : 13 * lo + hi;
+        if ((poker_hu_minraise_calls[cell / 64] >> (cell % 64)) & 1u) return 0;
+    }
+#endif
     if (fold) return -1;
     if (raise && poker_can_raise(g, t)) {
         uint32_t target = g->high[t] <= 100 ? 250 : 3 * g->high[t];
