@@ -3,50 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101b18">
-  <meta name="description" content="Take a seat at Puffer Poker. Play no-limit Texas Hold’em against native poker bots in your browser.">
-  <title>Puffer Poker · The private table</title>
+  <meta name="theme-color" content="#35070c">
+  <meta name="description" content="Play Texas Hold’em at Puffer Poker. Native opponents, clear betting controls, and practice chips.">
+  <title>Puffer Poker · No-limit Hold’em</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <header class="masthead">
-    <a class="brand" href="./" aria-label="Puffer Poker home"><span class="brand-mark">♠</span><span>PUFFER<span class="brand-sub">POKER CLUB</span></span></a>
-    <div class="header-note"><span class="live-dot"></span> THE PRIVATE TABLE</div>
-    <button class="quiet" id="settings-button">Table settings <span aria-hidden="true">↗</span></button>
+    <a class="brand" href="./" aria-label="Puffer Poker home"><span class="brand-mark">♠</span> PUFFER <b>POKER</b></a>
+    <span class="header-note">NO-LIMIT HOLD’EM</span>
+    <nav aria-label="Table tools"><button class="quiet" id="history-button" aria-expanded="false" aria-controls="table-drawer">History &amp; session</button><button class="quiet" id="help-button">Help</button><button class="quiet" id="settings-button">Table settings <span aria-hidden="true">⚙</span></button></nav>
   </header>
-  <main>
-    <div class="page-heading"><div><p class="eyebrow">NO-LIMIT TEXAS HOLD’EM</p><h1>Your seat is ready.</h1></div><div class="table-meta"><span id="table-type">6 seats</span><i></i><span>200 BB</span><i></i><span>Practice chips</span></div></div>
-    <div class="game-layout">
-      <section class="play-area" aria-label="Poker table">
-        <div class="table-toolbar"><span><span class="live-dot"></span> <span id="street-label">OPENING THE TABLE</span></span><span id="hand-label">HAND 001</span><button id="sound-button" class="text-button" aria-pressed="false">Sound off</button></div>
-        <div class="stage" id="stage" data-seats="6">
-          <div class="table-shadow"></div><div class="rail"><div class="felt"><div class="felt-line"></div><div class="felt-brand">PUFFER <span>♠</span> POKER CLUB</div></div></div>
-          <div id="seats" class="seats"></div>
-          <div class="community">
-            <div class="pot-wrap"><span class="pot-chip" aria-hidden="true"></span><span class="pot-label">TOTAL POT <strong id="pot">0 BB</strong></span></div>
-            <div class="board" id="board" aria-label="Community cards"></div>
-            <div class="table-message" id="table-message" role="status" aria-live="polite">Preparing the deck…</div>
-          </div>
+  <main class="game-shell">
+    <section class="play-area" aria-label="Poker table">
+      <div class="table-toolbar"><div><span id="table-type">6 seats</span><span class="toolbar-separator">·</span><span>Blinds 0.5 / 1 BB</span><span class="toolbar-separator">·</span><span>Practice chips</span></div><div><span id="street-label">OPENING TABLE</span><span class="toolbar-separator">·</span><span id="hand-label">HAND 001</span></div><button id="sound-button" class="text-button" aria-pressed="true">Sound on</button></div>
+      <div class="stage" id="stage" data-seats="6">
+        <div class="table-shadow"></div><div class="rail"><div class="felt"><div class="felt-line"></div><div class="felt-brand">PUFFER <span>POKER</span></div></div></div>
+        <div id="seats" class="seats"></div>
+        <div class="community"><div class="pot-wrap"><span class="pot-chip" aria-hidden="true"></span><span class="pot-label">Total pot <strong id="pot">0 BB</strong></span></div><div class="board" id="board" aria-label="Community cards"></div><div class="table-message" id="table-message" role="status" aria-live="polite">Preparing the deck…</div></div>
+        <span id="last-action" class="last-action" aria-live="polite"></span><span class="rank-badge" id="hand-rank"></span>
+      </div>
+      <div class="action-area" id="action-area">
+        <div class="turn-heading"><div><span class="live-dot" id="turn-dot"></span><strong id="turn-label">Getting ready</strong><span class="hero-position" id="hero-position">You: seat 1</span></div><span id="call-hint"></span></div>
+        <div id="betting-controls" class="betting-controls">
+          <div class="action-buttons"><button class="action fold" id="fold-button">Fold <kbd>F</kbd></button><button class="action call" id="call-button">Check <kbd>C</kbd></button><button class="action raise" id="raise-button"><span id="raise-action-label">Raise to</span><strong id="raise-button-value">—</strong></button></div>
+          <div class="raise-builder"><div class="raise-track"><button class="step-button" id="raise-minus" aria-label="Decrease raise by one big blind">−</button><input type="range" id="raise-slider" aria-label="Raise size"><button class="step-button" id="raise-plus" aria-label="Increase raise by one big blind">+</button><div class="raise-value"><label class="sr-only" for="raise-input" id="raise-label">Raise total in big blinds</label><input id="raise-input" type="number" step="0.01" aria-label="Raise total in big blinds"><span>BB</span></div></div><div class="presets"><button data-size="min"><span>Min</span><strong>—</strong></button><button data-size="first"><span>3 BB</span><strong>—</strong></button><button data-size="second"><span>5 BB</span><strong>—</strong></button><button data-size="pot"><span>Pot</span><strong>—</strong></button><button data-size="all"><span>All in</span><strong>—</strong></button></div></div>
         </div>
-        <div class="action-area">
-          <div class="turn-heading"><div><span class="live-dot" id="turn-dot"></span><strong id="turn-label">Getting ready</strong><span id="hand-rank"></span></div><span id="call-hint"></span></div>
-          <div id="betting-controls" class="betting-controls">
-            <div class="raise-builder"><div class="raise-top"><label for="raise-input" id="raise-label">RAISE TO</label><div class="raise-value"><input id="raise-input" type="number" step="0.01" aria-label="Raise total in big blinds"><span>BB</span></div></div><input type="range" id="raise-slider" aria-label="Raise size"><div class="presets"><button data-size="min">Min</button><button data-size="third">⅓ pot</button><button data-size="two-thirds">⅔ pot</button><button data-size="pot">Pot</button><button data-size="all">All in</button></div></div>
-            <div class="action-buttons"><button class="action fold" id="fold-button">Fold <kbd>F</kbd></button><button class="action call" id="call-button">Check <kbd>C</kbd></button><button class="action raise" id="raise-button">Raise <span id="raise-button-value"></span></button></div>
-          </div>
-          <div class="finished-controls" id="finished-controls" hidden><div><strong id="result-title"></strong><span id="result-detail"></span></div><button class="primary" id="next-button">Deal next hand <span>→</span></button></div>
-        </div>
-        <div class="table-footer"><span>50 / 100 blinds <i>·</i> No rake <i>·</i> Stacks reset each hand</span><button id="help-button" class="text-button">How to play</button></div>
-      </section>
-      <aside>
-        <section class="session-panel"><div class="panel-heading"><span class="eyebrow">YOUR SESSION</span><span class="small-suit">♠</span></div><p class="session-net" id="session-net">0<span>BB</span></p><p class="muted session-caption">Net result</p><div class="session-grid"><div><strong id="session-hands">0</strong><span>Hands played</span></div><div><strong id="session-wins">0</strong><span>Hands won</span></div></div><div class="opponent-note"><span class="eyebrow">AT YOUR TABLE</span><p id="opponent-description">A mixed field of Rules, Range and Fullhouse bots.</p></div></section>
-        <section class="history-panel"><div class="panel-heading"><span class="eyebrow">HAND HISTORY</span><span class="history-dot"></span></div><ol id="history" aria-label="Recent actions"></ol></section>
-      </aside>
-    </div>
-    <footer class="page-footer"><span>THE HOUSE IS OPEN. TAKE YOUR TIME.</span><span>Runs in your browser <i>·</i> Practice chips only</span></footer>
+        <div class="finished-controls" id="finished-controls" hidden><div><strong id="result-title"></strong><span id="result-detail"></span></div><button class="primary" id="next-button">Deal next hand <span>→</span></button></div>
+        <div class="table-footer"><span>No rake · Practice chips</span><span>200 BB per hand · Stacks reset</span><span>Raise sizes are totals for this betting round</span></div>
+      </div>
+    </section>
+    <aside id="table-drawer" hidden aria-label="History and session"><div class="drawer-heading"><h2>Your table</h2><button class="close-button" id="close-drawer" aria-label="Close history">×</button></div><section class="session-panel"><div class="panel-heading"><span class="eyebrow">YOUR SESSION</span><span>♠</span></div><p class="session-net" id="session-net">0<span>BB</span></p><p class="muted">Net result</p><div class="session-grid"><div><strong id="session-hands">0</strong><span>Hands played</span></div><div><strong id="session-wins">0</strong><span>Hands won</span></div></div><div class="opponent-note"><span class="eyebrow">OPPONENTS</span><p id="opponent-description">Rules, Range and Fullhouse.</p></div></section><section class="history-panel"><div class="panel-heading"><span class="eyebrow">HAND HISTORY</span></div><ol id="history" aria-label="Recent actions"></ol></section></aside>
   </main>
-  <dialog id="settings"><form id="settings-form"><button type="button" class="close-button" data-close="settings" aria-label="Close settings">×</button><p class="eyebrow">MAKE YOURSELF AT HOME</p><h2>Set your table.</h2><label for="seat-count">Seats</label><select id="seat-count"><option value="2">2 · Heads-up</option><option value="6" selected>6 · Six-handed</option><option value="9">9 · Full ring</option></select><label for="opponent">Opponents</label><select id="opponent"><option value="mixed">The house mix</option><option value="rules">Rules</option><option value="range">Range</option><option value="fullhouse">Fullhouse</option><option value="river">Pro river candidate · heads-up</option></select><p class="dialog-note" id="bot-detail">The house mix rotates Rules, Range and Fullhouse around your table.</p><label for="speed">Table pace</label><select id="speed"><option value="480">Relaxed</option><option value="260" selected>Normal</option><option value="80">Quick</option></select><p class="dialog-note">Start with 200 BB each hand. Your net result carries through the session. Opening a new table resets the session.</p><button class="primary" id="start-table" type="submit">Open table <span>→</span></button></form></dialog>
-  <dialog id="help"><button class="close-button" data-close="help" aria-label="Close help">×</button><p class="eyebrow">THE BASICS</p><h2>A good hand starts here.</h2><p>Make the best five-card hand using your two cards and the five community cards. Win at showdown, or make everyone else fold.</p><dl><dt>Check / call</dt><dd>Check when the bet is free, or call the amount needed to stay in.</dd><dt>Bet / raise</dt><dd>The amount shown is your total commitment on this betting round, including chips already in front of you.</dd><dt>Fold</dt><dd>Leave the hand and forfeit chips already committed. You can’t fold when checking is free.</dd><dt>The session</dt><dd>Each hand starts with 200 BB. Blinds rotate, stacks reset, and your cumulative result appears beside the table. These are practice chips.</dd></dl><p class="dialog-note">Rules is our fast heuristic. Range samples possible hidden hands. Fullhouse is an external learned policy. The heads-up Pro river candidate comes from PR #5 and remains experimental. Slumbot is an external evaluation opponent and is not connected to this game.</p></dialog>
+  <dialog id="settings"><form id="settings-form"><button type="button" class="close-button" data-close="settings" aria-label="Close settings">×</button><p class="eyebrow">PUFFER POKER</p><h2>Table settings</h2><label for="seat-count">Seats</label><select id="seat-count"><option value="2">2 · Heads-up</option><option value="6" selected>6 · Six-handed</option><option value="9">9 · Full ring</option></select><label for="opponent">Opponents</label><select id="opponent"><option value="mixed">The house mix</option><option value="rules">Rules</option><option value="range">Range</option><option value="fullhouse">Fullhouse</option><option value="river">Pro river candidate · heads-up</option></select><p class="dialog-note" id="bot-detail"></p><label for="speed">Table pace</label><select id="speed"><option value="900">Relaxed</option><option value="600" selected>Normal</option><option value="80">Quick</option></select><p class="dialog-note">200 BB each hand. Your net result carries through the session. Opening a new table resets the session.</p><button class="primary" id="start-table" type="submit">Open table <span>→</span></button></form></dialog>
+  <dialog id="help"><button class="close-button" data-close="help" aria-label="Close help">×</button><p class="eyebrow">NO-LIMIT TEXAS HOLD’EM</p><h2>How to play</h2><p>Make the best five-card hand using your two cards and the community cards. Win at showdown or make everyone else fold.</p><dl><dt>Check / call</dt><dd>Check when the bet is free, or call the amount needed to stay in.</dd><dt>Bet / raise to</dt><dd>The displayed amount is your total for this betting round, including chips you already put in. Preset buttons select a size; press Bet or Raise to commit it.</dd><dt>Preflop presets</dt><dd>3 BB / 5 BB are opening totals. Facing a raise, these become 3× / 5× the current bet. All sizes respect the legal minimum and your stack.</dd><dt>Postflop presets</dt><dd>½ pot, ¾ pot and pot use the pot after your call. A pot raise adds that amount to the current bet. Each button shows the resulting legal total.</dd><dt>Fold</dt><dd>Leave the hand and forfeit committed chips. You can’t fold when checking is free.</dd><dt>Your session</dt><dd>Hands start at 200 BB. Blinds rotate, stacks reset and net results accumulate under History &amp; session. These are practice chips.</dd></dl><p class="dialog-note">Rules is our fast heuristic. Range samples possible hidden hands. Fullhouse is an external learned policy. Pro’s heads-up river candidate is experimental. Slumbot is an external benchmark and is not connected here.</p></dialog>
   <div class="error-toast" id="error" role="alert" hidden></div>
   <script type="module" src="./app.js"></script>
 </body>

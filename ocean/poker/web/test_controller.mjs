@@ -11,4 +11,14 @@ for(const upper of [50,100,300,20000])for(const target of [0,99,100,250,100000])
   const actual=Core.raise_target(target,200,upper);
   assert.ok(actual<=upper);assert.ok(actual>=Math.min(200,upper));checks++;
 }
+let presets=0;
+// Independent arithmetic over the browser's bounded chip domain. Exercise
+// unopened/raised pots, calls, rounding, minimum raises and short all-ins.
+for(const street of [0,1,2,3])for(const high of [0,100,250,1000])for(const pot of [150,101,1600,180000])for(const call of [0,50,300])for(const upper of [150,2200,20000])for(let kind=0;kind<5;kind++){
+  const lower=high+100;
+  const requested=kind===0?lower:kind===1?(street===0?3*Math.max(high,100):high+Math.floor((pot+call)/2)):kind===2?(street===0?5*Math.max(high,100):high+Math.floor(3*(pot+call)/4)):kind===3?high+pot+call:upper;
+  const expected=Math.min(Math.max(requested,Math.min(lower,upper)),upper);
+  assert.equal(Core.preset(BigInt(kind),street,high,pot,call,100,lower,upper),expected);presets++;
+}
 console.log(`PASS: ${checks} Bend browser control boundary checks and session accounting`);
+console.log(`PASS: ${presets} independent blind/pot preset calculations`);

@@ -17,3 +17,15 @@ def L.session_records_terminal_return():
   {==}
 def L.raise_target_clips_short_stack():
   {==}
+def L.unopened_three_blinds():
+  {==}
+def L.reraise_three_times_current_bet():
+  {==}
+def L.half_pot_bet():
+  {==}
+def L.pot_raise_calls_before_sizing():
+  {==}
+def L.three_quarter_pot_rounds_down():
+  {==}
+def L.oversized_preset_is_allin():
+  {==}

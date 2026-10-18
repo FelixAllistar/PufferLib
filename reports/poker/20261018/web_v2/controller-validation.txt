@@ -1,0 +1,4 @@
+Stock Bend 2.0.6: All terms check. Fourteen laws proved.
+PASS: 5204 control boundary checks and session accounting.
+PASS: 2880 independent blind/pot preset calculations.
+Guard: MemoryMax=2147483648; MemorySwapMax=0; TasksMax=128; CPUQuota=100%.

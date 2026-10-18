@@ -1,0 +1,8 @@
+{
+  "byte_identical_to_v1": {
+    "poker2.wasm": true,
+    "poker6.wasm": true,
+    "poker9.wasm": true,
+    "poker2pro.wasm": true
+  }
+}

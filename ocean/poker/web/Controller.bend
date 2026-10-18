@@ -17,6 +17,29 @@ def maximum(+a: U32, +b: U32) -> U32:
 def raise_target(requested: U32, lower: U32, +upper: U32) -> U32:
   minimum(maximum(requested, minimum(lower, upper)), upper)
 
+# All amounts are integer chips and positive actions are street totals.
+# Pot raises include the call before applying the pot fraction.
+def opening_size(+multiple: U32, +high: U32, +blind: U32) -> U32:
+  choose(U32.is_le(high, blind), (multiple * blind : U32),
+    (multiple * high : U32))
+
+def preset_request(kind: Nat, +street: U32, +high: U32, +pot: U32,
+                   +call: U32, +blind: U32, lower: U32, upper: U32) -> U32:
+  match kind:
+    case 0n: lower
+    case 1n:
+      choose(U32.is_eq(street, 0), opening_size(3, high, blind),
+        (high + (pot + call) / 2 : U32))
+    case 2n:
+      choose(U32.is_eq(street, 0), opening_size(5, high, blind),
+        (high + 3 * (pot + call) / 4 : U32))
+    case 3n: (high + pot + call : U32)
+    case _: upper
+
+def preset(kind: Nat, street: U32, high: U32, pot: U32, call: U32,
+           blind: U32, +lower: U32, +upper: U32) -> U32:
+  raise_target(preset_request(kind, street, high, pot, call, blind, lower, upper), lower, upper)
+
 def phase(done: Bool, actor: U32, viewer: U32) -> U32:
   choose(done, 2, choose(U32.is_eq(actor, viewer), 1, 0))
 
