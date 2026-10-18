@@ -197,10 +197,19 @@ void poker_equity(Poker* g, int t, uint64_t* rng, int samples, int ranges,
 }
 
 #ifndef POKER_RIVER_VALUE
-#define POKER_RIVER_VALUE (POKER_PLAYERS == 2)
+#define POKER_RIVER_VALUE (!POKER_RIVER_CFR && POKER_PLAYERS == 2)
+#endif
+#if POKER_RIVER_CFR && (POKER_RIVER_VALUE \
+    || (defined(POKER_RIVER_EXACT) && POKER_RIVER_EXACT) \
+    || (defined(POKER_RIVER_CALIBRATED) && POKER_RIVER_CALIBRATED) \
+    || (defined(POKER_RIVER_RANGE_CALIBRATED) && POKER_RIVER_RANGE_CALIBRATED))
+#error "POKER_RIVER_CFR is a standalone mode; disable the expectimax modes"
 #endif
 #if POKER_RIVER_VALUE
 #include "river_value.h"
+#endif
+#if POKER_RIVER_CFR && POKER_PLAYERS == 2
+#include "river_cfr_adapter.h"
 #endif
 
 int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int samples,
@@ -212,7 +221,10 @@ int32_t poker_equity_bot(Poker* g, int t, uint64_t* rng, int samples,
     simulations |= poker_random(rng);
     if (!simulations) simulations = 1;
     unsigned roll = poker_random(rng) % 1000;
-#if POKER_RIVER_VALUE
+#if POKER_RIVER_CFR && POKER_PLAYERS == 2
+    int32_t cfr_action;
+    if (poker_cfr_action(g, t, &simulations, profiles, &cfr_action)) return cfr_action;
+#elif POKER_RIVER_VALUE
     int32_t river_action;
     if (poker_river_action_value(g, t, &simulations,
             samples ? samples : POKER_EQUITY_SAMPLES, profiles, &river_action, NULL))
