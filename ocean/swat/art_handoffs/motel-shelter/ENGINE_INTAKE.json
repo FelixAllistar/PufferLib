@@ -1,0 +1,33 @@
+{
+  "created_utc": "2026-10-18T05:42:41.547Z",
+  "asset": "BC_SHELTER01",
+  "source_drive_file": "1B0q9G-6m3LOgHmkfytfx59MrawRqTnj9",
+  "archive": {
+    "archive": "shelter.zip",
+    "bytes": 29559445,
+    "sha256": "f5b1ff2e30dc6b97ececcfcaf33a86cd93e51eddd2523be003b4672e0ab3f265",
+    "indexed_payloads_verified": 54
+  },
+  "runtime": {
+    "asset": "BC_SHELTER01",
+    "drive_file": "1B0q9G-6m3LOgHmkfytfx59MrawRqTnj9",
+    "runtime_path": "ocean/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb",
+    "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+    "runtime_bytes": 2984364,
+    "triangles": 7868,
+    "primitives": 3,
+    "materials": 3,
+    "embedded_images": 5,
+    "nodes": 12,
+    "source_manifest_sha256": "5a91c5fd2333c74cff5138bd77d1b7d0b020bb654a1c9b2846e82da2469f7643",
+    "provenance_sha256": "bb305fd3c7676a1c4c97edeb9c2bf68409c1ea6eee06360e2249ef2a35104d02",
+    "status": "Verified unchanged static candidate intake; not installed in the level. Placement, collision/navigation, destruction/material binding, native rendering and performance acceptance remain open.",
+    "repository_handoff": "ocean/swat/art_handoffs/motel-shelter"
+  },
+  "intake_check": "node ocean/swat/tools/check_roadside_candidates.cjs",
+  "supplied_actual_export_sheet_inspected": true,
+  "authoring_python_executed": false,
+  "source_unchanged": true,
+  "status": "Verified repository intake. The scene does not yet load or place this candidate. Placement, collision/navigation, material/destruction binding, native rendering and performance acceptance remain open.",
+  "slack_ack": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792299097423699?thread_ts=1791078311.943659&cid=C0C5TN3AA8K"
+}

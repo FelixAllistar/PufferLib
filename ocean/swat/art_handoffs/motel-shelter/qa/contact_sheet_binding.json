@@ -1,0 +1,56 @@
+{
+  "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+  "method": "Resized original rendered pixels into a labeled sheet; no retouching. Hero is a JPEG encoding of the front_threequarter render.",
+  "contact_sheet": {
+    "file": "previews/contact_sheet.jpg",
+    "sha256": "c2528f631cd4ccef53e3d321321d0a0237b10953237f5d9e574224bb34b1e7e6",
+    "cells": [
+      {
+        "source": "previews/front_threequarter.png",
+        "source_sha256": "5c597236610ed6727756736292411ba5592eca0bf577fd36553f9619cff161bd",
+        "cell": 0
+      },
+      {
+        "source": "previews/rear_threequarter.png",
+        "source_sha256": "e3477a51b37018e5c2f174df649a18d4d1159c2220ea43a13cacef8e047a12a8",
+        "cell": 1
+      },
+      {
+        "source": "previews/eye_level.png",
+        "source_sha256": "2f6ca990ac790c28c8d185acffc96a6f250ffc8b616d93d3eee2131fd5279ff0",
+        "cell": 2
+      },
+      {
+        "source": "previews/front.png",
+        "source_sha256": "ddc53961ad5c98e6af929be852252816e98940dd82fca3800e7b26213e4e1359",
+        "cell": 3
+      },
+      {
+        "source": "previews/bench_join_detail.png",
+        "source_sha256": "87a6168d57190d344fc3a70abfa9a60974c8631b5677ec62c239b5f4a50c4ef7",
+        "cell": 4
+      },
+      {
+        "source": "previews/ground_contact.png",
+        "source_sha256": "53810d1138698ad119f1e4be509c30a9921789d37fb52580571a00b718062e44",
+        "cell": 5
+      },
+      {
+        "source": "previews/roof_drain_detail.png",
+        "source_sha256": "f26c56a3c1243de10339c6ea1c9d9e22dd31ea28fefdf23f67396a2dd763b9d5",
+        "cell": 6
+      },
+      {
+        "source": "previews/rear.png",
+        "source_sha256": "5a494f117ff0611ef97c8a3a52c15e685851a79dafae69dceb9a3345b8e7d161",
+        "cell": 7
+      }
+    ]
+  },
+  "hero": {
+    "file": "previews/hero.jpg",
+    "sha256": "9ad4a362a3d1a4c3da38b836ab5b407258abffe285c0f14dcbfb8aaec729d6be",
+    "source": "previews/front_threequarter.png",
+    "source_sha256": "5c597236610ed6727756736292411ba5592eca0bf577fd36553f9619cff161bd"
+  }
+}

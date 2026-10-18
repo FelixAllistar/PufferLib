@@ -1,0 +1,86 @@
+{
+  "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+  "status": "PASS_OFFLINE_WITH_VISUAL_CAVEATS",
+  "all_nine_preview_hashes_verified": true,
+  "review_method": "Inspected actual PNG pixels from stable copies after validating each PNG SHA-256 against the final render receipt, which identifies fresh import of the frozen GLB. No retouching.",
+  "views": [
+    {
+      "name": "front_threequarter",
+      "file": "previews/front_threequarter.png",
+      "sha256": "c54399ad23b30dc5520704a2f18c1943b105807b8ea48bf7fa24b665af53a73f",
+      "pixels_reviewed": true,
+      "finding": "Anonymous compact silhouette, paired side-door handles, pillars, wheel arches, wipers and lamps read clearly. No glazing leaks or detached wheel appearance. Thin seam visibility varies."
+    },
+    {
+      "name": "rear_threequarter",
+      "file": "previews/rear_threequarter.png",
+      "sha256": "e225e2301723d313bbd95bfad2463a6aa4030b44a97e29c8a7951a39b0cf1334",
+      "pixels_reviewed": true,
+      "finding": "Rear fascia and opaque cabin read coherently; rear-deck shutline is faint/intermittent. No open shell or wheel-contact defect visible."
+    },
+    {
+      "name": "front",
+      "file": "previews/front.png",
+      "sha256": "fc24230aa311dd088e7fbb13f41631d8e5f1ebce3396698c5afbec13bf96497c",
+      "pixels_reviewed": true,
+      "finding": "Full frontal body and both front tire contacts visible; closed opaque glazing. Minor bright pinched/faceted lower-valance highlights remain."
+    },
+    {
+      "name": "rear",
+      "file": "previews/rear.png",
+      "sha256": "8885e7e43ea71c95b5d08e70ae750f360ecfb9c212f3bf3dcf54d23fb07da3fa",
+      "pixels_reviewed": true,
+      "finding": "Full rear body and tire contacts visible; rear screen opaque, lamps/blank panel legible. Faint deck line and minor low-poly lower-valance shading remain."
+    },
+    {
+      "name": "side",
+      "file": "previews/side.png",
+      "sha256": "9f319e9354a18d10515040663a0d9b9e5bac62c6323dd67f600d41e985b1cc25",
+      "pixels_reviewed": true,
+      "finding": "Full side silhouette shows two doors, A/B/C pillars, fuel flap, arch clearance and both near-side tire contacts. Upper door transitions have thin angle-dependent seam visibility."
+    },
+    {
+      "name": "eye_level",
+      "file": "previews/eye_level.png",
+      "sha256": "4b6e64f12d73f4b588be2953edc0cdeeaaf6dfde98c25fb387a7d1dcca6a03d2",
+      "pixels_reviewed": true,
+      "finding": "Near-ground three-quarter view shows a coherent parked stance and no visible wheel/body clipping; opposite wheel visible under front fascia. Opaque glass treatment holds."
+    },
+    {
+      "name": "underside",
+      "file": "previews/underside.png",
+      "sha256": "9e06ef21a65f3ca3fa3a8b1767569c47c2d760b70f647af35701f8fcc82f8c69",
+      "pixels_reviewed": true,
+      "finding": "Closed simple underfloor and black undertray visible. No major open shell or absent wheel surface seen. Intentionally simplified underside has no mechanical-completeness claim."
+    },
+    {
+      "name": "wheel_contact",
+      "file": "previews/wheel_contact.png",
+      "sha256": "05bf23999f07e0407788f84466010ab0cd06b7b3ae5c29a26be034c733e0539f",
+      "pixels_reviewed": true,
+      "finding": "Close-up confirms tread meets the review ground and a visible gap remains to the arch. Wheel-cover vent slots are uneven and partly occluded by the dish; this is a cosmetic close-up limitation."
+    },
+    {
+      "name": "top",
+      "file": "previews/top.png",
+      "sha256": "7d2d64b6eb3fce2dced9fc5d0dbf36dc2511acf4d48c269e6e77bb5aa6346b01",
+      "pixels_reviewed": true,
+      "finding": "Corrected framing includes the entire overhead silhouette and both bumper tips. Roof, A/B/C pillars, mirrors, hood/deck contours, wipers and opaque screens inspected; no newly visible geometry defect."
+    }
+  ],
+  "visual_caveats": [
+    "Faint/intermittent thin rear-deck shutline and angle-dependent thin seam visibility.",
+    "Minor pinched/faceted lower-valance highlights in frontal lighting.",
+    "Wheel-cover vent slots are uneven and partly occluded by the dish in close-up; the openings are not uniformly clean."
+  ],
+  "coverage_note": "Corrected top preview at 6.7 m orthographic width includes both bumper tips and the full overhead silhouette; all nine views have been visually reviewed.",
+  "no_asset_blockers_found_in_tested_scope": true,
+  "untested": [
+    "Target game-engine import and render parity",
+    "Performance, batching, memory and instancing",
+    "Collision, physics, navigation and gameplay placement",
+    "Animation, driving, suspension, damage and interiors",
+    "LOD/mip/streaming/lightmap tests",
+    "Formal Khronos glTF Validator"
+  ]
+}

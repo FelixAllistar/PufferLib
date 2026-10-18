@@ -1,0 +1,131 @@
+{
+  "identity": {
+    "asset_id": "BC_SHELTER01",
+    "runtime": {
+      "file": "runtime/BC_SHELTER01_static.glb",
+      "sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "bytes": 2984364
+    },
+    "editable_source": {
+      "file": "source/BC_SHELTER01_editable.blend",
+      "sha256": "105e41a64dd82b84f78eadab1189f9e1c9b477d595f09ff82fc61229a5f4fd36"
+    },
+    "canonical_oriented_surface_sha256": "cb14b611139f6ac1e25d27a0dd7bc3cc5ebceb2061f65481d635cbdbee888571",
+    "recipes": [
+      {
+        "file": "source/build_shelter.py",
+        "sha256": "baabf396c7f4d4e1324415e31875780f7362bda8d652a7c2d7bdff45390e0ff5"
+      },
+      {
+        "file": "source/make_textures.py",
+        "sha256": "910a9a4d0d550ace9e546aa8e991672acf780aab65230933bc73380f52ba78b5"
+      },
+      {
+        "file": "source/export_packed.py",
+        "sha256": "d9b60b6b75f93de400c224c03860f8e1100a34f6ff224b123fab670a60ee3284"
+      },
+      {
+        "file": "source/render_export.py",
+        "sha256": "b393fb104dc593e0d5c79ceb0dce85c91eeec15de27b0915474d8a2a26b8ba73"
+      }
+    ]
+  },
+  "environment": {
+    "blender": "4.3.2",
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "no_maps_beside_packed_copy": true
+  },
+  "packed_only": {
+    "export_sha256": "71ed8e6b2b932e4cf082c1073c4bc743f85bb3e1b9f6337d575bc6cd55635a9b",
+    "exact_world_triangle_material_normal_uv_match": true,
+    "canonical_oriented_surface_sha256": "cb14b611139f6ac1e25d27a0dd7bc3cc5ebceb2061f65481d635cbdbee888571",
+    "PBR_pixels_factors_samplers_match": true,
+    "named_transforms_and_metadata_match": true
+  },
+  "relocated_recipe": {
+    "export_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+    "exact_world_triangle_material_normal_uv_match": true,
+    "canonical_oriented_surface_sha256": "cb14b611139f6ac1e25d27a0dd7bc3cc5ebceb2061f65481d635cbdbee888571",
+    "PBR_pixels_factors_samplers_match": true,
+    "named_transforms_and_metadata_match": true
+  },
+  "packed_images": [
+    {
+      "name": "shelter_paint_atlas.png",
+      "packed": true,
+      "packed_sha256": "090670bca3fd26291355e8ce67ee662c5edf2ac10c85ddc1f3b1da971acccc08",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorspace": "sRGB"
+    },
+    {
+      "name": "shelter_paint_orm.png",
+      "packed": true,
+      "packed_sha256": "1a5609717712a02e3c5726d3260a1f60ddc82d341f0ae948e70db5e70df17654",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorspace": "Non-Color"
+    },
+    {
+      "name": "shelter_timber_atlas.png",
+      "packed": true,
+      "packed_sha256": "148c93ba39e7973fc507abf2ec859dc431546044b7634086ba650d8d15ece419",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorspace": "sRGB"
+    },
+    {
+      "name": "shelter_timber_roughness.png",
+      "packed": true,
+      "packed_sha256": "364e57ac5918d7090280fcfdee2375a39edbe9aa6d0981d07fef883df47197df",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorspace": "Non-Color"
+    },
+    {
+      "name": "steel.png",
+      "packed": true,
+      "packed_sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+      "size": [
+        256,
+        256
+      ],
+      "colorspace": "sRGB"
+    }
+  ],
+  "texture_regeneration": [
+    {
+      "file": "shelter_timber_atlas.png",
+      "regenerated_sha256": "148c93ba39e7973fc507abf2ec859dc431546044b7634086ba650d8d15ece419",
+      "candidate_sha256": "148c93ba39e7973fc507abf2ec859dc431546044b7634086ba650d8d15ece419",
+      "byte_identical": true
+    },
+    {
+      "file": "shelter_paint_atlas.png",
+      "regenerated_sha256": "090670bca3fd26291355e8ce67ee662c5edf2ac10c85ddc1f3b1da971acccc08",
+      "candidate_sha256": "090670bca3fd26291355e8ce67ee662c5edf2ac10c85ddc1f3b1da971acccc08",
+      "byte_identical": true
+    },
+    {
+      "file": "shelter_paint_orm.png",
+      "regenerated_sha256": "1a5609717712a02e3c5726d3260a1f60ddc82d341f0ae948e70db5e70df17654",
+      "candidate_sha256": "1a5609717712a02e3c5726d3260a1f60ddc82d341f0ae948e70db5e70df17654",
+      "byte_identical": true
+    },
+    {
+      "file": "shelter_timber_roughness.png",
+      "regenerated_sha256": "364e57ac5918d7090280fcfdee2375a39edbe9aa6d0981d07fef883df47197df",
+      "candidate_sha256": "364e57ac5918d7090280fcfdee2375a39edbe9aa6d0981d07fef883df47197df",
+      "byte_identical": true
+    }
+  ],
+  "comparison_scope": "Exact float values, material names and oriented triangle corners; independent of mesh grouping, triangle order, and cyclic vertex-start order. Includes POSITION, NORMAL, TEXCOORD_0. Core glTF PBR factors, effective opaque/sided defaults, decoded RGBA pixels, effective sampler defaults and texture coordinates, plus named node transforms/extras; source_parts is compared as a sorted inventory since its order is nonsemantic. Not full Khronos validator."
+}

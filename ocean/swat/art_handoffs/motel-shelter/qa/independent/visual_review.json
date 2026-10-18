@@ -1,0 +1,84 @@
+{
+  "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+  "review_method": "Human visual inspection of actual PNG pixels in eight supplied fresh-GLB renders and three independently rendered diagnostics. No postpaint. Numerical contact/geometry checks supplement the sampled views.",
+  "builder_views_reviewed": [
+    {
+      "name": "eye_level",
+      "file": "previews/eye_level.png",
+      "sha256": "2f6ca990ac790c28c8d185acffc96a6f250ffc8b616d93d3eee2131fd5279ff0",
+      "finding": "Roof rail/post corner black patches corrected; underside connections read coherently."
+    },
+    {
+      "name": "roof_drain_detail",
+      "file": "previews/roof_drain_detail.png",
+      "sha256": "f26c56a3c1243de10339c6ea1c9d9e22dd31ea28fefdf23f67396a2dd763b9d5",
+      "finding": "Gutter/endcap and verge have clean edge relationships; a thin fabricated seam remains rather than black coincident-face stripes."
+    },
+    {
+      "name": "front_threequarter",
+      "file": "previews/front_threequarter.png",
+      "sha256": "5c597236610ed6727756736292411ba5592eca0bf577fd36553f9619cff161bd",
+      "finding": "Coherent shelter silhouette and material separation; rounded timber edges, seated feet and suspended bench read clearly."
+    },
+    {
+      "name": "rear_threequarter",
+      "file": "previews/rear_threequarter.png",
+      "sha256": "e3477a51b37018e5c2f174df649a18d4d1159c2220ea43a13cacef8e047a12a8",
+      "finding": "Rear folded screen reads continuous and opaque, with intentional bottom/upper clearance and attached downpipe."
+    },
+    {
+      "name": "front",
+      "file": "previews/front.png",
+      "sha256": "ddc53961ad5c98e6af929be852252816e98940dd82fca3800e7b26213e4e1359",
+      "finding": "Balanced frame and three support positions; no center-seam contact patch remains."
+    },
+    {
+      "name": "bench_join_detail",
+      "file": "previews/bench_join_detail.png",
+      "sha256": "87a6168d57190d344fc3a70abfa9a60974c8631b5677ec62c239b5f4a50c4ef7",
+      "finding": "Bench slats, back uprights, arm and support hardware read joined."
+    },
+    {
+      "name": "ground_contact",
+      "file": "previews/ground_contact.png",
+      "sha256": "53810d1138698ad119f1e4be509c30a9921789d37fb52580571a00b718062e44",
+      "finding": "Collar, plate, washers/nuts form a coherent foot; numerical plate minimum is ground Z=0. Review floor is not asset geometry."
+    },
+    {
+      "name": "rear",
+      "file": "previews/rear.png",
+      "sha256": "5a494f117ff0611ef97c8a3a52c15e685851a79dafae69dceb9a3345b8e7d161",
+      "finding": "Screen coverage, central joint and four-foot stance remain coherent from straight rear."
+    }
+  ],
+  "independent_views_reviewed": [
+    {
+      "file": "diagnostics/seat_underside.png",
+      "sha256": "438b5730121603ffb281365df0e24ffb661d2c35511b17e69c701817066074e1",
+      "finding": "Three braced bearers and rear support assembly visible. Prior lower-mullion underside patch removed."
+    },
+    {
+      "file": "diagnostics/drain_opening.png",
+      "sha256": "4232cbedf03d5756455480ebfc09aac1ea09b9417f125c15997c864c1cbe8163",
+      "finding": "Near-overhead view clearly shows a through-hole into the hollow pipe, including the faceted pipe rim."
+    },
+    {
+      "file": "diagnostics/gutter_end_inside.png",
+      "sha256": "ed88994f8949f0d7dff165baf863cd18bb35cb4f742e46e16f79cb4646dfa141",
+      "finding": "Endcap has a thin overlap seam; no former black verge stripe or large coplanar patch appears."
+    }
+  ],
+  "blocking_visual_findings": [],
+  "limitations": [
+    "Finite offline views and Cycles lighting do not establish target-renderer appearance at all angles or distances.",
+    "Floor/lights/cameras used only for review; physical watertightness, water flow, load behavior and accessibility are outside scope."
+  ],
+  "presentation_derivatives": {
+    "binding_file": "qa/contact_sheet_binding.json",
+    "binding_sha256": "129cf3cf808c40604cda96436c40b65bf6ed777919c4b647f46b5e6ed004fb32",
+    "contact_sheet_sha256": "c2528f631cd4ccef53e3d321321d0a0237b10953237f5d9e574224bb34b1e7e6",
+    "hero_sha256": "9ad4a362a3d1a4c3da38b836ab5b407258abffe285c0f14dcbfb8aaec729d6be",
+    "source_hashes_verified": true,
+    "contact_sheet_visual_finding": "Eight labeled source views read clearly; label descenders are visible and no cells appear cropped unexpectedly."
+  }
+}

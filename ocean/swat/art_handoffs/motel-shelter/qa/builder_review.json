@@ -1,0 +1,27 @@
+{
+  "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+  "source_sha256": "105e41a64dd82b84f78eadab1189f9e1c9b477d595f09ff82fc61229a5f4fd36",
+  "source_solids": 160,
+  "individual_source_solids_closed": true,
+  "all_source_signed_volumes_positive": true,
+  "preview_count": 8,
+  "actual_export_preview_bindings_verified": true,
+  "visual_review": [
+    "front and rear three-quarter silhouette",
+    "front opaque rear screen and seated bench",
+    "eye-level roof underside and rail joins",
+    "bench support and fixing close-up",
+    "baseplate to grade contact",
+    "rear gutter, socket, downpipe and roof lip"
+  ],
+  "corrections_before_final": [
+    "Rear center mullion broadened/offset to overlap screen seam without coplanar crossing faces",
+    "Backrest uprights and screw-head contacts seated against boards",
+    "Roof cross-rail ends recessed inside side rails to remove coincident outer end faces",
+    "Gutter caps seated across ends with distinct exterior surfaces",
+    "Verge exterior/end faces separated from roof sheet caps",
+    "Lower mullion, rear bench rail, panel clips and post/side-rail faces seated without same-facing coplanar patches",
+    "Review floor set exactly to runtime ground-contact plane"
+  ],
+  "qualification": "Builder review of fictional static art only, not native engine, engineering, accessibility or performance acceptance."
+}

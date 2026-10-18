@@ -1,0 +1,72 @@
+{
+  "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+  "method": "All primitive POSITIONs rounded to 1 micrometre and spatially welded per mesh; edge incidence and oriented edge-pair checks. This is topology QA, not a solid boolean union or engine collision mesh.",
+  "meshes": [
+    {
+      "mesh": "BC_SEDAN01_body",
+      "welded_vertices_1e6": 3822,
+      "triangles": 7356,
+      "duplicate_geometric_triangles": 0,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "winding_examples": [],
+      "signed_volume_m3": 4.670659302912063
+    },
+    {
+      "mesh": "BC_SEDAN01_wheel_front_left",
+      "welded_vertices_1e6": 690,
+      "triangles": 1324,
+      "duplicate_geometric_triangles": 0,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "winding_examples": [],
+      "signed_volume_m3": 0.03564025601847039
+    },
+    {
+      "mesh": "BC_SEDAN01_wheel_front_right",
+      "welded_vertices_1e6": 690,
+      "triangles": 1324,
+      "duplicate_geometric_triangles": 0,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "winding_examples": [],
+      "signed_volume_m3": 0.03564025601847037
+    },
+    {
+      "mesh": "BC_SEDAN01_wheel_rear_left",
+      "welded_vertices_1e6": 690,
+      "triangles": 1324,
+      "duplicate_geometric_triangles": 0,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "winding_examples": [],
+      "signed_volume_m3": 0.03564025605482677
+    },
+    {
+      "mesh": "BC_SEDAN01_wheel_rear_right",
+      "welded_vertices_1e6": 690,
+      "triangles": 1324,
+      "duplicate_geometric_triangles": 0,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "winding_examples": [],
+      "signed_volume_m3": 0.03564025605482672
+    },
+    {
+      "mesh": "BC_SEDAN01_windows",
+      "welded_vertices_1e6": 248,
+      "triangles": 472,
+      "duplicate_geometric_triangles": 0,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "winding_examples": [],
+      "signed_volume_m3": 0.01454965790529553
+    }
+  ]
+}

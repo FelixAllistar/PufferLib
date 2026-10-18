@@ -1,0 +1,7 @@
+{
+  "method": "Same-facing triangle surfaces grouped by rounded normal and plane; 1e-5 approximate plane tolerance. Projected intersection areas in m2; opposite-facing legitimate seated contacts excluded.",
+  "pairs": [],
+  "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+  "source_sha256": "105e41a64dd82b84f78eadab1189f9e1c9b477d595f09ff82fc61229a5f4fd36",
+  "scope": "Builder cross-object exact-plane screen. Not a general collision or near-coplanar engine test."
+}

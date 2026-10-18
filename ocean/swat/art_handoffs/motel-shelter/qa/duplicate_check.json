@@ -1,0 +1,373 @@
+{
+  "scope": "Bounded duplicate check of available original index plus UPDATE41 archive text; no claim to visual inspection of every library mesh. Related canopy metadata compared.",
+  "original_index": {
+    "path": "/workspace/shared/motel_dumpster_01/evidence/original_library_index.json",
+    "sha256": "0a53860b01caee2b95eb6dd6b052a01fd5e8312f140ca63a67798ab46c66a5d2",
+    "asset_count": 216,
+    "matches": []
+  },
+  "update41": {
+    "path": "/workspace/shared/catalog_update41/Briar-Court-catalog-UPDATE41-2026-10-16-candidate.zip",
+    "sha256": "fca679b439ffc8fafa2f2f970c35a921012c234df91a01090cef695b30b21329",
+    "archive_members": 732,
+    "text_members_searched": 721,
+    "matches": []
+  },
+  "related_assets": [
+    {
+      "asset_id": "eb07_curb_straight_2m",
+      "library_id": "07_exterior_boundaries/eb07_curb_straight_2m",
+      "batch_id": "07_exterior_boundaries",
+      "file": "07_exterior_boundaries/assets/curb_straight_2m.glb",
+      "source_manifest": "07_exterior_boundaries/manifest.json",
+      "source_manifest_asset_id": "eb07_curb_straight_2m",
+      "label": "Concrete curb \u00b7 2 m",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "ground/underside",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          0.0,
+          0.0,
+          -0.11500000208616257
+        ],
+        "max": [
+          2.0,
+          0.19050000607967377,
+          0.11599999666213989
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        2.0,
+        0.19050000607967377,
+        0.23099999874830246
+      ],
+      "triangles": 242,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 0,
+      "mesh_count": 1,
+      "mesh_instances": 1,
+      "file_bytes": 650760,
+      "sha256": "d4c52bc0aabc673832a1d17729a2d99d37c42dfce26da0dcaf186a4a2bffb225",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "pivot_policy": "Start cross-section at ground, run +X.",
+      "connection_points": [
+        {
+          "name": "start",
+          "position_source_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "position_gltf_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source_xyz": [
+            -1,
+            0,
+            0
+          ],
+          "outward_gltf_xyz": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "end",
+          "position_source_xyz_m": [
+            2,
+            0,
+            0
+          ],
+          "position_gltf_xyz_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source_xyz": [
+            1,
+            0,
+            0
+          ],
+          "outward_gltf_xyz": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "degenerate_triangle_count": 0
+    },
+    {
+      "asset_id": "eb07_slab_square_1m",
+      "library_id": "07_exterior_boundaries/eb07_slab_square_1m",
+      "batch_id": "07_exterior_boundaries",
+      "file": "07_exterior_boundaries/assets/slab_square_1m.glb",
+      "source_manifest": "07_exterior_boundaries/manifest.json",
+      "source_manifest_asset_id": "eb07_slab_square_1m",
+      "label": "Chipped square slab",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "ground/underside",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.5,
+          0.0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          0.08569999784231186,
+          0.5
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        1.0,
+        0.08569999784231186,
+        1.0
+      ],
+      "triangles": 248,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 0,
+      "mesh_count": 1,
+      "mesh_instances": 1,
+      "file_bytes": 651028,
+      "sha256": "0f39b0293fdce3f6cd29730787fb50b5030976e0509ea5a4457f5cf6cb61f7be",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "pivot_policy": "Footprint centre at underside Z=0; nominal 1 m square.",
+      "connection_points": [
+        {
+          "name": "centre",
+          "position_source_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "position_gltf_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source_xyz": [
+            0,
+            0,
+            1
+          ],
+          "outward_gltf_xyz": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "degenerate_triangle_count": 0
+    },
+    {
+      "asset_id": "eb07_slab_split_1m",
+      "library_id": "07_exterior_boundaries/eb07_slab_split_1m",
+      "batch_id": "07_exterior_boundaries",
+      "file": "07_exterior_boundaries/assets/slab_split_1m.glb",
+      "source_manifest": "07_exterior_boundaries/manifest.json",
+      "source_manifest_asset_id": "eb07_slab_split_1m",
+      "label": "Split and settled slab",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "ground/underside",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -0.5,
+          0.0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          0.0860000029206276,
+          0.5
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        1.0,
+        0.0860000029206276,
+        1.0
+      ],
+      "triangles": 258,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 0,
+      "mesh_count": 1,
+      "mesh_instances": 1,
+      "file_bytes": 651668,
+      "sha256": "d90656e5fe92150bc3fb22c01fe0cbb8093305fee80a5075beadd3818fec026c",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "pivot_policy": "Footprint centre at underside Z=0; separated pieces are static art.",
+      "connection_points": [
+        {
+          "name": "centre",
+          "position_source_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "position_gltf_xyz_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source_xyz": [
+            0,
+            0,
+            1
+          ],
+          "outward_gltf_xyz": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "degenerate_triangle_count": 0
+    },
+    {
+      "asset_id": "cv14_game_stall_frame",
+      "library_id": "14_rundown_carnival/cv14_game_stall_frame",
+      "batch_id": "14_rundown_carnival",
+      "file": "14_rundown_carnival/assets/game_stall_frame.glb",
+      "source_manifest": "14_rundown_carnival/manifest.json",
+      "source_manifest_asset_id": "cv14_game_stall_frame",
+      "label": "Game stall frame",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "ground",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -1.659999966621399,
+          0.0,
+          -1.2100000381469727
+        ],
+        "max": [
+          1.659999966621399,
+          2.555000066757202,
+          1.2100000381469727
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        3.319999933242798,
+        2.555000066757202,
+        2.4200000762939453
+      ],
+      "triangles": 1108,
+      "material_count": 3,
+      "primitive_count": 3,
+      "embedded_image_count": 3,
+      "double_sided_material_count": 3,
+      "mesh_count": 1,
+      "mesh_instances": 1,
+      "file_bytes": 209792,
+      "sha256": "24d2058bcb5d73cc823c57bb8325c39700f4878192a42a82c2d6f3895c4136bf",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "pivot_policy": "design anchor at source origin; not recentered; see manifest anchors",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "anchors": {
+        "canopy_support": [
+          0,
+          0,
+          2.55
+        ],
+        "counter_suggested": [
+          0,
+          -1.02,
+          0
+        ]
+      },
+      "anchors_coordinate_space": "Blender source +Z-up metres; named scalar heights/angles retain their explicit units. Exporter does not basis-convert custom metadata.",
+      "degenerate_triangle_count": 0
+    },
+    {
+      "asset_id": "cv14_striped_canopy",
+      "library_id": "14_rundown_carnival/cv14_striped_canopy",
+      "batch_id": "14_rundown_carnival",
+      "file": "14_rundown_carnival/assets/striped_canopy.glb",
+      "source_manifest": "14_rundown_carnival/manifest.json",
+      "source_manifest_asset_id": "cv14_striped_canopy",
+      "label": "Striped stall canopy",
+      "license": "CC0-1.0",
+      "units": "metres",
+      "mounting": "support",
+      "bounds_gltf_y_up_m": {
+        "min": [
+          -1.899999976158142,
+          -0.1599999964237213,
+          -1.3899999856948853
+        ],
+        "max": [
+          1.8999994993209839,
+          0.7720004320144653,
+          1.3899999856948853
+        ]
+      },
+      "dimensions_gltf_xyz_m": [
+        3.799999475479126,
+        0.9320004284381866,
+        2.7799999713897705
+      ],
+      "triangles": 800,
+      "material_count": 4,
+      "primitive_count": 4,
+      "embedded_image_count": 4,
+      "double_sided_material_count": 4,
+      "mesh_count": 1,
+      "mesh_instances": 1,
+      "file_bytes": 243008,
+      "sha256": "81c871e983b74f60baba5fa3cd1b7e7b646f3ad08c47a4b80a0ec68be8caa506",
+      "render_only_default": true,
+      "colliders_supplied": false,
+      "audit_status": "passed",
+      "pivot_policy": "design anchor at source origin; not recentered; see manifest anchors",
+      "pivot_source_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "pivot_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "anchors": {
+        "frame_top_mount": [
+          0,
+          0,
+          0
+        ]
+      },
+      "anchors_coordinate_space": "Blender source +Z-up metres; named scalar heights/angles retain their explicit units. Exporter does not basis-convert custom metadata.",
+      "degenerate_triangle_count": 0
+    }
+  ],
+  "decision": "Distinct roadside waiting shelter with fixed seat, opaque rear screen, mono-pitch drained metal roof; not carnival canopy or separate boundary slab. No transit assignment/signage. No existing model copied or modified."
+}

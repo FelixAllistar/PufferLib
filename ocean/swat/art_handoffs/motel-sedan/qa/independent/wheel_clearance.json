@@ -1,0 +1,66 @@
+[
+  {
+    "tire": "wheel_front_left_tire",
+    "target": "Coachwork_continuous_arch_cut_shell",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.045317549258470535,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  },
+  {
+    "tire": "wheel_front_left_tire",
+    "target": "front_arch_lip_1",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.03896281495690346,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  },
+  {
+    "tire": "wheel_front_right_tire",
+    "target": "Coachwork_continuous_arch_cut_shell",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.045317523181438446,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  },
+  {
+    "tire": "wheel_front_right_tire",
+    "target": "front_arch_lip_-1",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.03896281495690346,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  },
+  {
+    "tire": "wheel_rear_left_tire",
+    "target": "Coachwork_continuous_arch_cut_shell",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.04531750828027725,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  },
+  {
+    "tire": "wheel_rear_left_tire",
+    "target": "rear_arch_lip_1",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.03988266736268997,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  },
+  {
+    "tire": "wheel_rear_right_tire",
+    "target": "Coachwork_continuous_arch_cut_shell",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.045317549258470535,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  },
+  {
+    "tire": "wheel_rear_right_tire",
+    "target": "rear_arch_lip_-1",
+    "BVHTree_overlap_triangle_pairs": 0,
+    "overlap_pairs": [],
+    "minimum_sampled_vertex_to_triangle_distance_m": 0.03988266736268997,
+    "method": "Blender BVHTree overlap query and bidirectional all-vertex-to-triangle distance samples; no engine collision or steering envelope tested."
+  }
+]

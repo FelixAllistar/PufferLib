@@ -1,0 +1,90 @@
+{
+  "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+  "files": [
+    {
+      "file": "AUDIT_REPORT.json",
+      "sha256": "53b9947db15452bd7a9d0de697a7915c8b5ef068173871dfe8135803b5613adf",
+      "bytes": 2679
+    },
+    {
+      "file": "AUDIT_REPORT.md",
+      "sha256": "5993883853bc6a00f486796e03d67f3c814931d31411f281744bf15702006200",
+      "bytes": 3973
+    },
+    {
+      "file": "contact_checks.json",
+      "sha256": "78d11814a7e630be83a7abc3b70a059d6f75cf886709af6d72f18467ffbfadc7",
+      "bytes": 38516
+    },
+    {
+      "file": "diagnostics/binding.json",
+      "sha256": "5f707c7a27af4bace5d05e53f9d75ffe6e6b973ecc58b0953896950710c558c6",
+      "bytes": 1197
+    },
+    {
+      "file": "diagnostics/drain_opening.png",
+      "sha256": "4232cbedf03d5756455480ebfc09aac1ea09b9417f125c15997c864c1cbe8163",
+      "bytes": 1520086
+    },
+    {
+      "file": "diagnostics/gutter_end_inside.png",
+      "sha256": "ed88994f8949f0d7dff165baf863cd18bb35cb4f742e46e16f79cb4646dfa141",
+      "bytes": 1309901
+    },
+    {
+      "file": "diagnostics/seat_underside.png",
+      "sha256": "438b5730121603ffb281365df0e24ffb661d2c35511b17e69c701817066074e1",
+      "bytes": 1301570
+    },
+    {
+      "file": "geometry_checks.json",
+      "sha256": "392ebf651a2c3a866a256b73bed38269b3ce2d3e289de9e71122a2bd32f20577",
+      "bytes": 4741
+    },
+    {
+      "file": "reproduce/audit_glb.py",
+      "sha256": "8d1e327c285ee1e8c81c22a29b8ab8458bd296e5e757def9a4c8218c7641b02a",
+      "bytes": 6905
+    },
+    {
+      "file": "reproduce/audit_materials.py",
+      "sha256": "4e5fd5f98f8f03f8af1e62f55e3d71c1554d5467c3f2482ec5427cf3b77365ee",
+      "bytes": 3367
+    },
+    {
+      "file": "reproduce/compare_surfaces.py",
+      "sha256": "7f59bcf9d99074d37ee26b5975bcd59904329d9de4995c1c477d08d777eacfe6",
+      "bytes": 1635
+    },
+    {
+      "file": "reproduce/inspect_source.py",
+      "sha256": "cbf0b8b5736a14ed1749b8ce4aa21d2641dc2419088fedc84da1ea00be518833",
+      "bytes": 5606
+    },
+    {
+      "file": "reproduce/render_diagnostics.py",
+      "sha256": "49cb83de5b573783b0c2ec365b2ea18fe008dea8825d8c1b77cd7bf1871ecea0",
+      "bytes": 1966
+    },
+    {
+      "file": "reproduce/rerun_checks.py",
+      "sha256": "7dfb1538b7a9b522e1206a543849ffb56d2a18377484fc1c64b3345892231fbc",
+      "bytes": 2626
+    },
+    {
+      "file": "reproduce/scan_coplanar.py",
+      "sha256": "99ac2145d91aae952af918c99023071c0f4a10b476c0bbb2b706b2df02b4dea2",
+      "bytes": 2634
+    },
+    {
+      "file": "reproduction_checks.json",
+      "sha256": "ac930d0249af64af8f581a264581cd7eef32b0f1fd6803d6a54b7b99aab7ed20",
+      "bytes": 4887
+    },
+    {
+      "file": "visual_review.json",
+      "sha256": "aacd3793dc4f4893c5ce8d4a59193a2289a4384dcce720bd80e81c80a3e9359d",
+      "bytes": 4374
+    }
+  ]
+}

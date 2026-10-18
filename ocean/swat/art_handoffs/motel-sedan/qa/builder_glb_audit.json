@@ -1,0 +1,3932 @@
+{
+  "file": "/workspace/shared/parked_sedan_01/candidate/runtime/BC_SEDAN01_parked.glb",
+  "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+  "bytes": 1012828,
+  "asset": {
+    "generator": "Khronos glTF Blender I/O v4.3.47",
+    "version": "2.0"
+  },
+  "extensionsUsed": [],
+  "materials": [
+    {
+      "name": "BC_SEDAN_Paint_SageGrey",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    },
+    {
+      "name": "BC_SEDAN_Rubber_Trim",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 2
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.7900000214576721
+      }
+    },
+    {
+      "name": "BC_SEDAN_Detail_Atlas",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicRoughnessTexture": {
+          "index": 4
+        }
+      }
+    },
+    {
+      "name": "BC_SEDAN_Opaque_Glass",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.035999998450279236,
+          0.05999999865889549,
+          0.06800000369548798,
+          1
+        ],
+        "metallicFactor": 0.20000000298023224,
+        "roughnessFactor": 0.20000000298023224
+      }
+    }
+  ],
+  "images": [
+    {
+      "index": 0,
+      "name": "paint_baseColor",
+      "mimeType": "image/png",
+      "bytes": 128413,
+      "sha256": "b35ea00bb05d93b33ba488b40249dfb9519791fc56da03432dd8761e5a300ab3",
+      "exact_source_matches": [
+        "source/maps/paint_baseColor.png"
+      ]
+    },
+    {
+      "index": 1,
+      "name": "paint_ORM",
+      "mimeType": "image/png",
+      "bytes": 146322,
+      "sha256": "2041215b6f3bc0d8a29ed24b81286559775fa2a83ab10f9d007dcbd9fae50154",
+      "exact_source_matches": [
+        "source/maps/paint_ORM.png"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "rubber_baseColor",
+      "mimeType": "image/png",
+      "bytes": 133683,
+      "sha256": "3530ada20cc66e22126e01a387452b04fceea56a1dc6bf3f23b2aefe19586e78",
+      "exact_source_matches": [
+        "source/maps/rubber_baseColor.png"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "detail_baseColor",
+      "mimeType": "image/png",
+      "bytes": 112365,
+      "sha256": "5157fc17fa72600c5fd97f4fe0292e6a78f23ed5e1759919b3948e9111ea427a",
+      "exact_source_matches": [
+        "source/maps/detail_baseColor.png"
+      ]
+    },
+    {
+      "index": 4,
+      "name": "detail_ORM",
+      "mimeType": "image/png",
+      "bytes": 1924,
+      "sha256": "f969da4d1ddb8044483f2bdd5d90fdb093fa66237bf04adf6a76927f819f1908",
+      "exact_source_matches": [
+        "source/maps/detail_ORM.png"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "index": 6,
+      "name": "BC_SEDAN01",
+      "mesh": null,
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "children": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "index": 0,
+      "name": "BC_SEDAN01_body",
+      "mesh": 0,
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "children": []
+    },
+    {
+      "index": 1,
+      "name": "BC_SEDAN01_wheel_front_left",
+      "mesh": 1,
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "children": []
+    },
+    {
+      "index": 2,
+      "name": "BC_SEDAN01_wheel_front_right",
+      "mesh": 2,
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "children": []
+    },
+    {
+      "index": 3,
+      "name": "BC_SEDAN01_wheel_rear_left",
+      "mesh": 3,
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "children": []
+    },
+    {
+      "index": 4,
+      "name": "BC_SEDAN01_wheel_rear_right",
+      "mesh": 4,
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "children": []
+    },
+    {
+      "index": 5,
+      "name": "BC_SEDAN01_windows",
+      "mesh": 5,
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "children": []
+    }
+  ],
+  "mesh_instances": [
+    {
+      "node": 0,
+      "name": "BC_SEDAN01_body",
+      "mesh_name": "BC_SEDAN01_body",
+      "primitives": [
+        {
+          "material": 0,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 3381,
+          "triangles": 4124,
+          "area_min_m2": 3.3870629515705574e-05,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999383997813,
+            "length_max": 1.0000001255744901,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.022938782740487364
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.0,
+                0.0
+              ],
+              "max": [
+                1.0,
+                1.0
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        },
+        {
+          "material": 1,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 3516,
+          "triangles": 2556,
+          "area_min_m2": 6.0358801149863146e-06,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999113304124,
+            "length_max": 1.0000001256802777,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.13229234317278404
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.05000000074505806,
+                0.8600000143051147
+              ],
+              "max": [
+                0.17000000178813934,
+                0.9800000190734863
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        },
+        {
+          "material": 2,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 864,
+          "triangles": 676,
+          "area_min_m2": 5.071742193539127e-06,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999465930213,
+            "length_max": 1.0000000931801003,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.8606614194725737
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.014999999664723873,
+                0.26499998569488525
+              ],
+              "max": [
+                0.9850000143051147,
+                0.9850000143051147
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "world_min": [
+        -0.9800000190734863,
+        0.2214999943971634,
+        -2.177999973297119
+      ],
+      "world_max": [
+        0.9800000190734863,
+        1.4539999961853027,
+        2.184000015258789
+      ],
+      "weld_tolerance_m": 1e-06,
+      "welded_vertices": 3822,
+      "components": [
+        {
+          "triangles": 2196,
+          "welded_vertices": 1100,
+          "edges": 3294,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 4.3805853098593035,
+          "world_min": [
+            -0.875,
+            0.23499999940395355,
+            -2.1500000953674316
+          ],
+          "world_max": [
+            0.875,
+            0.9559999704360962,
+            2.1500000953674316
+          ]
+        },
+        {
+          "triangles": 180,
+          "welded_vertices": 92,
+          "edges": 270,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0003664195987824453,
+          "world_min": [
+            -0.8691229224205017,
+            0.24963094294071198,
+            -1.6569942235946655
+          ],
+          "world_max": [
+            -0.8293086290359497,
+            0.6919988393783569,
+            -0.9030025005340576
+          ]
+        },
+        {
+          "triangles": 180,
+          "welded_vertices": 92,
+          "edges": 270,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0003664473951772121,
+          "world_min": [
+            -0.869110643863678,
+            0.2496197372674942,
+            0.903008759021759
+          ],
+          "world_max": [
+            -0.8262766003608704,
+            0.691987156867981,
+            1.6569974422454834
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.002263788964698519,
+          "world_min": [
+            -0.871999979019165,
+            0.24694287776947021,
+            -0.901076078414917
+          ],
+          "world_max": [
+            -0.8240044116973877,
+            0.29403331875801086,
+            0.901076078414917
+          ]
+        },
+        {
+          "triangles": 180,
+          "welded_vertices": 92,
+          "edges": 270,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00036641960544757927,
+          "world_min": [
+            0.8293086290359497,
+            0.24963094294071198,
+            -1.6569942235946655
+          ],
+          "world_max": [
+            0.8691229224205017,
+            0.6919988393783569,
+            -0.9030025005340576
+          ]
+        },
+        {
+          "triangles": 180,
+          "welded_vertices": 92,
+          "edges": 270,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00036644739641415063,
+          "world_min": [
+            0.8262766003608704,
+            0.2496197372674942,
+            0.903008759021759
+          ],
+          "world_max": [
+            0.869110643863678,
+            0.691987156867981,
+            1.6569974422454834
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0022637889730163026,
+          "world_min": [
+            0.8240044116973877,
+            0.24694287776947021,
+            -0.901076078414917
+          ],
+          "world_max": [
+            0.871999979019165,
+            0.29403331875801086,
+            0.901076078414917
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.010444820373914985,
+          "world_min": [
+            -0.7950000166893005,
+            0.8799999952316284,
+            -1.340000033378601
+          ],
+          "world_max": [
+            -0.6349999904632568,
+            1.3919999599456787,
+            1.059999942779541
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.01044482037391494,
+          "world_min": [
+            0.6349999904632568,
+            0.8799999952316284,
+            -1.340000033378601
+          ],
+          "world_max": [
+            0.7950000166893005,
+            1.3919999599456787,
+            1.059999942779541
+          ]
+        },
+        {
+          "triangles": 248,
+          "welded_vertices": 126,
+          "edges": 372,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.023410735685199347,
+          "world_min": [
+            -0.6489999890327454,
+            1.371999979019165,
+            -0.640999972820282
+          ],
+          "world_max": [
+            0.6489999890327454,
+            1.4539999961853027,
+            0.3610000014305115
+          ]
+        },
+        {
+          "triangles": 212,
+          "welded_vertices": 108,
+          "edges": 318,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.014950313718555227,
+          "world_min": [
+            -0.7960000038146973,
+            0.8740000128746033,
+            0.34800001978874207
+          ],
+          "world_max": [
+            0.7960000038146973,
+            1.4500000476837158,
+            1.059999942779541
+          ]
+        },
+        {
+          "triangles": 212,
+          "welded_vertices": 108,
+          "edges": 318,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.014950300865132604,
+          "world_min": [
+            -0.7960000038146973,
+            0.8740000128746033,
+            -1.340000033378601
+          ],
+          "world_max": [
+            0.7960000038146973,
+            1.4500000476837158,
+            -0.6279999613761902
+          ]
+        },
+        {
+          "triangles": 200,
+          "welded_vertices": 102,
+          "edges": 300,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.05181689825261903,
+          "world_min": [
+            -0.8299999833106995,
+            0.3400000035762787,
+            1.7949999570846558
+          ],
+          "world_max": [
+            0.8299999833106995,
+            0.5600000023841858,
+            2.1500000953674316
+          ]
+        },
+        {
+          "triangles": 200,
+          "welded_vertices": 102,
+          "edges": 300,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.05181689825261904,
+          "world_min": [
+            -0.8299999833106995,
+            0.3400000035762787,
+            -2.1500000953674316
+          ],
+          "world_max": [
+            0.8299999833106995,
+            0.5600000023841858,
+            -1.7949999570846558
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0013414501409888518,
+          "world_min": [
+            -0.9800000190734863,
+            0.9959999918937683,
+            0.6600000262260437
+          ],
+          "world_max": [
+            -0.8600000143051147,
+            1.0750000476837158,
+            0.8700000047683716
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0013414501409888529,
+          "world_min": [
+            0.8600000143051147,
+            0.9959999918937683,
+            0.6600000262260437
+          ],
+          "world_max": [
+            0.9800000190734863,
+            1.0750000476837158,
+            0.8700000047683716
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.00018398811426243814,
+          "world_min": [
+            -0.7842534184455872,
+            0.9464133977890015,
+            -0.19112461805343628
+          ],
+          "world_max": [
+            -0.6543086767196655,
+            1.3622221946716309,
+            0.9501246213912964
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.00015287331339531996,
+          "world_min": [
+            -0.7842612862586975,
+            0.9465663433074951,
+            -1.2172483205795288
+          ],
+          "world_max": [
+            -0.6540355086326599,
+            1.3622504472732544,
+            -0.2717517614364624
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 4.6740314621841e-05,
+          "world_min": [
+            -0.7786862850189209,
+            0.949999988079071,
+            -0.2529999911785126
+          ],
+          "world_max": [
+            -0.6567058563232422,
+            1.3600000143051147,
+            -0.21299999952316284
+          ]
+        },
+        {
+          "triangles": 28,
+          "welded_vertices": 16,
+          "edges": 42,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00015695907743591567,
+          "world_min": [
+            -0.7861372232437134,
+            0.9390000104904175,
+            -1.2200000286102295
+          ],
+          "world_max": [
+            -0.7741372585296631,
+            0.9509999752044678,
+            0.9599999785423279
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.00018398811426243757,
+          "world_min": [
+            0.6543086767196655,
+            0.9464133977890015,
+            -0.19112461805343628
+          ],
+          "world_max": [
+            0.7842534184455872,
+            1.3622221946716309,
+            0.9501246213912964
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.00015287331339531966,
+          "world_min": [
+            0.6540355086326599,
+            0.9465663433074951,
+            -1.2172483205795288
+          ],
+          "world_max": [
+            0.7842612862586975,
+            1.3622504472732544,
+            -0.2717517614364624
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 4.6740314621842586e-05,
+          "world_min": [
+            0.6567058563232422,
+            0.949999988079071,
+            -0.2529999911785126
+          ],
+          "world_max": [
+            0.7786862850189209,
+            1.3600000143051147,
+            -0.21299999952316284
+          ]
+        },
+        {
+          "triangles": 28,
+          "welded_vertices": 16,
+          "edges": 42,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0001569590774359151,
+          "world_min": [
+            0.7741372585296631,
+            0.9390000104904175,
+            -1.2200000286102295
+          ],
+          "world_max": [
+            0.7861372232437134,
+            0.9509999752044678,
+            0.9599999785423279
+          ]
+        },
+        {
+          "triangles": 92,
+          "welded_vertices": 48,
+          "edges": 138,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.0538222319182887e-05,
+          "world_min": [
+            -0.8678277730941772,
+            0.3147946000099182,
+            -0.2427976429462433
+          ],
+          "world_max": [
+            -0.7727085947990417,
+            0.953777551651001,
+            -0.22219999134540558
+          ]
+        },
+        {
+          "triangles": 204,
+          "welded_vertices": 104,
+          "edges": 306,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.7524030378090755e-05,
+          "world_min": [
+            -0.8741375207901001,
+            0.31220000982284546,
+            -0.24100272357463837
+          ],
+          "world_max": [
+            -0.7732126712799072,
+            0.9547760486602783,
+            1.0176464319229126
+          ]
+        },
+        {
+          "triangles": 164,
+          "welded_vertices": 84,
+          "edges": 246,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.3032402427139317e-05,
+          "world_min": [
+            -0.8768330216407776,
+            0.31220000982284546,
+            -1.30259108543396
+          ],
+          "world_max": [
+            -0.7733850479125977,
+            0.9548149108886719,
+            -0.23899726569652557
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.618767388585147e-05,
+          "world_min": [
+            -0.8703206777572632,
+            0.8134999871253967,
+            -0.14149999618530273
+          ],
+          "world_max": [
+            -0.8583207130432129,
+            0.856499969959259,
+            0.03149999678134918
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.618766546123251e-05,
+          "world_min": [
+            -0.8768754601478577,
+            0.8134999871253967,
+            -0.8614999651908875
+          ],
+          "world_max": [
+            -0.8648754954338074,
+            0.856499969959259,
+            -0.6884999871253967
+          ]
+        },
+        {
+          "triangles": 128,
+          "welded_vertices": 64,
+          "edges": 192,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 8.666725728623809e-06,
+          "world_min": [
+            -0.8650521636009216,
+            0.7573047876358032,
+            -1.8022185564041138
+          ],
+          "world_max": [
+            -0.7016660571098328,
+            0.8526937961578369,
+            -1.6374768018722534
+          ]
+        },
+        {
+          "triangles": 92,
+          "welded_vertices": 48,
+          "edges": 138,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.0538222319182906e-05,
+          "world_min": [
+            0.7727085947990417,
+            0.3147946000099182,
+            -0.2427976429462433
+          ],
+          "world_max": [
+            0.8678277730941772,
+            0.953777551651001,
+            -0.22219999134540558
+          ]
+        },
+        {
+          "triangles": 204,
+          "welded_vertices": 104,
+          "edges": 306,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.7524030378088553e-05,
+          "world_min": [
+            0.7732126712799072,
+            0.31220000982284546,
+            -0.24100272357463837
+          ],
+          "world_max": [
+            0.8741375207901001,
+            0.9547760486602783,
+            1.0176464319229126
+          ]
+        },
+        {
+          "triangles": 164,
+          "welded_vertices": 84,
+          "edges": 246,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.3032402427139297e-05,
+          "world_min": [
+            0.7733850479125977,
+            0.31220000982284546,
+            -1.30259108543396
+          ],
+          "world_max": [
+            0.8768330216407776,
+            0.9548149108886719,
+            -0.23899726569652557
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.618767388585137e-05,
+          "world_min": [
+            0.8583207130432129,
+            0.8134999871253967,
+            -0.14149999618530273
+          ],
+          "world_max": [
+            0.8703206777572632,
+            0.856499969959259,
+            0.03149999678134918
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.618766546123254e-05,
+          "world_min": [
+            0.8648754954338074,
+            0.8134999871253967,
+            -0.8614999651908875
+          ],
+          "world_max": [
+            0.8768754601478577,
+            0.856499969959259,
+            -0.6884999871253967
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.699033725445223e-05,
+          "world_min": [
+            -0.6845399737358093,
+            0.8230634927749634,
+            1.0397034883499146
+          ],
+          "world_max": [
+            -0.6561004519462585,
+            0.9059788584709167,
+            1.9800995588302612
+          ]
+        },
+        {
+          "triangles": 28,
+          "welded_vertices": 16,
+          "edges": 42,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.0518038698416592e-05,
+          "world_min": [
+            -0.6818423271179199,
+            0.8317104578018188,
+            -1.9803351163864136
+          ],
+          "world_max": [
+            -0.6585387587547302,
+            0.9065431952476501,
+            -1.399619698524475
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.6990284587214907e-05,
+          "world_min": [
+            0.6561004519462585,
+            0.8230862617492676,
+            1.0397034883499146
+          ],
+          "world_max": [
+            0.6845399737358093,
+            0.9059752821922302,
+            1.9801018238067627
+          ]
+        },
+        {
+          "triangles": 28,
+          "welded_vertices": 16,
+          "edges": 42,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.0518391955246557e-05,
+          "world_min": [
+            0.6585387587547302,
+            0.8316071629524231,
+            -1.980322003364563
+          ],
+          "world_max": [
+            0.6818423271179199,
+            0.9065319895744324,
+            -1.3996198177337646
+          ]
+        },
+        {
+          "triangles": 36,
+          "welded_vertices": 20,
+          "edges": 54,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.3738601215369626e-05,
+          "world_min": [
+            -0.6592391729354858,
+            0.8230651021003723,
+            1.9769999980926514
+          ],
+          "world_max": [
+            0.6592390537261963,
+            0.8471924066543579,
+            1.9830000400543213
+          ]
+        },
+        {
+          "triangles": 36,
+          "welded_vertices": 20,
+          "edges": 54,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.3832393901515245e-05,
+          "world_min": [
+            -0.6617110371589661,
+            0.8315948843955994,
+            -1.9830000400543213
+          ],
+          "world_max": [
+            0.6617116928100586,
+            0.8605002164840698,
+            -1.9769999980926514
+          ]
+        },
+        {
+          "triangles": 100,
+          "welded_vertices": 52,
+          "edges": 150,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0017803749966846451,
+          "world_min": [
+            -0.8211010694503784,
+            0.4580000042915344,
+            1.9582630395889282
+          ],
+          "world_max": [
+            0.8211010694503784,
+            0.5040000081062317,
+            2.177999973297119
+          ]
+        },
+        {
+          "triangles": 84,
+          "welded_vertices": 44,
+          "edges": 126,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 4.109711261465134e-05,
+          "world_min": [
+            -0.8117181062698364,
+            0.5595000386238098,
+            1.97758948802948
+          ],
+          "world_max": [
+            0.8117181062698364,
+            0.5665000081062317,
+            2.1545000076293945
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.000916176158350248,
+          "world_min": [
+            -0.20250000059604645,
+            0.5489999651908875,
+            2.135999917984009
+          ],
+          "world_max": [
+            0.20250000059604645,
+            0.6769999861717224,
+            2.1540000438690186
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0009224695542451323,
+          "world_min": [
+            -0.3499999940395355,
+            0.36649999022483826,
+            2.1475000381469727
+          ],
+          "world_max": [
+            0.3499999940395355,
+            0.43149998784065247,
+            2.1684999465942383
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.001146818058433402,
+          "world_min": [
+            -0.3375000059604645,
+            0.7009999752044678,
+            2.1570000648498535
+          ],
+          "world_max": [
+            0.3375000059604645,
+            0.8090000152587891,
+            2.172999858856201
+          ]
+        },
+        {
+          "triangles": 100,
+          "welded_vertices": 52,
+          "edges": 150,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0017803749966846432,
+          "world_min": [
+            -0.8211010694503784,
+            0.4580000042915344,
+            -2.177999973297119
+          ],
+          "world_max": [
+            0.8211010694503784,
+            0.5040000081062317,
+            -1.9582630395889282
+          ]
+        },
+        {
+          "triangles": 84,
+          "welded_vertices": 44,
+          "edges": 126,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 4.1097112614651575e-05,
+          "world_min": [
+            -0.8117181062698364,
+            0.5595000386238098,
+            -2.1545000076293945
+          ],
+          "world_max": [
+            0.8117181062698364,
+            0.5665000081062317,
+            -1.97758948802948
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0009161761583502515,
+          "world_min": [
+            -0.20250000059604645,
+            0.5489999651908875,
+            -2.1540000438690186
+          ],
+          "world_max": [
+            0.20250000059604645,
+            0.6769999861717224,
+            -2.135999917984009
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 9.242892806534594e-05,
+          "world_min": [
+            -0.7073184847831726,
+            0.6663726568222046,
+            2.040987253189087
+          ],
+          "world_max": [
+            -0.3716815114021301,
+            0.8036400079727173,
+            2.151916265487671
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 3.0284560884023105e-05,
+          "world_min": [
+            -0.7990587949752808,
+            0.6684697270393372,
+            1.9935352802276611
+          ],
+          "world_max": [
+            -0.716941237449646,
+            0.7785978317260742,
+            2.0473508834838867
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.00012251140765798135,
+          "world_min": [
+            -0.7924767732620239,
+            0.6661800742149353,
+            -2.1554434299468994
+          ],
+          "world_max": [
+            -0.3425232470035553,
+            0.79582679271698,
+            -1.9953420162200928
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 2.972880364344923e-05,
+          "world_min": [
+            -0.463657945394516,
+            0.6839098930358887,
+            -2.154189109802246
+          ],
+          "world_max": [
+            -0.3543420732021332,
+            0.7651460766792297,
+            -2.1219000816345215
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 9.242892806534594e-05,
+          "world_min": [
+            0.3716815114021301,
+            0.6663726568222046,
+            2.040987253189087
+          ],
+          "world_max": [
+            0.7073184847831726,
+            0.8036400079727173,
+            2.151916265487671
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 3.0284560884023034e-05,
+          "world_min": [
+            0.716941237449646,
+            0.6684697270393372,
+            1.9935352802276611
+          ],
+          "world_max": [
+            0.7990587949752808,
+            0.7785978317260742,
+            2.0473508834838867
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.00012251140765798078,
+          "world_min": [
+            0.3425232470035553,
+            0.6661800742149353,
+            -2.1554434299468994
+          ],
+          "world_max": [
+            0.7924767732620239,
+            0.79582679271698,
+            -1.9953420162200928
+          ]
+        },
+        {
+          "triangles": 32,
+          "welded_vertices": 16,
+          "edges": 48,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 2.972880364344894e-05,
+          "world_min": [
+            0.3543420732021332,
+            0.6839098930358887,
+            -2.154189109802246
+          ],
+          "world_max": [
+            0.463657945394516,
+            0.7651460766792297,
+            -2.1219000816345215
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00014676274862495333,
+          "world_min": [
+            -0.8811803460121155,
+            0.9835745096206665,
+            0.7576392889022827
+          ],
+          "world_max": [
+            -0.7788196802139282,
+            1.0394254922866821,
+            0.8423606753349304
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00014676274862495393,
+          "world_min": [
+            0.7788196802139282,
+            0.9835745096206665,
+            0.7576392889022827
+          ],
+          "world_max": [
+            0.8811803460121155,
+            1.0394254922866821,
+            0.8423606753349304
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.07872715295939182,
+          "world_min": [
+            -0.5649999976158142,
+            0.2214999943971634,
+            -1.0
+          ],
+          "world_max": [
+            0.5649999976158142,
+            0.2565000057220459,
+            1.0
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 4.573718410202599e-05,
+          "world_min": [
+            -0.5426670908927917,
+            0.948509931564331,
+            0.9798383712768555
+          ],
+          "world_max": [
+            -0.07748611271381378,
+            1.0077414512634277,
+            1.0189292430877686
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 4.3112040273523906e-05,
+          "world_min": [
+            0.11772504448890686,
+            0.9695706963539124,
+            0.9748446345329285
+          ],
+          "world_max": [
+            0.5574492812156677,
+            0.9841147661209106,
+            1.021926760673523
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 6.63275965086554e-05,
+          "world_min": [
+            -0.8898206949234009,
+            0.8289999961853027,
+            -0.12250000238418579
+          ],
+          "world_max": [
+            -0.8648207187652588,
+            0.8509999513626099,
+            0.012500002980232239
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 6.632758409346017e-05,
+          "world_min": [
+            -0.8963754177093506,
+            0.8289999961853027,
+            -0.8424999713897705
+          ],
+          "world_max": [
+            -0.8713754415512085,
+            0.8509999513626099,
+            -0.7074999809265137
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 6.632759650865518e-05,
+          "world_min": [
+            0.8648207187652588,
+            0.8289999961853027,
+            -0.12250000238418579
+          ],
+          "world_max": [
+            0.8898206949234009,
+            0.8509999513626099,
+            0.012500002980232239
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 6.632758409345987e-05,
+          "world_min": [
+            0.8713754415512085,
+            0.8289999961853027,
+            -0.8424999713897705
+          ],
+          "world_max": [
+            0.8963754177093506,
+            0.8509999513626099,
+            -0.7074999809265137
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0003561334224734419,
+          "world_min": [
+            -0.17149999737739563,
+            0.5690000057220459,
+            2.1519999504089355
+          ],
+          "world_max": [
+            0.17149999737739563,
+            0.656999945640564,
+            2.1640000343322754
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 7.679100772631563e-05,
+          "world_min": [
+            -0.3199999928474426,
+            0.7164999842643738,
+            2.171999931335449
+          ],
+          "world_max": [
+            0.3199999928474426,
+            0.7275000214576721,
+            2.184000015258789
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 7.67910077262049e-05,
+          "world_min": [
+            -0.3199999928474426,
+            0.7444999814033508,
+            2.171999931335449
+          ],
+          "world_max": [
+            0.3199999928474426,
+            0.7555000185966492,
+            2.184000015258789
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 7.679100772624162e-05,
+          "world_min": [
+            -0.3199999928474426,
+            0.7724999785423279,
+            2.171999931335449
+          ],
+          "world_max": [
+            0.3199999928474426,
+            0.7835000157356262,
+            2.184000015258789
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.000356133422473443,
+          "world_min": [
+            -0.17149999737739563,
+            0.5690000057220459,
+            -2.1640000343322754
+          ],
+          "world_max": [
+            0.17149999737739563,
+            0.656999945640564,
+            -2.1519999504089355
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0008579535593634628,
+          "world_min": [
+            -0.7049999833106995,
+            0.6740000247955322,
+            2.0246732234954834
+          ],
+          "world_max": [
+            -0.37400001287460327,
+            0.7960000038146973,
+            2.1442301273345947
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00014687998174668158,
+          "world_min": [
+            -0.7940000295639038,
+            0.6740000247955322,
+            1.9765361547470093
+          ],
+          "world_max": [
+            -0.722000002861023,
+            0.7730000019073486,
+            2.0403499603271484
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.001067996850252155,
+          "world_min": [
+            -0.7900000214576721,
+            0.6740000247955322,
+            -2.147836446762085
+          ],
+          "world_max": [
+            -0.3449999988079071,
+            0.7879999876022339,
+            -1.9789490699768066
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00012974432483875593,
+          "world_min": [
+            -0.46000000834465027,
+            0.6909999847412109,
+            -2.146291732788086
+          ],
+          "world_max": [
+            -0.3580000102519989,
+            0.7580000162124634,
+            -2.105797529220581
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.7921752276446193e-05,
+          "world_min": [
+            -0.8635077476501465,
+            0.7204999923706055,
+            1.6475000381469727
+          ],
+          "world_max": [
+            -0.8515077829360962,
+            0.749500036239624,
+            1.7325000762939453
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0008579535593634854,
+          "world_min": [
+            0.37400001287460327,
+            0.6740000247955322,
+            2.0246732234954834
+          ],
+          "world_max": [
+            0.7049999833106995,
+            0.7960000038146973,
+            2.1442301273345947
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00014687998174668532,
+          "world_min": [
+            0.722000002861023,
+            0.6740000247955322,
+            1.9765361547470093
+          ],
+          "world_max": [
+            0.7940000295639038,
+            0.7730000019073486,
+            2.0403499603271484
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0010679968502521646,
+          "world_min": [
+            0.3449999988079071,
+            0.6740000247955322,
+            -2.147836446762085
+          ],
+          "world_max": [
+            0.7900000214576721,
+            0.7879999876022339,
+            -1.9789490699768066
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00012974432483875377,
+          "world_min": [
+            0.3580000102519989,
+            0.6909999847412109,
+            -2.146291732788086
+          ],
+          "world_max": [
+            0.46000000834465027,
+            0.7580000162124634,
+            -2.105797529220581
+          ]
+        },
+        {
+          "triangles": 44,
+          "welded_vertices": 24,
+          "edges": 66,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 2.7921752276446448e-05,
+          "world_min": [
+            0.8515077829360962,
+            0.7204999923706055,
+            1.6475000381469727
+          ],
+          "world_max": [
+            0.8635077476501465,
+            0.749500036239624,
+            1.7325000762939453
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.1094076418389533e-05,
+          "world_min": [
+            -0.9610000252723694,
+            1.0119999647140503,
+            0.6620000004768372
+          ],
+          "world_max": [
+            -0.875,
+            1.0549999475479126,
+            0.6770000457763672
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 1.1094076418389533e-05,
+          "world_min": [
+            0.875,
+            1.0119999647140503,
+            0.6620000004768372
+          ],
+          "world_max": [
+            0.9610000252723694,
+            1.0549999475479126,
+            0.6770000457763672
+          ]
+        },
+        {
+          "triangles": 28,
+          "welded_vertices": 16,
+          "edges": 42,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.004504263182472095,
+          "world_min": [
+            -0.6499999761581421,
+            0.2800000011920929,
+            -1.3149999380111694
+          ],
+          "world_max": [
+            0.6499999761581421,
+            0.3499999940395355,
+            -1.2450000047683716
+          ]
+        },
+        {
+          "triangles": 28,
+          "welded_vertices": 16,
+          "edges": 42,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0045042631824720935,
+          "world_min": [
+            -0.6499999761581421,
+            0.2800000011920929,
+            1.2450000047683716
+          ],
+          "world_max": [
+            0.6499999761581421,
+            0.3499999940395355,
+            1.3149999380111694
+          ]
+        }
+      ],
+      "duplicate_triangle_count": 0
+    },
+    {
+      "node": 1,
+      "name": "BC_SEDAN01_wheel_front_left",
+      "mesh_name": "BC_SEDAN01_wheel_front_left",
+      "primitives": [
+        {
+          "material": 1,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 410,
+          "triangles": 640,
+          "area_min_m2": 0.0006152875666021123,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999598055244,
+            "length_max": 1.0000000976201093,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9347681407510239
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.0,
+                0.0
+              ],
+              "max": [
+                1.0,
+                1.0
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        },
+        {
+          "material": 2,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 722,
+          "triangles": 684,
+          "area_min_m2": 4.549982278010181e-05,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999496503571,
+            "length_max": 1.0000000926463024,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.8660252838106343
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.014999999664723873,
+                0.26499998569488525
+              ],
+              "max": [
+                0.23499999940395355,
+                0.9850000143051147
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "world_min": [
+        0.6650000214576721,
+        0.0,
+        0.9649999737739563
+      ],
+      "world_max": [
+        0.8759999871253967,
+        0.6299999952316284,
+        1.5950000286102295
+      ],
+      "weld_tolerance_m": 1e-06,
+      "welded_vertices": 690,
+      "components": [
+        {
+          "triangles": 640,
+          "welded_vertices": 320,
+          "edges": 960,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.03242541672533534,
+          "world_min": [
+            0.6650000214576721,
+            0.0,
+            0.9649999737739563
+          ],
+          "world_max": [
+            0.8650000095367432,
+            0.6299999952316284,
+            1.5950000286102295
+          ]
+        },
+        {
+          "triangles": 124,
+          "welded_vertices": 64,
+          "edges": 186,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0009453274397469765,
+          "world_min": [
+            0.6779999732971191,
+            0.10699999332427979,
+            1.0720000267028809
+          ],
+          "world_max": [
+            0.6850000023841858,
+            0.5230000019073486,
+            1.4879999160766602
+          ]
+        },
+        {
+          "triangles": 384,
+          "welded_vertices": 194,
+          "edges": 576,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00218783469411162,
+          "world_min": [
+            0.8410000205039978,
+            0.10400000214576721,
+            1.069000005722046
+          ],
+          "world_max": [
+            0.8679999709129333,
+            0.5260000228881836,
+            1.4910000562667847
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672883679959218e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.3374495506286621,
+            1.4021615982055664
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.4255036413669586,
+            1.4659106731414795
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.67288322030943e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.4364607334136963,
+            1.3036216497421265
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.5006853938102722,
+            1.3916947841644287
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672885894593041e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.43716156482696533,
+            1.1694964170455933
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.5009106397628784,
+            1.2575504779815674
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.6728887710865e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.3386216163635254,
+            1.0943145751953125
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.42669475078582764,
+            1.1585392951965332
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672895977515402e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.204496368765831,
+            1.094089388847351
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.2925504744052887,
+            1.1578384637832642
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672888877512796e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.129314586520195,
+            1.1683052778244019
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.19353927671909332,
+            1.256378412246704
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672888358637833e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.1290893405675888,
+            1.3024495840072632
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.19283843040466309,
+            1.3905036449432373
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672886629887642e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.20330524444580078,
+            1.4014607667922974
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.2913784086704254,
+            1.4656853675842285
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667018723e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.3603101968765259,
+            1.32356858253479
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.38282686471939087,
+            1.3495686054229736
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667018e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.3603101968765259,
+            1.210431456565857
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.38282686471939087,
+            1.2364314794540405
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667022696e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.24717313051223755,
+            1.210431456565857
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.26968979835510254,
+            1.2364314794540405
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.073514466702125e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.24717313051223755,
+            1.32356858253479
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.26968979835510254,
+            1.3495686054229736
+          ]
+        }
+      ],
+      "duplicate_triangle_count": 0
+    },
+    {
+      "node": 2,
+      "name": "BC_SEDAN01_wheel_front_right",
+      "mesh_name": "BC_SEDAN01_wheel_front_right",
+      "primitives": [
+        {
+          "material": 1,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 410,
+          "triangles": 640,
+          "area_min_m2": 0.0006152875666021123,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999598055244,
+            "length_max": 1.0000000976201093,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9347681407510239
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.0,
+                0.0
+              ],
+              "max": [
+                1.0,
+                1.0
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        },
+        {
+          "material": 2,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 722,
+          "triangles": 684,
+          "area_min_m2": 4.549982278010181e-05,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999496503571,
+            "length_max": 1.0000000926463024,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.8660252838106343
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.014999999664723873,
+                0.26499998569488525
+              ],
+              "max": [
+                0.23499999940395355,
+                0.9850000143051147
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "world_min": [
+        -0.8759999871253967,
+        0.0,
+        0.9649999737739563
+      ],
+      "world_max": [
+        -0.6650000214576721,
+        0.6299999952316284,
+        1.5950000286102295
+      ],
+      "weld_tolerance_m": 1e-06,
+      "welded_vertices": 690,
+      "components": [
+        {
+          "triangles": 640,
+          "welded_vertices": 320,
+          "edges": 960,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.032425416725335346,
+          "world_min": [
+            -0.8650000095367432,
+            0.0,
+            0.9649999737739563
+          ],
+          "world_max": [
+            -0.6650000214576721,
+            0.6299999952316284,
+            1.5950000286102295
+          ]
+        },
+        {
+          "triangles": 384,
+          "welded_vertices": 194,
+          "edges": 576,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.002187834694111624,
+          "world_min": [
+            -0.8679999709129333,
+            0.10400000214576721,
+            1.069000005722046
+          ],
+          "world_max": [
+            -0.8410000205039978,
+            0.5260000228881836,
+            1.4910000562667847
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672883679961677e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.3374495506286621,
+            1.4021615982055664
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.4255036413669586,
+            1.4659106731414795
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672883220309466e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.4364607334136963,
+            1.3036216497421265
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.5006853938102722,
+            1.3916947841644287
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672885894594234e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.43716156482696533,
+            1.1694964170455933
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.5009106397628784,
+            1.2575504779815674
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672888771085307e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.3386216163635254,
+            1.0943145751953125
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.42669475078582764,
+            1.1585392951965332
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.67289597751918e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.204496368765831,
+            1.094089388847351
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.2925504744052887,
+            1.1578384637832642
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672888877511749e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.129314586520195,
+            1.1683052778244019
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.19353927671909332,
+            1.256378412246704
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672888358638971e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.1290893405675888,
+            1.3024495840072632
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.19283843040466309,
+            1.3905036449432373
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672886629884318e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.20330524444580078,
+            1.4014607667922974
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.2913784086704254,
+            1.4656853675842285
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667018723e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.3603101968765259,
+            1.32356858253479
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.38282686471939087,
+            1.3495686054229736
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667029565e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.3603101968765259,
+            1.210431456565857
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.38282686471939087,
+            1.2364314794540405
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.073514466702848e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.24717313051223755,
+            1.210431456565857
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.26968979835510254,
+            1.2364314794540405
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.073514466702125e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.24717313051223755,
+            1.32356858253479
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.26968979835510254,
+            1.3495686054229736
+          ]
+        },
+        {
+          "triangles": 124,
+          "welded_vertices": 64,
+          "edges": 186,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0009453274397469765,
+          "world_min": [
+            -0.6850000023841858,
+            0.10699999332427979,
+            1.0720000267028809
+          ],
+          "world_max": [
+            -0.6779999732971191,
+            0.5230000019073486,
+            1.4879999160766602
+          ]
+        }
+      ],
+      "duplicate_triangle_count": 0
+    },
+    {
+      "node": 3,
+      "name": "BC_SEDAN01_wheel_rear_left",
+      "mesh_name": "BC_SEDAN01_wheel_rear_left",
+      "primitives": [
+        {
+          "material": 1,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 410,
+          "triangles": 640,
+          "area_min_m2": 0.0006152875666021123,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999598055244,
+            "length_max": 1.0000000976201093,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9347681407510239
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.0,
+                0.0
+              ],
+              "max": [
+                1.0,
+                1.0
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        },
+        {
+          "material": 2,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 722,
+          "triangles": 684,
+          "area_min_m2": 4.549982278010181e-05,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999496503571,
+            "length_max": 1.0000001011007709,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.8660252838106343
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.014999999664723873,
+                0.26499998569488525
+              ],
+              "max": [
+                0.23499999940395355,
+                0.9850000143051147
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "world_min": [
+        0.6650000214576721,
+        0.0,
+        -1.5950000286102295
+      ],
+      "world_max": [
+        0.8759999871253967,
+        0.6299999952316284,
+        -0.9649999737739563
+      ],
+      "weld_tolerance_m": 1e-06,
+      "welded_vertices": 690,
+      "components": [
+        {
+          "triangles": 640,
+          "welded_vertices": 320,
+          "edges": 960,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.03242541672533534,
+          "world_min": [
+            0.6650000214576721,
+            0.0,
+            -1.5950000286102295
+          ],
+          "world_max": [
+            0.8650000095367432,
+            0.6299999952316284,
+            -0.9649999737739563
+          ]
+        },
+        {
+          "triangles": 124,
+          "welded_vertices": 64,
+          "edges": 186,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0009453274397469765,
+          "world_min": [
+            0.6779999732971191,
+            0.10699999332427979,
+            -1.4879999160766602
+          ],
+          "world_max": [
+            0.6850000023841858,
+            0.5230000019073486,
+            -1.0720000267028809
+          ]
+        },
+        {
+          "triangles": 384,
+          "welded_vertices": 194,
+          "edges": 576,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0021878347304681114,
+          "world_min": [
+            0.8410000205039978,
+            0.10400000214576721,
+            -1.4910000562667847
+          ],
+          "world_max": [
+            0.8679999709129333,
+            0.5260000228881836,
+            -1.069000005722046
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672894552630507e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.3374495506286621,
+            -1.1578384637832642
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.4255036413669586,
+            -1.094089388847351
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672883592535588e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.4364607334136963,
+            -1.256378412246704
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.5006853938102722,
+            -1.1683052778244019
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672886390499453e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.43716156482696533,
+            -1.3905036449432373
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.5009106397628784,
+            -1.3024495840072632
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672883805393676e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.3386216163635254,
+            -1.4656853675842285
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.42669475078582764,
+            -1.4014607667922974
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672885104842325e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.204496368765831,
+            -1.4659106731414795
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.2925504744052887,
+            -1.4021615982055664
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672888505282844e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.129314586520195,
+            -1.3916947841644287
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.19353927671909332,
+            -1.3036216497421265
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.67288786273095e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.1290893405675888,
+            -1.2575504779815674
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.19283843040466309,
+            -1.1694964170455933
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672891595590477e-06,
+          "world_min": [
+            0.8450000286102295,
+            0.20330524444580078,
+            -1.1585392951965332
+          ],
+          "world_max": [
+            0.8479999899864197,
+            0.2913784086704254,
+            -1.0943145751953125
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667029565e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.3603101968765259,
+            -1.2364314794540405
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.38282686471939087,
+            -1.210431456565857
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667018723e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.3603101968765259,
+            -1.3495686054229736
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.38282686471939087,
+            -1.32356858253479
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.073514466702125e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.24717313051223755,
+            -1.3495686054229736
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.26968979835510254,
+            -1.32356858253479
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.073514466702848e-06,
+          "world_min": [
+            0.8690000176429749,
+            0.24717313051223755,
+            -1.2364314794540405
+          ],
+          "world_max": [
+            0.8759999871253967,
+            0.26968979835510254,
+            -1.210431456565857
+          ]
+        }
+      ],
+      "duplicate_triangle_count": 0
+    },
+    {
+      "node": 4,
+      "name": "BC_SEDAN01_wheel_rear_right",
+      "mesh_name": "BC_SEDAN01_wheel_rear_right",
+      "primitives": [
+        {
+          "material": 1,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 410,
+          "triangles": 640,
+          "area_min_m2": 0.0006152875666021123,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999598055244,
+            "length_max": 1.0000000976201093,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9347681407510239
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.0,
+                0.0
+              ],
+              "max": [
+                1.0,
+                1.0
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        },
+        {
+          "material": 2,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 722,
+          "triangles": 684,
+          "area_min_m2": 4.549982278010181e-05,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999496503571,
+            "length_max": 1.0000001011007709,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.8660252838106343
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.014999999664723873,
+                0.26499998569488525
+              ],
+              "max": [
+                0.23499999940395355,
+                0.9850000143051147
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "world_min": [
+        -0.8759999871253967,
+        0.0,
+        -1.5950000286102295
+      ],
+      "world_max": [
+        -0.6650000214576721,
+        0.6299999952316284,
+        -0.9649999737739563
+      ],
+      "weld_tolerance_m": 1e-06,
+      "welded_vertices": 690,
+      "components": [
+        {
+          "triangles": 640,
+          "welded_vertices": 320,
+          "edges": 960,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 0,
+          "signed_volume_m3": 0.03242541672533534,
+          "world_min": [
+            -0.8650000095367432,
+            0.0,
+            -1.5950000286102295
+          ],
+          "world_max": [
+            -0.6650000214576721,
+            0.6299999952316284,
+            -0.9649999737739563
+          ]
+        },
+        {
+          "triangles": 384,
+          "welded_vertices": 194,
+          "edges": 576,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0021878347304680975,
+          "world_min": [
+            -0.8679999709129333,
+            0.10400000214576721,
+            -1.4910000562667847
+          ],
+          "world_max": [
+            -0.8410000205039978,
+            0.5260000228881836,
+            -1.069000005722046
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672894552632133e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.3374495506286621,
+            -1.1578384637832642
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.4255036413669586,
+            -1.094089388847351
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672883592537902e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.4364607334136963,
+            -1.256378412246704
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.5006853938102722,
+            -1.1683052778244019
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672886390501079e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.43716156482696533,
+            -1.3905036449432373
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.5009106397628784,
+            -1.3024495840072632
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672883805389917e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.3386216163635254,
+            -1.4656853675842285
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.42669475078582764,
+            -1.4014607667922974
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672885104840699e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.204496368765831,
+            -1.4659106731414795
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.2925504744052887,
+            -1.4021615982055664
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672888505280784e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.129314586520195,
+            -1.3916947841644287
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.19353927671909332,
+            -1.3036216497421265
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672887862732018e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.1290893405675888,
+            -1.2575504779815674
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.19283843040466309,
+            -1.1694964170455933
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 8.672891595588742e-06,
+          "world_min": [
+            -0.8479999899864197,
+            0.20330524444580078,
+            -1.1585392951965332
+          ],
+          "world_max": [
+            -0.8450000286102295,
+            0.2913784086704254,
+            -1.0943145751953125
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667018e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.3603101968765259,
+            -1.2364314794540405
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.38282686471939087,
+            -1.210431456565857
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667018723e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.3603101968765259,
+            -1.3495686054229736
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.38282686471939087,
+            -1.32356858253479
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.073514466702125e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.24717313051223755,
+            -1.3495686054229736
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.26968979835510254,
+            -1.32356858253479
+          ]
+        },
+        {
+          "triangles": 20,
+          "welded_vertices": 12,
+          "edges": 30,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 3.0735144667022696e-06,
+          "world_min": [
+            -0.8759999871253967,
+            0.24717313051223755,
+            -1.2364314794540405
+          ],
+          "world_max": [
+            -0.8690000176429749,
+            0.26968979835510254,
+            -1.210431456565857
+          ]
+        },
+        {
+          "triangles": 124,
+          "welded_vertices": 64,
+          "edges": 186,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0009453274397469765,
+          "world_min": [
+            -0.6850000023841858,
+            0.10699999332427979,
+            -1.4879999160766602
+          ],
+          "world_max": [
+            -0.6779999732971191,
+            0.5230000019073486,
+            -1.0720000267028809
+          ]
+        }
+      ],
+      "duplicate_triangle_count": 0
+    },
+    {
+      "node": 5,
+      "name": "BC_SEDAN01_windows",
+      "mesh_name": "BC_SEDAN01_windows",
+      "primitives": [
+        {
+          "material": 3,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 424,
+          "triangles": 472,
+          "area_min_m2": 0.0003638458548828204,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999267402795,
+            "length_max": 1.0000000917505922,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9520124061546749
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.0,
+                0.0
+              ],
+              "max": [
+                1.0,
+                1.0
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "world_min": [
+        -0.7773156762123108,
+        0.910325288772583,
+        -1.300244688987732
+      ],
+      "world_max": [
+        0.7773156762123108,
+        1.4262501001358032,
+        1.0314109325408936
+      ],
+      "weld_tolerance_m": 1e-06,
+      "welded_vertices": 248,
+      "components": [
+        {
+          "triangles": 212,
+          "welded_vertices": 108,
+          "edges": 318,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.005078643170132606,
+          "world_min": [
+            -0.7412840127944946,
+            0.910325288772583,
+            0.39395520091056824
+          ],
+          "world_max": [
+            0.7412840127944946,
+            1.4262501001358032,
+            1.0314109325408936
+          ]
+        },
+        {
+          "triangles": 212,
+          "welded_vertices": 108,
+          "edges": 318,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.004755517414440691,
+          "world_min": [
+            -0.7156057953834534,
+            0.9205530881881714,
+            -1.300244688987732
+          ],
+          "world_max": [
+            0.7156057953834534,
+            1.418375015258789,
+            -0.6845577359199524
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0013356266403454498,
+          "world_min": [
+            -0.7773156762123108,
+            0.953000009059906,
+            -0.18700000643730164
+          ],
+          "world_max": [
+            -0.6560764908790588,
+            1.3569999933242798,
+            0.9459999799728394
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.00102212202001561,
+          "world_min": [
+            -0.7773156762123108,
+            0.953000009059906,
+            -1.2120000123977661
+          ],
+          "world_max": [
+            -0.6560764908790588,
+            1.3569999933242798,
+            -0.2770000100135803
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.001335626640345462,
+          "world_min": [
+            0.6560764908790588,
+            0.953000009059906,
+            -0.18700000643730164
+          ],
+          "world_max": [
+            0.7773156762123108,
+            1.3569999933242798,
+            0.9459999799728394
+          ]
+        },
+        {
+          "triangles": 12,
+          "welded_vertices": 8,
+          "edges": 18,
+          "boundary_edges": 0,
+          "nonmanifold_edges_over_2": 0,
+          "same_direction_paired_edges": 0,
+          "euler_characteristic": 2,
+          "signed_volume_m3": 0.0010221220200156017,
+          "world_min": [
+            0.6560764908790588,
+            0.953000009059906,
+            -1.2120000123977661
+          ],
+          "world_max": [
+            0.7773156762123108,
+            1.3569999933242798,
+            -0.2770000100135803
+          ]
+        }
+      ],
+      "duplicate_triangle_count": 0
+    }
+  ],
+  "warnings": [],
+  "summary": {
+    "node_count": 7,
+    "mesh_instances": 6,
+    "mesh_count": 6,
+    "material_count": 4,
+    "image_count": 5,
+    "triangles": 13124,
+    "exported_vertices": 12713,
+    "world_min_gltf_xyz": [
+      -0.9800000190734863,
+      0.0,
+      -2.177999973297119
+    ],
+    "world_max_gltf_xyz": [
+      0.9800000190734863,
+      1.4539999961853027,
+      2.184000015258789
+    ],
+    "dimensions_gltf_xyz_m": [
+      1.9600000381469727,
+      1.4539999961853027,
+      4.361999988555908
+    ],
+    "floor_y_m": 0.0,
+    "all_positions_finite": true,
+    "solid_components": 151
+  }
+}
