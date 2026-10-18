@@ -9,10 +9,17 @@ fi
 river_exact="${POKER_RIVER_EXACT:-0}"
 river_calibrated="${POKER_RIVER_CALIBRATED:-0}"
 river_range_calibrated="${POKER_RIVER_RANGE_CALIBRATED:-0}"
+river_cfr="${POKER_RIVER_CFR:-0}"
 if [[ ( "$river_exact" != 0 && "$river_exact" != 1 ) || \
       ( "$river_calibrated" != 0 && "$river_calibrated" != 1 ) || \
-      ( "$river_range_calibrated" != 0 && "$river_range_calibrated" != 1 ) ]]; then
-    echo 'POKER_RIVER_EXACT, POKER_RIVER_CALIBRATED and POKER_RIVER_RANGE_CALIBRATED must be 0 or 1' >&2
+      ( "$river_range_calibrated" != 0 && "$river_range_calibrated" != 1 ) || \
+      ( "$river_cfr" != 0 && "$river_cfr" != 1 ) ]]; then
+    echo 'POKER_RIVER_EXACT, POKER_RIVER_CALIBRATED, POKER_RIVER_RANGE_CALIBRATED and POKER_RIVER_CFR must be 0 or 1' >&2
+    exit 2
+fi
+if [[ "$river_cfr" == 1 && \
+      ( "$river_exact" == 1 || "$river_calibrated" == 1 || "$river_range_calibrated" == 1 ) ]]; then
+    echo 'POKER_RIVER_CFR=1 is a standalone mode; disable the expectimax modes' >&2
     exit 2
 fi
 if [[ "$river_calibrated" == 1 && "$river_exact" != 1 ]]; then
@@ -29,12 +36,14 @@ for players in 2 6 9; do
         -DPOKER_PLAYERS="$players" -DPOKER_RIVER_EXACT="$river_exact" \
         -DPOKER_RIVER_CALIBRATED="$river_calibrated" \
         -DPOKER_RIVER_RANGE_CALIBRATED="$river_range_calibrated" \
+        -DPOKER_RIVER_CFR="$river_cfr" \
         -shared -fPIC ocean/poker/native.c \
         -lm -o "build/poker/libpoker$players.so"
     "$compiler" -O3 -march=native -ffp-contract=off -std=c11 -DNDEBUG \
         -DPOKER_PLAYERS="$players" -DPOKER_RIVER_EXACT="$river_exact" \
         -DPOKER_RIVER_CALIBRATED="$river_calibrated" \
         -DPOKER_RIVER_RANGE_CALIBRATED="$river_range_calibrated" \
+        -DPOKER_RIVER_CFR="$river_cfr" \
         ocean/poker/test.c -lm -o "build/poker/bench$players"
 done
 if [[ "${1:-}" == --test ]]; then
@@ -79,6 +88,10 @@ if [[ "${1:-}" == --test || "${1:-}" == --native-test ]]; then
         -DPOKER_RIVER_RANGE_CALIBRATED=1 \
         ocean/poker/test_river_range_calibrated.c -lm -o build/poker/test_river_range_calibrated
     build/poker/test_river_range_calibrated
+    "$compiler" -O2 -g -std=c11 -Wall -Wextra -fsanitize=address,undefined \
+        -DPOKER_PLAYERS=2 -DPOKER_RIVER_CFR=1 \
+        ocean/poker/test_river_cfr.c -lm -o build/poker/test_river_cfr
+    build/poker/test_river_cfr
     POKER_FIRST_DIVERGENCE_SOURCE="$PWD/ocean/poker" \
         POKER_FIRST_DIVERGENCE_LIBRARY="$PWD/build/poker/libpoker2.so" \
         "${POKER_PYTHON:-python3}" ocean/poker/test_first_divergence.py

@@ -1,6 +1,10 @@
 #pragma once
 
-#if POKER_PLAYERS == 2
+#ifndef POKER_RIVER_CFR
+#define POKER_RIVER_CFR 0
+#endif
+
+#if POKER_PLAYERS == 2 && !POKER_RIVER_CFR
 #include "preflop_minraise.h"
 #endif
 
@@ -28,7 +32,7 @@ int32_t poker_rules_preflop(Poker* g, int t, uint64_t* rng, int focused) {
         if (focused && hi == 12 && lo == 11 && g->high[t] <= 400)
             raise = roll < (suited ? 900u : 650u);
     }
-#if POKER_PLAYERS == 2
+#if POKER_PLAYERS == 2 && !POKER_RIVER_CFR
     // One frozen policy-improvement lookup, limited to the price and stack
     // format evaluated offline. Preserve the original rules control and all
     // existing raises; the baseline's RNG draw has already been consumed.

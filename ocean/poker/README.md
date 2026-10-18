@@ -3,7 +3,9 @@
 Small C simulator, native rules opponent, acting-seat batch API, and Puffer PPO
 adapter. Compile the same source for 2, 6 or 9 seats. The simulator uses SoA blocks
 of 64 tables, integer chips, bit masks, and a table-free exact hand evaluator.
-There are no allocations during dealing, stepping, observation, or bot inference.
+There are no allocations during dealing, stepping, observation, or default bot
+inference. The optional heads-up CFR river mode allocates a temporary solver
+workspace for each eligible decision.
 Simulator state is 88/196/277 bytes per table for 2/6/9 seats; policy and trainer
 buffers are additional.
 
@@ -40,6 +42,20 @@ build/poker/puffer2 train --env.num_players=2 --base.eval_episodes=0
 
 Use `POKER_PLAYERS=9` and `--env.num_players=9` for nine seats. Changing the seat
 count changes observation width and checkpoint compatibility.
+
+## Optional heads-up river CFR
+
+```sh
+POKER_RIVER_CFR=1 bash ocean/poker/build.sh
+```
+
+This flag defaults to zero and is a standalone alternative to the optional
+expectimax modes. The heads-up policy constructs a public two-player river
+game and samples an averaged strategy after a fixed numerical best-response
+check. Unsupported or rejected solves use the original range heuristic;
+six- and nine-player policies do not invoke CFR. See the
+[source guide](RIVER_CFR.md) for the ranges, legal action menu, iteration cap,
+privacy boundary, fallback behavior, memory use and continuation limitations.
 
 ## Frozen snapshot self-play
 
