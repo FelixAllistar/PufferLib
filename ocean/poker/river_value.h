@@ -1,18 +1,31 @@
 #pragma once
 
-// Experimental river expectimax against a frozen range-policy response proxy.
-// No claim of calibration to Slumbot or humans. Only two live, active players
+// River expectimax with an uncalibrated default range-policy response proxy.
+// An optional, separately guarded historical Slumbot fit changes only the
+// first predicted response; it does not identify full strategy or game value.
+// Only two live, active players
 // with equal contributions before this street are modeled. Other states retain
 // the existing policy. One fixed raise size makes the re-raise tree a chain:
 // fold/call end the hand, while only a re-raise produces another hero decision.
 // All hero decisions aggregate hidden holdings before maximizing their values.
 // The river has finite two-card ranges: exact integration is an optional mode.
-// This changes numerical integration only, not the uncalibrated response model.
+// Exact mode changes numerical integration. A separate flag below controls
+// the optional first-response calibration.
 #ifndef POKER_RIVER_EXACT
 #define POKER_RIVER_EXACT 0
 #endif
 #define POKER_RIVER_OPPONENTS (POKER_RIVER_EXACT ? 990 : 128)
 #define POKER_RIVER_REFERENCES (POKER_RIVER_EXACT ? 1081 : 128)
+
+#ifndef POKER_RIVER_CALIBRATED
+#define POKER_RIVER_CALIBRATED 0
+#endif
+#if POKER_RIVER_CALIBRATED
+#if !POKER_RIVER_EXACT
+#error "POKER_RIVER_CALIBRATED requires POKER_RIVER_EXACT=1"
+#endif
+#include "river_response.h"
+#endif
 
 #ifndef POKER_RIVER_DEPTH
 #define POKER_RIVER_DEPTH 16
@@ -25,6 +38,9 @@ typedef struct PokerRiverMoney {
 typedef struct PokerRiverModel {
     Poker* game;
     int table, hero, opponent, samples;
+#if POKER_RIVER_CALIBRATED
+    int calibrated;
+#endif
     uint32_t initial_stack[2], initial_pot;
     int8_t outcome[POKER_RIVER_OPPONENTS];
     // Opponent equity versus hypothetical hero holdings after a passive action
@@ -109,10 +125,22 @@ static double poker_river_opponent_value(PokerRiverModel* ctx,
         ? called.bet[0] - called.bet[1] : 0;
     double eligible = called.pot - unmatched;
     double hero_fold_win = ctx->initial_pot + ctx->initial_stack[1] - m->stack[1];
+#if POKER_RIVER_CALIBRATED
+    int calibrated = POKER_PLAYERS == 2 && ctx->calibrated && !depth;
+    PokerRiverResponseContext response = {0};
+    if (calibrated) response = poker_river_response_context(call, eligible,
+        m->pot, m->stack[1], m->stack[0], raise);
+#endif
     for (int i = 0; i < ctx->samples; i++) {
         double q = ctx->opponent_equity[range][i];
         double fold = call && q * eligible < call;
         double r = 0;
+#if POKER_RIVER_CALIBRATED
+        if (calibrated) {
+            double p[3]; poker_river_response_predict(&response, q, p);
+            fold = p[0]; r = p[2];
+        } else
+#endif
         if (!fold && raise) {
             if (q > (call ? .78 : .58)) r = .85;
             else if (!call && q > .25) r = .045;
@@ -197,7 +225,13 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
     int opponent_samples = POKER_RIVER_EXACT ? 990 : samples;
     (void)rng;
     PokerRiverModel ctx = {.game=g, .table=t, .hero=h, .opponent=o, .samples=opponent_samples,
-        .initial_stack={g->stack[h][t],g->stack[o][t]}, .initial_pot=g->pot[t]};
+        .initial_stack={g->stack[h][t],g->stack[o][t]}, .initial_pot=g->pot[t],
+#if POKER_RIVER_CALIBRATED
+        // Calibrated on 200BB heads-up play without public table profiles.
+        .calibrated=POKER_PLAYERS == 2 && !profiles && g->initial[h][t] == 20000
+            && g->initial[o][t] == 20000,
+#endif
+    };
     PokerRiverMoney money = {.pot=g->pot[t], .high=g->high[t], .increment=g->increment[t],
         .bet={g->bet[h][t],g->bet[o][t]}, .stack={g->stack[h][t],g->stack[o][t]},
         .reopen={g->reopen[h][t],g->reopen[o][t]}};
