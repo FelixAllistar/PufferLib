@@ -2,7 +2,40 @@
 #include <stdio.h>
 #include "native.c"
 
+static void cached_range_rank_preserves_visible_history(void) {
+    Poker* g = calloc(1, sizeof(Poker));
+    const uint8_t board[5] = {2, 17, 30, 43, 48};
+    for (int i = 0; i < 5; i++) g->board[i][0] = board[i];
+    g->button[0] = 0;
+    g->line[1][0] = 3u | (2u << 2) | (3u << 4) | (2u << 6);
+    PokerProfile profiles[POKER_PLAYERS] = {0};
+    profiles[1] = (PokerProfile){.hands=80, .vpip=25, .pfr=12,
+        .post_actions=40, .post_raises=11};
+    for (int c0 = 0; c0 < 52; c0++) for (int c1 = c0 + 1; c1 < 52; c1++) {
+        int collision = 0;
+        for (int i = 0; i < 5; i++) collision |= c0 == board[i] || c1 == board[i];
+        if (collision) continue;
+        uint8_t cards[7] = {c0, c1, board[0], board[1], board[2], board[3], board[4]};
+        uint32_t final_rank = poker_rank(cards, 7);
+        for (int street = 1; street <= 3; street++) {
+            g->street[0] = street;
+            for (int history = 0; history < 2; history++) {
+                const PokerProfile* h = history ? profiles : NULL;
+                double reference = poker_range_weight(g, 0, 1, c0, c1, h);
+                double cached = poker_range_weight_ranked(g, 0, 1, c0, c1, h, final_rank);
+                assert(reference == cached);
+                // Future-card ranks are irrelevant before the river, including
+                // when a caller supplies a deliberately incorrect final rank.
+                if (street < 3)
+                    assert(reference == poker_range_weight_ranked(g, 0, 1, c0, c1, h, 1));
+            }
+        }
+    }
+    free(g);
+}
+
 int main(void) {
+    cached_range_rank_preserves_visible_history();
     Poker* g = calloc(1, sizeof(Poker));
     poker_seed(g, 91);
     // Everyone plays the royal-flush board. A short hero can win only the
