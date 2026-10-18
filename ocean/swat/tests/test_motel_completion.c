@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 // This driver knows the level plan, like a repeatable human QA route. It only
 // sends ordinary player inputs: no actor teleports, forced surrender, evidence
@@ -319,18 +320,24 @@ static void enter_breach(float wall,b3Pos retreat) {
 }
 int main(int argc,char** argv) {
     b3SetLogFcn(physics_log);
-    assert(argc>=2 && argc<=5);bool combat=false;const char* route="front";
+    assert(argc>=2 && argc<=6);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"combat"))combat=true;
         else if(!strcmp(argv[i],"squad"))squad_restraint=true;
         else if(!strcmp(argv[i],"exterior")||!strcmp(argv[i],"interroom"))route=argv[i];
+        else if(!strncmp(argv[i],"seed=",5)) {
+            const char* digits=argv[i]+5;assert(!seed_given&&digits[0]&&strspn(digits,"0123456789")==strlen(digits));
+            errno=0;char* end;unsigned long value=strtoul(digits,&end,10);assert(!errno&&!*end&&value<=UINT32_MAX);
+            seed=(uint32_t)value;seed_given=true;
+        }
         else assert(false);
     }
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;swat_config_human(&cfg);
     cfg.randomize=false;cfg.hostile_fire=combat;cfg.max_ticks=60000;
     char save[1024];assert(snprintf(save,sizeof(save),"%s.save",argv[1])<(int)sizeof(save));
     int saved_tick=0;uint32_t saved_hash=0;
-    swat_sim_init(&sim,cfg,81);assert(swat_replay_record(&journal,argv[1],&sim));
+    swat_sim_init(&sim,cfg,seed);assert(swat_replay_record(&journal,argv[1],&sim));
+    printf("Motel QA seed %u initial resolve suspect1=%.6f civilian2=%.6f civilian6=%.6f civilian7=%.6f suspect8=%.6f\n",seed,sim.actors[1].mind.resolve,sim.actors[2].mind.resolve,sim.actors[6].mind.resolve,sim.actors[7].mind.resolve,sim.actors[8].mind.resolve);fflush(stdout);
     SwatInput in=swat_neutral_input();in.squad_order=squad_restraint?SWAT_ORDER_FALL_IN:SWAT_ORDER_HOLD;
     if(strcmp(route,"front")) {
         in.loadout=3; // Entry's actual finite wall stock and ram.

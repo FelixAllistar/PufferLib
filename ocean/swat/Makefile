@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test door-frame-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test motel-dumpster-test motel-dumpster-art-test-build
+.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test breach-geometry-test door-support-test door-frame-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 lighting-bake: | $(BUILD)
@@ -55,9 +55,12 @@ $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/
 	cmake --build $(ROOT)/build/swat/enet --parallel 2
 server: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) server.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/server
-net-test: $(ENET_LIB) | $(BUILD)
+net-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_net.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_net
+net-test: net-test-build
 	ulimit -c 0; $(BUILD)/test_net
+net-motel-test: net-test-build
+	ulimit -c 0; $(BUILD)/test_net motel
 net-probe: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) net_probe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/net_probe
 test: breach-geometry-test door-support-test door-frame-test wall-support-test
@@ -100,8 +103,12 @@ squad-tasks-test: $(ENET_LIB) | $(BUILD)
 navigation-search-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_navigation_search.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_navigation_search
 	$(BUILD)/test_navigation_search
-motel-completion-test: $(ENET_LIB) | $(BUILD)
+motel-completion-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_completion.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_completion
+motel-seeds-test: motel-completion-test-build
+	$(BUILD)/test_motel_completion $(BUILD)/motel-seed82-squad.sgrp squad seed=82
+	$(BUILD)/test_motel_completion $(BUILD)/motel-seed2026-interroom.sgrp combat interroom seed=2026
+motel-completion-test: motel-completion-test-build
 	$(BUILD)/test_motel_completion $(BUILD)/motel-completion.sgrp
 	$(BUILD)/test_motel_completion $(BUILD)/motel-completion-combat.sgrp combat
 	$(BUILD)/test_motel_completion $(BUILD)/motel-completion-exterior.sgrp combat exterior

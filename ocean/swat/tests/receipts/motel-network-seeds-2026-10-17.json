@@ -1,0 +1,145 @@
+{
+  "created_utc": "2026-10-18T00:02:28.219Z",
+  "baseline_engine_commit": "ea0cffef7",
+  "protocol": 30,
+  "scope": "Motel real UDP lifecycle acceptance and two additional fixed-position RNG-seed complete QA routes. Full vertical slice remains active.",
+  "evidence_root": "build/swat/review/motel-network-seeds/",
+  "network": {
+    "topology": "One listen host and three remote UDP peers, within one process per platform.",
+    "fixture_actions": [
+      "Spawn surrendered civilian at a visible test position and aim host at that actor.",
+      "Direct lid/body damage, physical masonry cut and sound emission establish repeatable state."
+    ],
+    "ordinary_actions": [
+      "Queued squad command and Execute",
+      "Remote movement inputs",
+      "Transport join, disconnect and epoch restart"
+    ],
+    "checks": [
+      "Directed target reaches observer; human takeover clears queued task before Execute.",
+      "Remote officers move independently.",
+      "Late join reconstructs full motel geometry with one removed lid and an open capsule-traversable aperture.",
+      "Existing peers consume breach cue once; late hearing memory suppresses historical cue and consumes a new impact once.",
+      "Removing the body removes supported lids; restart restores body/lids and closed masonry for every peer.",
+      "Disconnect restores bot ownership without stale directed target."
+    ],
+    "linux": {
+      "pass_groups": 14,
+      "log": {
+        "path": "build/swat/review/motel-network-seeds/net-full-linux.log",
+        "sha256": "638ca89854aebd0b6222e89491191d39d351d368735dd1c5f66c717d6f40fc4d"
+      }
+    },
+    "native_windows": {
+      "pass_groups": 14,
+      "log": {
+        "path": "build/swat/review/motel-network-seeds/net-full-native.log",
+        "sha256": "df04b8081e167eb1255398ebfa1700343fe6bb6619193708aa55edc060282173"
+      },
+      "stable_executable": "build/swat/windows/test_net.exe",
+      "restart_ready_diagnostic": "NET_READY peers=3 epoch=2 elapsed_ms=1"
+    },
+    "matching_encoded_states": [
+      "MOTEL_STATE 0 4 6b4e2d68",
+      "MOTEL_STATE 1 6 d598d3da",
+      "MOTEL_STATE 1 6 d598d3da",
+      "MOTEL_STATE 2 40 44d05394",
+      "MOTEL_STATE 2 40 44d05394",
+      "MOTEL_STATE 2 40 44d05394",
+      "MOTEL_STATE 3 46 f65c3d4f",
+      "MOTEL_STATE 3 46 f65c3d4f",
+      "MOTEL_STATE 3 46 f65c3d4f",
+      "MOTEL_STATE 4 0 d130680c",
+      "MOTEL_STATE 4 0 d130680c",
+      "MOTEL_STATE 4 0 d130680c"
+    ],
+    "state_comparison_scope": "Entire encoded simulation snapshot after removing sound history; join floor, epoch, hearing and raw cue deduplication checked separately. Generic capture normalizes transport metadata.",
+    "test_wait_fix": {
+      "previous_native_attempt": {
+        "path": "build/swat/review/motel-network-seeds/net-native-short-wait.stderr.log",
+        "sha256": "cf39e6c2beda7cd489d3993e48a2464110eae355e8c26e8df06572e3b1a61330"
+      },
+      "reason": "The helper sampled before all replicas were active within a five-second total wait. Three sequential world rebuilds share its thread. Extend test-helper wait to 15 seconds and report elapsed readiness; production six-second client timeout remains unchanged."
+    }
+  },
+  "complete_runs": {
+    "seed82-squad": {
+      "seed": 82,
+      "randomize": false,
+      "mode": "front route with squad restraints",
+      "frames": 20584,
+      "arrests": 2,
+      "armed_suspects_killed": 0,
+      "civilian_evacuations": 3,
+      "recovered_weapons": 2,
+      "protected_deaths": 0,
+      "unlawful_force": 0,
+      "initial_resolve": "Motel QA seed 82 initial resolve suspect1=0.807500 civilian2=0.332750 civilian6=0.767750 civilian7=0.245000 suspect8=0.940250",
+      "linux_log": {
+        "path": "build/swat/review/motel-network-seeds/seed82-squad-linux.log",
+        "sha256": "14505b786fa6d75444ae359046d14331efbe30cb7676ddd852e2658bbe4b3a11"
+      },
+      "journal": {
+        "path": "build/swat/review/motel-network-seeds/seed82-squad.sgrp",
+        "sha256": "d4427d3638dbe52b48359d8c99c2d04fa122af78fc25f75bed1395595c314d2b"
+      },
+      "native_replay": {
+        "path": "build/swat/review/motel-network-seeds/seed82-squad-native-replay.log",
+        "sha256": "40529dc9591d012bf300d25d3c8a918183c282307feeff328d519ba94d8b9bbc"
+      }
+    },
+    "seed2026-interroom": {
+      "seed": 2026,
+      "randomize": false,
+      "mode": "hostile-fire inter-room charge route",
+      "frames": 12715,
+      "arrests": 1,
+      "armed_suspects_killed": 1,
+      "civilian_evacuations": 3,
+      "recovered_weapons": 2,
+      "protected_deaths": 0,
+      "unlawful_force": 0,
+      "initial_resolve": "Motel QA seed 2026 initial resolve suspect1=0.915500 civilian2=0.590750 civilian6=0.659750 civilian7=0.383000 suspect8=0.274250",
+      "linux_log": {
+        "path": "build/swat/review/motel-network-seeds/seed2026-interroom-linux.log",
+        "sha256": "13b12ab11e540d2819c2123c575006b73ba21ae8613292e1b3126e6e41b038eb"
+      },
+      "journal": {
+        "path": "build/swat/review/motel-network-seeds/seed2026-interroom.sgrp",
+        "sha256": "94487991758222059b7346760ff4589aabdff959c99a868f53f1b3e742b2753c"
+      },
+      "native_replay": {
+        "path": "build/swat/review/motel-network-seeds/seed2026-interroom-native-replay.log",
+        "sha256": "dcae376b55add2faec40c1b17adfb884fc6e06830810280908da03dbebb8fd0d"
+      }
+    }
+  },
+  "builds": {
+    "source_sha256": {
+      "CMakeLists.txt": "5be14190eb66daafa8eaf4f2bb49afb9374df59d84e3bdd52cbd3d55bda7e8c9",
+      "Makefile": "a02df8f4a09ea18d6cd8d5d52edf26975cfaa4d841f93fe86efd56f88f24094b",
+      "README.md": "f9a3a7e20fad46203a78ba5b0a45b650aae3f2f0bc9593d4fc95c0fa3ea4d7ed",
+      "ROADMAP.md": "a1c30833111fac875cf62fab8805e62864b3592dd6ae41b92313e16ca316fa0a",
+      "tests/test_net.c": "eaec280ae49523e5a7c34c94f4e077434274ae9b6387da03af7ef20179a6eff6",
+      "tests/motel_network.h": "e0ee4b5c172423e335a40ae6a71e9a91e3f1ae413bf1f6c069a4f63cf0fa462d",
+      "tests/test_motel_completion.c": "3e086efdc23b3e82fa8b55ffe477e29bd7e66cf094bc36cbf69e6468a2bd4aa2"
+    },
+    "qa_binary_sha256": {
+      "linux_net": "ca50f1502eef0fc76729debe407b8b5e38b531391d474429ed46c4284c1afd19",
+      "linux_completion": "2fb7f02e55d1d3163487912cb7a6c1f734ed5575632e5eb6d37ea335cadd16ce",
+      "native_net": "9306f852d22518f25f1107db459239220fccb7f1149e1b2cdbd379fcd1348db0",
+      "native_completion": "ac9148cd2949e72bcadcbf4da34c3257ba1f5f2b27f52f92e83d551aaac68737"
+    },
+    "production_engine_changed": false,
+    "installed_qa_binaries_match": true
+  },
+  "limits": [
+    "Both seed runs use authored occupant positions and randomize=false; initial resolve and subsequent RNG vary. They are not varied-layout or held-out learned-policy evaluation.",
+    "The QA driver knows the room plan. Linux runs validate every-tick replay, mid-run save/resume and final replica/debrief; Windows independently replays those journals.",
+    "UDP lifecycle cases establish damage/cut/sounds directly; they are not a four-player full ordinary-input mission completion.",
+    "Sound tests use actual received event metadata and hearing memory; audio-device playback is not tested.",
+    "No GPU, graphical or performance test was run. Heavy performance testing remains held.",
+    "Manual playtesting is optional feedback; full-slice acceptance remains open."
+  ],
+  "total_native_cross_replay_frames": 33299
+}

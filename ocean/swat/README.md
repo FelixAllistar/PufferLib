@@ -900,6 +900,19 @@ client moved/fired against the actual listen-host player with the host window
 minimized. These verify this machine's transport/UI integration; a separate
 two-machine LAN session and adverse network conditions remain to qualify.
 
+`make -C ocean/swat net-test` also runs the motel with a listen host and three
+real UDP peers. The motel cases check a queued restraint's target and human
+handoff, independent remote movement, late joining after lid damage and a wall
+cut, physical aperture queries, sound history, episode restart and disconnect.
+`make -C ocean/swat net-motel-test` selects only these cases. Native Windows uses
+`bash ocean/swat/run-windows-network-test.sh CANDIDATE/test_net.exe motel` to keep
+the executable at the stable firewall-approved path. Fixture setup places a
+surrendered occupant and directly applies damage, the wall cut and sound events;
+remote input, queues and joining use ordinary transport. Encoded simulation
+states match across Linux/Windows. Sound checks exercise received cue metadata
+and the hearing consumer's join floor and duplicate suppression; they do not
+verify audio-device playback.
+
 With `env.task=annex` and a matching rebuilt trainer, a native FP32 smoke run
 completed 2,048 transitions with finite losses and
 saved checkpoints; loading those weights into another 2,048-step training run
@@ -933,6 +946,12 @@ buffer overflows. Dense bed/rack contacts preserve their original triangles,
 edge flags and ballistic thickness in bounded shared mesh components.
 Windows builds the equivalent `test_motel_completion.exe`; pass an output
 `.sgrp` path, optional `combat`, and optional `exterior` or `interroom` argument.
+Optional `seed=N` selects the recorded episode RNG seed (default 81).
+`make -C ocean/swat motel-seeds-test` runs seed 82 with squad restraints and
+seed 2026 with hostile fire and the inter-room charge route. These vary initial
+resolve and subsequent RNG while retaining authored occupant positions. Both
+have full replay/save/replica checks; they do not establish varied-layout or
+held-out policy performance.
 Optional `squad` delegates restraints to the actual squad, moves the commander
 clear of the doorway, and recalls covering officers before escorting occupants.
 The QA driver knows the room plan. These checks establish functional behavior,
