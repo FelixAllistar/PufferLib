@@ -1,0 +1,26 @@
+[
+  {
+    "players": 6,
+    "width": 390,
+    "height": 844,
+    "no_board_seat_overlap": true
+  },
+  {
+    "players": 9,
+    "width": 390,
+    "height": 844,
+    "no_board_seat_overlap": true
+  },
+  {
+    "players": 6,
+    "width": 1440,
+    "height": 900,
+    "no_board_seat_overlap": true
+  },
+  {
+    "players": 9,
+    "width": 1366,
+    "height": 768,
+    "no_board_seat_overlap": true
+  }
+]

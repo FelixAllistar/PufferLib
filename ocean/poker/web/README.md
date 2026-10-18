@@ -8,7 +8,7 @@ rotating blinds, no rake, and cumulative session results. Six seats open by
 default. Settings select two, six or nine seats and opponent policy.
 
 The browser executes stock **Bend 2.0.6** for action permissions, raise clamping,
-turn phases and session accounting (`Controller.bend`). `PROOF.bend` checks eight
+turn phases and session accounting (`Controller.bend`). `PROOF.bend` checks fourteen
 laws. The stock Bend HTML bundler compiles these definitions into the actual
 browser bundle; they are not a second specification beside handwritten logic.
 JavaScript handles DOM, sound, animation and worker transport. The existing C
@@ -69,7 +69,31 @@ Browser checks cover raise/call/fold controls, session accounting, chip totals,
 mobile seat-label overlap, dialogs and console errors. Desktop and 390-pixel
 phone screenshots are emitted under `build/poker/web/`.
 
-Cards and chips use CSS animations, with reduced-motion support. Sound starts
-only after an explicit user click. Session state lasts for the current table;
+Cards and chips use CSS animations, with reduced-motion support. Distinct fold, check, call, raise, turn and win sounds start after the first
+interaction; the Sound button mutes them. Normal table pace is 600 ms per bot action. Session state lasts for the current table;
 reloading or opening a new table starts a new session. This initial core has no
 accounts, multiplayer, persistent balances or real-money features.
+
+## Table layout and action feedback
+
+The second interface iteration follows the supplied Ignition references: a
+screen-filling red table, white stack badges, large face cards, and a betting
+panel directly below the human seat. History/session information lives in a
+drawer. Tens display as `10`; SB/BB tags and the human position line show posted
+blind amounts. Folded players keep an explicit FOLDED status while their cards
+slide away. Checks show a tick, wagers animate chips toward the pot, and the
+human turn uses a teal ring and a distinct two-note cue. No artificial action
+timer or countdown is displayed.
+
+Bend calculates each preset as a legal street total. Preflop: 3 BB / 5 BB for
+opening, then 3× / 5× the current bet when facing a raise. Postflop: half pot,
+three-quarter pot and pot, including the call before sizing. Every button shows
+the resulting amount; a click selects the size and Bet/Raise commits it. Input,
+slider, minimum, all-in and one-BB adjustment buttons share the same clamp.
+
+Additional verification: 2,880 independent preset calculations, six new sizing
+laws (fourteen total), and another 30 browser hands. Browser checks verified
+530 displayed preset values across all four streets, 33 visible-ten cases,
+audio node starts after interaction, and the history drawer. The native WASM
+artifacts remain byte-for-byte identical to the first release. No database,
+chat or multiplayer implementation was added.

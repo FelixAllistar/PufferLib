@@ -4,6 +4,8 @@ const $ = id => document.getElementById(id);
 const ranks = '23456789TJQKA', suits = ['♣','♦','♥','♠'];
 const categories = ['High card','One pair','Two pair','Three of a kind','Straight','Flush','Full house','Four of a kind','Straight flush'];
 const streets = ['Preflop','Flop','Turn','River'];
+const presetKinds = ['min','first','second','pot','all'];
+const seatColors = ['#00bbaa','#885ac4','#c44b36','#4e87bc','#b4762f','#638054','#9e5d94','#4c8c94','#8170b7'];
 const names = {rules:'Rules', range:'Range', fullhouse:'Fullhouse', river:'River candidate'};
 const descriptions = {
   mixed:'A mixed field of Rules, Range and Fullhouse bots.',
@@ -12,9 +14,10 @@ const descriptions = {
   fullhouse:'The external Fullhouse learned policy, running locally at your table.',
   river:'Pro’s experimental heads-up river candidate from PR #5. Standard sampled mode.'
 };
-let settings = {players:6, opponent:'mixed', pace:260};
+let settings = {players:6, opponent:'mixed', pace:600};
 let worker, state, busy = true, failed = false, generation = 0, requestId = 0, pending = new Map();
-let session = Core.empty(), lastActions = [], recordedHand = -1, selectedRaise = 0, sound = false, audio;
+let session = Core.empty(), lastActions = [], recordedHand = -1, selectedRaise = 0, selectedPreset = null, sound = true, audio;
+let actionEffects = new Map(), latestAction = '';
 let history = [], botTimer, startedAt = 0, lastBotTime = 0;
 const fmt = chips => (chips / 100).toLocaleString('en-US',{maximumFractionDigits:2});
 const signed = chips => `${chips > 0 ? '+' : chips < 0 ? '−' : ''}${fmt(Math.abs(chips))}`;
@@ -32,19 +35,31 @@ function policyFor(p) {
 function label(p) { return p === 0 ? 'You' : `${names[policyFor(p)]} ${String(p).padStart(2,'0')}`; }
 function card(id, animate=false) {
   if (id === 52) return '<span class="card back" aria-label="Face-down card"></span>';
-  const rank = ranks[id >> 2], suit = suits[id & 3];
+  const raw = ranks[id >> 2], rank = raw === 'T' ? '10' : raw, suit = suits[id & 3];
   return `<span class="card${(id & 3) === 1 || (id & 3) === 2 ? ' red' : ''}${animate ? ' dealt' : ''}" aria-label="${rank}${suit}"><span class="corner">${rank}<small>${suit}</small></span><span class="suit">${suit}</span><span class="lower">${rank}</span></span>`;
 }
+function unlockAudio() {
+  if(!sound)return;
+  try {audio??=new AudioContext();if(audio.state==='suspended')audio.resume();}catch{}
+}
+document.addEventListener('pointerdown',unlockAudio,{capture:true});
+document.addEventListener('keydown',unlockAudio,{capture:true});
 function soundEffect(kind) {
-  if (!sound) return;
+  if (!sound || document.hidden || !audio || audio.state!=='running') return;
   try {
-    audio ??= new AudioContext();
-    audio.resume();
-    const t = audio.currentTime, osc = audio.createOscillator(), gain = audio.createGain();
-    osc.type = 'sine'; osc.frequency.setValueAtTime(kind === 'deal' ? 720 : kind === 'turn' ? 500 : 1150,t);
-    osc.frequency.exponentialRampToValueAtTime(kind === 'turn' ? 650 : 200,t+.07);
-    gain.gain.setValueAtTime(.025,t); gain.gain.exponentialRampToValueAtTime(.0001,t+.1);
-    osc.connect(gain).connect(audio.destination); osc.start(t); osc.stop(t+.11);
+    const now=audio.currentTime;
+    const tone=(freq,start,duration,volume=.035,end=freq)=>{
+      const osc=audio.createOscillator(),gain=audio.createGain();osc.type='sine';
+      osc.frequency.setValueAtTime(freq,start);osc.frequency.exponentialRampToValueAtTime(end,start+duration);
+      gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(volume,start+.005);gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+      osc.connect(gain).connect(audio.destination);osc.start(start);osc.stop(start+duration);
+    };
+    if(kind==='turn'){tone(660,now,.18,.04);tone(880,now+.15,.28,.04);}
+    else if(kind==='check'){tone(320,now,.045,.05,150);tone(320,now+.09,.045,.04,150);}
+    else if(kind==='fold'){tone(480,now,.13,.035,90);}
+    else if(kind==='deal'){tone(900,now,.055,.02,300);tone(1100,now+.06,.055,.02,350);}
+    else if(kind==='win'){[660,830,990].forEach((f,i)=>tone(f,now+i*.11,.25,.035));}
+    else {const n=kind==='raise'?3:2;for(let i=0;i<n;i++)tone(1500+i*170,now+i*.055,.075,.025,900);}
   } catch {}
 }
 function tellError(message) {
@@ -70,14 +85,27 @@ function logAction(before, action) {
   else {verb = before[4] ? 'raises to' : 'bets'; amount = `${fmt(action)} BB`;}
   if (action >= 0 && (action > 0 ? action-r[1] : call) === r[0]) verb += ' · all in';
   lastActions[p] = action < 0 ? 'Folded' : `${verb.charAt(0).toUpperCase()+verb.slice(1)}${amount ? ` ${amount}` : ''}`;
+  const kind=action<0?'fold':action>0?'raise':call?'call':'check';
+  actionEffects.set(p,{kind,at:performance.now()});
+  latestAction=`${label(p)} ${verb}${amount?' '+amount:''}`;
+  soundEffect(kind);
   addHistory(label(p),verb,amount);
 }
-function setRaise(value) {
+function position(p) {
+  const sb=settings.players===2?state[7]:(state[7]+1)%settings.players,bb=(sb+1)%settings.players;
+  return p===bb?{short:'BB',name:'Big blind',posted:100}:p===sb?{short:'SB',name:'Small blind',posted:50}:p===state[7]?{short:'D',name:'Button',posted:0}:{short:'',name:`Seat ${p+1}`,posted:0};
+}
+function presetAmount(kind) {
+  return Core.preset(BigInt(presetKinds.indexOf(kind)),state[2],state[4],state[3],state[12],100,state[10],state[11]);
+}
+function setRaise(value, preset=null) {
   if (!state) return;
+  selectedPreset = preset;
   selectedRaise = Core.raise_target(Math.max(0,Math.round(value)),state[10],state[11]);
   $('raise-input').value = fmt(selectedRaise).replaceAll(',','');
   $('raise-slider').value = selectedRaise;
   $('raise-button-value').textContent = `${fmt(selectedRaise)} BB`;
+  document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('selected',b.dataset.size===preset));
 }
 function render(previous) {
   const done = isDone(), myTurn = heroTurn() && !busy && !failed;
@@ -90,32 +118,51 @@ function render(previous) {
   $('board').innerHTML = Array.from({length:5},(_,i)=>i < state[13] ? card(state[16+i],newHand || !previous || i >= previous[13]) : '<span class="card empty" aria-hidden="true"></span>').join('');
   $('seats').innerHTML = Array.from({length:settings.players},(_,p) => {
     const r=seat(state,p), angle=Math.PI/2+2*Math.PI*p/settings.players;
-    const x=50+39*Math.cos(angle), y=p===0?85:46+36*Math.sin(angle);
-    const acted = lastActions[p] || (p===state[7] ? 'Dealer' : '');
+    const x=50+(settings.players===9?37:35)*Math.cos(angle), y=p===0?83:46+32*Math.sin(angle);
+    const pos=position(p), acted=lastActions[p] || (pos.posted?`POST ${pos.short} · ${fmt(pos.posted)} BB`:'');
+    const effect=actionEffects.get(p),elapsed=effect?performance.now()-effect.at:2000;
+    const effectClass=elapsed<1600?` effect-${effect.kind}`:'';
+    const stageRect=$('stage').getBoundingClientRect();
+    const effectStyle=`--effect-delay:-${Math.max(0,elapsed)}ms;--to-pot-x:${(50-x)*stageRect.width/100}px;--to-pot-y:${(39-y)*stageRect.height/100}px;`;
     const visibleBefore=previous?seat(previous,p)[3]:52;
     const animate=newHand || (r[3]!==52 && visibleBefore===52);
-    const betTop = p===0 ? '-22px' : y<30 ? '120px' : y>60 ? '-24px' : '54px';
-    const betStyle = p!==0 && y>=30 && y<=60 ? `left:${x<50?'130%':'-30%'};` : '';
-    return `<div class="seat${p===0?' hero':''}${!r[5]?' folded':''}${!done&&p===state[1]?' active':''}" style="--x:${x}%;--y:${y}%;--bet-top:${betTop}" data-seat="${p}" aria-label="${label(p)}, ${fmt(r[0])} big blinds${!r[5]?', folded':''}"><div class="seat-cards">${card(r[3],animate)}${card(r[4],animate)}</div><div class="seat-info">${state[7]===p?'<span class="dealer" title="Dealer button">D</span>':''}<div class="seat-name">${label(p).toUpperCase()}</div><div class="seat-stack">${fmt(r[0])} <small>BB</small></div></div><div class="seat-status">${done&&r[7]!==0 ? `${signed(r[7])} BB${r[6]>=0&&r[5]?` · ${categories[r[6]]}`:''}` : !r[5]?'Folded':r[0]===0?'All in':acted}</div>${!done&&r[1]>0?`<div class="seat-bet${previous&&r[1]!==seat(previous,p)[1]?' chip-enter':''}" style="${betStyle}"><span class="bet-chip"></span>${fmt(r[1])}</div>`:''}</div>`;
+    const betTop = p===0 ? '-20px' : y<32 ? 'calc(100% + 10px)' : y>60 ? '-18px' : '60%';
+    const betX = p!==0 && y>=32 && y<=60 ? (x<50?'130%':'-30%') : '50%';
+    const status=!r[5]?'FOLDED':done&&r[7]!==0?`${signed(r[7])} BB${r[6]>=0?` · ${categories[r[6]]}`:''}`:r[0]===0?'ALL IN':!done&&p===state[1]?p===0?'YOUR TURN':'THINKING…':acted;
+    return `<div class="seat${p===0?' hero':''}${!r[5]?' folded':''}${!done&&p===state[1]?' active':''}${effectClass}" style="--x:${x}%;--y:${y}%;--bet-top:${betTop};--bet-x:${betX};--seat-color:${seatColors[p]};${effectStyle}" data-seat="${p}" aria-label="${label(p)}, ${fmt(r[0])} big blinds${!r[5]?', folded':''}"><div class="seat-cards">${card(r[3],animate)}${card(r[4],animate)}</div><div class="seat-info">${state[7]===p?'<span class="dealer" title="Dealer button">D</span>':''}<span class="seat-number">${p===0?'Y':p}</span><div class="seat-stack">${fmt(r[0])}<small>BB</small></div></div><div class="seat-name">${label(p)}${pos.short?` <span class="position-tag">${pos.short}</span>`:''}</div><div class="seat-status">${status}</div>${elapsed<600&&(effect.kind==='call'||effect.kind==='raise')?'<span class="action-chip bet-chip" aria-hidden="true"></span>':''}${elapsed<1000&&effect.kind==='check'?'<span class="check-effect" aria-hidden="true">✓</span>':''}${!done&&r[1]>0?`<div class="seat-bet${previous&&r[1]!==seat(previous,p)[1]?' chip-enter':''}"><span class="bet-chip"></span>${fmt(r[1])}</div>`:''}</div>`;
   }).join('');
   $('betting-controls').hidden = done;
   $('betting-controls').style.display = done ? 'none' : '';
   $('finished-controls').hidden = !done;
   const hero=seat(state,0);
   $('hand-rank').textContent = hero[6]>=0 && hero[5] ? categories[hero[6]] : '';
-  $('raise-label').textContent = state[4] ? 'RAISE TO' : 'BET';
-  $('raise-button').firstChild.textContent = state[4] ? 'Raise ' : 'Bet ';
+  $('raise-action-label').textContent = state[4] ? 'Raise to' : 'Bet';
   const canRaise = myTurn && !!(state[9]&~3);
   $('fold-button').disabled = !myTurn || !(state[9]&1);
   $('call-button').disabled = !myTurn;
-  $('call-button').innerHTML = `${state[12] ? `Call ${fmt(state[12])}` : 'Check'} <kbd>C</kbd>`;
+  $('call-button').innerHTML = state[12] ? `Call<strong>${fmt(state[12])} BB</strong>` : 'Check <kbd>C</kbd>';
   $('raise-button').disabled = !canRaise;
   $('raise-input').disabled = !canRaise; $('raise-slider').disabled = !canRaise;
-  document.querySelectorAll('[data-size]').forEach(b=>b.disabled=!canRaise);
+  $('raise-minus').disabled = !canRaise; $('raise-plus').disabled = !canRaise;
+  document.querySelectorAll('[data-size]').forEach(b=>{
+    const kind=b.dataset.size, preflop=state[2]===0, opened=state[4]>100;
+    const labels={min:'Min',first:preflop?(opened?'3× bet':'3 BB'):'½ pot',second:preflop?(opened?'5× bet':'5 BB'):'¾ pot',pot:'Pot',all:'All in'};
+    const amount=myTurn?presetAmount(kind):0;
+    b.disabled=!canRaise;b.dataset.amount=String(amount);
+    b.querySelector('span').textContent=labels[kind];
+    b.querySelector('strong').textContent=myTurn?`${fmt(amount)}`:'—';
+    b.title=`${labels[kind]}${myTurn?` · ${fmt(amount)} BB total`:''}`;
+    b.setAttribute('aria-label',b.title);
+    b.classList.toggle('selected',kind===selectedPreset);
+  });
   $('raise-slider').min = Math.min(state[10],state[11]); $('raise-slider').max = state[11]; $('raise-slider').step = 1;
   $('raise-input').min = Math.min(state[10],state[11])/100; $('raise-input').max = state[11]/100;
-  if (myTurn && (!previous || previous[1]!==0 || previous[8]!==state[8])) setRaise(state[4]+Math.floor(2*(state[3]+state[12])/3));
+  if (myTurn && (!previous || previous[1]!==0 || previous[8]!==state[8])) setRaise(presetAmount('first'),'first');
   $('call-hint').textContent = myTurn ? state[12] ? `${fmt(state[12])} BB to call` : 'Check for free' : '';
+  const ownPosition=position(0);
+  $('hero-position').textContent=`You: ${ownPosition.name}${ownPosition.posted?` · posted ${fmt(ownPosition.posted)} BB`:''}`;
+  $('last-action').textContent=latestAction;
+  $('action-area').classList.toggle('your-turn',myTurn);
   const message=done ? hero[7]>0 ? `You win ${signed(hero[7])} BB` : hero[7]===0 ? 'An even hand' : `${label(state.slice(24).findIndex((_,i)=>i%9===7&&state[24+i]>0)/9|0)} takes the pot` : myTurn ? 'The action is on you' : `${label(state[1])} is thinking…`;
   $('table-message').textContent = message;
   $('table-message').classList.toggle('result',done);
@@ -141,6 +188,7 @@ function acceptState(next, before) {
   }
   if (isDone() && recordedHand!==state[15]) {
     const net=seat(state,0)[7]; session=Core.record(Math.max(0,net),Math.max(0,-net),session); recordedHand=state[15];
+    if(net>0)soundEffect('win');
     addHistory('You',net>0?'win':net<0?'finish':'split',`${signed(net)} BB`);
   }
   render(before);
@@ -159,7 +207,7 @@ function scheduleBot() {
       const reply=await request('bot',{policy:kind==='rules'?1:kind==='fullhouse'?4:7});
       lastBotTime=performance.now()-t;
       if(generation!==tableGeneration)return;
-      logAction(before,reply.action); busy=false; soundEffect('chips'); acceptState(reply.state,before);
+      logAction(before,reply.action); busy=false; acceptState(reply.state,before);
     } catch(error) {if(generation!==tableGeneration)return; fail(error);}
   },settings.pace);
 }
@@ -169,11 +217,11 @@ async function act(action) {
   const kind=action<0?0n:action===0?1n:2n;
   if(!Core.allowed(isDone(),state[1],0,kind,state[12],Number(!!(state[9]&~3)),state[4],state[10],state[11],Math.max(0,action)))return;
   const before=state, tableGeneration=generation; busy=true;render(before);
-  try {const reply=await request('act',{action});if(generation!==tableGeneration)return;logAction(before,action);busy=false;soundEffect('chips');acceptState(reply.state,before);}catch(error){if(generation===tableGeneration)fail(error);}
+  try {const reply=await request('act',{action});if(generation!==tableGeneration)return;logAction(before,action);busy=false;acceptState(reply.state,before);}catch(error){if(generation===tableGeneration)fail(error);}
 }
 async function openTable(nextSettings) {
   generation++;clearTimeout(botTimer);worker?.terminate();pending.forEach(p=>p.reject(Error('Table replaced.')));pending.clear();
-  settings=nextSettings; busy=true;failed=false;state=undefined;history=[];lastActions=[];recordedHand=-1;session=Core.empty();
+  settings=nextSettings; busy=true;failed=false;state=undefined;history=[];lastActions=[];recordedHand=-1;session=Core.empty();actionEffects.clear();latestAction='';
   $('history').innerHTML='';$('table-message').textContent='Shuffling the deck…';$('turn-label').textContent='Opening the table';
   worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
   worker.onmessage=({data})=>{const p=pending.get(data.id);if(!p)return;pending.delete(data.id);data.error?p.reject(Error(data.error)):p.resolve(data);};
@@ -188,18 +236,20 @@ async function openTable(nextSettings) {
 }
 $('fold-button').onclick=()=>act(-1);$('call-button').onclick=()=>act(0);$('raise-button').onclick=()=>act(selectedRaise);
 $('raise-input').onchange=e=>setRaise(Number(e.target.value)*100);$('raise-slider').oninput=e=>setRaise(Number(e.target.value));
+$('raise-minus').onclick=()=>setRaise(Math.max(0,selectedRaise-100));$('raise-plus').onclick=()=>setRaise(selectedRaise+100);
 document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{
   if(!heroTurn()||busy)return;
-  const pot=state[3]+state[12],type=b.dataset.size;
-  setRaise(type==='all'?state[11]:type==='min'?state[10]:state[4]+Math.floor(pot*(type==='third'?1/3:type==='two-thirds'?2/3:1)));
+  setRaise(presetAmount(b.dataset.size),b.dataset.size);
 });
 $('next-button').onclick=async()=>{
   if(busy||!isDone()||failed)return;
-  busy=true;render(state);lastActions=[];addHistory('',`HAND ${state[15]+1} · PREFLOP`,'','history-street');
+  busy=true;render(state);lastActions=[];actionEffects.clear();latestAction='';addHistory('',`HAND ${state[15]+1} · PREFLOP`,'','history-street');
   const tableGeneration=generation;
   try {const reply=await request('next');if(generation!==tableGeneration)return;const before=state;busy=false;acceptState(reply.state,before);soundEffect('deal');}catch(error){if(generation===tableGeneration)fail(error);}
 };
 $('settings-button').onclick=()=>$('settings').showModal();$('help-button').onclick=()=>$('help').showModal();
+function toggleHistory(open) {$('table-drawer').hidden=!open;$('history-button').setAttribute('aria-expanded',String(open));}
+$('history-button').onclick=()=>toggleHistory($('table-drawer').hidden);$('close-drawer').onclick=()=>toggleHistory(false);
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 function settingsDetail(){
   const pro=$('opponent').querySelector('[value="river"]');pro.disabled=$('seat-count').value!=='2';
@@ -210,8 +260,9 @@ function settingsDetail(){
 }
 $('seat-count').onchange=settingsDetail;$('opponent').onchange=settingsDetail;settingsDetail();
 $('settings-form').onsubmit=e=>{e.preventDefault();$('settings').close();openTable({players:Number($('seat-count').value),opponent:$('opponent').value,pace:Number($('speed').value)});};
-$('sound-button').onclick=()=>{sound=!sound;$('sound-button').textContent=sound?'Sound on':'Sound off';$('sound-button').setAttribute('aria-pressed',String(sound));soundEffect('turn');};
+$('sound-button').onclick=()=>{sound=!sound;$('sound-button').textContent=sound?'Sound on':'Sound off';$('sound-button').setAttribute('aria-pressed',String(sound));if(sound){unlockAudio();soundEffect('turn');}};
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')toggleHistory(false);
   if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||document.querySelector('dialog[open]')||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
   if(e.key.toLowerCase()==='f'&&!$('fold-button').disabled)act(-1);
   if(e.key.toLowerCase()==='c'&&!$('call-button').disabled)act(0);
