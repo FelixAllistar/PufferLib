@@ -1,0 +1,33 @@
+{
+  "created_utc": "2026-10-18T05:42:41.464Z",
+  "asset": "BC_SEDAN01",
+  "source_drive_file": "1y86hL1AubZSi9GxakdE-dlDSgMTP3feU",
+  "archive": {
+    "archive": "sedan.zip",
+    "bytes": 14575746,
+    "sha256": "45ecafa273edfe101781ab62665b7bfea7ad8bf79a23034fa18d008559a937e4",
+    "indexed_payloads_verified": 64
+  },
+  "runtime": {
+    "asset": "BC_SEDAN01",
+    "drive_file": "1y86hL1AubZSi9GxakdE-dlDSgMTP3feU",
+    "runtime_path": "ocean/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb",
+    "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+    "runtime_bytes": 1012828,
+    "triangles": 13124,
+    "primitives": 12,
+    "materials": 4,
+    "embedded_images": 5,
+    "nodes": 7,
+    "source_manifest_sha256": "362a53ba13a88dc43f4165f3f3f65343ffd63af282046ad4232df3069c248b6f",
+    "provenance_sha256": "d499b4d90f2182855728d22931ba9cf78576a8b527084b84692991109343a854",
+    "status": "Verified unchanged static candidate intake; not installed in the level. Placement, collision/navigation, destruction/material binding, native rendering and performance acceptance remain open.",
+    "repository_handoff": "ocean/swat/art_handoffs/motel-sedan"
+  },
+  "intake_check": "node ocean/swat/tools/check_roadside_candidates.cjs",
+  "supplied_actual_export_sheet_inspected": true,
+  "authoring_python_executed": false,
+  "source_unchanged": true,
+  "status": "Verified repository intake. The scene does not yet load or place this candidate. Placement, collision/navigation, material/destruction binding, native rendering and performance acceptance remain open.",
+  "slack_ack": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792299097423699?thread_ts=1791078311.943659&cid=C0C5TN3AA8K"
+}

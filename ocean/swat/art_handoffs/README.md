@@ -17,6 +17,16 @@ cat audio_sources/free-firearm.7z.*.part > free-firearm.7z
 The assembled archive's SHA-256 is recorded in `audio_sources/free-firearm.sha256`.
 Other packages retain their supplied manifests, hashes and license records.
 
+The approved 2026-10-18 [sedan](motel-sedan/ENGINE_INTAKE.md) and
+[shelter](motel-shelter/ENGINE_INTAKE.md) retain unchanged editable sources,
+recipes, provenance, export views and audit evidence. Their original runtime
+GLBs have canonical copies under `assets/environment/motel_sedan` and
+`assets/environment/motel_shelter`. Run
+`node ocean/swat/tools/check_roadside_candidates.cjs` to verify all 118 indexed
+payloads and the decoded geometry/material inventories. These are static
+candidates awaiting scene placement, collision/navigation, native rendering
+and performance acceptance. Authoring recipes were not executed locally.
+
 The 2026-10-11 maintenance deliveries are retained as complete source archives:
 [tied refuse bag](motel-maintenance-bag/source.zip) and
 [open power box](motel-power-box/source.zip). Their adjacent `receipt.json` files

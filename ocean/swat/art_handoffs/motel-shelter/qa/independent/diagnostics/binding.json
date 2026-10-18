@@ -1,0 +1,51 @@
+{
+  "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+  "method": "Independent fresh GLB import, neutral lights and cameras; no floor or asset geometry edits.",
+  "views": [
+    {
+      "file": "seat_underside.png",
+      "sha256": "438b5730121603ffb281365df0e24ffb661d2c35511b17e69c701817066074e1",
+      "camera_blender_xyz_m": [
+        3,
+        -4,
+        -1
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0.2,
+        0.42
+      ],
+      "orthographic_width_m": 3.35
+    },
+    {
+      "file": "drain_opening.png",
+      "sha256": "4232cbedf03d5756455480ebfc09aac1ea09b9417f125c15997c864c1cbe8163",
+      "camera_blender_xyz_m": [
+        1.43,
+        0.82,
+        3.3
+      ],
+      "target_blender_xyz_m": [
+        1.43,
+        0.77,
+        2.15
+      ],
+      "orthographic_width_m": 0.26
+    },
+    {
+      "file": "gutter_end_inside.png",
+      "sha256": "ed88994f8949f0d7dff165baf863cd18bb35cb4f742e46e16f79cb4646dfa141",
+      "camera_blender_xyz_m": [
+        -2,
+        2.2,
+        3.0
+      ],
+      "target_blender_xyz_m": [
+        -1.55,
+        0.77,
+        2.18
+      ],
+      "orthographic_width_m": 0.42
+    }
+  ]
+}

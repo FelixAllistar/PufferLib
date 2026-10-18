@@ -1,0 +1,16 @@
+{
+  "blender": "4.3.2",
+  "python_texture_recipe": "3.12.14",
+  "dependencies": [
+    "NumPy",
+    "Pillow"
+  ],
+  "network_required": false,
+  "renderer": "Cycles CPU, no denoising (OpenImageDenoise unavailable in installed Blender)",
+  "native_engine_test": "not run",
+  "target_platform_performance": "not run",
+  "generated_utc_date": "2026-10-17",
+  "numpy_version": "2.3.5",
+  "pillow_version": "12.3.0",
+  "gltf_exporter": "Khronos glTF Blender I/O v4.3.47"
+}

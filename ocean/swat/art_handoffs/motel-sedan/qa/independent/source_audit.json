@@ -1,0 +1,8228 @@
+{
+  "file": "/workspace/shared/parked_sedan_01/independent/frozen/source/BC_SEDAN01_editable.blend",
+  "sha256": "689c4b8a5a65f8dcd7c80e03834f699abc8e51d743e251b5bed340e33b776420",
+  "blender": "4.3.2",
+  "units": {
+    "system": "METRIC",
+    "scale": 1.0
+  },
+  "root": {
+    "location": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "custom": {
+      "asset_id": "BC_SEDAN01",
+      "revision": "r01",
+      "scope": "Original static exterior, opaque glazing. No interior, rig, driving, collision or damage implementation.",
+      "front_axis": "Blender -Y; glTF +Z",
+      "unit": "metres",
+      "pivot": "Ground center (0,0,0)",
+      "wheel_centers_json": "[{\"name\": \"wheel_front_left\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [0.765, -1.28, 0.315], \"gltf_center\": [0.765, 0.315, 1.28]}, {\"name\": \"wheel_front_right\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [-0.765, -1.28, 0.315], \"gltf_center\": [-0.765, 0.315, 1.28]}, {\"name\": \"wheel_rear_left\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [0.765, 1.28, 0.315], \"gltf_center\": [0.765, 0.315, -1.28]}, {\"name\": \"wheel_rear_right\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [-0.765, 1.28, 0.315], \"gltf_center\": [-0.765, 0.315, -1.28]}]"
+    }
+  },
+  "objects": [
+    {
+      "name": "B_pillar_applique_-1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 4.674031462183819e-05,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 4.6745951597888975e-05
+        }
+      ],
+      "bbox_min": [
+        -0.7786862850189209,
+        0.21299999952316284,
+        0.949999988079071
+      ],
+      "bbox_max": [
+        -0.6567058563232422,
+        0.2529999911785126,
+        1.3600000143051147
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "B_pillar_applique_1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 4.6740314621841874e-05,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 4.6745951597888975e-05
+        }
+      ],
+      "bbox_min": [
+        0.6567058563232422,
+        0.21299999952316284,
+        0.949999988079071
+      ],
+      "bbox_max": [
+        0.7786862850189209,
+        0.2529999911785126,
+        1.3600000143051147
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Beltline_seal_-1",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 14,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0001569590774358942,
+      "components": [
+        {
+          "faces": 14,
+          "signed_volume": 0.0001569626862571264
+        }
+      ],
+      "bbox_min": [
+        -0.7861372232437134,
+        -0.9599999785423279,
+        0.9390000104904175
+      ],
+      "bbox_max": [
+        -0.7741372585296631,
+        1.2200000286102295,
+        0.9509999752044678
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Beltline_seal_1",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 14,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00015695907743589434,
+      "components": [
+        {
+          "faces": 14,
+          "signed_volume": 0.00015695387749777555
+        }
+      ],
+      "bbox_min": [
+        0.7741372585296631,
+        -0.9599999785423279,
+        0.9390000104904175
+      ],
+      "bbox_max": [
+        0.7861372232437134,
+        1.2200000286102295,
+        0.9509999752044678
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Boot_rear_shutline",
+      "group": "body",
+      "vertices": 20,
+      "polygons": 18,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.3832393901470142e-05,
+      "components": [
+        {
+          "faces": 18,
+          "signed_volume": 2.383594983637594e-05
+        }
+      ],
+      "bbox_min": [
+        -0.6617110371589661,
+        1.9769999980926514,
+        0.8315948843955994
+      ],
+      "bbox_max": [
+        0.6617116928100586,
+        1.9830000400543213,
+        0.8605002164840698
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Boot_side_shutline_-1",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 14,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.0518057691381938e-05,
+      "components": [
+        {
+          "faces": 14,
+          "signed_volume": 1.0538535813490568e-05
+        }
+      ],
+      "bbox_min": [
+        -0.6818423271179199,
+        1.399619698524475,
+        0.8317104578018188
+      ],
+      "bbox_max": [
+        -0.6585387587547302,
+        1.9803351163864136,
+        0.9065431952476501
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Boot_side_shutline_1",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 14,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.0518382314250079e-05,
+      "components": [
+        {
+          "faces": 14,
+          "signed_volume": 1.0466979195674297e-05
+        }
+      ],
+      "bbox_min": [
+        0.6585387587547302,
+        1.3996198177337646,
+        0.8316071629524231
+      ],
+      "bbox_max": [
+        0.6818423271179199,
+        1.980322003364563,
+        0.9065319895744324
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Cabin_side_frame_-1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.010444820373915007,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.010444839058133454
+        }
+      ],
+      "bbox_min": [
+        -0.7950000166893005,
+        -1.059999942779541,
+        0.8799999952316284
+      ],
+      "bbox_max": [
+        -0.6349999904632568,
+        1.340000033378601,
+        1.3919999599456787
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Cabin_side_frame_1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.010444820373914959,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.01044483905813344
+        }
+      ],
+      "bbox_min": [
+        0.6349999904632568,
+        -1.059999942779541,
+        0.8799999952316284
+      ],
+      "bbox_max": [
+        0.7950000166893005,
+        1.340000033378601,
+        1.3919999599456787
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Coachwork_continuous_arch_cut_shell",
+      "group": "body",
+      "vertices": 1100,
+      "polygons": 1116,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 4.380218245486631,
+      "components": [
+        {
+          "faces": 1116,
+          "signed_volume": 4.3802181491409975
+        }
+      ],
+      "bbox_min": [
+        -0.875,
+        -2.1500000953674316,
+        0.23499999940395355
+      ],
+      "bbox_max": [
+        0.875,
+        2.1500000953674316,
+        0.9559999704360962
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_blank_registration_panel",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00035613342247344676,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 0.00035617656734150904
+        }
+      ],
+      "bbox_min": [
+        -0.17149999737739563,
+        -2.1640000343322754,
+        0.5690000057220459
+      ],
+      "bbox_max": [
+        0.17149999737739563,
+        -2.1519999504089355,
+        0.656999945640564
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_bumper_body_separation",
+      "group": "body",
+      "vertices": 44,
+      "polygons": 42,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 4.109711261463968e-05,
+      "components": [
+        {
+          "faces": 42,
+          "signed_volume": 4.10373080133774e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8117181062698364,
+        -2.1545000076293945,
+        0.5595000386238098
+      ],
+      "bbox_max": [
+        0.8117181062698364,
+        -1.97758948802948,
+        0.5665000081062317
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_bumper_rubrail",
+      "group": "body",
+      "vertices": 52,
+      "polygons": 50,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0017803749966846414,
+      "components": [
+        {
+          "faces": 50,
+          "signed_volume": 0.001780391656817904
+        }
+      ],
+      "bbox_min": [
+        -0.8211010694503784,
+        -2.177999973297119,
+        0.4580000042915344
+      ],
+      "bbox_max": [
+        0.8211010694503784,
+        -1.9582630395889282,
+        0.5040000081062317
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_indicator_-1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00014687998174668215,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0001468925523416453
+        }
+      ],
+      "bbox_min": [
+        -0.7940000295639038,
+        -2.0403499603271484,
+        0.6740000247955322
+      ],
+      "bbox_max": [
+        -0.722000002861023,
+        -1.9765361547470093,
+        0.7730000019073486
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_indicator_-1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.028456088398888e-05,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 3.032684859742091e-05
+        }
+      ],
+      "bbox_min": [
+        -0.7990587949752808,
+        -2.0473508834838867,
+        0.6684697270393372
+      ],
+      "bbox_max": [
+        -0.716941237449646,
+        -1.9935352802276611,
+        0.7785978317260742
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_indicator_1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00014687998174668345,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.000146892552341645
+        }
+      ],
+      "bbox_min": [
+        0.722000002861023,
+        -2.0403499603271484,
+        0.6740000247955322
+      ],
+      "bbox_max": [
+        0.7940000295639038,
+        -1.9765361547470093,
+        0.7730000019073486
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_indicator_1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0284560884065318e-05,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 3.018465152611818e-05
+        }
+      ],
+      "bbox_min": [
+        0.716941237449646,
+        -2.0473508834838867,
+        0.6684697270393372
+      ],
+      "bbox_max": [
+        0.7990587949752808,
+        -1.9935352802276611,
+        0.7785978317260742
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_plate_surround",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0009161761583502373,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 0.0009161969016228574
+        }
+      ],
+      "bbox_min": [
+        -0.20250000059604645,
+        -2.1540000438690186,
+        0.5489999651908875
+      ],
+      "bbox_max": [
+        0.20250000059604645,
+        -2.135999917984009,
+        0.6769999861717224
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_side_window_-1",
+      "group": "windows",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0013356266403454148,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0013356215398137722
+        }
+      ],
+      "bbox_min": [
+        -0.7773156762123108,
+        -0.9459999799728394,
+        0.953000009059906
+      ],
+      "bbox_max": [
+        -0.6560764908790588,
+        0.18700000643730164,
+        1.3569999933242798
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_side_window_-1_weatherseal",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0001839882789160226,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 0.00018396481270125894
+        }
+      ],
+      "bbox_min": [
+        -0.7842534184455872,
+        -0.9501246213912964,
+        0.9464133977890015
+      ],
+      "bbox_max": [
+        -0.6543086767196655,
+        0.19112461805343628,
+        1.3622221946716309
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_side_window_1",
+      "group": "windows",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0013356266403454467,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0013356215398137722
+        }
+      ],
+      "bbox_min": [
+        0.6560764908790588,
+        -0.9459999799728394,
+        0.953000009059906
+      ],
+      "bbox_max": [
+        0.7773156762123108,
+        0.18700000643730164,
+        1.3569999933242798
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_side_window_1_weatherseal",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0001839879487879571,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 0.0001840076292864982
+        }
+      ],
+      "bbox_min": [
+        0.6543086767196655,
+        -0.9501246213912964,
+        0.9464133977890015
+      ],
+      "bbox_max": [
+        0.7842534184455872,
+        0.19112461805343628,
+        1.3622221946716309
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_static_axle_hint",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 10,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.004504263182472105,
+      "components": [
+        {
+          "faces": 10,
+          "signed_volume": 0.004504266602452844
+        }
+      ],
+      "bbox_min": [
+        -0.6499999761581421,
+        -1.3149999380111694,
+        0.2800000011920929
+      ],
+      "bbox_max": [
+        0.6499999761581421,
+        -1.2450000047683716,
+        0.3499999940395355
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Front_wrap_bumper",
+      "group": "body",
+      "vertices": 102,
+      "polygons": 98,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.05181689825261885,
+      "components": [
+        {
+          "faces": 98,
+          "signed_volume": 0.05181686767552192
+        }
+      ],
+      "bbox_min": [
+        -0.8299999833106995,
+        -2.1500000953674316,
+        0.3400000035762787
+      ],
+      "bbox_max": [
+        0.8299999833106995,
+        -1.7949999570846558,
+        0.5600000023841858
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Fuel_filler_seam",
+      "group": "body",
+      "vertices": 64,
+      "polygons": 64,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.654320107056031e-06,
+      "components": [
+        {
+          "faces": 64,
+          "signed_volume": 8.595701388003336e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8650521636009216,
+        1.6374768018722534,
+        0.7573047876358032
+      ],
+      "bbox_max": [
+        -0.7016660571098328,
+        1.8022185564041138,
+        0.8526937961578369
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Headlamp_-1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0008579535593634634,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0008579740145554146
+        }
+      ],
+      "bbox_min": [
+        -0.7049999833106995,
+        -2.1442301273345947,
+        0.6740000247955322
+      ],
+      "bbox_max": [
+        -0.37400001287460327,
+        -2.0246732234954834,
+        0.7960000038146973
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Headlamp_-1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 9.24289345944174e-05,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 9.239268062325866e-05
+        }
+      ],
+      "bbox_min": [
+        -0.7073184847831726,
+        -2.151916265487671,
+        0.6663726568222046
+      ],
+      "bbox_max": [
+        -0.3716815114021301,
+        -2.040987253189087,
+        0.8036400079727173
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Headlamp_1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.000857953559363474,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0008579740145554152
+        }
+      ],
+      "bbox_min": [
+        0.37400001287460327,
+        -2.1442301273345947,
+        0.6740000247955322
+      ],
+      "bbox_max": [
+        0.7049999833106995,
+        -2.0246732234954834,
+        0.7960000038146973
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Headlamp_1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 9.242892153627985e-05,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 9.242066395624205e-05
+        }
+      ],
+      "bbox_min": [
+        0.3716815114021301,
+        -2.151916265487671,
+        0.6663726568222046
+      ],
+      "bbox_max": [
+        0.7073184847831726,
+        -2.040987253189087,
+        0.8036400079727173
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Hood_front_shutline",
+      "group": "body",
+      "vertices": 20,
+      "polygons": 18,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.373860121534046e-05,
+      "components": [
+        {
+          "faces": 18,
+          "signed_volume": 2.3727014195969458e-05
+        }
+      ],
+      "bbox_min": [
+        -0.6592391729354858,
+        -1.9830000400543213,
+        0.8230651021003723
+      ],
+      "bbox_max": [
+        0.6592390537261963,
+        -1.9769999980926514,
+        0.8471924066543579
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Hood_side_shutline_-1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 22,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.6989880991186456e-05,
+      "components": [
+        {
+          "faces": 22,
+          "signed_volume": 1.6957366218169563e-05
+        }
+      ],
+      "bbox_min": [
+        -0.6845399737358093,
+        -1.9800995588302612,
+        0.8230634927749634
+      ],
+      "bbox_max": [
+        -0.6561004519462585,
+        -1.0397034883499146,
+        0.9059788584709167
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Hood_side_shutline_1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 22,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.6990743087929027e-05,
+      "components": [
+        {
+          "faces": 22,
+          "signed_volume": 1.6992513944084603e-05
+        }
+      ],
+      "bbox_min": [
+        0.6561004519462585,
+        -1.9801018238067627,
+        0.8230862617492676
+      ],
+      "bbox_max": [
+        0.6845399737358093,
+        -1.0397034883499146,
+        0.9059752821922302
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Lower_intake_dark",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0009224695542451099,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 0.0009224815633691206
+        }
+      ],
+      "bbox_min": [
+        -0.3499999940395355,
+        -2.1684999465942383,
+        0.36649999022483826
+      ],
+      "bbox_max": [
+        0.3499999940395355,
+        -2.1475000381469727,
+        0.43149998784065247
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Mirror_face_-1",
+      "group": "body",
+      "vertices": 12,
+      "polygons": 10,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.1094076418389817e-05,
+      "components": [
+        {
+          "faces": 10,
+          "signed_volume": 1.109783382465447e-05
+        }
+      ],
+      "bbox_min": [
+        -0.9610000252723694,
+        -0.6770000457763672,
+        1.0119999647140503
+      ],
+      "bbox_max": [
+        -0.875,
+        -0.6620000004768372,
+        1.0549999475479126
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Mirror_face_1",
+      "group": "body",
+      "vertices": 12,
+      "polygons": 10,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.1094076418389268e-05,
+      "components": [
+        {
+          "faces": 10,
+          "signed_volume": 1.1097833824654399e-05
+        }
+      ],
+      "bbox_min": [
+        0.875,
+        -0.6770000457763672,
+        1.0119999647140503
+      ],
+      "bbox_max": [
+        0.9610000252723694,
+        -0.6620000004768372,
+        1.0549999475479126
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Mirror_housing_-1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0013573501484473575,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0013428560147682835
+        }
+      ],
+      "bbox_min": [
+        -0.9800000190734863,
+        -0.8700000047683716,
+        0.9959999918937683
+      ],
+      "bbox_max": [
+        -0.8600000143051147,
+        -0.6600000262260437,
+        1.0750000476837158
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Mirror_housing_1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0013573501484473562,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.001342856014768282
+        }
+      ],
+      "bbox_min": [
+        0.8600000143051147,
+        -0.8700000047683716,
+        0.9959999918937683
+      ],
+      "bbox_max": [
+        0.9800000190734863,
+        -0.6600000262260437,
+        1.0750000476837158
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Mirror_stalk_-1",
+      "group": "body",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00014676274862495406,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 0.0001467947343674797
+        }
+      ],
+      "bbox_min": [
+        -0.8811803460121155,
+        -0.8423606753349304,
+        0.9835745096206665
+      ],
+      "bbox_max": [
+        -0.7788196802139282,
+        -0.7576392889022827,
+        1.0394254922866821
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Mirror_stalk_1",
+      "group": "body",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00014676274862495477,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 0.00014674869210769715
+        }
+      ],
+      "bbox_min": [
+        0.7788196802139282,
+        -0.8423606753349304,
+        0.9835745096206665
+      ],
+      "bbox_max": [
+        0.8811803460121155,
+        -0.7576392889022827,
+        1.0394254922866821
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Parked_wiper_-0.55",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 4.573715117727685e-05,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 4.573459500534242e-05
+        }
+      ],
+      "bbox_min": [
+        -0.5426670908927917,
+        -1.0189292430877686,
+        0.948509931564331
+      ],
+      "bbox_max": [
+        -0.07748611271381378,
+        -0.9798383712768555,
+        1.0077414512634277
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Parked_wiper_0.12",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 4.3112101288213145e-05,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 4.311499715470319e-05
+        }
+      ],
+      "bbox_min": [
+        0.11772504448890686,
+        -1.021926760673523,
+        0.9695706963539124
+      ],
+      "bbox_max": [
+        0.5574492812156677,
+        -0.9748446345329285,
+        0.9841147661209106
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_blank_registration_panel",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.000356133422473447,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 0.0003561455620608004
+        }
+      ],
+      "bbox_min": [
+        -0.17149999737739563,
+        2.1519999504089355,
+        0.5690000057220459
+      ],
+      "bbox_max": [
+        0.17149999737739563,
+        2.1640000343322754,
+        0.656999945640564
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_bumper_body_separation",
+      "group": "body",
+      "vertices": 44,
+      "polygons": 42,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 4.109711261463972e-05,
+      "components": [
+        {
+          "faces": 42,
+          "signed_volume": 4.1144458615841766e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8117181062698364,
+        1.97758948802948,
+        0.5595000386238098
+      ],
+      "bbox_max": [
+        0.8117181062698364,
+        2.1545000076293945,
+        0.5665000081062317
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_bumper_rubrail",
+      "group": "body",
+      "vertices": 52,
+      "polygons": 50,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0017803749966846419,
+      "components": [
+        {
+          "faces": 50,
+          "signed_volume": 0.0017803984095129078
+        }
+      ],
+      "bbox_min": [
+        -0.8211010694503784,
+        1.9582630395889282,
+        0.4580000042915344
+      ],
+      "bbox_max": [
+        0.8211010694503784,
+        2.177999973297119,
+        0.5040000081062317
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_plate_surround",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0009161761583502367,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 0.00091618140868378
+        }
+      ],
+      "bbox_min": [
+        -0.20250000059604645,
+        2.135999917984009,
+        0.5489999651908875
+      ],
+      "bbox_max": [
+        0.20250000059604645,
+        2.1540000438690186,
+        0.6769999861717224
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_reverse_lens_-1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00012974432483875252,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.00012976614137490524
+        }
+      ],
+      "bbox_min": [
+        -0.46000000834465027,
+        2.105797529220581,
+        0.6909999847412109
+      ],
+      "bbox_max": [
+        -0.3580000102519989,
+        2.146291732788086,
+        0.7580000162124634
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_reverse_lens_-1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.972880364345663e-05,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 2.974548260681342e-05
+        }
+      ],
+      "bbox_min": [
+        -0.463657945394516,
+        2.1219000816345215,
+        0.6839098930358887
+      ],
+      "bbox_max": [
+        -0.3543420732021332,
+        2.154189109802246,
+        0.7651460766792297
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_reverse_lens_1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00012974432483876027,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.00012976614137490643
+        }
+      ],
+      "bbox_min": [
+        0.3580000102519989,
+        2.105797529220581,
+        0.6909999847412109
+      ],
+      "bbox_max": [
+        0.46000000834465027,
+        2.146291732788086,
+        0.7580000162124634
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_reverse_lens_1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.9728803643456927e-05,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 2.9767116454119068e-05
+        }
+      ],
+      "bbox_min": [
+        0.3543420732021332,
+        2.1219000816345215,
+        0.6839098930358887
+      ],
+      "bbox_max": [
+        0.463657945394516,
+        2.154189109802246,
+        0.7651460766792297
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_screen_frame_base",
+      "group": "body",
+      "vertices": 108,
+      "polygons": 106,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.014950300883647486,
+      "components": [
+        {
+          "faces": 106,
+          "signed_volume": 0.014950202089191249
+        }
+      ],
+      "bbox_min": [
+        -0.7960000038146973,
+        0.6279999613761902,
+        0.8740000128746033
+      ],
+      "bbox_max": [
+        0.7960000038146973,
+        1.340000033378601,
+        1.4500000476837158
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_screen_opaque",
+      "group": "windows",
+      "vertices": 108,
+      "polygons": 106,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.004755517409082089,
+      "components": [
+        {
+          "faces": 106,
+          "signed_volume": 0.004755563372934043
+        }
+      ],
+      "bbox_min": [
+        -0.7156057953834534,
+        0.6845577359199524,
+        0.9205530881881714
+      ],
+      "bbox_max": [
+        0.7156057953834534,
+        1.300244688987732,
+        1.418375015258789
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_side_window_-1",
+      "group": "windows",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.001022122020015595,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.001022126467432836
+        }
+      ],
+      "bbox_min": [
+        -0.7773156762123108,
+        0.2770000100135803,
+        0.953000009059906
+      ],
+      "bbox_max": [
+        -0.6560764908790588,
+        1.2120000123977661,
+        1.3569999933242798
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_side_window_-1_weatherseal",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00015287333307987877,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 0.00015279315012624778
+        }
+      ],
+      "bbox_min": [
+        -0.7842612862586975,
+        0.2717517614364624,
+        0.9465663433074951
+      ],
+      "bbox_max": [
+        -0.6540355086326599,
+        1.2172483205795288,
+        1.3622504472732544
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_side_window_1",
+      "group": "windows",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0010221220200156114,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.001022126467432835
+        }
+      ],
+      "bbox_min": [
+        0.6560764908790588,
+        0.2770000100135803,
+        0.953000009059906
+      ],
+      "bbox_max": [
+        0.7773156762123108,
+        1.2120000123977661,
+        1.3569999933242798
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_side_window_1_weatherseal",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00015287329209843104,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 0.000152979869464312
+        }
+      ],
+      "bbox_min": [
+        0.6540355086326599,
+        0.2717517614364624,
+        0.9465663433074951
+      ],
+      "bbox_max": [
+        0.7842612862586975,
+        1.2172483205795288,
+        1.3622504472732544
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_static_axle_hint",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 10,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.004504263182472105,
+      "components": [
+        {
+          "faces": 10,
+          "signed_volume": 0.004504250498333328
+        }
+      ],
+      "bbox_min": [
+        -0.6499999761581421,
+        1.2450000047683716,
+        0.2800000011920929
+      ],
+      "bbox_max": [
+        0.6499999761581421,
+        1.3149999380111694,
+        0.3499999940395355
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_tail_lamp_-1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0010679968502521524,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0010679956370343684
+        }
+      ],
+      "bbox_min": [
+        -0.7900000214576721,
+        1.9789490699768066,
+        0.6740000247955322
+      ],
+      "bbox_max": [
+        -0.3449999988079071,
+        2.147836446762085,
+        0.7879999876022339
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_tail_lamp_-1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0001225114076579109,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 0.00012249471061901796
+        }
+      ],
+      "bbox_min": [
+        -0.7924767732620239,
+        1.9953420162200928,
+        0.6661800742149353
+      ],
+      "bbox_max": [
+        -0.3425232470035553,
+        2.1554434299468994,
+        0.79582679271698
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_tail_lamp_1",
+      "group": "body",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.001067996850252194,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 0.0010679956370343684
+        }
+      ],
+      "bbox_min": [
+        0.3449999988079071,
+        1.9789490699768066,
+        0.6740000247955322
+      ],
+      "bbox_max": [
+        0.7900000214576721,
+        2.147836446762085,
+        0.7879999876022339
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_tail_lamp_1_gasket",
+      "group": "body",
+      "vertices": 16,
+      "polygons": 16,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00012251140765790812,
+      "components": [
+        {
+          "faces": 16,
+          "signed_volume": 0.00012244872899221633
+        }
+      ],
+      "bbox_min": [
+        0.3425232470035553,
+        1.9953420162200928,
+        0.6661800742149353
+      ],
+      "bbox_max": [
+        0.7924767732620239,
+        2.1554434299468994,
+        0.79582679271698
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rear_wrap_bumper",
+      "group": "body",
+      "vertices": 102,
+      "polygons": 98,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0518168982526188,
+      "components": [
+        {
+          "faces": 98,
+          "signed_volume": 0.0518168676755219
+        }
+      ],
+      "bbox_min": [
+        -0.8299999833106995,
+        1.7949999570846558,
+        0.3400000035762787
+      ],
+      "bbox_max": [
+        0.8299999833106995,
+        2.1500000953674316,
+        0.5600000023841858
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rocker_sill_-1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 20,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0022637889729255635,
+      "components": [
+        {
+          "faces": 20,
+          "signed_volume": 0.002263804711219565
+        }
+      ],
+      "bbox_min": [
+        -0.871999979019165,
+        -0.901076078414917,
+        0.24694287776947021
+      ],
+      "bbox_max": [
+        -0.8240044116973877,
+        0.901076078414917,
+        0.29403331875801086
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Rocker_sill_1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 20,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0022637889729255622,
+      "components": [
+        {
+          "faces": 20,
+          "signed_volume": 0.0022637891094442896
+        }
+      ],
+      "bbox_min": [
+        0.8240044116973877,
+        -0.901076078414917,
+        0.24694287776947021
+      ],
+      "bbox_max": [
+        0.871999979019165,
+        0.901076078414917,
+        0.29403331875801086
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Roof_crown",
+      "group": "body",
+      "vertices": 126,
+      "polygons": 124,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.02341073568519937,
+      "components": [
+        {
+          "faces": 124,
+          "signed_volume": 0.02341070430748016
+        }
+      ],
+      "bbox_min": [
+        -0.6489999890327454,
+        -0.3610000014305115,
+        1.371999979019165
+      ],
+      "bbox_max": [
+        0.6489999890327454,
+        0.640999972820282,
+        1.4539999961853027
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Side_marker_-1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.7921752276448958e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 2.7878942394939645e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8635077476501465,
+        -1.7325000762939453,
+        0.7204999923706055
+      ],
+      "bbox_max": [
+        -0.8515077829360962,
+        -1.6475000381469727,
+        0.749500036239624
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Side_marker_1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.7921752276448823e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 2.7906033210456317e-05
+        }
+      ],
+      "bbox_min": [
+        0.8515077829360962,
+        -1.7325000762939453,
+        0.7204999923706055
+      ],
+      "bbox_max": [
+        0.8635077476501465,
+        -1.6475000381469727,
+        0.749500036239624
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Static_undertray",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.07872715295939181,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 0.07872716321920369
+        }
+      ],
+      "bbox_min": [
+        -0.5649999976158142,
+        -1.0,
+        0.2214999943971634
+      ],
+      "bbox_max": [
+        0.5649999976158142,
+        1.0,
+        0.2565000057220459
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Unbranded_grille_slat_0.722",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 7.679100772632532e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 7.6813138245295e-05
+        }
+      ],
+      "bbox_min": [
+        -0.3199999928474426,
+        -2.184000015258789,
+        0.7164999842643738
+      ],
+      "bbox_max": [
+        0.3199999928474426,
+        -2.171999931335449,
+        0.7275000214576721
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Unbranded_grille_slat_0.75",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 7.679100772621408e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 7.679746098195491e-05
+        }
+      ],
+      "bbox_min": [
+        -0.3199999928474426,
+        -2.184000015258789,
+        0.7444999814033508
+      ],
+      "bbox_max": [
+        0.3199999928474426,
+        -2.171999931335449,
+        0.7555000185966492
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Unbranded_grille_slat_0.778",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 7.67910077262143e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 7.68212291101623e-05
+        }
+      ],
+      "bbox_min": [
+        -0.3199999928474426,
+        -2.184000015258789,
+        0.7724999785423279
+      ],
+      "bbox_max": [
+        0.3199999928474426,
+        -2.171999931335449,
+        0.7835000157356262
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Upper_grille_recess",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0011468180584334451,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 0.0011468304922648922
+        }
+      ],
+      "bbox_min": [
+        -0.3375000059604645,
+        -2.172999858856201,
+        0.7009999752044678
+      ],
+      "bbox_max": [
+        0.3375000059604645,
+        -2.1570000648498535,
+        0.8090000152587891
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Windshield_frame_base",
+      "group": "body",
+      "vertices": 108,
+      "polygons": 106,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.014950313753579227,
+      "components": [
+        {
+          "faces": 106,
+          "signed_volume": 0.014950290185273454
+        }
+      ],
+      "bbox_min": [
+        -0.7960000038146973,
+        -1.059999942779541,
+        0.8740000128746033
+      ],
+      "bbox_max": [
+        0.7960000038146973,
+        -0.34800001978874207,
+        1.4500000476837158
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "Windshield_opaque",
+      "group": "windows",
+      "vertices": 108,
+      "polygons": 106,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.005078643163972776,
+      "components": [
+        {
+          "faces": 106,
+          "signed_volume": 0.0050786826826273055
+        }
+      ],
+      "bbox_min": [
+        -0.7412840127944946,
+        -1.0314109325408936,
+        0.910325288772583
+      ],
+      "bbox_max": [
+        0.7412840127944946,
+        -0.39395520091056824,
+        1.4262501001358032
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_arch_lip_-1",
+      "group": "body",
+      "vertices": 92,
+      "polygons": 90,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.00036644739508875717,
+      "components": [
+        {
+          "faces": 90,
+          "signed_volume": 0.0003663572620098423
+        }
+      ],
+      "bbox_min": [
+        -0.869110643863678,
+        -1.6569974422454834,
+        0.2496197372674942
+      ],
+      "bbox_max": [
+        -0.8262766003608704,
+        -0.903008759021759,
+        0.691987156867981
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_arch_lip_1",
+      "group": "body",
+      "vertices": 92,
+      "polygons": 90,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.000366447388118756,
+      "components": [
+        {
+          "faces": 90,
+          "signed_volume": 0.00036651884208064667
+        }
+      ],
+      "bbox_min": [
+        0.8262766003608704,
+        -1.6569974422454834,
+        0.2496197372674942
+      ],
+      "bbox_max": [
+        0.869110643863678,
+        -0.903008759021759,
+        0.691987156867981
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_door_panel_gap_-1",
+      "group": "body",
+      "vertices": 104,
+      "polygons": 102,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.7518394439628796e-05,
+      "components": [
+        {
+          "faces": 102,
+          "signed_volume": 2.7600511420663095e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8741375207901001,
+        -1.0176464319229126,
+        0.31220000982284546
+      ],
+      "bbox_max": [
+        -0.7732126712799072,
+        0.24100272357463837,
+        0.9547760486602783
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_door_panel_gap_1",
+      "group": "body",
+      "vertices": 104,
+      "polygons": 102,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.752966589359101e-05,
+      "components": [
+        {
+          "faces": 102,
+          "signed_volume": 2.7533098242808273e-05
+        }
+      ],
+      "bbox_min": [
+        0.7732126712799072,
+        -1.0176464319229126,
+        0.31220000982284546
+      ],
+      "bbox_max": [
+        0.8741375207901001,
+        0.24100272357463837,
+        0.9547760486602783
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_handle_-1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 6.632759650865533e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 6.632528644937903e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8898206949234009,
+        -0.012500002980232239,
+        0.8289999961853027
+      ],
+      "bbox_max": [
+        -0.8648207187652588,
+        0.12250000238418579,
+        0.8509999513626099
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_handle_1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 6.632759650865511e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 6.633207944635926e-05
+        }
+      ],
+      "bbox_min": [
+        0.8648207187652588,
+        -0.012500002980232239,
+        0.8289999961853027
+      ],
+      "bbox_max": [
+        0.8898206949234009,
+        0.12250000238418579,
+        0.8509999513626099
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_handle_recess_-1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.618767388584805e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 8.618462127666657e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8703206777572632,
+        -0.03149999678134918,
+        0.8134999871253967
+      ],
+      "bbox_max": [
+        -0.8583207130432129,
+        0.14149999618530273,
+        0.856499969959259
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "front_handle_recess_1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.618767388584794e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 8.618703295345208e-05
+        }
+      ],
+      "bbox_min": [
+        0.8583207130432129,
+        -0.03149999678134918,
+        0.8134999871253967
+      ],
+      "bbox_max": [
+        0.8703206777572632,
+        0.14149999618530273,
+        0.856499969959259
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_arch_lip_-1",
+      "group": "body",
+      "vertices": 92,
+      "polygons": 90,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0003664195986483637,
+      "components": [
+        {
+          "faces": 90,
+          "signed_volume": 0.00036655435057279345
+        }
+      ],
+      "bbox_min": [
+        -0.8691229224205017,
+        0.9030025005340576,
+        0.24963094294071198
+      ],
+      "bbox_max": [
+        -0.8293086290359497,
+        1.6569942235946655,
+        0.6919988393783569
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_arch_lip_1",
+      "group": "body",
+      "vertices": 92,
+      "polygons": 90,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0003664195662063774,
+      "components": [
+        {
+          "faces": 90,
+          "signed_volume": 0.00036642995837610215
+        }
+      ],
+      "bbox_min": [
+        0.8293086290359497,
+        0.9030025005340576,
+        0.24963094294071198
+      ],
+      "bbox_max": [
+        0.8691229224205017,
+        1.6569942235946655,
+        0.6919988393783569
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_door_panel_gap_-1",
+      "group": "body",
+      "vertices": 84,
+      "polygons": 82,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.3017212893161267e-05,
+      "components": [
+        {
+          "faces": 82,
+          "signed_volume": 2.3098759129425165e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8768330216407776,
+        0.23899726569652557,
+        0.31220000982284546
+      ],
+      "bbox_max": [
+        -0.7733850479125977,
+        1.30259108543396,
+        0.9548149108886719
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_door_panel_gap_1",
+      "group": "body",
+      "vertices": 84,
+      "polygons": 82,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 2.304759171030314e-05,
+      "components": [
+        {
+          "faces": 82,
+          "signed_volume": 2.3053310921265308e-05
+        }
+      ],
+      "bbox_min": [
+        0.7733850479125977,
+        0.23899726569652557,
+        0.31220000982284546
+      ],
+      "bbox_max": [
+        0.8768330216407776,
+        1.30259108543396,
+        0.9548149108886719
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_handle_-1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 6.632758409345896e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 6.636060182548412e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8963754177093506,
+        0.7074999809265137,
+        0.8289999961853027
+      ],
+      "bbox_max": [
+        -0.8713754415512085,
+        0.8424999713897705,
+        0.8509999513626099
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_handle_1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 6.632758409345874e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 6.634079181821992e-05
+        }
+      ],
+      "bbox_min": [
+        0.8713754415512085,
+        0.7074999809265137,
+        0.8289999961853027
+      ],
+      "bbox_max": [
+        0.8963754177093506,
+        0.8424999713897705,
+        0.8509999513626099
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_handle_recess_-1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.61876654612299e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 8.62050465002536e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8768754601478577,
+        0.6884999871253967,
+        0.8134999871253967
+      ],
+      "bbox_max": [
+        -0.8648754954338074,
+        0.8614999651908875,
+        0.856499969959259
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "rear_handle_recess_1",
+      "group": "body",
+      "vertices": 24,
+      "polygons": 26,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.618766546122995e-05,
+      "components": [
+        {
+          "faces": 26,
+          "signed_volume": 8.616902126353463e-05
+        }
+      ],
+      "bbox_min": [
+        0.8648754954338074,
+        0.6884999871253967,
+        0.8134999871253967
+      ],
+      "bbox_max": [
+        0.8768754601478577,
+        0.8614999651908875,
+        0.856499969959259
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "shared_B_pillar_panel_gap_-1",
+      "group": "body",
+      "vertices": 48,
+      "polygons": 46,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.0538353833378544e-05,
+      "components": [
+        {
+          "faces": 46,
+          "signed_volume": 1.0525405135316142e-05
+        }
+      ],
+      "bbox_min": [
+        -0.8678277730941772,
+        0.22219999134540558,
+        0.3147946000099182
+      ],
+      "bbox_max": [
+        -0.7727085947990417,
+        0.2427976429462433,
+        0.953777551651001
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "shared_B_pillar_panel_gap_1",
+      "group": "body",
+      "vertices": 48,
+      "polygons": 46,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 1.0538090816362002e-05,
+      "components": [
+        {
+          "faces": 46,
+          "signed_volume": 1.0561634553596366e-05
+        }
+      ],
+      "bbox_min": [
+        0.7727085947990417,
+        0.22219999134540558,
+        0.3147946000099182
+      ],
+      "bbox_max": [
+        0.8678277730941772,
+        0.2427976429462433,
+        0.953777551651001
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_inner_steel_dish",
+      "group": "wheel_front_left",
+      "vertices": 64,
+      "polygons": 34,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0009453274397469777,
+      "components": [
+        {
+          "faces": 34,
+          "signed_volume": 0.0009453337212713997
+        }
+      ],
+      "bbox_min": [
+        0.6779999732971191,
+        -1.4879999160766602,
+        0.10699999332427979
+      ],
+      "bbox_max": [
+        0.6850000023841858,
+        -1.0720000267028809,
+        0.5230000019073486
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_lug_0",
+      "group": "wheel_front_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.073514466701881e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0845791722337315e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        -1.3495686054229736,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        -1.32356858253479,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_lug_1",
+      "group": "wheel_front_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667024504e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.085044833521041e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        -1.2364314794540405,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        -1.210431456565857,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_lug_2",
+      "group": "wheel_front_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667027486e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.073907767732954e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        -1.2364314794540405,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        -1.210431456565857,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_lug_3",
+      "group": "wheel_front_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667027486e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.069697413593551e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        -1.3495686054229736,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        -1.32356858253479,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_outer_steel_cover",
+      "group": "wheel_front_left",
+      "vertices": 194,
+      "polygons": 224,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0021765299294365763,
+      "components": [
+        {
+          "faces": 224,
+          "signed_volume": 0.002176433217452264
+        }
+      ],
+      "bbox_min": [
+        0.8410000205039978,
+        -1.4910000562667847,
+        0.10400000214576721
+      ],
+      "bbox_max": [
+        0.8679999709129333,
+        -1.069000005722046,
+        0.5260000228881836
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_tire",
+      "group": "wheel_front_left",
+      "vertices": 320,
+      "polygons": 320,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.03242541656540881,
+      "components": [
+        {
+          "faces": 320,
+          "signed_volume": 0.03242544898178799
+        }
+      ],
+      "bbox_min": [
+        0.6650000214576721,
+        -1.5950000286102295,
+        0.0
+      ],
+      "bbox_max": [
+        0.8650000095367432,
+        -0.9649999737739563,
+        0.6299999952316284
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_0",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672883679959788e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.689860502878735e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.4659106731414795,
+        0.3374495506286621
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.4021615982055664,
+        0.4255036413669586
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_1",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.67288322030878e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.668886342396277e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.3916947841644287,
+        0.4364607334136963
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.3036216497421265,
+        0.5006853938102722
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_2",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672885894595753e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.672310893113216e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.2575504779815674,
+        0.43716156482696533
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.1694964170455933,
+        0.5009106397628784
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_3",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888771083396e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.674454875290468e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.1585392951965332,
+        0.3386216163635254
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.0943145751953125,
+        0.42669475078582764
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_4",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672895977518741e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.676889895771977e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.1578384637832642,
+        0.204496368765831
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.094089388847351,
+        0.2925504744052887
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_5",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888877513357e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.667537864918433e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.256378412246704,
+        0.129314586520195
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.1683052778244019,
+        0.19353927671909332
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_6",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888358636532e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.677083921308228e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.3905036449432373,
+        0.1290893405675888
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.3024495840072632,
+        0.19283843040466309
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_left_vent_7",
+      "group": "wheel_front_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672886629882835e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.66136785286161e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        -1.4656853675842285,
+        0.20330524444580078
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        -1.4014607667922974,
+        0.2913784086704254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_inner_steel_dish",
+      "group": "wheel_front_right",
+      "vertices": 64,
+      "polygons": 34,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0009453274397469673,
+      "components": [
+        {
+          "faces": 34,
+          "signed_volume": 0.0009452941400619792
+        }
+      ],
+      "bbox_min": [
+        -0.6850000023841858,
+        -1.4879999160766602,
+        0.10699999332427979
+      ],
+      "bbox_max": [
+        -0.6779999732971191,
+        -1.0720000267028809,
+        0.5230000019073486
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_lug_0",
+      "group": "wheel_front_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667020167e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.076391294598549e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        -1.3495686054229736,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        -1.32356858253479,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_lug_1",
+      "group": "wheel_front_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667022878e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0676989505688124e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        -1.2364314794540405,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        -1.210431456565857,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_lug_2",
+      "group": "wheel_front_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667027215e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0769927737613372e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        -1.2364314794540405,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        -1.210431456565857,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_lug_3",
+      "group": "wheel_front_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667024504e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0816299840807576e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        -1.3495686054229736,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        -1.32356858253479,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_outer_steel_cover",
+      "group": "wheel_front_right",
+      "vertices": 194,
+      "polygons": 224,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0021765299294365793,
+      "components": [
+        {
+          "faces": 224,
+          "signed_volume": 0.0021764332174522487
+        }
+      ],
+      "bbox_min": [
+        -0.8679999709129333,
+        -1.4910000562667847,
+        0.10400000214576721
+      ],
+      "bbox_max": [
+        -0.8410000205039978,
+        -1.069000005722046,
+        0.5260000228881836
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_tire",
+      "group": "wheel_front_right",
+      "vertices": 320,
+      "polygons": 320,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.032425416565408795,
+      "components": [
+        {
+          "faces": 320,
+          "signed_volume": 0.032425314077348354
+        }
+      ],
+      "bbox_min": [
+        -0.8650000095367432,
+        -1.5950000286102295,
+        0.0
+      ],
+      "bbox_max": [
+        -0.6650000214576721,
+        -0.9649999737739563,
+        0.6299999952316284
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_0",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672883679957985e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.689860502878789e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.4659106731414795,
+        0.3374495506286621
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.4021615982055664,
+        0.4255036413669586
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_1",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672883220310122e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.66888634239632e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.3916947841644287,
+        0.4364607334136963
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.3036216497421265,
+        0.5006853938102722
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_2",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672885894593944e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.67231089311347e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.2575504779815674,
+        0.43716156482696533
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.1694964170455933,
+        0.5009106397628784
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_3",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888771084399e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.67445487529034e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.1585392951965332,
+        0.3386216163635254
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.0943145751953125,
+        0.42669475078582764
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_4",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672895977513822e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.676889895771868e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.1578384637832642,
+        0.204496368765831
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.094089388847351,
+        0.2925504744052887
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_5",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888877511636e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.66753786491842e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.256378412246704,
+        0.129314586520195
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.1683052778244019,
+        0.19353927671909332
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_6",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888358637989e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.677083921308428e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.3905036449432373,
+        0.1290893405675888
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.3024495840072632,
+        0.19283843040466309
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_front_right_vent_7",
+      "group": "wheel_front_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672886629887633e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.661367852861538e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        -1.4656853675842285,
+        0.20330524444580078
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        -1.4014607667922974,
+        0.2913784086704254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_inner_steel_dish",
+      "group": "wheel_rear_left",
+      "vertices": 64,
+      "polygons": 34,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0009453274397469673,
+      "components": [
+        {
+          "faces": 34,
+          "signed_volume": 0.0009452941400619829
+        }
+      ],
+      "bbox_min": [
+        0.6779999732971191,
+        1.0720000267028809,
+        0.10699999332427979
+      ],
+      "bbox_max": [
+        0.6850000023841858,
+        1.4879999160766602,
+        0.5230000019073486
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_lug_0",
+      "group": "wheel_rear_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667022878e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0676989505688124e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        1.210431456565857,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        1.2364314794540405,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_lug_1",
+      "group": "wheel_rear_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667020167e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.076391294598549e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        1.32356858253479,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        1.3495686054229736,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_lug_2",
+      "group": "wheel_rear_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667024504e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0816299840807576e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        1.32356858253479,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        1.3495686054229736,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_lug_3",
+      "group": "wheel_rear_left",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667027215e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0769927737613372e-06
+        }
+      ],
+      "bbox_min": [
+        0.8690000176429749,
+        1.210431456565857,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        0.8759999871253967,
+        1.2364314794540405,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_outer_steel_cover",
+      "group": "wheel_rear_left",
+      "vertices": 194,
+      "polygons": 224,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.002176529940018659,
+      "components": [
+        {
+          "faces": 224,
+          "signed_volume": 0.0021765367512974407
+        }
+      ],
+      "bbox_min": [
+        0.8410000205039978,
+        1.069000005722046,
+        0.10400000214576721
+      ],
+      "bbox_max": [
+        0.8679999709129333,
+        1.4910000562667847,
+        0.5260000228881836
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_tire",
+      "group": "wheel_rear_left",
+      "vertices": 320,
+      "polygons": 320,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.03242541656540881,
+      "components": [
+        {
+          "faces": 320,
+          "signed_volume": 0.032425509855784185
+        }
+      ],
+      "bbox_min": [
+        0.6650000214576721,
+        0.9649999737739563,
+        0.0
+      ],
+      "bbox_max": [
+        0.8650000095367432,
+        1.5950000286102295,
+        0.6299999952316284
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_0",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.67289455262982e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.657070187230995e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.094089388847351,
+        0.3374495506286621
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.1578384637832642,
+        0.4255036413669586
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_1",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672883592534471e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.683108414212867e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.1683052778244019,
+        0.4364607334136963
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.256378412246704,
+        0.5006853938102722
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_2",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672886390498585e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.69760212178028e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.3024495840072632,
+        0.43716156482696533
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.3905036449432373,
+        0.5009106397628784
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_3",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672883805389999e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.686697886635835e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.4014607667922974,
+        0.3386216163635254
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.4656853675842285,
+        0.42669475078582764
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_4",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672885104842745e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.671816127995668e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.4021615982055664,
+        0.204496368765831
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.4659106731414795,
+        0.2925504744052887
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_5",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888505283258e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.673378033563424e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.3036216497421265,
+        0.129314586520195
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.3916947841644287,
+        0.19353927671909332
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_6",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.6728878627308e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.669769158586751e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.1694964170455933,
+        0.1290893405675888
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.2575504779815674,
+        0.19283843040466309
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_left_vent_7",
+      "group": "wheel_rear_left",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672891595586831e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.677326453228865e-06
+        }
+      ],
+      "bbox_min": [
+        0.8450000286102295,
+        1.0943145751953125,
+        0.20330524444580078
+      ],
+      "bbox_max": [
+        0.8479999899864197,
+        1.1585392951965332,
+        0.2913784086704254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_inner_steel_dish",
+      "group": "wheel_rear_right",
+      "vertices": 64,
+      "polygons": 34,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0009453274397469777,
+      "components": [
+        {
+          "faces": 34,
+          "signed_volume": 0.0009453337212714028
+        }
+      ],
+      "bbox_min": [
+        -0.6850000023841858,
+        1.0720000267028809,
+        0.10699999332427979
+      ],
+      "bbox_max": [
+        -0.6779999732971191,
+        1.4879999160766602,
+        0.5230000019073486
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_lug_0",
+      "group": "wheel_rear_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667024504e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.085044833521041e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        1.210431456565857,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        1.2364314794540405,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_lug_1",
+      "group": "wheel_rear_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.073514466701881e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.0845791722337315e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        1.32356858253479,
+        0.3603101968765259
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        1.3495686054229736,
+        0.38282686471939087
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_lug_2",
+      "group": "wheel_rear_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667027486e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.069697413593551e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        1.32356858253479,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        1.3495686054229736,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_lug_3",
+      "group": "wheel_rear_right",
+      "vertices": 12,
+      "polygons": 8,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 3.0735144667027486e-06,
+      "components": [
+        {
+          "faces": 8,
+          "signed_volume": 3.073907767732954e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8759999871253967,
+        1.210431456565857,
+        0.24717313051223755
+      ],
+      "bbox_max": [
+        -0.8690000176429749,
+        1.2364314794540405,
+        0.26968979835510254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_outer_steel_cover",
+      "group": "wheel_rear_right",
+      "vertices": 194,
+      "polygons": 224,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.0021765299400186996,
+      "components": [
+        {
+          "faces": 224,
+          "signed_volume": 0.0021765367512974285
+        }
+      ],
+      "bbox_min": [
+        -0.8679999709129333,
+        1.069000005722046,
+        0.10400000214576721
+      ],
+      "bbox_max": [
+        -0.8410000205039978,
+        1.4910000562667847,
+        0.5260000228881836
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_tire",
+      "group": "wheel_rear_right",
+      "vertices": 320,
+      "polygons": 320,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 0.032425416565408836,
+      "components": [
+        {
+          "faces": 320,
+          "signed_volume": 0.03242537324210079
+        }
+      ],
+      "bbox_min": [
+        -0.8650000095367432,
+        0.9649999737739563,
+        0.0
+      ],
+      "bbox_max": [
+        -0.6650000214576721,
+        1.5950000286102295,
+        0.6299999952316284
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_0",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672894552630078e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.657070187230941e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.094089388847351,
+        0.3374495506286621
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.1578384637832642,
+        0.4255036413669586
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_1",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672883592535588e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.683108414212827e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.1683052778244019,
+        0.4364607334136963
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.256378412246704,
+        0.5006853938102722
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_2",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672886390501689e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.697602121780351e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.3024495840072632,
+        0.43716156482696533
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.3905036449432373,
+        0.5009106397628784
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_3",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.6728838053921e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.686697886635842e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.4014607667922974,
+        0.3386216163635254
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.4656853675842285,
+        0.42669475078582764
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_4",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.67288510484322e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.671816127995722e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.4021615982055664,
+        0.204496368765831
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.4659106731414795,
+        0.2925504744052887
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_5",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672888505281543e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.673378033563495e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.3036216497421265,
+        0.129314586520195
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.3916947841644287,
+        0.19353927671909332
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_6",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.672887862730623e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.669769158586826e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.1694964170455933,
+        0.1290893405675888
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.2575504779815674,
+        0.19283843040466309
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    },
+    {
+      "name": "wheel_rear_right_vent_7",
+      "group": "wheel_rear_right",
+      "vertices": 8,
+      "polygons": 6,
+      "closed_manifold": true,
+      "nonmanifold_edges": [],
+      "signed_volume": 8.67289159558805e-06,
+      "components": [
+        {
+          "faces": 6,
+          "signed_volume": 8.677326453229045e-06
+        }
+      ],
+      "bbox_min": [
+        -0.8479999899864197,
+        1.0943145751953125,
+        0.20330524444580078
+      ],
+      "bbox_max": [
+        -0.8450000286102295,
+        1.1585392951965332,
+        0.2913784086704254
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "all_finite": true,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "modifiers": [
+        [
+          "Export_triangulation",
+          "TRIANGULATE"
+        ]
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "detail_baseColor.png",
+      "path": "//maps/detail_baseColor.png",
+      "packed": true,
+      "packed_size": 112365,
+      "packed_sha256": "5157fc17fa72600c5fd97f4fe0292e6a78f23ed5e1759919b3948e9111ea427a",
+      "dimensions": [
+        512,
+        512
+      ],
+      "channels": 4,
+      "pixels_count": 1048576,
+      "has_data": true,
+      "colorspace": "sRGB"
+    },
+    {
+      "name": "detail_ORM.png",
+      "path": "//maps/detail_ORM.png",
+      "packed": true,
+      "packed_size": 1924,
+      "packed_sha256": "f969da4d1ddb8044483f2bdd5d90fdb093fa66237bf04adf6a76927f819f1908",
+      "dimensions": [
+        512,
+        512
+      ],
+      "channels": 4,
+      "pixels_count": 1048576,
+      "has_data": true,
+      "colorspace": "Non-Color"
+    },
+    {
+      "name": "paint_baseColor.png",
+      "path": "//maps/paint_baseColor.png",
+      "packed": true,
+      "packed_size": 128413,
+      "packed_sha256": "b35ea00bb05d93b33ba488b40249dfb9519791fc56da03432dd8761e5a300ab3",
+      "dimensions": [
+        512,
+        512
+      ],
+      "channels": 4,
+      "pixels_count": 1048576,
+      "has_data": true,
+      "colorspace": "sRGB"
+    },
+    {
+      "name": "paint_ORM.png",
+      "path": "//maps/paint_ORM.png",
+      "packed": true,
+      "packed_size": 146322,
+      "packed_sha256": "2041215b6f3bc0d8a29ed24b81286559775fa2a83ab10f9d007dcbd9fae50154",
+      "dimensions": [
+        512,
+        512
+      ],
+      "channels": 4,
+      "pixels_count": 1048576,
+      "has_data": true,
+      "colorspace": "Non-Color"
+    },
+    {
+      "name": "rubber_baseColor.png",
+      "path": "//maps/rubber_baseColor.png",
+      "packed": true,
+      "packed_size": 133683,
+      "packed_sha256": "3530ada20cc66e22126e01a387452b04fceea56a1dc6bf3f23b2aefe19586e78",
+      "dimensions": [
+        512,
+        512
+      ],
+      "channels": 4,
+      "pixels_count": 1048576,
+      "has_data": true,
+      "colorspace": "sRGB"
+    }
+  ],
+  "summary": {
+    "mesh_objects": 151,
+    "not_closed": [],
+    "nonpositive_volume": [],
+    "nonpositive_component_volume": [],
+    "non_finite": [],
+    "unpacked_images": []
+  },
+  "tires": [
+    {
+      "name": "wheel_front_left_tire",
+      "center_from_bounds": [
+        0.7649999856948853,
+        -1.2799999713897705,
+        0.3149999976158142
+      ],
+      "bbox_min": [
+        0.6650000214576721,
+        -1.5950000286102295,
+        0.0
+      ],
+      "bbox_max": [
+        0.8650000095367432,
+        -0.9649999737739563,
+        0.6299999952316284
+      ],
+      "radius_from_bounds": 0.3149999976158142,
+      "width_from_bounds": 0.19999998807907104,
+      "ground_min_z": 0.0,
+      "ground_vertex_count": 2,
+      "max_radial_error": 5.7220458982154554e-08,
+      "nearest_tire_vertex_to_shell_distance": 0.045317549258470535,
+      "distance_note": "Vertex-to-triangle sample, not full collision proof."
+    },
+    {
+      "name": "wheel_front_right_tire",
+      "center_from_bounds": [
+        -0.7649999856948853,
+        -1.2799999713897705,
+        0.3149999976158142
+      ],
+      "bbox_min": [
+        -0.8650000095367432,
+        -1.5950000286102295,
+        0.0
+      ],
+      "bbox_max": [
+        -0.6650000214576721,
+        -0.9649999737739563,
+        0.6299999952316284
+      ],
+      "radius_from_bounds": 0.3149999976158142,
+      "width_from_bounds": 0.19999998807907104,
+      "ground_min_z": 0.0,
+      "ground_vertex_count": 2,
+      "max_radial_error": 5.7220458982154554e-08,
+      "nearest_tire_vertex_to_shell_distance": 0.045317523181438446,
+      "distance_note": "Vertex-to-triangle sample, not full collision proof."
+    },
+    {
+      "name": "wheel_rear_left_tire",
+      "center_from_bounds": [
+        0.7649999856948853,
+        1.2799999713897705,
+        0.3149999976158142
+      ],
+      "bbox_min": [
+        0.6650000214576721,
+        0.9649999737739563,
+        0.0
+      ],
+      "bbox_max": [
+        0.8650000095367432,
+        1.5950000286102295,
+        0.6299999952316284
+      ],
+      "radius_from_bounds": 0.3149999976158142,
+      "width_from_bounds": 0.19999998807907104,
+      "ground_min_z": 0.0,
+      "ground_vertex_count": 2,
+      "max_radial_error": 5.7220458982154554e-08,
+      "nearest_tire_vertex_to_shell_distance": 0.04531750828027725,
+      "distance_note": "Vertex-to-triangle sample, not full collision proof."
+    },
+    {
+      "name": "wheel_rear_right_tire",
+      "center_from_bounds": [
+        -0.7649999856948853,
+        1.2799999713897705,
+        0.3149999976158142
+      ],
+      "bbox_min": [
+        -0.8650000095367432,
+        0.9649999737739563,
+        0.0
+      ],
+      "bbox_max": [
+        -0.6650000214576721,
+        1.5950000286102295,
+        0.6299999952316284
+      ],
+      "radius_from_bounds": 0.3149999976158142,
+      "width_from_bounds": 0.19999998807907104,
+      "ground_min_z": 0.0,
+      "ground_vertex_count": 2,
+      "max_radial_error": 5.7220458982154554e-08,
+      "nearest_tire_vertex_to_shell_distance": 0.045317549258470535,
+      "distance_note": "Vertex-to-triangle sample, not full collision proof."
+    }
+  ],
+  "geometry_sha256": "17222a4b193551b2e6d3fbe024adabeb84b7a8c59f86fab3626ae0448b52d6f6"
+}

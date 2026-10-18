@@ -25,7 +25,7 @@
     {
       "asset": "BC_SEDAN01",
       "drive_file": "1y86hL1AubZSi9GxakdE-dlDSgMTP3feU",
-      "runtime_path": "build/swat/review/art-intake-2026-10-18/sedan/BC_SEDAN01_r01_candidate/runtime/BC_SEDAN01_parked.glb",
+      "runtime_path": "ocean/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb",
       "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
       "runtime_bytes": 1012828,
       "triangles": 13124,
@@ -35,12 +35,13 @@
       "nodes": 7,
       "source_manifest_sha256": "362a53ba13a88dc43f4165f3f3f65343ffd63af282046ad4232df3069c248b6f",
       "provenance_sha256": "d499b4d90f2182855728d22931ba9cf78576a8b527084b84692991109343a854",
-      "status": "Verified unchanged static candidate intake; not installed in the level. Placement, collision/navigation, destruction/material binding, native rendering and performance acceptance remain open."
+      "status": "Verified unchanged static candidate intake; not installed in the level. Placement, collision/navigation, destruction/material binding, native rendering and performance acceptance remain open.",
+      "repository_handoff": "ocean/swat/art_handoffs/motel-sedan"
     },
     {
       "asset": "BC_SHELTER01",
       "drive_file": "1B0q9G-6m3LOgHmkfytfx59MrawRqTnj9",
-      "runtime_path": "build/swat/review/art-intake-2026-10-18/shelter/runtime/BC_SHELTER01_static.glb",
+      "runtime_path": "ocean/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb",
       "runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
       "runtime_bytes": 2984364,
       "triangles": 7868,
@@ -50,7 +51,8 @@
       "nodes": 12,
       "source_manifest_sha256": "5a91c5fd2333c74cff5138bd77d1b7d0b020bb654a1c9b2846e82da2469f7643",
       "provenance_sha256": "bb305fd3c7676a1c4c97edeb9c2bf68409c1ea6eee06360e2249ef2a35104d02",
-      "status": "Verified unchanged static candidate intake; not installed in the level. Placement, collision/navigation, destruction/material binding, native rendering and performance acceptance remain open."
+      "status": "Verified unchanged static candidate intake; not installed in the level. Placement, collision/navigation, destruction/material binding, native rendering and performance acceptance remain open.",
+      "repository_handoff": "ocean/swat/art_handoffs/motel-shelter"
     }
   ],
   "catalog": {
@@ -65,5 +67,14 @@
   "performance_testing_run": false,
   "private_search": false,
   "slack_acknowledgement_sent": true,
-  "slack_acknowledgement": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792299097423699?thread_ts=1791078311.943659&cid=C0C5TN3AA8K"
+  "slack_acknowledgement": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792299097423699?thread_ts=1791078311.943659&cid=C0C5TN3AA8K",
+  "repository_payload_audit": {
+    "command": "node ocean/swat/tools/check_roadside_candidates.cjs",
+    "verified_payloads": 118,
+    "stdout": {
+      "path": "build/swat/review/art-intake-2026-10-18/repository-intake.log",
+      "sha256": "88da227bf0305f57846d50b60b9e7b79808b3bac28d4232f68e3f7dcbef9f12e"
+    },
+    "notes": "All supplied source/provenance/preview/audit files are retained unchanged. Original runtime entries are resolved to canonical assets/environment paths."
+  }
 }

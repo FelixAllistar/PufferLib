@@ -1,0 +1,167 @@
+{
+  "summary": {
+    "node_count": 12,
+    "mesh_instances": 3,
+    "mesh_count": 3,
+    "material_count": 3,
+    "image_count": 5,
+    "triangles": 7868,
+    "exported_vertices": 15984,
+    "world_min_gltf_xyz": [
+      -1.6100000143051147,
+      0.0,
+      -0.8769705891609192
+    ],
+    "world_max_gltf_xyz": [
+      1.6100000143051147,
+      2.378999948501587,
+      0.8119999766349792
+    ],
+    "dimensions_gltf_xyz_m": [
+      3.2200000286102295,
+      2.378999948501587,
+      1.6889705657958984
+    ],
+    "floor_y_m": 0.0,
+    "all_positions_finite": true,
+    "solid_components": 160
+  },
+  "source_mesh_solids": 160,
+  "degenerate_triangles_below_1e_minus_12_m2": 0,
+  "duplicate_triangles": 0,
+  "runtime_component_boundary_edges": 0,
+  "runtime_component_nonmanifold_edges": 0,
+  "runtime_component_same_direction_edges": 0,
+  "nonpositive_volume_components": 0,
+  "source_nonmanifold_edges": 0,
+  "winding_opposed_normal_corners": 0,
+  "normals_length_min": 0.9999999345794748,
+  "normals_length_max": 1.0000001189743377,
+  "zero_area_uv_triangles": 0,
+  "mesh_checks": [
+    {
+      "name": "BC_SHELTER01_BenchTimber",
+      "primitives": [
+        {
+          "material": 0,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 1882,
+          "triangles": 756,
+          "area_min_m2": 8.289669508078627e-06,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999369947925,
+            "length_max": 1.0000000775177655,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9999999890032522
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.006723456084728241,
+                0.011686265468597412
+              ],
+              "max": [
+                0.9932765364646912,
+                0.8643648624420166
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "closed_components": 7
+    },
+    {
+      "name": "BC_SHELTER01_FrameAndScreen",
+      "primitives": [
+        {
+          "material": 1,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 6950,
+          "triangles": 3148,
+          "area_min_m2": 8.659342811991093e-07,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999345794748,
+            "length_max": 1.000000092910437,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9999999798199959
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                0.00800000037997961,
+                0.008000016212463379
+              ],
+              "max": [
+                0.9919999837875366,
+                0.9919999837875366
+              ],
+              "outside_0_1_vertices": 0,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "closed_components": 57
+    },
+    {
+      "name": "BC_SHELTER01_RoofAndHardware",
+      "primitives": [
+        {
+          "material": 2,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0"
+          ],
+          "vertices": 7152,
+          "triangles": 3964,
+          "area_min_m2": 8.659541033245068e-07,
+          "degenerate_triangles_below_1e-12_m2": 0,
+          "normals": {
+            "finite": true,
+            "length_min": 0.9999999405181836,
+            "length_max": 1.0000001189743377,
+            "winding_opposed_corner_count": 0,
+            "face_corner_dot_min": 0.9999999750814831
+          },
+          "uvs": {
+            "TEXCOORD_0": {
+              "finite": true,
+              "min": [
+                -2.0840001106262207,
+                -2.7005999088287354
+              ],
+              "max": [
+                2.4240000247955322,
+                1.7667999267578125
+              ],
+              "outside_0_1_vertices": 2560,
+              "zero_area_triangles": 0
+            }
+          }
+        }
+      ],
+      "closed_components": 96
+    }
+  ],
+  "source_scene_units": "METRIC",
+  "source_scene_scale_length": 1.0,
+  "same_facing_coplanar_pairs": [],
+  "coplanar_method": "Same-facing triangle planes grouped within 1e-6 normal/distance rounding, cross-object triangle intersection by 2D convex clipping. Exposed-versus-buried classification requires manual review; not a global intersection absence proof."
+}

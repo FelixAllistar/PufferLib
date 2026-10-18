@@ -1,0 +1,963 @@
+{
+  "identity": {
+    "asset_id": "BC_SHELTER01",
+    "runtime": {
+      "file": "runtime/BC_SHELTER01_static.glb",
+      "sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "bytes": 2984364
+    },
+    "editable_source": {
+      "file": "source/BC_SHELTER01_editable.blend",
+      "sha256": "105e41a64dd82b84f78eadab1189f9e1c9b477d595f09ff82fc61229a5f4fd36"
+    },
+    "canonical_oriented_surface_sha256": "cb14b611139f6ac1e25d27a0dd7bc3cc5ebceb2061f65481d635cbdbee888571",
+    "recipes": [
+      {
+        "file": "source/build_shelter.py",
+        "sha256": "baabf396c7f4d4e1324415e31875780f7362bda8d652a7c2d7bdff45390e0ff5"
+      },
+      {
+        "file": "source/make_textures.py",
+        "sha256": "910a9a4d0d550ace9e546aa8e991672acf780aab65230933bc73380f52ba78b5"
+      },
+      {
+        "file": "source/export_packed.py",
+        "sha256": "d9b60b6b75f93de400c224c03860f8e1100a34f6ff224b123fab670a60ee3284"
+      },
+      {
+        "file": "source/render_export.py",
+        "sha256": "b393fb104dc593e0d5c79ceb0dce85c91eeec15de27b0915474d8a2a26b8ba73"
+      }
+    ]
+  },
+  "seat_contact_rays": [
+    {
+      "bearer": "BenchSeatBearer_01",
+      "slat": "BenchSeatSlat_01",
+      "blender_x_y_m": [
+        -1.0257,
+        0.029349999999999998
+      ],
+      "bearer_top_z_m": 0.42600002884864807,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": -2.9802322387695312e-08
+    },
+    {
+      "bearer": "BenchSeatBearer_01",
+      "slat": "BenchSeatSlat_02",
+      "blender_x_y_m": [
+        -1.0257,
+        0.14185
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_01",
+      "slat": "BenchSeatSlat_03",
+      "blender_x_y_m": [
+        -1.0257,
+        0.25434999999999997
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_01",
+      "slat": "BenchSeatSlat_04",
+      "blender_x_y_m": [
+        -1.0257,
+        0.36685
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_02",
+      "slat": "BenchSeatSlat_01",
+      "blender_x_y_m": [
+        0.0043,
+        0.029349999999999998
+      ],
+      "bearer_top_z_m": 0.42600002884864807,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": -2.9802322387695312e-08
+    },
+    {
+      "bearer": "BenchSeatBearer_02",
+      "slat": "BenchSeatSlat_02",
+      "blender_x_y_m": [
+        0.0043,
+        0.14185
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_02",
+      "slat": "BenchSeatSlat_03",
+      "blender_x_y_m": [
+        0.0043,
+        0.25434999999999997
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_02",
+      "slat": "BenchSeatSlat_04",
+      "blender_x_y_m": [
+        0.0043,
+        0.36685
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_03",
+      "slat": "BenchSeatSlat_01",
+      "blender_x_y_m": [
+        1.0343,
+        0.029349999999999998
+      ],
+      "bearer_top_z_m": 0.42600002884864807,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": -2.9802322387695312e-08
+    },
+    {
+      "bearer": "BenchSeatBearer_03",
+      "slat": "BenchSeatSlat_02",
+      "blender_x_y_m": [
+        1.0343,
+        0.14185
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_03",
+      "slat": "BenchSeatSlat_03",
+      "blender_x_y_m": [
+        1.0343,
+        0.25434999999999997
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    },
+    {
+      "bearer": "BenchSeatBearer_03",
+      "slat": "BenchSeatSlat_04",
+      "blender_x_y_m": [
+        1.0343,
+        0.36685
+      ],
+      "bearer_top_z_m": 0.4259999990463257,
+      "slat_bottom_z_m": 0.4259999990463257,
+      "vertical_gap_m": 0.0
+    }
+  ],
+  "frame_roof_and_bench_pairs": [
+    {
+      "a": "Baseplate_Left_Front",
+      "b": "Post_Left_Front",
+      "intersecting_triangle_pairs": 14,
+      "min_vertex_to_surface_distance_m": 0.0009999722242355347,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Left_Front",
+      "b": "RoofSideRail_Left",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.00014831953740213066,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Left_Front",
+      "b": "RoofCrossRail_Front",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.0,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Left_Front",
+      "b": "Post_Left_Front",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.0274999737739563,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Left_Front",
+      "b": "RoofCrossRail_Front",
+      "intersecting_triangle_pairs": 15,
+      "min_vertex_to_surface_distance_m": 0.009113073348999023,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Baseplate_Left_Rear",
+      "b": "Post_Left_Rear",
+      "intersecting_triangle_pairs": 14,
+      "min_vertex_to_surface_distance_m": 0.0010000914335250854,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Left_Rear",
+      "b": "RoofSideRail_Left",
+      "intersecting_triangle_pairs": 19,
+      "min_vertex_to_surface_distance_m": 0.00014855085464660078,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Left_Rear",
+      "b": "RoofCrossRail_Rear",
+      "intersecting_triangle_pairs": 9,
+      "min_vertex_to_surface_distance_m": 0.0,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Left_Rear",
+      "b": "Post_Left_Rear",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.0274999737739563,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Left_Rear",
+      "b": "RoofCrossRail_Rear",
+      "intersecting_triangle_pairs": 15,
+      "min_vertex_to_surface_distance_m": 0.009113311767578125,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Baseplate_Right_Front",
+      "b": "Post_Right_Front",
+      "intersecting_triangle_pairs": 14,
+      "min_vertex_to_surface_distance_m": 0.0009999722242355347,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Right_Front",
+      "b": "RoofSideRail_Right",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.00014831953740213066,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Right_Front",
+      "b": "RoofCrossRail_Front",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.0,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Right_Front",
+      "b": "Post_Right_Front",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.0274999737739563,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Right_Front",
+      "b": "RoofCrossRail_Front",
+      "intersecting_triangle_pairs": 15,
+      "min_vertex_to_surface_distance_m": 0.009113073348999023,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Baseplate_Right_Rear",
+      "b": "Post_Right_Rear",
+      "intersecting_triangle_pairs": 14,
+      "min_vertex_to_surface_distance_m": 0.0010000914335250854,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Right_Rear",
+      "b": "RoofSideRail_Right",
+      "intersecting_triangle_pairs": 19,
+      "min_vertex_to_surface_distance_m": 0.00014855085464660078,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Post_Right_Rear",
+      "b": "RoofCrossRail_Rear",
+      "intersecting_triangle_pairs": 10,
+      "min_vertex_to_surface_distance_m": 0.0,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Right_Rear",
+      "b": "Post_Right_Rear",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.0274999737739563,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "KneeAcross_Right_Rear",
+      "b": "RoofCrossRail_Rear",
+      "intersecting_triangle_pairs": 15,
+      "min_vertex_to_surface_distance_m": 0.009113311767578125,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_01",
+      "b": "BenchBackSlat_01",
+      "intersecting_triangle_pairs": 30,
+      "min_vertex_to_surface_distance_m": 0.14750003814697266,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_01",
+      "b": "BenchBackSlat_02",
+      "intersecting_triangle_pairs": 30,
+      "min_vertex_to_surface_distance_m": 0.14750003814697266,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_01",
+      "b": "BenchBackSlat_03",
+      "intersecting_triangle_pairs": 30,
+      "min_vertex_to_surface_distance_m": 0.022944482043385506,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchSeatBearer_01",
+      "b": "BenchRearSupportRail",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.003999978303909302,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBrace_01",
+      "b": "BenchSeatBearer_01",
+      "intersecting_triangle_pairs": 17,
+      "min_vertex_to_surface_distance_m": 0.006000041961669922,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBrace_01",
+      "b": "BenchBracketMount_01",
+      "intersecting_triangle_pairs": 29,
+      "min_vertex_to_surface_distance_m": 0.00010579824447631836,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBracketMount_01",
+      "b": "RearRail_Lower",
+      "intersecting_triangle_pairs": 27,
+      "min_vertex_to_surface_distance_m": 0.002999961609020829,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_02",
+      "b": "BenchBackSlat_01",
+      "intersecting_triangle_pairs": 28,
+      "min_vertex_to_surface_distance_m": 0.26956069469451904,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_02",
+      "b": "BenchBackSlat_02",
+      "intersecting_triangle_pairs": 28,
+      "min_vertex_to_surface_distance_m": 0.1598212867975235,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_02",
+      "b": "BenchBackSlat_03",
+      "intersecting_triangle_pairs": 28,
+      "min_vertex_to_surface_distance_m": 0.022944482043385506,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchSeatBearer_02",
+      "b": "BenchRearSupportRail",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.004000077024102211,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBrace_02",
+      "b": "BenchSeatBearer_02",
+      "intersecting_triangle_pairs": 17,
+      "min_vertex_to_surface_distance_m": 0.005999991670250893,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBrace_02",
+      "b": "BenchBracketMount_02",
+      "intersecting_triangle_pairs": 29,
+      "min_vertex_to_surface_distance_m": 0.00010579824447631836,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBracketMount_02",
+      "b": "RearRail_Lower",
+      "intersecting_triangle_pairs": 25,
+      "min_vertex_to_surface_distance_m": 0.0029999613761901855,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_03",
+      "b": "BenchBackSlat_01",
+      "intersecting_triangle_pairs": 30,
+      "min_vertex_to_surface_distance_m": 0.14750003814697266,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_03",
+      "b": "BenchBackSlat_02",
+      "intersecting_triangle_pairs": 30,
+      "min_vertex_to_surface_distance_m": 0.14750003814697266,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBackUpright_03",
+      "b": "BenchBackSlat_03",
+      "intersecting_triangle_pairs": 30,
+      "min_vertex_to_surface_distance_m": 0.022944482043385506,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchSeatBearer_03",
+      "b": "BenchRearSupportRail",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.003999979235231876,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBrace_03",
+      "b": "BenchSeatBearer_03",
+      "intersecting_triangle_pairs": 17,
+      "min_vertex_to_surface_distance_m": 0.006000041961669922,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBrace_03",
+      "b": "BenchBracketMount_03",
+      "intersecting_triangle_pairs": 29,
+      "min_vertex_to_surface_distance_m": 0.00010579824447631836,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchBracketMount_03",
+      "b": "RearRail_Lower",
+      "intersecting_triangle_pairs": 23,
+      "min_vertex_to_surface_distance_m": 0.0029999613761901855,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchRearSupportRail",
+      "b": "Post_Left_Rear",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.00999999139457941,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "BenchRearSupportRail",
+      "b": "Post_Right_Rear",
+      "intersecting_triangle_pairs": 23,
+      "min_vertex_to_surface_distance_m": 0.009999990463256836,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Roof_ClosedCorrugatedSheet",
+      "b": "RoofCrossRail_Front",
+      "intersecting_triangle_pairs": 446,
+      "min_vertex_to_surface_distance_m": 0.005664580035954714,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Roof_ClosedCorrugatedSheet",
+      "b": "RoofCrossRail_Rear",
+      "intersecting_triangle_pairs": 446,
+      "min_vertex_to_surface_distance_m": 0.005664536263793707,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Roof_ClosedCorrugatedSheet",
+      "b": "RoofSideRail_Left",
+      "intersecting_triangle_pairs": 26,
+      "min_vertex_to_surface_distance_m": 0.001243095495738089,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Roof_ClosedCorrugatedSheet",
+      "b": "RoofSideRail_Right",
+      "intersecting_triangle_pairs": 28,
+      "min_vertex_to_surface_distance_m": 0.0012430836213752627,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Roof_ClosedCorrugatedSheet",
+      "b": "RoofPurlin_A",
+      "intersecting_triangle_pairs": 260,
+      "min_vertex_to_surface_distance_m": 0.005814751610159874,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Roof_ClosedCorrugatedSheet",
+      "b": "RoofPurlin_B",
+      "intersecting_triangle_pairs": 260,
+      "min_vertex_to_surface_distance_m": 0.005814765114337206,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    }
+  ],
+  "screen_clip_pairs": [
+    {
+      "a": "PanelClip_Left_-0.069_0.285",
+      "b": "RearScreen_Left_FoldedOpaque",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-0.069_0.285",
+      "b": "RearRail_Lower",
+      "intersecting_triangle_pairs": 6,
+      "min_vertex_to_surface_distance_m": 5.361105650081299e-06,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-0.069_1.12",
+      "b": "RearScreen_Left_FoldedOpaque",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-0.069_1.12",
+      "b": "RearRail_Middle",
+      "intersecting_triangle_pairs": 32,
+      "min_vertex_to_surface_distance_m": 0.006500007584691048,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-0.069_1.99",
+      "b": "RearScreen_Left_FoldedOpaque",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-0.069_1.99",
+      "b": "RearRail_Upper",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.008000057190656662,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-1.295_0.285",
+      "b": "RearScreen_Left_FoldedOpaque",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-1.295_0.285",
+      "b": "RearRail_Lower",
+      "intersecting_triangle_pairs": 6,
+      "min_vertex_to_surface_distance_m": 1.3328003944934608e-07,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-1.295_1.12",
+      "b": "RearScreen_Left_FoldedOpaque",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-1.295_1.12",
+      "b": "RearRail_Middle",
+      "intersecting_triangle_pairs": 34,
+      "min_vertex_to_surface_distance_m": 0.0065000057220458984,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-1.295_1.99",
+      "b": "RearScreen_Left_FoldedOpaque",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Left_-1.295_1.99",
+      "b": "RearRail_Upper",
+      "intersecting_triangle_pairs": 25,
+      "min_vertex_to_surface_distance_m": 0.008000016212463379,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_0.069_0.285",
+      "b": "RearScreen_Right_FoldedOpaque",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_0.069_0.285",
+      "b": "RearRail_Lower",
+      "intersecting_triangle_pairs": 7,
+      "min_vertex_to_surface_distance_m": 2.2150163658807287e-06,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_0.069_1.12",
+      "b": "RearScreen_Right_FoldedOpaque",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_0.069_1.12",
+      "b": "RearRail_Middle",
+      "intersecting_triangle_pairs": 32,
+      "min_vertex_to_surface_distance_m": 0.006500007584691048,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_0.069_1.99",
+      "b": "RearScreen_Right_FoldedOpaque",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_0.069_1.99",
+      "b": "RearRail_Upper",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.008000035770237446,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_1.295_0.285",
+      "b": "RearScreen_Right_FoldedOpaque",
+      "intersecting_triangle_pairs": 16,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_1.295_0.285",
+      "b": "RearRail_Lower",
+      "intersecting_triangle_pairs": 6,
+      "min_vertex_to_surface_distance_m": 0.0,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_1.295_1.12",
+      "b": "RearScreen_Right_FoldedOpaque",
+      "intersecting_triangle_pairs": 18,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_1.295_1.12",
+      "b": "RearRail_Middle",
+      "intersecting_triangle_pairs": 34,
+      "min_vertex_to_surface_distance_m": 0.0065000057220458984,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_1.295_1.99",
+      "b": "RearScreen_Right_FoldedOpaque",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.003000020980834961,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "PanelClip_Right_1.295_1.99",
+      "b": "RearRail_Upper",
+      "intersecting_triangle_pairs": 21,
+      "min_vertex_to_surface_distance_m": 0.008000016212463379,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    }
+  ],
+  "gutter_endcap_pairs": [
+    {
+      "a": "Gutter_EndCap_Left",
+      "b": "Gutter_OpenTrough",
+      "intersecting_triangle_pairs": 38,
+      "min_vertex_to_surface_distance_m": 0.001999974250793457,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    },
+    {
+      "a": "Gutter_EndCap_Right",
+      "b": "Gutter_OpenTrough",
+      "intersecting_triangle_pairs": 38,
+      "min_vertex_to_surface_distance_m": 0.001999974250793457,
+      "scope": "BVH triangle intersection or minimum vertex-to-surface distance; no structural certification. Minimum is not a full edge-edge separation proof."
+    }
+  ],
+  "drain_center_ray": {
+    "gutter_center_vertical_ray_origin_blender_xyz": [
+      1.4299999475479126,
+      0.7699999809265137,
+      2.240000009536743
+    ],
+    "direction": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "range_m": 0.2,
+    "hit": null,
+    "gutter_bounds": [
+      [
+        -1.6030000448226929,
+        0.7099999785423279,
+        2.1470000743865967
+      ],
+      [
+        1.6030000448226929,
+        0.8299999833106995,
+        2.2200000286102295
+      ]
+    ],
+    "outlet_bounds": [
+      [
+        1.4059998989105225,
+        0.7459999918937683,
+        0.10802942514419556
+      ],
+      [
+        1.4539999961853027,
+        0.8769705891609192,
+        2.1540000438690186
+      ]
+    ]
+  },
+  "feet": [
+    {
+      "name": "Baseplate_Left_Front",
+      "vertices": 24,
+      "triangles": 44,
+      "material": "BC_SHELTER01_WeatheredGreenSteel",
+      "bounds_blender_xyz_m": [
+        [
+          -1.4824999570846558,
+          -0.6825000047683716,
+          0.0
+        ],
+        [
+          -1.277500033378601,
+          -0.47749999165534973,
+          0.02199999988079071
+        ]
+      ],
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "signed_volume_m3": 0.0008945978769571757,
+      "modifiers": [
+        "TRIANGULATE"
+      ]
+    },
+    {
+      "name": "Baseplate_Left_Rear",
+      "vertices": 24,
+      "triangles": 44,
+      "material": "BC_SHELTER01_WeatheredGreenSteel",
+      "bounds_blender_xyz_m": [
+        [
+          -1.4824999570846558,
+          0.47749999165534973,
+          0.0
+        ],
+        [
+          -1.277500033378601,
+          0.6825000047683716,
+          0.02199999988079071
+        ]
+      ],
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "signed_volume_m3": 0.0008945978769571753,
+      "modifiers": [
+        "TRIANGULATE"
+      ]
+    },
+    {
+      "name": "Baseplate_Right_Front",
+      "vertices": 24,
+      "triangles": 44,
+      "material": "BC_SHELTER01_WeatheredGreenSteel",
+      "bounds_blender_xyz_m": [
+        [
+          1.277500033378601,
+          -0.6825000047683716,
+          0.0
+        ],
+        [
+          1.4824999570846558,
+          -0.47749999165534973,
+          0.02199999988079071
+        ]
+      ],
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "signed_volume_m3": 0.0008945978769571756,
+      "modifiers": [
+        "TRIANGULATE"
+      ]
+    },
+    {
+      "name": "Baseplate_Right_Rear",
+      "vertices": 24,
+      "triangles": 44,
+      "material": "BC_SHELTER01_WeatheredGreenSteel",
+      "bounds_blender_xyz_m": [
+        [
+          1.277500033378601,
+          0.47749999165534973,
+          0.0
+        ],
+        [
+          1.4824999570846558,
+          0.6825000047683716,
+          0.02199999988079071
+        ]
+      ],
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "signed_volume_m3": 0.0008945978769571755,
+      "modifiers": [
+        "TRIANGULATE"
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "name": "ANCHOR_DrainOutlet",
+      "location_blender_xyz_m": [
+        1.4299999475479126,
+        0.8600000143051147,
+        0.125
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive open outlet center; no particle/water system supplied.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "ANCHOR_Foot_Left_Front",
+      "location_blender_xyz_m": [
+        -1.3799999952316284,
+        -0.5799999833106995,
+        0.0
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive baseplate ground-contact center. No gameplay/collision semantics.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "ANCHOR_Foot_Left_Rear",
+      "location_blender_xyz_m": [
+        -1.3799999952316284,
+        0.5799999833106995,
+        0.0
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive baseplate ground-contact center. No gameplay/collision semantics.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "ANCHOR_Foot_Right_Front",
+      "location_blender_xyz_m": [
+        1.3799999952316284,
+        -0.5799999833106995,
+        0.0
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive baseplate ground-contact center. No gameplay/collision semantics.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "ANCHOR_Foot_Right_Rear",
+      "location_blender_xyz_m": [
+        1.3799999952316284,
+        0.5799999833106995,
+        0.0
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive baseplate ground-contact center. No gameplay/collision semantics.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "ANCHOR_RoofFrontCenter",
+      "location_blender_xyz_m": [
+        0.0,
+        -0.800000011920929,
+        2.359999895095825
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive roof sheet low surface at front edge.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "ANCHOR_RoofRearCenter",
+      "location_blender_xyz_m": [
+        0.0,
+        0.7200000286102295,
+        2.2079999446868896
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive drainage edge; no water simulation supplied.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "ANCHOR_SeatCenter",
+      "location_blender_xyz_m": [
+        0.0,
+        0.19499999284744263,
+        0.4699999988079071
+      ],
+      "parent": "BC_SHELTER01_ROOT",
+      "properties": {
+        "purpose": "Descriptive seat-top center only; engine owns occupancy/interaction.",
+        "coordinate_basis": "Node transform uses normal exporter basis conversion; documented coordinates are explicitly separated."
+      }
+    },
+    {
+      "name": "BC_SHELTER01_ROOT",
+      "location_blender_xyz_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent": null,
+      "properties": {
+        "asset_id": "BC_SHELTER01",
+        "units": "metres",
+        "scope": "Static environment art. No transit designation, placement, collision, navigation, support/cover logic or native performance acceptance.",
+        "front": "Blender -Y; standard glTF +Z after export",
+        "origin": "center between four grade-level baseplate centers; Blender Z=0"
+      }
+    }
+  ],
+  "interpretation": [
+    "All 12 seat-bottom samples meet the bearer tops within 0.00000003 m; three supports join the rear assembly.",
+    "Screens are intentionally offset from rails. Their clips bridge the gap; direct screen-to-rail contact is not required.",
+    "Vertex-to-surface distance is not a complete minimum-distance test and is misleading for large coplanar faces. Use the dedicated seat rays and triangle intersection evidence.",
+    "Gutter center ray misses the gutter floor through the modeled drain opening; this verifies an opening, not hydraulic function.",
+    "Contacts and closed part topology are static art evidence, not structural or gameplay acceptance."
+  ]
+}

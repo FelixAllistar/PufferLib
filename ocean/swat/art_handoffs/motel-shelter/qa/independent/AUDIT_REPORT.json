@@ -1,0 +1,57 @@
+{
+  "schema": "BC_SHELTER01_independent_static_art_audit_v1",
+  "status": "PASS_WITH_SCOPE_CAVEATS",
+  "identity": {
+    "asset_id": "BC_SHELTER01",
+    "runtime": {
+      "file": "runtime/BC_SHELTER01_static.glb",
+      "sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "bytes": 2984364
+    },
+    "editable_source": {
+      "file": "source/BC_SHELTER01_editable.blend",
+      "sha256": "105e41a64dd82b84f78eadab1189f9e1c9b477d595f09ff82fc61229a5f4fd36"
+    },
+    "canonical_oriented_surface_sha256": "cb14b611139f6ac1e25d27a0dd7bc3cc5ebceb2061f65481d635cbdbee888571",
+    "recipes": [
+      {
+        "file": "source/build_shelter.py",
+        "sha256": "baabf396c7f4d4e1324415e31875780f7362bda8d652a7c2d7bdff45390e0ff5"
+      },
+      {
+        "file": "source/make_textures.py",
+        "sha256": "910a9a4d0d550ace9e546aa8e991672acf780aab65230933bc73380f52ba78b5"
+      },
+      {
+        "file": "source/export_packed.py",
+        "sha256": "d9b60b6b75f93de400c224c03860f8e1100a34f6ff224b123fab670a60ee3284"
+      },
+      {
+        "file": "source/render_export.py",
+        "sha256": "b393fb104dc593e0d5c79ceb0dce85c91eeec15de27b0915474d8a2a26b8ba73"
+      }
+    ]
+  },
+  "independent_review_date_utc": "2026-10-17",
+  "blocking_findings": [],
+  "corrected_during_audit": [
+    "Exposed same-facing overlaps at roof cross-rail ends, roof verge sides/ends, gutter caps, lower mullion underside, bench rear-rail/bearer tops and low panel clips were corrected and rechecked.",
+    "Smaller post/side-rail coincidences were also removed; final same-facing triangle overlap scan found zero pairs."
+  ],
+  "evidence_files": [
+    "geometry_checks.json",
+    "reproduction_checks.json",
+    "contact_checks.json",
+    "visual_review.json",
+    "diagnostics/binding.json"
+  ],
+  "caveats": [
+    "No native engine import, collision, navigation, cover, occupancy, destruction, target performance or draw-call acceptance was tested.",
+    "UV0 contains intentional atlas reuse and repeating steel UVs outside 0\u20131; no secondary lightmap UV set or LODs are supplied.",
+    "The asset is an assembly of overlapping solids, not one boolean-unioned solid. Contact checks and drainage appearance do not establish engineering, installation, weatherproofing or accessibility compliance.",
+    "No full Khronos glTF validator or exhaustive self-intersection proof was run. The stated offline checks and sampled visual views are the scope of this result."
+  ],
+  "builder_render_binding_runtime_sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+  "builder_render_views_verified": 8,
+  "independent_render_views_verified": 3
+}

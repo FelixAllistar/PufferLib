@@ -1,0 +1,150 @@
+{
+  "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+  "method": "Fresh GLB import. Review-only neutral stage, lights and camera. No retouching.",
+  "views": [
+    {
+      "name": "front_threequarter",
+      "file": "previews/front_threequarter.png",
+      "camera_blender_xyz_m": [
+        -4.9,
+        -6.4,
+        3.3
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.7
+      ],
+      "ortho_scale": 5.65,
+      "sha256": "c54399ad23b30dc5520704a2f18c1943b105807b8ea48bf7fa24b665af53a73f"
+    },
+    {
+      "name": "rear_threequarter",
+      "file": "previews/rear_threequarter.png",
+      "camera_blender_xyz_m": [
+        4.9,
+        6.3,
+        3.1
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.7
+      ],
+      "ortho_scale": 5.65,
+      "sha256": "e225e2301723d313bbd95bfad2463a6aa4030b44a97e29c8a7951a39b0cf1334"
+    },
+    {
+      "name": "front",
+      "file": "previews/front.png",
+      "camera_blender_xyz_m": [
+        0,
+        -7,
+        1.3
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.72
+      ],
+      "ortho_scale": 3.5,
+      "sha256": "fc24230aa311dd088e7fbb13f41631d8e5f1ebce3396698c5afbec13bf96497c"
+    },
+    {
+      "name": "rear",
+      "file": "previews/rear.png",
+      "camera_blender_xyz_m": [
+        0,
+        7,
+        1.3
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.72
+      ],
+      "ortho_scale": 3.5,
+      "sha256": "8885e7e43ea71c95b5d08e70ae750f360ecfb9c212f3bf3dcf54d23fb07da3fa"
+    },
+    {
+      "name": "side",
+      "file": "previews/side.png",
+      "camera_blender_xyz_m": [
+        -7,
+        0,
+        1.35
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.71
+      ],
+      "ortho_scale": 5.15,
+      "sha256": "9f319e9354a18d10515040663a0d9b9e5bac62c6323dd67f600d41e985b1cc25"
+    },
+    {
+      "name": "eye_level",
+      "file": "previews/eye_level.png",
+      "camera_blender_xyz_m": [
+        -5.5,
+        -5.5,
+        1.45
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.71
+      ],
+      "ortho_scale": 5.65,
+      "sha256": "4b6e64f12d73f4b588be2953edc0cdeeaaf6dfde98c25fb387a7d1dcca6a03d2"
+    },
+    {
+      "name": "underside",
+      "file": "previews/underside.png",
+      "camera_blender_xyz_m": [
+        4,
+        -5,
+        -3
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.65
+      ],
+      "ortho_scale": 5.65,
+      "sha256": "9e06ef21a65f3ca3fa3a8b1767569c47c2d760b70f647af35701f8fcc82f8c69"
+    },
+    {
+      "name": "wheel_contact",
+      "file": "previews/wheel_contact.png",
+      "camera_blender_xyz_m": [
+        -3.1,
+        -2.3,
+        0.36
+      ],
+      "target_blender_xyz_m": [
+        -0.765,
+        -1.28,
+        0.315
+      ],
+      "ortho_scale": 1.55,
+      "sha256": "05bf23999f07e0407788f84466010ab0cd06b7b3ae5c29a26be034c733e0539f"
+    },
+    {
+      "name": "top",
+      "file": "previews/top.png",
+      "camera_blender_xyz_m": [
+        0,
+        -0.01,
+        8
+      ],
+      "target_blender_xyz_m": [
+        0,
+        0,
+        0.71
+      ],
+      "ortho_scale": 6.7,
+      "sha256": "7d2d64b6eb3fce2dced9fc5d0dbf36dc2511acf4d48c269e6e77bb5aa6346b01"
+    }
+  ]
+}

@@ -1,0 +1,1467 @@
+{
+  "path": "/workspace/shared/parked_sedan_01/independent/frozen/runtime/BC_SEDAN01_parked.glb",
+  "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+  "bytes": 1012828,
+  "header": {
+    "version": 2,
+    "declared_length": 1012828
+  },
+  "glTF_asset": {
+    "generator": "Khronos glTF Blender I/O v4.3.47",
+    "version": "2.0"
+  },
+  "totals": {
+    "meshes": 6,
+    "nodes": 7,
+    "materials": 4,
+    "images": 5,
+    "primitives": 12,
+    "triangles": 13124,
+    "export_vertices": 12713,
+    "zero_area_triangles": 0,
+    "zero_uv_area_triangles": 0,
+    "opposing_corner_normals": 0,
+    "average_opposing_triangles": 0
+  },
+  "bbox_mesh_coordinate_min": [
+    -0.9800000190734863,
+    0.0,
+    -2.177999973297119
+  ],
+  "bbox_mesh_coordinate_max": [
+    0.9800000190734863,
+    1.4539999961853027,
+    2.184000015258789
+  ],
+  "dimensions": [
+    1.9600000381469727,
+    1.4539999961853027,
+    4.361999988555908
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        6
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "index": 0,
+      "name": "BC_SEDAN01_body",
+      "mesh": 0,
+      "children": [],
+      "transform": {},
+      "finite": true,
+      "extras": {
+        "source_order": 0,
+        "runtime_group": "body",
+        "role": "body"
+      }
+    },
+    {
+      "index": 1,
+      "name": "BC_SEDAN01_wheel_front_left",
+      "mesh": 1,
+      "children": [],
+      "transform": {},
+      "finite": true,
+      "extras": {
+        "source_order": 86,
+        "runtime_group": "wheel_front_left",
+        "role": "wheel_front_left"
+      }
+    },
+    {
+      "index": 2,
+      "name": "BC_SEDAN01_wheel_front_right",
+      "mesh": 2,
+      "children": [],
+      "transform": {},
+      "finite": true,
+      "extras": {
+        "source_order": 101,
+        "runtime_group": "wheel_front_right",
+        "role": "wheel_front_right"
+      }
+    },
+    {
+      "index": 3,
+      "name": "BC_SEDAN01_wheel_rear_left",
+      "mesh": 3,
+      "children": [],
+      "transform": {},
+      "finite": true,
+      "extras": {
+        "source_order": 116,
+        "runtime_group": "wheel_rear_left",
+        "role": "wheel_rear_left"
+      }
+    },
+    {
+      "index": 4,
+      "name": "BC_SEDAN01_wheel_rear_right",
+      "mesh": 4,
+      "children": [],
+      "transform": {},
+      "finite": true,
+      "extras": {
+        "source_order": 131,
+        "runtime_group": "wheel_rear_right",
+        "role": "wheel_rear_right"
+      }
+    },
+    {
+      "index": 5,
+      "name": "BC_SEDAN01_windows",
+      "mesh": 5,
+      "children": [],
+      "transform": {},
+      "finite": true,
+      "extras": {
+        "source_order": 12,
+        "runtime_group": "windows",
+        "role": "windows"
+      }
+    },
+    {
+      "index": 6,
+      "name": "BC_SEDAN01",
+      "mesh": null,
+      "children": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "transform": {},
+      "finite": true,
+      "extras": {
+        "asset_id": "BC_SEDAN01",
+        "revision": "r01",
+        "scope": "Original static exterior, opaque glazing. No interior, rig, driving, collision or damage implementation.",
+        "front_axis": "Blender -Y; glTF +Z",
+        "unit": "metres",
+        "pivot": "Ground center (0,0,0)",
+        "wheel_centers_json": "[{\"name\": \"wheel_front_left\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [0.765, -1.28, 0.315], \"gltf_center\": [0.765, 0.315, 1.28]}, {\"name\": \"wheel_front_right\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [-0.765, -1.28, 0.315], \"gltf_center\": [-0.765, 0.315, 1.28]}, {\"name\": \"wheel_rear_left\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [0.765, 1.28, 0.315], \"gltf_center\": [0.765, 0.315, -1.28]}, {\"name\": \"wheel_rear_right\", \"radius\": 0.315, \"width\": 0.2, \"blender_center\": [-0.765, 1.28, 0.315], \"gltf_center\": [-0.765, 0.315, -1.28]}]"
+      }
+    }
+  ],
+  "materials": [
+    {
+      "name": "BC_SEDAN_Paint_SageGrey",
+      "alphaMode": "OPAQUE",
+      "doubleSided": false,
+      "extensions": {},
+      "pbr": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    },
+    {
+      "name": "BC_SEDAN_Rubber_Trim",
+      "alphaMode": "OPAQUE",
+      "doubleSided": false,
+      "extensions": {},
+      "pbr": {
+        "baseColorTexture": {
+          "index": 2
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.7900000214576721
+      }
+    },
+    {
+      "name": "BC_SEDAN_Detail_Atlas",
+      "alphaMode": "OPAQUE",
+      "doubleSided": false,
+      "extensions": {},
+      "pbr": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicRoughnessTexture": {
+          "index": 4
+        }
+      }
+    },
+    {
+      "name": "BC_SEDAN_Opaque_Glass",
+      "alphaMode": "OPAQUE",
+      "doubleSided": false,
+      "extensions": {},
+      "pbr": {
+        "baseColorFactor": [
+          0.035999998450279236,
+          0.05999999865889549,
+          0.06800000369548798,
+          1
+        ],
+        "metallicFactor": 0.20000000298023224,
+        "roughnessFactor": 0.20000000298023224
+      }
+    }
+  ],
+  "images": [
+    {
+      "index": 0,
+      "name": "paint_baseColor",
+      "mimeType": "image/png",
+      "embedded": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "bytes": 128413,
+      "sha256": "b35ea00bb05d93b33ba488b40249dfb9519791fc56da03432dd8761e5a300ab3",
+      "pixel_sha256": "93dcfb426b947d7e5cd5cb0732d5a711bc57b56348bff176aa6b5328697feb77"
+    },
+    {
+      "index": 1,
+      "name": "paint_ORM",
+      "mimeType": "image/png",
+      "embedded": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "bytes": 146322,
+      "sha256": "2041215b6f3bc0d8a29ed24b81286559775fa2a83ab10f9d007dcbd9fae50154",
+      "pixel_sha256": "77ac11eba0df14fb872b27ed533d593be620c27c989740e4b82332b8ba95521e"
+    },
+    {
+      "index": 2,
+      "name": "rubber_baseColor",
+      "mimeType": "image/png",
+      "embedded": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "bytes": 133683,
+      "sha256": "3530ada20cc66e22126e01a387452b04fceea56a1dc6bf3f23b2aefe19586e78",
+      "pixel_sha256": "41010f12fd730f3af0c82125dd8443ae29cf257a57f9b50eefad6f8926c11ca3"
+    },
+    {
+      "index": 3,
+      "name": "detail_baseColor",
+      "mimeType": "image/png",
+      "embedded": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "bytes": 112365,
+      "sha256": "5157fc17fa72600c5fd97f4fe0292e6a78f23ed5e1759919b3948e9111ea427a",
+      "pixel_sha256": "294488af2001d0b02340392b62aa0343eb1fffc5985bd2cb27cc917d97efe2f5"
+    },
+    {
+      "index": 4,
+      "name": "detail_ORM",
+      "mimeType": "image/png",
+      "embedded": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "bytes": 1924,
+      "sha256": "f969da4d1ddb8044483f2bdd5d90fdb093fa66237bf04adf6a76927f819f1908",
+      "pixel_sha256": "f5cf9bdc7d9f7ef46e9b10d3e1210d08b6b09ea8f3fbe93b85ac9c1995f18ebb"
+    }
+  ],
+  "meshes": [
+    {
+      "mesh": 0,
+      "name": "BC_SEDAN01_body",
+      "primitives": [
+        {
+          "primitive": 0,
+          "material": "BC_SEDAN_Paint_SageGrey",
+          "vertices": 3381,
+          "triangles": 4124,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999998807907104,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.022938782460599196,
+          "uv_min": [
+            0.0,
+            0.0
+          ],
+          "uv_max": [
+            1.0,
+            1.0
+          ],
+          "bbox_min": [
+            -0.9800000190734863,
+            0.23499999940395355,
+            -2.1500000953674316
+          ],
+          "bbox_max": [
+            0.9800000190734863,
+            1.4539999961853027,
+            2.1500000953674316
+          ],
+          "all_finite": true
+        },
+        {
+          "primitive": 1,
+          "material": "BC_SEDAN_Rubber_Trim",
+          "vertices": 3516,
+          "triangles": 2556,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999998807907104,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.13229234875497647,
+          "uv_min": [
+            0.05000000074505806,
+            0.8600000143051147
+          ],
+          "uv_max": [
+            0.17000000178813934,
+            0.9800000190734863
+          ],
+          "bbox_min": [
+            -0.8811803460121155,
+            0.2214999943971634,
+            -2.177999973297119
+          ],
+          "bbox_max": [
+            0.8811803460121155,
+            1.3622504472732544,
+            2.177999973297119
+          ],
+          "all_finite": true
+        },
+        {
+          "primitive": 2,
+          "material": "BC_SEDAN_Detail_Atlas",
+          "vertices": 864,
+          "triangles": 676,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.8606613919824978,
+          "uv_min": [
+            0.014999999664723873,
+            0.26499998569488525
+          ],
+          "uv_max": [
+            0.9850000143051147,
+            0.9850000143051147
+          ],
+          "bbox_min": [
+            -0.9610000252723694,
+            0.2800000011920929,
+            -2.1640000343322754
+          ],
+          "bbox_max": [
+            0.9610000252723694,
+            1.0549999475479126,
+            2.184000015258789
+          ],
+          "all_finite": true
+        }
+      ]
+    },
+    {
+      "mesh": 1,
+      "name": "BC_SEDAN01_wheel_front_left",
+      "primitives": [
+        {
+          "primitive": 0,
+          "material": "BC_SEDAN_Rubber_Trim",
+          "vertices": 410,
+          "triangles": 640,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.9347682135248944,
+          "uv_min": [
+            0.0,
+            0.0
+          ],
+          "uv_max": [
+            1.0,
+            1.0
+          ],
+          "bbox_min": [
+            0.6650000214576721,
+            0.0,
+            0.9649999737739563
+          ],
+          "bbox_max": [
+            0.8650000095367432,
+            0.6299999952316284,
+            1.5950000286102295
+          ],
+          "all_finite": true
+        },
+        {
+          "primitive": 1,
+          "material": "BC_SEDAN_Detail_Atlas",
+          "vertices": 722,
+          "triangles": 684,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.8660252838106343,
+          "uv_min": [
+            0.014999999664723873,
+            0.26499998569488525
+          ],
+          "uv_max": [
+            0.23499999940395355,
+            0.9850000143051147
+          ],
+          "bbox_min": [
+            0.6779999732971191,
+            0.10400000214576721,
+            1.069000005722046
+          ],
+          "bbox_max": [
+            0.8759999871253967,
+            0.5260000228881836,
+            1.4910000562667847
+          ],
+          "all_finite": true
+        }
+      ]
+    },
+    {
+      "mesh": 2,
+      "name": "BC_SEDAN01_wheel_front_right",
+      "primitives": [
+        {
+          "primitive": 0,
+          "material": "BC_SEDAN_Rubber_Trim",
+          "vertices": 410,
+          "triangles": 640,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.9347682135248944,
+          "uv_min": [
+            0.0,
+            0.0
+          ],
+          "uv_max": [
+            1.0,
+            1.0
+          ],
+          "bbox_min": [
+            -0.8650000095367432,
+            0.0,
+            0.9649999737739563
+          ],
+          "bbox_max": [
+            -0.6650000214576721,
+            0.6299999952316284,
+            1.5950000286102295
+          ],
+          "all_finite": true
+        },
+        {
+          "primitive": 1,
+          "material": "BC_SEDAN_Detail_Atlas",
+          "vertices": 722,
+          "triangles": 684,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.8660252838106343,
+          "uv_min": [
+            0.014999999664723873,
+            0.26499998569488525
+          ],
+          "uv_max": [
+            0.23499999940395355,
+            0.9850000143051147
+          ],
+          "bbox_min": [
+            -0.8759999871253967,
+            0.10400000214576721,
+            1.069000005722046
+          ],
+          "bbox_max": [
+            -0.6779999732971191,
+            0.5260000228881836,
+            1.4910000562667847
+          ],
+          "all_finite": true
+        }
+      ]
+    },
+    {
+      "mesh": 3,
+      "name": "BC_SEDAN01_wheel_rear_left",
+      "primitives": [
+        {
+          "primitive": 0,
+          "material": "BC_SEDAN_Rubber_Trim",
+          "vertices": 410,
+          "triangles": 640,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.9347682135248944,
+          "uv_min": [
+            0.0,
+            0.0
+          ],
+          "uv_max": [
+            1.0,
+            1.0
+          ],
+          "bbox_min": [
+            0.6650000214576721,
+            0.0,
+            -1.5950000286102295
+          ],
+          "bbox_max": [
+            0.8650000095367432,
+            0.6299999952316284,
+            -0.9649999737739563
+          ],
+          "all_finite": true
+        },
+        {
+          "primitive": 1,
+          "material": "BC_SEDAN_Detail_Atlas",
+          "vertices": 722,
+          "triangles": 684,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.8660252838106343,
+          "uv_min": [
+            0.014999999664723873,
+            0.26499998569488525
+          ],
+          "uv_max": [
+            0.23499999940395355,
+            0.9850000143051147
+          ],
+          "bbox_min": [
+            0.6779999732971191,
+            0.10400000214576721,
+            -1.4910000562667847
+          ],
+          "bbox_max": [
+            0.8759999871253967,
+            0.5260000228881836,
+            -1.069000005722046
+          ],
+          "all_finite": true
+        }
+      ]
+    },
+    {
+      "mesh": 4,
+      "name": "BC_SEDAN01_wheel_rear_right",
+      "primitives": [
+        {
+          "primitive": 0,
+          "material": "BC_SEDAN_Rubber_Trim",
+          "vertices": 410,
+          "triangles": 640,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.9347682135248944,
+          "uv_min": [
+            0.0,
+            0.0
+          ],
+          "uv_max": [
+            1.0,
+            1.0
+          ],
+          "bbox_min": [
+            -0.8650000095367432,
+            0.0,
+            -1.5950000286102295
+          ],
+          "bbox_max": [
+            -0.6650000214576721,
+            0.6299999952316284,
+            -0.9649999737739563
+          ],
+          "all_finite": true
+        },
+        {
+          "primitive": 1,
+          "material": "BC_SEDAN_Detail_Atlas",
+          "vertices": 722,
+          "triangles": 684,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999999403953552,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.8660252838106343,
+          "uv_min": [
+            0.014999999664723873,
+            0.26499998569488525
+          ],
+          "uv_max": [
+            0.23499999940395355,
+            0.9850000143051147
+          ],
+          "bbox_min": [
+            -0.8759999871253967,
+            0.10400000214576721,
+            -1.4910000562667847
+          ],
+          "bbox_max": [
+            -0.6779999732971191,
+            0.5260000228881836,
+            -1.069000005722046
+          ],
+          "all_finite": true
+        }
+      ]
+    },
+    {
+      "mesh": 5,
+      "name": "BC_SEDAN01_windows",
+      "primitives": [
+        {
+          "primitive": 0,
+          "material": "BC_SEDAN_Opaque_Glass",
+          "vertices": 424,
+          "triangles": 472,
+          "zero_area_triangles": 0,
+          "zero_area_triangle_ids": [],
+          "uv_zero_area_triangles": 0,
+          "uv_zero_area_triangle_ids": [],
+          "normal_length_min": 0.9999998807907104,
+          "normal_length_max": 1.0000001192092896,
+          "corner_normal_opposes_triangle": 0,
+          "triangles_with_opposing_corner_normal": 0,
+          "triangle_average_normal_opposes_face": 0,
+          "minimum_normal_face_dot": 0.9520124204239949,
+          "uv_min": [
+            0.0,
+            0.0
+          ],
+          "uv_max": [
+            1.0,
+            1.0
+          ],
+          "bbox_min": [
+            -0.7773156762123108,
+            0.910325288772583,
+            -1.300244688987732
+          ],
+          "bbox_max": [
+            0.7773156762123108,
+            1.4262501001358032,
+            1.0314109325408936
+          ],
+          "all_finite": true
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    {
+      "index": 0,
+      "count": 3381,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.9800000190734863,
+        0.23499999940395355,
+        -2.1500000953674316
+      ],
+      "max": [
+        0.9800000190734863,
+        1.4539999961853027,
+        2.1500000953674316
+      ]
+    },
+    {
+      "index": 1,
+      "count": 3381,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 2,
+      "count": 3381,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.0,
+        0.0
+      ],
+      "max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 3,
+      "count": 12372,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        3380
+      ]
+    },
+    {
+      "index": 4,
+      "count": 3516,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.8811803460121155,
+        0.2214999943971634,
+        -2.177999973297119
+      ],
+      "max": [
+        0.8811803460121155,
+        1.3622504472732544,
+        2.177999973297119
+      ]
+    },
+    {
+      "index": 5,
+      "count": 3516,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.9999549388885498,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.9999549388885498,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 6,
+      "count": 3516,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.05000000074505806,
+        0.8600000143051147
+      ],
+      "max": [
+        0.17000000178813934,
+        0.9800000190734863
+      ]
+    },
+    {
+      "index": 7,
+      "count": 7668,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        3515
+      ]
+    },
+    {
+      "index": 8,
+      "count": 864,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.9610000252723694,
+        0.2800000011920929,
+        -2.1640000343322754
+      ],
+      "max": [
+        0.9610000252723694,
+        1.0549999475479126,
+        2.184000015258789
+      ]
+    },
+    {
+      "index": 9,
+      "count": 864,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 10,
+      "count": 864,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.014999999664723873,
+        0.26499998569488525
+      ],
+      "max": [
+        0.9850000143051147,
+        0.9850000143051147
+      ]
+    },
+    {
+      "index": 11,
+      "count": 2028,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        863
+      ]
+    },
+    {
+      "index": 12,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.6650000214576721,
+        0.0,
+        0.9649999737739563
+      ],
+      "max": [
+        0.8650000095367432,
+        0.6299999952316284,
+        1.5950000286102295
+      ]
+    },
+    {
+      "index": 13,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 14,
+      "count": 410,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.0,
+        0.0
+      ],
+      "max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 15,
+      "count": 1920,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        409
+      ]
+    },
+    {
+      "index": 16,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.6779999732971191,
+        0.10400000214576721,
+        1.069000005722046
+      ],
+      "max": [
+        0.8759999871253967,
+        0.5260000228881836,
+        1.4910000562667847
+      ]
+    },
+    {
+      "index": 17,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 18,
+      "count": 722,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.014999999664723873,
+        0.26499998569488525
+      ],
+      "max": [
+        0.23499999940395355,
+        0.9850000143051147
+      ]
+    },
+    {
+      "index": 19,
+      "count": 2052,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        721
+      ]
+    },
+    {
+      "index": 20,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.8650000095367432,
+        0.0,
+        0.9649999737739563
+      ],
+      "max": [
+        -0.6650000214576721,
+        0.6299999952316284,
+        1.5950000286102295
+      ]
+    },
+    {
+      "index": 21,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 22,
+      "count": 410,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.0,
+        0.0
+      ],
+      "max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 23,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.8759999871253967,
+        0.10400000214576721,
+        1.069000005722046
+      ],
+      "max": [
+        -0.6779999732971191,
+        0.5260000228881836,
+        1.4910000562667847
+      ]
+    },
+    {
+      "index": 24,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 25,
+      "count": 722,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.014999999664723873,
+        0.26499998569488525
+      ],
+      "max": [
+        0.23499999940395355,
+        0.9850000143051147
+      ]
+    },
+    {
+      "index": 26,
+      "count": 2052,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        721
+      ]
+    },
+    {
+      "index": 27,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.6650000214576721,
+        0.0,
+        -1.5950000286102295
+      ],
+      "max": [
+        0.8650000095367432,
+        0.6299999952316284,
+        -0.9649999737739563
+      ]
+    },
+    {
+      "index": 28,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 29,
+      "count": 410,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.0,
+        0.0
+      ],
+      "max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 30,
+      "count": 1920,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        409
+      ]
+    },
+    {
+      "index": 31,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.6779999732971191,
+        0.10400000214576721,
+        -1.4910000562667847
+      ],
+      "max": [
+        0.8759999871253967,
+        0.5260000228881836,
+        -1.069000005722046
+      ]
+    },
+    {
+      "index": 32,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 33,
+      "count": 722,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.014999999664723873,
+        0.26499998569488525
+      ],
+      "max": [
+        0.23499999940395355,
+        0.9850000143051147
+      ]
+    },
+    {
+      "index": 34,
+      "count": 2052,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        721
+      ]
+    },
+    {
+      "index": 35,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.8650000095367432,
+        0.0,
+        -1.5950000286102295
+      ],
+      "max": [
+        -0.6650000214576721,
+        0.6299999952316284,
+        -0.9649999737739563
+      ]
+    },
+    {
+      "index": 36,
+      "count": 410,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 37,
+      "count": 410,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.0,
+        0.0
+      ],
+      "max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 38,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.8759999871253967,
+        0.10400000214576721,
+        -1.4910000562667847
+      ],
+      "max": [
+        -0.6779999732971191,
+        0.5260000228881836,
+        -1.069000005722046
+      ]
+    },
+    {
+      "index": 39,
+      "count": 722,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 40,
+      "count": 722,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.014999999664723873,
+        0.26499998569488525
+      ],
+      "max": [
+        0.23499999940395355,
+        0.9850000143051147
+      ]
+    },
+    {
+      "index": 41,
+      "count": 2052,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        721
+      ]
+    },
+    {
+      "index": 42,
+      "count": 424,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.7773156762123108,
+        0.910325288772583,
+        -1.300244688987732
+      ],
+      "max": [
+        0.7773156762123108,
+        1.4262501001358032,
+        1.0314109325408936
+      ]
+    },
+    {
+      "index": 43,
+      "count": 424,
+      "type": "VEC3",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        -0.9872326254844666,
+        -1.0,
+        -0.9999969005584717
+      ],
+      "max": [
+        0.9872326254844666,
+        1.0,
+        0.9999969005584717
+      ]
+    },
+    {
+      "index": 44,
+      "count": 424,
+      "type": "VEC2",
+      "componentType": 5126,
+      "finite": true,
+      "min": [
+        0.0,
+        0.0
+      ],
+      "max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "index": 45,
+      "count": 1416,
+      "type": "SCALAR",
+      "componentType": 5123,
+      "finite": true,
+      "min": [
+        0
+      ],
+      "max": [
+        423
+      ]
+    }
+  ],
+  "animations": 0,
+  "skins": 0,
+  "cameras": 0,
+  "extensions_used": [],
+  "external_uris": []
+}

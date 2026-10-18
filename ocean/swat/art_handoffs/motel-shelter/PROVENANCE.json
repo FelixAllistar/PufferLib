@@ -1,0 +1,82 @@
+{
+  "asset_id": "BC_SHELTER01",
+  "created_utc": "2026-10-17",
+  "geometry": "Original source/build_shelter.py model; no imported or copied outside geometry. No prior accepted asset modified.",
+  "new_work_rights": "Project-scoped new geometry, original textures and recipes; no new CC0 dedication or general-purpose license.",
+  "textures": [
+    {
+      "file": "source/maps/shelter_paint_atlas.png",
+      "sha256": "090670bca3fd26291355e8ce67ee662c5edf2ac10c85ddc1f3b1da971acccc08",
+      "bytes": 881289,
+      "dimensions_px": [
+        1024,
+        1024
+      ],
+      "encoding": "sRGB basecolor",
+      "source": "Original deterministic source/make_textures.py artwork for this shelter",
+      "rights": "Project-scoped original work; no blanket public license",
+      "notices": []
+    },
+    {
+      "file": "source/maps/shelter_paint_orm.png",
+      "sha256": "1a5609717712a02e3c5726d3260a1f60ddc82d341f0ae948e70db5e70df17654",
+      "bytes": 15683,
+      "dimensions_px": [
+        1024,
+        1024
+      ],
+      "encoding": "linear data; no baked illumination",
+      "source": "Original deterministic source/make_textures.py artwork for this shelter",
+      "rights": "Project-scoped original work; no blanket public license",
+      "notices": []
+    },
+    {
+      "file": "source/maps/shelter_timber_atlas.png",
+      "sha256": "148c93ba39e7973fc507abf2ec859dc431546044b7634086ba650d8d15ece419",
+      "bytes": 630652,
+      "dimensions_px": [
+        1024,
+        1024
+      ],
+      "encoding": "sRGB basecolor",
+      "source": "Original deterministic source/make_textures.py artwork for this shelter",
+      "rights": "Project-scoped original work; no blanket public license",
+      "notices": []
+    },
+    {
+      "file": "source/maps/shelter_timber_roughness.png",
+      "sha256": "364e57ac5918d7090280fcfdee2375a39edbe9aa6d0981d07fef883df47197df",
+      "bytes": 584945,
+      "dimensions_px": [
+        1024,
+        1024
+      ],
+      "encoding": "linear data; no baked illumination",
+      "source": "Original deterministic source/make_textures.py artwork for this shelter",
+      "rights": "Project-scoped original work; no blanket public license",
+      "notices": []
+    },
+    {
+      "file": "source/maps/steel.png",
+      "sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+      "bytes": 57646,
+      "dimensions_px": [
+        256,
+        256
+      ],
+      "encoding": "sRGB basecolor",
+      "source": "Unchanged original procedural batch16 steel map, retained through EYE01 and BC_DUMP01",
+      "rights": "Inherited CC0-1.0 for this map only",
+      "notices": [
+        "source/notices/inherited_LICENSE.txt",
+        "source/notices/inherited_textures_provenance.json"
+      ]
+    }
+  ],
+  "notice_scope": "The verbatim inherited notices describe a wider earlier batch. Only the unchanged steel.png reused here carries those inherited terms.",
+  "inherited_inputs_verified": {
+    "steel_sha256": "1be627b7df5124a7687694f505dbc5207d8e28efb47089ad74cab6b7e85b77c3",
+    "actual_match": true
+  },
+  "export_transforms": "Blender core glTF exporter packs source roughness/metalness data into embedded metallic-roughness images as needed; no texture download dependencies."
+}

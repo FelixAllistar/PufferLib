@@ -1,0 +1,31 @@
+{
+  "scope": "Bounded historical inventory and UPDATE41 textual evidence only; not a scan of the live engine or universal absence claim.",
+  "original_index": {
+    "filename": "original_library_index.json",
+    "sha256": "0a53860b01caee2b95eb6dd6b052a01fd5e8312f140ca63a67798ab46c66a5d2",
+    "reported_original_ids": 216
+  },
+  "catalog": {
+    "filename": "Briar-Court-catalog-UPDATE41-2026-10-16-candidate.zip",
+    "sha256": "fca679b439ffc8fafa2f2f970c35a921012c234df91a01090cef695b30b21329",
+    "text_members_examined": 721
+  },
+  "search_terms": [
+    "sedan",
+    "hatchback",
+    "passenger-car",
+    "parked-car",
+    "pickup",
+    "truck",
+    "vehicle",
+    "car"
+  ],
+  "hits": [
+    {
+      "member": "prior_update40/prior_update39/prior_update38/prior_update37/prior_update36/prior_update35/prior_update34/prior_update33/evidence/rook_service_yard/notices/README.md",
+      "line": 7,
+      "excerpt": "A 12 \u00d7 12 m enclosure places an 8 \u00d7 8 m nominal open-sky court southeast of three furnished rooms in an asymmetric L. Intake occupies the southwest, dry store the northwest elbow, and dispatch the north extension. A single south pedestrian service doorway reaches the court. The main choice is an exposed direct court crossing versus an enclosed turning route through intake, store and dispatch. The rooms retain usable furniture and floor area rather than forming a disguised corridor. No covered gallery, central island, new prop family, vehicle, gate system or WC was added."
+    }
+  ],
+  "decision": "No compact-sedan or parked-car entry found in these bounded sources. The sole vehicle mention says the Rook yard adds none. The historical gw09_treaded_tire_steel_rim is not reused: this sedan includes newly authored wheel geometry."
+}

@@ -1,0 +1,81 @@
+{
+  "source_mesh_objects": 151,
+  "wheel_centers": [
+    {
+      "name": "wheel_front_left",
+      "radius": 0.315,
+      "width": 0.2,
+      "blender_center": [
+        0.765,
+        -1.28,
+        0.315
+      ],
+      "gltf_center": [
+        0.765,
+        0.315,
+        1.28
+      ]
+    },
+    {
+      "name": "wheel_front_right",
+      "radius": 0.315,
+      "width": 0.2,
+      "blender_center": [
+        -0.765,
+        -1.28,
+        0.315
+      ],
+      "gltf_center": [
+        -0.765,
+        0.315,
+        1.28
+      ]
+    },
+    {
+      "name": "wheel_rear_left",
+      "radius": 0.315,
+      "width": 0.2,
+      "blender_center": [
+        0.765,
+        1.28,
+        0.315
+      ],
+      "gltf_center": [
+        0.765,
+        0.315,
+        -1.28
+      ]
+    },
+    {
+      "name": "wheel_rear_right",
+      "radius": 0.315,
+      "width": 0.2,
+      "blender_center": [
+        -0.765,
+        1.28,
+        0.315
+      ],
+      "gltf_center": [
+        -0.765,
+        0.315,
+        -1.28
+      ]
+    }
+  ],
+  "blender_version": "4.3.2",
+  "groups": {
+    "body": 85,
+    "wheel_front_left": 15,
+    "wheel_front_right": 15,
+    "wheel_rear_left": 15,
+    "wheel_rear_right": 15,
+    "windows": 6
+  },
+  "materials": [
+    "BC_SEDAN_Paint_SageGrey",
+    "BC_SEDAN_Rubber_Trim",
+    "BC_SEDAN_Opaque_Glass",
+    "BC_SEDAN_Detail_Atlas"
+  ],
+  "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298"
+}

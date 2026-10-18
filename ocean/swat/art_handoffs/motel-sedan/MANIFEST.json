@@ -1,0 +1,126 @@
+{
+  "asset_id": "BC_SEDAN01",
+  "revision": "r01",
+  "status": "Static exterior art candidate; offline QA passed with documented minor visual limitations; engine acceptance not claimed",
+  "runtime": {
+    "file": "runtime/BC_SEDAN01_parked.glb",
+    "bytes": 1012828,
+    "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+    "node_count": 7,
+    "mesh_instances": 6,
+    "mesh_count": 6,
+    "material_count": 4,
+    "image_count": 5,
+    "triangles": 13124,
+    "exported_vertices": 12713,
+    "world_min_gltf_xyz": [
+      -0.9800000190734863,
+      0.0,
+      -2.177999973297119
+    ],
+    "world_max_gltf_xyz": [
+      0.9800000190734863,
+      1.4539999961853027,
+      2.184000015258789
+    ],
+    "dimensions_gltf_xyz_m": [
+      1.9600000381469727,
+      1.4539999961853027,
+      4.361999988555908
+    ],
+    "floor_y_m": 0.0,
+    "all_positions_finite": true,
+    "solid_components": 151,
+    "material_primitives": 12
+  },
+  "source": {
+    "file": "source/BC_SEDAN01_editable.blend",
+    "sha256": "689c4b8a5a65f8dcd7c80e03834f699abc8e51d743e251b5bed340e33b776420",
+    "bytes": 2521518,
+    "closed_editable_solids": 151,
+    "packed_images": 5
+  },
+  "recipe": {
+    "file": "source/build_sedan.py",
+    "sha256": "55c54f079568f7971364d50557934de623dc5b8ab232a9ebe9fc3cd3df1ac055",
+    "texture_recipe": "source/make_textures.py",
+    "packed_export": "source/export_packed.py"
+  },
+  "placement": {
+    "unit": "metres",
+    "pivot": "ground center between wheel-contact pairs",
+    "gltf_front": "+Z",
+    "gltf_up": "+Y",
+    "blender_front": "-Y",
+    "blender_up": "+Z",
+    "coachwork_width_m": 1.75,
+    "wheelbase_m": 2.56,
+    "wheel_centers": [
+      {
+        "name": "wheel_front_left",
+        "radius": 0.315,
+        "width": 0.2,
+        "blender_center": [
+          0.765,
+          -1.28,
+          0.315
+        ],
+        "gltf_center": [
+          0.765,
+          0.315,
+          1.28
+        ]
+      },
+      {
+        "name": "wheel_front_right",
+        "radius": 0.315,
+        "width": 0.2,
+        "blender_center": [
+          -0.765,
+          -1.28,
+          0.315
+        ],
+        "gltf_center": [
+          -0.765,
+          0.315,
+          1.28
+        ]
+      },
+      {
+        "name": "wheel_rear_left",
+        "radius": 0.315,
+        "width": 0.2,
+        "blender_center": [
+          0.765,
+          1.28,
+          0.315
+        ],
+        "gltf_center": [
+          0.765,
+          0.315,
+          -1.28
+        ]
+      },
+      {
+        "name": "wheel_rear_right",
+        "radius": 0.315,
+        "width": 0.2,
+        "blender_center": [
+          -0.765,
+          1.28,
+          0.315
+        ],
+        "gltf_center": [
+          -0.765,
+          0.315,
+          -1.28
+        ]
+      }
+    ]
+  },
+  "preview_binding": "qa/render_binding.json",
+  "independent_report": "qa/independent/QA_REPORT.md",
+  "limitations": "docs/KNOWN_LIMITATIONS.md",
+  "provenance": "PROVENANCE.json",
+  "duplicate_scope": "qa/duplicate_check.json"
+}

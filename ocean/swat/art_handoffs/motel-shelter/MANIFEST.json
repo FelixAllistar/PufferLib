@@ -1,0 +1,358 @@
+{
+  "asset_id": "BC_SHELTER01",
+  "revision": "r01",
+  "title": "Modest roadside waiting shelter with fixed bench",
+  "design_count": 1,
+  "runtime_exports": 1,
+  "state": "static art candidate",
+  "native_acceptance": "OPEN / NOT TESTED",
+  "performance_acceptance": "OPEN / NOT TESTED",
+  "engine_owned": [
+    "placement",
+    "collision",
+    "cover classification",
+    "navigation",
+    "interaction and occupancy",
+    "destruction/support",
+    "water effects",
+    "native integration",
+    "target-platform performance"
+  ],
+  "runtime": {
+    "file": "runtime/BC_SHELTER01_static.glb",
+    "sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+    "bytes": 2984364,
+    "triangles": 7868,
+    "mesh_nodes": 3,
+    "total_nodes": 12,
+    "material_primitives": 3,
+    "materials": 3,
+    "images": 5,
+    "bounds_blender_xyz_m": [
+      [
+        -1.6100000143051147,
+        -0.8119999766349792,
+        0.0
+      ],
+      [
+        1.6100000143051147,
+        0.8769705891609192,
+        2.378999948501587
+      ]
+    ],
+    "dimensions_blender_xyz_m": [
+      3.2200000286102295,
+      1.6889705657958984,
+      2.378999948501587
+    ],
+    "dimensions_gltf_xyz_m": [
+      3.2200000286102295,
+      2.378999948501587,
+      1.6889705657958984
+    ],
+    "root_pivot": [
+      0,
+      0,
+      0
+    ],
+    "front": "Blender -Y / glTF +Z",
+    "up": "Blender +Z / glTF +Y",
+    "node_inventory": [
+      {
+        "name": "ANCHOR_DrainOutlet",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          1.4299999475479126,
+          0.125,
+          -0.8600000143051147
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "ANCHOR_Foot_Left_Front",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          -1.3799999952316284,
+          0,
+          0.5799999833106995
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "ANCHOR_Foot_Left_Rear",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          -1.3799999952316284,
+          0,
+          -0.5799999833106995
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "ANCHOR_Foot_Right_Front",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          1.3799999952316284,
+          0,
+          0.5799999833106995
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "ANCHOR_Foot_Right_Rear",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          1.3799999952316284,
+          0,
+          -0.5799999833106995
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "ANCHOR_RoofFrontCenter",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          0,
+          2.359999895095825,
+          0.800000011920929
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "ANCHOR_RoofRearCenter",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          0,
+          2.2079999446868896,
+          -0.7200000286102295
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "ANCHOR_SeatCenter",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          0,
+          0.4699999988079071,
+          -0.19499999284744263
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "BC_SHELTER01_BenchTimber",
+        "mesh": 0,
+        "translation_gltf_xyz_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "BC_SHELTER01_FrameAndScreen",
+        "mesh": 1,
+        "translation_gltf_xyz_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "BC_SHELTER01_RoofAndHardware",
+        "mesh": 2,
+        "translation_gltf_xyz_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "BC_SHELTER01_ROOT",
+        "mesh": null,
+        "translation_gltf_xyz_m": [
+          0,
+          0,
+          0
+        ],
+        "rotation_gltf_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    ],
+    "material_inventory": [
+      {
+        "name": "BC_SHELTER01_WeatheredTimber",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 0
+          },
+          "metallicFactor": 0,
+          "metallicRoughnessTexture": {
+            "index": 1
+          }
+        }
+      },
+      {
+        "name": "BC_SHELTER01_WeatheredGreenSteel",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 2
+          },
+          "metallicRoughnessTexture": {
+            "index": 3
+          }
+        }
+      },
+      {
+        "name": "BC_SHELTER01_GalvanizedRoofAndFixings",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 4
+          },
+          "metallicFactor": 0.7799999713897705,
+          "roughnessFactor": 0.6600000262260437
+        }
+      }
+    ],
+    "extensions_used": [],
+    "external_image_uris": 0,
+    "animations": 0,
+    "skins": 0
+  },
+  "source": {
+    "file": "source/BC_SHELTER01_editable.blend",
+    "sha256": "105e41a64dd82b84f78eadab1189f9e1c9b477d595f09ff82fc61229a5f4fd36",
+    "named_mesh_parts": 160,
+    "packed_images": 5,
+    "geometry_recipe": "source/build_shelter.py",
+    "texture_recipe": "source/make_textures.py",
+    "packed_export_helper": "source/export_packed.py",
+    "render_recipe": "source/render_export.py"
+  },
+  "scope": "Individual source parts are closed solids, joined in runtime by material without boolean-union. Static art only, no engine/engineering certification.",
+  "provenance": "PROVENANCE.json",
+  "duplicate_check": "qa/duplicate_check.json",
+  "preview_receipt": "qa/render_binding.json",
+  "independent_report": "qa/independent/AUDIT_REPORT.md",
+  "independent_report_sha256": "5993883853bc6a00f486796e03d67f3c814931d31411f281744bf15702006200"
+}

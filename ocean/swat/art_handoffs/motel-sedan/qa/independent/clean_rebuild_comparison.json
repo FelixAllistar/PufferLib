@@ -1,0 +1,205 @@
+{
+  "a": {
+    "path": "/workspace/shared/parked_sedan_01/independent/frozen/runtime/BC_SEDAN01_parked.glb",
+    "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+    "groups": {
+      "BC_SEDAN01_body": {
+        "triangles": 7356,
+        "canonical_triangle_sha256_1e6": "a5a325a84e73e17deb3c3cea16550a623472885398af224172f83144808dcfad"
+      },
+      "BC_SEDAN01_wheel_front_left": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "1b06772d30dbbf9742e64ca5c951055d6413cdc6b273a29aa4bbcf5ca09f5cb2"
+      },
+      "BC_SEDAN01_wheel_front_right": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "6580b89ff4f0d53f11fe2036f1a0d2ea8faa55cbec370bfae7bcaa68ff54f129"
+      },
+      "BC_SEDAN01_wheel_rear_left": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "c586db895d6faa6c1a304f4ebda7485ea3691766894788b622c436270ecc6118"
+      },
+      "BC_SEDAN01_wheel_rear_right": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "7c2c686a819403a6a7f44e9f3a5fa9cee12a5bcc3b9e6a5fe199ec5b4c6228b5"
+      },
+      "BC_SEDAN01_windows": {
+        "triangles": 472,
+        "canonical_triangle_sha256_1e6": "503cfd857a1169ae20516900de591b5bbdcfdca329c205e80e562fec16a06407"
+      }
+    },
+    "images": {
+      "paint_baseColor": "b35ea00bb05d93b33ba488b40249dfb9519791fc56da03432dd8761e5a300ab3",
+      "paint_ORM": "2041215b6f3bc0d8a29ed24b81286559775fa2a83ab10f9d007dcbd9fae50154",
+      "rubber_baseColor": "3530ada20cc66e22126e01a387452b04fceea56a1dc6bf3f23b2aefe19586e78",
+      "detail_baseColor": "5157fc17fa72600c5fd97f4fe0292e6a78f23ed5e1759919b3948e9111ea427a",
+      "detail_ORM": "f969da4d1ddb8044483f2bdd5d90fdb093fa66237bf04adf6a76927f819f1908"
+    },
+    "materials": {
+      "BC_SEDAN_Paint_SageGrey": {
+        "name": "BC_SEDAN_Paint_SageGrey",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": {
+              "image": "paint_baseColor",
+              "image_sha256": "b35ea00bb05d93b33ba488b40249dfb9519791fc56da03432dd8761e5a300ab3"
+            }
+          },
+          "metallicRoughnessTexture": {
+            "index": {
+              "image": "paint_ORM",
+              "image_sha256": "2041215b6f3bc0d8a29ed24b81286559775fa2a83ab10f9d007dcbd9fae50154"
+            }
+          }
+        }
+      },
+      "BC_SEDAN_Rubber_Trim": {
+        "name": "BC_SEDAN_Rubber_Trim",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": {
+              "image": "rubber_baseColor",
+              "image_sha256": "3530ada20cc66e22126e01a387452b04fceea56a1dc6bf3f23b2aefe19586e78"
+            }
+          },
+          "metallicFactor": 0,
+          "roughnessFactor": 0.7900000214576721
+        }
+      },
+      "BC_SEDAN_Detail_Atlas": {
+        "name": "BC_SEDAN_Detail_Atlas",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": {
+              "image": "detail_baseColor",
+              "image_sha256": "5157fc17fa72600c5fd97f4fe0292e6a78f23ed5e1759919b3948e9111ea427a"
+            }
+          },
+          "metallicRoughnessTexture": {
+            "index": {
+              "image": "detail_ORM",
+              "image_sha256": "f969da4d1ddb8044483f2bdd5d90fdb093fa66237bf04adf6a76927f819f1908"
+            }
+          }
+        }
+      },
+      "BC_SEDAN_Opaque_Glass": {
+        "name": "BC_SEDAN_Opaque_Glass",
+        "pbrMetallicRoughness": {
+          "baseColorFactor": [
+            0.035999998450279236,
+            0.05999999865889549,
+            0.06800000369548798,
+            1
+          ],
+          "metallicFactor": 0.20000000298023224,
+          "roughnessFactor": 0.20000000298023224
+        }
+      }
+    }
+  },
+  "b": {
+    "path": "/workspace/shared/parked_sedan_01/independent/rebuild/runtime/BC_SEDAN01_parked.glb",
+    "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+    "groups": {
+      "BC_SEDAN01_body": {
+        "triangles": 7356,
+        "canonical_triangle_sha256_1e6": "a5a325a84e73e17deb3c3cea16550a623472885398af224172f83144808dcfad"
+      },
+      "BC_SEDAN01_wheel_front_left": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "1b06772d30dbbf9742e64ca5c951055d6413cdc6b273a29aa4bbcf5ca09f5cb2"
+      },
+      "BC_SEDAN01_wheel_front_right": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "6580b89ff4f0d53f11fe2036f1a0d2ea8faa55cbec370bfae7bcaa68ff54f129"
+      },
+      "BC_SEDAN01_wheel_rear_left": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "c586db895d6faa6c1a304f4ebda7485ea3691766894788b622c436270ecc6118"
+      },
+      "BC_SEDAN01_wheel_rear_right": {
+        "triangles": 1324,
+        "canonical_triangle_sha256_1e6": "7c2c686a819403a6a7f44e9f3a5fa9cee12a5bcc3b9e6a5fe199ec5b4c6228b5"
+      },
+      "BC_SEDAN01_windows": {
+        "triangles": 472,
+        "canonical_triangle_sha256_1e6": "503cfd857a1169ae20516900de591b5bbdcfdca329c205e80e562fec16a06407"
+      }
+    },
+    "images": {
+      "paint_baseColor": "b35ea00bb05d93b33ba488b40249dfb9519791fc56da03432dd8761e5a300ab3",
+      "paint_ORM": "2041215b6f3bc0d8a29ed24b81286559775fa2a83ab10f9d007dcbd9fae50154",
+      "rubber_baseColor": "3530ada20cc66e22126e01a387452b04fceea56a1dc6bf3f23b2aefe19586e78",
+      "detail_baseColor": "5157fc17fa72600c5fd97f4fe0292e6a78f23ed5e1759919b3948e9111ea427a",
+      "detail_ORM": "f969da4d1ddb8044483f2bdd5d90fdb093fa66237bf04adf6a76927f819f1908"
+    },
+    "materials": {
+      "BC_SEDAN_Paint_SageGrey": {
+        "name": "BC_SEDAN_Paint_SageGrey",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": {
+              "image": "paint_baseColor",
+              "image_sha256": "b35ea00bb05d93b33ba488b40249dfb9519791fc56da03432dd8761e5a300ab3"
+            }
+          },
+          "metallicRoughnessTexture": {
+            "index": {
+              "image": "paint_ORM",
+              "image_sha256": "2041215b6f3bc0d8a29ed24b81286559775fa2a83ab10f9d007dcbd9fae50154"
+            }
+          }
+        }
+      },
+      "BC_SEDAN_Rubber_Trim": {
+        "name": "BC_SEDAN_Rubber_Trim",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": {
+              "image": "rubber_baseColor",
+              "image_sha256": "3530ada20cc66e22126e01a387452b04fceea56a1dc6bf3f23b2aefe19586e78"
+            }
+          },
+          "metallicFactor": 0,
+          "roughnessFactor": 0.7900000214576721
+        }
+      },
+      "BC_SEDAN_Detail_Atlas": {
+        "name": "BC_SEDAN_Detail_Atlas",
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": {
+              "image": "detail_baseColor",
+              "image_sha256": "5157fc17fa72600c5fd97f4fe0292e6a78f23ed5e1759919b3948e9111ea427a"
+            }
+          },
+          "metallicRoughnessTexture": {
+            "index": {
+              "image": "detail_ORM",
+              "image_sha256": "f969da4d1ddb8044483f2bdd5d90fdb093fa66237bf04adf6a76927f819f1908"
+            }
+          }
+        }
+      },
+      "BC_SEDAN_Opaque_Glass": {
+        "name": "BC_SEDAN_Opaque_Glass",
+        "pbrMetallicRoughness": {
+          "baseColorFactor": [
+            0.035999998450279236,
+            0.05999999865889549,
+            0.06800000369548798,
+            1
+          ],
+          "metallicFactor": 0.20000000298023224,
+          "roughnessFactor": 0.20000000298023224
+        }
+      }
+    }
+  },
+  "byte_identical": true,
+  "geometry_match_1e6": true,
+  "images_match": true,
+  "materials_match": true,
+  "method": "Triangles canonicalized per mesh/material, cyclic order retained; position/normal/UV rounded to 1e-6. Image embedded bytes and material texture content compared."
+}

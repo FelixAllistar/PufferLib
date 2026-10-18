@@ -1,0 +1,33 @@
+{
+  "runtime_sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+  "status": "PASS_OFFLINE_WITH_VISUAL_CAVEATS",
+  "complete_checks": [
+    "Independent GLB decode and accessor validation",
+    "Geometric/UV degeneracy and normal tests",
+    "Spatially welded runtime topology tests",
+    "All 151 source solids manifold and positive-volume",
+    "All four tire centers, radii, ground contacts and arch clearance",
+    "Opaque single-sided material and embedded image checks",
+    "Exact packed-source reopen without external maps",
+    "Independent semantic packed-source reexport",
+    "Supplied packed-source helper byte-identical export",
+    "Clean recipe byte-identical rebuild",
+    "All five procedural maps byte-identical regeneration",
+    "Nine final preview hash bindings and actual-pixel review"
+  ],
+  "blockers": [],
+  "visual_caveats": [
+    "Faint/intermittent thin rear-deck shutline and angle-dependent thin seam visibility.",
+    "Minor pinched/faceted lower-valance highlights in frontal lighting.",
+    "Wheel-cover vent slots are uneven and partly occluded by the dish in close-up; the openings are not uniformly clean."
+  ],
+  "coverage_note": "Corrected top preview at 6.7 m orthographic width includes both bumper tips and the full overhead silhouette; all nine views have been visually reviewed.",
+  "untested": [
+    "Target game-engine import and render parity",
+    "Performance, batching, memory and instancing",
+    "Collision, physics, navigation and gameplay placement",
+    "Animation, driving, suspension, damage and interiors",
+    "LOD/mip/streaming/lightmap tests",
+    "Formal Khronos glTF Validator"
+  ]
+}
