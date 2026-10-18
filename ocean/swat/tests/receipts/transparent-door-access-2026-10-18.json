@@ -1,0 +1,970 @@
+{
+  "created_utc": "2026-10-18T14:24:55.124Z",
+  "baseline_commit": "c0db68cee450df54091342f3d791622662916c82",
+  "previous_goal_turn": {
+    "classification": "progress",
+    "evidence": "Installed and sealed v37 surviving-material tools,42 focused cases,181 broad groups/platform and four complete missions."
+  },
+  "goal_status": "active",
+  "classification": "progress",
+  "protocol": 38,
+  "scope": "Correct physical work-position access through clear glass for already-named squad Pick/Wedge tasks; initial command targeting through panes remains open. Full vertical slice remains active.",
+  "source_files": [
+    {
+      "path": "ocean/swat/README.md",
+      "sha256": "30e4b3e4c13a3f755b4e86d1e21f0428baf0f0a568587e17c71f44429688622a"
+    },
+    {
+      "path": "ocean/swat/ROADMAP.md",
+      "sha256": "e5ea7f64723fefe87fe74619769b94986f34949fd063d6f184a0a5bde6933fda"
+    },
+    {
+      "path": "ocean/swat/encounter.c",
+      "sha256": "58e34304ff762635c8c916ea996a6477e6fd068641279936bb7dd9d7d504ad39"
+    },
+    {
+      "path": "ocean/swat/protocol.h",
+      "sha256": "9100327981fa77d1604de4874baa6001314f51d821ac93480b6d581ea221aafe"
+    },
+    {
+      "path": "ocean/swat/tests/squad_damaged_equipment.h",
+      "sha256": "72121f31e49c5ac6dce2addd16e408f18e3d2062b8adf8eac4cff24209e0393a"
+    },
+    {
+      "path": "ocean/swat/tests/squad_equipment_network.h",
+      "sha256": "3f9414b1e7ea71c0ea9d1653c3afa73972d4e566eb2b19828da0ed37de756922"
+    },
+    {
+      "path": "ocean/swat/tests/test_encounter.c",
+      "sha256": "a966c688f4ea7fa528c61e5b12e390c8776cdf2bfd156877eb466895ff911b9a"
+    }
+  ],
+  "proof_drivers": [
+    {
+      "path": "build/swat/review/transparent-door-access/check.sh",
+      "sha256": "924a8ff1b77943f446e5c1defa9a648c7f7230990d7bdfd4c33f53fc2f8e7d4f"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/check-native.sh",
+      "sha256": "f8d9d66154fed209093c3ac818102ccfa99ba53eeef52f92129ee1b7c16669b2"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/build-release.sh",
+      "sha256": "46e67e925c9005ea7a18fed594aa79a7b6a7aa843368a06931bc5c46a76b8652"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/compile-roadside-art.sh",
+      "sha256": "7005fdf7cc66d864bdc6587af7a2454718d7880460feaadb28e3a3d420d1e587"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/run-functional-progress.sh",
+      "sha256": "9dce2c075cf4d6f29e96b3864b84dddb2405c1e73347704bd7c5afc38c4b39d8"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/run-qualification.sh",
+      "sha256": "e59b8130959e645e42c64dd4d4e7b84e6ab6e7208a3c5fbf83c2f05bd2dbcf50"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/negative-control.sh",
+      "sha256": "8713f676872208c06319f97e60cd895b0309a0931f0d3427e8e849790b699ae5"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/registration.sh",
+      "sha256": "85eef805c3170474a29b4bbc3f3667fa0a2c87ee32472fd984f7b674da46584f"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/install.sh",
+      "sha256": "ae9ae815f4eb3ede98d2e3b128c372bd7e3bf4cf680868dbc5f00e1662115534"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/finalize.sh",
+      "sha256": "89dc87f885d3c33fb3a8c444cec824f13c6af317a5bab0cbc73e2acb522873f6"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/record-receipt.cjs",
+      "sha256": "7170d08acbfc73b1ffee97fc0e6e637dd703f4455848c81d621a1078c7286832"
+    },
+    {
+      "path": "build/swat/review/transparent-door-access/verify-receipt.cjs",
+      "sha256": "ce18990d2d96bb1ae2137146efe8fe2bb57d4f17aa54f63cae77a623668dac14"
+    }
+  ],
+  "baseline": {
+    "source": {
+      "path": "build/swat/review/transparent-door-access/before-fix/encounter.c",
+      "sha256": "6421de09d292ac3a334b7f3e631cb205486828430ecbde2151aadf6af03cd4c3"
+    },
+    "harness": {
+      "path": "build/swat/review/transparent-door-access/before-fix/squad_damaged_equipment.h",
+      "sha256": "72121f31e49c5ac6dce2addd16e408f18e3d2062b8adf8eac4cff24209e0393a"
+    },
+    "binary": {
+      "path": "build/swat/review/transparent-door-access/before-fix/test_encounter",
+      "sha256": "184fbaa5288ec981bcef59bd1d58ca243992cff5e05fb98d8aeff8955a7dcdc2"
+    },
+    "trace": {
+      "path": "build/swat/review/transparent-door-access/baseline.trace",
+      "sha256": "97af170421443d74dd3ed9131cc2ca0d0a6948991289e2a3e59f423de30297fe"
+    },
+    "stdout": {
+      "path": "build/swat/review/transparent-door-access/baseline.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "path": "build/swat/review/transparent-door-access/baseline.stderr.log",
+      "sha256": "9aecc0bdf74369e61d3e855399d7e4c76d91c4f759ae169cdc1e9d7f2f85c15f"
+    },
+    "finding": "At360ticks a fully glass-covered leaf remained locked with no tool progress, but tool_goal was true and blocked status stayed false. Optical sight saw wood while the physical ray hit the pane."
+  },
+  "changes": [
+    "Work-position validation uses the physical world ray instead of optical sight. Optical perception, actual hand gating, reach distances, capability, stock, threat priority and geometry remain unchanged.",
+    "Eighteen additional cases qualify full glass cover/wait/removal/resumption, partial panes and low-gap crouched access across Pick/Wedge and three orientations. Bypass cases keep glass active and undamaged; successful tool progress must have a real same-leaf hand hit.",
+    "The explicit UDP fixture now covers both opaque and clear glass, including waiting status, zero tool progress while blocked and actual resumption. The separate canonical motel mesh/slow-join qualification remains intact.",
+    "Protocol/replay v38 requires matching peers and new recordings/saves for changed deterministic planning behavior. No extra wire fields were added."
+  ],
+  "negative_control": {
+    "source": {
+      "path": "build/swat/review/transparent-door-access/before-fix/encounter.c",
+      "sha256": "6421de09d292ac3a334b7f3e631cb205486828430ecbde2151aadf6af03cd4c3"
+    },
+    "driver": {
+      "path": "build/swat/review/transparent-door-access/negative-control.sh",
+      "sha256": "8713f676872208c06319f97e60cd895b0309a0931f0d3427e8e849790b699ae5"
+    },
+    "result": {
+      "path": "build/swat/review/transparent-door-access/negative-control.log",
+      "sha256": "0cea7f90c4b4e753bbeca0632986471cc7c2bcc6afaba2376a1541ffee98d083"
+    },
+    "stdout": {
+      "path": "build/swat/review/transparent-door-access/optical-negative.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "path": "build/swat/review/transparent-door-access/optical-negative.stderr.log",
+      "sha256": "35956f5b91058b44d8e6649dd1af63ebfb8e53d21e12c3442bce03644b29c825"
+    },
+    "trace": {
+      "path": "build/swat/review/transparent-door-access/optical-negative.trace",
+      "sha256": "c8eff5c76ae8d9c759b9c8ad43a3db9ade912954b9fc8e9635cadb754a63e4f0"
+    },
+    "meaning": "Restoring optical-only workpoint selection reproduces the same false approach under current v38 core/codec and test rules; the assertion failure is expected."
+  },
+  "opaque_nonregression": {
+    "samples": 11996,
+    "result": {
+      "path": "build/swat/review/transparent-door-access/opaque-nonregression.log",
+      "sha256": "277f167ba48b508ee5bec20a120c0a9b7efea28f11c3881fa01dad4358536948"
+    },
+    "fixed_before_version_trace": {
+      "path": "build/swat/review/transparent-door-access/before-version/damaged-linux.trace",
+      "sha256": "f0e60c8fc4b142222078147874cdfa55dc2aaf012f823795d5e19a77298056b0"
+    },
+    "scope": "All42 pre-existing cut/opaque cases match their original11996 hashes exactly before the deliberate version bump."
+  },
+  "checks": {
+    "linux": {
+      "broad_groups": 199,
+      "broad": {
+        "encounter": {
+          "groups": 139,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/encounter-linux.log",
+            "sha256": "f5595445f9b71fc2c76700bdcf0e756838d26bdc2eb7d9a59e16346d9ec51791"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/encounter-linux.stderr.log",
+            "sha256": "53d013b362fe0a637fe236efda52f06fc7c1e96f0a33ef910f45007b22511e65"
+          }
+        },
+        "tactical": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/tactical-linux.log",
+            "sha256": "38e858492b3f2936f3396cc1b9f850da49015d29ff8a71001cb35cbb071e994a"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/tactical-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "groups": 13,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/sim-linux.log",
+            "sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/sim-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "groups": 5,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/protocol-linux.log",
+            "sha256": "1ccbf0cfa8c8f9b61fe2084c08443beceaf901f4fa5342d4c6e92017e5e010bc"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/protocol-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/motel-linux.log",
+            "sha256": "62d9a7a5803d5e96f064e387068a85e5919df80fd3dcacd168c7edee7a576ca8"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/motel-linux.stderr.log",
+            "sha256": "7e52b7b05fe72e558805802c6ddfaa8217e9ef005940f8d9f5705488ef47b059"
+          }
+        },
+        "navigation": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/navigation-linux.log",
+            "sha256": "f77a6a4aaec85991521d980f29c306d4a6fd3ed8d5e635e5b65704b29bc0bb8f"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/navigation-linux.stderr.log",
+            "sha256": "83bfadcc22dfc45ae60533a1290c5a2727ebb9cbdc59b54c5b32e6d342300c09"
+          }
+        },
+        "net": {
+          "groups": 15,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/net-linux.log",
+            "sha256": "067d85727fbc758ba05ff6975f6101b9c75c523535b0e16df556b109caf2b2d5"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/net-linux.stderr.log",
+            "sha256": "6cafe2d6a52b3ad97aac2d61af81f74396c22004d6b3062fd21b92804a865d38"
+          }
+        }
+      },
+      "focused": {
+        "path": "build/swat/review/transparent-door-access/damaged-linux.log",
+        "sha256": "21c38b1ce6db8b64e92901ec94b771e3537ba8dc79423e71c40f8d288d949ca3"
+      },
+      "focused_stderr": {
+        "path": "build/swat/review/transparent-door-access/damaged-linux.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "transport": [
+        {
+          "name": "room-network",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/room-network-linux.log",
+            "sha256": "1874f694b5b36b36b46b38f59493fd3031145454f70417f9f50065c181a769f2"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/room-network-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "name": "equipment-network",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/equipment-network-linux.log",
+            "sha256": "247debf3e9b499a343a92d8c00cc743d794f10ae055c0ab29862b0fde6c4777c"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/equipment-network-linux.stderr.log",
+            "sha256": "dbd5fc13da7f39404acb7533bac28b2e0b74d03f5d6c94f685f9e42c6509b270"
+          }
+        },
+        {
+          "name": "frontend-network",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/frontend-network-linux.log",
+            "sha256": "836a15d5f3f7d141b7c91842b0c4f4ca477d95529a9eb497e95fd6fc81ca83a8"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/frontend-network-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "movement": [
+        {
+          "name": "player",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/player-linux.log",
+            "sha256": "d80ad631a4f7b7888a59be8c85d31741cb818c0c1bb0bd7dbac545fbd662f4a7"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/player-linux.stderr.log",
+            "sha256": "4510002eb708392f296900c1e2df5a38ab9ec96590a0270df69c9f167adbcbb4"
+          }
+        },
+        {
+          "name": "locomotion",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/locomotion-linux.log",
+            "sha256": "23f7192a7fae0ed78f2bdb7a637b0034566ec89fd0d5c47d6ae92f745e443784"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/locomotion-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "name": "foundation",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/foundation-linux.log",
+            "sha256": "df5c1604cb0cbae8f116311cf1aaa12066d3e0b10659ac5f44c8b5ae83cdb172"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/foundation-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "name": "scenarios",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/scenarios-linux.log",
+            "sha256": "2962247111e289aa4e97c7d5cc55321e2965f1c33af7f97b8a83faf0cf14ec4b"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/scenarios-linux.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ]
+    },
+    "native": {
+      "broad_groups": 199,
+      "broad": {
+        "encounter": {
+          "groups": 139,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/encounter-native.log",
+            "sha256": "ffdb6aabfa1307ef94362edc381f6c29943984b61fffe48567e939ea06823a3a"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/encounter-native.stderr.log",
+            "sha256": "67c5f680accd3f4f71454e6eec7efe344096aa5d742706d8abb86f3271a1e27a"
+          }
+        },
+        "tactical": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/tactical-native.log",
+            "sha256": "e4c179d5b6059b4a5ccb704760db7274f4cd587d9a24617b0ee3fd9334f70966"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/tactical-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "sim": {
+          "groups": 13,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/sim-native.log",
+            "sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/sim-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "protocol": {
+          "groups": 5,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/protocol-native.log",
+            "sha256": "2540c55d137bfe90c478acbe859b33d74e6b5212f70b2d42126d916a7646da6c"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/protocol-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "motel": {
+          "groups": 12,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/motel-native.log",
+            "sha256": "752dc6094dbe81b25b91b12ed0dd95b4baa3d122e817cada7477a7cfdc4efa9e"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/motel-native.stderr.log",
+            "sha256": "3ebe62ba2dc3ed22cf1b0d37d32eb547529be4f2f1c12185a492e808488045a2"
+          }
+        },
+        "navigation": {
+          "groups": 3,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/navigation-native.log",
+            "sha256": "4a0574d4578e12e577732616fc505f7c1847987ef0766860dfe422c586cd37ba"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/navigation-native.stderr.log",
+            "sha256": "481bb622a37548165965bf936620ccdc569485da4a0385beb2f734fd3543279e"
+          }
+        },
+        "net": {
+          "groups": 15,
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/net-native.log",
+            "sha256": "583116cab0983759ee9abdfc0ca272bac16711ba0e9db9de244a0bf9a43e8aa5"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/net-native.stderr.log",
+            "sha256": "6dca6090be320ee055e3177fb0d6be01ee404e3c5c443c236542dc0d887cf2dd"
+          }
+        }
+      },
+      "focused": {
+        "path": "build/swat/review/transparent-door-access/damaged-native.log",
+        "sha256": "a1db638607af0ff1efe71151ed361b9958853e838f0bba9f27e9e73e660a6b7e"
+      },
+      "focused_stderr": {
+        "path": "build/swat/review/transparent-door-access/damaged-native.stderr.log",
+        "sha256": "c5f66f569e7f53152eaf6ec6f3f1c481645b603f15faff8cc1c05c55717f6c4c"
+      },
+      "transport": [
+        {
+          "name": "room-network",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/room-network-native.log",
+            "sha256": "2072c71d70aedbbc8333ef27af0f415c3c655439474c9fa3931b3052818d83d0"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/room-network-native.stderr.log",
+            "sha256": "c5f66f569e7f53152eaf6ec6f3f1c481645b603f15faff8cc1c05c55717f6c4c"
+          }
+        },
+        {
+          "name": "equipment-network",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/equipment-network-native.log",
+            "sha256": "bc567a8030bb9fc7c43477f85257c1afa2e1c876cdd8bf238d7bc044aa205620"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/equipment-network-native.stderr.log",
+            "sha256": "590f72bf225e3adf369b6c9097433bbc8fd85b8836f8a2961352cc6172b9831a"
+          }
+        },
+        {
+          "name": "frontend-network",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/frontend-network-native.log",
+            "sha256": "5ce4d810d66974ebf9acb56b996d12d425ce935967b1ac934a109ab5586b6083"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/frontend-network-native.stderr.log",
+            "sha256": "cadee44f3fcd809a442e301b98f16bcc7442caedc9784303236aa12b78041acd"
+          }
+        }
+      ],
+      "movement": [
+        {
+          "name": "player",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/player-native.log",
+            "sha256": "cfd432359ae44df7dffd929a1f7a86014babbe754cd714993ec9c6fd65ad05f4"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/player-native.stderr.log",
+            "sha256": "f930593177131aab30df22a94bf22b6b0a8186fbbd8f0374a94c01358192b826"
+          }
+        },
+        {
+          "name": "locomotion",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/locomotion-native.log",
+            "sha256": "aa8714d570cc824094053629796d544523097ffa420f519494056d541869998c"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/locomotion-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "name": "foundation",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/foundation-native.log",
+            "sha256": "5aa5302977a70ffd3c463b3c2118e736760f3882334d1bbf72ce9609ab887d93"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/foundation-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "name": "scenarios",
+          "stdout": {
+            "path": "build/swat/review/transparent-door-access/scenarios-native.log",
+            "sha256": "ddfb5d895dd2362a616b2e091b5d7a6081e9180ef834861c865a7b2c51758cd3"
+          },
+          "stderr": {
+            "path": "build/swat/review/transparent-door-access/scenarios-native.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ]
+    }
+  },
+  "cross_platform_traces": [
+    {
+      "name": "damaged",
+      "samples": 17439,
+      "comparison": "Exact state hash lines, host CRLF normalization only; raw traces retained",
+      "linux": {
+        "path": "build/swat/review/transparent-door-access/damaged-linux.trace",
+        "sha256": "21cb2cd82eeed1e0465c61efad809776201214cef3a58b4207fc78d8ccc2cbae"
+      },
+      "native": {
+        "path": "build/swat/review/transparent-door-access/damaged-native.trace",
+        "sha256": "7d74630ff582dc9181ed3ca777d71aba75ef69cb6e158443b84b4ad0ee6a4196"
+      }
+    },
+    {
+      "name": "all",
+      "samples": 81399,
+      "comparison": "Exact state hash lines, host CRLF normalization only; raw traces retained",
+      "linux": {
+        "path": "build/swat/review/transparent-door-access/all-linux.trace",
+        "sha256": "4161355473e402eea1c5b9e864e419b44ef8d09c1354cbd9a95e2b39b46b93be"
+      },
+      "native": {
+        "path": "build/swat/review/transparent-door-access/all-native.trace",
+        "sha256": "432c03160d0eb04e3f36b58bd6e3d877a21bff53be843697e9d8d652ada2d9a6"
+      }
+    },
+    {
+      "name": "room-motel",
+      "samples": 6382,
+      "comparison": "Exact state hash lines, host CRLF normalization only; raw traces retained",
+      "linux": {
+        "path": "build/swat/review/transparent-door-access/room-motel-linux.trace",
+        "sha256": "377b5140a7644daafe9583d90d6d548ec03e110b6039d5d7822bc9cf7c44e21f"
+      },
+      "native": {
+        "path": "build/swat/review/transparent-door-access/room-motel-native.trace",
+        "sha256": "3b87aa10cc2e32ac794f92eb032621df7313507808aed4d085489cbf8d2bd280"
+      }
+    },
+    {
+      "name": "roadside",
+      "samples": 38,
+      "comparison": "Exact state hash lines, host CRLF normalization only; raw traces retained",
+      "linux": {
+        "path": "build/swat/review/transparent-door-access/roadside-linux.trace",
+        "sha256": "2f777d5ca58a84151d028ef1b65f29f4626276a5e39d297b9a024283646b9228"
+      },
+      "native": {
+        "path": "build/swat/review/transparent-door-access/roadside-native.trace",
+        "sha256": "756ebca55157880ffa791e0d428ceda8a8cfb0ac142c2405e89543cb45bbec01"
+      }
+    },
+    {
+      "name": "input",
+      "samples": 78,
+      "comparison": "Exact state hash lines, host CRLF normalization only; raw traces retained",
+      "linux": {
+        "path": "build/swat/review/transparent-door-access/input-linux.trace",
+        "sha256": "cc77074682e7e37cd377a92b77247f39a9d7da047eb7ca41246c8e4bb2fbad2d"
+      },
+      "native": {
+        "path": "build/swat/review/transparent-door-access/input-native.trace",
+        "sha256": "1e86a5cd10cab5081dae5c39a0da1a487b7e6af92db79b3b2960fe6e59587ada"
+      }
+    },
+    {
+      "name": "player",
+      "samples": 1751,
+      "comparison": "Exact state hash lines, host CRLF normalization only; raw traces retained",
+      "linux": {
+        "path": "build/swat/review/transparent-door-access/player-linux.trace",
+        "sha256": "6efb761787433193f23abaff986512b7cbb0d76034b20c799c01767f7d6d0afd"
+      },
+      "native": {
+        "path": "build/swat/review/transparent-door-access/player-native.trace",
+        "sha256": "267adc7525876f6e9ac9f80416cb6db1154525396b0cdd214130a150e332dcac"
+      }
+    }
+  ],
+  "cross_platform_audit": {
+    "path": "build/swat/review/transparent-door-access/cross-platform-audit.log",
+    "sha256": "824e76528117ce49e152d66ff8dd6c97f92c8fc82ea6798c5d5b15ac1a8a014b"
+  },
+  "routes": [
+    {
+      "name": "motel-damaged",
+      "frames": 25741,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-damaged.sgrp",
+        "sha256": "83b9d2d719b0ed79d68214023f9b6672fc6c749a527794bd6d189ee8754bcc01"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/transparent-door-access/motel-damaged-linux-replay.log",
+          "sha256": "6fc1602b851e88097f9065f3fd483342d2838d71ba521d9cf419874892394495"
+        },
+        "native": {
+          "path": "build/swat/review/transparent-door-access/motel-damaged-native-replay.log",
+          "sha256": "e99b7fe991996a241a286d10e234a709a539d165dfb3cead72c593edc31cac96"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/transparent-door-access/motel-damaged.log",
+        "sha256": "31b11729c6f7ec52f64656839225795b372b32d86acdfb3828662e292325efb8"
+      },
+      "stderr": {
+        "path": "build/swat/review/transparent-door-access/motel-damaged.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-room-search",
+      "frames": 25730,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-room-search.sgrp",
+        "sha256": "901ead42fbe7cb5b6fbf9d1098a5bf108747db1a907d8b633f1510623bbd1efb"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/transparent-door-access/motel-room-search-linux-replay.log",
+          "sha256": "1ecd9c81a173ae8dcca3830736b5806134a7f558a6e3ba09bf4f6b2044e453ee"
+        },
+        "native": {
+          "path": "build/swat/review/transparent-door-access/motel-room-search-native-replay.log",
+          "sha256": "d0a280b79141d4e3d992044ef9947eedfa6240c305c592eb30b005819358c623"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/transparent-door-access/motel-room-search.log",
+        "sha256": "2a9a7309dfcb3c1d1ed486a201b06e8ce806e348ca6ffe42ab2c40d4f263bfb7"
+      },
+      "stderr": {
+        "path": "build/swat/review/transparent-door-access/motel-room-search.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-threat-interroom",
+      "frames": 20457,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-threat-interroom.sgrp",
+        "sha256": "97a954039771dce1bbfe2c56e0736e22590edc00493fb7ac6fea152a9b599db6"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/transparent-door-access/motel-threat-interroom-linux-replay.log",
+          "sha256": "39dfc5263a1c7677c1e314d201b4330b3dd91d8370c90259cd2729231eec3d25"
+        },
+        "native": {
+          "path": "build/swat/review/transparent-door-access/motel-threat-interroom-native-replay.log",
+          "sha256": "3cb4b53051d0b74314943803de091577989abd24cf131ece79b7613fbc9e4622"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/transparent-door-access/motel-threat-interroom.log",
+        "sha256": "9cbf0c7a35cadf8126bd8e542e77f756dc17a95ffd261f4091424109ca7cb033"
+      },
+      "stderr": {
+        "path": "build/swat/review/transparent-door-access/motel-threat-interroom.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "motel-threat-exterior",
+      "frames": 9513,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-threat-exterior.sgrp",
+        "sha256": "b58151da6edb40c52c63c785b25470aa6a35808409e95b72f2069df922d6dbaa"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/transparent-door-access/motel-threat-exterior-linux-replay.log",
+          "sha256": "00e4f83dd7a1045dca27b1941380c7f4ab3310de061bc31e4378af8c45bc3fac"
+        },
+        "native": {
+          "path": "build/swat/review/transparent-door-access/motel-threat-exterior-native-replay.log",
+          "sha256": "ea087e85100192516bf569483f0d72336c4cf233bafa2113f93cc15bb10a84e9"
+        }
+      },
+      "stdout": {
+        "path": "build/swat/review/transparent-door-access/motel-threat-exterior.log",
+        "sha256": "d18d33e04cf33b6775d6bc76ee727ba7240a2b56d521cf1282bec0b681847d1f"
+      },
+      "stderr": {
+        "path": "build/swat/review/transparent-door-access/motel-threat-exterior.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "player-linux",
+      "frames": 1624,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/player-linux.sgrp",
+        "sha256": "64156bdc8c8eda1b363d21e18cd1a219a2fb3e1eddb0dcd05bed1e57f322f78e"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/transparent-door-access/player-linux-linux-replay.log",
+          "sha256": "7188ede5ea77593d1f04ed82339442630e5aba0863600e564794dbf57b0ba8f5"
+        },
+        "native": {
+          "path": "build/swat/review/transparent-door-access/player-linux-native-replay.log",
+          "sha256": "8fb6978ff4577fb77403fe6ecb41bafaabe3bab41dff1537b2143a00ca2d5a1b"
+        }
+      }
+    },
+    {
+      "name": "player-native",
+      "frames": 1624,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/player-native.sgrp",
+        "sha256": "64156bdc8c8eda1b363d21e18cd1a219a2fb3e1eddb0dcd05bed1e57f322f78e"
+      },
+      "replays": {
+        "linux": {
+          "path": "build/swat/review/transparent-door-access/player-native-linux-replay.log",
+          "sha256": "7188ede5ea77593d1f04ed82339442630e5aba0863600e564794dbf57b0ba8f5"
+        },
+        "native": {
+          "path": "build/swat/review/transparent-door-access/player-native-native-replay.log",
+          "sha256": "8fb6978ff4577fb77403fe6ecb41bafaabe3bab41dff1537b2143a00ca2d5a1b"
+        }
+      }
+    }
+  ],
+  "saved_prefixes": [
+    {
+      "route": "motel-damaged",
+      "kind": "room",
+      "frames": 1237,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-damaged.sgrp.room.save",
+        "sha256": "f58dc77b502deae58c48be0237d5fed84cb0aa0909f68ffe272b15b1a62dc708"
+      },
+      "native_replay": {
+        "path": "build/swat/review/transparent-door-access/motel-damaged-room-prefix-native-replay.log",
+        "sha256": "e290ae59f4f974ad14462efa032dea0494b5e2f7110137eaff95ff83df8b04f0"
+      }
+    },
+    {
+      "route": "motel-damaged",
+      "kind": "wedge",
+      "frames": 23265,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-damaged.sgrp.wedge.save",
+        "sha256": "a8234b1d8976f40c2d4931d8516fec55c6fcc5ded3f6755202b7a9f3a6da72e9"
+      },
+      "native_replay": {
+        "path": "build/swat/review/transparent-door-access/motel-damaged-wedge-prefix-native-replay.log",
+        "sha256": "aae3d9f0873d2035f9e725f0e7e28377fc33546309a91dbc03ac973a97c8acf4"
+      }
+    },
+    {
+      "route": "motel-room-search",
+      "kind": "room",
+      "frames": 1237,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-room-search.sgrp.room.save",
+        "sha256": "f58dc77b502deae58c48be0237d5fed84cb0aa0909f68ffe272b15b1a62dc708"
+      },
+      "native_replay": {
+        "path": "build/swat/review/transparent-door-access/motel-room-search-room-prefix-native-replay.log",
+        "sha256": "e290ae59f4f974ad14462efa032dea0494b5e2f7110137eaff95ff83df8b04f0"
+      }
+    },
+    {
+      "route": "motel-room-search",
+      "kind": "wedge",
+      "frames": 23144,
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/motel-room-search.sgrp.wedge.save",
+        "sha256": "9a5d992819a1f5c7c1894ce1509f2c8db662e5b1f1e850a72d7ee3f3586fefe8"
+      },
+      "native_replay": {
+        "path": "build/swat/review/transparent-door-access/motel-room-search-wedge-prefix-native-replay.log",
+        "sha256": "5393e16516aaac63d8f0e67da27f6a7e91f6b1e20d20ea80bf7962d41e311632"
+      }
+    }
+  ],
+  "independent_player_journals_and_checkpoints_byte_identical": true,
+  "frontend_replay": [
+    {
+      "frames": 60,
+      "stdout": {
+        "path": "build/swat/review/transparent-door-access/input-journal-linux.log",
+        "sha256": "bcc79de299968ad4d927462f44c26ddd5fe4f30881b4003bd3b4340786e026af"
+      },
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/input-linux.trace.sgrp",
+        "sha256": "493dbce9a3666a2e612c5ac72598fa46f6b9821e97005fcb02bb93dbbfcfc52d"
+      }
+    },
+    {
+      "frames": 60,
+      "stdout": {
+        "path": "build/swat/review/transparent-door-access/input-journal-native.log",
+        "sha256": "7e2ea74bd1d9d2d1e01c53ceed447f27d00170e5b36112789cb5f7f66a3f5158"
+      },
+      "journal": {
+        "path": "build/swat/review/transparent-door-access/input-native.trace.sgrp",
+        "sha256": "493dbce9a3666a2e612c5ac72598fa46f6b9821e97005fcb02bb93dbbfcfc52d"
+      }
+    }
+  ],
+  "old_v37_rejection": {
+    "expected_version": 37,
+    "journal": {
+      "path": "build/swat/review/damaged-door-tasks/motel-room-search.sgrp",
+      "sha256": "27507c328a7a745e6fd5efc58f114c2680eb5d5167ab86f45708579763a42ec0"
+    },
+    "logs": [
+      {
+        "path": "build/swat/review/transparent-door-access/old-v37-linux.log",
+        "sha256": "867e62a34dcea707eccc43f56cade2b150fdde28fc128733f6a54d9c67c0c4aa"
+      },
+      {
+        "path": "build/swat/review/transparent-door-access/old-v37-native.log",
+        "sha256": "85e168a8279bbfacc90e496492ea299f031724a92ceb579c01dd0354c5697b42"
+      }
+    ]
+  },
+  "build": {
+    "linux": {
+      "path": "build/swat/review/transparent-door-access/release-linux.log",
+      "sha256": "03f2b69e4ce7f3ce947d268bf48501997de72f8c6c9c5d947fddafe6c79cb0c8"
+    },
+    "native": {
+      "path": "build/swat/review/transparent-door-access/release-native.log",
+      "sha256": "e64257c63747eded04f51fbaf25328946eb62b9a6d611d3905bed194b4d0b6ff"
+    },
+    "graphics_compile_only": {
+      "path": "build/swat/review/transparent-door-access/art-compile.log",
+      "sha256": "6d0d1cac2f5e60a5a867eecd19d36bb23d490f0d7bfc95e94bcc8ddeda3129e2"
+    }
+  },
+  "registration": {
+    "log": {
+      "path": "build/swat/review/transparent-door-access/registration.log",
+      "sha256": "8384a28eed5bbe8a38de224f8df4387b07ae9e6e14aecab651098206738e0e5c"
+    },
+    "cmake": {
+      "path": "build/swat/review/transparent-door-access/cmake-configure.log",
+      "sha256": "d60da1bab34a9bd60a6ff7310c8aba77c383b2fc5d98c8d8085f8bf5c0d45c44"
+    },
+    "ctest": {
+      "path": "build/swat/review/transparent-door-access/cmake-registration.json",
+      "sha256": "d9c3f42435bfe2c518df95e8007fa81ab46144eda5207a66d692362025caad78"
+    },
+    "generated_manifest": {
+      "path": "build/swat/review/transparent-door-access/cmake/CTestTestfile.cmake",
+      "sha256": "8c150983a4cb35c7f727fa35b94d901e52f5dc3bcbdf456e7b41ea88cdd75d71"
+    },
+    "argument_wiring": {
+      "path": "build/swat/review/transparent-door-access/ctest-wiring.log",
+      "sha256": "95e748a6adaf43712235c1ef01bb993df1e7cc74963714e3854fb7f66d29d769"
+    },
+    "make": {
+      "path": "build/swat/review/transparent-door-access/make-registration.log",
+      "sha256": "100340fbb4b271716f0348eeea53d409048600d6b0b148bf20dd7b29264086e0"
+    }
+  },
+  "coordination": {
+    "public_art_thread_check": {
+      "path": "build/swat/review/transparent-door-access/slack-check.json",
+      "sha256": "6a8bdf4ddf6a624e358b59b6ecbdb34e3ce9a0e44f6959b1034525f18300f578"
+    }
+  },
+  "inherited": {
+    "receipt": {
+      "path": "ocean/swat/tests/receipts/damaged-door-tasks-2026-10-18.json",
+      "sha256": "69999b550d9db9bb507afa61c91e5370cdac1b938f5d86690f520febcaaabc1f"
+    },
+    "audit": {
+      "path": "build/swat/review/transparent-door-access/inherited-seal-audit.log",
+      "sha256": "8c6ad34229c7977ba1d64c304bb661f450d4dadc217194aa04ef3b784be37baf"
+    },
+    "source_static_assets": [
+      {
+        "path": "ocean/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb",
+        "sha256": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298"
+      },
+      {
+        "path": "ocean/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb",
+        "sha256": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+      }
+    ],
+    "scope": "Earlier geometry, source assets and static-render evidence remain unchanged. New graphics/focus/performance acceptance is not inferred from headless results."
+  },
+  "installed": {
+    "executables": 42,
+    "unchanged_glbs": 4,
+    "files": 46,
+    "sha256": {
+      "build/swat/swat": "b516a343b540d8dd740c37a3ddeed565bcbcef8e8105faeb957e6030b313e2c8",
+      "build/swat/server": "3f0d9ff1aedbcbdd7c22ecb2465cfa5f087f9bce5fbb412106c9a0d68aa52677",
+      "build/swat/replay_tool": "505f37de4ac888aeb49ebcd71cf3ac9050175b77d07a2b1c0cc1a786b1052cd3",
+      "build/swat/performance_tool": "33a80096141d48987f6d65efd1136d654b8f155273a341bc4f5f65b9bf6294a6",
+      "build/swat/test_encounter": "74717e065f42ebc7c83c00fc7c4a495624d52ce55ac6c549c7738f28c819b4fa",
+      "build/swat/test_tactical": "ea6bceb542914f97f85eaf564066704bea50ec0ed939a87c4ffa44c9b141ba5d",
+      "build/swat/test_sim": "f9fddb857562cd8ef9896748eef2e9105bf2acff98ba68eb5da6fd4a02805ca4",
+      "build/swat/test_protocol": "6f7d677ee6d3d9f88b6d80e22d2c056fcb288d5232c436bdd349b8b49d345a99",
+      "build/swat/test_net": "7c5d7c3661cd9ef5b413665609e845f550726cf7deeed0cfaadb49bfc6cd2451",
+      "build/swat/test_motel_completion": "f3bea65976bb7bb175c50c36bf0fd8d7f2d3577ef4f8edcfe58f16b146290334",
+      "build/swat/test_navigation_search": "36aec91f38b97a40a9feb6f6e209d7e2488e83d2ee2b253d862a8b46fa6a2234",
+      "build/swat/test_motel": "ceb155a89a927ce7c9f1d604baee2d9a712d27681d7293e3e4cda88270184f64",
+      "build/swat/test_frontend": "89f974a029736509bbe161ded6f5bf426ad2ba33bb06f754555c8f92dba605d1",
+      "build/swat/test_frontend_input": "a4693be628ff29884907e17174538850a188deae1cf0d29dda1985733b3cbf79",
+      "build/swat/test_motel_roadside": "44d30f97a5d895dd3b6070e20290c11e19f3bd037eca51d6643d4a176b7b17c8",
+      "build/swat/test_motel_dumpster": "f7d5a1e4e819e6f6794ab13d827de986242c42ecf19d2ab55772021c74da27c6",
+      "build/swat/test_motel_roadside_art": "225f58fe34a55861aa4e8c3c9c6ac0ed1934a39d195448c031d8a94d7fce58ee",
+      "build/swat/test_motel_player_contacts": "5925ed724f8639dbb0f3470208de3f4efc68022451c9b50add599bc5bd60cf59",
+      "build/swat/test_locomotion": "c231627bd164567b7d837e77881781ea1be0307ddcbd6e1747d1156cbd575456",
+      "build/swat/test_foundation": "fa39db3ef8fc294077e7673be731ef6aadb17f6be2a6ff66bcef3070f19ecbb1",
+      "build/swat/test_scenarios": "ccc340b2655249bb8b9f826ee85fbad78093a8221e44e39353ecb7a73f7e20d8",
+      "build/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "build/swat/windows/swat.exe": "eea8500cfd96031de7e398fe3cce3746aef2822362838a000f2a500750a05875",
+      "build/swat/windows/swat-server.exe": "eab6f1adc6616623a1348eb0d3f2158f2a5e5ea0dd5b6b7125f45c1999207a68",
+      "build/swat/windows/replay_tool.exe": "7450deda83812affd41a1a72911151c547b2780d6b371e62bc812a80a7603939",
+      "build/swat/windows/performance_tool.exe": "78f4db82546f9c2988f4f2f2bf9335f017a241d84f64389f9139376402342231",
+      "build/swat/windows/test_encounter.exe": "3fb1920b72adbe9c94458f5f147396e64c1bd7588e937997fad926914823921a",
+      "build/swat/windows/test_tactical.exe": "69d776c0be78ee8dd9a80995d9de631c2405a52897ac409510dd5f310506cb77",
+      "build/swat/windows/test_sim.exe": "dd383c8b1d4cd9c68a0df9ba0e8b118ebe999c4b74085940325bb5119e7144d5",
+      "build/swat/windows/test_protocol.exe": "29140dd1381a6f39e46493add5520696211e5b45de5888832ef439162fb8cf27",
+      "build/swat/windows/test_net.exe": "73e5434a02c270d00328782e65274db48896a0b0f89578f0e7d970db1e8db003",
+      "build/swat/windows/test_motel_completion.exe": "8ee60924d87d0a7bbcf94d1728b6140138e24c325e78fc42de2ca764c3e1f116",
+      "build/swat/windows/test_navigation_search.exe": "6ff916e7545088eab65427c42311dc7df330156b60d4681ed1a3eed222db12f4",
+      "build/swat/windows/test_motel.exe": "fdd5245f42e838ce18513b3c7d66b4d391af97812f345994d39ff0edc9d15768",
+      "build/swat/windows/test_frontend.exe": "abff7e30620d661a3368942b8ba65ce14edc6b15779836fd270355de81d1d093",
+      "build/swat/windows/test_frontend_input.exe": "971fd7269956ee94c304e38d3e863549338cc18a9f58a4bf691a9907c7df97ce",
+      "build/swat/windows/test_motel_roadside.exe": "33431a07bbfa1cb92b123e8b65017c343332eb279dd92d41d8bf9044f9ab5345",
+      "build/swat/windows/test_motel_dumpster.exe": "21b5b62c5ead0b340bfeab06d8e8c7576bb12d4ecaffa72001958e50b3ba0fd1",
+      "build/swat/windows/test_motel_roadside_art.exe": "2d729126e4a6be4a6c8ce850b123d06dfeb679714b66ad9232bb3d6b783659ed",
+      "build/swat/windows/test_motel_player_contacts.exe": "ae154f8cba8bdbf3b32520f4836156cee3b067ac5ac74ad9aaac888dcba9cf13",
+      "build/swat/windows/test_locomotion.exe": "1e90acd372608d84802300e7a21e525d21c6ef18f755e145bd152aadfe6a6afd",
+      "build/swat/windows/test_foundation.exe": "7f498834ed1b9c4206aa475e28d82c7f7ad678ddc1a1de1a2a54f4eb66e8f2cd",
+      "build/swat/windows/test_scenarios.exe": "63c825ea4aabaa254e4d2b2f28c1ba8f5cf513d5a847f1f91bb56fae68813c6e",
+      "build/swat/windows/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/windows/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+    },
+    "log": {
+      "path": "build/swat/review/transparent-door-access/install.log",
+      "sha256": "63d2817418779c0022747bb652da48d59114758a1c62155135fda3ec338070fb"
+    },
+    "launcher": {
+      "path": "build/swat/review/transparent-door-access/installed-help.log",
+      "sha256": "e3eeedab547e7a57f3ce0d28eb5e77902c6e6aa56206bcb0331bf551a18d9f90"
+    }
+  },
+  "constraints": {
+    "no_python_execution": true,
+    "no_root_trainer_cuda_or_box3d_rebuild": true,
+    "no_graphics_windows_gpu_or_performance_runs": true,
+    "serialized_nice_10_cpu_commands": true,
+    "earlier_sealed_roots_unchanged": true
+  },
+  "remaining": [
+    "Initial equipment command targeting through transparent panes and further moving/occupied layouts require separate qualification.",
+    "Broader room/squad moving-threat coverage and equipment roles, remaining production art/audio/visible handling, policy baselines/held-out evaluation, vehicle panel stacks and suspension remain open.",
+    "Native visual/focus and stable-load frame-time acceptance remain held."
+  ]
+}

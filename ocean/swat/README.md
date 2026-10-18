@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v37 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v38 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1020,11 +1020,15 @@ supported standing/crouched positions, physical sight and a navigable approach;
 the ordinary hand ray still controls tool progress. Obstructed tasks display
 “Waiting for access” and retry without spending stock. Fragment searches run
 in bounded batches, and damage during work invalidates a missing workpoint.
-`make -C ocean/swat squad-damaged-equipment-test` covers 42 rotated, cut and
-occluded cases, including crouched access and human takeover. The
+`make -C ocean/swat squad-damaged-equipment-test` covers 60 rotated, cut and
+occluded cases, including crouched access, human takeover and clear glass. The
 `motel-damaged-equipment-test` target uses ordinary gunfire before queued wedge
 placement/removal in a complete motel mission, with replay and save/resume.
-These task rules and the replicated access status require protocol/replay v37,
+The tool planner uses a physical ray: seeing wood through an intact pane does
+not establish hand access. Eighteen clear-glass cases cover complete obstruction
+and resumption after breakage, partial panes and low gaps; bypass cases retain
+the glass without damage. Optical perception still sees through clear glass.
+These task rules and the replicated access status require protocol/replay v38,
 matching peers and fresh recordings/saves.
 
 **Search room** selects the room through the visible door or aimed room surface
@@ -1048,7 +1052,7 @@ over real motel UDP. Native transport uses the approved wrapper with
 `test_encounter.exe rooms-network`. `motel-room-search-test` adds a queued
 Room 101 search, checkpoint/restore and ordinary completion to the full quiet
 restraint/retrieval/equipment/escort route. The QA executable accepts `rooms`.
-Room identity/progress and door references use protocol/replay v37; use matching
+Room identity/progress and door references use protocol/replay v38; use matching
 peers and recreate older journals/saves.
 
 Parking stops retain their full mesh collision. NPC navigation treats them as
@@ -1611,7 +1615,7 @@ graphics check; pass an output directory and an asset root containing just the
 `motel_sedan` and `motel_shelter` exports. Its source/fallback silhouette,
 damage and lighting checks can run on an isolated software display. Software
 rendering does not establish native visual or performance acceptance.
-New motel journals/saves and matching v37 peers are required. The Windows build
+New motel journals/saves and matching v38 peers are required. The Windows build
 copies both complete original GLBs into its runtime asset tree.
 
 Ground snapping checks the actual feet hull and leaned capsule before moving
@@ -1621,7 +1625,7 @@ undoing physics separation at a wheel-stop lip. Upward stair handling retains
 the existing stair casts. Named door equipment orders retain the selected leaf's
 identity and canonical centre anchor. Pick/Wedge derive their actual workpoint
 from surviving material as described above. The contact and canonical-anchor
-fixes entered protocol/replay v36; current v37 records the expanded tool rules.
+fixes entered protocol/replay v36; current v38 records the expanded tool rules.
 `make -C ocean/swat motel-player-contacts-test` checks 180 crossing/blocked-approach
 trials across the five original concrete stops, four captured lip departures
 with actual goal arrival, encoded replicas and a recorded twelve-crossing route

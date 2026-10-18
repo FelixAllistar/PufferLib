@@ -1053,7 +1053,9 @@ static bool door_task_at(SwatSim* s,int i,b3Pos point,int door,b3Pos* goal,bool*
         if(!order_support_height(&s->world,&candidate,height) || !actor_lane_clear(s,i,candidate,candidate))continue;
         b3Pos eye=b3OffsetPos(candidate,swat_v(0,height-.2032f,0));b3Vec3 delta=b3SubPos(point,eye);float reach=b3Length(delta);
         if(reach>1.55f)continue;
-        SwatHit hit=swat_world_sight_ray(&s->world,eye,swat_normalize(delta),reach+.05f,a->controller.body.body);
+        // A tool needs physical access. Optical sight deliberately passes clear
+        // glass, which must still obstruct both the planned and actual hand ray.
+        SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(delta),reach+.05f,a->controller.body.body);
         if(hit.kind!=SWAT_HIT_WORLD || hit.index!=door)continue;
         float score=b3Distance(feet,candidate)+stance*.05f;
         if(score<best){
