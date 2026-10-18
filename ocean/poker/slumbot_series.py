@@ -20,6 +20,30 @@ from poker_audit import difference, estimate, fingerprint, parse_log
 ORDER = ("control", "candidate", "candidate", "control",
          "candidate", "control", "control", "candidate")
 SEMANTICS = "already_adjusted_hero_minus_slumbot_selfplay"
+FIRST_DIVERGENCE_SPEC = {
+    "version": "first_divergence_v1",
+    "baseline_rule": "bb_minraise_fold_else_river_all_check_call_v1",
+    "policy_rng_mode": "independent_hand_seeds_v1",
+    "hand_seed_derivation": "sha256_poker_policy_hand_seed_v1",
+    "hand_reservation_scheme": "game_blocks_with_overflow_v1",
+}
+ANALYSIS_SUPPORT = ("eval.py", "poker_audit.py", "slumbot_series.py", "audit_archived_series.py")
+
+
+def divergence_mode(manifest: dict) -> bool:
+    return manifest.get("primary_metric") == "first_divergence_gain_bb100"
+
+
+def check_analysis_sources(manifest: dict) -> None:
+    if not divergence_mode(manifest):
+        return
+    spec = manifest["first_divergence"]
+    if fingerprint(Path(spec["analyzer"])) != spec["analyzer_sha256"]:
+        raise ValueError("Frozen first-divergence analyzer source changed")
+    for name, expected in spec["support_sources_sha256"].items():
+        path = Path(manifest["runner"]) if name == "eval.py" else Path(__file__).with_name(name)
+        if fingerprint(path) != expected:
+            raise ValueError(f"Frozen analysis support source changed: {name}")
 
 
 def write_new(path: Path, value) -> None:
@@ -35,15 +59,17 @@ def freeze(args) -> dict:
     libraries = {"control": args.control.resolve(), "candidate": args.candidate.resolve()}
     hashes = {arm: fingerprint(path) for arm, path in libraries.items()}
     samples = {"control": args.control_samples, "candidate": args.candidate_samples}
+    analyzer = getattr(args, "first_divergence_analyzer", None)
     jobs = []
     for i, arm in enumerate(ORDER):
         job_id = f"{i:02d}_{arm}"
         jobs.append({"id": job_id, "arm": arm, "library": str(libraries[arm]),
-                     "library_sha256": hashes[arm], "seed": args.start_seed + i,
+                     "library_sha256": hashes[arm],
+                     "seed": args.start_seed + (i // 2 if analyzer else i),
                      "quota": args.hands_per_job, "games": args.games, "policy_id": 7,
                      "equity_samples": samples[arm],
                      "output": str(directory / f"{job_id}.jsonl")})
-    return {"schema": 1, "created_at_utc": datetime.now(timezone.utc).isoformat(),
+    manifest = {"schema": 1, "created_at_utc": datetime.now(timezone.utc).isoformat(),
             "runner": str(runner), "runner_sha256": fingerprint(runner),
             # Keep a venv executable's symlink spelling: resolving it would
             # invoke the system interpreter without that venv's dependencies.
@@ -54,6 +80,31 @@ def freeze(args) -> dict:
             "require_baseline_coverage": True,
             "stopping_rule": "Execute all eight fixed jobs in order, one at a time. Stop further jobs on any dirty, incomplete, mismatched or failed job. Preserve every attempt. No score-based stopping, substitutions, extensions, or favorable prefixes.",
             "analysis_rule": "Combine all clean complete jobs of each identical frozen arm; confirmatory eligibility requires every planned job. Raw independent-arm difference is primary, server-adjusted difference secondary. Do not pool earlier development or unrelated logs."}
+    if analyzer:
+        analyzer = analyzer.resolve()
+        manifest.update(schema=2, primary_metric="first_divergence_gain_bb100",
+                        secondary_metrics=["raw_gain_bb100", "already_adjusted_gain_bb100"])
+        manifest.pop("secondary_metric")
+        manifest["first_divergence"] = {
+            **FIRST_DIVERGENCE_SPEC, "analyzer": str(analyzer),
+            "analyzer_sha256": fingerprint(analyzer),
+            "support_sources_sha256": {name: fingerprint(
+                runner if name == "eval.py" else Path(__file__).with_name(name))
+                for name in ANALYSIS_SUPPORT},
+            "paired_jobs": [[jobs[i]["id"], jobs[i + 1]["id"]] for i in range(0, 8, 2)],
+        }
+        manifest["analysis_rule"] = (
+            "Execute all eight jobs with matched, independent per-hand policy seeds in each "
+            "adjacent control/candidate pair. Server deals are fresh, not duplicate deals. "
+            "The frozen first-divergence analyzer is primary: retain every hand in its arm's "
+            "denominator, assign zero before any policy divergence, otherwise subtract the "
+            "same fixed settlement baseline at the first action or policy-RNG divergence. "
+            "Raw and already-adjusted independent-arm differences are secondary. Require all "
+            "planned jobs, matching seed/seat coverage, complete revealed terminal cards, "
+            "exact prefix replay, and execution-bound log hashes. The estimator assumes the "
+            "same opponent law across paired jobs; interleaving does not prove this assumption. "
+            "Do not pool development hands, refit the baseline, or select favorable prefixes.")
+    return manifest
 
 
 def load_manifest(path: Path) -> dict:
@@ -61,13 +112,42 @@ def load_manifest(path: Path) -> dict:
     jobs = manifest["jobs"]
     if len(jobs) != 8 or tuple(job["arm"] for job in jobs) != ORDER:
         raise ValueError("Manifest must contain the frozen eight-job interleaved order")
-    if len({job["seed"] for job in jobs}) != 8 or len({job["output"] for job in jobs}) != 8:
-        raise ValueError("Every job needs a distinct seed and output")
+    if len({job["output"] for job in jobs}) != 8:
+        raise ValueError("Every job needs a distinct output")
     if len({job["id"] for job in jobs}) != 8:
         raise ValueError("Duplicate job IDs")
-    if manifest.get("primary_metric") != "raw_gain_bb100" or \
-            manifest.get("secondary_metric") != "already_adjusted_gain_bb100":
-        raise ValueError("Unexpected metric definition")
+    if divergence_mode(manifest):
+        if manifest.get("schema") != 2 or manifest.get("secondary_metrics") != [
+                "raw_gain_bb100", "already_adjusted_gain_bb100"] or "secondary_metric" in manifest:
+            raise ValueError("Unexpected first-divergence metric definition")
+        spec = manifest.get("first_divergence", {})
+        if any(spec.get(key) != value for key, value in FIRST_DIVERGENCE_SPEC.items()):
+            raise ValueError("Unexpected first-divergence estimator or seed definition")
+        if not isinstance(spec.get("analyzer"), str) or not spec["analyzer"]:
+            raise ValueError("Missing frozen first-divergence analyzer")
+        sha = spec.get("analyzer_sha256", "")
+        if not isinstance(sha, str) or len(sha) != 64 or any(c not in "0123456789abcdef" for c in sha):
+            raise ValueError("Invalid analyzer source hash")
+        support = spec.get("support_sources_sha256", {})
+        if not isinstance(support, dict) or set(support) != set(ANALYSIS_SUPPORT) or any(
+                not isinstance(value, str) or len(value) != 64 or
+                any(c not in "0123456789abcdef" for c in value) for value in support.values()):
+            raise ValueError("Invalid analysis support source hashes")
+        pairs = [[jobs[i]["id"], jobs[i + 1]["id"]] for i in range(0, 8, 2)]
+        if spec.get("paired_jobs") != pairs or len({job["seed"] for job in jobs}) != 4:
+            raise ValueError("First-divergence jobs require four distinct matched seed pairs")
+        for i in range(0, 8, 2):
+            if any(jobs[i][key] != jobs[i + 1][key] for key in ("seed", "quota", "games")):
+                raise ValueError("Paired jobs must match seed, quota, and game count")
+        if any(type(job["seed"]) is not int or job["seed"] < 0 for job in jobs):
+            raise ValueError("First-divergence master seeds must be nonnegative integers")
+    else:
+        if manifest.get("primary_metric") != "raw_gain_bb100" or \
+                manifest.get("secondary_metric") != "already_adjusted_gain_bb100" or \
+                "first_divergence" in manifest:
+            raise ValueError("Unexpected metric definition")
+        if len({job["seed"] for job in jobs}) != 8:
+            raise ValueError("Every ordinary raw-primary job needs a distinct seed")
     if manifest.get("baseline_winnings_semantics") != SEMANTICS:
         raise ValueError("Unverified baseline semantics")
     for arm in ("control", "candidate"):
@@ -81,6 +161,50 @@ def load_manifest(path: Path) -> dict:
         if job["quota"] < 2 or not 1 <= job["games"] <= 50:
             raise ValueError("Invalid quota or concurrency")
     return manifest
+
+
+def validate_hand_seeds(path: Path, job: dict) -> None:
+    """Cheap per-job gate before spending requests on the next planned job.
+
+    The primary analyzer independently replays native decisions. This gate
+    verifies only reservation coverage and the recorded RNG chain.
+    """
+    from eval import game_quotas, hand_reservation_index, independent_hand_seed
+    quotas = game_quotas(job["quota"], job["games"])
+    planned = {}
+    for game, quota in enumerate(quotas):
+        for attempt in range(quota):
+            index = hand_reservation_index(game, attempt, quotas)
+            planned[index] = {"game": game, "game_hand_attempt": attempt,
+                              "hand_reservation_index": index,
+                              "policy_seed_at_hand_start": independent_hand_seed(job["seed"], index)}
+    reserved, finished = set(), set()
+    with path.open() as handle:
+        for line in handle:
+            record = json.loads(line)
+            reservation = record.get("hand_reserved")
+            if reservation is not None:
+                index = reservation.get("hand_reservation_index")
+                if index not in planned or index in reserved or any(
+                        reservation.get(key) != value for key, value in planned[index].items()):
+                    raise ValueError("invalid or duplicate hand reservation")
+                reserved.add(index)
+            if "winnings_chips" not in record:
+                continue
+            index = record.get("hand_reservation_index")
+            if index not in reserved or index in finished or any(
+                    record.get(key) != value for key, value in planned[index].items()):
+                raise ValueError("terminal hand differs from its unique prior reservation")
+            rng = record["policy_seed_at_hand_start"]
+            for decision in record["decisions"]:
+                if decision.get("policy_rng_before") != rng:
+                    raise ValueError("decision RNG chain differs from reserved hand seed")
+                rng = decision["policy_rng_after"]
+            if record.get("policy_rng") != rng:
+                raise ValueError("terminal RNG differs from final decision")
+            finished.add(index)
+    if reserved != set(planned) or finished != reserved:
+        raise ValueError("reserved and terminal hands do not cover the fixed plan")
 
 
 def check_job(job: dict, manifest: dict) -> tuple[dict | None, list[str]]:
@@ -103,6 +227,11 @@ def check_job(job: dict, manifest: dict) -> tuple[dict | None, list[str]]:
                 "hands_requested": job["quota"], "concurrent_games": job["games"],
                 "opponent": "slumbot.com", "starting_bb": 200,
                 "baseline_winnings_semantics": SEMANTICS}
+    if divergence_mode(manifest):
+        from eval import game_quotas
+        expected.update({key: FIRST_DIVERGENCE_SPEC[key] for key in (
+            "policy_rng_mode", "hand_seed_derivation", "hand_reservation_scheme")})
+        expected.update(log_schema=4, hand_reservation_quotas=game_quotas(job["quota"], job["games"]))
     metadata = audit["metadata"]
     for key, value in expected.items():
         if metadata.get(key, 0 if key == "equity_samples" else None) != value:
@@ -115,6 +244,11 @@ def check_job(job: dict, manifest: dict) -> tuple[dict | None, list[str]]:
         errors.append("planned jobs must be single fresh runs, not resumed logs")
     if manifest.get("require_baseline_coverage", True) and not audit["server_baseline"]["complete_coverage"]:
         errors.append("incomplete server-baseline coverage")
+    if divergence_mode(manifest):
+        try:
+            validate_hand_seeds(path, job)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors.append(f"hand seed integrity: {exc}")
     return audit, errors
 
 
@@ -217,13 +351,18 @@ def analyze(path: Path) -> dict:
     complete = not blockers and all(len(arm["raw"]) == manifest["hands_per_arm"] for arm in arms.values())
     conclusion = "incomplete_not_confirmatory"
     if complete:
-        low, high = raw_difference["ci95_bb100"]
-        conclusion = "raw_improvement_supported" if low > 0 else "raw_deterioration_supported" if high < 0 else "raw_difference_unresolved"
+        if divergence_mode(manifest):
+            conclusion = "first_divergence_analysis_required"
+        else:
+            low, high = raw_difference["ci95_bb100"]
+            conclusion = "raw_improvement_supported" if low > 0 else "raw_deterioration_supported" if high < 0 else "raw_difference_unresolved"
     return {"schema": 1, "manifest": str(path.resolve()), "manifest_sha256": fingerprint(path),
             "all_planned_jobs_complete_and_eligible": complete, "conclusion": conclusion,
             "eligibility_blockers": blockers, "execution": execution, "jobs": reports, "arms": summaries,
             "primary_raw_difference": raw_difference, "secondary_adjusted_difference": adjusted_difference,
-            "interpretation": "Every planned job is required for confirmation. Any incomplete-series statistics describe all currently eligible complete jobs and are not a selected or confirmatory prefix. No developmental or dirty-job hands are pooled.",
+            "declared_primary_metric": manifest["primary_metric"],
+            "raw_difference_role": "secondary" if divergence_mode(manifest) else "primary",
+            "interpretation": "Every planned job is required for confirmation. Any incomplete-series statistics describe all currently eligible complete jobs and are not a selected or confirmatory prefix. No developmental or dirty-job hands are pooled. In first-divergence mode these raw/adjusted summaries are secondary; the separately frozen analyzer must compute the primary estimate and its additional eligibility gates.",
             "ci_method": "Approximate normal 95% CI of independent hand returns; identical frozen arm jobs pooled by hand, not by unweighted job means. Interleaving addresses timing balance but does not prove statistical independence."}
 
 
@@ -258,6 +397,7 @@ def run(path: Path) -> int:
                     raise ValueError("Manifest changed after launch")
                 if fingerprint(Path(manifest["runner"])) != manifest["runner_sha256"]:
                     raise ValueError("Frozen runner source changed")
+                check_analysis_sources(manifest)
                 if fingerprint(Path(job["library"])) != job["library_sha256"]:
                     raise ValueError(f"Frozen {job['arm']} library changed")
                 output = Path(job["output"])
@@ -266,6 +406,8 @@ def run(path: Path) -> int:
                            "--style", str(job["policy_id"]), "--equity-samples", str(job["equity_samples"]),
                            "--hands", str(job["quota"]), "--games", str(job["games"]),
                            "--seed", str(job["seed"]), "--output", str(output)]
+                if divergence_mode(manifest):
+                    command.append("--independent-hand-seeds")
                 if manifest.get("contact"):
                     command.extend(("--contact", manifest["contact"]))
                 process_log = output.with_suffix(".process.log")
@@ -282,6 +424,10 @@ def run(path: Path) -> int:
                     errors.append("library changed during job")
                 if fingerprint(Path(manifest["runner"])) != manifest["runner_sha256"]:
                     errors.append("runner source changed during job")
+                try:
+                    check_analysis_sources(manifest)
+                except (OSError, ValueError) as exc:
+                    errors.append(str(exc))
                 record({"job_finished": job["id"], "returncode": returncode, "errors": errors,
                         "log_sha256": fingerprint(output) if output.exists() else None})
                 if audit:
@@ -297,8 +443,10 @@ def run(path: Path) -> int:
     result = analyze(path)
     write_new(path.with_suffix(".analysis.json"), result)
     print(json.dumps({"complete": result["all_planned_jobs_complete_and_eligible"],
-                      "conclusion": result["conclusion"], "primary": result["primary_raw_difference"],
-                      "secondary": result["secondary_adjusted_difference"]}, indent=2), flush=True)
+                      "conclusion": result["conclusion"],
+                      "declared_primary_metric": manifest["primary_metric"],
+                      "raw": result["primary_raw_difference"],
+                      "already_adjusted": result["secondary_adjusted_difference"]}, indent=2), flush=True)
     return 0 if result["all_planned_jobs_complete_and_eligible"] else 2
 
 
@@ -317,6 +465,8 @@ def main(argv=None) -> int:
     create.add_argument("--start-seed", type=int, default=202610185000)
     create.add_argument("--control-samples", type=int, choices=(0, 32, 64, 128), default=0)
     create.add_argument("--candidate-samples", type=int, choices=(0, 32, 64, 128), default=0)
+    create.add_argument("--first-divergence-analyzer", type=Path,
+                        help="Freeze a first-divergence primary comparison with paired independent hand seeds")
     create.add_argument("--contact", default="https://github.com/FelixAllistar")
     launch = sub.add_parser("run", help="Launches LIVE Slumbot requests through the frozen eval.py")
     launch.add_argument("manifest", type=Path)

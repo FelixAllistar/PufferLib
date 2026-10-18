@@ -20,7 +20,8 @@ import sys
 from typing import Any
 
 STREETS = ("preflop", "flop", "turn", "river")
-IMMUTABLE = ("style", "equity_samples", "library_sha256", "opponent", "starting_bb")
+IMMUTABLE = ("style", "equity_samples", "library_sha256", "opponent", "starting_bb",
+             "policy_rng_mode", "hand_seed_derivation", "hand_reservation_scheme")
 TOKEN = re.compile(r"b\d+|[kcf/]")
 ACTION = {"f": "fold", "k": "check", "c": "call"}
 
@@ -177,6 +178,8 @@ def parse_log(path: Path, prefix_hands: int | None = None,
     last_line = 0
     total_decisions = 0
     hand_ids: set[int] = set()
+    reserved_ids: set[int] = set()
+    pending_reservations: set[int] = set()
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for line_no, raw in enumerate(handle, 1):
@@ -213,6 +216,12 @@ def parse_log(path: Path, prefix_hands: int | None = None,
             elif "winnings_chips" in record:
                 records_by_type["completed"] += 1
                 last_event_line = line_no
+                if metadata.get("policy_rng_mode") == "independent_hand_seeds_v1":
+                    index = record.get("hand_reservation_index")
+                    if index not in pending_reservations:
+                        integrity_errors.append(f"line {line_no}: terminal hand lacks a unique pending reservation")
+                    else:
+                        pending_reservations.remove(index)
                 if "hand" in record:
                     ident = record["hand"]
                     if ident in hand_ids:
@@ -272,10 +281,28 @@ def parse_log(path: Path, prefix_hands: int | None = None,
                 if first_interrupted_after is None:
                     first_interrupted_after = len(all_values)
                 event = record["interrupted"]
+                if metadata.get("policy_rng_mode") == "independent_hand_seeds_v1":
+                    index = event.get("hand_reservation_index")
+                    if index not in pending_reservations:
+                        integrity_errors.append(f"line {line_no}: interrupted hand lacks a pending reservation")
+                    else:
+                        pending_reservations.remove(index)
                 interrupted.append({"line": line_no, "completed_before": len(all_values),
                                     "game": event.get("game"), "stage": event.get("stage"),
                                     "type": event.get("type"), "status": event.get("status"),
                                     "decision_count": len(event.get("decisions", []))})
+            elif "hand_reserved" in record:
+                records_by_type["hand_reserved"] += 1
+                last_event_line = line_no
+                reservation = record["hand_reserved"]
+                index = reservation.get("hand_reservation_index") if isinstance(reservation, dict) else None
+                if metadata.get("log_schema") != 4 or metadata.get("policy_rng_mode") != "independent_hand_seeds_v1":
+                    integrity_errors.append(f"line {line_no}: hand reservation without schema-4 seed mode")
+                elif type(index) is not int or index < 0 or index in reserved_ids:
+                    integrity_errors.append(f"line {line_no}: invalid or duplicate hand reservation")
+                else:
+                    reserved_ids.add(index)
+                    pending_reservations.add(index)
             elif "backoff" in record:
                 records_by_type["backoff"] += 1
                 last_event_line = line_no
@@ -287,7 +314,7 @@ def parse_log(path: Path, prefix_hands: int | None = None,
     if not metadata:
         integrity_errors.append("missing initial metadata")
     summary_terminal = final_summary is not None and last_summary_line > last_event_line
-    pending_unknown = not summary_terminal or bool(unknown_prior_segments)
+    pending_unknown = not summary_terminal or bool(unknown_prior_segments) or bool(pending_reservations)
     if parse_errors:
         pending_unknown = True
     if summary_terminal:

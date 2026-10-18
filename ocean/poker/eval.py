@@ -11,6 +11,44 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 RANKS, SUITS = "23456789TJQKA", "cdhs"
+HAND_SEED_MODE = "independent_hand_seeds_v1"
+HAND_SEED_DERIVATION = "sha256_poker_policy_hand_seed_v1"
+HAND_RESERVATION_SCHEME = "game_blocks_with_overflow_v1"
+
+
+def game_quotas(hands, games):
+    """Preserve complete alternating-seat pairs within each API game."""
+    pairs, odd = divmod(hands, 2)
+    return [2 * (pairs // games + (game < pairs % games))
+            + (odd if game == 0 else 0) for game in range(games)]
+
+
+def hand_reservation_index(game, attempt, quotas):
+    """Assign from a fixed game block, never from completion order.
+
+    Clean runs cover [0, sum(quotas)). A failed attempt consumes its index;
+    replacement attempts use deterministic, disjoint overflow sequences.
+    Such a run remains incomplete for confirmation because it has an
+    interrupted hand, even when replacement hands reach the requested quota.
+    """
+    if not 0 <= game < len(quotas) or attempt < 0:
+        raise ValueError("Invalid game or hand attempt")
+    if attempt < quotas[game]:
+        return sum(quotas[:game]) + attempt
+    return sum(quotas) + game + len(quotas) * (attempt - quotas[game])
+
+
+def independent_hand_seed(eval_seed, reservation_index):
+    """SHA256 ASCII domain:seed:index, first 8 bytes big-endian; zero -> 1.
+
+    Seeds depend only on the frozen evaluation seed and the hand reservation.
+    The reservation is assigned before new_hand, before cards are observed.
+    Neither game scheduling nor earlier policy RNG consumption enters it.
+    """
+    if reservation_index < 0:
+        raise ValueError("A hand reservation index must be nonnegative")
+    key = f"poker-policy-hand-seed-v1:{eval_seed}:{reservation_index}".encode("ascii")
+    return int.from_bytes(hashlib.sha256(key).digest()[:8], "big") or 1
 
 
 def card(text):
@@ -130,6 +168,10 @@ def slumbot(args):
     from threading import Event
 
     assert 1 <= args.games <= 50 and args.hands > 0 and args.request_delay >= 0
+    independent_seeds = getattr(args, "independent_hand_seeds", False)
+    if independent_seeds and args.resume:
+        raise ValueError("--independent-hand-seeds does not support --resume; "
+                         "start a fresh, fully planned evaluation")
     binary = Path(args.library) if args.library else ROOT / "build/poker/libpoker2.so"
     samples = getattr(args, "equity_samples", 0)
     if not Native(library=binary, samples=samples).styles & (1 << args.style):
@@ -157,6 +199,8 @@ def slumbot(args):
             raise ValueError("Cannot resume a log without a drained final summary; "
                              "pending outcomes are unknown. Start a new output log.")
         original = records[0]["metadata"]
+        if original.get("policy_rng_mode") == HAND_SEED_MODE:
+            raise ValueError("Cannot resume a log created with independent hand seeds")
         assert all(original[k] == metadata[k] for k in ("style", "library_sha256"))
         assert original.get("equity_samples", 0) == samples
         hands = [r for r in records if "winnings_chips" in r]
@@ -167,6 +211,12 @@ def slumbot(args):
         rngs = {r.get("game", 0): r["policy_rng"] for r in hands if "policy_rng" in r}
     initial = len(results)
     assert initial <= args.hands
+    quotas = game_quotas(args.hands - initial, args.games)
+    if independent_seeds:
+        metadata.update(log_schema=4, policy_rng_mode=HAND_SEED_MODE,
+            hand_seed_derivation=HAND_SEED_DERIVATION,
+            hand_reservation_scheme=HAND_RESERVATION_SCHEME,
+            hand_reservation_quotas=quotas)
     started = time.monotonic()
     events, stop = Queue(), Event()
 
@@ -178,6 +228,7 @@ def slumbot(args):
             native.rng.value = rngs[game]
         token, failure = None, None
         completed = failures = 0
+        hand_attempt = 0
 
         def backoff(response, attempt):
             delay = min(60, 2 ** attempt)
@@ -209,6 +260,15 @@ def slumbot(args):
         try:
             while completed < quota and not stop.is_set():
                 decisions, observed = [], {}
+                if independent_seeds:
+                    reservation = hand_reservation_index(game, hand_attempt, quotas)
+                    start_seed = independent_hand_seed(args.seed, reservation)
+                    observed.update(game_hand_attempt=hand_attempt,
+                        hand_reservation_index=reservation,
+                        policy_seed_at_hand_start=start_seed)
+                    native.rng.value = start_seed
+                    events.put(("hand_reserved", {"game": game, **observed}))
+                    hand_attempt += 1
                 try:
                     stage = "new_hand"
                     data = post("new_hand", {"token": token} if token else {})
@@ -340,12 +400,9 @@ def slumbot(args):
         with output.open("a" if args.resume else "x") as log:
             log.write(json.dumps({"resumed" if args.resume else "metadata": metadata}) + "\n")
             log.flush()
-            pairs, odd = divmod(args.hands - initial, 2)
             with ThreadPoolExecutor(max_workers=args.games) as pool:
                 jobs = {}
-                for game in range(args.games):
-                    quota = 2 * (pairs // args.games + (game < pairs % args.games))
-                    quota += odd if game == 0 else 0
+                for game, quota in enumerate(quotas):
                     if quota:
                         jobs[pool.submit(play, game, quota)] = game
                 active = len(jobs)
@@ -403,6 +460,10 @@ if __name__ == "__main__":
     parser.add_argument("--library")
     parser.add_argument("--request-delay", type=float, default=0)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--independent-hand-seeds", action="store_true",
+                        help="Reset policy RNG before each reserved hand using the "
+                             "evaluation seed and fixed per-game reservation blocks; "
+                             "independent of cards and completion order; no resume")
     parser.add_argument("--games", type=int, default=1)
     parser.add_argument("--contact")
     parser.add_argument("--progress")

@@ -6,6 +6,14 @@
 // the existing policy. One fixed raise size makes the re-raise tree a chain:
 // fold/call end the hand, while only a re-raise produces another hero decision.
 // All hero decisions aggregate hidden holdings before maximizing their values.
+// The river has finite two-card ranges: exact integration is an optional mode.
+// This changes numerical integration only, not the uncalibrated response model.
+#ifndef POKER_RIVER_EXACT
+#define POKER_RIVER_EXACT 0
+#endif
+#define POKER_RIVER_OPPONENTS (POKER_RIVER_EXACT ? 990 : 128)
+#define POKER_RIVER_REFERENCES (POKER_RIVER_EXACT ? 1081 : 128)
+
 #ifndef POKER_RIVER_DEPTH
 #define POKER_RIVER_DEPTH 16
 #endif
@@ -18,10 +26,10 @@ typedef struct PokerRiverModel {
     Poker* game;
     int table, hero, opponent, samples;
     uint32_t initial_stack[2], initial_pot;
-    int8_t outcome[128];
+    int8_t outcome[POKER_RIVER_OPPONENTS];
     // Opponent equity versus hypothetical hero holdings after a passive action
     // or a raise. Those reference holdings use only the board and public line.
-    double opponent_equity[2][128];
+    double opponent_equity[2][POKER_RIVER_OPPONENTS];
     int32_t root_action;
     double root_passive_value, root_raise_value, root_value;
 } PokerRiverModel;
@@ -92,7 +100,7 @@ static double poker_river_opponent_value(PokerRiverModel* ctx,
     uint32_t call = poker_river_call(m, 1);
     PokerRiverMoney called = poker_river_pay(*m, 1, 0);
     int32_t raise = poker_river_raise(m, 1);
-    double raised_weights[128], raised_mass = 0, value = 0;
+    double raised_weights[POKER_RIVER_OPPONENTS], raised_mass = 0, value = 0;
     double payoff[3];
     for (int outcome = -1; outcome <= 1; outcome++)
         payoff[outcome + 1] = poker_river_showdown(ctx, &called, outcome);
@@ -159,6 +167,7 @@ static double poker_river_hero_value(PokerRiverModel* ctx,
     return best;
 }
 
+#if !POKER_RIVER_EXACT
 static void poker_river_pair(uint64_t* rng, const uint8_t* pool, int available,
     uint8_t* first, uint8_t* second) {
     unsigned x, limit = UINT32_MAX - UINT32_MAX % available;
@@ -171,6 +180,8 @@ static void poker_river_pair(uint64_t* rng, const uint8_t* pool, int available,
     *first = pool[a]; *second = pool[b];
 }
 
+#endif
+
 static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
     const PokerProfile* profiles, int32_t* action, PokerRiverModel* diagnostics) {
     int h = g->actor[t];
@@ -182,7 +193,10 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
     for (int p = 0; p < POKER_PLAYERS; p++)
         if (p != h && p != o && g->total[p][t] > prior) return 0;
     assert(samples > 0 && samples <= 128);
-    PokerRiverModel ctx = {.game=g, .table=t, .hero=h, .opponent=o, .samples=samples,
+    int reference_samples = POKER_RIVER_EXACT ? 1081 : samples;
+    int opponent_samples = POKER_RIVER_EXACT ? 990 : samples;
+    (void)rng;
+    PokerRiverModel ctx = {.game=g, .table=t, .hero=h, .opponent=o, .samples=opponent_samples,
         .initial_stack={g->stack[h][t],g->stack[o][t]}, .initial_pot=g->pot[t]};
     PokerRiverMoney money = {.pot=g->pot[t], .high=g->high[t], .increment=g->increment[t],
         .bet={g->bet[h][t],g->bet[o][t]}, .stack={g->stack[h][t],g->stack[o][t]},
@@ -211,12 +225,20 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
     unsigned passive_kind = money.high > money.bet[0] ? 2 : 1;
     unsigned old_kind = g->line[h][t] >> 6;
     if (passive_kind < old_kind) passive_kind = old_kind;
-    uint64_t reference_mask[128];
-    uint32_t reference_rank[128];
-    uint8_t reference_cards[128][2];
-    double reference_weight[2][128];
-    for (int j = 0; j < samples; j++) {
+    uint64_t reference_mask[POKER_RIVER_REFERENCES];
+    uint32_t reference_rank[POKER_RIVER_REFERENCES];
+    uint8_t reference_cards[POKER_RIVER_REFERENCES][2];
+    double reference_weight[2][POKER_RIVER_REFERENCES];
+#if POKER_RIVER_EXACT
+    int reference_a = 0, reference_b = 1;
+#endif
+    for (int j = 0; j < reference_samples; j++) {
+#if POKER_RIVER_EXACT
+        cards[0] = board_pool[reference_a]; cards[1] = board_pool[reference_b];
+        if (++reference_b == board_count) reference_b = ++reference_a + 1;
+#else
         poker_river_pair(rng, board_pool, board_count, &cards[0], &cards[1]);
+#endif
         reference_mask[j] = (UINT64_C(1) << cards[0]) | (UINT64_C(1) << cards[1]);
         reference_cards[j][0] = cards[0]; reference_cards[j][1] = cards[1];
         reference_rank[j] = poker_rank(cards, 7);
@@ -235,10 +257,11 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
     }
     // Rank CDF answers each showdown-equity query in logarithmic time. Lists
     // of reference hands containing each card remove the opponent's blockers.
-    // This is the same weighted reference sample, not a different estimator.
-    int order[128], head[52], next[256];
+    // Exact mode integrates the complete reference range; sampled mode uses
+    // the same weighted draws as the previous estimator.
+    int order[POKER_RIVER_REFERENCES], head[52], next[2 * POKER_RIVER_REFERENCES];
     for (int c = 0; c < 52; c++) head[c] = -1;
-    for (int j = 0; j < samples; j++) {
+    for (int j = 0; j < reference_samples; j++) {
         int at = j;
         while (at && reference_rank[order[at - 1]] > reference_rank[j]) {
             order[at] = order[at - 1]; at--;
@@ -249,12 +272,20 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
             next[node] = head[c]; head[c] = node;
         }
     }
-    double prefix[2][129] = {{0}};
-    for (int j = 0; j < samples; j++) for (int k = 0; k < 2; k++)
+    double prefix[2][POKER_RIVER_REFERENCES + 1] = {{0}};
+    for (int j = 0; j < reference_samples; j++) for (int k = 0; k < 2; k++)
         prefix[k][j + 1] = prefix[k][j] + reference_weight[k][order[j]];
-    double weights[128];
-    for (int i = 0; i < samples; i++) {
+    double weights[POKER_RIVER_OPPONENTS];
+#if POKER_RIVER_EXACT
+    int opponent_a = 0, opponent_b = 1;
+#endif
+    for (int i = 0; i < opponent_samples; i++) {
+#if POKER_RIVER_EXACT
+        cards[0] = opponent_pool[opponent_a]; cards[1] = opponent_pool[opponent_b];
+        if (++opponent_b == opponent_count) opponent_b = ++opponent_a + 1;
+#else
         poker_river_pair(rng, opponent_pool, opponent_count, &cards[0], &cards[1]);
+#endif
         uint32_t rank = poker_rank(cards, 7);
         ctx.outcome[i] = (hero_rank > rank) - (hero_rank < rank);
         public_view.line[o][0] = g->line[o][t] & 63u;
@@ -267,13 +298,13 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
             if ((cards[b + 2] >> 2) > board_hi) board_hi = cards[b + 2] >> 2;
         weights[i] = prior_weight * poker_range_rank_likelihood(rank, cards[0] >> 2,
             cards[1] >> 2, board_hi, 0, g->line[o][t] >> 6, aggression);
-        int low = 0, high = samples;
+        int low = 0, high = reference_samples;
         while (low < high) {
             int mid = (low + high) / 2;
             if (reference_rank[order[mid]] < rank) low = mid + 1;
             else high = mid;
         }
-        int below = low; high = samples;
+        int below = low; high = reference_samples;
         while (low < high) {
             int mid = (low + high) / 2;
             if (reference_rank[order[mid]] <= rank) low = mid + 1;
@@ -293,7 +324,7 @@ static int poker_river_action_value(Poker* g, int t, uint64_t* rng, int samples,
             }
         }
         for (int k = 0; k < 2; k++) {
-            double mass = prefix[k][samples] - blocked_mass[k];
+            double mass = prefix[k][reference_samples] - blocked_mass[k];
             double share = prefix[k][below] + .5 * (prefix[k][tied] - prefix[k][below]) - blocked_share[k];
             double q = mass > 0 ? share / mass : .5;
             ctx.opponent_equity[k][i] = q < 0 ? 0 : q > 1 ? 1 : q;

@@ -4,7 +4,8 @@
 The original manifest and execution JSONL stay byte-for-byte unchanged. Only
 log lookup is relocated beneath --report-root; recorded SHA256 values bind
 the manifest to its execution and each included log to its completed job.
-This program does not import eval.py, load a bot library, or make requests.
+This program does not load a bot library or make requests. In schema-4 seed
+mode it imports only the evaluator's pure reservation/seed functions.
 """
 from __future__ import annotations
 
@@ -118,9 +119,13 @@ def analyze_archive(manifest_path: Path, report_root: Path,
         adjusted = difference(summaries["candidate"]["adjusted"], summaries["control"]["adjusted"])
     complete = not blockers and all(len(arm["raw"]) == manifest["hands_per_arm"] for arm in arms.values())
     conclusion = "incomplete_not_confirmatory"
+    first_divergence = manifest.get("primary_metric") == "first_divergence_gain_bb100"
     if complete:
-        low, high = raw["ci95_bb100"]
-        conclusion = "raw_improvement_supported" if low > 0 else "raw_deterioration_supported" if high < 0 else "raw_difference_unresolved"
+        if first_divergence:
+            conclusion = "first_divergence_analysis_required"
+        else:
+            low, high = raw["ci95_bb100"]
+            conclusion = "raw_improvement_supported" if low > 0 else "raw_deterioration_supported" if high < 0 else "raw_difference_unresolved"
     if fingerprint(manifest_path) != manifest_hash or \
             (execution_path.exists() and fingerprint(execution_path) != execution.get("sha256")):
         raise ValueError("Manifest or execution record changed during analysis")
@@ -129,8 +134,10 @@ def analyze_archive(manifest_path: Path, report_root: Path,
             "all_planned_jobs_complete_and_eligible": complete, "conclusion": conclusion,
             "execution": execution, "eligibility_blockers": blockers, "jobs": reports, "arms": summaries,
             "primary_raw_difference": raw, "secondary_adjusted_difference": adjusted,
+            "declared_primary_metric": manifest["primary_metric"],
+            "raw_difference_role": "secondary" if first_divergence else "primary",
             "interpretation": "Only report-relative log lookup was relocated. The original manifest and execution bytes were not modified. Every included log must match completed-job SHA256 provenance. All planned jobs are required for confirmation; incomplete-series statistics are descriptive, never a favorable prefix.",
-            "ci_method": "Approximate normal 95% interval of independent hand returns, pooling identical frozen arms by hand. Raw gain is primary; the already-adjusted server field is secondary and is not subtracted again."}
+            "ci_method": "Approximate normal 95% interval of independent hand returns, pooling identical frozen arms by hand. In first-divergence mode both these raw and already-adjusted summaries are secondary and the separate frozen analyzer is required for the primary estimate. Otherwise raw gain is primary. The already-adjusted server field is not subtracted again."}
 
 
 def main() -> int:

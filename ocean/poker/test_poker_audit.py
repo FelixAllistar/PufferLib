@@ -128,6 +128,29 @@ class AuditTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             compare_blocks(a, b)
 
+    def test_seed_reservations_require_unique_terminal_resolution(self):
+        path = self.write("reserved", [-1, 1])
+        records = [json.loads(line) for line in path.read_text().splitlines()]
+        records[0]["metadata"].update(log_schema=4, policy_rng_mode="independent_hand_seeds_v1")
+        events = [records[0]]
+        for index, record in enumerate(records[1:-1]):
+            record["hand_reservation_index"] = index
+            events.extend([{"hand_reserved": {"hand_reservation_index": index}}, record])
+        events.append(records[-1])
+        save = lambda rows: path.write_text("\n".join(json.dumps(row) for row in rows) + "\n")
+        save(events)
+        self.assertTrue(parse_log(path)["window"]["clean"])
+        # A claimed drained summary cannot erase a reservation with no outcome.
+        save(events[:-1] + [{"hand_reserved": {"hand_reservation_index": 2}}, events[-1]])
+        audit = parse_log(path)
+        self.assertFalse(audit["window"]["clean"])
+        self.assertTrue(audit["window"]["pending_outcomes_unknown"])
+        # Nor can a duplicate terminal record resolve the same index twice.
+        duplicate = json.loads(json.dumps(events))
+        duplicate[4]["hand_reservation_index"] = 0
+        save(duplicate)
+        self.assertFalse(parse_log(path)["window"]["clean"])
+
 
 if __name__ == "__main__":
     unittest.main()
