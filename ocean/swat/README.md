@@ -971,6 +971,18 @@ The order does not search unseen rooms or collect other nearby weapons.
 `make -C ocean/swat motel-squad-search-test` adds actual squad retrieval of both
 weapons to the complete restraint/escort route, including a checkpoint with a
 queued weapon target. The equivalent QA executable accepts optional `search`.
+Squad selections retain their team and queue choice until input is submitted.
+Each selection sends one pulse; a neutral tick lets a repeated Restrain or Secure
+weapon request name a new target. A rejected target consumes its selection, so
+looking elsewhere later does not issue the old order. The leader can select it
+again to retry. Render-only frames and failed network enqueue retain unsent input.
+`make -C ocean/swat frontend-input-test` checks this without a window, using the
+production input module, physical simulation and real UDP acknowledgements. The
+native equivalent is `test_frontend_input.exe`; run its network mode through
+`bash ocean/swat/run-windows-network-test.sh build/swat/windows/test_frontend_input.exe network`.
+That wrapper uses the existing approved network-test path temporarily and restores
+its ordinary QA executable afterward. These checks stub OS input; live native
+menu/focus interaction remains a separate visual check.
 Officers with no visible threat turn toward a received gunshot's coarse bearing
 for up to 90 ticks. The cue reveals no shooter identity or hidden position.
 Formation movement continues while looking; restraint and weapon retrieval

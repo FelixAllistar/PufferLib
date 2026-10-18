@@ -296,6 +296,7 @@ int main(int argc, char** argv) {
             app.notice_seconds=4; app.resume_requested=false;
         }
         if(app.scenario_requested) {
+            swat_frontend_cancel_squad(&app);
             if(app.leader) {
                 if(server.transport) swat_server_scenario(&server,&app.scenario);
                 else if(client.transport) swat_client_scenario(&client,&app.scenario);
@@ -304,6 +305,7 @@ int main(int argc, char** argv) {
             app.scenario_requested=false; app.reset_input=true;
         }
         if(app.restart_requested) {
+            swat_frontend_cancel_squad(&app);
             if(server.transport) swat_server_restart(&server);
             else if(client.transport) swat_client_restart(&client);
             else { env.sim->config=solo_config; puf_reset(&env); terminal=1; }
@@ -326,8 +328,11 @@ int main(int argc, char** argv) {
                 look_x=look_y=0;
             }
             for(int t=0;t<ticks;t++) {
-                if(server.transport) swat_server_tick(&server,&input);
-                else if(client.status==SWAT_NET_ACTIVE) swat_client_input(&client,&input);
+                bool submitted=false;
+                if(server.transport) {swat_server_tick(&server,&input);submitted=true;}
+                else if(client.transport) {
+                    if(client.status==SWAT_NET_ACTIVE)submitted=swat_client_input(&client,&input);
+                }
                 else if(policy) {
                     policy_action(policy,obs,actions,terminal,deterministic);
                     puf_step(&env);
@@ -337,10 +342,12 @@ int main(int argc, char** argv) {
                         if(!swat_replay_record(&recording,record_path,env.sim)) fprintf(stderr,"Cannot start replay recording: %s\n",record_path);
                     }
                     int before_tick=env.sim->tick; swat_sim_step(env.sim,&input);
+                    submitted=env.sim->tick!=before_tick;
                     if(recording.file && env.sim->tick!=before_tick && !swat_replay_append(&recording,&input,env.sim)) {
                         fprintf(stderr,"Replay recording stopped after %u frames\n",recording.count); swat_replay_close(&recording);
                     }
                 }
+                if(submitted)swat_frontend_input_submitted(&app,&input);
                 accumulator-=SWAT_DT;
             }
         }

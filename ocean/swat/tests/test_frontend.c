@@ -39,12 +39,13 @@ static void event(unsigned int type, int a, int b) {
 
 static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
     swat_frontend_update(app,sim,false);
-    if(app->restart_requested) { swat_sim_reset(sim); app->restart_requested=false; }
-    if(app->scenario_requested) { sim->config=app->scenario; swat_sim_reset(sim); app->scenario_requested=false; }
+    if(app->restart_requested) { swat_frontend_cancel_squad(app); swat_sim_reset(sim); app->restart_requested=false; }
+    if(app->scenario_requested) { swat_frontend_cancel_squad(app); sim->config=app->scenario; swat_sim_reset(sim); app->scenario_requested=false; }
     app->reset_input=false;
     if(swat_frontend_playing(app)) {
         SwatInput in=swat_frontend_input(app,sim);
         swat_sim_step(sim,&in);
+        swat_frontend_input_submitted(app,&in);
     }
     swat_sound_view_update(&test_sound,sim,app->actor,app->settings.master_volume,0,0);
     view->actor=app->actor; view->planning=app->screen==SWAT_SCREEN_PLAN;

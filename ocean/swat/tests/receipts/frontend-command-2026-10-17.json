@@ -1,0 +1,267 @@
+{
+  "created_utc": "2026-10-18T02:36:10.581Z",
+  "baseline_commit": "9b17de181",
+  "previous_goal_turn": {
+    "classification": "progress",
+    "evidence": "Committed squad gunshot attention, installed matched v32 tools, and verified three complete approaches in 9b17de181."
+  },
+  "protocol": 32,
+  "evidence_root": "build/swat/review/frontend-command/",
+  "scope": "Frontend squad command selection/submission across render and fixed ticks, real UDP acknowledgements, input-journal compatibility, and approved-path QA restoration. The full vertical-slice goal remains active.",
+  "baseline_failure": {
+    "exit_code": 134,
+    "behavior": "At simulation tick 0, an already active Hold order cleared a new Hold selection while collecting the first render frame. The next render frame returned no order despite no tick or network submission.",
+    "source": {
+      "path": "build/swat/review/frontend-command/baseline.c",
+      "sha256": "c062cb70dcfa99db4f4dff9826bf537c5f7d4cd6c762515bebdf91c034e96937"
+    },
+    "stdout": {
+      "path": "build/swat/review/frontend-command/baseline.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "path": "build/swat/review/frontend-command/baseline.stderr.log",
+      "sha256": "5835285bb14c3093bdb3d3e84de2b77566cad4a3dacb257244fcf4edee22a26e"
+    }
+  },
+  "changes": [
+    "Input collection and command handoff live in frontend_input.c, used by both the player and window-free tests. Drawing remains in frontend.c.",
+    "Selection captures team/queue intent. Only a real local tick or successful reliable enqueue consumes the selection and clears its order pulse from the rest of that frame.",
+    "A neutral submitted tick rearms immediately repeated commands; rejected targets consume their selection, and newer unsent intent survives older handoffs.",
+    "Scope/capture gating and failed/offline/full-acknowledgement-queue sends preserve unsent intent. Restore/episode/session/restart/scenario transitions cancel stale requests. Nonleaders receive a notice.",
+    "The application retains failed clients in the remote dispatch branch rather than stepping their read-only replica locally. Input recording precedes command consumption.",
+    "Frontend UDP checks temporarily use the existing approved test_net.exe path under its lock, then restore the original QA executable."
+  ],
+  "checks": {
+    "linux": {
+      "input_cases": 8,
+      "stdout": {
+        "path": "build/swat/review/frontend-command/input-linux.log",
+        "sha256": "0a13959946434050f81954b2090bd81d5556fb556a5d7de71950ad5c5def6ea9"
+      },
+      "stderr": {
+        "path": "build/swat/review/frontend-command/input-linux.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "udp_scenarios": 1,
+      "udp_stdout": {
+        "path": "build/swat/review/frontend-command/network-linux.log",
+        "sha256": "836a15d5f3f7d141b7c91842b0c4f4ca477d95529a9eb497e95fd6fc81ca83a8"
+      },
+      "udp_stderr": {
+        "path": "build/swat/review/frontend-command/network-linux.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "acknowledgements": [
+        "FRONTEND_ACK first 1 release 2 target2 team1 queued1",
+        "FRONTEND_ACK second 7 release 8 target3 team1 queued1"
+      ],
+      "journal": {
+        "path": "build/swat/review/frontend-command/input-linux.trace.sgrp",
+        "sha256": "39a9cf9ffe34d303749f0fdff5211d609055eb8028cca8ac0f159ad86ad8b1d3",
+        "frames": 60,
+        "shipping_tool_replay": {
+          "path": "build/swat/review/frontend-command/journal-linux-replay.log",
+          "sha256": "bcc79de299968ad4d927462f44c26ddd5fe4f30881b4003bd3b4340786e026af"
+        }
+      }
+    },
+    "native": {
+      "input_cases": 8,
+      "stdout": {
+        "path": "build/swat/review/frontend-command/input-native.log",
+        "sha256": "0753e3b77e13cd6889b91c44bb77bc180c322ddd26f301cd70dea160b000c3c5"
+      },
+      "stderr": {
+        "path": "build/swat/review/frontend-command/input-native.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "udp_scenarios": 1,
+      "udp_stdout": {
+        "path": "build/swat/review/frontend-command/network-native.log",
+        "sha256": "5ce4d810d66974ebf9acb56b996d12d425ce935967b1ac934a109ab5586b6083"
+      },
+      "udp_stderr": {
+        "path": "build/swat/review/frontend-command/network-native.stderr.log",
+        "sha256": "e967eb58bf96f5a2993290346700f67096c2941dd65ed734b59d4c53d110badd"
+      },
+      "acknowledgements": [
+        "FRONTEND_ACK first 1 release 2 target2 team1 queued1",
+        "FRONTEND_ACK second 7 release 8 target3 team1 queued1"
+      ],
+      "journal": {
+        "path": "build/swat/review/frontend-command/input-native.trace.sgrp",
+        "sha256": "39a9cf9ffe34d303749f0fdff5211d609055eb8028cca8ac0f159ad86ad8b1d3",
+        "frames": 60,
+        "shipping_tool_replay": {
+          "path": "build/swat/review/frontend-command/journal-native-replay.log",
+          "sha256": "7e2ea74bd1d9d2d1e01c53ceed447f27d00170e5b36112789cb5f7f66a3f5158"
+        }
+      }
+    },
+    "wrapper": {
+      "host": "Linux bash, isolated temporary root, no native program/network launch",
+      "cases": 4,
+      "stdout": {
+        "path": "build/swat/review/frontend-command/wrapper.log",
+        "sha256": "b3bfb97dc12b77ee90b8efc89d9865ff84ffb840b1170bcd8862ab0c9886639c"
+      },
+      "stderr": {
+        "path": "build/swat/review/frontend-command/wrapper.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "cmake": {
+      "registered_and_executed_checks": 3,
+      "log": {
+        "path": "build/swat/review/frontend-command/ctest.log",
+        "sha256": "9009b7d2a4eedca7b7f92878f5a29029e75d751ceb9783b743ffab3db722d5ee"
+      },
+      "configure": {
+        "path": "build/swat/review/frontend-command/cmake-configure-final.log",
+        "sha256": "5376d26eaa8982465483e01332cc4a1cf1885b2369b80bd28f8f71e5ec5a744c"
+      },
+      "build": {
+        "path": "build/swat/review/frontend-command/cmake-build-final.log",
+        "sha256": "08130f750b9bbc8f4a0fcc9952b3942e1ed7c015a25eb79d93dc50534e00cb33"
+      }
+    },
+    "make_recipes": {
+      "path": "build/swat/review/frontend-command/make-target.log",
+      "sha256": "256a2b601c84241a40beef91289a62b687bbaeb6aed3f0c6f6ccf1fba5fc3477"
+    },
+    "headless_libraries": {
+      "linux": {
+        "path": "build/swat/review/frontend-command/headless-linux-libraries.log",
+        "sha256": "5c6d08a1f89d0b3bebfa5fb3413f18d8ffa523322aad596311323f1044bae3e6"
+      },
+      "native": {
+        "path": "build/swat/review/frontend-command/headless-native-imports.log",
+        "sha256": "e91aa37e78fbf3e964360548145ee52f98f70191607edba5e225b44d0e1399e9"
+      },
+      "no_graphics_runtime_library": true
+    },
+    "retained_intermediate_build": {
+      "scope": "An earlier CMake configuration retained pre-split target sources during the input-module refactor and failed linking. The final explicit reconfiguration/build and all three CTest checks passed.",
+      "log": {
+        "path": "build/swat/review/frontend-command/cmake-build.log",
+        "sha256": "319cef04d9f03049a249633beb15d815192ac046a3c05213c48d3394f2beac58"
+      }
+    }
+  },
+  "builds": {
+    "source_sha256": {
+      "CMakeLists.txt": "b054770ae3ed635d300e8c6f570fe92cee402b09c06c1f5a49e1311d26c13365",
+      "Makefile": "5e9a930dca7093d29fd9450ae3c23dd2d3dc93557b633dbf67f97aab88cf920f",
+      "README.md": "77cdca0037cf9ddc82b85a1e9e9cd4db5dc1a6ff6344a6c1a5aa0f356f33ca6d",
+      "ROADMAP.md": "e7c905069a2f0b2a0a4127c516b4823f7f2ac14fb71b65921c74b2482ae6e67b",
+      "build-windows.sh": "74ed7be51c04381686f752dfadedbbec81bdc375039fc0b8bfef69b0b4dd2d84",
+      "frontend.c": "4089312819f9041ced2a16d44776773690a70b60976e0400dbd019e24a61f040",
+      "frontend.h": "962c6c6bdf1a750d602faa699288b278cba448a4deb7c4b39ffde11e969793a7",
+      "frontend_input.c": "ec80630c5c4cee67f29b25a924f75a7475946beb1426f84e71a114c5657eb00c",
+      "run-windows-network-test.sh": "25e456462a588395e06e8868d9bfca910a950e8c0a203b2d5c0a2228798217ac",
+      "swat.c": "a7f304256783187848a53adedb15d70441140467e36743993e6526a7ac8c30fb",
+      "tests/test_frontend.c": "f0310547ba68e9f2d4d09230fa7c0b22ea6d9445b13d17b5964e1b94a3ac2474",
+      "tests/test_frontend_input.c": "3e2442378af3f39fb5dbfeac3be8867c4f25d887b8a34bf9e8db4247f56995ec",
+      "tests/test_windows_network_wrapper.sh": "59f7f8b0e63a70741e00a3b0858b0c78cb314e52fe33d6f3153462124aa57a62"
+    },
+    "changed_artifacts": {
+      "build/swat/swat": "c333c014ef3306b7eb951f9798bdd33485b9f488960c060be1a1e0d517c57a2e",
+      "build/swat/windows/swat.exe": "1e947bb51b2242fff9e3b82085bddbfaf9d0ebe54a7782ad2c54802343450195",
+      "build/swat/test_frontend": "2fe90d8488d9e1154fbac9efe82516f22d62787b9be7ac1efe629c8b44f85116",
+      "build/swat/windows/test_frontend.exe": "7579ce94e1d5a5336bfbcdb71b7d19756e50dc0121be40491880cc018321005b",
+      "build/swat/test_frontend_input": "1e00d5672dee6843d3feab5b10e81fecaaf26e764016a65c8cde66831cf451c2",
+      "build/swat/windows/test_frontend_input.exe": "792f755bc4eb24d1e45eed1c810e6e6ac07a584e64633488ff92fdf8d4c8c798"
+    },
+    "unchanged_v32_tools": {
+      "build/swat/server": "83e66531676eccb60aa9adfaea18d172a6ef1974ec8c91e32bcb69fc14e30858",
+      "build/swat/replay_tool": "d81a4f45e7922b3cd8f703b66a579979d1fec4d34d3390cdd08ab621b1c18971",
+      "build/swat/performance_tool": "dda0d33c1598d25055886556e478180ca9239d06f215cc828060d93889b4e5c7",
+      "build/swat/windows/swat-server.exe": "16ff693de1b61f74d12e69c4b5c73e366728cbf4abe18b56ac180d5094ecdefb",
+      "build/swat/windows/replay_tool.exe": "70d0c4ff2a630d0f4b54e0012e4a6ce6fc731787d4a0097c88c51f69e880acb2",
+      "build/swat/windows/performance_tool.exe": "9c236dcf16616e516884c56794598f89fee0521d3794449305c9321c33b8b290"
+    },
+    "existing_qa_including_approved_network_tool_restored": true,
+    "reused_core_and_presentation": "Read-only v32 objects from build/swat/review/squad-fire; frontend drawing/input units and player main rebuilt for both platforms. Server/replay/performance tools and existing gameplay QA bytes remain unchanged. CMake independently rebuilt its core dependency graph and the new input target.",
+    "logs": {
+      "linux": {
+        "path": "build/swat/review/frontend-command/player-linux-build.log",
+        "sha256": "11e0e245f2504271935628a26f17f7d9cfdd6309206fb595c0efcc8673ef0cb5"
+      },
+      "native": {
+        "path": "build/swat/review/frontend-command/player-native-build.log",
+        "sha256": "c609529d0f81075880398047cdd1dc920fbf65f3be90a10f5fa2214b85c78510"
+      },
+      "input_linux": {
+        "path": "build/swat/review/frontend-command/build-linux.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "input_native": {
+        "path": "build/swat/review/frontend-command/build-native.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "launch_smokes": {
+      "linux": {
+        "stdout": {
+          "path": "build/swat/review/frontend-command/launcher-linux-help.log",
+          "sha256": "76d4d29b3c3c4d1029cdfb8ce6162cb33b87731bd0fbac61f4e528e9c6087884"
+        },
+        "stderr": {
+          "path": "build/swat/review/frontend-command/launcher-linux-help.stderr.log",
+          "sha256": "8c4d9443fe6674d4c10c34930e4dc556bebf4e064e5ddb3b7a586d29177347ad"
+        }
+      },
+      "native": {
+        "stdout": {
+          "path": "build/swat/review/frontend-command/launcher-native-help.log",
+          "sha256": "7a1e59f5cdedb39729ea69bf8b400caafd84858bbf0ae4e0a5b990a184713fd8"
+        },
+        "stderr": {
+          "path": "build/swat/review/frontend-command/launcher-native-help.stderr.log",
+          "sha256": "31b341b904007d54cabbfcb28f98e2ef2389f980f719b9306c1ee4433ec4098e"
+        }
+      }
+    },
+    "installed_artifacts_match": true,
+    "gui_qa_rebuild_logs": {
+      "linux": {
+        "path": "build/swat/review/frontend-command/gui-qa-linux-build.log",
+        "sha256": "11e0e245f2504271935628a26f17f7d9cfdd6309206fb595c0efcc8673ef0cb5"
+      },
+      "native": {
+        "path": "build/swat/review/frontend-command/gui-qa-native-build.log",
+        "sha256": "c609529d0f81075880398047cdd1dc920fbf65f3be90a10f5fa2214b85c78510"
+      }
+    },
+    "review_scripts": {
+      "build-headless.sh": {
+        "path": "build/swat/review/frontend-command/build-headless.sh",
+        "sha256": "57ccd2871862ebabc9816ffd6304fe4684f6caf822a48b20dcee436ca13bee9c"
+      },
+      "build-native.sh": {
+        "path": "build/swat/review/frontend-command/build-native.sh",
+        "sha256": "fdd8701e613858d61b3e83d5c928110926ae1d592ddc989651463ecb2d5a764c"
+      },
+      "build-player.sh": {
+        "path": "build/swat/review/frontend-command/build-player.sh",
+        "sha256": "a181f3fee5ac9870738504a4ad03efb39ae0a451609a2b18404bd1e736778436"
+      }
+    }
+  },
+  "limits": [
+    "OS focus, key and mouse functions are stubbed in the new headless checks. Real simulation, input collection, replay and UDP transport run normally.",
+    "Small fixtures establish geometry, surrender and evidence state; one local fixture re-aims the view directly. The UDP case turns through ordinary controller inputs. These fixtures are not full mission completions or learned-policy evaluation.",
+    "The real-house journal records and exactly replays 60 ticks with two Hold requests and Execute. It does not accept rendered appearance or full tactical mission behavior.",
+    "Interactive frontend QA executables were rebuilt but not run; native window/menu/focus-event acceptance remains open. The failed-client application branch was source-audited and rebuilt, not driven through an interactive window.",
+    "Gameplay/protocol/simulation code is unchanged from v32; previous full-route validation is referenced rather than rerun for this frontend-only increment.",
+    "Room searches, equipment orders, broader moving squad coverage, varied occupants/layouts, low-prop player contacts, remaining art/audio, policy baselines, native visual and stable-load performance acceptance remain open.",
+    "No Python, root Puffer/CUDA rebuild, graphical capture or performance test was executed. Heavy performance testing remains held; manual playtesting is optional feedback."
+  ],
+  "matching_local_state_digests": 78,
+  "canonical_trace": {
+    "path": "build/swat/review/frontend-command/input-linux.trace",
+    "sha256": "6b23f35b3cb1f7d6e7f281f585a0539510d5dadd0245a7a312d453b78f7332e9"
+  },
+  "byte_identical_cross_platform_input_journals": true
+}

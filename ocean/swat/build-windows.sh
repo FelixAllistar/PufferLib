@@ -111,7 +111,7 @@ fi
 if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = player ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
     "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
-    "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
+    "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" "$SWAT_ROOT/ocean/swat/frontend_input.c" \
     "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/swat.exe"
@@ -206,9 +206,13 @@ done
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_frontend.c" \
     "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
-    "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
+    "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" "$SWAT_ROOT/ocean/swat/frontend_input.c" \
     "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_frontend.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_frontend_input.c" \
+    "$SWAT_ROOT/ocean/swat/frontend_input.c" "$SWAT_ROOT/ocean/swat/settings.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_frontend_input.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_motel.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_motel.exe"
