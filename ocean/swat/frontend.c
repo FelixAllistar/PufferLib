@@ -355,8 +355,10 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             int status_row=0;
             for(int i=0;i<sim->actor_count;i++) {
                 const SwatActor* officer=&sim->actors[i];const SwatMind* mind=&officer->mind;
-                if(!officer->present || !officer->alive || !mind->bot || !mind->order_room)continue;
-                const char* status=mind->order==SWAT_ORDER_HOLD && mind->room_step==SWAT_ROOM_SEARCH_POINTS?"Room route searched":
+                bool equipment=mind->order==SWAT_ORDER_PICK || mind->order==SWAT_ORDER_WEDGE;
+                if(!officer->present || !officer->alive || !mind->bot || (!mind->order_room && !equipment))continue;
+                const char* status=equipment?(mind->state==SWAT_ENGAGE?"Covering threat":mind->state==SWAT_INVESTIGATE?"Checking gunfire":mind->tool_blocked?"Waiting for access":officer->gear.door_ticks?"Using door tool":"Approaching door"):
+                    mind->order==SWAT_ORDER_HOLD && mind->room_step==SWAT_ROOM_SEARCH_POINTS?"Room route searched":
                     mind->room_blocked?"Room search blocked":mind->room_task==SWAT_ROOM_TASK_CLOSE_DOOR?"Clearing doorway":mind->room_task>=SWAT_ROOM_TASK_ESCORT?"Moving occupant aside":mind->room_task==SWAT_ROOM_TASK_PERSON?"Securing occupant":
                     mind->room_task==SWAT_ROOM_TASK_WEAPON?"Securing weapon":"Searching room";
                 swat_hud_text(view,TextFormat("%s: %s",mind->team==1?"Red":"Blue",status),24,120+status_row++*20,15,menu_paper);

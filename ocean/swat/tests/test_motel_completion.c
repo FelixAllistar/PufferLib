@@ -1,5 +1,6 @@
 #include "replay.h"
 #include "pose.h"
+#include "fracture_geometry.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,8 @@ static bool squad_search;
 static int squad_weapons;
 static const char* search_save;
 static bool squad_equipment;
+static bool damaged_equipment;
+static int damaged_door_shots;
 static const char* equipment_save;
 static int squad_wedges;
 static bool squad_rooms;
@@ -298,10 +301,31 @@ static void delegate_wedge(float door_x) {
         if(feet(0).z<2.3f || door->door_open)fail("back clear of closed equipment door");
     }
     SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_HOLD;step(in);idle(20);
-    for(int n=0;n<60;n++)step(look(door->center));
+    b3Pos point=door->center;
+    if(damaged_equipment) {
+        // Every cut in this journal must come from an ordinary, finite-stock
+        // shot. All occupants are already secured; retain the real leaf and
+        // hardware, and let the operator choose its own surviving workpoint.
+        for(int i=0;i<sim.actor_count;i++)if(sim.actors[i].present && sim.actors[i].role!=SWAT_OFFICER && !sim.actors[i].gear.restrained)fail("secure occupants before door damage");
+        int before=sim.actors[0].arsenal.shots;
+        for(int n=0;n<1800 && swat_fracture_contains(door,0,0);n++) {
+            in=look(door->center);in.aim=true;
+            // Let the ordinary weapon settle between shots. Rapid repeated
+            // fire scatters holes above the intended task point through recoil.
+            in.fire=n>=60 && n%60==0;
+            in.reload=!sim.actors[0].arsenal.slots[0].chambered;
+            if(sim.actors[0].arsenal.shots-before>=20)fail("bounded door damage shots");
+            step(in);
+        }
+        damaged_door_shots=sim.actors[0].arsenal.shots-before;
+        if(!damaged_door_shots || swat_fracture_contains(door,0,0) || !door->active || door->latch_broken || door->door_open)fail("actual central aperture with intact door hardware");
+        point=b3OffsetPos(door->center,b3RotateVector(swat_object_rotation(door),swat_v(0,.65f,0)));
+        printf("PASS ordinary gunfire removed door %d centre with %d shots; retained leaf/hardware\n",owner,damaged_door_shots);fflush(stdout);
+    }
+    for(int n=0;n<60;n++)step(look(point));
     SwatHit hit=swat_context_hit(&sim,0,24);
     if(hit.kind!=SWAT_HIT_WORLD || hit.index!=owner)fail("visible authored wedge target");
-    in=look(door->center);in.squad_order=SWAT_ORDER_WEDGE;in.squad_team=1;in.squad_queue=true;step(in);
+    in=look(point);in.squad_order=SWAT_ORDER_WEDGE;in.squad_team=1;in.squad_queue=true;step(in);
     int recipient=-1;
     for(int i=3;i<6;i++)if(sim.actors[i].mind.pending_order==SWAT_ORDER_WEDGE && sim.actors[i].mind.pending_door==owner) {
         if(recipient>=0)fail("multiple wedge recipients");
@@ -316,17 +340,22 @@ static void delegate_wedge(float door_x) {
     puts("PASS queued wedge survives journal checkpoint/restore with the authored door identity");fflush(stdout);
     // Clear the real working space while the task is still queued.
     walk((b3Pos){door_x+1.2f,0,1.0f},.3f);
-    in=look(door->center);in.squad_execute=true;step(in);
-    for(int n=0;n<3000 && (door->wedge_owner!=recipient || sim.actors[recipient].mind.order!=SWAT_ORDER_HOLD);n++)step(look(door->center));
+    in=look(point);in.squad_execute=true;step(in);
+    bool surviving_work=false;
+    for(int n=0;n<3000 && (door->wedge_owner!=recipient || sim.actors[recipient].mind.order!=SWAT_ORDER_HOLD);n++) {
+        step(look(point));SwatActor* worker=&sim.actors[recipient];
+        if(worker->gear.door_ticks>0){b3Vec3 local=b3InvRotateVector(swat_object_rotation(door),b3SubPos(worker->mind.task_point,door->center));surviving_work|=swat_fracture_contains(door,local.y,local.z) && hypotf(local.y,local.z)>.005f;}
+    }
     if(door->wedge_owner!=recipient || door->door_open || sim.actors[recipient].mind.order!=SWAT_ORDER_HOLD || sim.actors[recipient].mind.order_door || !sim.actors[recipient].gear.used_tools)fail("squad authored door wedge");
     squad_wedges++;
+    if(damaged_equipment && !surviving_work)fail("squad uses retained material after gunfire");
     // Recall the operator out of the working space before ordinary removal.
     in=look(door->center);in.squad_order=SWAT_ORDER_FALL_IN;in.squad_team=1;step(in);idle(90);
     // Remove the actual wedge using ordinary human reach/tool input.
     walk((b3Pos){door_x,0,1.0f},.3f);
-    for(int n=0;n<60;n++)step(look(door->center));
+    for(int n=0;n<60;n++)step(look(point));
     for(int n=0;n<240 && door->wedge_owner>=0;n++) {
-        in=look(door->center);in.door_tool=SWAT_REMOVE_WEDGE;step(in);
+        in=look(point);in.door_tool=SWAT_REMOVE_WEDGE;step(in);
     }
     if(door->wedge_owner>=0 || sim.actors[recipient].gear.wedges!=1)fail("human removal of squad wedge");
     in=look(door->center);in.squad_order=SWAT_ORDER_FALL_IN;step(in);
@@ -565,12 +594,13 @@ static void enter_breach(float wall,b3Pos retreat) {
 }
 int main(int argc,char** argv) {
     b3SetLogFcn(physics_log);
-    assert(argc>=2 && argc<=9);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
+    assert(argc>=2 && argc<=10);bool combat=false,seed_given=false;const char* route="front";uint32_t seed=81;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"combat"))combat=true;
         else if(!strcmp(argv[i],"squad"))squad_restraint=true;
         else if(!strcmp(argv[i],"search"))squad_search=true;
         else if(!strcmp(argv[i],"equipment"))squad_equipment=true;
+        else if(!strcmp(argv[i],"damaged-equipment"))damaged_equipment=squad_equipment=true;
         else if(!strcmp(argv[i],"rooms"))squad_rooms=true;
         else if(!strcmp(argv[i],"exterior")||!strcmp(argv[i],"interroom"))route=argv[i];
         else if(!strncmp(argv[i],"seed=",5)) {
@@ -587,6 +617,7 @@ int main(int argc,char** argv) {
     char wedge_save[1024];assert(snprintf(wedge_save,sizeof(wedge_save),"%s.wedge.save",argv[1])<(int)sizeof(wedge_save));equipment_save=wedge_save;
     char route_save[1024];assert(snprintf(route_save,sizeof(route_save),"%s.room.save",argv[1])<(int)sizeof(route_save));room_save=route_save;
     assert(!squad_rooms || !strcmp(route,"front"));
+    assert(!damaged_equipment || (!combat && !strcmp(route,"front")));
     int saved_tick=0;uint32_t saved_hash=0;
     swat_sim_init(&sim,cfg,seed);assert(swat_replay_record(&journal,argv[1],&sim));
     printf("Motel QA seed %u initial resolve suspect1=%.6f civilian2=%.6f civilian6=%.6f civilian7=%.6f suspect8=%.6f\n",seed,sim.actors[1].mind.resolve,sim.actors[2].mind.resolve,sim.actors[6].mind.resolve,sim.actors[7].mind.resolve,sim.actors[8].mind.resolve);fflush(stdout);
@@ -650,6 +681,7 @@ int main(int argc,char** argv) {
     if(squad_restraint)assert(squad_cuffs==5-dead_suspects);
     if(squad_search)assert(squad_weapons==2);
     if(squad_equipment)assert(squad_wedges==1);
+    if(damaged_equipment)assert(damaged_door_shots>0);
     if(squad_rooms)assert(squad_room_routes==1);
     assert(swat_replay_close(&journal));
     printf("PASS motel complete player-input run (%s, %s route): %d ticks, %d arrests, %d armed suspects killed, three evacuations, two weapons, squad regroup, no civilian/officer deaths or unlawful force\n",cfg.hostile_fire?"hostile fire enabled":"interaction isolation",route,sim.tick,sim.debrief.arrests,dead_suspects);fflush(stdout);

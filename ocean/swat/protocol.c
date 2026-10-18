@@ -247,7 +247,7 @@ static void putactor(Writer* w,const SwatActorState* a) {
     unsigned int flags=a->present | (a->alive<<1) | (a->crouched<<2) | (a->grounded<<3) |
                        (a->sprinting<<4) | (a->muzzle_blocked<<5);
     put8(w,flags); if(!a->present) return;
-    put8(w,a->mind.bot | (a->rescued<<1)); put8(w,a->mind.state); put8(w,a->mind.team);
+    put8(w,a->mind.bot | (a->rescued<<1) | (a->mind.tool_blocked<<2)); put8(w,a->mind.state); put8(w,a->mind.team);
     put8(w,a->mind.order); put8(w,a->mind.pending_order); put8(w,a->mind.queued); put8(w,a->mind.escort_owner+1);
     put8(w,a->mind.order_actor);put8(w,a->mind.pending_actor);
     put32(w,(uint32_t)a->mind.order_door);put32(w,(uint32_t)a->mind.pending_door);
@@ -280,7 +280,7 @@ static SwatActorState getactor(Reader* r) {
     if(flags>63 || (!(flags&1) && flags)) r->ok=false;
     a.present=flags&1; if(!a.present) return a;
     a.alive=flags&2; a.crouched=flags&4; a.grounded=flags&8; a.sprinting=flags&16; a.muzzle_blocked=flags&32;
-    unsigned int behavior_flags=get8(r); a.mind.bot=behavior_flags&1; a.rescued=behavior_flags&2;
+    unsigned int behavior_flags=get8(r); a.mind.bot=behavior_flags&1; a.rescued=behavior_flags&2;a.mind.tool_blocked=behavior_flags&4;
     a.mind.state=(SwatBehavior)get8(r); a.mind.team=(int)get8(r); a.mind.order=(int)get8(r); a.mind.pending_order=(int)get8(r);
     unsigned int queued=get8(r); a.mind.queued=queued!=0; a.mind.escort_owner=(int)get8(r)-1;
     a.mind.order_actor=(int)get8(r);a.mind.pending_actor=(int)get8(r);
@@ -289,8 +289,9 @@ static SwatActorState getactor(Reader* r) {
     unsigned int room_blocked=get8(r);a.mind.room_blocked=room_blocked!=0;
     if(a.mind.order_room>SWAT_MAX_ROOMS || a.mind.pending_room>SWAT_MAX_ROOMS || a.mind.room_step>SWAT_ROOM_SEARCH_POINTS || a.mind.room_task>=SWAT_ROOM_TASKS || room_blocked>1)r->ok=false;
     if(a.mind.order_actor>SWAT_MAX_ACTORS || a.mind.pending_actor>SWAT_MAX_ACTORS)r->ok=false;
-    if(behavior_flags>3 || a.mind.state>SWAT_DETAINED || a.mind.team>2 || a.mind.order>=SWAT_SQUAD_ORDERS || a.mind.pending_order>=SWAT_SQUAD_ORDERS || queued>1 || a.mind.escort_owner>=SWAT_MAX_ACTORS) r->ok=false;
-    unsigned int role=get8(r); if(role>SWAT_SNIPER) r->ok=false; a.role=(SwatRole)role;
+    if(behavior_flags>7 || a.mind.state>SWAT_DETAINED || a.mind.team>2 || a.mind.order>=SWAT_SQUAD_ORDERS || a.mind.pending_order>=SWAT_SQUAD_ORDERS || queued>1 || a.mind.escort_owner>=SWAT_MAX_ACTORS ||
+       (a.mind.tool_blocked && a.mind.order!=SWAT_ORDER_PICK && a.mind.order!=SWAT_ORDER_WEDGE)) r->ok=false;
+    unsigned int role=get8(r); if(role>SWAT_SNIPER || (a.mind.tool_blocked && (role!=SWAT_OFFICER || !a.mind.bot))) r->ok=false; a.role=(SwatRole)role;
     a.position=getpos(r); a.velocity=getvec(r,100); a.upper_offset=getvec(r,SWAT_MAX_LEAN+0.01f);
     a.health=getf(r,0,100); a.yaw=getf(r,-SWAT_PI,SWAT_PI); a.pitch=getf(r,-85*SWAT_RAD,85*SWAT_RAD);
     a.ads=getf(r,0,1); a.stamina=getf(r,0,1); a.eye_height=getf(r,0,2);
@@ -663,6 +664,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     if(state->object_count!=sim->world.count) return false;
     for(int i=0;i<SWAT_MAX_ACTORS;i++)if(state->actors[i].present) {
         const SwatMind* mind=&state->actors[i].mind;
+        if(mind->tool_blocked && (state->actors[i].role!=SWAT_OFFICER || !mind->bot || (mind->order!=SWAT_ORDER_PICK && mind->order!=SWAT_ORDER_WEDGE)))return false;
         if(mind->order_room<0 || mind->pending_room<0 || mind->order_room>sim->world.room_count || mind->pending_room>sim->world.room_count)return false;
         if(mind->room_step<0 || mind->room_step>SWAT_ROOM_SEARCH_POINTS || mind->room_task<0 || mind->room_task>=SWAT_ROOM_TASKS ||
            (mind->order==SWAT_ORDER_ROOM_SEARCH && !mind->order_room) || (mind->pending_order==SWAT_ORDER_ROOM_SEARCH && !mind->pending_room) ||

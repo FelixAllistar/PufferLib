@@ -116,6 +116,11 @@ squad-equipment-test: $(ENET_LIB) | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_encounter equipment $(BUILD)/squad-equipment.trace
 squad-equipment-network-test: squad-equipment-test
 	ulimit -c 0; $(BUILD)/test_encounter equipment-network
+.PHONY: squad-damaged-equipment-test motel-damaged-equipment-test
+squad-damaged-equipment-test: squad-equipment-test
+	ulimit -c 0; $(BUILD)/test_encounter damaged-equipment $(BUILD)/squad-damaged-equipment.trace
+motel-damaged-equipment-test: motel-completion-test-build
+	$(BUILD)/test_motel_completion $(BUILD)/motel-damaged-equipment.sgrp squad search damaged-equipment rooms seed=82
 motel-squad-equipment-test: motel-completion-test-build
 	$(BUILD)/test_motel_completion $(BUILD)/motel-squad-equipment.sgrp squad search equipment seed=82
 .PHONY: room-search-test room-search-network-test room-search-motel-test motel-room-search-test

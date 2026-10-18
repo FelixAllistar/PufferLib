@@ -178,7 +178,13 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
     if(!usable) { g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return; }
     if(g->door_target!=hit.index || g->door_mode!=mode) g->door_ticks=0;
     g->door_target=hit.index; g->door_mode=mode;
-    if(!g->door_ticks) swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.12f,5);
+    // Named squad work has a material-derived contact point. Keep its handling
+    // sound there; tiny platform differences in the reach ray's intersection
+    // must not move the sound or change an otherwise identical replay.
+    bool planned=a->mind.bot && a->mind.tool_goal &&
+        (a->mind.order==SWAT_ORDER_PICK || a->mind.order==SWAT_ORDER_WEDGE);
+    b3Pos handling=planned?a->mind.task_point:hit.point;
+    if(!g->door_ticks) swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,handling,.12f,5);
     bool crouch=in->crouch; float yaw=in->yaw_delta,pitch=in->pitch_delta;
     *in=swat_neutral_input(); in->crouch=crouch; in->yaw_delta=yaw; in->pitch_delta=pitch;
     int duration=mode==SWAT_LOCKPICK ? 180 : mode==SWAT_DISARM ? 120 : mode==SWAT_PLACE_CHARGE ? 90 : 45;
@@ -193,7 +199,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
         else { door->trapped=false; door->trap_known=0; }
         g->door_completed=true; s->world.generation++;
         g->used_tools=true; g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE;
-        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.18f,6);
+        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,handling,.18f,6);
     }
 }
 bool swat_throw(SwatSim* s,int actor,SwatProjectileKind kind) {
