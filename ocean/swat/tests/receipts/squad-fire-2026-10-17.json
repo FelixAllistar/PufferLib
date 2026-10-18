@@ -1,0 +1,474 @@
+{
+  "created_utc": "2026-10-18T01:43:35.855Z",
+  "baseline_commit": "480cea7c3",
+  "protocol": 32,
+  "scope": "Bounded squad gunshot attention and ordinary-input combined hostile squad/breach QA. Full vertical-slice goal remains active.",
+  "evidence_root": "build/swat/review/squad-fire/",
+  "changes": [
+    "Officers consume propagated shot cues, orient toward their coarse bearing for at most 90 ticks and retain physical formation movement. Hearing supplies no actor identity or hidden position.",
+    "Hands-on restraint/retrieval pauses during gunshot attention and resumes afterward. Visible-target rules retain firing-line and civilian protection; attention expires through stun.",
+    "QA commander reacts to observed gunfire and visible raised weapons aimed at the team, retains observed threat status while visible and armed, aims at the exposed perception point and uses existing slow formation pace during hostile delegated-task runs. These are QA inputs, not game player assistance.",
+    "QA holds the team outside the planned charge exposure, covers the aperture after detonation and recalls officers afterward. Protected casualties now fail immediately with a closed diagnostic journal."
+  ],
+  "checks": {
+    "linux": {
+      "encounter": {
+        "pass_groups": 53,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/encounter-linux.log",
+          "sha256": "cd9de7d5f577d38f04d0643a27a52ae33f8fbf3169aceb3cb7da9b7be552c984"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/encounter-linux.stderr.log",
+          "sha256": "7134053cbe47954842a2ee7f389333a645f1a48a600d1eb096233da61a4fc7df"
+        }
+      },
+      "tactical": {
+        "pass_groups": 10,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/tactical-linux.log",
+          "sha256": "00231a210c6a06c107e4f298993d7eac1fcb369049aa9963ba3b6db42e400a13"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/tactical-linux.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "sim": {
+        "pass_groups": 13,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/sim-linux.log",
+          "sha256": "3b432092b1ff9a2006defcee44ce2168d75c05b23b235f6cf074b49ec0ae318a"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/sim-linux.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "protocol": {
+        "pass_groups": 3,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/protocol-linux.log",
+          "sha256": "21c97dd7ef2df3ee2fa5f3e5a0eea3b8e775625a47595044450a0cd0944c66e3"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/protocol-linux.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "motel": {
+        "pass_groups": 12,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/motel-linux.log",
+          "sha256": "3c56fae3f87e4e3c300bf22f049b318b2d65b3fc55c88c772e4e7be559bca8fe"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/motel-linux.stderr.log",
+          "sha256": "7e52b7b05fe72e558805802c6ddfaa8217e9ef005940f8d9f5705488ef47b059"
+        }
+      },
+      "navigation": {
+        "pass_groups": 3,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/navigation-linux.log",
+          "sha256": "f77a6a4aaec85991521d980f29c306d4a6fd3ed8d5e635e5b65704b29bc0bb8f"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/navigation-linux.stderr.log",
+          "sha256": "7e6127a96938d64567cc8466dc7c8c0eb7a660eecfc513430324162564e592a5"
+        }
+      },
+      "net": {
+        "pass_groups": 14,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/net-linux.log",
+          "sha256": "8e818bffab6a2a8c9dae0335688ae6785ba44843b7dad12504e24ebc6931a973"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/net-linux.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "total_pass_groups": 108
+    },
+    "native": {
+      "encounter": {
+        "pass_groups": 53,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/encounter-native.log",
+          "sha256": "3270d9a4894117773c4a627c2bd7b7912dc4cd9599415db78ade4409c29d1fe7"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/encounter-native.stderr.log",
+          "sha256": "b04494474cbed861984f18049ddfdcc9b621023f6bc4b32e2891495b21118d0c"
+        }
+      },
+      "tactical": {
+        "pass_groups": 10,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/tactical-native.log",
+          "sha256": "e78f55134ea2b32d938732e9169e146e813ab3e831d10dbab9e4992f0f825350"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/tactical-native.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "sim": {
+        "pass_groups": 13,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/sim-native.log",
+          "sha256": "6687a3e238784125786eaddd96b368c77b1922bc07c57ed8b1e81fc17c626490"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/sim-native.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "protocol": {
+        "pass_groups": 3,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/protocol-native.log",
+          "sha256": "9d69bf0d557a66ff463c36fd9308e056bb98fccbfad4c6ea06eaca6b8cdd36c7"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/protocol-native.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "motel": {
+        "pass_groups": 12,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/motel-native.log",
+          "sha256": "658e1e9d97280d1573bbd331d5e4d0d494aa4382791f1c6a068e7f143450ab3d"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/motel-native.stderr.log",
+          "sha256": "3ebe62ba2dc3ed22cf1b0d37d32eb547529be4f2f1c12185a492e808488045a2"
+        }
+      },
+      "navigation": {
+        "pass_groups": 3,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/navigation-native.log",
+          "sha256": "4a0574d4578e12e577732616fc505f7c1847987ef0766860dfe422c586cd37ba"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/navigation-native.stderr.log",
+          "sha256": "20979940b4a597cbb4c641985c2d840323015d72ea972547f7b737da064b9a47"
+        }
+      },
+      "net": {
+        "pass_groups": 14,
+        "stdout": {
+          "path": "build/swat/review/squad-fire/net-native.log",
+          "sha256": "75f14edd6d93f5c24b1d2397e9ecf4b76424975810b16c703c59cb6b171fa62e"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/net-native.stderr.log",
+          "sha256": "9a30c4cd0ce4e1184bfc6177051c558566d4c773c2040e9ef338efb6a720713d"
+        }
+      },
+      "total_pass_groups": 108
+    }
+  },
+  "focused": {
+    "linux": {
+      "path": "build/swat/review/squad-fire/fire-linux.log",
+      "sha256": "13700cf805c8bb4ef109d1a28299d46423aa2106255f8abad3fa02592f32136c"
+    },
+    "native": {
+      "path": "build/swat/review/squad-fire/fire-native.log",
+      "sha256": "14ffed4f6d5af0cfb40d9a7ad312ddf76a573eb42a034e5a6d8db408005cbdcf"
+    },
+    "matching_tick_digests": 1950,
+    "fresh_map_and_encoded_snapshot_roundtrips": 65,
+    "trace": {
+      "path": "build/swat/review/squad-fire/fire-linux.trace",
+      "sha256": "961f14a3f679ee5655771800eb7f639b33394e47517e02037b7e3ef203ccc810"
+    }
+  },
+  "complete_runs": {
+    "motel-quiet-front": {
+      "seed": 82,
+      "mode": "quiet front, squad restraints and weapon retrieval",
+      "frames": 24220,
+      "arrests": 2,
+      "armed_suspects_killed": 0,
+      "rescued": 3,
+      "recovered_weapons": 2,
+      "protected_deaths": 0,
+      "unlawful_force": 0,
+      "driver_log": {
+        "path": "build/swat/review/squad-fire/motel-quiet-front.log",
+        "sha256": "fe6c284dc17571baf1c068570165435146bd16fbe96b227248f0f50ad095299d"
+      },
+      "journal": {
+        "path": "build/swat/review/squad-fire/motel-quiet-front.sgrp",
+        "sha256": "52bce5845b4c94ac029c9315a40aa9c7536926aef345630012c9355696813054"
+      },
+      "every_tick_replay": true,
+      "midrun_save_and_continuation": true,
+      "final_encoded_map_and_snapshot_replica": true,
+      "engine_replays": {
+        "linux": {
+          "driver_verifies_every_tick": true,
+          "log": {
+            "path": "build/swat/review/squad-fire/motel-quiet-front.log",
+            "sha256": "fe6c284dc17571baf1c068570165435146bd16fbe96b227248f0f50ad095299d"
+          }
+        },
+        "native": {
+          "path": "build/swat/review/squad-fire/motel-quiet-front-native-replay.log",
+          "sha256": "73e470edda688c6eca2dcdaee1e9638fece78db3ad83899710ffe26b07987b2f"
+        }
+      },
+      "squad_restraints": 5,
+      "squad_weapon_recoveries": 2
+    },
+    "motel-threat-exterior": {
+      "seed": 81,
+      "mode": "hostile exterior charge, player restraints/retrieval",
+      "frames": 9637,
+      "arrests": 0,
+      "armed_suspects_killed": 2,
+      "rescued": 3,
+      "recovered_weapons": 2,
+      "protected_deaths": 0,
+      "unlawful_force": 0,
+      "driver_log": {
+        "path": "build/swat/review/squad-fire/motel-threat-exterior.log",
+        "sha256": "a3d201ba1954bac4a535996525321d2166ca8a5f6879eae3f2ecdc51b28c235f"
+      },
+      "journal": {
+        "path": "build/swat/review/squad-fire/motel-threat-exterior.sgrp",
+        "sha256": "2f670e98efc1e5f3d9d7251b2d6215b65491233fac85a3e92be2847c39582f3f"
+      },
+      "every_tick_replay": true,
+      "midrun_save_and_continuation": true,
+      "final_encoded_map_and_snapshot_replica": true,
+      "engine_replays": {
+        "linux": {
+          "driver_verifies_every_tick": true,
+          "log": {
+            "path": "build/swat/review/squad-fire/motel-threat-exterior.log",
+            "sha256": "a3d201ba1954bac4a535996525321d2166ca8a5f6879eae3f2ecdc51b28c235f"
+          }
+        },
+        "native": {
+          "path": "build/swat/review/squad-fire/motel-threat-exterior-native-replay.log",
+          "sha256": "8a737c6e1aa058b9e7fc9025ee068c6cc91a8ca082d942e9aa32f0ea81a8a430"
+        }
+      }
+    },
+    "motel-threat-fire": {
+      "seed": 2026,
+      "mode": "hostile inter-room charge, squad restraints and weapon retrieval",
+      "frames": 20268,
+      "arrests": 0,
+      "armed_suspects_killed": 2,
+      "rescued": 3,
+      "recovered_weapons": 2,
+      "protected_deaths": 0,
+      "unlawful_force": 0,
+      "driver_log": {
+        "path": "build/swat/review/squad-fire/motel-threat-fire.log",
+        "sha256": "b5f33487a444c8229190b179cbc6a7711feed51743098f316304ca8c285b4850"
+      },
+      "journal": {
+        "path": "build/swat/review/squad-fire/motel-threat-fire.sgrp",
+        "sha256": "646e3619f7f8ec83b7db446491cb1744b161655241698250f53bf458c23ca6f4"
+      },
+      "every_tick_replay": true,
+      "midrun_save_and_continuation": true,
+      "final_encoded_map_and_snapshot_replica": true,
+      "engine_replays": {
+        "linux": {
+          "driver_verifies_every_tick": true,
+          "log": {
+            "path": "build/swat/review/squad-fire/motel-threat-fire.log",
+            "sha256": "b5f33487a444c8229190b179cbc6a7711feed51743098f316304ca8c285b4850"
+          }
+        },
+        "native": {
+          "path": "build/swat/review/squad-fire/motel-threat-fire-native-replay.log",
+          "sha256": "1bcbda36ac9fd1ba5c1f4c80e1f48f8f24f0b698dcdb0425a1fc9819d2991ffc"
+        }
+      },
+      "squad_restraints": 3,
+      "squad_weapon_recoveries": 2
+    }
+  },
+  "failures_retained": {
+    "baseline-fire-linux.stderr.log": {
+      "path": "build/swat/review/squad-fire/baseline-fire-linux.stderr.log",
+      "sha256": "9a4658c89abaa5bf8259a472909943ce09e36b54591cbaa1f9528ef573e75381"
+    },
+    "baseline-interroom-linux.stderr.log": {
+      "path": "build/swat/review/squad-fire/baseline-interroom-linux.stderr.log",
+      "sha256": "037e05bef6ade868df44e65804804d92699afc21b95b9b222929896443bba037"
+    },
+    "motel-fire-interroom-linux.stderr.log": {
+      "path": "build/swat/review/squad-fire/motel-fire-interroom-linux.stderr.log",
+      "sha256": "c5e7b9c38c455f88e15f6062cddea84e259eabfe0ec85ae68592167bdcd8ca09"
+    },
+    "motel-hearing-cover.stderr.log": {
+      "path": "build/swat/review/squad-fire/motel-hearing-cover.stderr.log",
+      "sha256": "3cfc0a55c1fefbb8b05f0cbc0b9967c0dceda2a025a06daf303466d221df6731"
+    },
+    "motel-team-pace.stderr.log": {
+      "path": "build/swat/review/squad-fire/motel-team-pace.stderr.log",
+      "sha256": "98b73d4bf834a9bdc9e0fda61e78b0050c013e0c0c3e9a7b29e81516747e8742"
+    },
+    "motel-confirmed-fire.stderr.log": {
+      "path": "build/swat/review/squad-fire/motel-confirmed-fire.stderr.log",
+      "sha256": "7156c2bfb5da91fb9076a6c60ed44c7660a9b21c35e783be1ea3ee7125d75acd"
+    },
+    "audit-casualties.log": {
+      "path": "build/swat/review/squad-fire/audit-casualties.log",
+      "sha256": "cf010fdc0934fd6f4d1df6792411f36b2f0cdeae5286e79bda0590b5479796f9"
+    },
+    "inspect-fight.log": {
+      "path": "build/swat/review/squad-fire/inspect-fight.log",
+      "sha256": "51c0671924cc46e0ecc1bfacacd72aa14cb7524c96fb0c3c146db358cc841d8f"
+    },
+    "motel-breach-cover.stderr.log": {
+      "path": "build/swat/review/squad-fire/motel-breach-cover.stderr.log",
+      "sha256": "9edeef8594b0172f7691d7562f9df4b9c1d2e5bd2961891203422fc7a7a25b2d"
+    },
+    "motel-stage-cover.stderr.log": {
+      "path": "build/swat/review/squad-fire/motel-stage-cover.stderr.log",
+      "sha256": "91a7d21c853b37d2ed7ba94969cac4253e947e76bcb1f263700de10fbc4867d7"
+    },
+    "motel-final-fire.stderr.log": {
+      "path": "build/swat/review/squad-fire/motel-final-fire.stderr.log",
+      "sha256": "2c81c7bbedd5034fc6050e526287b41b6cf893acaf02b0673c711fbd5c8292ef"
+    },
+    "net-linux-loaded-failure.stderr.log": {
+      "path": "build/swat/review/squad-fire/net-linux-loaded-failure.stderr.log",
+      "sha256": "07d94caec0ed3e2abd71eb09ee5c2a13bd6a1016adffac952b101225c7299109"
+    },
+    "interpretation": "Original v31 combined run loses commander at tick 4429. Faster follower experiment produced route churn and was removed. Slow QA route exposed officer 3 casualty at 11647; the stricter guard now stops there. Sight-line trace shows officer 3 occluding the commander after the first exchange; breach QA now holds the team at extraction and the commander covers the opening before/after triggering. Further trials lost an exposed officer at 11683 and the isolated commander at 9883; QA then added observable raised-weapon threat response. One UDP synchronization failure under concurrent work is retained; final checks are separate from adverse-load/packet-loss qualification. Do not count these failed trials as accepted runs."
+  },
+  "builds": {
+    "source_sha256": {
+      "CMakeLists.txt": "cd4976b1dee131fd69753710b617ceea3e02ead9b6749e5d0a49d2aed10cd08e",
+      "Makefile": "76b0d1bf65383e868d064a56263bad2e988de778b5f253642592b7ef30519715",
+      "README.md": "8d0860fb02ec7e9d31fa4bd1918648b2741c7e23af9d91a6d167b506cc0311b2",
+      "ROADMAP.md": "5ba9391301345d68134f9502d3416e915e83b18f8caede34c4ef153ccfb92d3e",
+      "encounter.c": "1781775335bf99be2dd6e8296d06b014d081838b4f2c592a2986c2ea76d952ab",
+      "protocol.h": "9049a94b78a0a005bedd6246a021b5bb16d7608272c80a08036fd629d31927ad",
+      "tests/test_encounter.c": "3a5e244b4369861ad1b1934ad0d47d0098f0144c2085dba1073c520cafaa249c",
+      "tests/squad_fire.h": "c0783779fc5d5c04e854fc488f7c1912cdc2e1fe344e19e77b37bfad3c25cdba",
+      "tests/test_motel_completion.c": "bd0eff38e3569edaa01ef5b37415f9ad5e4b38a1a2fa65399ed67c4707cdf66f"
+    },
+    "rebuild": "23 core and 12 presentation units rebuilt per platform with current headers, O2 and ffp-contract=off; final QA driver recompiled after its last changes.",
+    "production": {
+      "build/swat/swat": "40f5af0c3e033e98052a04c3735c3f90c1f077f9957ea989d36fc432f503c153",
+      "build/swat/server": "83e66531676eccb60aa9adfaea18d172a6ef1974ec8c91e32bcb69fc14e30858",
+      "build/swat/replay_tool": "d81a4f45e7922b3cd8f703b66a579979d1fec4d34d3390cdd08ab621b1c18971",
+      "build/swat/performance_tool": "dda0d33c1598d25055886556e478180ca9239d06f215cc828060d93889b4e5c7",
+      "build/swat/windows/swat.exe": "720de35d2339bef3d32a92b4a2cba6039cb534ebc9b544d7836638798c7a1e37",
+      "build/swat/windows/swat-server.exe": "16ff693de1b61f74d12e69c4b5c73e366728cbf4abe18b56ac180d5094ecdefb",
+      "build/swat/windows/replay_tool.exe": "70d0c4ff2a630d0f4b54e0012e4a6ce6fc731787d4a0097c88c51f69e880acb2",
+      "build/swat/windows/performance_tool.exe": "9c236dcf16616e516884c56794598f89fee0521d3794449305c9321c33b8b290"
+    },
+    "qa": {
+      "build/swat/test_encounter": "758a8a5cd3a09c907d7cc82a181600d191585f4114478bc715013010b9379efc",
+      "build/swat/windows/test_encounter.exe": "cc7f5e5ea239c616e800c8fa45d303def0d059c94eb0a167af7b643adb7cd29e",
+      "build/swat/test_motel_completion": "77712bd1fdc41a5b1bfea1e35c4415772294e3f0a30caed1f959858e3147f9c7",
+      "build/swat/windows/test_motel_completion.exe": "1dc398a7dd26936ddda59c86dcaa4e7de2aabfbeced10d229d180f43e3dd4331",
+      "build/swat/test_motel": "fd400605e221a223758926a07f1a821cab694a36673376789c1911a0bc47404c",
+      "build/swat/windows/test_motel.exe": "be5bc6bf04d69adc441d062ec6e9f92fa8cc9de620f4562d6e4ae6648278c66b",
+      "build/swat/test_net": "451f58d4217a4e193c15bb36d7b1e66eeaa1a333bbd0d6f0d99834025b8b1f7f",
+      "build/swat/windows/test_net.exe": "a9ce7a2bd8086f405d9877ae09548b25f013e7b390814b76374e6e81959337cd",
+      "build/swat/test_protocol": "07719e0935b532c8b984cc08d0850058692fd8e948b02aada2ec27f79f8ee558",
+      "build/swat/windows/test_protocol.exe": "e161edcdc47fa2764f92501924e31ea89fd3926b58e7bc5b5ef9082242fe5b8f",
+      "build/swat/test_tactical": "666a9697156a4340b505ea19372bf71d30df82cd76b6c59fec01eb27b9344d13",
+      "build/swat/windows/test_tactical.exe": "e5922318f33c22c5f8c663dab371bba741ef3c8e88851609134d9376f04917ca",
+      "build/swat/test_sim": "013a92f89d64b9fc4f21d86e6460c6370f515107533a60aff09e40da930a9b87",
+      "build/swat/windows/test_sim.exe": "9bfa2e3fea76ebba3ecfb4ebd977b8d43f27c27f20b29843704b92804ea5b778",
+      "build/swat/test_navigation_search": "093c78e65833a16cc7864fcbe473fc62328e5856356bc26019c7ab65e1ec4796",
+      "build/swat/windows/test_navigation_search.exe": "11ba5b3b3555546f9c694cc90cda7f032a039a12884dc3e66c254c4b0a119a6c"
+    },
+    "install_matches": true,
+    "launch_smokes": {
+      "launcher-linux": {
+        "stdout": {
+          "path": "build/swat/review/squad-fire/launcher-linux-help.log",
+          "sha256": "76d4d29b3c3c4d1029cdfb8ce6162cb33b87731bd0fbac61f4e528e9c6087884"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/launcher-linux-help.stderr.log",
+          "sha256": "8c4d9443fe6674d4c10c34930e4dc556bebf4e064e5ddb3b7a586d29177347ad"
+        }
+      },
+      "launcher-native": {
+        "stdout": {
+          "path": "build/swat/review/squad-fire/launcher-native-help.log",
+          "sha256": "7a1e59f5cdedb39729ea69bf8b400caafd84858bbf0ae4e0a5b990a184713fd8"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/launcher-native-help.stderr.log",
+          "sha256": "31b341b904007d54cabbfcb28f98e2ef2389f980f719b9306c1ee4433ec4098e"
+        }
+      },
+      "server-linux": {
+        "stdout": {
+          "path": "build/swat/review/squad-fire/server-linux-help.log",
+          "sha256": "4db8e67ddf7e558c469ce42157b5060952ba23b1e0911a79435c4e7dd109a0c4"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/server-linux-help.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "server-native": {
+        "stdout": {
+          "path": "build/swat/review/squad-fire/server-native-help.log",
+          "sha256": "78992c7287d404a2032619bec596fec93c266fca6e7c5ad1414abab8b8779f5f"
+        },
+        "stderr": {
+          "path": "build/swat/review/squad-fire/server-native-help.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    "cmake_registration": {
+      "path": "build/swat/review/squad-fire/ctest-registration.log",
+      "sha256": "95c39570c5450ae2329eb2baa359ffaf8190dc3a104f27da45c00b6bc3d81552"
+    },
+    "make_recipes": {
+      "path": "build/swat/review/squad-fire/make-targets.log",
+      "sha256": "7c1997583c699803055437ec3b15c83a595dda3419ad5e775a4ba30981c9f211"
+    },
+    "linux_log": {
+      "path": "build/swat/review/squad-fire/linux-release.log",
+      "sha256": "08d146e8d1c16352ec80b108c268536dc2d17ca20b12208de3b374b6bb048395"
+    },
+    "native_log": {
+      "path": "build/swat/review/squad-fire/native-release.log",
+      "sha256": "cc3130f030a386fe56ca67cb8f3177fec5e84f5c96a1f96c6190188933246aab"
+    }
+  },
+  "limits": [
+    "Authored behavior and a level-aware QA driver are not learned-policy or held-out evaluation results.",
+    "Fixed authored occupant positions and selected resolve seeds only; varied populations/layouts remain open.",
+    "Following officers can cross a commander firing line; the diagnostic is retained. Broader squad coordination and equipment orders remain open.",
+    "Room searches, frontend repeated/rejected commands, isolated low-prop player contacts, remaining art/audio and composition, policy baselines, native visual and stable-load performance acceptance remain open.",
+    "No Python execution, root Puffer/CUDA rebuild, GPU rendering or performance test was run. Performance tools were built only.",
+    "Manual playtesting remains optional feedback; complete slice acceptance is unfinished.",
+    "The combined hostile case holds the squad at staging during demolition and produces two lawful armed-suspect deaths. It does not establish all-follow moving coverage or hostile-suspect squad restraint."
+  ],
+  "matching_udp_encoded_states": 12,
+  "total_full_frames_replayed_per_platform": 54125,
+  "queued_search_checkpoint": {
+    "path": "build/swat/review/squad-fire/motel-threat-fire.sgrp.search.save",
+    "sha256": "ba4bc1956bf8ef4caf1636bc4b83cf3ffc86b3ec44f92e1438bcdd009aaaef0a",
+    "frames": 12441,
+    "native_replay": {
+      "path": "build/swat/review/squad-fire/queued-search-native-replay.log",
+      "sha256": "f13fec846eb885e92e2680c681d1ab4665e065d11b04a0a329f084aa63d2a60d"
+    }
+  }
+}
