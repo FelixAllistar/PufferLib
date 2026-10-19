@@ -1,0 +1,126 @@
+/* The card-room material pass. Geometry and game-state cues live in style.css. */
+:root {
+  --bg:#151619; --panel:#1c1d21; --line:#e1c39b24;
+  --text:#f7f2e8; --muted:#bcb6ad; --gold:#e4c18a; --mint:#82deca;
+  font-family:Inter,"Segoe UI",Arial,sans-serif;
+  font-synthesis:none;
+  -webkit-font-smoothing:antialiased;
+}
+body { background:#151619; }
+.masthead { background:linear-gradient(#26272b,#1b1c20); border-bottom-color:#d7bd8c30; }
+.brand { color:#f3e6c9; letter-spacing:1.5px; font-weight:650; }
+.brand b { color:#cbc5b9; }
+.brand-mark { color:#dd665f; text-shadow:0 1px 1px #0008; }
+.header-note { color:#aaa9a5; border-left-color:#d7bd8c30; font-size:11px; letter-spacing:.5px; }
+.quiet { background:#ffffff04; border-color:#bdb4a430; color:#d9d6cf; box-shadow:inset 0 1px #ffffff05; }
+.quiet:hover { background:#ffffff0d; border-color:#d7bd8c77; }
+.quiet[aria-expanded=true] { background:#d6b67713; border-color:#b99b6166; color:#f5dfb7; }
+.table-toolbar { background:#161619; color:#c5bfb4; border-bottom:1px solid #d7bd8c15; }
+.toolbar-separator { color:#75695c; }
+#street-label { color:#e4c18a; letter-spacing:.8px; }
+#hand-label { color:#98958f; }
+.text-button { color:#c5bfb4; }
+.stage { background:radial-gradient(ellipse at 50% 42%,#36302b 0%,#232225 52%,#15161a 90%); }
+.table-shadow { background:#000b; filter:blur(21px); }
+.rail {
+  inset:20% 11% 16%;
+  padding:14px;
+  border:1px solid #a68c60;
+  background:repeating-linear-gradient(23deg,#ffffff03 0 1px,transparent 1px 4px),linear-gradient(165deg,#373332,#141416 42%,#222124 70%,#101113);
+  box-shadow:0 0 0 2px #181617,0 0 0 3px #8d704446,0 14px 26px #0009,inset 0 2px 2px #ffffff22,inset 0 -3px 4px #000b;
+}
+.rail:before { content:''; position:absolute; inset:5px; border:1px dashed #ae957d46; border-radius:inherit; pointer-events:none; }
+.felt {
+  background-color:#921e2c;
+  background-image:radial-gradient(ellipse at 47% 35%,#e0444b22,#3b001e38),url('./assets/casino-felt-v1.webp');
+  background-size:auto,460px 460px;
+  background-blend-mode:normal,soft-light;
+  box-shadow:0 0 0 1px #c8a365,0 0 0 3px #201a17,inset 0 3px 18px #29000b88,inset 0 0 50px #35000b55;
+}
+.felt-line { inset:11px; border:1px solid #f3cbad26; }
+.felt-brand { display:none; }
+.pot-wrap { background:linear-gradient(#2e101cdd,#291018ee); border:1px solid #e5c28f2e; box-shadow:0 3px 8px #19010844,inset 0 1px #ffffff06; }
+.pot-label { color:#d6bfb7; font-size:16px; }
+.pot-label strong { color:#fff2d7; font-weight:750; }
+.pot-chip,.bet-chip { background:repeating-conic-gradient(#bfad88 0 35deg,#faf1db 35deg 50deg); border-color:#ad9974; box-shadow:0 2px 0 #645439,0 3px 5px #0006; }
+.pot-chip:after,.bet-chip:after { background:#eee2c9; border-color:#9d8968; }
+.seat-bet { background:#201a1de6; color:#f9f0de; border:1px solid #d9ba8640; box-shadow:0 2px 5px #0005; }
+.card { background:linear-gradient(130deg,#fff,#fbf9f4); color:#242931; box-shadow:0 2px 0 #bab9b3,0 5px 10px #17030b66,inset 0 0 0 1px #fff; }
+.card.red { color:#d83243; }
+.card.back { background:repeating-linear-gradient(45deg,#b7a27b13 0 1px,transparent 1px 5px),linear-gradient(135deg,#292b31,#17191e); border-color:#d1be99; box-shadow:0 2px 0 #85765e,0 4px 8px #0007; }
+.card.back:after { color:#d6b77c; text-shadow:0 1px 2px #0009; }
+.card.empty { background:#30071112; border-color:#efc7ad26; box-shadow:none; }
+.seat-info { background:linear-gradient(120deg,#f1f0e9,#d7ddd9); color:#202c30; border-color:#e9e9dfb3; box-shadow:0 5px 12px #0007,inset 0 1px #fff; }
+.seat-number { background:linear-gradient(#ffffff18,#0000001c),var(--seat-color); box-shadow:inset 0 1px 2px #ffffff2e,0 1px 2px #0002; }
+.seat-name { color:#4d5a5c; letter-spacing:.15px; }
+.hero .seat-info { background:linear-gradient(120deg,#fffefa,#e7f1eb); }
+.seat.active .seat-info { background:linear-gradient(120deg,#fffefa,#edf8f1); box-shadow:0 0 0 2px #83dfca,0 6px 16px #0008; }
+.seat.active:after { background:#83dfca; }
+.seat.folded .seat-info { background:linear-gradient(120deg,#303033,#242428); color:#c0bdb7; border-color:#a6977b44; box-shadow:0 3px 8px #0004; }
+.seat.folded .seat-name,.seat.folded .seat-stack small { color:#a9a49d; }
+.seat.folded .seat-number { filter:saturate(.3) brightness(.65); }
+.seat.folded .seat-number:after { background:#c3b9a8; box-shadow:0 0 0 2px #343236; }
+.seat.winner .seat-info { background:linear-gradient(120deg,#fff9e8,#f0d6a3); border-color:#eed09b; box-shadow:0 0 0 2px #be9455,0 6px 18px #0009; }
+.seat.winner .seat-name { color:#705a34; }
+.seat-cue { background:#202226ed; color:#eee7db; border-color:#c9af8233; box-shadow:0 2px 6px #0004; }
+.seat-cue.cue-check { color:#a0e1cd; border-color:#7ec8b04d; }
+.seat-cue.cue-raise { background:#f1dfbd; color:#503c25; border-color:#fff1d4; }
+.seat-cue.cue-win { color:#f3d6a1; background:#30271d; border-color:#c8a260; }
+.position-tag { background:#1c1e22; border-color:#c8ac7370; color:#f1ddba; }
+.dealer { background:linear-gradient(145deg,#fffaf0,#dfd8c8); border-color:#bcaa85; color:#383027; box-shadow:0 3px 0 #8b785b,0 4px 8px #0008; }
+.table-message { color:#f5e1bd; text-shadow:0 2px 5px #270411; }
+.action-area,.action-area.your-turn { background:radial-gradient(ellipse at 50% 0,#302b2b66,transparent 65%),linear-gradient(#212226,#16171b); border-top:1px solid #b2986552; }
+.action-area.your-turn { border-top-color:#7fc9b27a; }
+.hand-summary .rank-badge { color:#f9efdc; letter-spacing:.1px; }
+.hand-summary>span { color:#aba79e; }
+.hero-position { color:#b4afa6; }
+.your-turn #turn-label { color:#9ae1ce; }
+#call-hint { color:#e5cba2; }
+.action { border-color:#bdb4a44d; background:linear-gradient(#35353a,#292a2f); color:#f7f1e5; box-shadow:inset 0 1px #ffffff09,0 2px 3px #0003; }
+.action:hover:not(:disabled) { background:linear-gradient(#454349,#323238); border-color:#d5bc8d99; }
+.action.call { border-color:#89c5ad70; background:linear-gradient(#2b4440,#243934); }
+.action.call:hover:not(:disabled) { background:linear-gradient(#385a50,#2b493f); }
+.action.raise,.primary { background:linear-gradient(#ba3547,#93283a); border-color:#dc7781; box-shadow:inset 0 1px #ffffff20,0 3px 7px #0004; }
+.action.raise:hover:not(:disabled),.primary:hover { background:linear-gradient(#ce4252,#b33244); }
+.action kbd { color:#aaa59c; }
+.step-button,.raise-value { background:#292a2f; border-color:#a49b8b66; color:#d5cbb9; }
+.presets button { background:linear-gradient(#323237,#292a2f); border-color:#9c92814d; color:#e3ddd2; }
+.presets button:hover:not(:disabled),.step-button:hover:not(:disabled) { background:#44413e; border-color:#c6a979; }
+.presets button.selected { background:#5d4a32; border-color:#d8bb83; box-shadow:inset 0 0 0 1px #e8cf971f; color:#fff2d5; }
+input[type=range] { accent-color:#e7c58f; }
+.table-footer,#deal-status { color:#a6a097; }
+#result-detail { color:#c9c1b5; }
+.winner-description { color:#efd09b; }
+.result-hold { background:#323135; border-color:#9b8d786b; color:#e7ddcb; }
+.result-hold:hover { background:#484139; }
+#learning-panel,#table-drawer { background:linear-gradient(140deg,#252529,#1b1c20); border-color:#b89e713d; box-shadow:0 12px 40px #0005,inset 0 1px #ffffff06; scrollbar-color:#756650 transparent; }
+.drawer-heading h2 { color:#f0e8d9; font-weight:650; }
+.close-button { color:#afa79c; }
+.close-button:hover { color:#fff0d3; }
+.learning-hand { color:#e4c18a; }
+.learning-context,.muted { color:#aaa69d; }
+.equity-box { background:linear-gradient(120deg,#4a392d77,#31292199); border-color:#b5945e52; box-shadow:inset 0 1px #fff2d208; }
+.equity-box .eyebrow { color:#d6b581; }
+#equity-value { color:#f2d7a5; font-variant-numeric:tabular-nums; letter-spacing:-1px; }
+#equity-detail { color:#c9beb0; }
+.call-odds { color:#e3c18e; }
+.learning-note { color:#b4afa6; }
+.chance-row { color:#e6dfd4; }
+.chance-row strong { color:#e6c795; font-variant-numeric:tabular-nums; }
+.chance-row i { background:linear-gradient(to right,#d0ad70 var(--chance),#49443e var(--chance)); }
+.eyebrow { color:#d2b37b; }
+.buyin-line,.opponent-note p,#history li { color:#bfb8ac; }
+.history-actor,.history-amount { color:#f2e5ce; }
+dialog { background:linear-gradient(140deg,#29292d,#1b1c20); border-color:#b99d6966; }
+dialog::backdrop { background:#08090bd6; }
+dialog p,dialog dd { color:#c8c1b5; }
+dialog select { background:#1c1d21; border-color:#a794704f; }
+.error-toast { background:#2d2026; border-color:#d67785; }
+@media (max-width:700px) {
+  .brand { letter-spacing:.7px; }
+  .rail { inset:20% 7% 19%; padding:7px; }
+  .rail:before { inset:3px; border-color:#c5ae8f38; }
+  .felt-line { inset:6px; }
+  .pot-label { font-size:12px; }
+  .pot-wrap { margin-bottom:18px; padding:5px 11px; }
+}

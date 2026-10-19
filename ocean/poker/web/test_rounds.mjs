@@ -47,7 +47,7 @@ await p.clock.fastForward(9000);assert.equal(await p.evaluate(()=>window.poker.s
 const began=Date.now();await p.evaluate(()=>{window.testHidden=false;document.dispatchEvent(new Event('visibilitychange'));});
 await p.waitForTimeout(800);assert.equal(await p.evaluate(()=>window.poker.snapshot()[15]),s[15],'Result remains readable before automatic deal');
 await p.waitForFunction(h=>window.poker.snapshot()[15]>h,s[15],{timeout:9000});const elapsed=Date.now()-began;
-assert.ok(elapsed>=2500&&elapsed<9000);const next=await p.evaluate(()=>window.poker.snapshot());
+assert.ok(elapsed>=2500&&elapsed<9000,`Automatic deal returned after ${elapsed} ms`);const next=await p.evaluate(()=>window.poker.snapshot());
 assert.equal(next[15],s[15]+1);for(let q=0;q<2;q++)assert.equal(next[32+9*q],s[24+9*q]||20000,'Actual stacks carry into automatic deal');
 await p.close();
 const loss=await table(1,390);const busted=await finish(loss,true);assert.equal(busted[24],0);const losingReceipt=await checkReceipt(loss,busted);

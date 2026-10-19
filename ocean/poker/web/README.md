@@ -252,3 +252,21 @@ refresh, history/visibility gates, explicit rebuy and fold-win privacy. Its
 visibility test uses a controlled document visibilitychange in headless Chromium.
 The browser suite accelerates only inter-hand waits with Playwright’s clock;
 funded rounds advance through the actual automatic-deal path.
+
+## Casino material pass
+
+`casino.css` supplies a charcoal card room around the red table: generated
+wool-baize felt, a padded dark rail with fine brass trim and stitching, warm
+ivory cards/badges, and restrained teal/gold action and winner cues. The wider
+desktop surface fills the space between seats. Folded seats use charcoal;
+check/call and bet/raise controls have separate green and red treatments. The
+right learning panel retains its data and gains the same warm neutral palette.
+The faint felt logo was removed so it no longer sits behind the human cards.
+
+Only the felt material is a raster asset. The rail, cards, chips, stack badges,
+controls and motion remain responsive DOM/CSS. The built-in image_gen tool
+produced an art-direction concept and a separate material; exact prompts and
+the concept are retained in `reports/poker/20261019/web_v7/`. The material is
+encoded as a 287 KiB WebP and bundled locally without a remote image/font
+dependency. `build.sh` records asset hashes alongside source hashes. The engine,
+bot policy, card privacy and cash-session format are unchanged.

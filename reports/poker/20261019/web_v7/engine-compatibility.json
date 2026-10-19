@@ -1,0 +1,26 @@
+{
+  "previous_poker_release": "79cc4d623",
+  "all_four_unchanged": true,
+  "variants": {
+    "2": {
+      "previous_sha256": "ac15ba69cd1ac3c395e8ab98d55ea48592d5508a23dd27253da34808fa51328b",
+      "current_sha256": "ac15ba69cd1ac3c395e8ab98d55ea48592d5508a23dd27253da34808fa51328b",
+      "unchanged": true
+    },
+    "6": {
+      "previous_sha256": "c312bbcc228d6ed6aeee812cad5ebb2a1d6038cae89e9d5ef665b2d60882c99b",
+      "current_sha256": "c312bbcc228d6ed6aeee812cad5ebb2a1d6038cae89e9d5ef665b2d60882c99b",
+      "unchanged": true
+    },
+    "9": {
+      "previous_sha256": "1a9af1d320d22ac1f82ce20b022a6894fec9ae0b6a472d52874c78afd09d0fbc",
+      "current_sha256": "1a9af1d320d22ac1f82ce20b022a6894fec9ae0b6a472d52874c78afd09d0fbc",
+      "unchanged": true
+    },
+    "2pro": {
+      "previous_sha256": "3e06dad963aff53ad65d677ff81af60ef9bcdaaf436fe34f98382a99424e48d5",
+      "current_sha256": "3e06dad963aff53ad65d677ff81af60ef9bcdaaf436fe34f98382a99424e48d5",
+      "unchanged": true
+    }
+  }
+}

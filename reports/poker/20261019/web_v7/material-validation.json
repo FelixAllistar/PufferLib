@@ -1,0 +1,22 @@
+{
+  "generation_mode": "built-in image_gen",
+  "material": "ocean/poker/web/assets/casino-felt-v1.webp",
+  "material_sha256": "5f44398151bc2e2e3ea0620f77458c7b187ab52342e94511a22bb4d9cd030636",
+  "material_bytes": 293334,
+  "decoded_size": [
+    1254,
+    1254
+  ],
+  "browser_image_decode": "passed in Chromium",
+  "encoding": "FFmpeg libwebp quality 80; original composition and dimensions",
+  "art_direction": "concept.png is generated reference; desktop.png/mobile.png are browser captures",
+  "remote_image_or_font_dependencies_added": false,
+  "visual_review": [
+    "card and stack contrast",
+    "folded seat distinction",
+    "larger desktop felt surface",
+    "rail trim and stitching",
+    "no logo behind hole cards",
+    "winning hand receipt and phone rebuy"
+  ]
+}
