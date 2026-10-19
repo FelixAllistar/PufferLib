@@ -74,6 +74,12 @@ static bool transition(SwatCharacterRuntime* runtime,SwatCharacterActorPose* cac
         MatrixDecompose(matrix(cache->transition_locals+i*16),&a,&qa,&sa);
         MatrixDecompose(target,&b,&qb,&sb);
         Vector3 p=Vector3Lerp(a,b,t),scale=Vector3Lerp(sa,sb,t);
+        // A skeletal offset is a rigid bone. Blend its direction while
+        // retaining the current source length; vector lerp alone shortens it.
+        const char* name=swat_character_node_name(asset,(int)i);
+        const char* parent_name=parent>=0?swat_character_node_name(asset,parent):NULL;
+        if(name && parent_name && !strncmp(name,"mixamorig:",10) && !strncmp(parent_name,"mixamorig:",10) && Vector3LengthSqr(p)>1e-12f)
+            p=Vector3Scale(p,Vector3Length(b)/Vector3Length(p));
         Matrix blended=compose(MatrixTranslate(p.x,p.y,p.z),compose(QuaternionToMatrix(QuaternionSlerp(qa,qb,t)),MatrixScale(scale.x,scale.y,scale.z)));
         memcpy(locals+i*16,MatrixToFloatV(blended).v,16*sizeof(float));
     }
@@ -368,6 +374,9 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             .m4=chest_up.x,.m5=chest_up.y,.m6=chest_up.z,.m8=chest_right.x,.m9=chest_right.y,.m10=chest_right.z,.m15=1};
         SwatPose bounded=achieved;bounded.weapon_forward=swat_direction(actor->controller.yaw,body_pitch);
         bounded.weapon_up=swat_normalize(b3Cross(achieved.right,bounded.weapon_forward));
+        // Rebuild the remaining axis after bounding the torso heading.
+        // Recoil makes the achieved right axis oblique to this new forward.
+        bounded.right=swat_normalize(b3Cross(bounded.weapon_forward,bounded.weapon_up));
         Matrix target_chest=compose(inverse_root,swat_weapon_art_transform(&bounded));
         Matrix torso_delta=compose(target_chest,MatrixInvert(chest));
         // Aim rotates the torso around its sampled spine joint. Translating

@@ -30,6 +30,19 @@ preserving abdomen length even when camera/stance targets differ; independent ar
 pose. The measured Prop_Rifle inverse-bind bridge is applied exactly once.
 Art landmarks never override the camera, physical muzzle or collider dimensions.
 
+The bounded torso frame rebuilds its right axis after selecting forward/up,
+preventing recoil/lean shear. Skeletal local translations blend direction while
+retaining the current sampled length; non-skeletal prop translations retain
+their original interpolation. A2,400-frame ordinary-input regression checks all
+64 skeletal edges and all seven banks, with firing, lean, extreme pitch, crouch,
+reload and ready changes. Final Linux/Windows maximum length error is0.82µm
+against the unchanged10µm bound. Full software GL and bounded native source
+skinning checks pass. This fixes deformation, not the remaining pose fit:
+extreme high aiming can leave the support hand beyond reach, and crouched
+reload transitions still exceed the physical head envelope. Source assets and
+first-person sampling remain unchanged. Evidence and limits:
+`tests/receipts/character-rigidity-2026-10-19.json`.
+
 Standing locomotion now selects distinct original left/right banks according to
 achieved local travel. Their pace is 1.92126191 / 1.92126155 m per one-second
 cycle. The adapter uses each bank's measured travel vector after its fixed fit,

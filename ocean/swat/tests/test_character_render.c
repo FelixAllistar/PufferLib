@@ -459,6 +459,61 @@ static void blend_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting*
     free(before);
     printf("PASS skeletal blend: interrupted crouch/reverse/settle, max hip step %.4f m, %d moving/aim/ADS/ready transition frames, exact rifle frame, authored wrist targets within reach deficit, rigid limb lengths/carriers, authority and repeated camera cache\n",maximum,transitions);
 }
+// Ordinary input must preserve every source bone through aim and bank changes.
+static void motion_rigidity_check(SwatCharacterRuntime* runtime,SwatLighting* light) {
+    const float lean[]={0,-1,1,.75f,-.75f,-.5f,.5f,0,1,-.5f};
+    const float pitch[]={0,25,-25,70,-70,15,-15,0,60,-30};
+    SwatSim* before=malloc(sizeof(*before));assert(before);
+    unsigned int banks=0;int total=0,reloads=0;float maximum=0;
+    const char* captures=getenv("SWAT_CHARACTER_RIGIDITY_CAPTURES");
+    assert(!captures || light);
+    for(int test=0;test<10;test++) {
+        SwatSim* sim=calloc(1,sizeof(*sim));assert(sim);
+        SwatConfig config=swat_default_config();config.randomize=config.hostile_fire=false;
+        config.squad_bots=0;swat_config_human(&config);swat_sim_init(sim,config,81);
+        for(int tick=0;tick<240;tick++) {
+            SwatInput input=swat_neutral_input();input.aim=true;input.lean=lean[test];
+            input.yaw_delta=swat_clamp(swat_angle((test%4)*SWAT_PI*.5f-sim->actors[0].controller.yaw),-6*SWAT_RAD,6*SWAT_RAD);
+            input.pitch_delta=swat_clamp(pitch[test]*SWAT_RAD-sim->actors[0].controller.pitch,-6*SWAT_RAD,6*SWAT_RAD);
+            input.crouch=(test==5||test==6||test==8)?tick>=40&&tick<200:test==7?tick>=140&&tick<220:false;
+            if(tick>=120&&tick<180){input.strafe=test==1?-.2f:test==2?.2f:0;input.forward=test==3?-.2f:test==4||test==6?.2f:0;}
+            input.fire=tick==80||tick==140;input.reload=(test==7||test==8)&&tick==90;
+            if(test==9&&tick>=180&&tick<210)input.ready=2;
+            swat_sim_step(sim,&input);assert(sim->end==SWAT_RUNNING && sim->actors[0].alive);
+            memcpy(before,sim,sizeof(*before));swat_character_runtime_prepare(runtime,sim);
+            assert(!memcmp(before,sim,sizeof(*before)));
+            const SwatCharacterActorPose* pose=&runtime->actors[0];assert(pose->valid);
+            SwatCharacterAsset* asset=runtime->banks[pose->bank].asset;banks|=1u<<pose->bank;
+            int edges=0;
+            for(size_t n=0;n<pose->count/16;n++) {
+                const char* name=swat_character_node_name(asset,(int)n);int parent=swat_character_parent_node(asset,(int)n);
+                if(!name || strncmp(name,"mixamorig:",10) || parent<0)continue;
+                const char* parent_name=swat_character_node_name(asset,parent);
+                if(!parent_name || strncmp(parent_name,"mixamorig:",10))continue;
+                float source=Vector3Distance(point(pose->first_person_matrices+n*16,(Vector3){0}),
+                    point(pose->first_person_matrices+parent*16,(Vector3){0}));
+                float fitted=Vector3Distance(point(pose->matrices+n*16,(Vector3){0}),
+                    point(pose->matrices+parent*16,(Vector3){0}));
+                maximum=fmaxf(maximum,fabsf(source-fitted));assert(fabsf(source-fitted)<1e-5f);edges++;
+            }
+            assert(edges==64);total++;reloads+=pose->reloading;
+            if(captures && (tick==80 || tick==140 || tick==200)) {
+                SwatCharacterView* view=&runtime->banks[pose->bank];
+                assert(swat_character_restore_pose(asset,pose->matrices,pose->count));
+                memcpy(view->visible,pose->visible,(size_t)view->model.meshCount);
+                Vector3 feet={pose->feet.x,pose->feet.y,pose->feet.z};
+                Camera3D camera={Vector3Add(feet,(Vector3){2.5f,1.4f,2.5f}),Vector3Add(feet,(Vector3){0,.8f,0}),{0,1,0},40,CAMERA_PERSPECTIVE};
+                Image image=frame(view,light,camera,pose->root);
+                assert(ExportImage(image,TextFormat("%s/rigidity-%02d-%03d.png",captures,test,tick)));UnloadImage(image);
+                assert(!memcmp(before,sim,sizeof(*before)));
+            }
+        }
+        assert(sim->actors[0].arsenal.shots>0);swat_sim_close(sim);free(sim);
+    }
+    free(before);assert(total==2400 && banks==127 && reloads>100);
+    printf("PASS motion rigidity:2400 ordinary-input frames,64 source bones,all7 banks,recoil/lean/pitch/crouch/reload/ready transitions,max length error %.9fm and unchanged authority\n",maximum);
+}
+
 static void runtime_check(const char* directory,SwatLighting* light) {
 #ifdef _WIN32
     assert(!_putenv_s("SWAT_CHARACTER_ASSETS",directory));
@@ -634,6 +689,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
     input.reload=true; swat_weapons_step(&actor->arsenal,&input,0,0,true,false); sim->tick++; swat_character_runtime_prepare(runtime,sim);
     assert(weapon->reload_stage==SWAT_RELOAD_INSERT && runtime->actors[0].source_time>=.88);
     printf("PASS live GPU character: yaw, crouch, pitch, immutable authority, camera reuse, reload commits/cancellation/restart\n");
+    motion_rigidity_check(runtime,light);
     swat_sim_close(sim); free(sim); free(before); swat_character_runtime_close(runtime); swat_weapon_art_close(&weapons);
 }
 int main(int argc,char** argv) {
