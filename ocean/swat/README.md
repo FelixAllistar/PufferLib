@@ -1,5 +1,7 @@
 # SWAT: Gold Element
 
+Character aim and animation transitions now preserve source bone lengths through recoil, lean and stance changes. The correction passes2,400 ordinary-input frames on Linux/Windows and software-rendered character checks. Extreme aiming grips and crouched reload posture still need fitting. [Receipt](tests/receipts/character-rigidity-2026-10-19.json).
+
 Shots and weapon handling now keep the weapon family captured when they happen, including delayed playback, reload cancellation and late replicas. Compliance, squad orders and acknowledgements also carry distinct cues, preparing recorded voices without substituting the wrong command. Linux/Windows audio, gameplay, UDP, eight complete missions and exact replays pass. Protocol/replay version is44; use matching peers and fresh saves/journals. Recordings and voice quality are unchanged. [Receipt](tests/receipts/audio-event-profiles-2026-10-19.json).
 
 The transformer now shares one original model across its four draw owners: four mesh uploads replace sixteen. Its physical pieces and draw submissions remain independent. A dropped final UDP snapshot also no longer strands the room-search QA wait: the paused test authority keeps publishing under the same15-second deadline. Both platforms pass the original full room-search assertions and controlled-loss recovery; twenty native images match the reviewed prototype exactly. This is a resource/QA update, with no measured frame-time improvement or wire-version change. [Receipt](tests/receipts/transformer-resource-sharing-2026-10-19.json).
