@@ -1,5 +1,7 @@
 # SWAT: Gold Element
 
+The transformer now shares one original model across its four draw owners: four mesh uploads replace sixteen. Its physical pieces and draw submissions remain independent. A dropped final UDP snapshot also no longer strands the room-search QA wait: the paused test authority keeps publishing under the same15-second deadline. Both platforms pass the original full room-search assertions and controlled-loss recovery; twenty native images match the reviewed prototype exactly. This is a resource/QA update, with no measured frame-time improvement or wire-version change. [Receipt](tests/receipts/transformer-resource-sharing-2026-10-19.json).
+
 Current motel increment (protocol/replay v43): the rear utility court includes the original static transformer, with four source-triangle physical owners, independent panel damage and navigation around its plinth. A captured roof-edge contact now permits safe departure while retaining wall and later-face rejection. Clean Linux/Windows checks cover 330 broad groups/platform, nine transformer groups and eight ordinary-input missions with exact shipping replay (175,258 frames/platform). A scoped native review passed sixteen render/collision cases and inspected the actual placement and panel removal. [Qualified receipt](tests/receipts/transformer-integration-2026-10-19.json). Fresh v43 saves and matching peers are required. Full-level visuals, stable-load performance, remaining art/audio and the full slice are still open.
 
 A standalone tactical game within Ocean, with environment/config name `swat`.

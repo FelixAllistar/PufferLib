@@ -1,8 +1,12 @@
 static const char* room_network_failure_prefix;
 static void room_network_settle(SwatNetServer* server,SwatNetClient* clients,SwatSim* replicas,int count,int tick) {
     // A fixed number of simulation ticks is not a UDP delivery deadline.
-    uint32_t start=enet_time_get();bool ready=false;
+    uint32_t start=enet_time_get(),published=start-250;bool ready=false;
     while(!ready && enet_time_get()-start<15000) {
+        // The authority is paused here. Continue its normal state publication:
+        // a dropped final unreliable snapshot must not strand this QA wait.
+        uint32_t now=enet_time_get();
+        if(now-published>=250){swat_server_publish(server);published=now;}
         equipment_net_poll(server,clients,count);ready=true;
         for(int i=0;i<count;i++)ready&=clients[i].status==SWAT_NET_ACTIVE && replicas[i].tick>=tick-1;
     }

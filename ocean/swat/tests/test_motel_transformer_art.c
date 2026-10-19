@@ -86,6 +86,7 @@ int main(int argc,char** argv){
     for(int i=0;i<4;i++){
         const int asset=SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+i;
         Model m=art.motel[asset];assert(m.meshCount==4&&m.materialCount==2);
+        assert(m.meshes==art.motel[SWAT_MOTEL_TRANSFORMER_ASSET_FIRST].meshes && m.materials==art.motel[SWAT_MOTEL_TRANSFORMER_ASSET_FIRST].materials);
         int total=0;for(int j=0;j<4;j++){assert(m.meshes[j].triangleCount==counts[j]);total+=m.meshes[j].triangleCount;}assert(total==4784);
         const SwatMotelAsset* a=swat_motel_asset(asset);const Mesh* mesh=&m.meshes[i];assert(mesh->triangleCount==a->triangle_count);
         for(int t=0;t<a->triangle_count;t++)for(int k=0;k<3;k++){
@@ -103,6 +104,26 @@ int main(int argc,char** argv){
     puts("PASS transformer native art: four original primitives, 4784 oriented triangles, one opaque PBR material, two shared maps, source/fallback silhouettes match physical owners");
     swat_lighting_init(&lighting);scene(argv[1],"scene-intact");
     assert(swat_world_damage(&sim.world,SWAT_MOTEL_TRANSFORMER_FIRST+2,100000));scene(argv[1],"scene-left-panel-removed");
+    static SwatWorld empty;
+    for(int cycle=0;cycle<3;cycle++) {
+        swat_environment_art_prepare_location(&art,&empty);assert(!swat_art_texture_stats().textures);
+        for(int i=0;i<SWAT_MOTEL_ASSETS;i++)assert(!art.motel[i].meshCount && !art.motel[i].materialCount);
+        swat_environment_art_prepare_location(&art,&sim.world);assert(swat_art_texture_stats().textures==2);
+        for(int i=1;i<4;i++)assert(art.motel[SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+i].meshes==art.motel[SWAT_MOTEL_TRANSFORMER_ASSET_FIRST].meshes);
+    }
+    scene(argv[1],"scene-reloaded");
+    assert(swat_world_damage(&sim.world,SWAT_MOTEL_TRANSFORMER_FIRST+1,100000));
+    assert(sim.world.objects[SWAT_MOTEL_TRANSFORMER_FIRST].active);
+    for(int i=1;i<4;i++)assert(!sim.world.objects[SWAT_MOTEL_TRANSFORMER_FIRST+i].active);
+    assert(art.motel[SWAT_MOTEL_TRANSFORMER_ASSET_FIRST].meshCount==4);
+    scene(argv[1],"scene-plinth-only");
+    // Independent old-style allocations must still close separately.
+    static SwatEnvironmentArt unique;char original[4096];snprintf(original,sizeof(original),"%s/motel_transformer/BC_XFMR01_closed.glb",argv[2]);
+    unique.storefront[0]=LoadModel(original);unique.storefront[1]=LoadModel(original);
+    assert(unique.storefront[0].meshCount==4 && unique.storefront[1].meshCount==4);
+    assert(unique.storefront[0].meshes!=unique.storefront[1].meshes);
+    swat_environment_art_close(&unique);assert(swat_art_texture_stats().textures==2);
+    puts("PASS transformer resource sharing: one4mesh upload replaces four copies; all physical/draw owners remain, three load/close cycles and independent-model cleanup pass");
     swat_lighting_close(&lighting);swat_sim_close(&sim);swat_environment_art_close(&art);assert(!swat_art_texture_stats().textures);CloseWindow();
     puts("PASS transformer native placement: production lighting, graybox maintenance-yard context, panel removal and immutable render authority; all textures released");
 }
