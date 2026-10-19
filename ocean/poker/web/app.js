@@ -1,4 +1,7 @@
 import Core from './Controller.bend';
+import Hand from './Hand.bend';
+import Cash from './Cash.bend';
+import {loadSession,saveSession} from './storage.js';
 
 const $ = id => document.getElementById(id);
 const ranks = '23456789TJQKA', suits = ['♣','♦','♥','♠'];
@@ -16,7 +19,9 @@ const descriptions = {
 };
 let settings = {players:6, opponent:'mixed', pace:600};
 let worker, state, busy = true, failed = false, generation = 0, requestId = 0, pending = new Map();
-let session = Core.empty(), lastActions = [], recordedHand = -1, selectedRaise = 0, selectedPreset = null, sound = true, audio;
+let session = Core.empty(), lastActions = [], recordedHand = 0, selectedRaise = 0, selectedPreset = null, sound = true, audio;
+let buyins=20000,tableBuyins=Array(6).fill(20000),latestCheckpoint=null;
+let learningOpen=innerWidth>=1280,lastLearning=null,learningPending='',showBest=true;
 let actionEffects = new Map(), latestAction = '';
 let history = [], botTimer, startedAt = 0, lastBotTime = 0;
 const fmt = chips => (chips / 100).toLocaleString('en-US',{maximumFractionDigits:2});
@@ -33,10 +38,10 @@ function policyFor(p) {
   return settings.opponent;
 }
 function label(p) { return p === 0 ? 'You' : `${names[policyFor(p)]} ${String(p).padStart(2,'0')}`; }
-function card(id, animate=false) {
+function card(id, animate=false, best=false) {
   if (id === 52) return '<span class="card back" aria-label="Face-down card"></span>';
   const raw = ranks[id >> 2], rank = raw === 'T' ? '10' : raw, suit = suits[id & 3];
-  return `<span class="card${(id & 3) === 1 || (id & 3) === 2 ? ' red' : ''}${animate ? ' dealt' : ''}" aria-label="${rank}${suit}"><span class="corner">${rank}<small>${suit}</small></span><span class="suit">${suit}</span><span class="lower">${rank}</span></span>`;
+  return `<span class="card${(id & 3) === 1 || (id & 3) === 2 ? ' red' : ''}${animate ? ' dealt' : ''}${best?' best':''}" aria-label="${rank}${suit}"><span class="corner">${rank}<small>${suit}</small></span><span class="suit">${suit}</span><span class="lower">${rank}</span></span>`;
 }
 function unlockAudio() {
   if(!sound)return;
@@ -75,8 +80,37 @@ function request(command, args={}) {
 function addHistory(actor, text, amount='', kind='') {
   history.unshift({actor,text,amount,kind});
   history = history.slice(0,120);
-  $('history').innerHTML = history.map(h => `<li class="${h.kind}"><span>${h.actor ? `<span class="history-actor">${h.actor}</span> ` : ''}${h.text}</span><span class="history-amount">${h.amount}</span></li>`).join('');
+  renderHistory();
 }
+const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+function renderHistory(){ $('history').innerHTML=history.map(h=>`<li class="${h.kind==='history-street'?'history-street':''}"><span>${h.actor?`<span class="history-actor">${escape(h.actor)}</span> `:''}${escape(h.text)}</span><span class="history-amount">${escape(h.amount)}</span></li>`).join(''); }
+function persist(){
+  if(!state||!latestCheckpoint)return;
+  const ok=saveSession({version:1,settings,sound,session,buyins,tableBuyins,recordedHand,checkpoint:latestCheckpoint,publicState:state,history,lastActions,latestAction,selectedRaise,showBest});
+  $('saved-state').textContent=ok?'Saved in this tab':'Tab storage unavailable';
+}
+function renderLearning(){
+  $('learning-context').textContent=lastLearning?`Hand ${lastLearning.hand} · ${streets[lastLearning.street]} decision`:'Analysis appears at your next decision';
+  if(!lastLearning){$('equity-value').textContent='—';$('hand-chances').innerHTML='';return;}
+  const d=lastLearning.data,pct=(n,total)=>`${(Cash.percent(n,total)/100).toFixed(1)}%`;
+  $('equity-value').textContent=pct(d[1],d[0]);
+  $('equity-detail').textContent=`Tie ${pct(d[2],d[0])} · Equity ${(d[3]/100).toFixed(1)}% · ${d[15]} opponent${d[15]===1?'':'s'}`;
+  $('call-odds').textContent=d[14]?`Call price: ${(d[14]/100).toFixed(1)}% of the eligible pot`:'No call required at this decision';
+  $('draw-method').textContent=d[16]?`All ${d[4].toLocaleString()} possible board runouts`:'4,096 sampled board runouts';
+  $('hand-chances').innerHTML=categories.map((name,i)=>{
+    const n=d[5+i],basis=Cash.percent(n,d[4]),label=!n&&!d[16]?'Not sampled':basis>0&&basis<10?'<0.1%':`${(basis/100).toFixed(1)}%`;
+    return `<div class="chance-row"><span>${name}</span><strong>${escape(label)}</strong><i style="--chance:${basis/100}%"></i></div>`;
+  }).join('');
+}
+async function updateLearning(){
+  if(!learningOpen||!heroTurn()||busy||failed||isDone())return;
+  const key=`${generation}:${state[15]}:${state[8]}`;
+  if(learningPending===key||lastLearning?.key===key)return;
+  learningPending=key;const hand=state[15],street=state[2];
+  try{const reply=await request('learn');if(key!==`${generation}:${state?.[15]}:${state?.[8]}`)return;lastLearning={key,data:reply.learning,hand,street};renderLearning();}
+  catch{}finally{if(learningPending===key)learningPending='';}
+}
+function toggleLearning(open){learningOpen=open;$('learning-panel').hidden=!open;document.body.classList.toggle('learning-open',open);$('learn-button').setAttribute('aria-expanded',String(open));if(open){toggleHistory(false);renderLearning();updateLearning();}}
 function logAction(before, action) {
   const p = before[1], r = seat(before,p), call = Math.min(before[4]-r[1],r[0]);
   let verb, amount='';
@@ -115,10 +149,10 @@ function render(previous) {
   $('street-label').textContent = done ? 'HAND COMPLETE' : streets[state[2]].toUpperCase();
   $('hand-label').textContent = `HAND ${String(state[15]).padStart(3,'0')}`;
   $('pot').textContent = `${fmt(done ? state.slice(24).filter((_,i)=>i%9===2).reduce((a,b)=>a+b,0) : state[3])} BB`;
-  $('board').innerHTML = Array.from({length:5},(_,i)=>i < state[13] ? card(state[16+i],newHand || !previous || i >= previous[13]) : '<span class="card empty" aria-hidden="true"></span>').join('');
+  $('board').innerHTML = Array.from({length:5},(_,i)=>i < state[13] ? card(state[16+i],newHand || !previous || i >= previous[13],showBest&&!!(state[22]&(1<<(i+2)))) : '<span class="card empty" aria-hidden="true"></span>').join('');
   $('seats').innerHTML = Array.from({length:settings.players},(_,p) => {
     const r=seat(state,p), angle=Math.PI/2+2*Math.PI*p/settings.players;
-    const x=50+(settings.players===9?37:35)*Math.cos(angle), y=p===0?83:46+32*Math.sin(angle);
+    const x=50+(settings.players===9?37:35)*Math.cos(angle), y=p===0?81:46+32*Math.sin(angle);
     const pos=position(p), acted=lastActions[p] || (pos.posted?`POST ${pos.short} · ${fmt(pos.posted)} BB`:'');
     const effect=actionEffects.get(p),elapsed=effect?performance.now()-effect.at:2000;
     const effectClass=elapsed<1600?` effect-${effect.kind}`:'';
@@ -129,13 +163,16 @@ function render(previous) {
     const betTop = p===0 ? '-20px' : y<32 ? 'calc(100% + 10px)' : y>60 ? '-18px' : '60%';
     const betX = p!==0 && y>=32 && y<=60 ? (x<50?'130%':'-30%') : '50%';
     const status=!r[5]?'FOLDED':done&&r[7]!==0?`${signed(r[7])} BB${r[6]>=0?` · ${categories[r[6]]}`:''}`:r[0]===0?'ALL IN':!done&&p===state[1]?p===0?'YOUR TURN':'THINKING…':acted;
-    return `<div class="seat${p===0?' hero':''}${!r[5]?' folded':''}${!done&&p===state[1]?' active':''}${effectClass}" style="--x:${x}%;--y:${y}%;--bet-top:${betTop};--bet-x:${betX};--seat-color:${seatColors[p]};${effectStyle}" data-seat="${p}" aria-label="${label(p)}, ${fmt(r[0])} big blinds${!r[5]?', folded':''}"><div class="seat-cards">${card(r[3],animate)}${card(r[4],animate)}</div><div class="seat-info">${state[7]===p?'<span class="dealer" title="Dealer button">D</span>':''}<span class="seat-number">${p===0?'Y':p}</span><div class="seat-stack">${fmt(r[0])}<small>BB</small></div></div><div class="seat-name">${label(p)}${pos.short?` <span class="position-tag">${pos.short}</span>`:''}</div><div class="seat-status">${status}</div>${elapsed<600&&(effect.kind==='call'||effect.kind==='raise')?'<span class="action-chip bet-chip" aria-hidden="true"></span>':''}${elapsed<1000&&effect.kind==='check'?'<span class="check-effect" aria-hidden="true">✓</span>':''}${!done&&r[1]>0?`<div class="seat-bet${previous&&r[1]!==seat(previous,p)[1]?' chip-enter':''}"><span class="bet-chip"></span>${fmt(r[1])}</div>`:''}</div>`;
+    return `<div class="seat${p===0?' hero':''}${!r[5]?' folded':''}${!done&&p===state[1]?' active':''}${effectClass}" style="--x:${x}%;--y:${y}%;--bet-top:${betTop};--bet-x:${betX};--seat-color:${seatColors[p]};${effectStyle}" data-seat="${p}" aria-label="${label(p)}, ${fmt(r[0])} big blinds${!r[5]?', folded':''}"><div class="seat-cards">${card(r[3],animate,p===0&&showBest&&!!(state[22]&1))}${card(r[4],animate,p===0&&showBest&&!!(state[22]&2))}</div><div class="seat-info">${state[7]===p?'<span class="dealer" title="Dealer button">D</span>':''}<span class="seat-number">${p===0?'Y':p}</span><div class="seat-stack">${fmt(r[0])}<small>BB</small></div></div><div class="seat-name">${label(p)}${pos.short?` <span class="position-tag">${pos.short}</span>`:''}</div><div class="seat-status">${status}</div>${elapsed<600&&(effect.kind==='call'||effect.kind==='raise')?'<span class="action-chip bet-chip" aria-hidden="true"></span>':''}${elapsed<1000&&effect.kind==='check'?'<span class="check-effect" aria-hidden="true">✓</span>':''}${!done&&r[1]>0?`<div class="seat-bet${previous&&r[1]!==seat(previous,p)[1]?' chip-enter':''}"><span class="bet-chip"></span>${fmt(r[1])}</div>`:''}</div>`;
   }).join('');
   $('betting-controls').hidden = done;
   $('betting-controls').style.display = done ? 'none' : '';
   $('finished-controls').hidden = !done;
   const hero=seat(state,0);
-  $('hand-rank').textContent = hero[6]>=0 && hero[5] ? categories[hero[6]] : '';
+  $('hand-rank').textContent = hero[6]>=0 && hero[5] ? Hand.name(state[21])+(state[23]?' · Board plays':'') : hero[5]?Hand.holding(hero[3],hero[4]):'You folded';
+  $('hand-rank').setAttribute('aria-pressed',String(showBest));
+  document.querySelector('.hand-summary>span').textContent=hero[6]>=0&&hero[5]?'Best five highlighted':'Cash game · 0.5 / 1 BB';
+  $('learning-hand').textContent=hero[6]>=0?Hand.name(state[21]):Hand.holding(hero[3],hero[4]);
   $('raise-action-label').textContent = state[4] ? 'Raise to' : 'Bet';
   const canRaise = myTurn && !!(state[9]&~3);
   $('fold-button').disabled = !myTurn || !(state[9]&1);
@@ -170,28 +207,33 @@ function render(previous) {
   $('turn-dot').style.background = myTurn ? 'var(--gold)' : 'var(--mint)';
   $('turn-label').parentElement.classList.toggle('thinking',!myTurn&&!done);
   if (done) {
-    $('result-title').textContent = hero[7]>0 ? `A nice hand. ${signed(hero[7])} BB` : hero[7]===0 ? 'All square.' : `Next hand, fresh start. ${signed(hero[7])} BB`;
-    $('result-detail').textContent = state[14] && hero[5] ? `Showdown · ${categories[hero[6]]}` : hero[5] ? 'The table folded to you.' : 'You folded. The hand has finished.';
+    $('result-title').textContent = `${hero[7]>0?'You win':hero[7]<0?'Hand result':'Split pot'} ${signed(hero[7])} BB`;
+    $('result-detail').textContent = state[14] && hero[5] ? `Showdown · ${Hand.name(state[21])}` : hero[5] ? 'The table folded to you.' : 'You folded. The hand has finished.';
+    $('next-button').innerHTML=hero[0]===0?'Rebuy 200 BB & deal <span>→</span>':'Deal next hand <span>→</span>';
     $('next-button').disabled=busy||failed;
   }
   const net=session.won-session.lost;
   $('session-net').innerHTML=`${signed(net)}<span>BB</span>`;
   $('session-net').className=`session-net${net>0?' positive':net<0?' negative':''}`;
   $('session-hands').textContent=session.hands; $('session-wins').textContent=session.wins;
+  $('session-buyins').textContent=`${fmt(buyins)} BB`;
+  $('cash-stack').textContent=`Stack ${fmt(hero[0])} BB · Net ${signed(net)} BB`;
   $('opponent-description').textContent=settings.players===9&&settings.opponent==='mixed'?'A mixed field of Rules and Range bots.':descriptions[settings.opponent];
 }
-function acceptState(next, before) {
+function acceptState(next, before, checkpoint) {
   state=next;
+  if(checkpoint)latestCheckpoint=checkpoint;
   if (before && state[2]!==before[2] && (!isDone() || state[14])) {
     lastActions=lastActions.map(a=>a==='Folded'?a:'');
     addHistory('',streets[state[2]].toUpperCase(),'','history-street'); soundEffect('deal');
   }
-  if (isDone() && recordedHand!==state[15]) {
+  if (Cash.should_record(isDone(),state[15],recordedHand)) {
     const net=seat(state,0)[7]; session=Core.record(Math.max(0,net),Math.max(0,-net),session); recordedHand=state[15];
     if(net>0)soundEffect('win');
     addHistory('You',net>0?'win':net<0?'finish':'split',`${signed(net)} BB`);
   }
   render(before);
+  persist();renderLearning();updateLearning();
   if(heroTurn()) soundEffect('turn');
   scheduleBot();
 }
@@ -207,7 +249,7 @@ function scheduleBot() {
       const reply=await request('bot',{policy:kind==='rules'?1:kind==='fullhouse'?4:7});
       lastBotTime=performance.now()-t;
       if(generation!==tableGeneration)return;
-      logAction(before,reply.action); busy=false; acceptState(reply.state,before);
+      logAction(before,reply.action); busy=false; acceptState(reply.state,before,reply.checkpoint);
     } catch(error) {if(generation!==tableGeneration)return; fail(error);}
   },settings.pace);
 }
@@ -217,11 +259,11 @@ async function act(action) {
   const kind=action<0?0n:action===0?1n:2n;
   if(!Core.allowed(isDone(),state[1],0,kind,state[12],Number(!!(state[9]&~3)),state[4],state[10],state[11],Math.max(0,action)))return;
   const before=state, tableGeneration=generation; busy=true;render(before);
-  try {const reply=await request('act',{action});if(generation!==tableGeneration)return;logAction(before,action);busy=false;acceptState(reply.state,before);}catch(error){if(generation===tableGeneration)fail(error);}
+  try {const reply=await request('act',{action});if(generation!==tableGeneration)return;logAction(before,action);busy=false;acceptState(reply.state,before,reply.checkpoint);}catch(error){if(generation===tableGeneration)fail(error);}
 }
-async function openTable(nextSettings) {
+async function openTable(nextSettings,saved=null) {
   generation++;clearTimeout(botTimer);worker?.terminate();pending.forEach(p=>p.reject(Error('Table replaced.')));pending.clear();
-  settings=nextSettings; busy=true;failed=false;state=undefined;history=[];lastActions=[];recordedHand=-1;session=Core.empty();actionEffects.clear();latestAction='';
+  settings=nextSettings; busy=true;failed=false;state=undefined;history=[];lastActions=[];recordedHand=0;session=Core.empty();actionEffects.clear();latestAction='';latestCheckpoint=null;buyins=20000;tableBuyins=Array(settings.players).fill(20000);lastLearning=null;
   $('history').innerHTML='';$('table-message').textContent='Shuffling the deck…';$('turn-label').textContent='Opening the table';
   worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
   worker.onmessage=({data})=>{const p=pending.get(data.id);if(!p)return;pending.delete(data.id);data.error?p.reject(Error(data.error)):p.resolve(data);};
@@ -230,8 +272,16 @@ async function openTable(nextSettings) {
   const tableGeneration=generation;
   try {
     const seed=crypto.getRandomValues(new Uint32Array(1))[0];
-    const reply=await request('init',{players:settings.players,experimental:settings.opponent==='river',seed});
-    if(generation!==tableGeneration)return;busy=false;addHistory('','PREFLOP','','history-street');acceptState(reply.state);soundEffect('deal');
+    const reply=saved?await request('restore',{checkpoint:saved.checkpoint}):await request('init',{players:settings.players,experimental:settings.opponent==='river',seed});
+    if(generation!==tableGeneration)return;
+    if(saved){
+      if(JSON.stringify(reply.state)!==JSON.stringify(saved.publicState))throw Error('Saved hand did not replay exactly.');
+      session={...Core.empty(),...saved.session};buyins=saved.buyins;tableBuyins=saved.tableBuyins;recordedHand=saved.recordedHand;history=saved.history;lastActions=saved.lastActions;latestAction=typeof saved.latestAction==='string'?saved.latestAction.slice(0,200):'';sound=!!saved.sound;showBest=saved.showBest!==false;renderHistory();
+    }else addHistory('','PREFLOP','','history-street');
+    busy=false;acceptState(reply.state,undefined,reply.checkpoint);
+    if(saved&&heroTurn()&&Number.isInteger(saved.selectedRaise))setRaise(saved.selectedRaise);
+    $('sound-button').textContent=sound?'Sound on':'Sound off';$('sound-button').setAttribute('aria-pressed',String(sound));
+    $('seat-count').value=String(settings.players);$('opponent').value=settings.opponent;$('speed').value=String(settings.pace);settingsDetail();soundEffect('deal');
   }catch(error){if(generation===tableGeneration)fail(error);}
 }
 $('fold-button').onclick=()=>act(-1);$('call-button').onclick=()=>act(0);$('raise-button').onclick=()=>act(selectedRaise);
@@ -243,13 +293,18 @@ document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{
 });
 $('next-button').onclick=async()=>{
   if(busy||!isDone()||failed)return;
-  busy=true;render(state);lastActions=[];actionEffects.clear();latestAction='';addHistory('',`HAND ${state[15]+1} · PREFLOP`,'','history-street');
+  const previous=state,stacks=Array.from({length:settings.players},(_,p)=>Cash.next_stack(seat(state,p)[0],20000));
+  busy=true;render(state);lastActions=[];actionEffects.clear();latestAction='';lastLearning=null;
   const tableGeneration=generation;
-  try {const reply=await request('next');if(generation!==tableGeneration)return;const before=state;busy=false;acceptState(reply.state,before);soundEffect('deal');}catch(error){if(generation===tableGeneration)fail(error);}
+  try {const reply=await request('next',{stacks});if(generation!==tableGeneration)return;
+    for(let p=0;p<settings.players;p++)if(seat(previous,p)[0]===0){tableBuyins[p]+=20000;if(p===0)buyins+=20000;addHistory(label(p),'rebuys','200 BB');}
+    addHistory('',`HAND ${reply.state[15]} · PREFLOP`,'','history-street');busy=false;acceptState(reply.state,previous,reply.checkpoint);soundEffect('deal');}catch(error){if(generation===tableGeneration)fail(error);}
 };
 $('settings-button').onclick=()=>$('settings').showModal();$('help-button').onclick=()=>$('help').showModal();
-function toggleHistory(open) {$('table-drawer').hidden=!open;$('history-button').setAttribute('aria-expanded',String(open));}
+function toggleHistory(open) {$('table-drawer').hidden=!open;$('history-button').setAttribute('aria-expanded',String(open));if(open)toggleLearning(false);}
 $('history-button').onclick=()=>toggleHistory($('table-drawer').hidden);$('close-drawer').onclick=()=>toggleHistory(false);
+$('learn-button').onclick=()=>toggleLearning(!learningOpen);$('close-learning').onclick=()=>toggleLearning(false);
+$('hand-rank').onclick=()=>{showBest=!showBest;render(state);persist();};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 function settingsDetail(){
   const pro=$('opponent').querySelector('[value="river"]');pro.disabled=$('seat-count').value!=='2';
@@ -260,9 +315,9 @@ function settingsDetail(){
 }
 $('seat-count').onchange=settingsDetail;$('opponent').onchange=settingsDetail;settingsDetail();
 $('settings-form').onsubmit=e=>{e.preventDefault();$('settings').close();openTable({players:Number($('seat-count').value),opponent:$('opponent').value,pace:Number($('speed').value)});};
-$('sound-button').onclick=()=>{sound=!sound;$('sound-button').textContent=sound?'Sound on':'Sound off';$('sound-button').setAttribute('aria-pressed',String(sound));if(sound){unlockAudio();soundEffect('turn');}};
+$('sound-button').onclick=()=>{sound=!sound;$('sound-button').textContent=sound?'Sound on':'Sound off';$('sound-button').setAttribute('aria-pressed',String(sound));if(sound){unlockAudio();soundEffect('turn');}persist();};
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')toggleHistory(false);
+  if(e.key==='Escape'){toggleHistory(false);if(innerWidth<1200)toggleLearning(false);}
   if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||document.querySelector('dialog[open]')||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
   if(e.key.toLowerCase()==='f'&&!$('fold-button').disabled)act(-1);
   if(e.key.toLowerCase()==='c'&&!$('call-button').disabled)act(0);
@@ -270,5 +325,7 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(botTimer);else scheduleBot();});
 // A small inspectable surface for deterministic browser acceptance tests.
-window.poker={snapshot:()=>state?.slice(),session:()=>({...session}),status:()=>({busy,failed,settings:{...settings},lastBotTime,startedAt})};
-openTable(settings);
+window.poker={snapshot:()=>state?.slice(),session:()=>({...session}),status:()=>({busy,failed,settings:{...settings},lastBotTime,startedAt,buyins,tableBuyins:[...tableBuyins]}),learning:()=>lastLearning?{...lastLearning}:null};
+toggleLearning(learningOpen);
+const saved=loadSession();
+if(saved&&!saved.invalid)openTable(saved.settings,saved);else {openTable(settings);if(saved?.invalid)tellError('The saved session could not be read. A new cash table is open.');}

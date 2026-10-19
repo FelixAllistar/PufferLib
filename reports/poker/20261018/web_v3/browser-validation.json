@@ -1,0 +1,68 @@
+{
+  "tables": [
+    {
+      "players": 2,
+      "opponent": "rules",
+      "hands": 5,
+      "human_decisions": 12,
+      "raises": 2,
+      "folds": 1
+    },
+    {
+      "players": 2,
+      "opponent": "range",
+      "hands": 5,
+      "human_decisions": 11,
+      "raises": 2,
+      "folds": 0
+    },
+    {
+      "players": 2,
+      "opponent": "fullhouse",
+      "hands": 5,
+      "human_decisions": 23,
+      "raises": 4,
+      "folds": 2
+    },
+    {
+      "players": 2,
+      "opponent": "river",
+      "hands": 5,
+      "human_decisions": 15,
+      "raises": 3,
+      "folds": 1
+    },
+    {
+      "players": 6,
+      "opponent": "mixed",
+      "hands": 5,
+      "human_decisions": 21,
+      "raises": 3,
+      "folds": 1
+    },
+    {
+      "players": 9,
+      "opponent": "mixed",
+      "hands": 5,
+      "human_decisions": 19,
+      "raises": 3,
+      "folds": 0
+    }
+  ],
+  "completed_hands": 30,
+  "mobile": [
+    2,
+    6,
+    9
+  ],
+  "preset_checks": 505,
+  "preset_streets": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "ten_card_checks": 27,
+  "audio_starts": 1006,
+  "console_errors": []
+}

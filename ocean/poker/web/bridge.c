@@ -5,6 +5,25 @@ static Poker game;
 static uint64_t policies[POKER_PLAYERS];
 static int hand;
 static int32_t view[24 + 9 * POKER_PLAYERS];
+static uint32_t opening[POKER_PLAYERS];
+
+int web_stack(int p, uint32_t chips) {
+    if(p<0 || p>=POKER_PLAYERS || !chips || chips>POKER_MAX_START) return 0;
+    opening[p]=chips;
+    return 1;
+}
+
+int web_open(uint32_t seed, int number) {
+    if(number<1) return 0;
+    for(int p=0;p<POKER_PLAYERS;p++) if(!opening[p])return 0;
+    memset(&game,0,sizeof(game));
+    game.rng[0]=(uint64_t)seed+1;
+    for(int p=0;p<POKER_PLAYERS;p++)policies[p]=(uint64_t)seed+0x9e3779b9u*(uint64_t)(p+1);
+    hand=number;
+    poker_deal(&game,0,(number-1)%POKER_PLAYERS,opening);
+    memset(opening,0,sizeof(opening));
+    return 1;
+}
 
 void web_next(void) {
     uint32_t stacks[POKER_PLAYERS];
@@ -28,7 +47,7 @@ int web_act(int32_t action) {
     if (action == -1 && game.bet[p][0] >= game.high[0]) return 0;
     if (action > 0) {
         uint32_t maximum = game.bet[p][0] + game.stack[p][0];
-        if (!poker_can_raise(&game, 0) || action <= game.high[0]
+        if (!poker_can_raise(&game, 0) || (uint32_t)action <= game.high[0]
             || (uint32_t)action > maximum
             || ((uint32_t)action < poker_min_raise(&game, 0)
                 && (uint32_t)action != maximum)) return 0;
@@ -74,10 +93,25 @@ int32_t* web_state(void) {
         if (visible && board_n >= 3) {
             uint8_t cards[7] = {game.hole[p][0][0], game.hole[p][1][0]};
             for (int i = 0; i < board_n; i++) cards[i+2] = game.board[i][0];
-            row[6] = poker_rank(cards, board_n+2) >> 24;
+            uint32_t rank=poker_rank(cards, board_n+2);
+            row[6] = rank >> 24;
+            if(p==0) {
+                view[21]=rank;
+                int best_mask=0;
+                for(int mask=0;mask<(1<<(board_n+2));mask++) if(__builtin_popcount(mask)==5) {
+                    uint8_t five[5];int n=0;
+                    for(int c=0;c<board_n+2;c++)if(mask&(1<<c))five[n++]=cards[c];
+                    if(poker_rank(five,5)==rank && (!best_mask
+                        || __builtin_popcount(mask&3)<__builtin_popcount(best_mask&3)))best_mask=mask;
+                }
+                view[22]=best_mask;
+                view[23]=board_n==5 && poker_rank(cards+2,5)==rank;
+            }
         }
-        row[7] = done ? (int32_t)game.stack[p][0] - 20000 : 0;
-        row[8] = 20000;
+        row[7] = done ? (int32_t)game.stack[p][0] - (int32_t)game.initial[p][0] : 0;
+        row[8] = game.initial[p][0];
     }
     return view;
 }
+
+#include "learning.h"

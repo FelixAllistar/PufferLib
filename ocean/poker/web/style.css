@@ -241,3 +241,66 @@ dialog .primary { width: 100%; margin-top: 23px; }
 .last-action:empty { display: none; }
 @media (max-height: 850px) and (min-width: 701px) { .table-message { display: none; } }
 @media (max-width: 700px) { .last-action { left: 8px; bottom: 4px; max-width: calc(100% - 145px); padding: 4px 6px; } }
+/* A crisp cash table: warm turn border, no halo or washed-out action panel. */
+.stage { background: radial-gradient(ellipse at 50% 43%,#b71620,#850a13 70%,#55060e); }
+.felt { background: radial-gradient(ellipse at 50% 30%,#c61b29,#ad101e); box-shadow: inset 0 2px 22px #5b061952; }
+.rail { background: linear-gradient(#ed7b76,#ae2637 48%,#e36366); padding: 5px; box-shadow: 0 7px 16px #36020b88; }
+.seat.active:before { display: none; }
+.seat.active .seat-info, .hero.active .seat-info { box-shadow: 0 0 0 3px #ffcd69,0 5px 10px #25010880; }
+.seat.active .seat-status, .hero.active .seat-status { background: #ffcf76; color: #35200d; font-weight: 700; border-radius: 4px; }
+.action-area.your-turn { border-top: 1px solid #bb626b; background: #43070e; }
+.your-turn #turn-label { color: #ffdc8c; }
+.your-turn #turn-dot { background: #ffcf76 !important; box-shadow: none; }
+.seat-info { box-shadow: 0 5px 11px #27030b99; }
+.card.best { outline: 2px solid #ffd16e; outline-offset: 2px; }
+.hand-summary { width: min(650px,100%); display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 26px; margin-bottom: 5px; }
+.hand-summary .rank-badge { position: static; padding: 0; margin: 0; background: none; border: 0; color: #fff5de; font-size: 17px; font-weight: 700; text-align: left; }
+.hand-summary>span { color: #d9b78d; font-size: 10px; flex-shrink: 0; }
+.hand-summary:has(.rank-badge[aria-pressed=false])>span { visibility: hidden; }
+.play-area { grid-template-rows: 34px minmax(430px,1fr) 255px; }
+#learning-panel { position: fixed; top: 64px; right: 10px; bottom: 12px; width: 282px; overflow: auto; z-index: 5; background: #241419; border: 1px solid #995862; border-radius: 10px; padding: 19px 17px; box-shadow: 0 8px 30px #29030b66; scrollbar-width: thin; scrollbar-color: #81505b transparent; }
+#learning-panel .drawer-heading { margin-bottom: 14px; }
+#learning-panel h2 { font-size: 17px; }
+.learning-hand { font-size: 17px; line-height: 1.3; font-weight: 700; color: #ffdda1; margin: 0 0 5px; }
+.learning-context { font-size: 11px; color: #dfb5bd; line-height: 1.4; margin: 0 0 12px; }
+.equity-box { padding: 15px; background: #3b2527; border: 1px solid #6a4b3b; border-radius: 7px; display: flex; flex-direction: column; gap: 8px; }
+.equity-box .eyebrow { font-size: 9px; letter-spacing: .8px; margin: 0; color: #f7d4b0; }
+#equity-value { font-size: 38px; color: #ffe1a5; line-height: 1; }
+#equity-detail { font-size: 10px; color: #e9c9c2; line-height: 1.5; }
+.call-odds { font-size: 12px; color: #f4d4a8; line-height: 1.5; margin: 13px 0 8px; }
+.learning-note { font-size: 10px; line-height: 1.6; color: #cfadb4; }
+#learning-panel h3 { font-size: 14px; margin: 20px 0 5px; }
+.chance-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0 9px; margin-bottom: 4px; font-size: 11px; }
+.chance-row strong { font-size: 11px; color: #f5d2a0; }
+.chance-row i { position: absolute; left: 0; right: 0; bottom: 2px; height: 3px; background: linear-gradient(to right,#d6a65c var(--chance),#61434a var(--chance)); border-radius: 3px; }
+.buyin-line { font-size: 12px; color: #ebc8bb; }
+@media (min-width: 1200px) { .learning-open .play-area { margin-right: 302px; } }
+@media (max-height: 850px) and (min-width: 701px) {
+  .play-area { grid-template-rows: 30px minmax(350px,1fr) 246px; }
+  .hero .seat-cards { height: 67px; }
+  .hero .card { width: 46px; height: 67px; }
+  .hero .card .corner { font-size: 22px; line-height: 23px; }
+  .hero .card .suit { font-size: 32px; transform: translate(2px,14px); }
+  .hero .seat-info { height: 42px; }
+  .hero .seat-number { width: 34px; height: 34px; }
+  .hero .seat-stack { font-size: 24px; }
+}
+@media (max-width: 700px) {
+  .play-area { grid-template-rows: 43px minmax(435px,1fr) 263px; }
+  .masthead { padding: 0 8px; }
+  .masthead nav { gap: 4px; }
+  .quiet { padding: 8px 6px; }
+  #learn-button { font-size: 0; }
+  #learn-button:after { content: 'Learn'; font-size: 11px; }
+  #help-button { display: none; }
+  .hand-summary .rank-badge { font-size: 14px; }
+  .hand-summary>span { font-size: 8px; }
+  .hand-summary { min-height: 22px; gap: 6px; margin-bottom: 4px; }
+  #learning-panel { top: 54px; bottom: 10px; right: 8px; width: min(310px,calc(100vw - 16px)); }
+}
+@media (max-height: 850px) and (min-width: 701px) {
+  .board { gap: 8px; }
+  .board .card { width: 60px; height: 87px; }
+  .board .card .corner { font-size: 28px; line-height: 29px; }
+  .board .card .suit { font-size: 42px; transform: translate(2px,17px); }
+}

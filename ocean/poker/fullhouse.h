@@ -162,8 +162,8 @@ void poker_fullhouse_features(Poker* g, int t, float* x, int32_t* amounts) {
     amounts[2] = g->high[t] + half; amounts[3] = g->high[t] + after;
     amounts[4] = stack + g->bet[p][t];
     if (poker_can_raise(g, t)) {
-        x[48] = half >= g->increment[t] && room > half;
-        x[49] = after >= g->increment[t] && room > after;
+        x[48] = (uint32_t)half >= g->increment[t] && room > half;
+        x[49] = (uint32_t)after >= g->increment[t] && room > after;
         int eff = opp[0] > 0 && opp[0] < stack ? opp[0] : stack;
         x[50] = eff < 4 * (pot > 0 ? pot : 1);
     }

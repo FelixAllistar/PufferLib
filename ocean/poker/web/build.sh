@@ -29,14 +29,15 @@ for web_variant in 2 6 9 2pro; do
   cp ocean/poker/{core.h,rules.h,equity.h,fullhouse.h} "$web_engine/"
   if [[ "$web_variant" == 2pro ]]; then cp "$web_src"/experimental/*.h "$web_engine/"; fi
   cp "$web_src/bridge.c" "$web_engine/bridge.c"
+  cp "$web_src/learning.h" "$web_engine/learning.h"
   web_model=()
   if [[ "$web_players" != 9 ]]; then web_model=("-DPOKER_FULLHOUSE_MODEL=\"$web_weights\""); fi
   "$web_emcc" -O3 -std=c11 -ffp-contract=off -Wall -Wextra \
-    -DPOKER_PLAYERS="$web_players" -DPOKER_BATCH=1 \
+    -DPOKER_PLAYERS="$web_players" -DPOKER_BATCH=1 -DPOKER_WIDE_CHIPS=1 \
     "${web_model[@]}" \
     -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
     -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=16777216 \
-    '-sEXPORTED_FUNCTIONS=["_web_init","_web_next","_web_act","_web_bot","_web_state"]' \
+    '-sEXPORTED_FUNCTIONS=["_web_init","_web_next","_web_act","_web_bot","_web_state","_web_stack","_web_open","_web_learning"]' \
     '-sEXPORTED_RUNTIME_METHODS=["HEAP32"]' \
     "$web_engine/bridge.c" -lm -o "$web_out/poker$web_variant.mjs"
 done

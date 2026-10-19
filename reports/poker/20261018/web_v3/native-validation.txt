@@ -1,0 +1,7 @@
+PASS: 800 exact native/WASM fixture hands across 2/6/9/2pro.
+PASS: ASan/UBSan cash transport at 2/6/9 seats: 1000 BB starting stacks, raise above 65535 chips, full public event amount, chip conservation.
+PASS: exact two pair nines/fives and five-card mask; royal flush certainty; board-only best hand; all 1081 flop and 46 turn runouts; nine flush-completing hearts among 46 turn runouts.
+PASS: analysis unchanged when private opponent cards and unrevealed board cards changed.
+PASS: compact default engine 20032 checked hands; bytes/table=196 at six seats.
+Stock Bend 2.0.6: All terms check. 25 laws; guarded 2 GiB/no swap.
+PASS: 5204 control boundaries and 2880 independent sizing cases.
