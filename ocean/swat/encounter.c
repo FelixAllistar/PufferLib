@@ -1013,7 +1013,7 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
         if(!equipment && !room_search && in->squad_order!=SWAT_ORDER_SEARCH && (hit.kind==SWAT_HIT_WORLD || hit.kind==SWAT_HIT_RUBBLE)) goal=b3OffsetPos(hit.point,swat_mul(hit.normal,.6f));
         // Preserve the targeted floor; navigation resolves its support height.
         if(!equipment && !room_search && in->squad_order!=SWAT_ORDER_SEARCH && (hit.kind==SWAT_HIT_WORLD || hit.kind==SWAT_HIT_RUBBLE) && hit.normal.y<.5f) goal.y=eye.y-source->controller.eye_height;
-        swat_sound_emit(&s->sounds,s->tick,leader,SWAT_SOUND_COMMAND,eye,1,20);
+        swat_sound_profile(&s->sounds,s->tick,leader,SWAT_SOUND_COMMAND,eye,1,20,SWAT_COMMAND_ORDER);
         b3Pos assigned[SWAT_MAX_PLAYERS];int count=0;
         for(int i=0;i<s->actor_count;i++) {
             SwatActor* a=&s->actors[i]; if(!a->present || !a->alive || !a->mind.bot || a->role!=SWAT_OFFICER || (in->squad_team && in->squad_team!=a->mind.team)) continue;
@@ -1046,7 +1046,7 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
         mind->fire_retry_tick=0;
         mind->order_room=mind->pending_room;mind->pending_room=0;mind->room_step=mind->room_task=mind->room_scan=0;mind->room_goal=mind->room_blocked=false;
         mind->room_tool_ticks=0;
-        swat_sound_emit(&s->sounds,s->tick,i,SWAT_SOUND_COMMAND,swat_controller_eye(&s->actors[i].controller),.5f,12);
+        swat_sound_profile(&s->sounds,s->tick,i,SWAT_SOUND_COMMAND,swat_controller_eye(&s->actors[i].controller),.5f,12,SWAT_COMMAND_ACK);
     }
 }
 static void officer_move(SwatSim* s,int i,SwatInput* in,bool tracking) {

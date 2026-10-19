@@ -53,7 +53,7 @@ int main(int argc,char** argv) {
     char file[1024]; snprintf(file,sizeof(file),"%s/comparison.csv",directory);
     FILE* report=fopen(file,"w"); if(!report) { perror(file); swat_spatial_close(spatial); return 1; }
     fprintf(report,"scene,low,mid,high,gain,delay_ticks,via_doorway,mid_rt60,source_mid_rt60,rms,tail_rms_after_500ms\n");
-    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{-3,1.4f,.17f},3,100,SWAT_CONCRETE};
+    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{-3,1.4f,.17f},3,100,SWAT_CONCRETE,SWAT_SOUND_PROFILE_UNSPECIFIED};
     b3Pos listener={3,1.4f,.17f}; SwatRoomAcoustics dry={0}; static SwatWorld world;
     bool ok=true; swat_world_init(&world);
     ok=render(directory,report,"01_open",&world,event,listener,dry,spatial)&&ok;

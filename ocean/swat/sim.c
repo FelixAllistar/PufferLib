@@ -308,7 +308,7 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
     a->tracer_start = origin;
     a->tracer_end = b3OffsetPos(origin,swat_mul(direction,shot.range));
     a->last_shot_tick = s->tick;
-    swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_SHOT,origin,3.0f,100);
+    swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_SHOT,origin,3.0f,100,(unsigned)a->arsenal.active);
     float remaining = shot.range, energy = shot.energy,travelled=0;
     int layers[8],layer_count=0,impacts=0;float exits[8];
     // Bounded material traversal. World casts, actor hits, and damage all use
@@ -573,7 +573,7 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     if(gear->throw_cooldown || gear->taser_cooldown>150) in->fire=in->reload=in->melee=false;
     bool command=in->command && !gear->last_command; gear->last_command=in->command;
     if(command && a->role==SWAT_OFFICER) {
-        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,eye,1.2f,22);
+        swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,eye,1.2f,22,SWAT_COMMAND_COMPLIANCE);
         SwatHit focused=swat_context_hit(s,actor,9);
         for(int i=0;i<s->actor_count;i++) {
             SwatActor* target=&s->actors[i];
@@ -659,9 +659,9 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
         c->muzzle_blocked || c->sprinting || (physical && !projectile_room));
     int reload=a->arsenal.slots[a->arsenal.active].reload_remaining;
     if(old_stage!=a->arsenal.slots[a->arsenal.active].reload_stage || (!old_reload && reload) || (old_reload && !reload && old_slot==a->arsenal.active))
-        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_RELOAD,eye,0.25f,8);
+        swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_RELOAD,eye,0.25f,8,(unsigned)(old_slot!=a->arsenal.active?old_slot:a->arsenal.active));
     if(old_slot!=a->arsenal.active || old_mode!=a->arsenal.slots[old_slot].mode)
-        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,eye,0.15f,6);
+        swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,eye,0.15f,6,(unsigned)a->arsenal.active);
     if (!shot.fired) return;
     if (actor == 0) s->events.shots++;
     // Camera aim selects a target; the actual shot starts at the checked muzzle.
@@ -673,7 +673,7 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     if(physical) {
         swat_launch(s,actor,(SwatProjectileKind)payload,muzzle,direction,shot.damage,shot.range);
         a->tracer_start=muzzle; a->tracer_end=muzzle; a->last_shot_tick=s->tick;
-        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_SHOT,muzzle,.7f,30);
+        swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_SHOT,muzzle,.7f,30,(unsigned)a->arsenal.active);
     } else swat_sim_shoot(s,actor,muzzle,direction,shot);
     swat_controller_recoil(c,swat_arsenal_def(&a->arsenal,a->arsenal.active)->recoil*SWAT_RAD,shot.recoil_yaw);
 }

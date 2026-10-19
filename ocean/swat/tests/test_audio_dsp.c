@@ -6,7 +6,7 @@
 int main(void) {
     static SwatAudioMixer a,b;
     swat_audio_init(&a,SWAT_AUDIO_RATE); swat_audio_init(&b,SWAT_AUDIO_RATE);
-    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{0,1,3},3,100,SWAT_CONCRETE};
+    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{0,1,3},3,100,SWAT_CONCRETE,SWAT_SOUND_PROFILE_UNSPECIFIED};
     SwatAcousticPath right={{1,1,1},1,{0,0,1},0,false};
     b3Vec3 listener_right={0,0,1};
     swat_audio_start(&a,event,right,listener_right); swat_audio_start(&b,event,right,listener_right);

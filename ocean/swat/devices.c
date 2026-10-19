@@ -74,7 +74,7 @@ void swat_devices_inputs(SwatSim* s,SwatInput inputs[]) {
         }
         if(requested.command && s->tick-d->last_command_tick>=90 && d->kind==SWAT_BALL) {
             d->last_command_tick=s->tick;
-            swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,d->position,1.2f,20);
+            swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,d->position,1.2f,20,SWAT_COMMAND_COMPLIANCE);
             for(int i=0;i<s->actor_count;i++) {
                 SwatActor* target=&s->actors[i]; if(!target->present || !target->alive || (target->role!=SWAT_SUSPECT && target->role!=SWAT_CIVILIAN)) continue;
                 b3Pos head=swat_controller_eye(&target->controller);

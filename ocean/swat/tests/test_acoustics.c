@@ -115,7 +115,7 @@ static void test_spatial_search(void) {
     uint32_t seed=42;
     for(int scene=0;scene<3;scene++) {
         swat_world_init(world);
-        SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{0,1.6f,0},3,100,SWAT_CONCRETE};
+        SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{0,1.6f,0},3,100,SWAT_CONCRETE,SWAT_SOUND_PROFILE_UNSPECIFIED};
         assert_reference(world,&event,(b3Pos){2,1.6f,1});
         if(scene==0) swat_world_build_range(world,&seed,false);
         else if(scene==1) swat_mission_build_house(world);
@@ -195,7 +195,7 @@ static void test_hearing_sequence(void) {
 static void test_transmission_and_arrival(void) {
     SwatWorld world; swat_world_init(&world);
     swat_world_box(&world,(b3Pos){5,-0.5f,0},swat_v(20,0.5f,20),SWAT_CONCRETE,0);
-    SwatSoundEvent event={1,10,0,SWAT_SOUND_SHOT,{0,1.6f,0},3,100,SWAT_CONCRETE};
+    SwatSoundEvent event={1,10,0,SWAT_SOUND_SHOT,{0,1.6f,0},3,100,SWAT_CONCRETE,SWAT_SOUND_PROFILE_UNSPECIFIED};
     b3Pos listener={10,1.6f,0};
     SwatAcousticPath clear=swat_acoustic_path(&world,&event,listener);
     assert(clear.gain>0.25f && clear.delay_ticks==2 && clear.direction.x<-0.99f);
@@ -252,7 +252,7 @@ static void test_hearing_bounds(void) {
 static void test_doorway_route(void) {
     SwatWorld world; swat_world_init(&world); uint32_t seed=42;
     swat_world_build_range(&world,&seed,false);
-    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{9,1.6f,3},3,100,SWAT_CONCRETE};
+    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{9,1.6f,3},3,100,SWAT_CONCRETE,SWAT_SOUND_PROFILE_UNSPECIFIED};
     b3Pos listener={5,1.6f,3};
     SwatAcousticPath closed=swat_acoustic_path(&world,&event,listener);
     world.room_count=1;
@@ -331,7 +331,7 @@ static void test_fragment_path(void) {
     SwatObject* skin=&world->objects[id]; skin->part=SWAT_PART_SKIN;
     const float corners[4][2]={{-1,-1},{1,-1},{.5f,1},{-.5f,1}};
     assert(swat_world_fragment(skin,corners));
-    SwatSoundEvent e={1,0,0,SWAT_SOUND_SHOT,{-1,1.9f,.9f},3,100,SWAT_CONCRETE};
+    SwatSoundEvent e={1,0,0,SWAT_SOUND_SHOT,{-1,1.9f,.9f},3,100,SWAT_CONCRETE,SWAT_SOUND_PROFILE_UNSPECIFIED};
     b3Pos listener={1,1.9f,.9f};
     assert(!swat_world_ray(world,e.position,swat_v(1,0,0),2,b3_nullBodyId).hit);
     SwatAcousticPath outside=swat_acoustic_path(world,&e,listener);

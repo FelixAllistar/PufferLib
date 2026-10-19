@@ -61,6 +61,17 @@ hip drop. Reloads always use the unchanged Ready bank and authority phase mappin
 Source garment/contact limitations remain, including the reported 18.392 mm
 crouch-forward sleeve/thigh overlap. Rejected ADS study poses are excluded.
 
+The separate deep-crouch grounding retarget remains rejected research. Actual
+460-frame input checks exposed backward start/stop, lateral and diagonal floor
+penetration after the four forward-heading cases passed. Restricting the knee
+pole fixes the backward case but cannot fix every stance: one captured diagonal
+hip/ankle pair admits no length-preserving knee solution above the floor (its
+highest possible knee centre is 46.9 mm below it). Crouched reload also fails;
+an earlier firing frame exposes a separate 85.6 micrometre arm-length difference.
+Revise directional stance/endpoints before further adoption; keep the original
+floor and bone bounds, source curves and gameplay authority. The rejected runs
+are pinned by `tests/receipts/crouch-direction-diagnostics-2026-10-19.json`.
+
 `tools/install_character_movement.py` accepts the four extracted private fixture
 directories in left, right, crouch-ready, crouch-forward order. It checks all
 four calibrated original GLB hashes before writing the tracked asset bank. The
