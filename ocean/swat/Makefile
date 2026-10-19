@@ -129,6 +129,27 @@ squad-fire-lanes-test: $(ENET_LIB) | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_encounter fire-lanes $(BUILD)/squad-fire-lanes.trace
 squad-fire-lanes-network-test: squad-fire-lanes-test
 	ulimit -c 0; $(BUILD)/test_encounter fire-lanes-network
+.PHONY: squad-threat-response-test squad-threat-posture-test squad-threat-network-test motel-moving-cover-test
+squad-threat-response-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter threat-duel $(BUILD)/squad-threat-duel.trace
+squad-threat-posture-test: squad-threat-response-test
+	ulimit -c 0; $(BUILD)/test_encounter threat-posture $(BUILD)/squad-threat-posture.trace
+squad-threat-network-test: squad-threat-response-test
+	ulimit -c 0; $(BUILD)/test_encounter threat-network
+motel-moving-cover-test: motel-completion-test-build
+	$(BUILD)/test_motel_completion $(BUILD)/motel-moving-cover.sgrp combat moving-cover seed=2026 occupancy=2 layout-seed=7
+.PHONY: partial-body-navigation-test
+.PHONY: mesh-contact-navigation-test squad-protected-people-test
+mesh-contact-navigation-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter contact-nav $(BUILD)/mesh-contact-navigation.trace
+squad-protected-people-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter protected-person $(BUILD)/protected-person.trace
+partial-body-navigation-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter partial-nav $(BUILD)/partial-body-navigation.trace
 .PHONY: motel-occupancy-deep-exit-test
 motel-occupancy-deep-exit-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter

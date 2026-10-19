@@ -19,9 +19,11 @@ save/resume, late replicas, source/asset audits and automated visual review as
 appropriate. Reproduce failures, fix them and validate the resulting behavior;
 commit completed increments and proceed to the next gap. Manual feedback is
 welcome when available, but is not a development gate. A passing increment does
-not complete the slice. Heavy performance runs remain held under Felix's earlier
-machine-use instruction; their final acceptance stays open rather than blocking
-independent work. Do not ask Felix to repeat already-authorized routine checks.
+not complete the slice. Latest steering (2026-10-18): Felix does not want manual
+playtesting and permits other autonomous work while the machine is available.
+Use bounded, hidden native render checks and inspect captures automatically.
+Schedule heavier frame-time checks after the functional batch so shared load
+does not invalidate measurements. Do not ask Felix to repeat authorized checks.
 The persistent full-slice goal was resumed on 2026-10-17 and is active. Keep
 that complete objective active until every acceptance requirement is verified.
 
@@ -33,12 +35,14 @@ Acceptance work still open:
 - Extend transparent-cover equipment beyond the tested initial/queued selection,
   physical working-position and explicit pane-relocation cases. Changing people
   and obstructions during work, more tools and broader world layouts remain open.
-- Extend hostile-fire squad coordination beyond observed friendly muzzle lanes
-  and the inter-room sequence with demolition staging holds. Earlier all-follow
-  runs lost protected actors, and a stationary covering-officer duel still fails.
-  Broader moving coverage and autonomous protection around equipment remain open.
-- Confirm native menu-click/focus timing alongside the accepted headless
-  repeated/rejected command, render-only frame and UDP acknowledgement cases.
+- Extend hostile-fire squad coordination beyond the observed-pose response,
+  firing-lane and front-entry moving-cover checks below. Multiple attackers,
+  initiative/order-sensitive encounters, more layouts and autonomous protection
+  around equipment remain open; explosive routes retain deliberate safe staging.
+- Extend native interaction coverage beyond the verified menu/pause/focus,
+  cursor, click-isolation and slider checks into further equipment/feed and
+  source-art scenes. Headless repeated/rejected commands and UDP acknowledgements
+  remain covered separately.
 - Extend contact qualification to boundaries introduced by further authored
   layouts and props; the ordinary-player wheel-stop regression is covered below.
 - Extend varied-occupant full completions beyond the three alternate quiet
@@ -48,12 +52,177 @@ Acceptance work still open:
   equipment handling; integrate approved art and inspect actual rendered output.
 - Establish reproducible officer/enemy policy baselines and held-out evaluation
   before claiming learned improvement, using the normal training workflow.
-- Complete native visual/interaction review and stable-load frame-time acceptance
-  when the machine-use constraint permits it. Automated evidence must state its
-  scope; headless success alone does not accept visual quality or performance.
+- Complete automated native visual/interaction review and stable-load frame-time
+  acceptance. Automated evidence must state its scope; headless success alone
+  does not accept visual quality or performance. No manual playtest is a gate.
 - Qualify vehicle cover separately. The delivered sedan has a closed exterior
   coachwork volume, with no hollow passenger interior or suspension model;
   current game material sections do not establish panel-stack ballistics.
+
+Observed aimed-threat response (2026-10-18): exact per-tick inspection of the
+failed v41 duel found both actors visible and aimed. The officer waited for
+the first actual shot; at the next common firing tick, the suspect's second
+shot killed the officer before its return fire was processed. Officers now
+use a shared current-pose query for a visible suspect aiming a raised weapon
+at the observer or another visible officer, sniper, civilian or visibly
+surrendered/restrained suspect. Optical rays
+bound the cue; opaque cover and unseen victims do not establish it. The query
+uses actor-level visibility and current pose, with no enemy ammunition or
+private target reads. It is not a rendered weapon-mesh visibility system.
+
+A tracked aimed contact uses the 18-tick confirmation threshold rather than
+the ordinary 36; existing 18-tick trigger cadence and actual damage remain.
+Weapon execution rechecks current posed threat or recent actual shooting,
+compliance, physical firing-line clearance and enabled bot gunfire. Lowering
+or averting a never-fired weapon, an ordinary compliance command, and disabled
+bot fire cancel selected or buffered shots before execution. The original
+initial aimed-threat prototype completes with actual incoming fire: the cover
+officer fires twice
+and survives at 49 health; the moving officer arrives at 100 health.
+
+Ten actual-AI duels cover mirrored and rotated geometry, firing phases,
+resolve, glass and crouching. Thirty-one posture/input/execution cases cover
+neutral and compliant states, cover, other visible protected people, hidden
+victims, irrelevant private ammo/target state, never-fired time sentinels,
+friendly firing clearance and late posture/command/config changes. Original
+code restored under the final cohort reproduces the duel casualty, false
+never-fired input, shooting a lowered weapon, and firing a buffered shot after
+bot gunfire is disabled. Original assertions and failed fixture/runner trials
+are retained; the invalid dead-actor fixture was corrected to real death state
+without changing snapshot validation.
+
+The first full inter-room candidate exposed a separate occlusion failure:
+a covering officer lost head visibility, forgot the contact and turned toward
+its follow route. All 4,105 failed frames replay exactly. Officers now consume
+the existing five-second last-seen point as view memory while routing, and
+fresh audible shots can redirect the look. Hidden movement cannot update that
+point. Six checks cover memory, concealed movement, crouching, expiry, hearing
+priority and cancellation of buffered blind fire. Restoring the preceding
+encounter code fails the new occlusion-view assertion. The unchanged original
+mission and all other routes were regenerated with the corrected controller.
+
+A later hostile Mixed run exposed a separate staging stall at tick 10,933:
+a porch post hid the head of a teammate while his torso stayed visible. Head-only
+occupancy repeatedly dropped and rediscovered him, reversing the planned step
+before the officer could turn. Exact replay and diagnostic torso rays confirm
+the cause. Navigation now checks the head and two points inside the current
+torso capsule. Fully covered bodies remain hidden; firing eligibility is
+unchanged. Two captured phases retain the original 2,400-tick staging limit,
+normal controller/collision and fresh replicas. Restoring the old encounter
+source reproduces both failures. The unchanged full mission and all eight
+final routes are regenerated after the fix.
+
+Two real UDP mirrors receive queued Move/Execute from a remote commander,
+run actual hostile and covering-officer AI, join another peer mid-route and
+verify protected arrival plus exact final wire-float pose/health/order. The
+original direction still includes real incoming fire; a mirrored preemption
+can stop the attacker before its first shot. Neither case grants immunity.
+
+The ordinary-player driver uses the same posed-threat query. A new front-entry
+combat Mixed mission keeps unassigned officers following during directed cuff
+and search tasks and rejects any commander Hold command. It completes in
+17,282 ticks with lawful threat resolution, three evacuations, both weapons,
+protected survival and regroup; internal exact replay, checkpoint continuation
+and fresh replicas pass. This extends moving coverage beyond demolition
+staging holds; other routes keep their existing explosive safety staging.
+
+The next Busy candidate exposed a16045-tick regroup failure at the sedan:
+a following officer could not leave an existing bumper mesh contact. Exact
+replay pins the stall to the start connector. Navigation now sweeps individual
+faces before allowing a separating move; a later face in the same mesh remains
+blocking. Static grid links and physical collision stay authoritative. Two
+captured Move/Fall In cases fail old code at2400ticks and pass the corrected
+controller. Two rotated geometry probes retain entry/re-entry rejection.
+A subsequent hostile Mixed run reached tick9325 with the staging reticle
+blocked by a recalled officer. Exact replay confirms adjacent floor remains
+visible. The input driver now selects and verifies a visible staging sample;
+blast clearance, original arrival deadline and survival assertions remain.
+Eight additional compliance-threat checks include surrendered/restrained
+suspects, actual crouched poses, cover and fresh execution cancellation.
+
+A later Standard inter-room run exposed a rear ambush at tick8569.
+Exact replay showed the follower looking along its route while the suspect
+acquired it from behind. Following officers now cover left/rear/right sectors
+using formation rank and the existing commander-heading reference. Bounded
+ordinary view turns and rebased translation preserve movement; visible contact
+and hearing override the watch. Six checks include rotated headings, quiet
+configuration, Hold, hearing priority and hidden-enemy changes. Damage, firing
+cadence and weapon execution order are unchanged by this formation change.
+
+Mixed rooms then exposed a separate held-cover handoff and another rear
+ambush. Combat cuffs now keep unassigned officers following; demolition
+Holds retain their blast safety checks. Both NPC sides prefer a visibly
+exposed upper torso, falling back to the visible head when torso sight is
+blocked. Optical range/FOV/light/person/opaque-cover checks select the point;
+weapons, damage, armour, confirmation/cadence and shot execution stay shared.
+Eight targeting cases include both roles, crouch, glass, head-only opaque
+cover, a lower friendly body with an actual safe head shot, rotated frames
+and irrelevant private ammunition/target state. Existing positive execution
+cases now assert the exact34-damage torso hit instead of the prior51-damage
+head hit; victim protection and late cancellation assertions are unchanged.
+
+A quiet room-task run then stalled at10914: the worker correctly covered
+another visible armed suspect while the commander waited inside. Exact replay
+and a verified ordinary-input continuation retain that failure. The Standard
+QA route now handles known armed-room approaches before remaining civilian
+work, and performs damaged-door tools after all restraints but before final
+evacuation. Its24925tick prototype passes every original safety, deadline,
+replay, checkpoint and replica gate; runtime threat priority is unchanged.
+
+The final v42 cohort passes 330 broad groups per platform, including all
+preceding lane/door/room/escort/contact checks. All 180,091 samples across seventeen
+Linux/Windows trace pairs match exactly. Eight frozen-source full missions
+pass internal replay/save/resume/replicas before the final clean rebuild.
+All eight missions regenerate in this final frozen batch;
+both final shipping replay tools then verify their unchanged journals,
+which match 175,543 mission frames per platform. Queued room/search/wedge prefixes,
+independent player checkpoints, frontend journals and v41 rejection pass.
+All 42 installed executables match the qualified cohort; four deployed GLBs
+and accepted source geometry are unchanged. Use fresh v42 saves and matching
+peers. Receipt: `tests/receipts/observed-threat-response-2026-10-18.json`;
+sealed evidence: `build/swat/review/observed-threat-regroup`. The v41 and
+earlier roots remain unchanged. No Python or trainer/CUDA/Box3D rebuild was
+used. The functional cohort is headless; after Felix allowed autonomous
+checks on the available machine, a separate hidden native graphics check
+passed sixteen intact/damaged art/fallback raster comparisons and texture
+cleanup, with twenty prop images and an actual 1440x810 motel player capture.
+These images were inspected automatically. A subsequent seven-screen native
+capture also checks initial UI legibility. Closer character captures exposed
+a crouched head/weapon mismatch; its visual correction remains open.
+An isolated shorter-stride/retimed prototype passes20snapshots and256cycle
+phases for floor/head-surface/bone/wrist bounds. Near-floor contact observations
+also include low swing. Preliminary source-inferred support windows reduce
+measured drift; final heel/toe references are now verified below, while
+contact tolerances remain open. The prototype stays out of production until real movement/transitions,
+gear and native playback qualify.
+Actual-frame checks additionally exposed pose-blend head lag and foot arcs
+below the floor. An isolated end-effector/trunk-fit correction passes
+four 460-frame stand/crouch/walk/stop/stand trajectories (1,840 actual frames).
+These bounds use controller feet; actual-ground and native review remain
+separate, with production character code unchanged.
+The exact-source heel/toe references and six rounded surface heights also
+match the engine importer with all seven influences retained. Flat-fixture
+calibration finds controller feet15mm above the physical floor; older views
+drew their reference plane at controller feet. An isolated three-pose visual
+root correction removes that gap while keeping controller/authority intact.
+Actual-floor native capture is queued behind existing GPU workloads; source
+contact thresholds, uneven ground and full movement acceptance stay open.
+The unchanged native menu/focus checks also pass on an idle Windows desktop:
+real cursor confinement/release, Escape callback, minimize/focus loss, paused
+restore, click isolation, slider cancellation and persisted settings. Desktop
+foreground, pointer and clipping are restored and verified. CRT render flags
+are verified for this bounded component run; audio and scene-art acceptance
+are separate. Its six frontend/test sources match the final committed blobs.
+These checks establish component rendering
+and one initial scene view, not whole-level visual, interaction or performance
+acceptance. No heavy performance measurement has been run.
+
+Broader combat, protected-role coverage, multiple-threat selection, initiative
+and actor-order independence, weapon-mesh exposure, opaque penetration and
+held-out policy acceptance remain open. The per-actor weapon execution order
+was not rewritten. Approved transformer integration, remaining production art
+and audio, visible equipment handling and whole-level native visual/focus/stable-load
+performance acceptance remain open. The complete slice goal stays active.
 
 Observed friendly muzzle lanes (2026-10-18): an ordinary queued Move
 crossed the commander's actual gunfire in a small open fixture, leaving the

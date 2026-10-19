@@ -573,7 +573,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v41 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v42 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1061,8 +1061,44 @@ covering-officer AI return fire.
 `squad-fire-lanes-network-test` sends Move and firing inputs from a connected
 commander and joins a second peer mid-route. Native UDP checks use the approved
 wrapper with `test_encounter.exe fire-lanes-network`.
+`squad-threat-response-test` covers ten actual AI duels and moving task routes;
+`squad-threat-posture-test` covers 45 cases: 31 visibility, posture, memory and
+late execution checks, six following-sector checks and eight aiming checks.
+`squad-threat-network-test` repeats real AI combat with remote Move/Execute and
+a second peer joining mid-route, using the same native wrapper with
+`test_encounter.exe threat-network`. `motel-moving-cover-test` completes a live
+front-entry Mixed mission with directed tasks and unassigned followers; the
+driver rejects any commander Hold command and uses ordinary inputs throughout.
 
-These task rules and the replicated access status require protocol/replay v41,
+`partial-body-navigation-test` covers two captured phases of a porch-post
+staging stall. Navigation checks the head and two points inside the torso
+capsule, so a visible body remains an obstacle when only its head is hidden.
+Fully opaque cover still blocks the observation. The captured Move must finish
+within the original 2,400-tick limit; moving a fully covered person must not
+change the route. Firing eligibility uses its existing independent checks.
+
+`mesh-contact-navigation-test` checks ordinary Move and Fall In from a captured
+parking-stop/bumper contact, with the original 2,400-tick deadline and fresh
+replicas. The planner can leave an existing mesh touch only after checking all
+faces along the proposed exit; static grid links and physical collision remain.
+`squad-protected-people-test` checks eight visible compliance, opaque/glass,
+active/dead-victim and late execution cases for surrendered/restrained suspects.
+
+Officers can respond to a visible suspect's raised weapon aimed at them or
+another visible officer, sniper, civilian or visibly surrendered/restrained
+suspect, before the suspect fires. The
+query uses current pose and optical clearance; opaque cover and unseen victims
+do not establish that new threat. It reads no enemy ammunition or private
+target intent. A tracked aimed contact uses the earlier confirmation threshold;
+actual weapon cadence and damage are shared. Selected and buffered bot shots
+recheck threat, compliance, firing-line clearance and enabled gunfire before
+execution. Recent actual shooting remains an independent threat cue.
+If sight is briefly blocked, officers keep looking toward the last observed
+point for up to five seconds while following their physical route. A fresh
+audible shot can redirect that look. Hidden movement does not update the point,
+and neither memory nor hearing authorizes firing without current visibility.
+
+These task rules and the replicated access status require protocol/replay v42,
 matching peers and fresh recordings/saves.
 
 **Search room** selects the room through the visible door or aimed room surface
@@ -1086,7 +1122,7 @@ over real motel UDP. Native transport uses the approved wrapper with
 `test_encounter.exe rooms-network`. `motel-room-search-test` adds a queued
 Room 101 search, checkpoint/restore and ordinary completion to the full quiet
 restraint/retrieval/equipment/escort route. The QA executable accepts `rooms`.
-Room identity/progress and door references use protocol/replay v41; use matching
+Room identity/progress and door references use protocol/replay v42; use matching
 peers and recreate older journals/saves.
 
 Parking stops retain their full mesh collision. NPC navigation treats them as
@@ -1212,7 +1248,7 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 39) and the same generated
+Saves require this network/replay version (currently 42) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
 
@@ -1664,7 +1700,7 @@ editable screwdriver scenes, source maps and CC0 provenance.
 Canonical older maps retain their prefix. Recreate pre-screwdriver motel recordings:
 the new scenario has additional physical objects, so their deterministic
 state digests differ. That import used snapshot version 18; the
-current protocol requires version 39 as described above.
+current protocol requires version 42 as described above.
 The approved [BC_DUMP01 dumpster](art_handoffs/motel-dumpster/ENGINE_INTEGRATION.md)
 stands on its eight original skid contacts beside the maintenance shed. Its
 unchanged 2,908-triangle GLB supplies a steel body and two independently removable
@@ -1697,13 +1733,19 @@ graphics check; pass an output directory and an asset root containing just the
 `motel_sedan` and `motel_shelter` exports. Its source/fallback silhouette,
 damage and lighting checks can run on an isolated software display. Software
 rendering does not establish native visual or performance acceptance.
+A bounded hidden Windows review also passed these sixteen intact/damaged
+source/fallback raster cases and texture cleanup, producing twenty prop views.
+One actual native player capture of the motel was inspected automatically.
+Evidence is in `build/swat/review/native-visual-review-v42`; this covers component
+rendering and an initial scene view. Whole-level visuals, interaction/focus and
+stable-load frame times remain open. No manual playtest is a development gate.
 The [UPDATE42 catalog intake](art_handoffs/catalog-update42/ENGINE_INTAKE.json)
 retains a metadata-only delta over UPDATE41. All 70 indexed payloads and seven
 referenced runtime-export hashes verify locally. Its attributed v39 receipts do
 not independently accept whole-level visuals or performance; later engine
 receipts supersede that historical snapshot. Original art packages stay unchanged.
 
-New motel journals/saves and matching v41 peers are required. The Windows build
+New motel journals/saves and matching v42 peers are required. The Windows build
 copies both complete original GLBs into its runtime asset tree.
 
 Ground snapping checks the actual feet hull and leaned capsule before moving
@@ -1713,7 +1755,7 @@ undoing physics separation at a wheel-stop lip. Upward stair handling retains
 the existing stair casts. Named door equipment orders retain the selected leaf's
 identity and canonical centre anchor. Pick/Wedge derive their actual workpoint
 from surviving material as described above. The contact and canonical-anchor
-fixes entered protocol/replay v36; current v41 also records observed friendly-fire routing.
+fixes entered protocol/replay v36; current v42 also records observed weapon threats and friendly-fire routing.
 `make -C ocean/swat motel-player-contacts-test` checks 180 crossing/blocked-approach
 trials across the five original concrete stops, four captured lip departures
 with actual goal arrival, encoded replicas and a recorded twelve-crossing route
@@ -1733,3 +1775,20 @@ replace wood aliases on plaster/drywall and add brick, glass and metal breakage.
 Charges emit one debris source for the opening, using the ordinary occlusion
 and room processing. Original licensed clips and hashes are preserved; the
 blast and door handling still need audio polish.
+
+Following security (v42): unassigned following
+officers cover left/rear/right sectors outside extraction, using the existing
+formation rank and commander-heading reference. They turn with ordinary bounded
+inputs and keep collision-based route movement. Current visible contacts and
+heard shots take priority; unseen hostiles do not choose the watch heading.
+The `threat-posture` suite includes six sector/movement/privacy/priority cases
+alongside 31 posture/memory/execution and eight aiming checks. The
+[qualified v42 receipt](tests/receipts/observed-threat-response-2026-10-18.json)
+records the complete cohort.
+
+Visible torso aim (v42): NPCs choose exposed upper
+torso when current optical geometry permits, retaining a visible-head fallback
+when the torso is covered. The posture suite adds eight aiming cases; positive
+execution fixtures assert the unchanged 34-point torso damage at the new point.
+Combat delegated cuffs now retain following cover officers, with demolition
+safety Holds preserved. Full-cohort qualification is recorded in the v42 receipt linked above.

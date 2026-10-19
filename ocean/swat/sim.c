@@ -383,6 +383,20 @@ bool swat_sim_firing_line_clear(const SwatSim* s,int observer,int target,float r
     SwatHit hit=swat_world_sight_ray(&s->world,swat_controller_eye(&a->controller),swat_controller_aim(&a->controller),range,a->controller.body.body);
     return hit.kind==SWAT_HIT_ACTOR && hit.index==target;
 }
+bool swat_sim_observed_weapon_threat(const SwatSim* s,int observer,int target,float range) {
+    if(!swat_sim_actor_visible(s,observer,target,range,60*SWAT_RAD))return false;
+    const SwatActor* gunman=&s->actors[target];
+    if(gunman->role!=SWAT_SUSPECT || gunman->gear.surrendered || gunman->gear.restrained ||
+       gunman->controller.ads<.5f || fabsf(gunman->controller.ready_blend)>.12f)return false;
+    SwatHit aimed=swat_world_sight_ray(&s->world,swat_controller_eye(&gunman->controller),
+        swat_controller_aim(&gunman->controller),range,gunman->controller.body.body);
+    if(aimed.kind!=SWAT_HIT_ACTOR || aimed.index<0 || aimed.index>=s->actor_count)return false;
+    const SwatActor* person=&s->actors[aimed.index];
+    if(!person->present || !person->alive ||
+       (person->role!=SWAT_OFFICER && person->role!=SWAT_SNIPER && person->role!=SWAT_CIVILIAN &&
+        !(person->role==SWAT_SUSPECT && (person->gear.surrendered || person->gear.restrained))))return false;
+    return aimed.index==observer || swat_sim_actor_visible(s,observer,aimed.index,range,60*SWAT_RAD);
+}
 void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     for (int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i] = swat_neutral_input();
     if(s->config.tactical_rules) { swat_encounter_inputs(s,inputs); return; }
@@ -625,10 +639,15 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
         // target after bot input selection. Recheck the actual aimed sight ray
         // before consuming ammunition, including a pending semi-auto shot.
         int target=a->target_actor;
-        bool clear=swat_sim_firing_line_clear(s,actor,target,24);
+        bool clear=s->config.hostile_fire && swat_sim_firing_line_clear(s,actor,target,24);
         if(clear) {
             const SwatActor* seen=&s->actors[target];
             clear=seen->role==SWAT_SUSPECT && !seen->gear.surrendered && !seen->gear.restrained;
+            if(clear) {
+                int age=s->tick-seen->last_shot_tick;
+                clear=(seen->last_shot_tick>=0 && age>=0 && age<120) ||
+                    swat_sim_observed_weapon_threat(s,actor,target,24);
+            }
         }
         if(!clear){weapon_input.fire=false;a->arsenal.fire_buffer_ticks=0;}
     }

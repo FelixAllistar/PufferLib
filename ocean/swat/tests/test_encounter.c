@@ -457,9 +457,21 @@ static void occupied_entry(int route,int mirror,int event) {
 #include "squad_room_search.h"
 #include "squad_room_network.h"
 #include "squad_fire_lanes_network.h"
+#include "squad_threat_response.h"
+#include "squad_threat_posture.h"
+#include "squad_threat_network.h"
 #include "motel_occupancy.h"
+#include "motel_partial_navigation.h"
+#include "motel_contact_navigation.h"
+#include "squad_protected_people.h"
 int main(int argc,char** argv) {
     setvbuf(stdout,NULL,_IONBF,0);
+    if(argc>=2 && !strcmp(argv[1],"partial-nav")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_PARTIAL_NAV_CASES;assert(first>=0 && last<=SWAT_PARTIAL_NAV_CASES);for(int i=first;i<last;i++)test_motel_partial_navigation(i);if(task_trace)assert(!fclose(task_trace));return 0;}
+    if(argc==2 && !strcmp(argv[1],"threat-network")){task_threat_network(-1);task_threat_network(1);return 0;}
+    if(argc>=2 && !strcmp(argv[1],"contact-nav")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_CONTACT_NAV_CASES;assert(first>=0 && last<=SWAT_CONTACT_NAV_CASES);for(int i=first;i<last;i++)task_contact_navigation(i);if(task_trace)assert(!fclose(task_trace));return 0;}
+    if(argc>=2 && !strcmp(argv[1],"protected-person")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_PROTECTED_PEOPLE_CASES;assert(first>=0 && last<=SWAT_PROTECTED_PEOPLE_CASES);for(int i=first;i<last;i++)task_protected_people(i);if(task_trace)assert(!fclose(task_trace));return 0;}
+    if(argc>=2 && !strcmp(argv[1],"threat-posture")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_THREAT_POSTURES;assert(first>=0 && last<=SWAT_THREAT_POSTURES);for(int i=first;i<last;i++)task_threat_posture(i);if(task_trace)assert(!fclose(task_trace));return 0;}
+    if(argc>=2 && !strcmp(argv[1],"threat-duel")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_THREAT_DUELS;assert(first>=0 && last<=SWAT_THREAT_DUELS);for(int i=first;i<last;i++)task_threat_response_duel(i);if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc>=2 && !strcmp(argv[1],"occupancy-deep-exit")){assert(argc<=3);test_motel_occupancy_deep_exit(argc==3?argv[2]:NULL);return 0;}
     if(argc==2 && !strcmp(argv[1],"fire-lanes-bot")){task_fire_lane_bot();return 0;}
     if(argc==2 && !strcmp(argv[1],"fire-lanes-network")){task_fire_lane_network(-1);task_fire_lane_network(1);return 0;}
@@ -547,6 +559,11 @@ int main(int argc,char** argv) {
     navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);for(int variant=0;variant<13;variant++)task_room_search(variant);for(int test=0;test<SWAT_DAMAGED_EQUIPMENT_CASES;test++)task_damaged_equipment(test);
     for(int test=0;test<SWAT_FIRE_LANE_CASES;test++)task_fire_lane(test);
     task_fire_surface();task_fire_lane_bot();test_motel_occupancy_deep_exit(NULL);
+    for(int i=0;i<SWAT_THREAT_DUELS;i++)task_threat_response_duel(i);
+    for(int i=0;i<SWAT_THREAT_POSTURES;i++)task_threat_posture(i);
+    for(int i=0;i<SWAT_PARTIAL_NAV_CASES;i++)test_motel_partial_navigation(i);
+    for(int i=0;i<SWAT_CONTACT_NAV_CASES;i++)task_contact_navigation(i);
+    for(int i=0;i<SWAT_PROTECTED_PEOPLE_CASES;i++)task_protected_people(i);
     if(task_trace)assert(!fclose(task_trace));
     return 0;
 }

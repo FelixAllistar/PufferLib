@@ -16,6 +16,8 @@ static int watch_actor=-1;
 static int contact_overflows;
 static bool track_breach,crossed_breach;
 static bool squad_restraint;
+static bool moving_cover;
+static int moving_cover_holds;
 static int squad_cuffs;
 static bool squad_search;
 static int squad_weapons;
@@ -63,6 +65,8 @@ static void fail(const char* task) {
 }
 static void step(SwatInput in) {
     if(sim.end!=SWAT_RUNNING)fail("unexpected scenario end");
+    if(in.squad_order==SWAT_ORDER_HOLD)moving_cover_holds++;
+    if(moving_cover && moving_cover_holds)fail("moving cover issued Hold");
     b3Pos before=feet(0);
     swat_sim_step(&sim,&in);assert(swat_replay_append(&journal,&in,&sim));
     b3Pos after=feet(0);
@@ -105,12 +109,7 @@ static bool cover_visible_attack(SwatInput* in,float route_yaw) {
         if(a->last_shot_tick>=0 && sim.tick-a->last_shot_tick<120)confirmed[i]=true;
         // A visible raised weapon aimed at the team is also an immediate
         // threat. Use observable pose, never the NPC's private target field.
-        if(a->controller.ads>.5f)for(int j=0;j<sim.actor_count;j++) {
-            const SwatActor* teammate=&sim.actors[j];
-            if(!teammate->present || !teammate->alive || teammate->role!=SWAT_OFFICER)continue;
-            b3Vec3 to=b3SubPos(swat_controller_eye(&teammate->controller),swat_controller_eye(&a->controller));
-            if(b3Dot(swat_controller_aim(&a->controller),swat_normalize(to))>cosf(8*SWAT_RAD))confirmed[i]=true;
-        }
+        if(swat_sim_observed_weapon_threat(&sim,0,i,24))confirmed[i]=true;
         // Resolve an observed shooting threat before resuming the route.
         // A two-second pause between shots does not establish compliance.
         if(!confirmed[i])continue;
@@ -170,9 +169,21 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
             }
             replan=t+30;
         }
-        SwatInput in=look(b3OffsetPos(waypoint,swat_v(0,1.65f,0)));
+        // A cell centre almost underfoot cannot supply a stable viewing
+        // direction. Look along the remaining goal while normal navigation
+        // still controls translation and real door/capsule interaction.
+        bool goal_view=hypotf(waypoint.x-p.x,waypoint.z-p.z)<.3f;
+        b3Pos view=goal_view?goal:waypoint;
+        float eye_height=(float)(swat_controller_eye(&sim.actors[0].controller).y-p.y);
+        SwatInput in=look(b3OffsetPos(view,swat_v(0,eye_height,0)));
         float yaw=atan2f(waypoint.z-p.z,waypoint.x-p.x);
-        if(fabsf(swat_angle(yaw-sim.actors[0].controller.yaw))<35*SWAT_RAD)in.forward=.8f;
+        if(goal_view) {
+            // Keep following the physical waypoint while looking toward the
+            // door/remaining route; ordinary strafe/backward input supplies
+            // the same desired translation in the newly selected view basis.
+            float turn=yaw-sim.actors[0].controller.yaw-in.yaw_delta;
+            in.forward=.8f*cosf(turn);in.strafe=.8f*sinf(turn);
+        } else if(fabsf(swat_angle(yaw-sim.actors[0].controller.yaw))<35*SWAT_RAD)in.forward=.8f;
         // Keep this delegated-task route at the team's existing formation
         // pace, instead of running the commander away from their coverage.
         in.gait=squad_restraint&&sim.config.hostile_fire?SWAT_SLOW:SWAT_WALK;
@@ -423,7 +434,9 @@ static void secure(int actor) {
         // reported weapons are recovered, unassigned members can yield through
         // alternate furnished-room portals while one worker cuffs.
         bool queued=sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD && sim.debrief.evidence==2;
-        SwatInput cover=look(chest(actor));cover.squad_order=queued?SWAT_ORDER_FALL_IN:SWAT_ORDER_HOLD;step(cover);idle(20);
+        // Combat handoffs keep unassigned officers moving with the commander.
+        // Demolition staging retains its separate explicit safety Hold.
+        SwatInput cover=look(chest(actor));cover.squad_order=sim.config.hostile_fire||queued?SWAT_ORDER_FALL_IN:SWAT_ORDER_HOLD;step(cover);idle(20);
         SwatInput order=look(chest(actor));order.squad_order=SWAT_ORDER_CUFF;order.squad_queue=queued;step(order);
         int recipient=-1;
         for(int i=3;i<6;i++)if(sim.actors[i].mind.pending_order==SWAT_ORDER_CUFF && sim.actors[i].mind.pending_actor==actor+1) {
@@ -583,11 +596,23 @@ static void hold_breach_team(b3Pos charge) {
         // A worker from an alternate occupied room can still be beside the
         // next charge surface. Acknowledge an ordinary Move to clear court
         // floor before Hold, rather than freezing someone in the entry door.
-        b3Pos staging=feet(0);b3Vec3 away=b3SubPos(staging,charge);away.y=0;
-        staging=b3OffsetPos(staging,swat_mul(swat_normalize(away),2));staging.y-=.015f;
-        for(int t=0;t<40;t++)step(look(staging));
-        SwatHit floor=swat_context_hit(&sim,0,24);
-        if(floor.kind!=SWAT_HIT_WORLD || floor.normal.y<.7f || b3Distance(floor.point,staging)>.4f)fail("visible clear breach staging floor");
+        b3Pos origin=feet(0),staging=origin;b3Vec3 away=b3SubPos(origin,charge);away.y=0;
+        away=swat_normalize(away);b3Vec3 side=swat_v(-away.z,0,away.x);bool selected=false;
+        // A recalled officer can cross the view of a perfectly clear floor
+        // point. Select another visible court sample, then turn and verify the
+        // actual context ray before issuing Move. Never order through a person
+        // or treat an obstructed reticle as a floor acknowledgement.
+        for(int distance=2;distance<=4 && !selected;distance++)for(int lane=0;lane<5 && !selected;lane++) {
+            float lateral=lane?((lane+1)/2)*.6f*(lane&1?1:-1):0;
+            staging=b3OffsetPos(origin,swat_add(swat_mul(away,(float)distance),swat_mul(side,lateral)));staging.y-=.015f;
+            b3Pos eye=swat_controller_eye(&sim.actors[0].controller);b3Vec3 delta=b3SubPos(staging,eye);
+            SwatHit visible=swat_world_ray(&sim.world,eye,swat_normalize(delta),b3Length(delta)+.4f,sim.actors[0].controller.body.body);
+            if(visible.kind!=SWAT_HIT_WORLD || visible.normal.y<.7f || b3Distance(visible.point,staging)>.4f)continue;
+            for(int t=0;t<40;t++)step(look(staging));
+            SwatHit floor=swat_context_hit(&sim,0,24);
+            selected=floor.kind==SWAT_HIT_WORLD && floor.normal.y>=.7f && b3Distance(floor.point,staging)<=.4f;
+        }
+        if(!selected)fail("visible clear breach staging floor");
         SwatInput recall=look(staging);recall.squad_order=SWAT_ORDER_MOVE;step(recall);
         bool settled=false;
         for(int t=0;t<2400;t++) {
@@ -674,6 +699,7 @@ int main(int argc,char** argv) {
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"combat"))combat=true;
         else if(!strcmp(argv[i],"squad"))squad_restraint=true;
+        else if(!strcmp(argv[i],"moving-cover"))moving_cover=squad_restraint=squad_search=true;
         else if(!strcmp(argv[i],"search"))squad_search=true;
         else if(!strcmp(argv[i],"equipment"))squad_equipment=true;
         else if(!strcmp(argv[i],"damaged-equipment"))damaged_equipment=squad_equipment=true;
@@ -700,6 +726,7 @@ int main(int argc,char** argv) {
     char task_save[1024];assert(snprintf(task_save,sizeof(task_save),"%s.search.save",argv[1])<(int)sizeof(task_save));search_save=task_save;
     char wedge_save[1024];assert(snprintf(wedge_save,sizeof(wedge_save),"%s.wedge.save",argv[1])<(int)sizeof(wedge_save));equipment_save=wedge_save;
     char route_save[1024];assert(snprintf(route_save,sizeof(route_save),"%s.room.save",argv[1])<(int)sizeof(route_save));room_save=route_save;
+    assert(!moving_cover || (combat && !strcmp(route,"front") && !squad_equipment && !squad_rooms));
     assert(!squad_rooms || !strcmp(route,"front"));
     assert(!damaged_equipment || (!combat && !strcmp(route,"front")));
     int saved_tick=0;uint32_t saved_hash=0;
@@ -715,7 +742,15 @@ int main(int argc,char** argv) {
     }
     step(in);idle(30);
     if(strcmp(route,"front"))assert(sim.actors[0].gear.kit==2 && sim.actors[0].arsenal.primary==(combat?0:2));
-    for(int i=0;i<5;i++)for(int n=0,visit=0;n<6;n++)if(assigned[n]==i) {
+    // This equipment/room-search plan first clears Room 101, then handles
+    // the known armed-room approaches before further hands-on civilian work.
+    // A worker correctly refuses cuffs while covering another armed contact;
+    // the commander must resolve that exposure instead of waiting inside.
+    const int room_order[]={0,2,4,1,3};
+    bool armed_first=squad_rooms && occupancy==SWAT_MOTEL_STANDARD;
+    for(int room_visit=0;room_visit<5;room_visit++) {
+      int i=armed_first?room_order[room_visit]:room_visit;
+      for(int n=0,visit=0;n<6;n++)if(assigned[n]==i) {
         if(squad_restraint) {in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
         squad_waiting=occupancy==SWAT_MOTEL_STANDARD?(b3Pos){doors[i]+1.2f,0,-.65f}:(b3Pos){doors[i]+1.5f,0,3.2f};
         search_waiting=(b3Pos){doors[i],0,2.5f};
@@ -741,14 +776,22 @@ int main(int argc,char** argv) {
             walk((b3Pos){doors[i],0,-.85f},.3f);
         }
         secure(occupants[n]);
+        if(armed_first && squad_equipment && room_visit==4 && !squad_wedges) {
+            // Everyone is now secured. Keep the final civilian awaiting
+            // evacuation until damage/wedge/removal checks finish, so mission
+            // success cannot precede equipment work. Return by ordinary input.
+            watch_actor=-1;walk((b3Pos){doors[1],0,2.5f},.3f);delegate_wedge(doors[1]);
+            watch_actor=occupants[n];approach_person(occupants[n]);
+        }
         if(sim.actors[occupants[n]].role==SWAT_CIVILIAN)evacuate(occupants[n],i==0&&!strcmp(route,"exterior"));
         else {collect(occupants[n]);walk((b3Pos){doors[i],0,2.5f},.3f);}
         if(i==2) {assert(swat_replay_checkpoint(&journal,save));saved_tick=sim.tick;saved_hash=swat_replay_digest(&sim);}
         visit++;
+      }
     }
     // Account for armed suspects before asking an officer to put its hands on
     // equipment. Visible threats correctly interrupt this work.
-    if(squad_equipment) {watch_actor=-1;walk((b3Pos){doors[1],0,2.5f},.3f);delegate_wedge(doors[1]);}
+    if(squad_equipment && !squad_wedges) {watch_actor=-1;walk((b3Pos){doors[1],0,2.5f},.3f);delegate_wedge(doors[1]);}
     if(sim.end==SWAT_RUNNING)walk(sim.extraction,.35f);
     if(sim.end==SWAT_RUNNING){in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
     for(int t=0;t<3000 && sim.end==SWAT_RUNNING;t++)idle(1);
@@ -772,6 +815,7 @@ int main(int argc,char** argv) {
     if(squad_equipment)assert(squad_wedges==1);
     if(damaged_equipment)assert(damaged_door_shots>0);
     if(squad_rooms)assert(squad_room_routes==1);
+    if(moving_cover){assert(!moving_cover_holds);puts("PASS moving cover: front-entry live threats, following unassigned officers and directed tasks, zero commander Hold commands");}
     assert(swat_replay_close(&journal));
     printf("PASS motel complete player-input run (%s, %s route, %s): %d ticks, %d arrests, %d armed suspects killed, %d evacuations, two weapons, squad regroup, no civilian/officer deaths or unlawful force\n",cfg.hostile_fire?"hostile fire enabled":"interaction isolation",route,swat_motel_occupancy_name(occupancy),sim.tick,sim.debrief.arrests,dead_suspects,civilians);fflush(stdout);
     static SwatSim replica;static SwatMap map,map_decoded;static SwatSnapshot snapshot,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];
