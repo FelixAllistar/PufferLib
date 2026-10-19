@@ -24,6 +24,7 @@ async function geometry(){
     document.querySelectorAll('.seat:not(.folded) .seat-cue.visible').forEach(cue=>{
       document.querySelectorAll('.seat-info,.seat:not(.folded) .seat-cards,#board').forEach(n=>{if(intersects(cue.getBoundingClientRect(),n.getBoundingClientRect()))failures.push(`Action cue touches ${n.className}`);});
     });
+    document.querySelectorAll('.dealer:not([hidden])').forEach(d=>{document.querySelectorAll('.seat-info,.seat:not(.folded) .seat-cards,#board').forEach(n=>{if(intersects(d.getBoundingClientRect(),n.getBoundingClientRect()))failures.push(`Dealer touches ${n.className}`);});});
     const badges=[...document.querySelectorAll('.seat-info')];badges.forEach((a,i)=>badges.slice(i+1).forEach(b=>{if(intersects(a.getBoundingClientRect(),b.getBoundingClientRect()))failures.push('Stack badges touch');}));
     if(document.documentElement.scrollWidth>innerWidth)failures.push('Horizontal page overflow');
     return {failures,bets:bets.length};

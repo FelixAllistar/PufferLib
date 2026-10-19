@@ -13,6 +13,7 @@ await page.addInitScript(()=>{
 const errors=[],report=[],presetStreets=new Set(),selectedStreets=new Set();let presetChecks=0,tenCards=0;
 page.on('pageerror',e=>errors.push(e.message));
 page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('fonts.googleapis'))errors.push(m.text());});
+await page.clock.install();
 await page.goto(origin);await page.waitForFunction(()=>window.poker?.snapshot());
 async function configure(players,opponent){
   await page.locator('#settings-button').click();
@@ -38,7 +39,10 @@ for(const [players,opponent] of [[2,'rules'],[2,'range'],[2,'fullhouse'],[2,'riv
     if(s[1]===255){
       const stats=await page.evaluate(()=>({core:window.poker.session(),net:document.querySelector('#session-net').textContent}));
       assert.equal(stats.core.hands,s[15]);
-      if(stats.core.hands<5)await page.locator('#next-button').click();
+      if(stats.core.hands<5){
+        if(s[24]===0)await page.locator('#rebuy-button').click();
+        else {await page.clock.fastForward(6500);await page.waitForFunction(h=>window.poker.snapshot()[15]>h,s[15]);}
+      }
     }else if(s[1]===0){
       assert.ok(await page.locator('#call-button').isEnabled());
       assert.ok((await page.locator('#hero-position').textContent()).startsWith('You:'));

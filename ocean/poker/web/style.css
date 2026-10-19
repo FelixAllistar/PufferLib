@@ -232,3 +232,32 @@ dialog .primary { width: 100%; margin-top: 23px; }
   #learning-panel { top:54px; bottom:10px; right:8px; width:min(310px,calc(100vw - 16px)); } #table-drawer { top:54px; bottom:12px; width:min(320px,calc(100vw - 24px)); } .error-toast { bottom:225px; font-size:12px; }
 }
 @media (prefers-reduced-motion:reduce) { *,*:before,*:after { animation:none !important; transition:none !important; } }
+
+/* A large dealer disc and a compact, readable showdown receipt. */
+.dealer { width:38px; height:38px; right:-44px; top:7px; border:3px solid #c4c0b4; font-size:26px; line-height:32px; box-shadow:0 3px 0 #8c8587,0 4px 8px #30020b88; }
+.finished-controls { min-height:0; flex-direction:column; align-items:stretch; justify-content:start; gap:7px; }
+.result-copy>strong { font-size:19px; line-height:23px; }
+#result-detail { font-size:12px; line-height:17px; margin-top:3px; }
+.result-hands { max-height:95px; overflow:auto; scrollbar-width:thin; margin-top:6px; }
+.winner-hand { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:4px 0; }
+.winner-description { font-size:12px; line-height:17px; color:#ffe1a3; max-width:360px; }
+.winning-cards { display:flex; gap:4px; flex-shrink:0; padding-bottom:3px; }
+.winning-cards .card { width:32px; height:46px; border-radius:3px; box-shadow:0 2px 0 #bfb7b7; }
+.winning-cards .card .corner { font-size:17px; line-height:18px; left:3px; top:3px; }
+.winning-cards .card .suit { font-size:23px; transform:translate(1px,9px); }
+.result-footer { display:flex; align-items:center; justify-content:flex-end; gap:12px; min-height:27px; }
+#deal-status { color:#cfb8b7; font-size:12px; margin-right:auto; }
+.result-hold { border:1px solid #9b6a76; border-radius:5px; background:#51202d; color:#f4dbe0; padding:4px 12px; font-size:12px; }
+#rebuy-button { padding:7px 12px; font-size:13px; }
+@media (max-width:700px) {
+  .dealer { width:29px; height:29px; right:-23px; top:-9px; border-width:2px; font-size:20px; line-height:25px; }
+  .finished-controls { min-height:0; gap:7px; }
+  .result-copy>strong { font-size:17px; line-height:20px; }
+  #result-detail { font-size:10px; line-height:14px; max-width:none; }
+  .winner-description { font-size:10px; line-height:14px; }
+  .winning-cards { gap:3px; }
+  .winning-cards .card { width:26px; height:38px; }
+  .winning-cards .card .corner { font-size:14px; line-height:15px; }
+  .winning-cards .card .suit { font-size:19px; transform:translate(1px,8px); }
+  #deal-status { font-size:10px; }
+}

@@ -13,7 +13,7 @@ if(process.argv.includes('--capture')){
  for(let i=0;i<80;i++){
   await p.waitForFunction(()=>window.poker?.snapshot()&&!window.poker.status().busy&&(window.poker.snapshot()[1]===0||window.poker.snapshot()[1]===255));
   const saved=await p.evaluate(()=>JSON.parse(sessionStorage.getItem('puffer-poker.cash.v1')));
-  if(saved.publicState[1]===255){terminal=saved;if(mid)break;await p.locator('#next-button').click();continue;}
+  if(saved.publicState[1]===255){terminal=saved;if(mid)break;if(saved.publicState[24]===0)await p.locator('#rebuy-button').click();else await p.waitForFunction(h=>window.poker.snapshot()[15]>h,saved.publicState[15]);continue;}
   if(saved.checkpoint.commands.length>=2)mid=saved;
   await p.locator('#call-button').click();
  }
@@ -27,7 +27,7 @@ const hash=manifest.artifacts['poker2pro.wasm'];
 assert.notEqual(hash,fixtures.mid.checkpoint.hash,'Test must cross an actual engine-hash update');
 const browser=await chromium.launch();const errors=[];
 async function open(saved,badTarget=false){
- const p=await browser.newPage({viewport:{width:1440,height:1000}});p.on('pageerror',e=>errors.push(e.message));
+ const p=await browser.newPage({viewport:{width:1440,height:1000}});await p.clock.install();p.on('pageerror',e=>errors.push(e.message));
  await p.addInitScript(s=>{if(!sessionStorage.getItem('candidate-test-imported')){sessionStorage.setItem('puffer-poker.cash.v1',JSON.stringify(s));sessionStorage.setItem('candidate-test-imported','1');}},saved);
  if(badTarget)await p.route('**/build-manifest.json',route=>{const m=structuredClone(manifest);m.experimental.replay_compatible_target_wasm_sha256='0'.repeat(64);return route.fulfill({json:m});});
  await p.goto(origin);return p;
@@ -44,7 +44,7 @@ for(const key of ['mid','terminal']){
  assert.deepEqual(await p.evaluate(()=>window.poker.session()),saved.session,'Refresh does not score terminal hand twice');
  // The upgraded candidate also plays a fresh cash hand and keeps its new hash.
  if(key==='terminal'){
-  await p.locator('#next-button').click();await p.waitForFunction(h=>window.poker.snapshot()?.[15]>h&&!window.poker.status().busy&&(window.poker.snapshot()[1]===0||window.poker.snapshot()[1]===255),saved.publicState[15]);
+  if(saved.publicState[24]===0)await p.locator('#rebuy-button').click();else await p.clock.fastForward(6500);await p.waitForFunction(h=>window.poker.snapshot()?.[15]>h&&!window.poker.status().busy&&(window.poker.snapshot()[1]===0||window.poker.snapshot()[1]===255),saved.publicState[15]);
   for(let i=0;i<20;i++){
    await p.waitForFunction(()=>!window.poker.status().busy&&(window.poker.snapshot()[1]===0||window.poker.snapshot()[1]===255));
    if(await p.evaluate(()=>window.poker.snapshot()[1]===255))break;await p.locator('#call-button').click();

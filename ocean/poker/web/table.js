@@ -1,11 +1,12 @@
 // Presentation only. The worker remains the authority for every chip and card.
+import {awardFor} from './showdown.js';
 const $=id=>document.getElementById(id);
 const ranks='23456789TJQKA',suits=['♣','♦','♥','♠'];
 const colors=['#00bbaa','#885ac4','#c44b36','#4e87bc','#b4762f','#638054','#9e5d94','#4c8c94','#8170b7'];
 const row=(s,p)=>s.slice(24+9*p,33+9*p);
 const fmt=n=>(n/100).toLocaleString('en-US',{maximumFractionDigits:2});
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
-function card(id){
+export function card(id){
   const el=document.createElement('span');el.className='card';el.dataset.card=id;
   if(id===52){el.classList.add('back');el.setAttribute('aria-label','Face-down card');return el;}
   const raw=ranks[id>>2],rank=raw==='T'?'10':raw,suit=suits[id&3];
@@ -29,7 +30,7 @@ function syncCards(node,ids,mask,focus,deal){
 }
 // Coordinates anchor the stack, not the changing card/status bounding box.
 function location(p,n,mobile){
-  if(p===0)return [50,87];
+  if(p===0)return [50,mobile?88:87];
   if(n===2)return [50,17];
   if(n===6)return [[50,87],[15.5,mobile?75:65],[15.5,28],[50,16.5],[84.5,28],[84.5,mobile?75:65]][p];
   const a=Math.PI/2+2*Math.PI*p/n;
@@ -48,7 +49,7 @@ export class TableView{
     this.nodes=Array.from({length:this.players},(_,p)=>{
       const el=document.createElement('div');el.dataset.seat=p;el.className=`seat${p===0?' hero':''}`;
       el.style.setProperty('--seat-color',colors[p]);
-      el.innerHTML='<div class="seat-cards"></div><div class="seat-info"><span class="dealer" title="Dealer button">D</span><span class="seat-number"></span><div class="seat-details"><div class="seat-stack"></div><div class="seat-name"></div></div><span class="position-tag"></span></div><div class="seat-cue" aria-hidden="true"></div>';
+      el.innerHTML='<div class="seat-cards"></div><span class="dealer" title="Dealer button">D</span><div class="seat-info"><span class="seat-number"></span><div class="seat-details"><div class="seat-stack"></div><div class="seat-name"></div></div><span class="position-tag"></span></div><div class="seat-cue" aria-hidden="true"></div>';
       return el;
     });$('seats').replaceChildren(...this.nodes);$('bets').replaceChildren();
   }
@@ -65,7 +66,7 @@ export class TableView{
     $('board').classList.toggle('preflop',s[13]===0);
     syncCards($('board'),Array.from({length:5},(_,i)=>i<s[13]?s[16+i]:null),s[22]>>2,focus&&s[13]>=3,changed);
     this.nodes.forEach((el,p)=>{
-      const r=row(s,p),pos=position(p),payout=done?r[0]-r[8]+r[2]:0;
+      const r=row(s,p),pos=position(p),payout=awardFor(s,p);
       el.classList.toggle('folded',!r[5]);el.classList.toggle('active',!done&&s[1]===p);
       el.classList.toggle('winner',payout>0);el.classList.toggle('all-in',!!r[5]&&!done&&r[0]===0);
       el.setAttribute('aria-label',`${label(p)}, ${fmt(r[0])} big blinds${!r[5]?', folded':''}${!done&&s[1]===p?', to act':''}${payout>0?`, wins ${fmt(payout)} big blinds`:''}`);
@@ -98,14 +99,15 @@ export class TableView{
       const pot=document.querySelector('.pot-wrap').getBoundingClientRect();
       oldBets.forEach(b=>this.fly(b,pot,0));
       if(done){
-        this.nodes.forEach((el,p)=>{const r=row(s,p);if(r[0]-r[8]+r[2]>0){this.fly(pot,el.querySelector('.seat-info').getBoundingClientRect(),oldBets.length?360:100,true);}});
+        this.nodes.forEach((el,p)=>{const r=row(s,p);if(awardFor(s,p)>0){this.fly(pot,el.querySelector('.seat-info').getBoundingClientRect(),oldBets.length?360:100,true);}});
       }
     }
     this.version=version;
   }
   clearCue(p){clearTimeout(this.cues.get(p));this.cues.delete(p);const el=this.nodes[p].querySelector('.seat-cue');el.className='seat-cue';el.textContent='';}
   cue(p,kind,text,persist){
-    this.clearCue(p);if(!kind)return;
+    // Folds use the card tuck and crossed seat marker; no extra action bubble.
+    this.clearCue(p);if(!kind||kind==='fold')return;
     const el=this.nodes[p].querySelector('.seat-cue');el.className=`seat-cue cue-${kind} visible`;
     const icon=kind==='check'?'✓':kind==='fold'?'↘':kind==='win'?'◆':kind==='raise'?'↑':kind==='all'?'●':'●';
     el.textContent=`${icon} ${text}`;
@@ -126,7 +128,7 @@ export class TableView{
     if(!this.s)return;
     const stage=$('stage').getBoundingClientRect(),mobile=stage.width<700;
     this.nodes.forEach((el,p)=>{const [x,y]=location(p,this.players,mobile);el.style.left=`${x}%`;el.style.top=`${y}%`;});
-    const obstacles=[...document.querySelectorAll('.seat-info,.seat-cards,.dealer:not([hidden]),.position-tag:not([hidden]),#board,.pot-wrap')].filter(el=>!el.closest('.folded')||!el.classList.contains('seat-cards')).map(el=>el.getBoundingClientRect());
+    const obstacles=[...document.querySelectorAll('.seat-info,.seat-cards,.position-tag:not([hidden]),#board,.pot-wrap')].filter(el=>!el.closest('.folded')||!el.classList.contains('seat-cards')).map(el=>el.getBoundingClientRect());
     const intersects=(a,b,g=6)=>a.x<b.x+b.width+g&&a.x+a.width+g>b.x&&a.y<b.y+b.height+g&&a.y+a.height+g>b.y;
     const findSpot=(width,height,preferred)=>{
       const rect=(x,y)=>({x:x-width/2,y:y-height/2,width,height});
@@ -140,6 +142,12 @@ export class TableView{
       }
       return best;
     };
+    for(const el of this.nodes){
+      const dealer=el.querySelector('.dealer');if(dealer.hidden)continue;
+      const info=el.querySelector('.seat-info').getBoundingClientRect(),parent=el.getBoundingClientRect();
+      const chosen=findSpot(dealer.offsetWidth,dealer.offsetHeight,[info.right+8+dealer.offsetWidth/2,info.y+info.height/2]);
+      if(chosen){dealer.style.right='auto';dealer.style.left=`${chosen.x-parent.x}px`;dealer.style.top=`${chosen.y-parent.y}px`;obstacles.push(chosen);}
+    }
     // Action bubbles share the same collision space as bets, including compact
     // nine-seat layouts where a bubble below one badge would cover another hand.
     for(const el of this.nodes){

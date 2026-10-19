@@ -1,0 +1,3 @@
+Running as unit: run-ra124669becb244adbcb8e4b37f8f34e3.scope; invocation ID: 1805afe0a2ec4fac8838ccf7e2ff20fa
+PASS: kernel memory cap <= 6 GiB; swap disabled
+All terms check.

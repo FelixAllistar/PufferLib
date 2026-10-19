@@ -11,7 +11,7 @@ opponent policy. Busted bots rebuy for 200 BB; the human chooses an explicit
 
 The browser executes stock **Bend 2.0.6** for action permissions, raise clamping,
 turn phases and session accounting (`Controller.bend`), cash rules (`Cash.bend`),
-and precise hand names (`Hand.bend`). `PROOF.bend` checks twenty-five laws. The stock Bend HTML bundler compiles these definitions into the actual
+and precise hand names (`Hand.bend`). `PROOF.bend` checks thirty-two laws. The stock Bend HTML bundler compiles these definitions into the actual
 browser bundle; they are not a second specification beside handwritten logic.
 JavaScript handles DOM, sound, animation and worker transport. The existing C
 engine and bots run as WebAssembly in a separate worker. Porting engine state
@@ -177,8 +177,8 @@ The acting seat grows slightly with a teal edge; the human hand also lifts.
 Checks double-tap, folds tuck cards into the badge and darken/cross its marker,
 wagers fly to the seat’s chips, and chips collect when a street finishes. Actual
 payout recipients turn gold and receive the pot animation. Payouts use ending
-stack minus starting stack plus contributions, so a side-pot recipient is shown
-even when their net result is negative. The result panel separates pot awards
+stack minus starting stack plus contributions, excluding unmatched showdown
+refunds. A side-pot recipient is shown even when their net result is negative. The result panel separates pot awards
 from the human net result. Quick pace intentionally allows simultaneous cues;
 normal/relaxed pace lets each action breathe. Card swishes, double knocks,
 chip clicks, turn chimes and win sounds pan gently toward the actor. Reduced
@@ -218,3 +218,37 @@ exact public state, identical accounting, persisted new hash, a fresh hand,
 unknown hashes, changed bot journals, and compatibility scope. Capture fixtures
 remain in the ignored build tree. The source-bound trial and ASan/UBSan
 results are retained in `reports/poker/20261018/pr_try/`.
+
+## Showdown receipts and automatic rounds
+
+Showdown results name each pot winner’s exact made hand, include the leading
+kicker when applicable, and show their best five cards in hand order (groups
+first, straights descending, with an ace low in a wheel). The human’s own hand
+is explicitly labeled. Fold wins say Won without showdown and never expose
+folded or unshown opponent cards. The hand history keeps the winner descriptions
+and shown winning cards. Unmatched all-in refunds are excluded from pot-winner
+markers; genuine side-pot winners remain marked even with a negative net return.
+
+`Hand.bend` evaluates only public cards for presentation and retains the native
+packed rank ordering. An independent C oracle matches 12,000 five-, six- and
+seven-card sets across all nine categories. The engine and bots are unchanged;
+all four WASM hashes remain the same as the previous release. `Cash.bend` owns
+auto-deal eligibility, result delays and the refund-adjusted award calculation.
+Seven new laws bring the checked total to 32; these do not constitute a full
+formal proof of the hand evaluator.
+
+There is no Next hand button. Funded stacks automatically continue after six
+seconds at showdown, or three seconds after a fold win. Pause/Resume holds the
+receipt, including across refresh. History, Help, Settings and a hidden tab stop
+the result clock; returning resumes the remaining reading time. A busted human
+must explicitly rebuy, while funded human and bot stacks carry into the new hand.
+The dealer disc is 38 px on desktop and 29 px on phones; placement clears cards,
+stack badges, board, bets and action cues. Phone spacing leaves room for check
+motion as well as the larger disc.
+
+`test_rounds.mjs` checks native winning-five ranks, a losing showdown, automatic
+continuation with a real six-second reading pause, stack carryover, held-result
+refresh, history/visibility gates, explicit rebuy and fold-win privacy. Its
+visibility test uses a controlled document visibilitychange in headless Chromium.
+The browser suite accelerates only inter-hand waits with Playwright’s clock;
+funded rounds advance through the actual automatic-deal path.

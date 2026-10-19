@@ -1,0 +1,18 @@
+{
+  "id": "appgdep_6ad595da42a08191a5d47d950959ae54",
+  "project_id": "appgprj_6ad54988fa808191a7fd7ee35a0e103a",
+  "title": "Puffer Poker",
+  "version_id": "appgprj_6ad54988fa808191a7fd7ee35a0e103a~appgver_eaf9f74619c481919af4f8286499c4e5",
+  "type": "publish",
+  "status": "succeeded",
+  "url": "https://puffer-poker.bouncy-plum-9922.chatgpt.site",
+  "has_mcp": false,
+  "screenshot_asset_pointer": null,
+  "provider_deployment_id": "site---6ad54988fa808191a7fd7ee35a0e103a",
+  "failure_message": null,
+  "env_set_revision": 0,
+  "updated_at": "2026-10-19T04:00:34.436642+00:00",
+  "source_commit": "1bb0462e1d0d1392740bd25bffc015fc5b52c815",
+  "audience": "existing owner-private audience preserved",
+  "engine_modules": "all four match preceding release"
+}

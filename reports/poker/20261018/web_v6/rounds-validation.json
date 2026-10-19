@@ -1,0 +1,42 @@
+{
+  "showdown_receipt": [
+    {
+      "p": 1,
+      "text": "Rules 01 · Straight, queen high",
+      "cards": [
+        42,
+        36,
+        34,
+        31,
+        26
+      ]
+    }
+  ],
+  "losing_receipt": [
+    {
+      "p": 1,
+      "text": "Fullhouse 01 · Three of a kind, kings · ace kicker",
+      "cards": [
+        44,
+        46,
+        47,
+        49,
+        40
+      ]
+    }
+  ],
+  "native_winning_five": true,
+  "automatic_next_hand": true,
+  "real_result_pause_ms": 6078,
+  "paused_result_survives_refresh": true,
+  "history_pauses_dealing": true,
+  "hidden_tab_gate": "controlled visibilitychange",
+  "stack_carryover": true,
+  "busted_player_not_auto_bought_in": true,
+  "explicit_rebuy": true,
+  "fold_win_hides_cards": true,
+  "dealer_diameter_desktop": 38,
+  "dealer_diameter_mobile": 29,
+  "no_next_hand_button": true,
+  "browser_errors": []
+}

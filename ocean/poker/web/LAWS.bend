@@ -83,3 +83,20 @@ law pocket_pair_name:
   {H.holding(8, 9) == "Pocket fours" : String}
 law suited_starting_hand_name:
   {H.holding(48, 44) == "ace–king suited" : String}
+law live_hand_never_auto_deals:
+  for stack: U32
+  for paused: Bool
+  for remaining: U32
+  {S.auto_ready(False{}, stack, paused, remaining) == 0 : U32}
+law busted_hand_waits_for_rebuy:
+  {S.auto_ready(True{}, 0, False{}, 0) == 0 : U32}
+law paused_result_does_not_deal:
+  {S.auto_ready(True{}, 100, True{}, 0) == 0 : U32}
+law result_waits_until_readable:
+  {S.auto_ready(True{}, 100, False{}, 1) == 0 : U32}
+law funded_result_continues:
+  {S.auto_ready(True{}, 100, False{}, 0) == 1 : U32}
+law unmatched_showdown_money_is_not_won:
+  {S.award(15000, 20000, 20000, 5000, True{}) == 0 : U32}
+law side_pot_can_win_despite_net_loss:
+  {S.award(10000, 15000, 15000, 20000, True{}) == 10000 : U32}
