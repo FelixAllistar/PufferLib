@@ -1,0 +1,243 @@
+{
+  "protocol": 43,
+  "baseline_commit": "edf741401699f02bea110a46c2ae8b2b07097265",
+  "change": "Static rear-utility transformer integration and finite-mesh corner departure",
+  "qualification": {
+    "protocol": 43,
+    "broad_groups_per_platform": {
+      "linux": 330,
+      "native": 330
+    },
+    "cross_platform_traces": [
+      {
+        "mode": "contact-nav",
+        "samples": 461
+      },
+      {
+        "mode": "protected-person",
+        "samples": 8
+      },
+      {
+        "mode": "partial-nav",
+        "samples": 838
+      },
+      {
+        "mode": "threat-duel",
+        "samples": 8737
+      },
+      {
+        "mode": "threat-posture",
+        "samples": 1125
+      },
+      {
+        "mode": "occupancy-deep-exit",
+        "samples": 657
+      },
+      {
+        "mode": "fire-lanes",
+        "samples": 9731
+      },
+      {
+        "mode": "initial",
+        "samples": 10296
+      },
+      {
+        "mode": "all",
+        "samples": 112464
+      },
+      {
+        "mode": "room-motel",
+        "samples": 5003
+      },
+      {
+        "mode": "roadside",
+        "samples": 38
+      },
+      {
+        "mode": "input",
+        "samples": 78
+      },
+      {
+        "mode": "player",
+        "samples": 1751
+      },
+      {
+        "mode": "occupancy",
+        "samples": 525
+      },
+      {
+        "mode": "occupancy-restraints",
+        "samples": 5544
+      },
+      {
+        "mode": "occupancy-escort",
+        "samples": 21600
+      },
+      {
+        "mode": "occupancy-portal-crowd",
+        "samples": 1235
+      }
+    ],
+    "total_trace_samples": 180091,
+    "missions": [
+      {
+        "name": "motel-threat-exterior",
+        "frames": 9563
+      },
+      {
+        "name": "motel-dispersed",
+        "frames": 27759
+      },
+      {
+        "name": "motel-mixed",
+        "frames": 24466
+      },
+      {
+        "name": "motel-busy",
+        "frames": 29203
+      },
+      {
+        "name": "motel-mixed-hostile",
+        "frames": 22312
+      },
+      {
+        "name": "motel-damaged",
+        "frames": 24989
+      },
+      {
+        "name": "motel-threat-interroom",
+        "frames": 19684
+      },
+      {
+        "name": "motel-moving-cover",
+        "frames": 17282
+      }
+    ],
+    "total_mission_frames_per_replay_platform": 175258,
+    "fresh_authoritative_artifacts": 138,
+    "final_prop_checks": [
+      {
+        "name": "motel_transformer",
+        "groups": 9,
+        "samples": 26
+      },
+      {
+        "name": "motel_roadside",
+        "groups": 7,
+        "samples": 38
+      },
+      {
+        "name": "motel_dumpster",
+        "groups": 4,
+        "samples": 27
+      }
+    ],
+    "native_room_wait": {
+      "initial_failure": "failed-room-snapshot-wait/room-network-native.stderr.log",
+      "strict_unchanged_binary_retries": 1,
+      "status": "Retry passed all original room-search/network assertions; original uninstrumented timeout cause remains unproven. Existing waiting helper pauses publication; controlled-loss investigation is separate."
+    },
+    "native_visual": {
+      "cases": 16,
+      "stable_samples": 34822,
+      "images": 18,
+      "agent_inspected": 6
+    },
+    "limits": [
+      "Full vertical slice remains active.",
+      "No stable-load frame-time or whole-level visual acceptance.",
+      "Transformer is static closed exterior art, without an electrical interior or opening rig.",
+      "Crouch correction, civilian art and picnic-table integration remain separate."
+    ]
+  },
+  "source": {
+    "manifest": {
+      "path": "build/swat/review/transformer-v43-qualification/FINAL_SOURCE_MANIFEST.json",
+      "sha256": "0bda38af1d8c39f06c0113b879d12568a959040681466998c290af42ab41c29b"
+    },
+    "unchanged_glb": {
+      "path": "ocean/swat/assets/environment/motel_transformer/BC_XFMR01_closed.glb",
+      "sha256": "17c4e6cd6cd17cd625855d0870c0d54eaec0ab34885ca5cb609a871175d15975"
+    },
+    "runtime_freeze": {
+      "path": "build/swat/review/transformer-v43-qualification/FROZEN_RUNTIME_SOURCE.json",
+      "sha256": "c1b79b350d768d6d84f86c8687f4223a7cfe87842d12f8c09d3d2c837a6ec971"
+    }
+  },
+  "proof": {
+    "path": "build/swat/review/transformer-v43-qualification/ARTIFACT_INDEX.json",
+    "sha256": "3cba975ef4aa019883112d63d020ca6cfcb506cd7b4319b6b2687b2e5fdf7633"
+  },
+  "native_review": {
+    "path": "build/swat/review/transformer-current-v43/VISUAL_REVIEW.json",
+    "sha256": "42cf052d724c84886508851e03376de9b93f4e1054112000593cdd67f507bd10",
+    "scope": "16 component raster cases,34822 stable samples,18 images;six inspected by agent;shared-load correctness only"
+  },
+  "corner_regression": {
+    "path": "build/swat/review/transformer-contact-exit/ARTIFACT_INDEX.json",
+    "sha256": "2eab0d6abc5c52c36f1841d018052ba9a75b6be38ae0c4f7e331bb3b6bf4d766"
+  },
+  "previous_receipt": {
+    "path": "ocean/swat/tests/receipts/observed-threat-response-2026-10-18.json",
+    "sha256": "83503ef552d84666d9a55cf738af027e09501b9ce94fdca26febda8ac82dbd39"
+  },
+  "installed": {
+    "executables": 46,
+    "assets": 6,
+    "sha256": {
+      "build/swat/swat": "aa108299efa5af4a2d122512451ddd2573d717f2e3f04ae2769eb40fd6b41887",
+      "build/swat/server": "2b136918f3b5211e8a66186890b4b3e62ca1c4fb3520d365f83efef59ce2ba27",
+      "build/swat/replay_tool": "5c7f8d4197a2aa7a62ce788b058243fa8450e7d55ba9dc56b51b877781d2b8cc",
+      "build/swat/performance_tool": "a5dbf63e99a7508b62fd07225741123d63c390bb11882619d76a035132a5dbc1",
+      "build/swat/test_encounter": "1c443db85803f414bd501d8c460b56479eb3975d5fc24eeaa883c5e6418b9de5",
+      "build/swat/test_tactical": "9c1c1234195a7601436dc8266513cb3d012e25b701f5a4b36fb337c5e2454733",
+      "build/swat/test_sim": "474d46af22d43c01f9a941059adf777b2ee1f8cd854ea1319182a421448046e9",
+      "build/swat/test_protocol": "289eedd429724666534c43da06087309dfc1b9f8a2c0d4bf1c83998cc7f280aa",
+      "build/swat/test_net": "be6fa0f1c46cbc696f1b6a8318a97c725ff67dc9d008f7fb67ef6c406f3ab3d9",
+      "build/swat/test_motel_completion": "a51f4352007b2f5a766aa120472f3c676092d109ccae37898218fb834d4d7a74",
+      "build/swat/test_navigation_search": "43057fa1dfc86acd118e5385fd7660c107024cd146bf49db68ed1bfa23b4a8f8",
+      "build/swat/test_motel": "a807a8b5240e37110159d5d2feae68783d91eb81a35a8a5f3b0df9a01c1aba13",
+      "build/swat/test_frontend": "b0490254116d37d12719e6efcca470bdf10d6b73130638efbff33c58c097b623",
+      "build/swat/test_frontend_input": "82f3de841ec742f492f13268af7c29af5cbf64584939370d7ded880156f94e5b",
+      "build/swat/test_motel_roadside": "ebfba9e5a6fbb74269eed9c1d0c0dab529c44f748baf1fe5b60a751b273c8e76",
+      "build/swat/test_motel_dumpster": "6a7155921b609307ea15588b8c68e53e93d4e74d43dcbf712acd8ff94d5b210e",
+      "build/swat/test_motel_roadside_art": "9205f3534761bf65db3bfc5d9664c11e781fc58359dabf1a5339a173cff219fe",
+      "build/swat/test_motel_player_contacts": "d8088bc917cc07a785d1c71c434be1eeae780b891eb5b3faa1f1ce3532811c4a",
+      "build/swat/test_locomotion": "42aec03702c7b4b541bc4d7df680a934db56e189d5074ee737cc9f34b071d2b3",
+      "build/swat/test_foundation": "c34c852c7dc5996f554738b2a312a64e4eb779683e820af8a5740176d8366b2f",
+      "build/swat/test_scenarios": "8a726de07aa14229f685bde0f872cea07e924510d004304acc2a5db923caa785",
+      "build/swat/test_motel_transformer": "c40e9faa8cb29e1ca72ef3c7441204bf74b2e517b0d9cdc198f32e89602ec6e6",
+      "build/swat/test_motel_transformer_art": "7bcd273c8b92a003b406ed6e1d18d738bf6125286617d9f728c744b3f72a19f5",
+      "build/swat/windows/swat.exe": "38c4910d9fb7074932cca84735f450285b508c4be1340f1520bdb7d2226bb49b",
+      "build/swat/windows/swat-server.exe": "7abfee1c5fbcc9560f6870154bf1e3a6dca963f337dd3825b0bd9692bbd51bf5",
+      "build/swat/windows/replay_tool.exe": "1f392b72ba55c5340bde59d6095731df061e0efa1607da5be71c28343d656367",
+      "build/swat/windows/performance_tool.exe": "7c3c8aec098c29863f52b7977cc7c40fbdf2b0dea37b47adcc9d4e8b085f2b54",
+      "build/swat/windows/test_encounter.exe": "0300c1087f2b141dc9f0bbe2938348952d024ca1137d12c7774f3db298c11fc9",
+      "build/swat/windows/test_tactical.exe": "a4fcf54eb5032ae3deda9f57e39b385bc38dfe60eba975e2677411d4668da003",
+      "build/swat/windows/test_sim.exe": "e498ce15b9a43cb1f2234c9e206855ffb9ccef1a7a9c08a9a3546ba500188728",
+      "build/swat/windows/test_protocol.exe": "429c387823d534f6a1c66d5676b3033e192b68e384aad1f6d6022392d97e4570",
+      "build/swat/windows/test_net.exe": "48753b822d8888addc34002d869360b6f261c5fa5d7878cfbb03d4b126882474",
+      "build/swat/windows/test_motel_completion.exe": "63804e23addfa1e4c5981afe313ffe27538f364301c8ebe7e2f806a20171ac92",
+      "build/swat/windows/test_navigation_search.exe": "d513f5766a9308161b04b2802cf5c4e11781700fcea4099c2e7a33106207c29a",
+      "build/swat/windows/test_motel.exe": "219e040267bdc4f55a8904fcae8eebd49a72194b30c14a3acc54db6aaace67c3",
+      "build/swat/windows/test_frontend.exe": "1970669782e480cd8b32eb9ecf07d3fba9c1f21e32827a61964ef14dd0672522",
+      "build/swat/windows/test_frontend_input.exe": "0ee6e82cb81dbfc26d643acd30ec223ba874ad53e6c53cf4a67ccb049dbb0781",
+      "build/swat/windows/test_motel_roadside.exe": "d25d9878ec5249bdc5da2e072ab99216fbaf0a9b1f8ebb2abf5811fa0fdb422b",
+      "build/swat/windows/test_motel_dumpster.exe": "9e98b20b5e8f0482cb6e31615588fa2b0adf8dc3e54abc5d603f336b1a45252d",
+      "build/swat/windows/test_motel_roadside_art.exe": "53493c00e02f1b75f6a66826eacde819d25da29c91fcdd810e15f810253ee2af",
+      "build/swat/windows/test_motel_player_contacts.exe": "18494731e40a9956a2d9bea4a16dd692b0430980034740faefd40db5b92171bc",
+      "build/swat/windows/test_locomotion.exe": "af11fac3742344e7f59ed825b9980402866913ba28a8f897915458b1134fbe80",
+      "build/swat/windows/test_foundation.exe": "1f7876a661a080789d252f4903acd53dfec4c2371e0713a61c89f23dd321575a",
+      "build/swat/windows/test_scenarios.exe": "5b7a1b19b175f84ca56412a185bbb26eea19793b2bf05cf2c2afae2646bae66c",
+      "build/swat/windows/test_motel_transformer.exe": "7cf0be0b7064cf7512fd7601c665b7c86c8a5dd7e0c4bd3933b94d91898b1e1f",
+      "build/swat/windows/test_motel_transformer_art.exe": "ace2866765ba77f54c20cce47f38efeb704572c1eb687f42a0e204a4a50a7cba",
+      "build/swat/windows/assets/environment/motel_transformer/BC_XFMR01_closed.glb": "17c4e6cd6cd17cd625855d0870c0d54eaec0ab34885ca5cb609a871175d15975",
+      "ocean/swat/assets/environment/motel_transformer/BC_XFMR01_closed.glb": "17c4e6cd6cd17cd625855d0870c0d54eaec0ab34885ca5cb609a871175d15975",
+      "build/swat/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d",
+      "build/swat/windows/assets/environment/motel_sedan/BC_SEDAN01_parked.glb": "1c50b6c4c31570fc441e4eef47f567b872848ac82895fd308cba9c393ab7a298",
+      "build/swat/windows/assets/environment/motel_shelter/BC_SHELTER01_static.glb": "79dd4edacb9af1b47d98294e2a75b0c109a2d469d1dd9fdf74af72ee63aeeb3d"
+    }
+  },
+  "full_slice_complete": false
+}

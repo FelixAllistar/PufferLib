@@ -33,6 +33,7 @@ swat_needs_build() {
                   ocean/swat/assets/environment/motel_mounted/*.glb \
                   ocean/swat/assets/environment/motel_props/*.glb \
                   ocean/swat/assets/environment/motel_dumpster/*.glb \
+                  ocean/swat/assets/environment/motel_transformer/*.glb \
                   ocean/swat/assets/environment/motel_sedan/*.glb \
                   ocean/swat/assets/environment/motel_shelter/*.glb \
                   ocean/swat/assets/environment/motel_windows_r1/*.glb \

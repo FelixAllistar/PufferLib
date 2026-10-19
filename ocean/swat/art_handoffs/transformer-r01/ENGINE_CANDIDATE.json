@@ -1,0 +1,68 @@
+{
+  "asset_id": "BC_XFMR01",
+  "revision": "r01",
+  "source_sha256": "17c4e6cd6cd17cd625855d0870c0d54eaec0ab34885ca5cb609a871175d15975",
+  "source_unchanged": true,
+  "protocol_candidate": 43,
+  "status": "Integrated static exterior candidate; Linux/native functional and scoped native visual qualification passed; full slice remains active",
+  "placement": {
+    "origin": [
+      10.8,
+      -0.08,
+      -7.6
+    ],
+    "yaw": 0,
+    "front": "+Z",
+    "foundation_owner": 0
+  },
+  "owner_order": [
+    "Plinth",
+    "Cabinet",
+    "Door_Left",
+    "Door_Right"
+  ],
+  "asset_order": [
+    "Cabinet",
+    "Door_Left",
+    "Door_Right",
+    "Plinth"
+  ],
+  "source_triangles": 4784,
+  "supports": {
+    "Plinth": "world foundation 0",
+    "Cabinet": "Plinth",
+    "Door_Left": "Cabinet",
+    "Door_Right": "Cabinet"
+  },
+  "game_materials": {
+    "Plinth": "concrete",
+    "Cabinet": "steel",
+    "Door_Left": "steel",
+    "Door_Right": "steel"
+  },
+  "game_sections_m": {
+    "Plinth": 0.18,
+    "Cabinet": 0.04,
+    "Door_Left": 0.022,
+    "Door_Right": 0.022
+  },
+  "limits": [
+    "Game sections approximate aggregate response; no real-world strength or electrical behavior claim.",
+    "Static source pose only: no opening interaction, internal equipment or powered behavior.",
+    "Original geometry, UVs and maps unchanged; collision recentres owner vertices and scales cooking units back to metres.",
+    "Four owners append to the old map; previous complete roadside prefix remains eligible for canonical collision."
+  ],
+  "checks": {
+    "source_hash": true,
+    "compiled": true,
+    "physical_contacts": true,
+    "navigation": true,
+    "damage": true,
+    "network_replica": true,
+    "native_render": true,
+    "visual_review": true
+  },
+  "full_mission_replay": true,
+  "receipt": "../../tests/receipts/transformer-integration-2026-10-19.json",
+  "full_slice_complete": false
+}

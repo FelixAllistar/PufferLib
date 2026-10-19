@@ -27,6 +27,8 @@ does not invalidate measurements. Do not ask Felix to repeat authorized checks.
 The persistent full-slice goal was resumed on 2026-10-17 and is active. Keep
 that complete objective active until every acceptance requirement is verified.
 
+2026-10-19 increment: protocol43 integrates the unchanged BC_XFMR01 exterior in the rear utility court. Its plinth/cabinet/two-panel support graph, all4784 source triangles, physical stop, three routes, damage lifecycle and encoded replicas pass on Linux/Windows. The captured roof-edge contact now exits through ordinary input; eight rotated wall/roof controls retain entry and second-face rejection. The full cohort passes330 broad groups/platform, 180,091 exact broad trace samples and eight missions (175,258 replay frames/platform), plus nine transformer groups. Scoped native review covers16 raster cases/34822 stable samples and18 images; the agent inspected six context/owner views. All46 executables and the new asset are installed. Receipt: `tests/receipts/transformer-integration-2026-10-19.json`. Source geometry/UVs/maps remain unchanged. No opening rig/electrical internals, whole-level visual acceptance, stable-load performance or full-slice completion is claimed. Crouch grounding/motion, civilian production and picnic integration remain separate work.
+
 Acceptance work still open:
 
 - Extend squad task completion across varied occupied layouts and further
@@ -178,8 +180,8 @@ both final shipping replay tools then verify their unchanged journals,
 which match 175,543 mission frames per platform. Queued room/search/wedge prefixes,
 independent player checkpoints, frontend journals and v41 rejection pass.
 All 42 installed executables match the qualified cohort; four deployed GLBs
-and accepted source geometry are unchanged. Use fresh v42 saves and matching
-peers. Receipt: `tests/receipts/observed-threat-response-2026-10-18.json`;
+and accepted source geometry were unchanged. That increment required fresh v42 saves and matching
+peers; current protocol43 requires its own fresh saves and matching peers. Receipt: `tests/receipts/observed-threat-response-2026-10-18.json`;
 sealed evidence: `build/swat/review/observed-threat-regroup`. The v41 and
 earlier roots remain unchanged. No Python or trainer/CUDA/Box3D rebuild was
 used. The functional cohort is headless; after Felix allowed autonomous
