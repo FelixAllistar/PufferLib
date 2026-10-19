@@ -395,6 +395,16 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
         TraceLog(LOG_WARNING,"SWAT: environment art incomplete; missing pieces use graybox rendering");
 }
 
+// Full Model aliases share both mesh/material ownership. Clear aliases before
+// freeing their original so the ordinary unique-model path stays unchanged.
+static void location_models_close(Model* models,int count) {
+    for(int i=0;i<count;i++) {
+        Model model=models[i];
+        if(model.meshes || model.materials)for(int j=i+1;j<count;j++)
+            if(models[j].meshes==model.meshes && models[j].materials==model.materials)models[j]=(Model){0};
+        swat_art_model_close(model);models[i]=(Model){0};
+    }
+}
 void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWorld* world) {
     const char* enabled=getenv("SWAT_ENVIRONMENT_ART");
     if(!art->initialized || (enabled && !strcmp(enabled,"0"))) return;
@@ -403,8 +413,8 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     if(!art->bounds)art->bounds=calloc(1,sizeof(*art->bounds));
     clear_bounds(art->bounds);
     room101_close(art);
-    for(int i=0;i<SWAT_MOTEL_ASSETS;i++) { swat_art_model_close(art->motel[i]); art->motel[i]=(Model){0}; }
-    for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) { swat_art_model_close(art->storefront[i]); art->storefront[i]=(Model){0}; }
+    location_models_close(art->motel,SWAT_MOTEL_ASSETS);
+    location_models_close(art->storefront,SWAT_STOREFRONT_ASSETS);
     art->location=selected;
     if(!selected) return;
     char path[4096];
@@ -414,6 +424,21 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
         char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i>=SWAT_MOTEL_TRANSFORMER_ASSET_FIRST?"motel_transformer":i>=60?"motel_dumpster":i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":i==44?"motel_mounted":"motel_props",a->file);
         Model* model=location ? &art->storefront[i] : &art->motel[i];
+        // Four physical/draw owners select primitives of the same immutable
+        // transformer GLB. Upload its four meshes once, retaining each owner.
+        const int first=SWAT_MOTEL_TRANSFORMER_ASSET_FIRST;
+        if(!location && i>first && i<first+SWAT_MOTEL_TRANSFORMER_PARTS && art->motel[first].meshCount) {
+            const SwatMotelAsset* base=swat_motel_asset(first);
+            bool same=!strcmp(a->file,base->file) && a->material_count==base->material_count;
+            for(int m=0;same && m<a->material_count;m++)
+                same=a->materials[m].roughness==base->materials[m].roughness && a->materials[m].metalness==base->materials[m].metalness;
+            if(same) {
+                *model=art->motel[first];
+                memcpy(art->motel_normal_scale[i],art->motel_normal_scale[first],sizeof(art->motel_normal_scale[i]));
+                memcpy(art->motel_occlusion_uv[i],art->motel_occlusion_uv[first],sizeof(art->motel_occlusion_uv[i]));
+                continue;
+            }
+        }
         bool found=false;
         const char* seating=getenv("SWAT_MOTEL_SEATING_TEXTURES");
         if(!location && i>=50 && i<=52 && (!seating || strcmp(seating,"original"))) {
@@ -494,8 +519,8 @@ void swat_environment_art_close(SwatEnvironmentArt* art) {
         if(art->surfaces[i].roughness.id) UnloadTexture(art->surfaces[i].roughness);
     }
     swat_art_model_close(art->door);
-    for(int i=0;i<SWAT_MOTEL_ASSETS;i++) swat_art_model_close(art->motel[i]);
-    for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) swat_art_model_close(art->storefront[i]);
+    location_models_close(art->motel,SWAT_MOTEL_ASSETS);
+    location_models_close(art->storefront,SWAT_STOREFRONT_ASSETS);
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) swat_art_model_close(art->props[i]);
     clear_bounds(art->bounds);free(art->bounds);
     memset(art,0,sizeof(*art));
