@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 44
+#define SWAT_NET_VERSION 45
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32

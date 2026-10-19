@@ -9,12 +9,12 @@ int swat_motel_roadside_first(int model){return model==0?SWAT_MOTEL_SEDAN_FIRST:
 const SwatRoadsidePart* swat_motel_roadside_part(int model,int part){return part<0 || part>=swat_motel_roadside_count(model)?NULL:model?&shelter_parts[part]:&sedan_parts[part];}
 int swat_motel_roadside_triangle(int model,int triangle){return triangle<0 || triangle>=(model==0?13124:model==1?7868:0)?-1:model?shelter_triangle_parts[triangle]:sedan_triangle_parts[triangle];}
 bool swat_motel_roadside(const SwatWorld* w,int owner,SwatMotelInstance* out) {
-    if(!w->motel || (w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS) || owner<SWAT_MOTEL_SEDAN_FIRST || owner>=SWAT_MOTEL_ROADSIDE_END)return false;
+    if(!w->motel || (w->count!=SWAT_MOTEL_ROADSIDE_END && (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS)) || owner<SWAT_MOTEL_SEDAN_FIRST || owner>=SWAT_MOTEL_ROADSIDE_END)return false;
     *out=roadside_placements[owner>=SWAT_MOTEL_SHELTER_FIRST];return true;
 }
 uint64_t swat_motel_roadside_mask(const SwatWorld* w,int model) {
     int first=swat_motel_roadside_first(model),count=swat_motel_roadside_count(model);uint64_t mask=0;
-    if(!w->motel || (w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS))return 0;
+    if(!w->motel || (w->count!=SWAT_MOTEL_ROADSIDE_END && (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS)))return 0;
     for(int i=0;i<count;i++)if(w->objects[first+i].active)mask|=UINT64_C(1)<<i;
     return mask;
 }
@@ -42,7 +42,7 @@ static bool roadside_supports(const SwatWorld* w,int model,int part,int supports
 }
 static bool roadside_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_DUMPSTER_END)return true;
-    if(w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_ROADSIDE_END && (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS))return false;
     for(int model=0;model<2;model++)for(int part=0;part<swat_motel_roadside_count(model);part++) {
         const SwatRoadsidePart* p=swat_motel_roadside_part(model,part);const SwatObject* o=&w->objects[swat_motel_roadside_first(model)+part];int supports[SWAT_MAX_SUPPORTS];
         if(!roadside_supports(w,model,part,supports) || memcmp(supports,o->supports,sizeof(supports)) ||
@@ -53,7 +53,7 @@ static bool roadside_validate(const SwatWorld* w) {
     return true;
 }
 static void roadside_bind(SwatWorld* w) {
-    if(w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS)return;
+    if(w->count!=SWAT_MOTEL_ROADSIDE_END && (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS))return;
     for(int model=0;model<2;model++)for(int part=0;part<swat_motel_roadside_count(model);part++) {
         const SwatRoadsidePart* p=swat_motel_roadside_part(model,part);SwatObject* o=&w->objects[swat_motel_roadside_first(model)+part];
         swat_world_build_progress(w);

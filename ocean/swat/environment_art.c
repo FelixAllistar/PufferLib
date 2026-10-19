@@ -11,6 +11,14 @@
 #include "motel_wall_art.h"
 #include "door_art_mesh.h"
 #include "art_texture_pool.h"
+#include "art_mesh_part.h"
+typedef struct SwatPicnicArt { Model source; float normal_scale[SWAT_ROOM101_MATERIALS]; SwatArtMeshPart meshes[8],shadow_parts[80]; uint64_t mask,failed_mask; bool filtered; } SwatPicnicArt;
+static void picnic_art_close(SwatEnvironmentArt* art) {
+    SwatPicnicArt* p=art->picnic_art;if(!p)return;
+    for(int i=0;i<8;i++)swat_art_mesh_part_close(&p->meshes[i]);
+    for(int i=0;i<80;i++)swat_art_mesh_part_close(&p->shadow_parts[i]);
+    swat_art_model_close(p->source);free(p);art->picnic_art=NULL;
+}
 #include "motel_zoning.h"
 // OpenGL 1.1 entry points are exported by both native platform libraries. Raylib
 // has no polygon-offset wrapper; avoid platform GL headers colliding with its UI.
@@ -118,6 +126,7 @@ static Texture2D load_surface(const char* name,bool metric) {
 }
 
 static void room101_close(SwatEnvironmentArt* art) {
+    picnic_art_close(art);
     door_art_clear(art->door_art);
     for(int i=0;i<2;i++){swat_art_model_close(art->room101_hinges[i]);art->room101_hinges[i]=(Model){0};}
     art->room101_hinges_ready=false;
@@ -176,6 +185,10 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
     }
     swat_art_model_share_textures(*model,path);
     return true;
+}
+static void picnic_art_load(SwatEnvironmentArt* art) {
+    SwatPicnicArt* p=calloc(1,sizeof(*p));if(!p)return;art->picnic_art=p;
+    if(!room101_model_load(&p->source,p->normal_scale,"motel_picnic/BC_PT01_picnic_table.glb") || p->source.meshCount!=8 || p->source.materialCount!=3)picnic_art_close(art);
 }
 static void room101_hinges_load(SwatEnvironmentArt* art) {
     const char* enabled=getenv("SWAT_MOTEL_HINGES");if(enabled && !strcmp(enabled,"0"))return;
@@ -471,7 +484,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         swat_art_model_share_textures(*model,path);
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
-    if(selected==1) {room101_load(art);motel_dressing_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
+    if(selected==1) {room101_load(art);motel_dressing_load(art);picnic_art_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
         for(int i=0;i<2;i++){
             char file[256];snprintf(file,sizeof(file),"motel_windows_r1/%s",swat_motel_window_model(i)->file);
             if(!room101_model_load(&art->motel_windows[i],art->motel_windows_normal_scale[i],file)){
@@ -920,6 +933,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             for(int r=0;r<SWAT_ROOM101_ASSETS;r++) if(source==&art->room101[r]) normal_scale=art->room101_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V3_ASSETS;r++) if(source==&art->room101_v3[r]) normal_scale=art->room101_v3_normal_scale[r][model->meshMaterial[i]];
             for(int r=0;r<SWAT_ROOM101_V4_ASSETS;r++) if(source==&art->room101_v4[r]) normal_scale=art->room101_v4_normal_scale[r][model->meshMaterial[i]];
+            if(art->picnic_art && source==&art->picnic_art->source)normal_scale=art->picnic_art->normal_scale[model->meshMaterial[i]];
             int ao_uv=0;
             for(int r=0;r<SWAT_MOTEL_ASSETS;r++)if(source==&art->motel[r]) {
                 ao_uv=art->motel_occlusion_uv[r][model->meshMaterial[i]];
@@ -1114,6 +1128,43 @@ static bool mounted_fallback(const SwatObject* o,bool shadow) {
     }
     rlEnd();rlSetTexture(0);rlPopMatrix();return true;
 }
+static bool picnic_art_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,const SwatMotelInstance* placement,bool shadow,bool cutaway) {
+    if(!o->active)return true;
+    SwatPicnicArt* p=art->picnic_art;
+    if(!p || !p->source.meshCount)return mounted_fallback(o,shadow);
+    // Shadow/contact callers cull owners independently. Draw that owner's
+    // source components so a culled batch leader cannot erase other shadows.
+    if(shadow) {
+        int owner=o->tag.index-SWAT_MOTEL_PICNIC_FIRST;
+        for(int i=0;i<80;i++){const SwatPicnicComponent* c=swat_motel_picnic_component(i);if(c->owner!=owner)continue;
+            if(!p->shadow_parts[i].model.meshCount && !swat_art_mesh_part_build(&p->shadow_parts[i],&p->source,c->mesh,c->source_triangles,c->triangles,true))return mounted_fallback(o,true);
+        }
+        for(int i=0;i<80;i++){const SwatPicnicComponent* c=swat_motel_picnic_component(i);if(c->owner==owner)location_mesh_draw(art,o,placement,&p->shadow_parts[i].model,&p->source,true,cutaway,false,NULL);}
+        return true;
+    }
+    uint64_t mask=swat_motel_picnic_mask(world);
+    if(p->failed_mask==mask)return mounted_fallback(o,shadow);
+    int leader=SWAT_MOTEL_PICNIC_FIRST;while(leader<o->tag.index && !world->objects[leader].active)leader++;
+    if(leader!=o->tag.index)return true;
+    const uint64_t full=(UINT64_C(1)<<SWAT_MOTEL_PICNIC_PARTS)-1;
+    if(mask==full)return location_mesh_draw(art,o,placement,&p->source,&p->source,shadow,cutaway,false,NULL);
+    if(!p->filtered || p->mask!=mask) {
+        for(int i=0;i<8;i++)swat_art_mesh_part_close(&p->meshes[i]);
+        p->filtered=false;
+        for(int mesh=0;mesh<8;mesh++) {
+            int count=0;for(int i=0;i<80;i++){const SwatPicnicComponent* c=swat_motel_picnic_component(i);if(c->mesh==mesh && (mask&(UINT64_C(1)<<c->owner)))count+=c->triangles;}
+            if(!count)continue;
+            int* triangles=malloc((size_t)count*sizeof(int));bool built=false;
+            if(triangles){int at=0;for(int i=0;i<80;i++){const SwatPicnicComponent* c=swat_motel_picnic_component(i);if(c->mesh==mesh && (mask&(UINT64_C(1)<<c->owner))){memcpy(triangles+at,c->source_triangles,(size_t)c->triangles*sizeof(int));at+=c->triangles;}}built=swat_art_mesh_part_build(&p->meshes[mesh],&p->source,mesh,triangles,count,true);free(triangles);}
+            if(!built){for(int i=0;i<8;i++)swat_art_mesh_part_close(&p->meshes[i]);p->failed_mask=mask;return mounted_fallback(o,shadow);}
+        }
+        p->mask=mask;p->filtered=true;
+    }
+    Mesh meshes[8];int materials[8];Model selected=p->source;selected.meshes=meshes;selected.meshMaterial=materials;selected.meshCount=0;
+    for(int i=0;i<8;i++)if(p->meshes[i].model.meshCount){int at=selected.meshCount++;meshes[at]=p->meshes[i].model.meshes[0];materials[at]=p->meshes[i].model.meshMaterial[0];}
+    if(!selected.meshCount)return true;
+    return location_mesh_draw(art,o,placement,&selected,&p->source,shadow,cutaway,false,NULL);
+}
 static const Model* window_source(const SwatEnvironmentArt* art,int owner) {
     if(owner==17 && art->room101_ready) {
         if(art->room101_v4_ready)return &art->room101_v4[7];
@@ -1181,6 +1232,8 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         const Model* model=window_mesh_art(art->motel_wall_art,source,world,o->tag.index);
         return location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),model,source,shadow,cutaway,false,NULL);
     }
+    SwatMotelInstance picnic;
+    if(swat_motel_picnic(world,o->tag.index,&picnic))return picnic_art_draw(art,world,o,&picnic,shadow,cutaway);
     SwatMotelInstance roadside;
     if(swat_motel_roadside(world,o->tag.index,&roadside)) {
         const Model* source=&art->roadside_props[roadside.asset];

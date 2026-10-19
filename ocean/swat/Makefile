@@ -222,7 +222,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: impact-effects-test sound-bank-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: impact-effects-test sound-bank-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
@@ -337,3 +337,10 @@ surroundings-test: | $(BUILD)
 storefront-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_storefront.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_storefront
 	$(BUILD)/test_storefront
+
+.PHONY: motel-picnic-test motel-picnic-art-test-build
+motel-picnic-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_picnic.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_picnic
+	ulimit -c 0; $(BUILD)/test_motel_picnic $(BUILD)/picnic-test.trace
+motel-picnic-art-test-build: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_picnic_art.c character_asset.c lighting.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_motel_picnic_art

@@ -258,6 +258,11 @@ done
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_motel_transformer_art.c" \
     "$SWAT_ROOT/ocean/swat/character_asset.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \
     "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_motel_transformer_art.exe"
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_motel_picnic.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/replay.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_motel_picnic.exe"
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_motel_picnic_art.c" \
+    "$SWAT_ROOT/ocean/swat/character_asset.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/replay.c" \
+    "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_motel_picnic_art.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_motel_roadside.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/replay.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_motel_roadside.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_motel_player_contacts.c" \

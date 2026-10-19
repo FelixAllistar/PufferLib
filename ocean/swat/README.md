@@ -1,5 +1,7 @@
 # SWAT: Gold Element
 
+The front-court picnic table now has original sparse collision and independent board damage. Planks shed their fasteners, loose legs lose unsupported poses, and neighbouring wood stays intact. Linux/Windows input, encoded replicas,330 broad groups per platform and eight full missions/replays pass. Protocol/replay version is45; use matching peers and fresh saves/journals. The native table raster remains deferred by the512MB free-VRAM guard. [Receipt](tests/receipts/picnic-integration-2026-10-19.json).
+
 Character aim and animation transitions now preserve source bone lengths through recoil, lean and stance changes. The correction passes2,400 ordinary-input frames on Linux/Windows and software-rendered character checks. Extreme aiming grips and crouched reload posture still need fitting. [Receipt](tests/receipts/character-rigidity-2026-10-19.json).
 
 Shots and weapon handling now keep the weapon family captured when they happen, including delayed playback, reload cancellation and late replicas. Compliance, squad orders and acknowledgements also carry distinct cues, preparing recorded voices without substituting the wrong command. Linux/Windows audio, gameplay, UDP, eight complete missions and exact replays pass. Protocol/replay version is44; use matching peers and fresh saves/journals. Recordings and voice quality are unchanged. [Receipt](tests/receipts/audio-event-profiles-2026-10-19.json).
@@ -157,7 +159,7 @@ records source preservation, import checks and the remaining physics limits.
 `SWAT_MOTEL_HINGES=0 ./swat play --mission motel` selects the frozen decorative
 assembly for comparison. Other rooms retain their accepted art.
 
-Use matching version-44 peers and fresh recordings/saves. Directed squad tasks
+Use matching version-45 peers and fresh recordings/saves. Directed squad tasks
 now retain the selected person; Restrain assigns one officer while the others
 cover, and Fall In keeps moving under visible threat. Jamb damage changes
 door attachments, and queued orders and scripted firing now handle interrupted

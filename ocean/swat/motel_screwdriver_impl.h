@@ -11,7 +11,7 @@ static bool screwdriver_supports(const SwatWorld* w,int supports[SWAT_MAX_SUPPOR
 }
 static bool screwdriver_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_SCREWDRIVER_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_ROADSIDE_END && (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS))return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_SCREWDRIVER_FIRST];int supports[SWAT_MAX_SUPPORTS];
     return screwdriver_supports(w,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(o->center,b3OffsetPos(screwdriver_instance.origin,screwdriver_asset.center))<1e-4f && b3Length(b3Sub(o->half,screwdriver_asset.half))<1e-5f &&
