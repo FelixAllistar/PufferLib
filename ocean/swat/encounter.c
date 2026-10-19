@@ -120,6 +120,15 @@ static bool nav_mesh_exit_triangle(b3Vec3 a,b3Vec3 b,b3Vec3 c,int triangle,void*
         normal=swat_mul(normal,1/sqrtf(length2));
         float side=b3Dot(normal,b3Sub(q->center,a));
         if(fabsf(side)>1e-5f && side*b3Dot(normal,q->input.translation)>1e-7f){q->contacts++;return true;}
+        // At a finite triangle edge, leaving contact can be parallel to its
+        // plane. The closest-feature normal is a separating distance gradient:
+        // a positive derivative keeps convex distance increasing along this
+        // straight segment. Zero core distance remains conservative.
+        b3SimplexCache cache=b3_emptyDistanceCache;
+        b3DistanceInput input={.proxyA=pair.proxyA,.proxyB=pair.proxyB,
+            .transform=pair.transform,.useRadii=false};
+        b3DistanceOutput distance=b3ShapeDistance(&input,&cache,NULL,0);
+        if(distance.distance>1e-6f && b3Dot(distance.normal,q->input.translation)>1e-6f){q->contacts++;return true;}
     }
     q->clear=false;return false;
 }

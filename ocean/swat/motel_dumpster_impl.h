@@ -37,7 +37,7 @@ static bool dumpster_supports(const SwatWorld* w,int index,int supports[SWAT_MAX
 }
 static bool dumpster_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_DUMPSTER_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int i=0;i<SWAT_MOTEL_DUMPSTER_PARTS;i++) {
         const SwatObject* o=&w->objects[SWAT_MOTEL_DUMPSTER_FIRST+i];const SwatMotelAsset* a=&dumpster_data[i];
         int supports[SWAT_MAX_SUPPORTS];

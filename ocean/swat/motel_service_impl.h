@@ -32,7 +32,7 @@ static bool service_supports(const SwatWorld* w,int index,int supports[SWAT_MAX_
 }
 static bool service_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_SERVICE_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
     for(int i=0;i<SWAT_MOTEL_SERVICE_PARTS;i++) {
         const SwatObject* o=&w->objects[SWAT_MOTEL_SERVICE_FIRST+i];b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];service_recipe(i,&center,&half);
         if(!service_supports(w,i,supports)||memcmp(supports,o->supports,sizeof(supports))||b3Distance(center,o->center)>1e-4f||b3Length(b3Sub(half,o->half))>1e-5f||

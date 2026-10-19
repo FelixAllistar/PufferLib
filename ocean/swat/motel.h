@@ -38,7 +38,11 @@
 #include "motel_roadside_count.h"
 #define SWAT_MOTEL_SEDAN_FIRST SWAT_MOTEL_DUMPSTER_END
 #define SWAT_MOTEL_SHELTER_FIRST (SWAT_MOTEL_SEDAN_FIRST+SWAT_SEDAN_PARTS)
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_SHELTER_FIRST+SWAT_SHELTER_PARTS)
+#define SWAT_MOTEL_ROADSIDE_END (SWAT_MOTEL_SHELTER_FIRST+SWAT_SHELTER_PARTS)
+#define SWAT_MOTEL_TRANSFORMER_FIRST SWAT_MOTEL_ROADSIDE_END
+#define SWAT_MOTEL_TRANSFORMER_PARTS 4
+#define SWAT_MOTEL_TRANSFORMER_ASSET_FIRST 63
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_TRANSFORMER_FIRST+SWAT_MOTEL_TRANSFORMER_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -81,6 +85,9 @@ const SwatMotelInstance* swat_motel_instance(int index);
 bool swat_motel_service(const SwatWorld*,int owner,SwatMotelInstance*);
 // Static closed-lid refuse container: steel body and two dependent soft lids.
 bool swat_motel_dumpster(const SwatWorld*,int owner,SwatMotelInstance*);
+// Static exterior utility cabinet: plinth, cabinet and two closed panels.
+// Named panels are not operational doors; their source pose has no opening rig.
+bool swat_motel_transformer(const SwatWorld*,int owner,SwatMotelInstance*);
 // Static roadside candidates retain their source triangles, independent material
 // owners and attachment graph. No driving, suspension or shelter occupancy rig.
 typedef struct SwatRoadsidePart {

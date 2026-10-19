@@ -222,7 +222,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: impact-effects-test sound-bank-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: impact-effects-test sound-bank-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
@@ -295,9 +295,16 @@ motel-dumpster-test: $(ENET_LIB) | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_motel_dumpster $(BUILD)/dumpster-test.trace
 motel-dumpster-art-test-build: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_dumpster_art.c character_asset.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_motel_dumpster_art
+.PHONY: motel-transformer-art-test-build
+motel-transformer-art-test-build: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_transformer_art.c character_asset.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_motel_transformer_art
 .PHONY: motel-roadside-art-test-build
 motel-roadside-art-test-build: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_roadside_art.c character_asset.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_motel_roadside_art
+.PHONY: motel-transformer-test
+motel-transformer-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_transformer.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_transformer
+	ulimit -c 0; $(BUILD)/test_motel_transformer $(BUILD)/transformer-test.trace
 .PHONY: motel-roadside-test
 motel-roadside-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_roadside.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_motel_roadside
