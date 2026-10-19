@@ -1,0 +1,106 @@
+{
+  "old_commit": "59e06c0f92aa6f62909522d5d8b24eaba5ad8cfb",
+  "new_commit": "d5c1a654d2245e24ccc11df83e327eca5e73093a",
+  "mode": "standard sampled HU river; exact/calibration/CFR/clone off",
+  "paired_fields": [
+    {
+      "hands": 2000,
+      "decisions": 7327,
+      "river_decisions": 815,
+      "net_chips": 96697,
+      "bb_per_100": 48.3485,
+      "opponent": "Rules",
+      "exact_old_new_trace_match": true,
+      "trace_sha256": "acb70d6bd047b1f5eca11894cee85ad846bd366be60261d25379e8c09291a0be",
+      "paired_strength_difference_bb_per_100": 0
+    },
+    {
+      "hands": 2000,
+      "decisions": 9855,
+      "river_decisions": 1366,
+      "net_chips": 71130,
+      "bb_per_100": 35.565,
+      "opponent": "Fullhouse",
+      "exact_old_new_trace_match": true,
+      "trace_sha256": "e86ee18b8991ef449bd4557e5dc5e06d5af3d0443b8d573d17d4702a61ff76a1",
+      "paired_strength_difference_bb_per_100": 0
+    }
+  ],
+  "river_equity_microbenchmark": {
+    "old": [
+      {
+        "cpu_seconds": 1.170829,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 1.204883,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 1.208904,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 1.117915,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 1.186766,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      }
+    ],
+    "new": [
+      {
+        "cpu_seconds": 0.911231,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 0.947529,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 0.850329,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 0.745947,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      },
+      {
+        "cpu_seconds": 0.91154,
+        "calls": 30000,
+        "hash": "611d18ca19d8d942",
+        "rng": "5ec4e0eb2c9a4a9f"
+      }
+    ],
+    "old_median_cpu_seconds": 1.186766,
+    "new_median_cpu_seconds": 0.911231,
+    "speedup": 1.3023766750692196,
+    "identical_outputs_and_rng": true
+  },
+  "source_sha256": {
+    "ocean/poker/core.h": "3212bfb72a1090d6f3a0bb7df63956c1785445847d0b989dcc4867c523b51b84",
+    "ocean/poker/fullhouse.h": "8ff68860a27f1e7bbf7855e8b81d4912c54d951eac9d2dc87867c9442e3e58f8",
+    "ocean/poker/web/bridge.c": "5a073233c7e52d1e234c364ea4e28f088aa34baf81dd87360db4a02b1e02ec8d",
+    "build/poker/fullhouse_weights.h": "8f7f7ac7430f803bada143b13a925d2fa84fcacba3df0d73ba1a0e1b688eb102"
+  },
+  "limits": "CPU time on a shared host; primitive river-equity timing, not whole-bot latency. No live Slumbot run. Paired matches use 200 BB fixed buy-ins and alternating buttons, not a calibrated strength estimate."
+}

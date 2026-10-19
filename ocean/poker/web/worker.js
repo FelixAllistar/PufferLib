@@ -8,7 +8,7 @@ async function load(players,experimental){
   const hash=manifest.artifacts[`${name}.wasm`];
   const {default:create}=await import(`./${name}.mjs?v=${hash}`);
   engine=await create({locateFile:file=>new URL(`${file}?v=${hash}`,self.location.href).href});
-  return hash;
+  return {hash,compatible:name==='poker2pro'&&hash===manifest.experimental.replay_compatible_target_wasm_sha256?(manifest.experimental.replay_compatible_wasm_sha256||[]):[]};
 }
 function open(seed,hand,stacks){
   if(!Number.isInteger(seed)||seed<0||seed>0xffffffff||!Number.isInteger(hand)||hand<1||hand>10000000||!Array.isArray(stacks)||stacks.length!==checkpoint.players||stacks.some(v=>!Number.isInteger(v)||v<1||v>10000000))throw Error('Invalid saved table.');
@@ -32,14 +32,16 @@ self.onmessage=async({data})=>{
   try{
     let chosen;
     if(command==='init'){
-      const hash=await load(data.players,data.experimental);
+      const {hash}=await load(data.players,data.experimental);
       checkpoint={format:FORMAT,hash,players:data.players,experimental:!!data.experimental};
       open(data.seed,1,Array(data.players).fill(20000));
     }else if(command==='restore'){
       const saved=data.checkpoint;
       if(saved?.format!==FORMAT||!Array.isArray(saved.commands)||saved.commands.length>5000)throw Error('Saved table format is not supported.');
-      const hash=await load(saved.players,saved.experimental);
-      if(hash!==saved.hash)throw Error('This saved hand uses an older engine. Open a new table to continue.');
+      const {hash,compatible}=await load(saved.players,saved.experimental);
+      // Only explicitly verified predecessors may replay under an updated build.
+      // Each bot action and the final public state are still checked exactly.
+      if(hash!==saved.hash&&!compatible.includes(saved.hash))throw Error('This saved hand uses an older engine. Open a new table to continue.');
       checkpoint={format:FORMAT,hash,players:saved.players,experimental:!!saved.experimental};
       open(saved.seed,saved.hand,saved.stacks);
       for(const action of saved.commands)apply(action);

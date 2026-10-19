@@ -1,0 +1,11 @@
+{
+  "url": "https://puffer-poker.bouncy-plum-9922.chatgpt.site",
+  "project_id": "appgprj_6ad54988fa808191a7fd7ee35a0e103a",
+  "deployment_id": "appgdep_6ad5701b9d9c8191bc1c4a2f091380a5",
+  "version_id": "appgprj_6ad54988fa808191a7fd7ee35a0e103a~appgver_70f95535f3f08191af6011389e239390",
+  "site_source_commit": "82c23c20fe84bfd6d18764c0636b9ae9d2b26323",
+  "candidate_commit": "d5c1a654d2245e24ccc11df83e327eca5e73093a",
+  "status": "succeeded",
+  "access": "owner-private",
+  "mode": "standard sampled HU Pro river candidate; previous Pro saves replay under a verified binary-pair allowlist"
+}
