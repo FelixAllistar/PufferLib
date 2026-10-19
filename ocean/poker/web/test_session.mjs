@@ -23,10 +23,10 @@ for(let i=0;i<20;i++){
 await page.waitForFunction(()=>window.poker.snapshot()[1]===255&&!window.poker.status().busy);
 const terminal=await page.evaluate(()=>({state:window.poker.snapshot(),session:window.poker.session(),status:window.poker.status()}));
 assert.equal(terminal.state[24],0);assert.equal(terminal.session.lost,20000);assert.equal(terminal.session.hands,1);
-assert.match(await page.locator('#next-button').innerText(),/Rebuy 200 BB/);
+assert.match(await page.locator('#rebuy-button').innerText(),/Rebuy 200 BB/);
 await page.reload();await page.waitForFunction(()=>window.poker?.snapshot()?.[1]===255&&!window.poker.status().busy);
 assert.deepEqual(await page.evaluate(()=>window.poker.session()),terminal.session,'Reload does not score the terminal hand twice');
-await page.locator('#next-button').click();await page.waitForFunction(()=>window.poker.snapshot()[15]===2&&window.poker.snapshot()[1]===0&&!window.poker.status().busy);
+await page.locator('#rebuy-button').click();await page.waitForFunction(()=>window.poker.snapshot()[15]===2&&window.poker.snapshot()[1]===0&&!window.poker.status().busy);
 const next=await page.evaluate(()=>({state:window.poker.snapshot(),status:window.poker.status()}));
 assert.equal(next.state[32],20000,'Human explicitly rebuys 200 BB');assert.equal(next.state[41],40000,'Opponent winning stack carries into next hand');
 assert.equal(next.status.buyins,40000);assert.equal(next.status.tableBuyins.reduce((a,b)=>a+b,0),60000);

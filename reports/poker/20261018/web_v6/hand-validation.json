@@ -1,0 +1,24 @@
+{
+  "native_rank_matches": 12000,
+  "card_counts": [
+    5,
+    6,
+    7
+  ],
+  "categories": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "wheel_and_royal": true,
+  "refund_excluded": true,
+  "net_losing_side_pot_recipient": true,
+  "fold_win_hides_hand": true,
+  "auto_deal_boundaries": true
+}

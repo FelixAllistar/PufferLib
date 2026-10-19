@@ -1,0 +1,15 @@
+{
+  "old_hash": "41bc02ba1f2e2967955d25e19daee0c333b783f19e1d5e69400b377e08fc237e",
+  "new_hash": "3e06dad963aff53ad65d677ff81af60ef9bcdaaf436fe34f98382a99424e48d5",
+  "mid_hand_exact": true,
+  "terminal_exact": true,
+  "scored_once_after_refresh": true,
+  "migrated_hash_saved": true,
+  "fresh_hand_plays": true,
+  "unknown_hash_rejected": true,
+  "altered_bot_journal_rejected": true,
+  "compatibility_scoped_to_pro": true,
+  "compatibility_bound_to_verified_target": true,
+  "failed_restore_preserves_save": true,
+  "browser_errors": []
+}

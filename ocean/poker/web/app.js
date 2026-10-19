@@ -2,7 +2,8 @@ import Core from './Controller.bend';
 import Hand from './Hand.bend';
 import Cash from './Cash.bend';
 import {loadSession,saveSession} from './storage.js';
-import {TableView} from './table.js';
+import {TableView,card} from './table.js';
+import {resultFor} from './showdown.js';
 
 const $ = id => document.getElementById(id);
 const categories = ['High card','One pair','Two pair','Three of a kind','Straight','Flush','Full house','Four of a kind','Straight flush'];
@@ -23,7 +24,8 @@ let buyins=20000,tableBuyins=Array(6).fill(20000),latestCheckpoint=null;
 let learningOpen=innerWidth>=1280,lastLearning=null,learningPending='',showBest=false;
 const tableView=new TableView();
 let latestAction = '';
-let history = [], botTimer, startedAt = 0, lastBotTime = 0;
+let history = [], botTimer, dealTimer, startedAt = 0, lastBotTime = 0;
+let result=null,resultKey='',reviewPaused=false,resultRemaining=0,dealClock=0;
 const fmt = chips => (chips / 100).toLocaleString('en-US',{maximumFractionDigits:2});
 const signed = chips => `${chips > 0 ? '+' : chips < 0 ? '−' : ''}${fmt(Math.abs(chips))}`;
 const seat = (s,p) => s.slice(24+9*p,33+9*p);
@@ -95,7 +97,7 @@ const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;')
 function renderHistory(){ $('history').innerHTML=history.map(h=>`<li class="${h.kind==='history-street'?'history-street':''}"><span>${h.actor?`<span class="history-actor">${escape(h.actor)}</span> `:''}${escape(h.text)}</span><span class="history-amount">${escape(h.amount)}</span></li>`).join(''); }
 function persist(){
   if(!state||!latestCheckpoint)return;
-  const ok=saveSession({version:1,settings,sound,session,buyins,tableBuyins,recordedHand,checkpoint:latestCheckpoint,publicState:state,history,lastActions,latestAction,selectedRaise,showBest});
+  const ok=saveSession({version:1,settings,sound,session,buyins,tableBuyins,recordedHand,checkpoint:latestCheckpoint,publicState:state,history,lastActions,latestAction,selectedRaise,showBest,reviewPaused});
   $('saved-state').textContent=ok?'Saved in this tab':'Tab storage unavailable';
 }
 function renderLearning(){
@@ -156,8 +158,10 @@ function render(previous) {
   $('table-type').textContent = `${settings.players} seats${settings.players === 2 ? ' · Heads-up' : ''}`;
   $('street-label').textContent = done ? 'HAND COMPLETE' : streets[state[2]].toUpperCase();
   $('hand-label').textContent = `HAND ${String(state[15]).padStart(3,'0')}`;
-  $('pot').textContent = `${fmt(done ? state.slice(24).filter((_,i)=>i%9===2).reduce((a,b)=>a+b,0) : state[3])} BB`;
+  $('pot').textContent = `${fmt(done?result.winners.reduce((sum,w)=>sum+w.amount,0):state[3])} BB`;
   tableView.render(state,{previous,label,position,focus:showBest});
+  document.querySelector('.hand-summary').hidden=done;
+  document.querySelector('.turn-heading').hidden=done;
   $('betting-controls').hidden = done;
   $('betting-controls').style.display = done ? 'none' : '';
   $('finished-controls').hidden = !done;
@@ -193,19 +197,22 @@ function render(previous) {
   $('hero-position').textContent=`You: ${ownPosition.name}${ownPosition.posted?` · posted ${fmt(ownPosition.posted)} BB`:''}`;
   $('last-action').textContent=latestAction;
   $('action-area').classList.toggle('your-turn',myTurn);
-  const winners=Array.from({length:settings.players},(_,p)=>({p,r:seat(state,p)})).filter(({r})=>done&&r[0]-r[8]+r[2]>0);
-  const awarded=winners.reduce((a,{r})=>a+r[0]-r[8]+r[2],0);
-  const message=done?winners.length>1?`Pot awarded · ${fmt(awarded)} BB`:`${winners[0]?.p===0?'You win':`${label(winners[0]?.p??0)} wins`} ${fmt(awarded)} BB`:'';
-  $('table-message').textContent = message;
+  const winners=result?.winners||[];
+  const awarded=winners.reduce((sum,w)=>sum+w.amount,0);
+  const message=done?winners.length>1?`${result.showdown&&new Set(winners.map(w=>w.rank)).size===1?'Split pot':'Pots awarded'} · ${fmt(awarded)} BB`:`${winners[0]?.p===0?'You win':`${label(winners[0]?.p??0)} wins`} ${fmt(awarded)} BB`:'';
+  $('table-message').textContent = done&&result.showdown&&winners.length===1?Hand.name(winners[0].rank):message;
   $('table-message').classList.toggle('result',done);
   $('turn-label').textContent = failed ? 'Table paused · open a new table to retry' : done ? 'Hand complete' : myTurn ? 'Your turn' : `${label(state[1])} to act`;
   $('turn-dot').style.background = myTurn ? 'var(--mint)' : '#a9b5bd';
   $('turn-label').parentElement.classList.toggle('thinking',!myTurn&&!done);
   if (done) {
     $('result-title').textContent = message;
-    $('result-detail').textContent = `${state[14]&&hero[5]?Hand.name(state[21]):hero[5]?'Everyone folded':'You folded'} · Your result ${signed(hero[7])} BB`;
-    $('next-button').innerHTML=hero[0]===0?'Rebuy 200 BB & deal <span>→</span>':'Deal next hand <span>→</span>';
-    $('next-button').disabled=busy||failed;
+    $('result-detail').textContent = `${result.showdown&&hero[5]?'Your hand: '+result.hero:result.hero} · Net ${signed(hero[7])} BB`;
+    renderResult();
+    $('rebuy-button').hidden=hero[0]>0;
+    $('rebuy-button').disabled=busy||failed;
+    $('hold-result').hidden=hero[0]===0;
+    updateDealStatus();
   }
   const net=session.won-session.lost;
   $('session-net').innerHTML=`${signed(net)}<span>BB</span>`;
@@ -215,8 +222,44 @@ function render(previous) {
   $('cash-stack').textContent=`Stack ${fmt(hero[0])} BB · Net ${signed(net)} BB`;
   $('opponent-description').textContent=settings.players===9&&settings.opponent==='mixed'?'A mixed field of Rules and Range bots.':descriptions[settings.opponent];
 }
+function cardLabel(id){const rank='23456789TJQKA'[id>>2];return `${rank==='T'?'10':rank}${['♣','♦','♥','♠'][id&3]}`;}
+function renderResult(){
+  if(!result)return;
+  const key=`${generation}:${result.hand}`;
+  if($('result-hands').dataset.hand===key)return;
+  $('result-hands').dataset.hand=key;
+  $('result-hands').replaceChildren(...result.winners.map(w=>{
+    const el=document.createElement('div');el.className='winner-hand';el.dataset.winner=w.p;
+    const text=document.createElement('span');text.className='winner-description';text.textContent=`${label(w.p)} · ${w.name}`;
+    const cards=document.createElement('div');cards.className='winning-cards';cards.setAttribute('aria-label',w.cards.length?`${label(w.p)} winning five cards`:'Cards not shown');cards.append(...w.cards.map(id=>card(id)));
+    el.append(text,cards);return el;
+  }));
+}
+function dealBlocked(){return reviewPaused||document.hidden||!!document.querySelector('dialog[open]')||!$('table-drawer').hidden;}
+function updateDealStatus(){
+  if(!isDone())return;
+  $('deal-status').textContent=seat(state,0)[0]===0?'Buy-in used · rebuy when ready':dealBlocked()?'Next deal paused':`Next hand in ${Math.max(1,Math.ceil(resultRemaining/1000))}s`;
+  $('hold-result').textContent=reviewPaused?'Resume':'Pause';$('hold-result').setAttribute('aria-pressed',String(reviewPaused));
+}
+function freezeDeal(){dealClock=performance.now();clearTimeout(dealTimer);updateDealStatus();scheduleDeal();}
+function scheduleDeal(){
+  clearTimeout(dealTimer);
+  if(!isDone()||busy||failed||dealBlocked()||seat(state,0)[0]===0)return;
+  const token=generation,hand=state[15];
+  dealTimer=setTimeout(()=>{
+    if(generation!==token||state?.[15]!==hand||!isDone()||busy||failed)return;
+    const now=performance.now(),blocked=dealBlocked();
+    if(!blocked)resultRemaining=Math.max(0,resultRemaining-(now-dealClock));
+    dealClock=now;updateDealStatus();
+    if(Cash.auto_ready(true,seat(state,0)[0],blocked,Math.ceil(resultRemaining))){dealNext();return;}
+    if(seat(state,0)[0]>0)scheduleDeal();
+  },100);
+}
 function acceptState(next, before, checkpoint) {
   state=next;
+  const key=`${generation}:${state[15]}`;
+  if(isDone()&&resultKey!==key){result=resultFor(state);resultKey=key;resultRemaining=Cash.result_delay(!!state[14]);dealClock=performance.now();}
+  if(!isDone()){result=null;resultKey='';resultRemaining=0;clearTimeout(dealTimer);}
   if(checkpoint)latestCheckpoint=checkpoint;
   if (before && state[2]!==before[2] && (!isDone() || state[14])) {
     lastActions=lastActions.map(a=>a==='Folded'?a:'');
@@ -225,12 +268,13 @@ function acceptState(next, before, checkpoint) {
   if (Cash.should_record(isDone(),state[15],recordedHand)) {
     const net=seat(state,0)[7]; session=Core.record(Math.max(0,net),Math.max(0,-net),session); recordedHand=state[15];
     soundEffect(net>0?'win':'pot');
+    for(const w of result.winners)addHistory(label(w.p),`${w.name}${w.cards.length?' · '+w.cards.map(cardLabel).join(' '):''}`,`${fmt(w.amount)} BB`);
     addHistory('You',net>0?'win':net<0?'finish':'split',`${signed(net)} BB`);
   }
   render(before);
   persist();renderLearning();updateLearning();
   if(heroTurn()) soundEffect('turn');
-  scheduleBot();
+  scheduleBot();scheduleDeal();
 }
 function scheduleBot() {
   clearTimeout(botTimer);
@@ -248,7 +292,7 @@ function scheduleBot() {
     } catch(error) {if(generation!==tableGeneration)return; fail(error);}
   },settings.pace===80?80:settings.pace===900?1300:900);
 }
-function fail(error) {busy=false;failed=true;clearTimeout(botTimer);tellError(`The table paused: ${error.message}. Open Table settings to start again.`);if(state)render(state);}
+function fail(error) {busy=false;failed=true;clearTimeout(botTimer);clearTimeout(dealTimer);tellError(`The table paused: ${error.message}. Open Table settings to start again.`);if(state)render(state);}
 async function act(action) {
   if(busy||!heroTurn()||failed)return;
   const kind=action<0?0n:action===0?1n:2n;
@@ -257,7 +301,7 @@ async function act(action) {
   try {const reply=await request('act',{action});if(generation!==tableGeneration)return;logAction(before,action);busy=false;acceptState(reply.state,before,reply.checkpoint);}catch(error){if(generation===tableGeneration)fail(error);}
 }
 async function openTable(nextSettings,saved=null) {
-  generation++;clearTimeout(botTimer);worker?.terminate();pending.forEach(p=>p.reject(Error('Table replaced.')));pending.clear();
+  generation++;clearTimeout(botTimer);clearTimeout(dealTimer);result=null;resultKey='';reviewPaused=false;worker?.terminate();pending.forEach(p=>p.reject(Error('Table replaced.')));pending.clear();
   tableView.s=null;tableView.version='';settings=nextSettings; busy=true;failed=false;state=undefined;history=[];lastActions=[];recordedHand=0;session=Core.empty();latestAction='';latestCheckpoint=null;buyins=20000;tableBuyins=Array(settings.players).fill(20000);lastLearning=null;
   $('history').innerHTML='';$('table-message').textContent='Shuffling the deck…';$('turn-label').textContent='Opening the table';
   worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
@@ -271,7 +315,7 @@ async function openTable(nextSettings,saved=null) {
     if(generation!==tableGeneration)return;
     if(saved){
       if(JSON.stringify(reply.state)!==JSON.stringify(saved.publicState))throw Error('Saved hand did not replay exactly.');
-      session={...Core.empty(),...saved.session};buyins=saved.buyins;tableBuyins=saved.tableBuyins;recordedHand=saved.recordedHand;history=saved.history;lastActions=saved.lastActions;latestAction=typeof saved.latestAction==='string'?saved.latestAction.slice(0,200):'';sound=!!saved.sound;showBest=false;renderHistory();
+      session={...Core.empty(),...saved.session};buyins=saved.buyins;tableBuyins=saved.tableBuyins;recordedHand=saved.recordedHand;history=saved.history;lastActions=saved.lastActions;latestAction=typeof saved.latestAction==='string'?saved.latestAction.slice(0,200):'';sound=!!saved.sound;showBest=false;reviewPaused=!!saved.reviewPaused;renderHistory();
     }else addHistory('','PREFLOP','','history-street');
     busy=false;acceptState(reply.state,undefined,reply.checkpoint);
     if(saved&&heroTurn()&&Number.isInteger(saved.selectedRaise))setRaise(saved.selectedRaise);
@@ -286,17 +330,20 @@ document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{
   if(!heroTurn()||busy)return;
   setRaise(presetAmount(b.dataset.size),b.dataset.size);
 });
-$('next-button').onclick=async()=>{
-  if(busy||!isDone()||failed)return;
+async function dealNext(explicitRebuy=false){
+  if(busy||!isDone()||failed||seat(state,0)[0]===0&&!explicitRebuy)return;
+  clearTimeout(dealTimer);
   const previous=state,stacks=Array.from({length:settings.players},(_,p)=>Cash.next_stack(seat(state,p)[0],20000));
   busy=true;render(state);lastActions=[];latestAction='';lastLearning=null;
   const tableGeneration=generation;
   try {const reply=await request('next',{stacks});if(generation!==tableGeneration)return;
     for(let p=0;p<settings.players;p++)if(seat(previous,p)[0]===0){tableBuyins[p]+=20000;if(p===0)buyins+=20000;addHistory(label(p),'rebuys','200 BB');}
     addHistory('',`HAND ${reply.state[15]} · PREFLOP`,'','history-street');busy=false;acceptState(reply.state,previous,reply.checkpoint);soundEffect('deal');}catch(error){if(generation===tableGeneration)fail(error);}
-};
-$('settings-button').onclick=()=>$('settings').showModal();$('help-button').onclick=()=>$('help').showModal();
-function toggleHistory(open) {$('table-drawer').hidden=!open;$('history-button').setAttribute('aria-expanded',String(open));if(open)toggleLearning(false);}
+}
+$('rebuy-button').onclick=()=>dealNext(true);
+$('hold-result').onclick=()=>{reviewPaused=!reviewPaused;dealClock=performance.now();updateDealStatus();persist();scheduleDeal();};
+$('settings-button').onclick=()=>{$('settings').showModal();freezeDeal();};$('help-button').onclick=()=>{$('help').showModal();freezeDeal();};
+function toggleHistory(open) {$('table-drawer').hidden=!open;freezeDeal();$('history-button').setAttribute('aria-expanded',String(open));if(open)toggleLearning(false);}
 $('history-button').onclick=()=>toggleHistory($('table-drawer').hidden);$('close-drawer').onclick=()=>toggleHistory(false);
 $('learn-button').onclick=()=>toggleLearning(!learningOpen);$('close-learning').onclick=()=>toggleLearning(false);
 $('hand-rank').onclick=()=>{showBest=!showBest;render(state);persist();};
@@ -316,11 +363,12 @@ document.addEventListener('keydown',e=>{
   if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||document.querySelector('dialog[open]')||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
   if(e.key.toLowerCase()==='f'&&!$('fold-button').disabled)act(-1);
   if(e.key.toLowerCase()==='c'&&!$('call-button').disabled)act(0);
-  if(e.key===' '&&isDone()){e.preventDefault();$('next-button').click();}
+
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(botTimer);else scheduleBot();});
+document.addEventListener('visibilitychange',()=>{freezeDeal();if(document.hidden)clearTimeout(botTimer);else scheduleBot();});
+document.querySelectorAll('dialog').forEach(d=>d.addEventListener('close',freezeDeal));
 // A small inspectable surface for deterministic browser acceptance tests.
-window.poker={snapshot:()=>state?.slice(),session:()=>({...session}),status:()=>({busy,failed,settings:{...settings},lastBotTime,startedAt,buyins,tableBuyins:[...tableBuyins]}),learning:()=>lastLearning?{...lastLearning}:null};
+window.poker={snapshot:()=>state?.slice(),session:()=>({...session}),status:()=>({busy,failed,settings:{...settings},lastBotTime,startedAt,buyins,reviewPaused,resultRemaining,tableBuyins:[...tableBuyins]}),learning:()=>lastLearning?{...lastLearning}:null};
 toggleLearning(learningOpen);
 const saved=loadSession();
 if(saved&&!saved.invalid)openTable(saved.settings,saved);else {openTable(settings);if(saved?.invalid)tellError('The saved session could not be read. A new cash table is open.');}

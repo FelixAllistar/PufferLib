@@ -53,3 +53,17 @@ def L.pocket_pair_name():
   {==}
 def L.suited_starting_hand_name():
   {==}
+def L.live_hand_never_auto_deals(stack, paused, remaining):
+  {==}
+def L.busted_hand_waits_for_rebuy():
+  {==}
+def L.paused_result_does_not_deal():
+  {==}
+def L.result_waits_until_readable():
+  {==}
+def L.funded_result_continues():
+  {==}
+def L.unmatched_showdown_money_is_not_won():
+  {==}
+def L.side_pot_can_win_despite_net_loss():
+  {==}
