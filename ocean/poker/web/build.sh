@@ -46,7 +46,7 @@ cp ocean/poker/third_party/fullhouse-LICENSE.txt "$web_out/fullhouse-LICENSE.txt
 python3 - "$web_out" "$web_weights" <<'PY'
 import hashlib,json,pathlib,subprocess,sys
 out=pathlib.Path(sys.argv[1]); repo=pathlib.Path.cwd()
-files=[*repo.glob('ocean/poker/*.h'),*repo.glob('ocean/poker/web/*.*'),*repo.glob('ocean/poker/web/experimental/*')]
+files=[*repo.glob('ocean/poker/*.h'),*repo.glob('ocean/poker/web/*.*'),*repo.glob('ocean/poker/web/experimental/*'),*repo.glob('ocean/poker/web/assets/*')]
 data={'engine_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
       'bend':'stock 2.0.6; browser controller compiled to JavaScript',
       'experimental':json.loads((repo/'ocean/poker/web/experimental/provenance.json').read_text()),

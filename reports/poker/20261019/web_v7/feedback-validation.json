@@ -1,0 +1,21 @@
+{
+  "layout_checks": 68,
+  "max_visible_bets": 4,
+  "widths": [
+    1920,
+    1366,
+    390,
+    360
+  ],
+  "seats": [
+    2,
+    6,
+    9
+  ],
+  "chip_obstacle_intersections": 0,
+  "stable_card_and_seat_DOM": true,
+  "optional_best_five_without_outlines": true,
+  "winners_marked_from_actual_payout": true,
+  "reduced_motion": true,
+  "browser_errors": []
+}
