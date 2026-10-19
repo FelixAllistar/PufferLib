@@ -1,0 +1,30 @@
+[
+  {
+    "variant": "2",
+    "hands": 200,
+    "states": 1146,
+    "decisions": 946,
+    "exact_native_wasm_parity": true
+  },
+  {
+    "variant": "6",
+    "hands": 200,
+    "states": 2090,
+    "decisions": 1890,
+    "exact_native_wasm_parity": true
+  },
+  {
+    "variant": "9",
+    "hands": 200,
+    "states": 2741,
+    "decisions": 2541,
+    "exact_native_wasm_parity": true
+  },
+  {
+    "variant": "2pro",
+    "hands": 200,
+    "states": 1116,
+    "decisions": 916,
+    "exact_native_wasm_parity": true
+  }
+]

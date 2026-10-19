@@ -64,7 +64,7 @@ for(const [players,opponent] of [[2,'rules'],[2,'range'],[2,'fullhouse'],[2,'riv
   }
   const snapshot=await page.evaluate(()=>window.poker.snapshot());
   assert.equal(snapshot[1],255);
-  assert.equal(snapshot.slice(24).filter((_,i)=>i%9===0).reduce((a,b)=>a+b,0),20000*players);
+  assert.equal(snapshot.slice(24).filter((_,i)=>i%9===0).reduce((a,b)=>a+b,0),await page.evaluate(()=>window.poker.status().tableBuyins.reduce((a,b)=>a+b,0)));
   report.push({players,opponent,hands:5,human_decisions:decisions,raises,folds});
   console.log(`Passed ${players} seats / ${opponent}`);
 }

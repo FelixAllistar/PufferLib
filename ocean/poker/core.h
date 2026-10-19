@@ -18,16 +18,31 @@
 #define POKER_BB 100
 #define POKER_DONE 255
 
+// The web cash table can carry deep stacks across hands. Default training
+// builds retain their compact layout and historical event encoding.
+#ifdef POKER_WIDE_CHIPS
+typedef uint32_t PokerAmount;
+typedef uint64_t PokerEvent;
+#define POKER_EVENT_SHIFT 32
+#define POKER_MAX_START 10000000u
+#else
+typedef uint16_t PokerAmount;
+typedef uint32_t PokerEvent;
+#define POKER_EVENT_SHIFT 16
+#define POKER_MAX_START 65535u
+#endif
+#define POKER_EVENT_AMOUNT ((((PokerEvent)1) << POKER_EVENT_SHIFT) - 1)
+
 // One independent RNG per table; policy sampling uses a different stream.
 typedef struct Poker {
     uint64_t rng[POKER_BATCH];
     uint32_t stack[POKER_PLAYERS][POKER_BATCH];
-    uint16_t initial[POKER_PLAYERS][POKER_BATCH];
-    uint16_t total[POKER_PLAYERS][POKER_BATCH];
-    uint16_t bet[POKER_PLAYERS][POKER_BATCH];
+    PokerAmount initial[POKER_PLAYERS][POKER_BATCH];
+    PokerAmount total[POKER_PLAYERS][POKER_BATCH];
+    PokerAmount bet[POKER_PLAYERS][POKER_BATCH];
     uint32_t reopen[POKER_PLAYERS][POKER_BATCH];
     uint32_t pot[POKER_BATCH];
-    uint16_t high[POKER_BATCH], increment[POKER_BATCH];
+    PokerAmount high[POKER_BATCH], increment[POKER_BATCH];
     uint16_t live[POKER_BATCH], active[POKER_BATCH], pending[POKER_BATCH];
     uint8_t hole[POKER_PLAYERS][2][POKER_BATCH], board[5][POKER_BATCH];
     uint8_t actor[POKER_BATCH], button[POKER_BATCH], street[POKER_BATCH];
@@ -38,7 +53,7 @@ typedef struct Poker {
     uint8_t line[POKER_PLAYERS][POKER_BATCH];
     uint16_t decisions[POKER_BATCH];
     uint16_t seen[POKER_PLAYERS][POKER_BATCH];
-    uint32_t history[POKER_HISTORY][POKER_BATCH];
+    PokerEvent history[POKER_HISTORY][POKER_BATCH];
 } Poker;
 
 uint32_t poker_random(uint64_t* rng) {
@@ -258,7 +273,7 @@ void poker_reset(Poker* g, int t, int button, const uint32_t* stacks,
     g->increment[t] = POKER_BB;
     g->live[t] = g->active[t] = (1u << POKER_PLAYERS) - 1;
     for (int p = 0; p < POKER_PLAYERS; p++) {
-        assert(stacks[p] > 0 && stacks[p] <= 65535);
+        assert(stacks[p] > 0 && stacks[p] <= POKER_MAX_START);
         g->stack[p][t] = g->initial[p][t] = stacks[p];
         g->bet[p][t] = g->total[p][t] = g->reopen[p][t] = 0;
         g->seen[p][t] = 0;
@@ -354,7 +369,8 @@ void poker_step(Poker* g, int t, int32_t action) {
     }
     unsigned bit = 1u << p;
     g->pending[t] &= ~bit;
-    uint32_t event = (p << 16) | (g->street[t] << 20);
+    PokerEvent event = ((PokerEvent)p << POKER_EVENT_SHIFT)
+        | ((PokerEvent)g->street[t] << (POKER_EVENT_SHIFT + 4));
     int slot = g->decisions[t] % POKER_HISTORY;
     g->seen[p][t] = g->decisions[t]++;
     if (action < 0) {
@@ -367,7 +383,7 @@ void poker_step(Poker* g, int t, int32_t action) {
         unsigned shift = 2 * g->street[t];
         if (kind > ((g->line[p][t] >> shift) & 3u))
             g->line[p][t] = (g->line[p][t] & ~(3u << shift)) | (kind << shift);
-        event |= kind << 22;
+        event |= (PokerEvent)kind << (POKER_EVENT_SHIFT + 6);
         uint32_t pay = target - g->bet[p][t];
         pay = pay < g->stack[p][t] ? pay : g->stack[p][t];
         assert(!action || (poker_can_raise(g, t) && target > g->high[t]
@@ -425,13 +441,13 @@ void poker_observe(Poker* g, int t, int p, float* obs) {
     assert(g->actor[t] != p || count <= POKER_HISTORY);
     count = count < POKER_HISTORY ? count : POKER_HISTORY;
     for (int i = 0; i < POKER_HISTORY; i++) {
-        uint32_t e = i < count ? g->history[(g->decisions[t] - count + i)
+        PokerEvent e = i < count ? g->history[(g->decisions[t] - count + i)
             % POKER_HISTORY][t] : 0;
-        events[4 * i] = i < count ? (1 + (((e >> 16) & 15) + POKER_PLAYERS - p)
+        events[4 * i] = i < count ? (1 + (((e >> POKER_EVENT_SHIFT) & 15) + POKER_PLAYERS - p)
             % POKER_PLAYERS) / (float)POKER_PLAYERS : 0;
-        events[4 * i + 1] = ((e >> 20) & 3) / 3.0f;
-        events[4 * i + 2] = ((e >> 22) & 3) / 3.0f;
-        events[4 * i + 3] = (e & 65535) / 20000.0f;
+        events[4 * i + 1] = ((e >> (POKER_EVENT_SHIFT + 4)) & 3) / 3.0f;
+        events[4 * i + 2] = ((e >> (POKER_EVENT_SHIFT + 6)) & 3) / 3.0f;
+        events[4 * i + 3] = (e & POKER_EVENT_AMOUNT) / 20000.0f;
     }
 }
 

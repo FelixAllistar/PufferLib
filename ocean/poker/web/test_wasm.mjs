@@ -25,7 +25,7 @@ int main(void) {
  return 0;
 }`);
   const model=players===9?[]:[`-DPOKER_FULLHOUSE_MODEL="${root}/build/poker/fullhouse_weights.h"`];
-  const cc=spawnSync('clang-19',['-O3','-ffp-contract=off','-std=c11',`-DPOKER_PLAYERS=${players}`,'-DPOKER_BATCH=1',...model,probe,'-lm','-o',binary],{encoding:'utf8'});
+  const cc=spawnSync('clang-19',['-O3','-ffp-contract=off','-std=c11',`-DPOKER_PLAYERS=${players}`,'-DPOKER_BATCH=1','-DPOKER_WIDE_CHIPS=1',...model,probe,'-lm','-o',binary],{encoding:'utf8'});
   assert.equal(cc.status,0,cc.stderr);
   const oracle=spawnSync(binary,[],{encoding:'utf8',maxBuffer:64*1024*1024});assert.equal(oracle.status,0,oracle.stderr);
   const {default:create}=await import(pathToFileURL(path.join(build,'dist',`poker${variant}.mjs`)));

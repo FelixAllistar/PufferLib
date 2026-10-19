@@ -1,0 +1,11 @@
+{
+  "mid_hand_exact_replay": true,
+  "terminal_scored_once": true,
+  "stack_carryover": true,
+  "explicit_human_rebuy": true,
+  "winning_opponent_carries_400BB": true,
+  "tab_isolation": true,
+  "corrupt_storage_recovers": true,
+  "learning_samples": 4096,
+  "browser_errors": []
+}

@@ -22,7 +22,8 @@ retains its original positions, contributions and observation format.
 ## Build and run
 
 For the playable browser table, see [the web core](web/README.md). It offers
-two-, six- and nine-seat tables, animated cards/chips and selectable opponents.
+two-, six- and nine-seat cash tables, carried stacks, tab-session restoration,
+a learning/odds panel, animated cards/chips and selectable opponents.
 Bend 2.0.6 runs browser controls and session accounting; the native engine and
 bots run in WebAssembly workers.
 

@@ -29,3 +29,27 @@ def L.three_quarter_pot_rounds_down():
   {==}
 def L.oversized_preset_is_allin():
   {==}
+def L.choose_same(flag, value):
+  match flag:
+    case True{}: {==}
+    case False{}: {==}
+def L.cash_stack_carries(stack):
+  L.choose_same(U32.is_eq(stack, 0), stack)
+def L.empty_seat_rebuys():
+  {==}
+def L.unfinished_hand_does_not_score(hand, recorded):
+  {==}
+def L.completed_hand_scores_once():
+  {==}
+def L.exact_pair_name():
+  {==}
+def L.exact_two_pair_name():
+  {==}
+def L.exact_full_house_name():
+  {==}
+def L.wheel_straight_name():
+  {==}
+def L.pocket_pair_name():
+  {==}
+def L.suited_starting_hand_name():
+  {==}

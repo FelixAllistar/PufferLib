@@ -1,0 +1,11 @@
+{
+  "exact_hand_label": "One pair, fours",
+  "flop_runouts": 1081,
+  "privacy_model": "uniform unknown hands; no opponent-hole/future-board access",
+  "screenshots": [
+    "cash-desktop.png",
+    "cash-mobile.png",
+    "cash-mobile-odds.png",
+    "cash-small9.png"
+  ]
+}
