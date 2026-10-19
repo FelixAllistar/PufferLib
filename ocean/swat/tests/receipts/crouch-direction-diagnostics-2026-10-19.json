@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-19",
+  "scope": "Actual-input crouch direction/start-stop/jump/fire-reload diagnostics against pinned v42 simulation and original source assets",
+  "production_applied": false,
+  "proof": "build/swat/review/crouch-backward-transition",
+  "index_sha256": "776062b13b57ea06baefaf53f187caadd4302e28faf2626a54b3962c75428b56",
+  "findings_sha256": "8fc92955bc7186e3c36dc683f2e21f11b5c32eceb54967f6f88d912d36bed6f4",
+  "passed_backward_candidate_min_floor_m": -0.008017354,
+  "rejected": true,
+  "diagonal_maximum_possible_knee_y_m": -0.04685699997893851,
+  "reload_floor_violations": 77,
+  "remaining": "Revise directional stance/foot endpoints, preserve source contacts and rigid bone lengths, then repeat full actual-input and native visual matrix."
+}

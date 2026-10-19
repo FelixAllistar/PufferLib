@@ -388,7 +388,8 @@ size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state) {
         const SwatSoundEvent* e=&state->sounds[i];
         put32(&w,e->id); put32(&w,(uint32_t)e->tick); put32(&w,(uint32_t)e->source_actor);
         put8(&w,e->kind); putpos(&w,e->position); putf(&w,e->strength); putf(&w,e->range);
-        put8(&w,e->material);
+        if(!swat_sound_profile_valid(e->kind,e->profile))return 0;
+        put8(&w,e->material);put8(&w,e->profile);
     }
     for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
         const SwatProjectile* p=&state->projectiles[i]; put8(&w,p->active);
@@ -496,6 +497,7 @@ bool swat_decode_snapshot(SwatSnapshot* state,const void* bytes,size_t size) {
         previous=e->id; e->kind=(SwatSoundKind)kind; e->position=getpos(&r);
         e->strength=getf(&r,0,10); e->range=getf(&r,0,1000);
         e->material=(SwatMaterial)get8(&r); if(e->material>=SWAT_MATERIAL_COUNT) r.ok=false;
+        e->profile=(unsigned char)get8(&r);if(!swat_sound_profile_valid(e->kind,e->profile))r.ok=false;
     }
     for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
         SwatProjectile* p=&tmp.projectiles[i]; unsigned active=get8(&r); if(active>1) r.ok=false;

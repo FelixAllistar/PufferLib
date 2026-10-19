@@ -25,10 +25,27 @@ void swat_sound_emit(SwatSoundLog* log, int tick, int source, SwatSoundKind kind
                      b3Pos position, float strength, float range) {
     swat_sound_surface(log,tick,source,kind,position,strength,range,SWAT_CONCRETE);
 }
+bool swat_sound_profile_valid(SwatSoundKind kind,unsigned int profile) {
+    if(kind<0 || kind>=SWAT_SOUND_KINDS)return false;
+    if(profile==SWAT_SOUND_PROFILE_UNSPECIFIED)return true;
+    if(kind==SWAT_SOUND_COMMAND)return profile<SWAT_COMMAND_CUES;
+    if(kind==SWAT_SOUND_SHOT || kind==SWAT_SOUND_RELOAD || kind==SWAT_SOUND_HANDLE)return profile<=1;
+    return profile==0;
+}
+static void sound_emit_profile(SwatSoundLog* log,int tick,int source,SwatSoundKind kind,
+                              b3Pos position,float strength,float range,SwatMaterial material,unsigned int profile) {
+    if(!swat_sound_profile_valid(kind,profile))return;
+    if(!log->next_id)log->next_id=1;
+    swat_sound_append(log,(SwatSoundEvent){.id=log->next_id,.tick=tick,.source_actor=source,.kind=kind,
+        .position=position,.strength=strength,.range=range,.material=material,.profile=(unsigned char)profile});
+}
 void swat_sound_surface(SwatSoundLog* log,int tick,int source,SwatSoundKind kind,
                        b3Pos position,float strength,float range,SwatMaterial material) {
-    if(!log->next_id) log->next_id=1;
-    swat_sound_append(log,(SwatSoundEvent){log->next_id,tick,source,kind,position,strength,range,material});
+    sound_emit_profile(log,tick,source,kind,position,strength,range,material,SWAT_SOUND_PROFILE_UNSPECIFIED);
+}
+void swat_sound_profile(SwatSoundLog* log,int tick,int source,SwatSoundKind kind,
+                        b3Pos position,float strength,float range,unsigned int profile) {
+    sound_emit_profile(log,tick,source,kind,position,strength,range,SWAT_CONCRETE,profile);
 }
 
 // A thread-local BVH uses authored acoustic bounds. Exact geometry comparisons

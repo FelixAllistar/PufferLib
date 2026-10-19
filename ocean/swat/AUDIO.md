@@ -14,8 +14,29 @@ Authority emits accepted shots, impacts, breakage, grounded footsteps,
 reload/equip/selector handling, compliance commands, canister contacts,
 flash/CS/taser effects and door interactions into a bounded ring.
 Events contain stable IDs, emission tick, source position, kind, strength and
-range and surface material. Rejected shots produce no shot event. Snapshots repeat recent sounds;
+range, surface material and an emission-time sample profile. Rejected shots produce no shot event. Snapshots repeat recent sounds;
 listener deduplication prevents repeats. Late join starts above old event IDs.
+
+Weapon shots/reloads/selector and draw handling stamp slot0/1 when emitted;
+playback never reads the source actor's later weapon selection. Cancelling a
+rifle reload while drawing a pistol retains the rifle cue for cancellation and
+the pistol cue for the draw. Compliance (including the communication ball),
+squad orders and officer acknowledgements use separate command cues0/1/2.
+Generic emitters explicitly use UNSPECIFIED255; wildcard bank entries can still
+match, but unknown weapon/command profiles cannot select a specific recording.
+The existing five-column bank format is retained: its third column is weapon
+slot0/1 or command cue0/1/2, with -1 as wildcard. Profile bytes are validated by
+kind and replicated in protocol44; older saves/peers reject. AI hearing still
+receives only kind, gain and coarse bearing. These cues prepare recorded voice
+routing; the current command voice remains synthesized.
+
+`make -C ocean/swat sound-profiles-test` exercises real input, the production
+sample selector, snapshot/late-replica encoding, atomic malformed-profile
+rejection, reload cancellation and owner-controlled ball commands without an
+audio device. The native build includes `test_sound_profiles.exe`; CMake
+registers it when player dependencies and tests are enabled. Seven profile
+regressions and five state samples agree across Linux/Windows; restoring the
+old live-weapon selector fails the immediate shot/swap case.
 
 `materials.c` separates surface absorption from low/mid/high transmission loss,
 and supplies contact density/friction/restitution/rolling resistance, impact

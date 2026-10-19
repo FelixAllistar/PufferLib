@@ -14,6 +14,11 @@ typedef enum SwatSoundKind {
     SWAT_SOUND_FLASH, SWAT_SOUND_GAS, SWAT_SOUND_TASER,
     SWAT_SOUND_DOOR_CLOSE, SWAT_SOUND_BREACH, SWAT_SOUND_KINDS
 } SwatSoundKind;
+// The profile describes the emitted sound, independent of later weapon swaps.
+// For weapon/mechanism events it is slot0/1; command events use these cues.
+#define SWAT_SOUND_PROFILE_UNSPECIFIED 255
+typedef enum SwatCommandCue { SWAT_COMMAND_COMPLIANCE,SWAT_COMMAND_ORDER,SWAT_COMMAND_ACK,SWAT_COMMAND_CUES } SwatCommandCue;
+bool swat_sound_profile_valid(SwatSoundKind kind,unsigned int profile);
 typedef struct SwatSoundEvent {
     uint32_t id;
     int tick, source_actor;
@@ -21,6 +26,7 @@ typedef struct SwatSoundEvent {
     b3Pos position;
     float strength, range;
     SwatMaterial material;
+    unsigned char profile; // Weapon slot, command cue, or UNSPECIFIED; never infer from current actor state.
 } SwatSoundEvent;
 typedef struct SwatSoundLog {
     SwatSoundEvent events[SWAT_SOUND_CAPACITY];
@@ -52,6 +58,8 @@ void swat_sound_emit(SwatSoundLog* log, int tick, int source, SwatSoundKind kind
                      b3Pos position, float strength, float range);
 void swat_sound_surface(SwatSoundLog* log,int tick,int source,SwatSoundKind kind,
                        b3Pos position,float strength,float range,SwatMaterial material);
+void swat_sound_profile(SwatSoundLog* log,int tick,int source,SwatSoundKind kind,
+                        b3Pos position,float strength,float range,unsigned int profile);
 void swat_sound_append(SwatSoundLog* log, SwatSoundEvent event);
 const SwatSoundEvent* swat_sound_at(const SwatSoundLog* log, int index);
 SwatAcousticPath swat_acoustic_path(const SwatWorld* world, const SwatSoundEvent* event,

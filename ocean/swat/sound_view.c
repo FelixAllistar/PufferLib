@@ -14,7 +14,7 @@ static void recordings_open(SwatSoundView* view) {
     char line[1024],name[256]; int kind,material,profile; float gain;
     while(view->clip_count<SWAT_SOUND_CLIPS && fgets(line,sizeof(line),file)) {
         if(line[0]=='#' || sscanf(line,"%d %d %d %f %255s",&kind,&material,&profile,&gain,name)!=5) continue;
-        if(kind<0 || kind>=SWAT_SOUND_KINDS || material< -1 || material>=SWAT_MATERIAL_COUNT || profile< -1 || profile>1 ||
+        if(kind<0 || kind>=SWAT_SOUND_KINDS || material< -1 || material>=SWAT_MATERIAL_COUNT || profile< -1 || profile>(kind==SWAT_SOUND_COMMAND?SWAT_COMMAND_CUES-1:1) ||
            !isfinite(gain) || gain<=0 || gain>4 || strstr(name,"..") || name[0]=='/' || strchr(name,':') || strchr(name,'\\')) continue;
         snprintf(path,sizeof(path),"%s/%s",directory,name); Wave wave=LoadWave(path); if(!IsWaveValid(wave)) continue;
         if(wave.frameCount>wave.sampleRate*4u) { UnloadWave(wave); continue; }
@@ -27,14 +27,13 @@ static void recordings_open(SwatSoundView* view) {
     fclose(file); TraceLog(LOG_INFO,"SWAT AUDIO: %d recorded variants loaded",view->clip_count);
 }
 static void recording_start(const SwatSoundView* view,const SwatSim* sim,SwatAudioVoice* voice) {
-    int choices[SWAT_SOUND_CLIPS],count=0,best=-1; bool sidearm=false;
+    int choices[SWAT_SOUND_CLIPS],count=0,best=-1;
+    (void)sim; // The emitting event owns its sample profile, including delayed/replayed sounds.
     int material=voice->event.material;
     int family=swat_sound_recorded_material(voice->event.kind,material);
-    int actor=voice->event.source_actor;
-    if(actor>=0 && actor<sim->actor_count) sidearm=sim->actors[actor].arsenal.active==1;
     for(int i=0;i<view->clip_count;i++) {
         const SwatSoundClip* clip=&view->clips[i];
-        if(clip->kind!=(int)voice->event.kind || (clip->profile>=0 && clip->profile!=(int)sidearm))continue;
+        if(clip->kind!=(int)voice->event.kind || (clip->profile>=0 && clip->profile!=(int)voice->event.profile))continue;
         int score=clip->material==material?4:clip->material==family?2:clip->material<0?0:-1;
         if(score<0)continue;
         score+=clip->profile>=0;
