@@ -1,0 +1,10 @@
+{
+  "url": "https://puffer-poker.bouncy-plum-9922.chatgpt.site",
+  "project_id": "appgprj_6ad54988fa808191a7fd7ee35a0e103a",
+  "deployment_id": "appgdep_6ad569ea35248191bd0a890abcfcb1f5",
+  "version_id": "appgprj_6ad54988fa808191a7fd7ee35a0e103a~appgver_f66066bd0f488191bcd4dcf33b93fe0f",
+  "site_source_commit": "50f887441060e889bbe233c356e9ea4b104b6346",
+  "status": "succeeded",
+  "access": "owner-private",
+  "mode": "cash-game NLHE; game feedback and collision-aware layout"
+}

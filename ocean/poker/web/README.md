@@ -72,8 +72,8 @@ mobile seat-label overlap, dialogs and console errors. Desktop and 390-pixel
 phone screenshots are emitted under `build/poker/web/`.
 
 Cards and chips use CSS animations, with reduced-motion support. Distinct fold, check, call, raise, turn and win sounds start after the first
-interaction; the Sound button mutes them. Normal table pace is 600 ms per bot
-action. Session state is saved in sessionStorage; refresh resumes the same
+interaction; the Sound button mutes them. Normal table pace is 900 ms per bot
+action (relaxed 1,300 ms; quick 80 ms). Session state is saved in sessionStorage; refresh resumes the same
 hand, stacks, net result, buy-ins, settings and recent history. Opening a new
 table starts a new session. There are no accounts, multiplayer or real-money
 features.
@@ -84,9 +84,10 @@ The second interface iteration follows the supplied Ignition references: a
 screen-filling red table, white stack badges, large face cards, and a betting
 panel directly below the human seat. History/session information lives in a
 drawer. Tens display as `10`; SB/BB tags and the human position line show posted
-blind amounts. Folded players keep an explicit FOLDED status while their cards
-slide away. Checks show a tick, wagers animate chips toward the pot, and the
-human turn uses a crisp amber border and a distinct two-note cue. No artificial action
+blind amounts. The current presentation consolidates names into stack badges. Folded cards
+tuck away and the seat darkens with a crossed marker. Checks double-tap;
+wagers move to each seat’s bet, then collect into the pot. Teal borders,
+a small size change and a distinct two-note cue identify the acting seat. No artificial action
 timer or countdown is displayed.
 
 Bend calculates each preset as a legal street total. Preflop: 3 BB / 5 BB for
@@ -144,8 +145,9 @@ zeroes say Not sampled, while exact zeroes say 0%. Call price uses the eligible
 pot, excluding contributions the short stack cannot win. It is a price comparison,
 not a complete action-value recommendation.
 
-The exact made-hand name appears above the controls, with the best five cards
-outlined. A board-only best hand says Board plays. Starting hands have names
+The exact made-hand name appears above the controls. Best-five focus is off
+on opening/refresh; clicking the hand name lifts the five cards and shades
+unused cards, without outlines. A board-only best hand says Board plays. Starting hands have names
 such as Pocket fours and ace–king suited. Opponents show card backs and folded
 hands remain hidden; the learning calculation does not use exposed opponent
 cards even at a later showdown.
@@ -156,3 +158,32 @@ outputs. `test_cash.c` covers deep-stack public events, exact hand/highlights,
 royal flush certainty, nine flush outs among 46 turn runouts, and hidden-card/
 future-card independence under ASan/UBSan. `test_wasm.mjs` retains 800 exact
 native/WASM fixture hands across all four variants.
+
+## Game feedback and spatial layout
+
+`table.js` owns the presentation of public state, without changing game rules.
+Seat badges use stable stack-centered anchors; face cards and chip amounts live
+in separate layers. Bet placement checks visible card, board, pot, badge, action
+cue and other-bet rectangles, selecting the nearest clear space. Seat/card DOM
+nodes persist across updates so input changes do not restart action animations.
+Names sit inside badges, with transient check/call/raise cues beside the actor;
+long-lived action bars and the duplicate visual action feed are removed.
+Screen readers retain the actor-qualified action feed and seat states.
+
+The acting seat grows slightly with a teal edge; the human hand also lifts.
+Checks double-tap, folds tuck cards into the badge and darken/cross its marker,
+wagers fly to the seat’s chips, and chips collect when a street finishes. Actual
+payout recipients turn gold and receive the pot animation. Payouts use ending
+stack minus starting stack plus contributions, so a side-pot recipient is shown
+even when their net result is negative. The result panel separates pot awards
+from the human net result. Quick pace intentionally allows simultaneous cues;
+normal/relaxed pace lets each action breathe. Card swishes, double knocks,
+chip clicks, turn chimes and win sounds pan gently toward the actor. Reduced
+motion suppresses flights and size/tap animation while retaining state/color.
+
+`test_feedback.mjs` checks chip/card/badge/board intersections at 360, 390, 1366
+and 1920 px across 2/6/9 seats, exact five-card focus without outlines, stable
+DOM, payout markers and reduced motion. `test_browser.mjs` retains cash play,
+legal sizing, mobile badges and audio acceptance; `test_session.mjs` checks
+restoration/rebuy. This presentation revision keeps all four engine WASM hashes
+identical to the prior cash-session release, preserving existing tab saves.
