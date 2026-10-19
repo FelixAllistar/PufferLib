@@ -25,7 +25,7 @@ inspected by its owner; future multiplayer needs authoritative server state.
 Rules and Range support all table sizes. Fullhouse supports two or six seats;
 nine-seat house mixes use Rules/Range. The optional heads-up River candidate
 vendors four source files from [PR #5](https://github.com/FelixAllistar/PufferLib/pull/5),
-pinned to `59e06c0f92aa6f62909522d5d8b24eaba5ad8cfb`. Its provenance and hashes are in
+pinned to `d5c1a654d2245e24ccc11df83e327eca5e73093a`. Its provenance and hashes are in
 `experimental/provenance.json`. Only the standard sampled action-value mode is
 included; exact/calibrated/CFR/clone modes remain disabled. The PR stays unmerged.
 Later candidates can replace this isolated variant without changing the UI or
@@ -112,7 +112,10 @@ empty-seat buy-ins, terminal score receipts and hand names. Writes contain the
 current hand's seed, initial stacks, a public command journal, public view,
 accounting and recent UI history. They do not contain a raw hidden-card snapshot.
 The worker replays the current hand and checks its exact public state. Engine
-hashes prevent replay under an incompatible strategy build. A malformed storage
+hashes prevent replay under an incompatible strategy build. The rank-cache
+update explicitly permits the previous experimental module hash after paired
+action/RNG/state checks; restoration still verifies every bot action and the
+complete public state before saving under the new hash. A malformed storage
 record starts a new session with a notice; an engine mismatch pauses restoration
 until the user opens a new table. Unavailable storage leaves the game playable
 and shows its status.
@@ -187,3 +190,31 @@ DOM, payout markers and reduced motion. `test_browser.mjs` retains cash play,
 legal sizing, mobile badges and audio acceptance; `test_session.mjs` checks
 restoration/rebuy. This presentation revision keeps all four engine WASM hashes
 identical to the prior cash-session release, preserving existing tab saves.
+
+## Latest PR candidate trial
+
+The optional two-seat Pro candidate is pinned to PR #5 at `d5c1a654`.
+It caches already-visible river hand ranks; other optional PR modes stay off.
+The regular two/six/nine-seat modules are byte-identical to V4. A paired run of
+2,000 hands against Rules and 2,000 against Fullhouse matched every per-hand
+rolling action/RNG/state trace and payoff of the preceding candidate. The
+paired strength difference was zero in these deals. The fixed-sample river
+equity primitive used about 23% less CPU at the median (1.30× throughput over
+five alternating repetitions of 30,000 calls); this is not whole-bot latency.
+The default heads-up river policy often takes its separate action-value path.
+No live Slumbot comparison was run for this update.
+
+Reproduce after fetching the PR objects, without switching the working branch:
+
+```sh
+git fetch origin refs/pull/5/head
+python3 ocean/poker/web/test_candidate.py
+```
+
+`test_upgrade.mjs --capture` records an actual mid-hand and terminal Pro save
+from a separately served predecessor bundle (`POKER_WEB_URL` selects its URL).
+After rebuilding, `test_upgrade.mjs` checks those saves against the new bundle:
+exact public state, identical accounting, persisted new hash, a fresh hand,
+unknown hashes, changed bot journals, and compatibility scope. Capture fixtures
+remain in the ignored build tree. The source-bound trial and ASan/UBSan
+results are retained in `reports/poker/20261018/pr_try/`.

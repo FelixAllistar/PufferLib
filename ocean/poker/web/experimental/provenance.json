@@ -1,12 +1,17 @@
 {
   "repository": "https://github.com/FelixAllistar/PufferLib",
   "pull_request": 5,
-  "commit": "59e06c0f92aa6f62909522d5d8b24eaba5ad8cfb",
+  "commit": "d5c1a654d2245e24ccc11df83e327eca5e73093a",
   "files": {
     "rules.h": "e35d4999d205047826b21d8efd3b59959da346f3b0a968f0fddaddaf2adb9490",
-    "equity.h": "b92c72eed89442faad7b8af5b356e063b2a5e82b4666d62d7a68973b379c9901",
+    "equity.h": "4297a9050d36ce5a715cd542414faf76a3c11028f4edeeb04a418ac838974e0a",
     "preflop_minraise.h": "cf891bcf0a1c39dd1c5c9e81db34843b62af12bf745ac1c9e62248676139c04a",
     "river_value.h": "478f110435f8aa740a37b6ab3d2f320540891609c761dc53a102f0fb83178867"
   },
-  "mode": "Default sampled HU river action values; exact, calibration, CFR and clone modes disabled."
+  "mode": "Default sampled HU river action values; exact, calibration, CFR and clone modes disabled.",
+  "previous_commit": "59e06c0f92aa6f62909522d5d8b24eaba5ad8cfb",
+  "replay_compatible_wasm_sha256": [
+    "41bc02ba1f2e2967955d25e19daee0c333b783f19e1d5e69400b377e08fc237e"
+  ],
+  "replay_compatible_target_wasm_sha256": "3e06dad963aff53ad65d677ff81af60ef9bcdaaf436fe34f98382a99424e48d5"
 }

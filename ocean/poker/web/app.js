@@ -14,7 +14,7 @@ const descriptions = {
   rules:'The original fast rules bot. A familiar, straightforward opponent.',
   range:'Our range bot samples possible hidden hands before making its decision.',
   fullhouse:'The external Fullhouse learned policy, running locally at your table.',
-  river:'Pro’s experimental heads-up river candidate from PR #5. Standard sampled mode.'
+  river:'Pro’s latest experimental heads-up river candidate from PR #5. Standard sampled mode.'
 };
 let settings = {players:6, opponent:'mixed', pace:600};
 let worker, state, busy = true, failed = false, generation = 0, requestId = 0, pending = new Map();

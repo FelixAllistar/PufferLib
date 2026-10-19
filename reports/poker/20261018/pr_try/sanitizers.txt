@@ -1,0 +1,4 @@
+ASan/UBSan; wide chips; LeakSanitizer disabled (host process inspection restriction).
+PASS equity: players=2, 2000 unequal-stack hands, 7116 legal decisions, side pots and public profiles
+PASS equity: players=6, 2000 unequal-stack hands, 16536 legal decisions, side pots and public profiles
+PASS equity: players=9, 2000 unequal-stack hands, 24439 legal decisions, side pots and public profiles
