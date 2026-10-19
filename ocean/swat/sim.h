@@ -111,6 +111,9 @@ bool swat_sim_actor_visible(const SwatSim*,int observer,int target,float range,f
 // A currently aimed sight ray must reach the target before any other person.
 // This authorizes an attempt; the actual shot still traverses physical materials.
 bool swat_sim_firing_line_clear(const SwatSim*,int observer,int target,float range);
+// Visible suspect weapon raised and aimed at the observer or another visible protected
+// person. Uses current pose/optical clearance, never private target or ammo.
+bool swat_sim_observed_weapon_threat(const SwatSim*,int observer,int target,float range);
 void swat_sim_step_inputs(SwatSim* sim, const SwatInput inputs[SWAT_MAX_ACTORS]);
 // Solo locomotion courses: same controller/door/physics step, no combat or
 // presentation bookkeeping. Inputs are movement plus automatic door interact.

@@ -1,0 +1,112 @@
+{
+  "status": "Candidate scope and contact targets sent; no delivered or accepted mesh",
+  "production_instruction": "Codex requested a separate first civilian candidate under Felix’s autonomous vertical-slice brief. Blenderbot acknowledged the contact requirements but reported its direct production question to Felix still pending; production has not been confirmed started.",
+  "source_thread": {
+    "channel": "C0C5TN3AA8K",
+    "thread_ts": "1791078311.943659",
+    "artist_scope_messages": [
+      "1792383675.624929",
+      "1792383853.294509",
+      "1792385635.639229"
+    ],
+    "engine_contact_message": "1792385612.545959",
+    "url": "https://datadynedesigngroup.slack.com/archives/C0C5TN3AA8K/p1792385612545959?thread_ts=1791078311.943659&cid=C0C5TN3AA8K"
+  },
+  "scope": {
+    "role": "One original clothed adult civilian, separate from accepted officer sources",
+    "clips": [
+      "standing idle",
+      "unrestrained walk",
+      "kneeling hands-up surrender",
+      "restrained kneeling idle",
+      "restrained standing idle",
+      "restrained escort walk"
+    ],
+    "transitions": "Connecting stand/kneel/restraint/start/stop transitions with exact timestamps, interpolation, support/contact phases and root-motion declarations",
+    "unsupported_states": "Keep existing fallbacks until separately delivered and qualified, including stunned/fallen/fleeing/low-clearance escort states."
+  },
+  "coordinates": {
+    "units": "metres",
+    "up": "+Y",
+    "engine_heading_zero": "+X",
+    "engine_right": "+Z",
+    "source_front": "Explicitly declare source front/root/floor/sole convention and exact source-to-engine transform"
+  },
+  "controller_references": {
+    "standing_height_m": 1.8288,
+    "standing_eye_above_feet_m": 1.6256,
+    "crouched_height_m": 1.016,
+    "crouched_eye_above_feet_m": 0.8128,
+    "policy": "Report anatomical/animation mismatch against these existing controller references. Do not silently scale or distort anatomy to fit. They are engine targets, not verified source-anatomical eye locations."
+  },
+  "restraint": {
+    "pose": "Wrists behind the back; relaxed parallel forearms, palms outward, thumbs upward; preserve natural shoulder and wrist bends",
+    "provisional_wrist_centre_separation_m": 0.12,
+    "provisional_connector_length_between_attachment_endpoints_m": 0.06,
+    "cuff_fit": "Fit openings/bands to the actual authored wrists. Report actual inner/outer envelopes, spacing, endpoint transforms and connector length; flag conflicts with provisional targets.",
+    "markers": {
+      "names": [
+        "CuffAnchor_L",
+        "CuffAnchor_R"
+      ],
+      "origin": "Actual wrist centre",
+      "x_axis": "Toward fingers along the distal forearm",
+      "y_axis": "Palm normal projected perpendicular to +X",
+      "z_axis": "+X cross +Y",
+      "mapping": "Declare actual exported rest/contact transforms separately from native joint frames and preserve the original rest/bind/skin mapping."
+    },
+    "interaction_reference": {
+      "simulation_ticks": 72,
+      "seconds_at_60_hz": 1.2,
+      "policy": "Declare natural transition and contact timing independently; presentation must adapt to a reported mismatch rather than force a rushed animation."
+    }
+  },
+  "escort": {
+    "mode": "Follow-only under current engine movement/navigation",
+    "officer_hand_attachment_required": false,
+    "requirements": "Wrists/cuffs stay coherent through restrained stand and escort walk; standing remains conditional on achieved controller clearance."
+  },
+  "delivery": {
+    "runtime": "Neutral dense GLB with explicit actual node/joint/rest/inverse-bind/skin mapping and all original weights",
+    "maps": "Separate original maps plus exact glTF material/texture bindings, normal/tangent conventions and provenance",
+    "source": "Editable original source and reproducible export instructions",
+    "markers": [
+      "sole contacts",
+      "anatomical eye centre",
+      "wrist/cuff contact frames"
+    ],
+    "evidence": [
+      "real-speed actual-export playback",
+      "foot slip and support/contact phases",
+      "natural kneeling supports",
+      "deformation and clothing clearance",
+      "stand/kneel/restraint/escort transitions",
+      "wrist/cuff/connector fit"
+    ]
+  },
+  "current_consumer_limits": {
+    "influences_per_vertex": 32,
+    "nodes": 4096,
+    "combined_vertices": 1000000,
+    "combined_triangles": 2000000,
+    "officer_visibility_mesh_slots": 16,
+    "policy": "Report actual candidate counts. Validate or extend consumer limits at integration; do not prune weights, discard meshes or imply that the officer72-joint variant is universal."
+  },
+  "acceptance": {
+    "source_delivered": false,
+    "provenance_verified": false,
+    "source_mapping_verified": false,
+    "anatomical_fit_verified": false,
+    "native_render_verified": false,
+    "engine_integrated": false,
+    "whole_character_accepted": false
+  },
+  "engine_sources": [
+    "ocean/swat/body.c",
+    "ocean/swat/controller.c",
+    "ocean/swat/sim.c",
+    "ocean/swat/encounter.c",
+    "ocean/swat/character_asset.c",
+    "ocean/swat/character_runtime.h"
+  ]
+}

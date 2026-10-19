@@ -50,7 +50,8 @@ static b3Pos grid_position(const SwatNavigation* nav,int index) {
     }
     return (b3Pos){nav->min_x+(index%nav->width+.5f)*.6f,0,nav->min_z+(index/nav->width+.5f)*.6f};
 }
-typedef struct NavQuery { const SwatWorld* world; bool blocked,fixtures_only; } NavQuery;
+typedef struct NavQuery { const SwatWorld* world; bool blocked,fixtures_only,leave_touch;
+    const b3ShapeProxy* proxy;b3Pos origin;b3Vec3 translation; } NavQuery;
 static bool nav_obstacle(const SwatWorld* world,const SwatObject* o) {
     if(o->part==SWAT_PART_FIXTURE || o->part==SWAT_PART_OBSTACLE)return true;
     // Original furniture predates fixture tags. Its low chair seats and desk
@@ -106,10 +107,51 @@ static bool nav_clear(const SwatWorld* world,b3Pos p,float height) {
     if(!query.blocked)b3World_OverlapShape(world->id,p,&lower,b3DefaultQueryFilter(),obstacle,&query);
     return !query.blocked;
 }
-static float edge_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
-    return obstacle(shape,context) ? -1 : 0;
+typedef struct NavMeshExit {b3ShapeCastInput input;b3Vec3 center;bool clear;int contacts;} NavMeshExit;
+static bool nav_mesh_exit_triangle(b3Vec3 a,b3Vec3 b,b3Vec3 c,int triangle,void* context) {
+    NavMeshExit* q=context;b3Vec3 vertices[]={b3Vec3_zero,b3Sub(b,a),b3Sub(c,a)};
+    b3ShapeCastPairInput pair={.proxyA={vertices,3,0},.proxyB=q->input.proxy,
+        .transform={b3Neg(a),b3Quat_identity},.translationB=q->input.translation,.maxFraction=1};
+    b3CastOutput hit=b3ShapeCast(&pair);if(!hit.hit)return true;
+    // An initial contact can be left only towards the starting side of its
+    // plane. Check every triangle, including later faces in the same subset.
+    b3Vec3 normal=b3Cross(vertices[1],vertices[2]);float length2=b3LengthSquared(normal);
+    if(hit.fraction==0 && length2>1e-16f) {
+        normal=swat_mul(normal,1/sqrtf(length2));
+        float side=b3Dot(normal,b3Sub(q->center,a));
+        if(fabsf(side)>1e-5f && side*b3Dot(normal,q->input.translation)>1e-7f){q->contacts++;return true;}
+    }
+    q->clear=false;return false;
 }
-static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {
+static bool nav_mesh_exit(b3ShapeId shape,const NavQuery* query) {
+    if(!query->proxy || query->proxy->count<1 || query->proxy->count>8 || b3Shape_GetType(shape)!=b3_meshShape)return false;
+    b3BodyId body=b3Shape_GetBody(shape);b3Quat rotation=b3Body_GetRotation(body);
+    b3Vec3 origin=b3SubPos(query->origin,b3Body_GetPosition(body)),points[8];
+    NavMeshExit q={.clear=true};
+    for(int i=0;i<query->proxy->count;i++) {
+        points[i]=b3InvRotateVector(rotation,b3Add(origin,query->proxy->points[i]));
+        q.center=b3Add(q.center,points[i]);
+    }
+    q.center=swat_mul(q.center,1.0f/query->proxy->count);
+    q.input=(b3ShapeCastInput){.proxy={points,query->proxy->count,query->proxy->radius},
+        .translation=b3InvRotateVector(rotation,query->translation),.maxFraction=1};
+    b3Vec3 low=points[0],high=points[0];
+    for(int i=1;i<q.input.proxy.count;i++){low=b3Min(low,points[i]);high=b3Max(high,points[i]);}
+    b3Vec3 radius=swat_v(q.input.proxy.radius,q.input.proxy.radius,q.input.proxy.radius);
+    b3AABB bounds={b3Sub(low,radius),b3Add(high,radius)};
+    bounds.lowerBound=b3Min(bounds.lowerBound,b3Add(bounds.lowerBound,q.input.translation));
+    bounds.upperBound=b3Max(bounds.upperBound,b3Add(bounds.upperBound,q.input.translation));
+    b3Mesh mesh=b3Shape_GetMesh(shape);b3QueryMesh(&mesh,bounds,nav_mesh_exit_triangle,&q);
+    return q.clear && q.contacts>0;
+}
+
+static float edge_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
+    if(obstacle(shape,context))return -1;
+    NavQuery* query=context;
+    if(fraction==0 && query->leave_touch && nav_mesh_exit(shape,query)) {query->blocked=false;return 1;}
+    return 0;
+}
+static bool nav_edge_query(const SwatWorld* world,b3Pos a,b3Pos b,float height,bool leave_touch) {
     float rise=(float)fabs(a.y-b.y);
     if(rise>.4572f) {
         // A grid edge can span several ordinary stair treads. Validate each
@@ -128,17 +170,21 @@ static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {
     // Step up/across/down matches the controller's bounded stair clearance.
     b3Pos raised=a; raised.y=fmax(a.y,b.y)+.015;
     b3Vec3 points[]={{0,height*.5f+.1437f,0},{0,fmaxf(height-.2873f,height*.5f+.1537f),0}}; b3ShapeProxy proxy={points,2,.2873f};
-    NavQuery query={.world=world}; b3Vec3 translation=b3SubPos(b,raised); translation.y=0;
+    b3Vec3 translation=b3SubPos(b,raised);translation.y=0;
+    NavQuery query={.world=world,.leave_touch=leave_touch,.proxy=&proxy,.origin=raised,.translation=translation};
     b3World_CastShape(world->id,raised,&proxy,translation,b3DefaultQueryFilter(),edge_hit,&query);
     b3Vec3 feet[8];
     for(int i=0;i<8;i++) feet[i]=swat_v(i&1 ? .2032f : -.2032f,i&2 ? fmaxf(height*.5f,.49f) : .46f,i&4 ? .2032f : -.2032f);
     b3ShapeProxy lower={feet,8,0};
+    query.proxy=&lower;
     if(!query.blocked) b3World_CastShape(world->id,raised,&lower,translation,b3DefaultQueryFilter(),edge_hit,&query);
     for(int i=0;i<8;i++)feet[i].y=i&2?.46f:.015f;
     query.fixtures_only=true;
     if(!query.blocked)b3World_CastShape(world->id,raised,&lower,translation,b3DefaultQueryFilter(),edge_hit,&query);
     return !query.blocked;
 }
+static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {return nav_edge_query(world,a,b,height,false);}
+static bool nav_start_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {return nav_edge_query(world,a,b,height,true);}
 static int adjacent(const SwatNavigation* nav,int cell,int direction) {
     int x=cell%nav->width,z=cell/nav->width;
     const int neighbors[]={x>0 ? cell-1 : -1,x+1<nav->width ? cell+1 : -1,z>0 ? cell-nav->width : -1,z+1<nav->depth ? cell+nav->width : -1};
@@ -410,6 +456,23 @@ static bool people_clear(const NavPeople* people,b3Pos from,b3Pos to) {
     }
     return true;
 }
+static bool navigation_person_visible(const SwatSim* s,int observer,int person) {
+    const SwatController* other=&s->actors[person].controller;
+    b3Pos eye=swat_controller_eye(&s->actors[observer].controller),head=swat_controller_eye(other);
+    if(swat_world_sight_clear(&s->world,eye,head))return true;
+    // A thin post can hide the head while the body remains exposed. Dropping
+    // that person from occupancy on each side of the post reverses routes.
+    // Sample two points inside the current torso capsule; opaque cover must
+    // still block every sample before a person disappears from navigation.
+    b3Vec3 delta=b3SubPos(head,eye);float span=hypotf(delta.x,delta.z);
+    if(span<.001f)return false;
+    float radius=other->body.bodyRadius*.7f;
+    b3Vec3 side=swat_v(-delta.z/span*radius,0,delta.x/span*radius);
+    b3Pos torso=b3OffsetPos(swat_body_feet_position(&other->body),
+        swat_add(other->body.upperOffset,swat_v(0,other->body.totalHeight*.7f,0)));
+    return swat_world_sight_clear(&s->world,eye,b3OffsetPos(torso,side)) ||
+        swat_world_sight_clear(&s->world,eye,b3OffsetPos(torso,swat_mul(side,-1)));
+}
 static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next,const NavPersonProposal* proposal) {
     const SwatRoom* limit=NULL;const SwatRoom* searched=NULL;
     if(actor>=0) {
@@ -452,7 +515,7 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
         // Walls and reduced interior visibility hide distant occupants; the
         // shared static nav stays unchanged. Nearby collision avoidance remains.
         float distance=b3Distance(start,feet);b3Pos head=swat_controller_eye(&other->controller);
-        if(distance<24 && swat_world_sight_clear(&s->world,swat_controller_eye(&s->actors[actor].controller),head) &&
+        if(distance<24 && navigation_person_visible(s,actor,i) &&
            (distance<12 || distance<swat_world_visual_range(&s->world,head,24)))
             people.feet[people.count++]=proposal && proposal->actor==i?proposal->feet:feet;
     }
@@ -460,14 +523,14 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     if(!search_room_route(searched,limit!=NULL,cell_position(nav,from)) || !search_room_route(searched,limit!=NULL,cell_position(nav,to)))return false;
     float start_height=(nav->walkable[from]&2)?1.8288f:1.016f;
     if(!door_leaves_clear(&s->world,doors,door_count,start,cell_position(nav,from)) ||
-       !nav_edge(&s->world,start,cell_position(nav,from),start_height) ||
+       !nav_start_edge(&s->world,start,cell_position(nav,from),start_height) ||
        !fire_lanes_clear(&lanes,start,cell_position(nav,from),start_height)) {
         float best=2;from=-1;
         for(int i=0;i<nav->nodes;i++)if(nav->walkable[i]) {
             b3Pos p=cell_position(nav,i);float distance=b3Distance(start,p);
             float height=(nav->walkable[i]&2)?1.8288f:1.016f;
             if(search_room_route(searched,limit!=NULL,p) && fabs(p.y-start.y)<.65 && distance<best &&
-               door_leaves_clear(&s->world,doors,door_count,start,p) && nav_edge(&s->world,start,p,height) &&
+               door_leaves_clear(&s->world,doors,door_count,start,p) && nav_start_edge(&s->world,start,p,height) &&
                fire_lanes_clear(&lanes,start,p,height)) {best=distance;from=i;}
         }
         if(from<0)return false;
@@ -500,7 +563,7 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
                 if(!search_room_route(searched,limit!=NULL,p) || fabs(p.y-start.y)>.65 || b3Distance(start,p)>1.8f)continue;
                 float height=(nav->walkable[from]&nav->walkable[n]&2)?1.8288f:1.016f;
                 if(!people_clear(&people,start,p) || !door_leaves_clear(&s->world,doors,door_count,start,p) ||
-                   !nav_edge(&s->world,start,p,height) || !fire_lanes_clear(&lanes,start,p,height))continue;
+                   !nav_start_edge(&s->world,start,p,height) || !fire_lanes_clear(&lanes,start,p,height))continue;
                 parent[n]=from;queue[tail++]=(uint32_t)n;
             }
         }
@@ -549,7 +612,7 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
         if(!arrived && !leaving_support)break;
         int ahead=queue[route-1];b3Pos target=cell_position(nav,ahead);
         float height=(nav->walkable[from]&nav->walkable[ahead]&2)?1.8288f:1.016f;
-        if(!nav_edge(&s->world,start,target,height) || !people_clear(&people,start,target) ||
+        if(!nav_start_edge(&s->world,start,target,height) || !people_clear(&people,start,target) ||
            !door_leaves_clear(&s->world,doors,door_count,start,target) || !fire_lanes_clear(&lanes,start,target,height))break;
         route--;at=ahead;
     }
@@ -557,7 +620,7 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     // A displaced start can cut a solid corner even when that grid edge is
     // clear. Join the checked start sample before following such an edge.
     float next_height=(nav->walkable[from]&nav->walkable[at]&2)?1.8288f:1.016f;
-    if(!nav_edge(&s->world,start,cell_position(nav,at),next_height) || !fire_lanes_clear(&lanes,start,cell_position(nav,at),next_height))at=from;
+    if(!nav_start_edge(&s->world,start,cell_position(nav,at),next_height) || !fire_lanes_clear(&lanes,start,cell_position(nav,at),next_height))at=from;
     *next=cell_position(nav,at); return true;
 }
 static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next) {
@@ -598,7 +661,7 @@ static bool actor_lane_clear(const SwatSim* s,int index,b3Pos from,b3Pos to) {
         b3Vec3 delta=b3SubPos(position,from);if(fabsf(delta.y)>1 || hypotf(delta.x,delta.z)>3)continue;
         // Local visible body avoidance only; this is not an omniscient occupancy
         // map of people in other rooms. Static geometry still owns the route.
-        if(!swat_world_sight_clear(&s->world,swat_controller_eye(&s->actors[index].controller),swat_controller_eye(&other->controller)))continue;
+        if(!navigation_person_visible(s,index,i))continue;
         delta.y=0;float t=length2>1e-6f ? swat_clamp(b3Dot(delta,segment)/length2,0,1) : 0;
         float distance=b3Length(b3Sub(delta,swat_mul(segment,t)));
         if(distance<.62f) {
@@ -721,15 +784,32 @@ static int visible_target(SwatSim* s,int index,bool officer) {
     return best;
 }
 static void face_target(SwatSim* s,int index,int target,SwatInput* in) {
-    SwatActor* a=&s->actors[index]; b3Vec3 d=b3SubPos(swat_controller_eye(&s->actors[target].controller),swat_controller_eye(&a->controller));
+    SwatActor* a=&s->actors[index];const SwatController* other=&s->actors[target].controller;
+    b3Pos eye=swat_controller_eye(&a->controller),point=swat_controller_eye(other);
+    // Prefer visibly exposed upper torso rather than locking every encounter
+    // onto the eye point. Opaque cover preserves a head-only exposed target;
+    // damage, armour, firing confirmation/cadence and real bullets are shared.
+    b3Pos torso=b3OffsetPos(swat_body_feet_position(&other->body),swat_v(other->body.upperOffset.x,other->body.totalHeight*.65f,other->body.upperOffset.z));
+    b3Vec3 toward=b3SubPos(torso,eye);float distance=b3Length(toward);
+    if(distance<24 && b3Dot(swat_controller_aim(&a->controller),swat_normalize(toward))>=cosf(60*SWAT_RAD)) {
+        SwatHit seen=swat_world_sight_ray(&s->world,eye,swat_normalize(toward),distance+.15f,a->controller.body.body);
+        if(seen.kind==SWAT_HIT_ACTOR && seen.index==target &&
+           (distance<12 || distance<swat_world_visual_range(&s->world,seen.point,24)))point=torso;
+    }
+    b3Vec3 d=b3SubPos(point,eye);
     float yaw=b3Atan2(d.z,d.x),pitch=b3Atan2(d.y,sqrtf(d.x*d.x+d.z*d.z));
     in->yaw_delta=swat_clamp(swat_angle(yaw-a->controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
     in->pitch_delta=swat_clamp(pitch-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD); in->aim=true;
     a->target_actor=target; a->visible_ticks++;
-    bool threat=a->role==SWAT_SUSPECT || (s->tick-s->actors[target].last_shot_tick<120);
+    int shot=s->actors[target].last_shot_tick,age=s->tick-shot;
+    bool aimed=a->role==SWAT_OFFICER && swat_sim_observed_weapon_threat(s,index,target,24);
+    bool threat=a->role==SWAT_SUSPECT || (shot>=0 && age>=0 && age<120) || aimed;
     // Sight transmits clear panes; physical ballistics still impact those panes.
     // An officer or hostage crossing the aimed line inhibits the shot.
-    in->fire=threat && s->config.hostile_fire && a->visible_ticks>36 &&
+    // A tracked contact actively aiming at a visible person warrants an
+    // earlier response than the ordinary attack confirmation delay. Weapon
+    // cadence, physical firing clearance and actual damage remain shared.
+    in->fire=threat && s->config.hostile_fire && a->visible_ticks>(aimed?18:36) &&
         swat_sim_firing_line_clear(s,index,target,24) && s->tick%18==0;
     in->reload=!a->arsenal.slots[a->arsenal.active].chambered;
 }
@@ -1122,6 +1202,19 @@ static void officer_follow(SwatSim* s,int i,SwatInput* in,bool tracking) {
         }
         mind->goal=follower_clear_portal(s,i,leader,goal);
     }
+    if(!tracking && s->config.hostile_fire &&
+       b3Distance(swat_body_feet_position(&s->actors[leader].controller.body),s->extraction)>=SWAT_STAGING_RADIUS) {
+        // The commander watches forward. Unassigned following officers cover
+        // left/rear/right sectors while their translation follows the route.
+        // This uses formation rank and the existing commander-heading reference only;
+        // no unseen contacts, enemy state, automatic shot or instantaneous turn.
+        int rank=0;for(int j=0;j<i;j++)if(j!=leader && s->actors[j].present && s->actors[j].alive &&
+            s->actors[j].role==SWAT_OFFICER && s->actors[j].mind.bot)rank++;
+        float sector=rank%3==0?SWAT_PI*.5f:rank%3==1?SWAT_PI:-SWAT_PI*.5f;
+        float yaw=swat_angle(s->actors[leader].controller.yaw+sector);
+        in->yaw_delta=swat_clamp(swat_angle(yaw-s->actors[i].controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
+        tracking=true;
+    }
     move_to_input(s,i,mind->goal,in,tracking);
 }
 static bool restraint_at(SwatSim* s,int actor,int target,b3Pos* point) {
@@ -1368,7 +1461,10 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
         SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
         if(a->role!=SWAT_OFFICER || !mind->bot || !a->alive || (mind->order!=SWAT_ORDER_PICK && mind->order!=SWAT_ORDER_WEDGE))mind->tool_goal=mind->tool_blocked=false;
         if(!a->present || !a->alive || (a->role==SWAT_OFFICER && !mind->bot) || a->role==SWAT_SNIPER) continue;
-        if(a->role==SWAT_OFFICER && a->hearing_ticks>0)a->hearing_ticks--;
+        if(a->role==SWAT_OFFICER) {
+            if(a->hearing_ticks>0)a->hearing_ticks--;
+            if(mind->memory_ticks>0)mind->memory_ticks--;
+        }
         SwatInput* in=&inputs[i];
         if(a->gear.stunned_ticks) continue;
         if(a->gear.restrained) {
@@ -1420,13 +1516,24 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
             // Hands-on tasks must not leave recalled or covering officers
             // staring at the floor. Active target/task tracking overrides this.
             in->pitch_delta=swat_clamp(-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD);
-            bool listening=a->hearing_ticks>0;
-            if(listening) {
+            bool listening=a->hearing_ticks>0,remembering=mind->memory_ticks>0;
+            bool tracking=listening || remembering;
+            if(tracking) {
                 mind->state=SWAT_INVESTIGATE;
-                in->yaw_delta=swat_clamp(swat_angle(a->heard_yaw-a->controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
+                // A brief occlusion must not turn a covering officer's back
+                // to the contact. Use the last observed point, never the
+                // hidden actor's current position. Fresh gunfire can redirect
+                // this look; firing still requires current visible contact.
+                b3Vec3 last=b3SubPos(mind->memory,swat_controller_eye(&a->controller));
+                float yaw=listening?a->heard_yaw:b3Atan2(last.z,last.x);
+                in->yaw_delta=swat_clamp(swat_angle(yaw-a->controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
+                if(!listening) {
+                    in->pitch_delta=swat_clamp(b3Atan2(last.y,hypotf(last.x,last.z))-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD);
+                    in->aim=true;
+                }
             }
             if(mind->order==SWAT_ORDER_FALL_IN || mind->order==0) {
-                officer_follow(s,i,in,listening);
+                officer_follow(s,i,in,tracking);
             } else if(mind->order==SWAT_ORDER_CUFF) {
                 if(!listening)officer_restrain(s,i,in);
             } else if(mind->order==SWAT_ORDER_SEARCH) {
@@ -1436,7 +1543,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
             } else if(mind->order==SWAT_ORDER_ROOM_SEARCH) {
                 if(!listening)officer_room_search(s,i,in);
             } else if(mind->order!=SWAT_ORDER_HOLD && mind->order!=SWAT_ORDER_COVER) {
-                officer_move(s,i,in,listening);
+                officer_move(s,i,in,tracking);
             }
         } else if(mind->memory_ticks>0) {
             mind->memory_ticks--; mind->state=SWAT_INVESTIGATE;
