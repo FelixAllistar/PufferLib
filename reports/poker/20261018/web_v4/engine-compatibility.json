@@ -1,0 +1,12 @@
+{
+  "prior_release": "cash/learning V3",
+  "all_four_wasm_hashes_unchanged": true,
+  "artifacts": {
+    "poker2.wasm": "ac15ba69cd1ac3c395e8ab98d55ea48592d5508a23dd27253da34808fa51328b",
+    "poker6.wasm": "c312bbcc228d6ed6aeee812cad5ebb2a1d6038cae89e9d5ef665b2d60882c99b",
+    "poker9.wasm": "1a9af1d320d22ac1f82ce20b022a6894fec9ae0b6a472d52874c78afd09d0fbc",
+    "poker2pro.wasm": "41bc02ba1f2e2967955d25e19daee0c333b783f19e1d5e69400b377e08fc237e"
+  },
+  "engine_and_policies_changed": false,
+  "existing_cash_saves_compatible": true
+}

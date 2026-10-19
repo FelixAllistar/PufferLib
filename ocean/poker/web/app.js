@@ -2,13 +2,12 @@ import Core from './Controller.bend';
 import Hand from './Hand.bend';
 import Cash from './Cash.bend';
 import {loadSession,saveSession} from './storage.js';
+import {TableView} from './table.js';
 
 const $ = id => document.getElementById(id);
-const ranks = '23456789TJQKA', suits = ['♣','♦','♥','♠'];
 const categories = ['High card','One pair','Two pair','Three of a kind','Straight','Flush','Full house','Four of a kind','Straight flush'];
 const streets = ['Preflop','Flop','Turn','River'];
 const presetKinds = ['min','first','second','pot','all'];
-const seatColors = ['#00bbaa','#885ac4','#c44b36','#4e87bc','#b4762f','#638054','#9e5d94','#4c8c94','#8170b7'];
 const names = {rules:'Rules', range:'Range', fullhouse:'Fullhouse', river:'River candidate'};
 const descriptions = {
   mixed:'A mixed field of Rules, Range and Fullhouse bots.',
@@ -21,8 +20,9 @@ let settings = {players:6, opponent:'mixed', pace:600};
 let worker, state, busy = true, failed = false, generation = 0, requestId = 0, pending = new Map();
 let session = Core.empty(), lastActions = [], recordedHand = 0, selectedRaise = 0, selectedPreset = null, sound = true, audio;
 let buyins=20000,tableBuyins=Array(6).fill(20000),latestCheckpoint=null;
-let learningOpen=innerWidth>=1280,lastLearning=null,learningPending='',showBest=true;
-let actionEffects = new Map(), latestAction = '';
+let learningOpen=innerWidth>=1280,lastLearning=null,learningPending='',showBest=false;
+const tableView=new TableView();
+let latestAction = '';
 let history = [], botTimer, startedAt = 0, lastBotTime = 0;
 const fmt = chips => (chips / 100).toLocaleString('en-US',{maximumFractionDigits:2});
 const signed = chips => `${chips > 0 ? '+' : chips < 0 ? '−' : ''}${fmt(Math.abs(chips))}`;
@@ -38,32 +38,41 @@ function policyFor(p) {
   return settings.opponent;
 }
 function label(p) { return p === 0 ? 'You' : `${names[policyFor(p)]} ${String(p).padStart(2,'0')}`; }
-function card(id, animate=false, best=false) {
-  if (id === 52) return '<span class="card back" aria-label="Face-down card"></span>';
-  const raw = ranks[id >> 2], rank = raw === 'T' ? '10' : raw, suit = suits[id & 3];
-  return `<span class="card${(id & 3) === 1 || (id & 3) === 2 ? ' red' : ''}${animate ? ' dealt' : ''}${best?' best':''}" aria-label="${rank}${suit}"><span class="corner">${rank}<small>${suit}</small></span><span class="suit">${suit}</span><span class="lower">${rank}</span></span>`;
-}
 function unlockAudio() {
   if(!sound)return;
   try {audio??=new AudioContext();if(audio.state==='suspended')audio.resume();}catch{}
 }
 document.addEventListener('pointerdown',unlockAudio,{capture:true});
 document.addEventListener('keydown',unlockAudio,{capture:true});
-function soundEffect(kind) {
+function soundEffect(kind,p=0) {
   if (!sound || document.hidden || !audio || audio.state!=='running') return;
   try {
     const now=audio.currentTime;
+    const output=audio.createStereoPanner();
+    const actor=document.querySelector(`[data-seat="${p}"]`),stage=$('stage').getBoundingClientRect();
+    const x=actor?actor.getBoundingClientRect().x+actor.offsetWidth/2-stage.x:stage.width/2;
+    output.pan.value=Math.max(-.65,Math.min(.65,(x/stage.width-.5)*1.3));output.connect(audio.destination);setTimeout(()=>output.disconnect(),2000);
+    // Short filtered noise gives cards a swish and chips a dry click.
+    const noise=(duration,frequency,volume)=>{
+      const buffer=audio.createBuffer(1,Math.ceil(audio.sampleRate*duration),audio.sampleRate),data=buffer.getChannelData(0);
+      for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+      const source=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();
+      source.buffer=buffer;filter.type='bandpass';filter.frequency.value=frequency;filter.Q.value=.7;
+      gain.gain.setValueAtTime(volume,now);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+      source.connect(filter).connect(gain).connect(output);source.start(now);source.stop(now+duration);
+    };
     const tone=(freq,start,duration,volume=.035,end=freq)=>{
       const osc=audio.createOscillator(),gain=audio.createGain();osc.type='sine';
       osc.frequency.setValueAtTime(freq,start);osc.frequency.exponentialRampToValueAtTime(end,start+duration);
       gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(volume,start+.005);gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
-      osc.connect(gain).connect(audio.destination);osc.start(start);osc.stop(start+duration);
+      osc.connect(gain).connect(output);osc.start(start);osc.stop(start+duration);
     };
     if(kind==='turn'){tone(660,now,.18,.04);tone(880,now+.15,.28,.04);}
-    else if(kind==='check'){tone(320,now,.045,.05,150);tone(320,now+.09,.045,.04,150);}
-    else if(kind==='fold'){tone(480,now,.13,.035,90);}
-    else if(kind==='deal'){tone(900,now,.055,.02,300);tone(1100,now+.06,.055,.02,350);}
+    else if(kind==='check'){tone(190,now,.045,.07,95);tone(190,now+.12,.045,.06,95);}
+    else if(kind==='fold'){noise(.22,1400,.13);tone(170,now,.09,.018,90);}
+    else if(kind==='deal'){noise(.15,2800,.08);tone(900,now,.055,.02,300);}
     else if(kind==='win'){[660,830,990].forEach((f,i)=>tone(f,now+i*.11,.25,.035));}
+    else if(kind==='pot'){noise(.25,3200,.09);tone(1100,now,.08,.025,600);}
     else {const n=kind==='raise'?3:2;for(let i=0;i<n;i++)tone(1500+i*170,now+i*.055,.075,.025,900);}
   } catch {}
 }
@@ -120,9 +129,9 @@ function logAction(before, action) {
   if (action >= 0 && (action > 0 ? action-r[1] : call) === r[0]) verb += ' · all in';
   lastActions[p] = action < 0 ? 'Folded' : `${verb.charAt(0).toUpperCase()+verb.slice(1)}${amount ? ` ${amount}` : ''}`;
   const kind=action<0?'fold':action>0?'raise':call?'call':'check';
-  actionEffects.set(p,{kind,at:performance.now()});
+  tableView.noteAction(p,kind,amount,action>0?(before[4]?'Raise to':'Bet'):'Call');
   latestAction=`${label(p)} ${verb}${amount?' '+amount:''}`;
-  soundEffect(kind);
+  soundEffect(kind,p);
   addHistory(label(p),verb,amount);
 }
 function position(p) {
@@ -143,35 +152,19 @@ function setRaise(value, preset=null) {
 }
 function render(previous) {
   const done = isDone(), myTurn = heroTurn() && !busy && !failed;
-  const newHand = !previous || state[15] !== previous[15];
   $('stage').dataset.seats = settings.players;
   $('table-type').textContent = `${settings.players} seats${settings.players === 2 ? ' · Heads-up' : ''}`;
   $('street-label').textContent = done ? 'HAND COMPLETE' : streets[state[2]].toUpperCase();
   $('hand-label').textContent = `HAND ${String(state[15]).padStart(3,'0')}`;
   $('pot').textContent = `${fmt(done ? state.slice(24).filter((_,i)=>i%9===2).reduce((a,b)=>a+b,0) : state[3])} BB`;
-  $('board').innerHTML = Array.from({length:5},(_,i)=>i < state[13] ? card(state[16+i],newHand || !previous || i >= previous[13],showBest&&!!(state[22]&(1<<(i+2)))) : '<span class="card empty" aria-hidden="true"></span>').join('');
-  $('seats').innerHTML = Array.from({length:settings.players},(_,p) => {
-    const r=seat(state,p), angle=Math.PI/2+2*Math.PI*p/settings.players;
-    const x=50+(settings.players===9?37:35)*Math.cos(angle), y=p===0?81:46+32*Math.sin(angle);
-    const pos=position(p), acted=lastActions[p] || (pos.posted?`POST ${pos.short} · ${fmt(pos.posted)} BB`:'');
-    const effect=actionEffects.get(p),elapsed=effect?performance.now()-effect.at:2000;
-    const effectClass=elapsed<1600?` effect-${effect.kind}`:'';
-    const stageRect=$('stage').getBoundingClientRect();
-    const effectStyle=`--effect-delay:-${Math.max(0,elapsed)}ms;--to-pot-x:${(50-x)*stageRect.width/100}px;--to-pot-y:${(39-y)*stageRect.height/100}px;`;
-    const visibleBefore=previous?seat(previous,p)[3]:52;
-    const animate=newHand || (r[3]!==52 && visibleBefore===52);
-    const betTop = p===0 ? '-20px' : y<32 ? 'calc(100% + 10px)' : y>60 ? '-18px' : '60%';
-    const betX = p!==0 && y>=32 && y<=60 ? (x<50?'130%':'-30%') : '50%';
-    const status=!r[5]?'FOLDED':done&&r[7]!==0?`${signed(r[7])} BB${r[6]>=0?` · ${categories[r[6]]}`:''}`:r[0]===0?'ALL IN':!done&&p===state[1]?p===0?'YOUR TURN':'THINKING…':acted;
-    return `<div class="seat${p===0?' hero':''}${!r[5]?' folded':''}${!done&&p===state[1]?' active':''}${effectClass}" style="--x:${x}%;--y:${y}%;--bet-top:${betTop};--bet-x:${betX};--seat-color:${seatColors[p]};${effectStyle}" data-seat="${p}" aria-label="${label(p)}, ${fmt(r[0])} big blinds${!r[5]?', folded':''}"><div class="seat-cards">${card(r[3],animate,p===0&&showBest&&!!(state[22]&1))}${card(r[4],animate,p===0&&showBest&&!!(state[22]&2))}</div><div class="seat-info">${state[7]===p?'<span class="dealer" title="Dealer button">D</span>':''}<span class="seat-number">${p===0?'Y':p}</span><div class="seat-stack">${fmt(r[0])}<small>BB</small></div></div><div class="seat-name">${label(p)}${pos.short?` <span class="position-tag">${pos.short}</span>`:''}</div><div class="seat-status">${status}</div>${elapsed<600&&(effect.kind==='call'||effect.kind==='raise')?'<span class="action-chip bet-chip" aria-hidden="true"></span>':''}${elapsed<1000&&effect.kind==='check'?'<span class="check-effect" aria-hidden="true">✓</span>':''}${!done&&r[1]>0?`<div class="seat-bet${previous&&r[1]!==seat(previous,p)[1]?' chip-enter':''}"><span class="bet-chip"></span>${fmt(r[1])}</div>`:''}</div>`;
-  }).join('');
+  tableView.render(state,{previous,label,position,focus:showBest});
   $('betting-controls').hidden = done;
   $('betting-controls').style.display = done ? 'none' : '';
   $('finished-controls').hidden = !done;
   const hero=seat(state,0);
   $('hand-rank').textContent = hero[6]>=0 && hero[5] ? Hand.name(state[21])+(state[23]?' · Board plays':'') : hero[5]?Hand.holding(hero[3],hero[4]):'You folded';
   $('hand-rank').setAttribute('aria-pressed',String(showBest));
-  document.querySelector('.hand-summary>span').textContent=hero[6]>=0&&hero[5]?'Best five highlighted':'Cash game · 0.5 / 1 BB';
+  document.querySelector('.hand-summary>span').textContent=hero[6]>=0&&hero[5]?(showBest?'Show all cards':'Show best five'):'0.5 / 1 BB';
   $('learning-hand').textContent=hero[6]>=0?Hand.name(state[21]):Hand.holding(hero[3],hero[4]);
   $('raise-action-label').textContent = state[4] ? 'Raise to' : 'Bet';
   const canRaise = myTurn && !!(state[9]&~3);
@@ -200,15 +193,17 @@ function render(previous) {
   $('hero-position').textContent=`You: ${ownPosition.name}${ownPosition.posted?` · posted ${fmt(ownPosition.posted)} BB`:''}`;
   $('last-action').textContent=latestAction;
   $('action-area').classList.toggle('your-turn',myTurn);
-  const message=done ? hero[7]>0 ? `You win ${signed(hero[7])} BB` : hero[7]===0 ? 'An even hand' : `${label(state.slice(24).findIndex((_,i)=>i%9===7&&state[24+i]>0)/9|0)} takes the pot` : myTurn ? 'The action is on you' : `${label(state[1])} is thinking…`;
+  const winners=Array.from({length:settings.players},(_,p)=>({p,r:seat(state,p)})).filter(({r})=>done&&r[0]-r[8]+r[2]>0);
+  const awarded=winners.reduce((a,{r})=>a+r[0]-r[8]+r[2],0);
+  const message=done?winners.length>1?`Pot awarded · ${fmt(awarded)} BB`:`${winners[0]?.p===0?'You win':`${label(winners[0]?.p??0)} wins`} ${fmt(awarded)} BB`:'';
   $('table-message').textContent = message;
   $('table-message').classList.toggle('result',done);
   $('turn-label').textContent = failed ? 'Table paused · open a new table to retry' : done ? 'Hand complete' : myTurn ? 'Your turn' : `${label(state[1])} to act`;
-  $('turn-dot').style.background = myTurn ? 'var(--gold)' : 'var(--mint)';
+  $('turn-dot').style.background = myTurn ? 'var(--mint)' : '#a9b5bd';
   $('turn-label').parentElement.classList.toggle('thinking',!myTurn&&!done);
   if (done) {
-    $('result-title').textContent = `${hero[7]>0?'You win':hero[7]<0?'Hand result':'Split pot'} ${signed(hero[7])} BB`;
-    $('result-detail').textContent = state[14] && hero[5] ? `Showdown · ${Hand.name(state[21])}` : hero[5] ? 'The table folded to you.' : 'You folded. The hand has finished.';
+    $('result-title').textContent = message;
+    $('result-detail').textContent = `${state[14]&&hero[5]?Hand.name(state[21]):hero[5]?'Everyone folded':'You folded'} · Your result ${signed(hero[7])} BB`;
     $('next-button').innerHTML=hero[0]===0?'Rebuy 200 BB & deal <span>→</span>':'Deal next hand <span>→</span>';
     $('next-button').disabled=busy||failed;
   }
@@ -229,7 +224,7 @@ function acceptState(next, before, checkpoint) {
   }
   if (Cash.should_record(isDone(),state[15],recordedHand)) {
     const net=seat(state,0)[7]; session=Core.record(Math.max(0,net),Math.max(0,-net),session); recordedHand=state[15];
-    if(net>0)soundEffect('win');
+    soundEffect(net>0?'win':'pot');
     addHistory('You',net>0?'win':net<0?'finish':'split',`${signed(net)} BB`);
   }
   render(before);
@@ -251,7 +246,7 @@ function scheduleBot() {
       if(generation!==tableGeneration)return;
       logAction(before,reply.action); busy=false; acceptState(reply.state,before,reply.checkpoint);
     } catch(error) {if(generation!==tableGeneration)return; fail(error);}
-  },settings.pace);
+  },settings.pace===80?80:settings.pace===900?1300:900);
 }
 function fail(error) {busy=false;failed=true;clearTimeout(botTimer);tellError(`The table paused: ${error.message}. Open Table settings to start again.`);if(state)render(state);}
 async function act(action) {
@@ -263,7 +258,7 @@ async function act(action) {
 }
 async function openTable(nextSettings,saved=null) {
   generation++;clearTimeout(botTimer);worker?.terminate();pending.forEach(p=>p.reject(Error('Table replaced.')));pending.clear();
-  settings=nextSettings; busy=true;failed=false;state=undefined;history=[];lastActions=[];recordedHand=0;session=Core.empty();actionEffects.clear();latestAction='';latestCheckpoint=null;buyins=20000;tableBuyins=Array(settings.players).fill(20000);lastLearning=null;
+  tableView.s=null;tableView.version='';settings=nextSettings; busy=true;failed=false;state=undefined;history=[];lastActions=[];recordedHand=0;session=Core.empty();latestAction='';latestCheckpoint=null;buyins=20000;tableBuyins=Array(settings.players).fill(20000);lastLearning=null;
   $('history').innerHTML='';$('table-message').textContent='Shuffling the deck…';$('turn-label').textContent='Opening the table';
   worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
   worker.onmessage=({data})=>{const p=pending.get(data.id);if(!p)return;pending.delete(data.id);data.error?p.reject(Error(data.error)):p.resolve(data);};
@@ -276,7 +271,7 @@ async function openTable(nextSettings,saved=null) {
     if(generation!==tableGeneration)return;
     if(saved){
       if(JSON.stringify(reply.state)!==JSON.stringify(saved.publicState))throw Error('Saved hand did not replay exactly.');
-      session={...Core.empty(),...saved.session};buyins=saved.buyins;tableBuyins=saved.tableBuyins;recordedHand=saved.recordedHand;history=saved.history;lastActions=saved.lastActions;latestAction=typeof saved.latestAction==='string'?saved.latestAction.slice(0,200):'';sound=!!saved.sound;showBest=saved.showBest!==false;renderHistory();
+      session={...Core.empty(),...saved.session};buyins=saved.buyins;tableBuyins=saved.tableBuyins;recordedHand=saved.recordedHand;history=saved.history;lastActions=saved.lastActions;latestAction=typeof saved.latestAction==='string'?saved.latestAction.slice(0,200):'';sound=!!saved.sound;showBest=false;renderHistory();
     }else addHistory('','PREFLOP','','history-street');
     busy=false;acceptState(reply.state,undefined,reply.checkpoint);
     if(saved&&heroTurn()&&Number.isInteger(saved.selectedRaise))setRaise(saved.selectedRaise);
@@ -294,7 +289,7 @@ document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{
 $('next-button').onclick=async()=>{
   if(busy||!isDone()||failed)return;
   const previous=state,stacks=Array.from({length:settings.players},(_,p)=>Cash.next_stack(seat(state,p)[0],20000));
-  busy=true;render(state);lastActions=[];actionEffects.clear();latestAction='';lastLearning=null;
+  busy=true;render(state);lastActions=[];latestAction='';lastLearning=null;
   const tableGeneration=generation;
   try {const reply=await request('next',{stacks});if(generation!==tableGeneration)return;
     for(let p=0;p<settings.players;p++)if(seat(previous,p)[0]===0){tableBuyins[p]+=20000;if(p===0)buyins+=20000;addHistory(label(p),'rebuys','200 BB');}
