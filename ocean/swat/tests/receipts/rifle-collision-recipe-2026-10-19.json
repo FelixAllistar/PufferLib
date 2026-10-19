@@ -1,0 +1,36 @@
+{
+  "kind": "source-recipe-qualification",
+  "change": "Add standalone original-rifle conservative collision-envelope importer;future weaponholding integration uses the same byte-exact generated data",
+  "runtime_protocol": 45,
+  "runtime_install_changed": false,
+  "base_runtime_receipt": {
+    "path": "ocean/swat/tests/receipts/picnic-integration-2026-10-19.json",
+    "sha256": "3d8bca348a193ebbfbbd87b3e066f0e825406e72b4e7544a629ab0892afe033b"
+  },
+  "tool": {
+    "path": "ocean/swat/tools/import_rifle_collision.cjs",
+    "sha256": "52306262275352ee6e18eb6d891133704e53d10428aea96ff1556d6060eefb79"
+  },
+  "source": {
+    "path": "ocean/swat/assets/weapons/rifle7_rigid_textured.glb",
+    "sha256": "011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a",
+    "triangles": 14762
+  },
+  "generated_header_sha256": "f807ec9f8a42fd762baca461018efccf4c4ba15599b517fbec47e8e08f260d38",
+  "qualification": {
+    "write_and_check_byteidentical": true,
+    "conservative_sections": 4,
+    "wrong_source_refused_without_output_change": true,
+    "inplace_source_overwrite_refused": true,
+    "installed_runtime_hashes_still_match": 69,
+    "pinned_runtime_source_files_still_match": 286,
+    "pinned_runtime_auxiliary_files_still_match": 14
+  },
+  "proof": {
+    "path": "build/swat/review/rifle-collision-recipe-install-v1/ARTIFACT_INDEX.json",
+    "sha256": "7141f9e7dad5fac6dc2bc04292047633d6f045443e119dc4941e4814107f2809"
+  },
+  "usage": "node ocean/swat/tools/import_rifle_collision.cjs INPUT.glb OUTPUT.h [--check]",
+  "limits": "Conservative envelopes only;runtime47weaponhold/bodyintegration,visual/bodycontactacceptance andperformance remain separate. Runtime45executables/assets are unchanged.",
+  "full_slice_complete": false
+}
