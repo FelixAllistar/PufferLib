@@ -383,3 +383,7 @@ solidity, shadow invalidation and late replicas. This art increment retains
 protocol/replay v26 and exact existing door journals. The subsequent jamb-support
 behavior requires matching v27 builds and fresh recordings/saves; its headless
 checks do not constitute a new graphical or performance acceptance pass.
+
+## Front-court picnic table
+
+The original BC_PT01 now uses source-exact sparse collision, independent timber/fastener damage and retained original material/UV data. The intact visible model submits its eight source material primitives once; damaged selections reuse the same material owner. Shadow/contact passes select independently culled owners. See [PICNIC_ART.md](PICNIC_ART.md) for scale, ownership, failure rules, rebuild commands and verification limits. This authored fixture is separate from the decorative generated-tabletop recipe above.

@@ -1,0 +1,1179 @@
+{
+  "source_sha256": "832407ad8d7883de2bf045c7d3249ec2f6ee8dde72aeb92b04ef300f429fe8b4",
+  "components": [
+    {
+      "id": 0,
+      "name": "Bench_Front_Plank_01",
+      "mesh": 0,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 0,
+      "triangles": 228
+    },
+    {
+      "id": 1,
+      "name": "Bench_Front_Plank_02",
+      "mesh": 0,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 228,
+      "triangles": 244
+    },
+    {
+      "id": 2,
+      "name": "Bench_Front_Bolt_1_L_Washer",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 0,
+      "triangles": 36
+    },
+    {
+      "id": 3,
+      "name": "Bench_Front_Bolt_1_L_HexHead",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 36,
+      "triangles": 68
+    },
+    {
+      "id": 4,
+      "name": "Bench_Front_Bolt_1_R_Washer",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 104,
+      "triangles": 36
+    },
+    {
+      "id": 5,
+      "name": "Bench_Front_Bolt_1_R_HexHead",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 140,
+      "triangles": 68
+    },
+    {
+      "id": 6,
+      "name": "Bench_Front_Bolt_2_L_Washer",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 208,
+      "triangles": 36
+    },
+    {
+      "id": 7,
+      "name": "Bench_Front_Bolt_2_L_HexHead",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 244,
+      "triangles": 68
+    },
+    {
+      "id": 8,
+      "name": "Bench_Front_Bolt_2_R_Washer",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 312,
+      "triangles": 36
+    },
+    {
+      "id": 9,
+      "name": "Bench_Front_Bolt_2_R_HexHead",
+      "mesh": 0,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 348,
+      "triangles": 68
+    },
+    {
+      "id": 10,
+      "name": "Bench_Rear_Plank_01",
+      "mesh": 1,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 0,
+      "triangles": 244
+    },
+    {
+      "id": 11,
+      "name": "Bench_Rear_Plank_02",
+      "mesh": 1,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 244,
+      "triangles": 228
+    },
+    {
+      "id": 12,
+      "name": "Bench_Rear_Bolt_1_L_Washer",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 0,
+      "triangles": 36
+    },
+    {
+      "id": 13,
+      "name": "Bench_Rear_Bolt_1_L_HexHead",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 36,
+      "triangles": 68
+    },
+    {
+      "id": 14,
+      "name": "Bench_Rear_Bolt_1_R_Washer",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 104,
+      "triangles": 36
+    },
+    {
+      "id": 15,
+      "name": "Bench_Rear_Bolt_1_R_HexHead",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 140,
+      "triangles": 68
+    },
+    {
+      "id": 16,
+      "name": "Bench_Rear_Bolt_2_L_Washer",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 208,
+      "triangles": 36
+    },
+    {
+      "id": 17,
+      "name": "Bench_Rear_Bolt_2_L_HexHead",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 244,
+      "triangles": 68
+    },
+    {
+      "id": 18,
+      "name": "Bench_Rear_Bolt_2_R_Washer",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 312,
+      "triangles": 36
+    },
+    {
+      "id": 19,
+      "name": "Bench_Rear_Bolt_2_R_HexHead",
+      "mesh": 1,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 348,
+      "triangles": 68
+    },
+    {
+      "id": 20,
+      "name": "Frame_Left_Leg_Front",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 0,
+      "triangles": 44
+    },
+    {
+      "id": 21,
+      "name": "Frame_Left_Leg_Rear",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 44,
+      "triangles": 44
+    },
+    {
+      "id": 22,
+      "name": "Frame_Left_SeatBearer",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 88,
+      "triangles": 44
+    },
+    {
+      "id": 23,
+      "name": "Frame_Left_TopBearer",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 132,
+      "triangles": 44
+    },
+    {
+      "id": 24,
+      "name": "Frame_Right_Leg_Front",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 176,
+      "triangles": 44
+    },
+    {
+      "id": 25,
+      "name": "Frame_Right_Leg_Rear",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 220,
+      "triangles": 44
+    },
+    {
+      "id": 26,
+      "name": "Frame_Right_SeatBearer",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 264,
+      "triangles": 44
+    },
+    {
+      "id": 27,
+      "name": "Frame_Right_TopBearer",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 308,
+      "triangles": 44
+    },
+    {
+      "id": 28,
+      "name": "Frame_LongitudinalSpine",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 352,
+      "triangles": 44
+    },
+    {
+      "id": 29,
+      "name": "Frame_LongitudinalBrace_Left",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 396,
+      "triangles": 44
+    },
+    {
+      "id": 30,
+      "name": "Frame_LongitudinalBrace_Right",
+      "mesh": 2,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 440,
+      "triangles": 44
+    },
+    {
+      "id": 31,
+      "name": "Frame_Left_Front_Seat_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 0,
+      "triangles": 36
+    },
+    {
+      "id": 32,
+      "name": "Frame_Left_Front_Seat_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 36,
+      "triangles": 68
+    },
+    {
+      "id": 33,
+      "name": "Frame_Left_Front_Top_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 104,
+      "triangles": 36
+    },
+    {
+      "id": 34,
+      "name": "Frame_Left_Front_Top_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 140,
+      "triangles": 68
+    },
+    {
+      "id": 35,
+      "name": "Frame_Left_Rear_Seat_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 208,
+      "triangles": 36
+    },
+    {
+      "id": 36,
+      "name": "Frame_Left_Rear_Seat_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 244,
+      "triangles": 68
+    },
+    {
+      "id": 37,
+      "name": "Frame_Left_Rear_Top_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 312,
+      "triangles": 36
+    },
+    {
+      "id": 38,
+      "name": "Frame_Left_Rear_Top_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 348,
+      "triangles": 68
+    },
+    {
+      "id": 39,
+      "name": "Frame_Right_Front_Seat_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 416,
+      "triangles": 36
+    },
+    {
+      "id": 40,
+      "name": "Frame_Right_Front_Seat_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 452,
+      "triangles": 68
+    },
+    {
+      "id": 41,
+      "name": "Frame_Right_Front_Top_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 520,
+      "triangles": 36
+    },
+    {
+      "id": 42,
+      "name": "Frame_Right_Front_Top_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 556,
+      "triangles": 68
+    },
+    {
+      "id": 43,
+      "name": "Frame_Right_Rear_Seat_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 624,
+      "triangles": 36
+    },
+    {
+      "id": 44,
+      "name": "Frame_Right_Rear_Seat_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 660,
+      "triangles": 68
+    },
+    {
+      "id": 45,
+      "name": "Frame_Right_Rear_Top_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 728,
+      "triangles": 36
+    },
+    {
+      "id": 46,
+      "name": "Frame_Right_Rear_Top_HexNut",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 764,
+      "triangles": 68
+    },
+    {
+      "id": 47,
+      "name": "Frame_Brace_LeftLower_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 832,
+      "triangles": 36
+    },
+    {
+      "id": 48,
+      "name": "Frame_Brace_LeftLower_HexHead",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 868,
+      "triangles": 68
+    },
+    {
+      "id": 49,
+      "name": "Frame_Brace_LeftUpper_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 936,
+      "triangles": 36
+    },
+    {
+      "id": 50,
+      "name": "Frame_Brace_LeftUpper_HexHead",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 972,
+      "triangles": 68
+    },
+    {
+      "id": 51,
+      "name": "Frame_Brace_RightLower_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 1040,
+      "triangles": 36
+    },
+    {
+      "id": 52,
+      "name": "Frame_Brace_RightLower_HexHead",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 1076,
+      "triangles": 68
+    },
+    {
+      "id": 53,
+      "name": "Frame_Brace_RightUpper_Washer",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 1144,
+      "triangles": 36
+    },
+    {
+      "id": 54,
+      "name": "Frame_Brace_RightUpper_HexHead",
+      "mesh": 2,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 1180,
+      "triangles": 68
+    },
+    {
+      "id": 55,
+      "name": "Tabletop_Plank_01",
+      "mesh": 3,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 0,
+      "triangles": 244
+    },
+    {
+      "id": 56,
+      "name": "Tabletop_Plank_02",
+      "mesh": 3,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 244,
+      "triangles": 244
+    },
+    {
+      "id": 57,
+      "name": "Tabletop_Plank_03",
+      "mesh": 3,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 488,
+      "triangles": 228
+    },
+    {
+      "id": 58,
+      "name": "Tabletop_Plank_04",
+      "mesh": 3,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 716,
+      "triangles": 244
+    },
+    {
+      "id": 59,
+      "name": "Tabletop_Plank_05",
+      "mesh": 3,
+      "primitive": 0,
+      "material": 0,
+      "kind": "wood",
+      "first_triangle": 960,
+      "triangles": 244
+    },
+    {
+      "id": 60,
+      "name": "Tabletop_Bolt_1_L_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 0,
+      "triangles": 36
+    },
+    {
+      "id": 61,
+      "name": "Tabletop_Bolt_1_L_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 36,
+      "triangles": 68
+    },
+    {
+      "id": 62,
+      "name": "Tabletop_Bolt_1_R_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 104,
+      "triangles": 36
+    },
+    {
+      "id": 63,
+      "name": "Tabletop_Bolt_1_R_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 140,
+      "triangles": 68
+    },
+    {
+      "id": 64,
+      "name": "Tabletop_Bolt_2_L_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 208,
+      "triangles": 36
+    },
+    {
+      "id": 65,
+      "name": "Tabletop_Bolt_2_L_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 244,
+      "triangles": 68
+    },
+    {
+      "id": 66,
+      "name": "Tabletop_Bolt_2_R_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 312,
+      "triangles": 36
+    },
+    {
+      "id": 67,
+      "name": "Tabletop_Bolt_2_R_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 348,
+      "triangles": 68
+    },
+    {
+      "id": 68,
+      "name": "Tabletop_Bolt_3_L_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 416,
+      "triangles": 36
+    },
+    {
+      "id": 69,
+      "name": "Tabletop_Bolt_3_L_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 452,
+      "triangles": 68
+    },
+    {
+      "id": 70,
+      "name": "Tabletop_Bolt_3_R_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 520,
+      "triangles": 36
+    },
+    {
+      "id": 71,
+      "name": "Tabletop_Bolt_3_R_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 556,
+      "triangles": 68
+    },
+    {
+      "id": 72,
+      "name": "Tabletop_Bolt_4_L_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 624,
+      "triangles": 36
+    },
+    {
+      "id": 73,
+      "name": "Tabletop_Bolt_4_L_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 660,
+      "triangles": 68
+    },
+    {
+      "id": 74,
+      "name": "Tabletop_Bolt_4_R_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 728,
+      "triangles": 36
+    },
+    {
+      "id": 75,
+      "name": "Tabletop_Bolt_4_R_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 764,
+      "triangles": 68
+    },
+    {
+      "id": 76,
+      "name": "Tabletop_Bolt_5_L_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 832,
+      "triangles": 36
+    },
+    {
+      "id": 77,
+      "name": "Tabletop_Bolt_5_L_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 868,
+      "triangles": 68
+    },
+    {
+      "id": 78,
+      "name": "Tabletop_Bolt_5_R_Washer",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 936,
+      "triangles": 36
+    },
+    {
+      "id": 79,
+      "name": "Tabletop_Bolt_5_R_HexHead",
+      "mesh": 3,
+      "primitive": 1,
+      "material": 1,
+      "kind": "steel",
+      "first_triangle": 972,
+      "triangles": 68
+    }
+  ],
+  "contacts": [
+    {
+      "a": "Frame_Left_Leg_Front",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Frame_Left_Leg_Front",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Frame_Left_Front_Seat_Washer",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Frame_Left_Front_Seat_HexNut",
+      "b": "Frame_Left_Front_Seat_Washer"
+    },
+    {
+      "a": "Frame_Left_Front_Top_Washer",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Frame_Left_Front_Top_HexNut",
+      "b": "Frame_Left_Front_Top_Washer"
+    },
+    {
+      "a": "Frame_Left_Leg_Rear",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Frame_Left_Leg_Rear",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Frame_Left_Rear_Seat_Washer",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Frame_Left_Rear_Seat_HexNut",
+      "b": "Frame_Left_Rear_Seat_Washer"
+    },
+    {
+      "a": "Frame_Left_Rear_Top_Washer",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Frame_Left_Rear_Top_HexNut",
+      "b": "Frame_Left_Rear_Top_Washer"
+    },
+    {
+      "a": "Tabletop_Plank_01",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_02",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_03",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_04",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_05",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Bench_Front_Plank_01",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Bench_Front_Plank_02",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Bench_Rear_Plank_01",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Bench_Rear_Plank_02",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Frame_LongitudinalSpine",
+      "b": "Frame_Left_TopBearer"
+    },
+    {
+      "a": "Frame_LongitudinalBrace_Left",
+      "b": "Frame_Left_SeatBearer"
+    },
+    {
+      "a": "Frame_LongitudinalBrace_Left",
+      "b": "Frame_LongitudinalSpine"
+    },
+    {
+      "a": "Frame_Brace_LeftLower_Washer",
+      "b": "Frame_LongitudinalBrace_Left"
+    },
+    {
+      "a": "Frame_Brace_LeftLower_HexHead",
+      "b": "Frame_Brace_LeftLower_Washer"
+    },
+    {
+      "a": "Frame_Brace_LeftUpper_Washer",
+      "b": "Frame_LongitudinalBrace_Left"
+    },
+    {
+      "a": "Frame_Brace_LeftUpper_HexHead",
+      "b": "Frame_Brace_LeftUpper_Washer"
+    },
+    {
+      "a": "Frame_Right_Leg_Front",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Frame_Right_Leg_Front",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Frame_Right_Front_Seat_Washer",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Frame_Right_Front_Seat_HexNut",
+      "b": "Frame_Right_Front_Seat_Washer"
+    },
+    {
+      "a": "Frame_Right_Front_Top_Washer",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Frame_Right_Front_Top_HexNut",
+      "b": "Frame_Right_Front_Top_Washer"
+    },
+    {
+      "a": "Frame_Right_Leg_Rear",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Frame_Right_Leg_Rear",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Frame_Right_Rear_Seat_Washer",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Frame_Right_Rear_Seat_HexNut",
+      "b": "Frame_Right_Rear_Seat_Washer"
+    },
+    {
+      "a": "Frame_Right_Rear_Top_Washer",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Frame_Right_Rear_Top_HexNut",
+      "b": "Frame_Right_Rear_Top_Washer"
+    },
+    {
+      "a": "Tabletop_Plank_01",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_02",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_03",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_04",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Tabletop_Plank_05",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Bench_Front_Plank_01",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Bench_Front_Plank_02",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Bench_Rear_Plank_01",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Bench_Rear_Plank_02",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Frame_LongitudinalSpine",
+      "b": "Frame_Right_TopBearer"
+    },
+    {
+      "a": "Frame_LongitudinalBrace_Right",
+      "b": "Frame_Right_SeatBearer"
+    },
+    {
+      "a": "Frame_LongitudinalBrace_Right",
+      "b": "Frame_LongitudinalSpine"
+    },
+    {
+      "a": "Frame_Brace_RightLower_Washer",
+      "b": "Frame_LongitudinalBrace_Right"
+    },
+    {
+      "a": "Frame_Brace_RightLower_HexHead",
+      "b": "Frame_Brace_RightLower_Washer"
+    },
+    {
+      "a": "Frame_Brace_RightUpper_Washer",
+      "b": "Frame_LongitudinalBrace_Right"
+    },
+    {
+      "a": "Frame_Brace_RightUpper_HexHead",
+      "b": "Frame_Brace_RightUpper_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_1_L_Washer",
+      "b": "Tabletop_Plank_01"
+    },
+    {
+      "a": "Tabletop_Bolt_1_L_HexHead",
+      "b": "Tabletop_Bolt_1_L_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_1_R_Washer",
+      "b": "Tabletop_Plank_01"
+    },
+    {
+      "a": "Tabletop_Bolt_1_R_HexHead",
+      "b": "Tabletop_Bolt_1_R_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_2_L_Washer",
+      "b": "Tabletop_Plank_02"
+    },
+    {
+      "a": "Tabletop_Bolt_2_L_HexHead",
+      "b": "Tabletop_Bolt_2_L_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_2_R_Washer",
+      "b": "Tabletop_Plank_02"
+    },
+    {
+      "a": "Tabletop_Bolt_2_R_HexHead",
+      "b": "Tabletop_Bolt_2_R_Washer"
+    },
+    {
+      "a": "Tabletop_Plank_03",
+      "b": "Frame_LongitudinalSpine"
+    },
+    {
+      "a": "Tabletop_Bolt_3_L_Washer",
+      "b": "Tabletop_Plank_03"
+    },
+    {
+      "a": "Tabletop_Bolt_3_L_HexHead",
+      "b": "Tabletop_Bolt_3_L_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_3_R_Washer",
+      "b": "Tabletop_Plank_03"
+    },
+    {
+      "a": "Tabletop_Bolt_3_R_HexHead",
+      "b": "Tabletop_Bolt_3_R_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_4_L_Washer",
+      "b": "Tabletop_Plank_04"
+    },
+    {
+      "a": "Tabletop_Bolt_4_L_HexHead",
+      "b": "Tabletop_Bolt_4_L_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_4_R_Washer",
+      "b": "Tabletop_Plank_04"
+    },
+    {
+      "a": "Tabletop_Bolt_4_R_HexHead",
+      "b": "Tabletop_Bolt_4_R_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_5_L_Washer",
+      "b": "Tabletop_Plank_05"
+    },
+    {
+      "a": "Tabletop_Bolt_5_L_HexHead",
+      "b": "Tabletop_Bolt_5_L_Washer"
+    },
+    {
+      "a": "Tabletop_Bolt_5_R_Washer",
+      "b": "Tabletop_Plank_05"
+    },
+    {
+      "a": "Tabletop_Bolt_5_R_HexHead",
+      "b": "Tabletop_Bolt_5_R_Washer"
+    },
+    {
+      "a": "Bench_Front_Bolt_1_L_Washer",
+      "b": "Bench_Front_Plank_01"
+    },
+    {
+      "a": "Bench_Front_Bolt_1_L_HexHead",
+      "b": "Bench_Front_Bolt_1_L_Washer"
+    },
+    {
+      "a": "Bench_Front_Bolt_1_R_Washer",
+      "b": "Bench_Front_Plank_01"
+    },
+    {
+      "a": "Bench_Front_Bolt_1_R_HexHead",
+      "b": "Bench_Front_Bolt_1_R_Washer"
+    },
+    {
+      "a": "Bench_Front_Bolt_2_L_Washer",
+      "b": "Bench_Front_Plank_02"
+    },
+    {
+      "a": "Bench_Front_Bolt_2_L_HexHead",
+      "b": "Bench_Front_Bolt_2_L_Washer"
+    },
+    {
+      "a": "Bench_Front_Bolt_2_R_Washer",
+      "b": "Bench_Front_Plank_02"
+    },
+    {
+      "a": "Bench_Front_Bolt_2_R_HexHead",
+      "b": "Bench_Front_Bolt_2_R_Washer"
+    },
+    {
+      "a": "Bench_Rear_Bolt_1_L_Washer",
+      "b": "Bench_Rear_Plank_01"
+    },
+    {
+      "a": "Bench_Rear_Bolt_1_L_HexHead",
+      "b": "Bench_Rear_Bolt_1_L_Washer"
+    },
+    {
+      "a": "Bench_Rear_Bolt_1_R_Washer",
+      "b": "Bench_Rear_Plank_01"
+    },
+    {
+      "a": "Bench_Rear_Bolt_1_R_HexHead",
+      "b": "Bench_Rear_Bolt_1_R_Washer"
+    },
+    {
+      "a": "Bench_Rear_Bolt_2_L_Washer",
+      "b": "Bench_Rear_Plank_02"
+    },
+    {
+      "a": "Bench_Rear_Bolt_2_L_HexHead",
+      "b": "Bench_Rear_Bolt_2_L_Washer"
+    },
+    {
+      "a": "Bench_Rear_Bolt_2_R_Washer",
+      "b": "Bench_Rear_Plank_02"
+    },
+    {
+      "a": "Bench_Rear_Bolt_2_R_HexHead",
+      "b": "Bench_Rear_Bolt_2_R_Washer"
+    }
+  ]
+}

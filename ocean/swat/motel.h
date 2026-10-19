@@ -42,7 +42,10 @@
 #define SWAT_MOTEL_TRANSFORMER_FIRST SWAT_MOTEL_ROADSIDE_END
 #define SWAT_MOTEL_TRANSFORMER_PARTS 4
 #define SWAT_MOTEL_TRANSFORMER_ASSET_FIRST 63
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_TRANSFORMER_FIRST+SWAT_MOTEL_TRANSFORMER_PARTS)
+#define SWAT_MOTEL_TRANSFORMER_END (SWAT_MOTEL_TRANSFORMER_FIRST+SWAT_MOTEL_TRANSFORMER_PARTS)
+#define SWAT_MOTEL_PICNIC_FIRST SWAT_MOTEL_TRANSFORMER_END
+#define SWAT_MOTEL_PICNIC_PARTS 50
+#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_PICNIC_FIRST+SWAT_MOTEL_PICNIC_PARTS)
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -96,6 +99,12 @@ typedef struct SwatRoadsidePart {
     int parents[SWAT_MAX_SUPPORTS];
     const b3Vec3* anchors;int anchor_count;
 } SwatRoadsidePart;
+typedef struct SwatPicnicComponent {int owner,mesh,triangles;const int* source_triangles;} SwatPicnicComponent;
+bool swat_motel_picnic(const SwatWorld*,int owner,SwatMotelInstance*);
+const SwatRoadsidePart* swat_motel_picnic_part(int part);
+const SwatPicnicComponent* swat_motel_picnic_component(int component);
+uint64_t swat_motel_picnic_mask(const SwatWorld*);
+uint64_t swat_motel_picnic_unstable_roots(const SwatWorld*);
 const SwatRoadsidePart* swat_motel_roadside_part(int model,int part);
 int swat_motel_roadside_count(int model);
 int swat_motel_roadside_triangle(int model,int triangle);

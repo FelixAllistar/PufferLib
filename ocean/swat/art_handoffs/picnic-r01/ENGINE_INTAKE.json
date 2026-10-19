@@ -1,0 +1,239 @@
+{
+  "asset_id": "BC_PT01",
+  "revision": "r01",
+  "source_handoff": {
+    "file_id": "1WOV02t6Zesn49_rM8lHlwwGnebpl0u4w",
+    "name": "BC_PT01_weathered_picnic_table_r01_candidate.zip",
+    "mime_type": "application/zip",
+    "bytes": 29702785,
+    "drive_url": "https://drive.google.com/file/d/1WOV02t6Zesn49_rM8lHlwwGnebpl0u4w/view?usp=drivesdk",
+    "approval_report": "Blenderbot reports Felix approved BC_PT01 in the established public project thread",
+    "approval_message": "1792380786.398969",
+    "package_message": "1792380797.559519",
+    "download_method": "Connected Google Drive raw file reference; signed download token not retained"
+  },
+  "archive": {
+    "path": "build/swat/review/picnic-table-intake/source.zip",
+    "bytes": 29702785,
+    "sha256": "d6d013cfe917fafcb184b23885c0195cd0639018a1586a04a4f9cc9ae8b78419"
+  },
+  "runtime": {
+    "path": "build/swat/review/picnic-table-intake/extracted/runtime/BC_PT01_picnic_table.glb",
+    "bytes": 4713628,
+    "sha256": "832407ad8d7883de2bf045c7d3249ec2f6ee8dde72aeb92b04ef300f429fe8b4",
+    "triangles": 5752,
+    "decoded_vertices": 13256,
+    "owners": [
+      {
+        "name": "BC_PT01_Bench_Front",
+        "triangles": 888,
+        "primitives": [
+          {
+            "material": 0,
+            "triangles": 472
+          },
+          {
+            "material": 1,
+            "triangles": 416
+          }
+        ]
+      },
+      {
+        "name": "BC_PT01_Bench_Rear",
+        "triangles": 888,
+        "primitives": [
+          {
+            "material": 0,
+            "triangles": 472
+          },
+          {
+            "material": 1,
+            "triangles": 416
+          }
+        ]
+      },
+      {
+        "name": "BC_PT01_Frame",
+        "triangles": 1732,
+        "primitives": [
+          {
+            "material": 0,
+            "triangles": 484
+          },
+          {
+            "material": 1,
+            "triangles": 1248
+          }
+        ]
+      },
+      {
+        "name": "BC_PT01_Tabletop",
+        "triangles": 2244,
+        "primitives": [
+          {
+            "material": 0,
+            "triangles": 1204
+          },
+          {
+            "material": 1,
+            "triangles": 1040
+          }
+        ]
+      }
+    ],
+    "bounds": [
+      [
+        -0.899899959564209,
+        0,
+        -0.7749999761581421
+      ],
+      [
+        0.8999506831169128,
+        0.765999972820282,
+        0.7749999761581421
+      ]
+    ],
+    "primitives": 8,
+    "materials": [
+      {
+        "name": "BC_PT01_WeatheredTimber",
+        "normalTexture": {
+          "index": 0,
+          "scale": 0.550000011920929
+        },
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 1
+          },
+          "metallicFactor": 0,
+          "metallicRoughnessTexture": {
+            "index": 2
+          }
+        }
+      },
+      {
+        "name": "BC_PT01_OxidizedHardware",
+        "pbrMetallicRoughness": {
+          "baseColorFactor": [
+            0.10499999672174454,
+            0.0820000022649765,
+            0.061000000685453415,
+            1
+          ],
+          "metallicFactor": 0.7200000286102295,
+          "roughnessFactor": 0.6700000166893005
+        }
+      }
+    ],
+    "images": [
+      {
+        "name": "BC_PT01_timber_normal",
+        "width": 2048,
+        "height": 1024,
+        "png_color_type": 2,
+        "sha256": "a14e77585564d1c90edd10cae98d37c0bb4b528c5e2a07fce5b238560d278e10"
+      },
+      {
+        "name": "BC_PT01_timber_basecolor",
+        "width": 2048,
+        "height": 1024,
+        "png_color_type": 2,
+        "sha256": "e96531734454fe7cace490742869ea45d7a14b9fbee3797ec15465ffbf1d2c5c"
+      },
+      {
+        "name": "BC_PT01_timber_roughness",
+        "width": 2048,
+        "height": 1024,
+        "png_color_type": 2,
+        "sha256": "e29eab5a18b1fed35e87715e8424648cc28c80246e179151df4f1ac4f1b8e403"
+      }
+    ]
+  },
+  "provenance": {
+    "asset_id": "BC_PT01",
+    "work": "Original task-authored static environmental art",
+    "date_utc": "2026-10-19",
+    "authoring_tools": {
+      "Blender": "4.3.2",
+      "Python": "3.12.14",
+      "NumPy": "2.3.5",
+      "Pillow": "12.3.0",
+      "glTF_exporter": "Khronos glTF Blender I/O v4.3.47"
+    },
+    "geometry": "Original numeric dimensions and construction in source/build_picnic_table.py; no input model, reference mesh or external geometry reused.",
+    "textures": "Original seeded numeric timber-grain, sparse small knots, longitudinal checks and weathering maps from source/make_textures.py. No photographed, scraped, AI-image-generated or downloaded images used.",
+    "metal": "Original scalar PBR base colour [0.105,0.082,0.061], metallic 0.72, roughness 0.67.",
+    "external_input_assets": [],
+    "rights_note": "No inherited library license or blanket CC0 declaration is asserted for this new work. No third-party model or texture has been incorporated.",
+    "bounded_inventory_check": "qa/duplicate_gap_check.json",
+    "maps": [
+      {
+        "file": "source/maps/BC_PT01_timber_basecolor.png",
+        "sha256": "e96531734454fe7cace490742869ea45d7a14b9fbee3797ec15465ffbf1d2c5c",
+        "bytes": 1742725,
+        "role": "sRGB base colour",
+        "color_space": "sRGB",
+        "dimensions": [
+          2048,
+          1024
+        ]
+      },
+      {
+        "file": "source/maps/BC_PT01_timber_normal.png",
+        "sha256": "a14e77585564d1c90edd10cae98d37c0bb4b528c5e2a07fce5b238560d278e10",
+        "bytes": 1003392,
+        "role": "tangent normal",
+        "color_space": "Non-Color",
+        "dimensions": [
+          2048,
+          1024
+        ]
+      },
+      {
+        "file": "source/maps/BC_PT01_timber_roughness.png",
+        "sha256": "1b696472f98b0991203cd7cf7050fd06f361aaeef459a13c90a829e57761618f",
+        "bytes": 808712,
+        "role": "roughness",
+        "color_space": "Non-Color",
+        "dimensions": [
+          2048,
+          1024
+        ]
+      }
+    ],
+    "recipes": [
+      {
+        "file": "source/build_picnic_table.py",
+        "sha256": "a7b15ab59b7af1b50b04862d3c6bb1ec216dcbc1a8547b8eb6b02d3036361d69"
+      },
+      {
+        "file": "source/export_packed.py",
+        "sha256": "fa5c160714a837dc7c9deb5f4830e04aeab621fc9e25269ab2acadfee9211abe"
+      },
+      {
+        "file": "source/make_contact_sheet.py",
+        "sha256": "0069372b72b090478937dfdb3dd612918de097637e6918352a3b504b4515e8c4"
+      },
+      {
+        "file": "source/make_textures.py",
+        "sha256": "37c2bfeb005c58b8122e292c680d8a89af9eceb80f0a8721a3d7b230761552d9"
+      },
+      {
+        "file": "source/render_export.py",
+        "sha256": "9983b54b65a12e1932ad46329eda361fc73b2ef9c05524a0e2efed2bfab26eaf"
+      }
+    ]
+  },
+  "source_review": {
+    "source_view": {
+      "path": "build/swat/review/picnic-table-intake/extracted/previews/contact_sheet.jpg",
+      "sha256": "617da292392c331a37a2c26a1f6cd27c039112f15e652f85c0417bf4ecf61ad5"
+    },
+    "observation": "Inspected supplied actual-GLB contact sheet: weathered light timber, separate bench boards and tabletop gaps, A-frame legs, braces and seated hardware. No engine/native placement, collision, seating or damage acceptance.",
+    "native_acceptance": false
+  },
+  "accepted_source_sha256": "832407ad8d7883de2bf045c7d3249ec2f6ee8dde72aeb92b04ef300f429fe8b4",
+  "recipes_executed": false,
+  "python_executed": false,
+  "engine_scope": "Static source-preserving courtyard fixture; engine damage/support owners differ from four authored GLB nodes. No sitting interaction, dynamic joint rig or measured strength claim."
+}

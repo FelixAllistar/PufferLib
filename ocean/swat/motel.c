@@ -21,6 +21,7 @@
 #include "motel_dumpster_data.h"
 #include "motel_roadside_data.h"
 #include "motel_transformer_data.h"
+#include "motel_picnic_data.h"
 static const SwatMotelAsset* service_assets[]={&service0_asset,&service1_asset,&service2_asset,&service3_asset};
 static const SwatMotelInstance bag_instance={53,{-9.65f,.0055f,-9.4f},{1,1,1},0,SWAT_CLOTH,false,false};
 static const SwatMotelInstance cabinet_instance={54,{-10.7f,1.6f,-9.909f},{1,1,1},0,SWAT_STEEL,false,false};
@@ -382,7 +383,7 @@ static float nightstand_health(void){const SwatMaterialDef* m=swat_material(SWAT
 static void nightstand_recipe(b3Pos* center,b3Vec3* half){*center=b3OffsetPos(nightstand_instance.origin,nightstand_asset.center);*half=nightstand_asset.half;}
 static bool nightstand_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_NIGHTSTAND_FIRST)return true;
-    if(w->count!=SWAT_MOTEL_WINDOWS_FIRST && w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_ROADSIDE_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
+    if(w->count!=SWAT_MOTEL_WINDOWS_FIRST && w->count!=SWAT_MOTEL_WINDOWS_END && w->count!=SWAT_MOTEL_SEATING_END && w->count!=SWAT_MOTEL_BAG_END && w->count!=SWAT_MOTEL_CABINET_END && w->count!=SWAT_MOTEL_SERVICE_END && w->count!=SWAT_MOTEL_SCREWDRIVER_END && w->count!=SWAT_MOTEL_DUMPSTER_END && w->count!=SWAT_MOTEL_ROADSIDE_END && (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS))return false;
     const SwatObject* o=&w->objects[SWAT_MOTEL_NIGHTSTAND_FIRST];b3Pos center;b3Vec3 half;int supports[SWAT_MAX_SUPPORTS];nightstand_recipe(&center,&half);
     return floor_supports(w,&nightstand_instance,81,nightstand_feet,supports) && !memcmp(o->supports,supports,sizeof(supports)) &&
         b3Distance(center,o->center)<1e-4f && b3Length(b3Sub(half,o->half))<1e-4f && o->yaw==0 && o->pitch==0 &&
@@ -545,13 +546,14 @@ static void panes_bind(SwatWorld* w) {
 }
 #include "motel_windows_impl.h"
 #include "motel_roadside_impl.h"
+#include "motel_picnic_impl.h"
 bool swat_motel_bind_collision(SwatWorld* w) {
     // Canonical prefix remains stable; appended wall fragments use their explicit
     // wire geometry. Also retain the original map without utility props.
     if(w->count<SWAT_MOTEL_INSTANCES+1 && w->count!=SWAT_MOTEL_BASE_INSTANCES+1 && w->count!=SWAT_MOTEL_UTILITY_INSTANCES+1) return false;
     int instances=w->count==SWAT_MOTEL_BASE_INSTANCES+1?SWAT_MOTEL_BASE_INSTANCES:w->count==SWAT_MOTEL_UTILITY_INSTANCES+1?SWAT_MOTEL_UTILITY_INSTANCES:SWAT_MOTEL_INSTANCES;
     if(w->motel) return true;
-    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w) || !panes_validate(w) || !nightstand_validate(w) || !windows_validate(w) || !seating_validate(w) || !bag_validate(w) || !cabinet_validate(w) || !service_validate(w) || !screwdriver_validate(w) || !dumpster_validate(w) || !roadside_validate(w) || !transformer_validate(w))return false;
+    if(!fence_validate(w) || !surroundings_validate(w) || !ground_validate(w) || !mounted_validate(w) || !props_validate(w) || !panes_validate(w) || !nightstand_validate(w) || !windows_validate(w) || !seating_validate(w) || !bag_validate(w) || !cabinet_validate(w) || !service_validate(w) || !screwdriver_validate(w) || !dumpster_validate(w) || !roadside_validate(w) || !transformer_validate(w) || !picnic_validate(w))return false;
     for(int i=0;i<instances;i++) {
         b3Pos center; b3Vec3 half; float yaw; recipe(i,&center,&half,&yaw); const SwatObject* o=&w->objects[i+1];
         const SwatMotelInstance* p=swat_motel_instance(i);
@@ -606,6 +608,7 @@ bool swat_motel_bind_collision(SwatWorld* w) {
     dumpster_bind(w);
     roadside_bind(w);
     transformer_bind(w);
+    picnic_bind(w);
     w->motel=true; return true;
 }
 
@@ -869,6 +872,7 @@ void swat_motel_build(SwatWorld* w) {
     dumpster_build(w);
     roadside_build(w);
     transformer_build(w);
+    picnic_build(w);
     for(int i=0;i<5;i++) w->rooms[i]=(SwatRoom){{-10+4*i,1.4f,-3},{1.88f,1.4f,2.88f},SWAT_PLASTER,SWAT_CARPET};
     w->rooms[5]=(SwatRoom){{-10,1.4f,-8},{1.88f,1.4f,1.88f},SWAT_PLASTER,SWAT_TILE};w->room_count=6;
 }

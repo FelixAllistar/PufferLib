@@ -56,6 +56,7 @@ typedef struct SwatEnvironmentArt {
     float motel_number_normal_scale[3][SWAT_ROOM101_MATERIALS];
     Model motel_reception;
     Model motel_roadside;
+    struct SwatPicnicArt* picnic_art;
     Model roadside_props[2]; // Approved parked sedan and open-front shelter.
     float roadside_props_normal_scale[2][SWAT_ROOM101_MATERIALS];
     float motel_roadside_normal_scale[SWAT_ROOM101_MATERIALS];

@@ -210,6 +210,15 @@ bool swat_world_damage(SwatWorld* w, int object, float damage) {
             child->health=0;remove_object(w,child);break;
         }
     }
+    // An angled picnic leg needs an attached bearer to retain its source pose.
+    // Floor contact alone must not leave a loose, unsupported leg standing.
+    if(object>=SWAT_MOTEL_PICNIC_FIRST && object<SWAT_MOTEL_OBJECTS) {
+        uint64_t loose=swat_motel_picnic_unstable_roots(w);
+        for(int i=0;i<SWAT_MOTEL_PICNIC_PARTS;i++)if(loose&(UINT64_C(1)<<i)) {
+            SwatObject* leg=&w->objects[SWAT_MOTEL_PICNIC_FIRST+i];
+            leg->health=0;remove_object(w,leg);
+        }
+    }
     support_changed(w,object);door_frame_refresh(w);return true;
 }
 
