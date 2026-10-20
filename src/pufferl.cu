@@ -332,6 +332,10 @@ typedef struct {
     float ent_coef;
     float min_ent_coef_ratio;
     bool anneal_ent_coef;
+    float magnet_coef;
+    float min_magnet_coef_ratio;
+    bool anneal_magnet_coef;
+    float magnet_tau;
     float gamma;
     float gae_lambda;
     bool vtrace;
@@ -546,6 +550,7 @@ const char* LOSS_NAMES[] = {
     "loss/kl",
     "loss/clipfrac",
     "importance",
+    "loss/magnet_kl",
 };
 
 typedef struct {
@@ -565,6 +570,9 @@ typedef struct PuffeRL {
 #endif
     Policy* policies;        // [num_policies]; policies[0] trainable, rest frozen
     int num_policies;
+    Policy magnet;           // EMA/anchor of policies[0]; used when magnet_coef > 0
+    Activations magnet_activs;
+    Allocator magnet_grads;  // unused weight grads registered by arch_reg_train
     Weights actor_weights; // async rollout snapshot of policies[0]; unused when async=0
     Activations train_activs;
     Allocator weight_alloc;      // async actor weights
@@ -1680,6 +1688,13 @@ __global__ void puf_stamp(unsigned long long* dst) {
     *dst = t;
 }
 
+__global__ void magnet_ema(float* magnet, const float* policy, float tau, int n) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        magnet[i] = (1.0f - tau) * magnet[i] + tau * policy[i];
+    }
+}
+
 static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         cudaStream_t stream) {
     Hypers* hypers = &pufferl->hypers;
@@ -1762,6 +1777,15 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         if (dw_train->continuous) {
             p_logstd = dw_train->logstd;
         }
+        // Magnet first: it shares the learner's segment-start states, and its
+        // writes to mb_imp/mb_gae_v/grad_values are overwritten just below.
+        if (hypers->magnet_coef > 0) {
+            arch_forward_train(&pufferl->magnet.arch, pufferl->magnet.weights,
+                pufferl->magnet_activs, graph.mb_obs, graph.mb_state,
+                graph.mb_terminals, dest_off, graph, p_logstd, pufferl->act_sizes,
+                pufferl->ppo_bufs.magnet_logp.data, pufferl->ppo_bufs.grad_values.data,
+                stream);
+        }
         Prec dec = arch_forward_train(&primary->arch, primary->weights,
             pufferl->train_activs, graph.mb_obs, graph.mb_state,
             graph.mb_terminals, dest_off, graph, p_logstd,
@@ -1809,6 +1833,17 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
             cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
                 primary->param.data, primary->master_weights.data, n);
         }
+        // EMAgnet: one EMA step per full pass over the rollout (PPO epoch)
+        if (hypers->magnet_coef > 0 && (mb + 1) % (batch_size / hypers->minibatch_size) == 0) {
+            Policy* magnet = &pufferl->magnet;
+            int n = numel(magnet->master_weights.shape);
+            magnet_ema<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(magnet->master_weights.data,
+                primary->master_weights.data, hypers->magnet_tau, n);
+            if (USE_BF16) {
+                cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
+                    magnet->param.data, magnet->master_weights.data, n);
+            }
+        }
     }
     puf_stamp<<<1, 1, 0, stream>>>(st + TE_E);
 }
@@ -1846,6 +1881,15 @@ void train_impl(PuffeRL* pufferl, RolloutBuf* src_arg) {
     // Host write + H2D stay outside the graph; device ptr is what kernels read.
     cudaMemcpyAsync(pufferl->ppo_bufs.ent_coef, &current_ent_coef,
         sizeof(float), cudaMemcpyHostToDevice, train_stream);
+    if (hypers->magnet_coef > 0) {
+        float magnet_coef = hypers->magnet_coef;
+        if (hypers->anneal_magnet_coef) {
+            magnet_coef = cosine_annealing(magnet_coef,
+                hypers->min_magnet_coef_ratio * magnet_coef, current_epoch, total_epochs);
+        }
+        cudaMemcpyAsync(pufferl->ppo_bufs.magnet_coef, &magnet_coef,
+            sizeof(float), cudaMemcpyHostToDevice, train_stream);
+    }
 
     int slot = hypers->async ? pufferl->async_ready_slot : 0;
     int train_batch = pufferl->train_rollouts.observations.shape[0] * hypers->horizon;
@@ -1966,8 +2010,7 @@ const char* puf_checkpoint_path_key(Ini* ini, const char* key,
     return out;
 }
 
-void puf_save_weights(PuffeRL* p, const char* path) {
-    Float mw = p->policies[0].master_weights;
+void puf_save_weights(Float mw, const char* path) {
     int64_t nbytes = numel(mw.shape) * sizeof(float);
     char* buf = (char*)malloc(nbytes);
     cudaMemcpy(buf, mw.data, nbytes, cudaMemcpyDeviceToHost);
@@ -2069,6 +2112,10 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         .ent_coef = puf_ini_get(ini, "train", "ent_coef"),
         .min_ent_coef_ratio = puf_ini_get(ini, "train", "min_ent_coef_ratio"),
         .anneal_ent_coef = puf_ini_get(ini, "train", "anneal_ent_coef") != 0,
+        .magnet_coef = puf_ini_get(ini, "train", "magnet_coef"),
+        .min_magnet_coef_ratio = puf_ini_get(ini, "train", "min_magnet_coef_ratio"),
+        .anneal_magnet_coef = puf_ini_get(ini, "train", "anneal_magnet_coef") != 0,
+        .magnet_tau = puf_ini_get(ini, "train", "magnet_tau"),
         .gamma = puf_ini_get(ini, "train", "gamma"),
         .gae_lambda = puf_ini_get(ini, "train", "gae_lambda"),
         .vtrace = puf_ini_get(ini, "train", "vtrace") != 0,
@@ -2257,6 +2304,14 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     }
     pufferl->train_activs = arch_reg_train(
         &primary->arch, primary->weights, acts, grads, B_TT);
+    Policy* magnet = &pufferl->magnet;
+    if (hypers.magnet_coef > 0) {
+        assert(!is_continuous && "magnet KL supports discrete actions only");
+        magnet->arch = primary->arch;
+        magnet->weights = weights_create(&magnet->arch, &magnet->params_alloc);
+        pufferl->magnet_activs = arch_reg_train(&magnet->arch, magnet->weights,
+            acts, &pufferl->magnet_grads, B_TT);
+    }
 
     // Async is Cleanba 2-slot only (lag 1). Sync uses a single slot.
     int async_slots = hypers.async ? 2 : 1;
@@ -2274,7 +2329,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     register_rollout_buffers(&pufferl->train_rollouts,
         acts, train_agents, horizon, input_size, num_action_heads, act_n);
     register_ppo_buffers(pufferl->ppo_bufs, acts, minibatch_segments,
-        hypers.horizon, decoder_output_size, is_continuous);
+        hypers.horizon, decoder_output_size, is_continuous, hypers.magnet_coef > 0);
     pufferl->train_state = {.shape = {num_layers, train_agents, hidden_size}};
     alloc_register(acts, &pufferl->train_state);
 
@@ -2299,6 +2354,16 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     }
     if (hypers.async) {
         alloc_create(&pufferl->weight_alloc);
+    }
+    if (hypers.magnet_coef > 0) {
+        alloc_create(&magnet->params_alloc);
+        alloc_create(&pufferl->magnet_grads);
+        magnet->param = {
+            .data = (precision_t*)magnet->params_alloc.mem,
+            .shape = {magnet->params_alloc.total_elems},
+        };
+        master_weights_setup(&magnet->master_weights, &magnet->param,
+            false, pufferl->default_stream);
     }
     alloc_create(grads);
     alloc_create(acts);
@@ -3484,6 +3549,22 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         PUF_LOAD_HOOK(load_path, ini);
 #endif
     }
+    // Magnet starts as the learner's initial weights unless magnet_path is set
+    if (pufferl->hypers.magnet_coef > 0) {
+        Policy* magnet = &pufferl->magnet;
+        const char* magnet_path = puf_ini_get_str(ini, "base", "magnet_path");
+        if (strcmp(magnet_path, "None")) {
+            puf_load_weights_into(magnet->master_weights, magnet->param,
+                pufferl->default_stream, magnet_path);
+        } else {
+            puf_copy(&magnet->param, &pufferl->policies[0].param, pufferl->default_stream);
+            cudaMemcpyAsync(magnet->master_weights.data,
+                pufferl->policies[0].master_weights.data,
+                numel(magnet->master_weights.shape) * sizeof(float),
+                cudaMemcpyDeviceToDevice, pufferl->default_stream);
+        }
+        cudaStreamSynchronize(pufferl->default_stream);
+    }
 
 #ifdef PUFFER_KAGGRICULTURE_DIRECT
     if (pufferl->teacher.coefficient) {
@@ -3502,7 +3583,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         char initial_checkpoint[4096];
         snprintf(initial_checkpoint, sizeof(initial_checkpoint),
             "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
-        puf_save_weights(pufferl, initial_checkpoint);
+        puf_save_weights(pufferl->policies[0].master_weights, initial_checkpoint);
 #ifdef PUF_CHECKPOINT_HOOK
         PUF_CHECKPOINT_HOOK(initial_checkpoint, ini);
 #endif
@@ -3600,7 +3681,13 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             snprintf(saved_checkpoint, sizeof(saved_checkpoint),
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner || use_selfplay) {
-                puf_save_weights(pufferl, saved_checkpoint);
+                puf_save_weights(pufferl->policies[0].master_weights, saved_checkpoint);
+                if (pufferl->hypers.magnet_coef > 0) {
+                    char magnet_checkpoint[4120];
+                    snprintf(magnet_checkpoint, sizeof(magnet_checkpoint),
+                        "%s.magnet", saved_checkpoint);
+                    puf_save_weights(pufferl->magnet.master_weights, magnet_checkpoint);
+                }
 #ifdef PUF_CHECKPOINT_HOOK
                 PUF_CHECKPOINT_HOOK(saved_checkpoint, ini);
 #endif

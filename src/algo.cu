@@ -1296,8 +1296,8 @@ __device__ __forceinline__ float safe_continuous_logstd(const precision_t* logst
 enum LossIdx {
     LOSS_PG = 0, LOSS_VF = 1, LOSS_ENT = 2, LOSS_TOTAL = 3,
     LOSS_OLD_APPROX_KL = 4, LOSS_APPROX_KL = 5, LOSS_CLIPFRAC = 6,
-    LOSS_IMP = 7,
-    LOSS_N = 8, NUM_LOSSES = 9,
+    LOSS_IMP = 7, LOSS_MAGNET = 8,
+    LOSS_N = 9, NUM_LOSSES = 10,
 };
 
 constexpr int PPO_THREADS = 256;
@@ -1346,6 +1346,8 @@ struct PPOKernelArgs {
     int num_atns;
     float clip_coef, vf_clip_coef, vf_coef;
     const float* ent_coef;  // device ptr — host by-value bakes into CUDA graphs
+    const float* magnet_logp; // (N, T, A_total) magnet log-probs, NULL when off
+    const float* magnet_coef;
     int T_seq, A_total, N;
     bool is_continuous;
 };
@@ -1354,9 +1356,12 @@ struct PPOBufs {
     Float grad_logits, grad_values, grad_logstd;
     Float ppo_partials;
     float* ent_coef;     // device scalar (graphs cannot bake host by-value)
+    Float magnet_logp;
+    float* magnet_coef;  // NULL when the magnet is off
 };
 
-void register_ppo_buffers(PPOBufs& bufs, Allocator* alloc, int N, int T, int A_total, bool is_continuous) {
+void register_ppo_buffers(PPOBufs& bufs, Allocator* alloc, int N, int T, int A_total,
+        bool is_continuous, bool magnet) {
     long total = (long)N * T;
     int ppo_grid = ((int)total + PPO_THREADS - 1) / PPO_THREADS;
     bufs = (PPOBufs){
@@ -1365,6 +1370,8 @@ void register_ppo_buffers(PPOBufs& bufs, Allocator* alloc, int N, int T, int A_t
         .grad_logstd = {.shape = {N, T, A_total}},
         .ppo_partials = {.shape = {ppo_grid * LOSS_N}},
         .ent_coef = NULL,
+        .magnet_logp = {.shape = {N, T, A_total}},
+        .magnet_coef = NULL,
     };
     alloc_register(alloc, &bufs.grad_logits);
     alloc_register(alloc, &bufs.grad_values);
@@ -1373,6 +1380,10 @@ void register_ppo_buffers(PPOBufs& bufs, Allocator* alloc, int N, int T, int A_t
     }
     alloc_register(alloc, &bufs.ppo_partials);
     cudaMalloc((void**)&bufs.ent_coef, sizeof(float));
+    if (magnet) {
+        alloc_register(alloc, &bufs.magnet_logp);
+        cudaMalloc((void**)&bufs.magnet_coef, sizeof(float));
+    }
 }
 
 // Discrete only. mask is always present (env mask or synthetic all-ones).
@@ -1563,6 +1574,8 @@ __global__ void ppo_loss_compute(
         }
         float d_new_logp = d_ratio * ratio;
         float total_entropy = 0.0f;
+        float magnet_coef = a.magnet_logp ? *a.magnet_coef : 0.0f;
+        float magnet_kl = 0.0f;
 
         if (a.is_continuous) {
             for (int h = 0; h < a.num_atns; ++h) {
@@ -1619,16 +1632,25 @@ __global__ void ppo_loss_compute(
                 for (int j = 0; j < A; ++j) {
                     float logp = a.grad_logits[at_base + logits_offset + j];
                     float p = __expf(logp);
-                    a.grad_logits[at_base + logits_offset + j] =
-                        ((j == act ? 1.0f : 0.0f) - p) * d_logp
+                    float grad = ((j == act ? 1.0f : 0.0f) - p) * d_logp
                         + d_entropy_term * p * (-ent - logp);
+                    // KL(magnet || policy): d/dlogit_j = p_j - q_j
+                    if (a.magnet_logp) {
+                        float lq = a.magnet_logp[at_base + logits_offset + j];
+                        float q = __expf(lq);
+                        grad += magnet_coef * inv_NT * (p - q);
+                        if (q > 0.0f) {
+                            magnet_kl += q * (lq - logp);
+                        }
+                    }
+                    a.grad_logits[at_base + logits_offset + j] = grad;
                 }
                 logits_offset += A;
             }
         }
 
         float thread_loss = (pg_loss + a.vf_coef * v_loss
-            - ent_coef * total_entropy) * inv_NT;
+            - ent_coef * total_entropy + magnet_coef * magnet_kl) * inv_NT;
 
         block_losses[LOSS_PG][tid] = pg_loss * inv_NT;
         block_losses[LOSS_VF][tid] = v_loss * inv_NT;
@@ -1639,6 +1661,7 @@ __global__ void ppo_loss_compute(
         block_losses[LOSS_CLIPFRAC][tid] =
             (fabsf(ratio - 1.0f) > a.clip_coef ? 1.0f : 0.0f) * inv_NT;
         block_losses[LOSS_IMP][tid] = ratio * inv_NT;
+        block_losses[LOSS_MAGNET][tid] = magnet_kl * inv_NT;
     }
 
     block_reduce_sum(&block_losses[0][0], &ppo_partials[blockIdx.x * LOSS_N],
@@ -1696,6 +1719,8 @@ void ppo_loss_fwd_bwd(
         .clip_coef = clip_coef, .vf_clip_coef = vf_clip_coef,
         .vf_coef = vf_coef,
         .ent_coef = ent_coef,
+        .magnet_logp = bufs.magnet_coef ? bufs.magnet_logp.data : NULL,
+        .magnet_coef = bufs.magnet_coef,
         .T_seq = T, .A_total = A_total, .N = N,
         .is_continuous = is_continuous,
     };
