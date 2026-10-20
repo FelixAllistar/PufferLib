@@ -1348,6 +1348,7 @@ struct PPOKernelArgs {
     const float* ent_coef;  // device ptr — host by-value bakes into CUDA graphs
     const float* magnet_logp; // (N, T, A_total) magnet log-probs, NULL when off
     const float* magnet_coef;
+    bool magnet_reverse;      // KL(policy || magnet) instead of KL(magnet || policy)
     int T_seq, A_total, N;
     bool is_continuous;
 };
@@ -1358,6 +1359,7 @@ struct PPOBufs {
     float* ent_coef;     // device scalar (graphs cannot bake host by-value)
     Float magnet_logp;
     float* magnet_coef;  // NULL when the magnet is off
+    bool magnet_reverse;
 };
 
 void register_ppo_buffers(PPOBufs& bufs, Allocator* alloc, int N, int T, int A_total,
@@ -1612,11 +1614,17 @@ __global__ void ppo_loss_compute(
 #endif
                 int act = (int)g.actions[nt * a.num_atns + h];
                 float ent = 0.0f;
+                float reverse_kl = 0.0f;
                 for (int j = 0; j < A; ++j) {
                     float logp = a.grad_logits[at_base + logits_offset + j];
                     ent -= __expf(logp) * logp;
+                    if (a.magnet_logp && a.magnet_reverse) {
+                        float lq = a.magnet_logp[at_base + logits_offset + j];
+                        reverse_kl += __expf(logp) * (logp - lq);
+                    }
                 }
                 total_entropy += ent;
+                magnet_kl += reverse_kl;
 #ifdef PUFFER_NETHACK
                 float d_logp = d_new_logp;
                 if (h == 0) {
@@ -1634,8 +1642,12 @@ __global__ void ppo_loss_compute(
                     float p = __expf(logp);
                     float grad = ((j == act ? 1.0f : 0.0f) - p) * d_logp
                         + d_entropy_term * p * (-ent - logp);
-                    // KL(magnet || policy): d/dlogit_j = p_j - q_j
-                    if (a.magnet_logp) {
+                    if (a.magnet_logp && a.magnet_reverse) {
+                        // KL(policy || magnet): d/dlogit_j = p_j (log p_j - log q_j - KL)
+                        float lq = a.magnet_logp[at_base + logits_offset + j];
+                        grad += magnet_coef * inv_NT * p * (logp - lq - reverse_kl);
+                    } else if (a.magnet_logp) {
+                        // KL(magnet || policy): d/dlogit_j = p_j - q_j
                         float lq = a.magnet_logp[at_base + logits_offset + j];
                         float q = __expf(lq);
                         grad += magnet_coef * inv_NT * (p - q);
@@ -1721,6 +1733,7 @@ void ppo_loss_fwd_bwd(
         .ent_coef = ent_coef,
         .magnet_logp = bufs.magnet_coef ? bufs.magnet_logp.data : NULL,
         .magnet_coef = bufs.magnet_coef,
+        .magnet_reverse = bufs.magnet_reverse,
         .T_seq = T, .A_total = A_total, .N = N,
         .is_continuous = is_continuous,
     };
