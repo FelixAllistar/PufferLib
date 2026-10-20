@@ -102,7 +102,7 @@ Invalid boundary moves, unproductive care/fertilizer, conflicting tasks and
 seed overspending are masked. Overflow/final cash-out SELL and final shed DROP
 are forced with singleton masks: probability one, entropy zero and no policy
 gradient. The same conditional masks are stored during rollout and reused by
-PPO, teacher KL and evaluation. Masking is not a full forward simulator:
+PPO and evaluation. Masking is not a full forward simulator:
 an otherwise supported primitive action can still do nothing in the game.
 
 The current 1024x2 BC-start baseline uses terminal +1/0/-1 WLD, gamma 1,
@@ -111,7 +111,7 @@ Current-policy matches train both seats; 25% of environments use a historical
 opponent (only the live seat trains there). The pool has at most six historical
 opponents, refreshed at the checkpoint cadence, not every 500M steps.
 Scripted training opponents, opponent action noise, PBRS, auxiliary rewards
-and frozen-teacher KL are off. Teacher KL currently cannot run with a league.
+are off.
 Replay resets are enabled at 10%, leaving 90% fresh starts. `root_money`
 remains visible. Optional land/crop/animal bonuses
 remain available for later experiments; adding them is no longer pure WLD.
@@ -342,7 +342,7 @@ is a PROTEIN suggestion setting, not a process timeout.
 The native PROTEIN search launches an environment-owned Python worker. Each
 worker waits for training to **exit and release GPU memory**, then evaluates
 128 fresh games on each seat against the fixed built-in rule bot, with 32
-environments and no resets, noise, league or teacher KL. Map sequences are
+environments and no resets, noise or league. Map sequences are
 fixed by environment indices; `sweep.eval_seed` fixes policy-sampling RNG.
 These are repeatable screening games, not held-out game seeds or an expert
 opponent ladder. The objective is the mean final cash across seats; win rate
@@ -380,8 +380,6 @@ repeated with newly prepared demonstrations, but public-replay downloading,
 heuristic refinement, fresh-self-play critic selection and CPU submission
 export are separate work. No final-day search controller is used.
 
-Teacher KL currently requires one live policy and one chronological pass
-per rollout (`num_policies=1`, `replay_ratio=1`); the trainer checks this.
 Joint old log probabilities are FP32 so BF16 rounding does not create
 spurious PPO ratios. Full optimizer/reference-state resume is not added:
 loading a checkpoint starts a fresh run as in the existing Puffer trainer.
