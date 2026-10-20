@@ -3,6 +3,8 @@
 # 1. magnet_coef=0 trains bit-identically to a run without any magnet settings.
 # 2. magnet_tau=0 keeps the magnet at the learner's initial weights.
 # 3. magnet_tau=1 makes the magnet equal the learner after the final pass.
+# 4. magnet_reverse=1 trains and keeps the same EMA (tau=1 still tracks the learner).
+# 5. magnet_path=random starts the magnet from fresh weights, not the learner's.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if [[ $# != 1 || -e $1 ]]; then
@@ -32,4 +34,9 @@ run frozen --train.magnet_coef=1 --train.magnet_tau=0
 [[ $(sha "$final.magnet") == $(sha "$initial") ]] || { echo 'FAIL: tau=0 moved magnet'; exit 1; }
 run follow --train.magnet_coef=1 --train.magnet_tau=1
 [[ $(sha "$final.magnet") == $(sha "$final") ]] || { echo 'FAIL: tau=1 magnet != learner'; exit 1; }
-echo 'PASS: magnet off is identical, tau=0 holds the anchor, tau=1 tracks the learner'
+run reverse --train.magnet_coef=1 --train.magnet_tau=1 --train.magnet_reverse=1
+[[ $(sha "$final.magnet") == $(sha "$final") ]] || { echo 'FAIL: reverse tau=1 magnet != learner'; exit 1; }
+run random --train.magnet_coef=1 --train.magnet_tau=0 --base.magnet_path=random
+[[ $(sha "$final.magnet") != $(sha "$initial") ]] || { echo 'FAIL: random magnet copied learner'; exit 1; }
+echo 'PASS: magnet off is identical, tau=0 holds the anchor, tau=1 tracks the learner,' \
+    'reverse KL trains, random magnet is fresh'

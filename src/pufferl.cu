@@ -336,6 +336,7 @@ typedef struct {
     float min_magnet_coef_ratio;
     bool anneal_magnet_coef;
     float magnet_tau;
+    bool magnet_reverse;
     float gamma;
     float gae_lambda;
     bool vtrace;
@@ -2101,6 +2102,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         .min_magnet_coef_ratio = puf_ini_get(ini, "train", "min_magnet_coef_ratio"),
         .anneal_magnet_coef = puf_ini_get(ini, "train", "anneal_magnet_coef") != 0,
         .magnet_tau = puf_ini_get(ini, "train", "magnet_tau"),
+        .magnet_reverse = puf_ini_get(ini, "train", "magnet_reverse") != 0,
         .gamma = puf_ini_get(ini, "train", "gamma"),
         .gae_lambda = puf_ini_get(ini, "train", "gae_lambda"),
         .vtrace = puf_ini_get(ini, "train", "vtrace") != 0,
@@ -2315,6 +2317,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         acts, train_agents, horizon, input_size, num_action_heads, act_n);
     register_ppo_buffers(pufferl->ppo_bufs, acts, minibatch_segments,
         hypers.horizon, decoder_output_size, is_continuous, hypers.magnet_coef > 0);
+    pufferl->ppo_bufs.magnet_reverse = hypers.magnet_reverse;
     pufferl->train_state = {.shape = {num_layers, train_agents, hidden_size}};
     alloc_register(acts, &pufferl->train_state);
 
@@ -3526,11 +3529,20 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         PUF_LOAD_HOOK(load_path, ini);
 #endif
     }
-    // Magnet starts as the learner's initial weights unless magnet_path is set
+    // Magnet starts as the learner's initial weights, a fresh random network
+    // (magnet_path = random, a near-uniform policy), or loaded weights
     if (pufferl->hypers.magnet_coef > 0) {
         Policy* magnet = &pufferl->magnet;
         const char* magnet_path = puf_ini_get_str(ini, "base", "magnet_path");
-        if (strcmp(magnet_path, "None")) {
+        if (!strcmp(magnet_path, "random")) {
+            ulong seed = pufferl->hypers.seed + 1;
+            weights_init(&magnet->arch, magnet->weights, &seed, pufferl->default_stream);
+            if (USE_BF16) {
+                int n = numel(magnet->param.shape);
+                cast<<<grid_size(n), BLOCK_SIZE, 0, pufferl->default_stream>>>(
+                    magnet->master_weights.data, magnet->param.data, n);
+            }
+        } else if (strcmp(magnet_path, "None")) {
             puf_load_weights_into(magnet->master_weights, magnet->param,
                 pufferl->default_stream, magnet_path);
         } else {
