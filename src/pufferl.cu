@@ -560,14 +560,7 @@ typedef struct {
     int skip_rollout_time;
 } Profile;
 
-#ifdef PUFFER_KAGGRICULTURE_DIRECT
-#include "../ocean/kaggriculture_direct/teacher.cuh"
-#endif
-
 typedef struct PuffeRL {
-#ifdef PUFFER_KAGGRICULTURE_DIRECT
-    KagDirectTeacher teacher;
-#endif
     Policy* policies;        // [num_policies]; policies[0] trainable, rest frozen
     int num_policies;
     Policy magnet;           // EMA/anchor of policies[0]; used when magnet_coef > 0
@@ -1810,14 +1803,6 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         Float grad_logstd = pufferl->is_continuous
             ? pufferl->ppo_bufs.grad_logstd : Float();
         Float grad_values = pufferl->ppo_bufs.grad_values;
-#ifdef PUFFER_KAGGRICULTURE_DIRECT
-        if (mb == 0 && hypers->reset_every_horizon && pufferl->teacher.coefficient) {
-            cudaMemsetAsync(pufferl->teacher.state.data,0,
-                numel(pufferl->teacher.state.shape)*sizeof(precision_t),stream);
-        }
-        kag_teacher_regularize(&pufferl->teacher,graph.mb_obs,graph.mb_terminals,dest_off,
-            dec,graph.mb_action_mask,grad_logits,pufferl->losses,stream);
-#endif
         arch_backward(&primary->arch, primary->weights, pufferl->train_activs,
             grad_logits, grad_logstd, grad_values, stream);
 
@@ -2429,14 +2414,6 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         }
     }
 
-#ifdef PUFFER_KAGGRICULTURE_DIRECT
-    float teacher_kl = puf_ini_get(ini,"train","teacher_kl_coefficient");
-    assert(isfinite(teacher_kl) && teacher_kl >= 0);
-    assert((teacher_kl == 0 || (pufferl->num_policies == 1 && hypers.replay_ratio == 1))
-        && "recurrent teacher KL requires live-only, one chronological PPO pass");
-    kag_teacher_create(&pufferl->teacher,&primary->arch,B_TT,train_agents,
-        num_layers,hidden_size,teacher_kl,pufferl->default_stream);
-#endif
     env_start(pufferl);
 
     if (hypers.profile) {
@@ -3566,18 +3543,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         cudaStreamSynchronize(pufferl->default_stream);
     }
 
-#ifdef PUFFER_KAGGRICULTURE_DIRECT
-    if (pufferl->teacher.coefficient) {
-        const char* teacher_path = puf_ini_get_str(ini,"base","teacher_model_path");
-        if (teacher_path && strcmp(teacher_path,"None")) {
-            puf_load_weights_into(pufferl->teacher.master,pufferl->teacher.parameters,
-                pufferl->default_stream,teacher_path);
-        } else {
-            puf_copy(&pufferl->teacher.parameters,&pufferl->policies[0].param,pufferl->default_stream);
-        }
-        cudaStreamSynchronize(pufferl->default_stream);
-    }
-#endif
     Selfplay selfplay = {0};
     if (use_selfplay) {
         char initial_checkpoint[4096];
@@ -3742,15 +3707,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         for (int i = 0; i < LOSS_N; i++) {
             dict_set(&new_log, LOSS_NAMES[i], losses_host[i] * inv_n);
         }
-#ifdef PUFFER_KAGGRICULTURE_DIRECT
-        if (pufferl->teacher.coefficient) {
-            float teacher_stats[2];
-            cudaMemcpy(teacher_stats,pufferl->teacher.metrics.data,sizeof(teacher_stats),cudaMemcpyDeviceToHost);
-            dict_set(&new_log,"loss/teacher_kl",teacher_stats[0]/fmaxf(1,teacher_stats[1]));
-            dict_set(&new_log,"teacher/coefficient",pufferl->teacher.coefficient);
-            cudaMemset(pufferl->teacher.metrics.data,0,sizeof(teacher_stats));
-        }
-#endif
         cudaMemset(pufferl->losses, 0, NUM_LOSSES * sizeof(float));
 
         log_util(pufferl, &new_log);

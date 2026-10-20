@@ -38,7 +38,6 @@ def test_sweep_only_varies_four_optimizer_settings():
     assert ini.getint("sweep", "trial_timesteps") < ini.getint("train", "total_timesteps")
     assert ini.get("base", "load_model_path").endswith("h1024_l2/bc.bin")
     assert ini.getint("policy", "hidden_size") == 1024
-    assert ini.getfloat("train", "teacher_kl_coefficient") == 0
     assert ini.get("sweep", "metric") == "root_money"
 
 
@@ -51,7 +50,6 @@ def test_eval_is_fresh_fixed_opponent_and_seat_balanced():
         assert over["env.learner_seat"] == str(seat)
         assert over["env.bot_policy"] == "1" and over["env.num_agents"] == "1"
         assert over["selfplay.enabled"] == "0" and over["vec.num_policies"] == "1"
-        assert over["train.teacher_kl_coefficient"] == "0"
         assert over["base.seed"] == "400"
         cmd = worker.command("puffer", "eval", {"base.result_fd": "99"}, over)
         assert "--base.result_fd=0" in cmd and "--headless" in cmd

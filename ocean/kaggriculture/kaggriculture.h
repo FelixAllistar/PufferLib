@@ -125,7 +125,6 @@ void kag_configure_potential(Ini* ini, const char* mode) {
 #ifdef KAG_DIRECT_POLICY
     assert(puf_ini_get(ini,"policy","action_version") == KAG_POLICY_VERSION
         && "config action_version does not match this compact-policy binary; rebuild kaggriculture");
-    if (strcmp(mode,"train")) dict_set(puf_ini_section(ini,"train",0),"teacher_kl_coefficient",0);
 #endif
     kag_qd_metrics = getenv("KAG_QD_METRICS") != NULL;
     // The native CLI only accepts keys already present in its default config.

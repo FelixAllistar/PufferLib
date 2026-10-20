@@ -215,14 +215,13 @@ def main():
             parser.error("sweep architecture is fixed in the single shared config; edit its fixed bounds too")
         if args.hidden or args.layers:
             command += [f"--policy.hidden_size={h}",f"--policy.num_layers={l}",
-                        f"--base.load_model_path={model_path(ini,h,l)}",
-                        f"--base.teacher_model_path={model_path(ini,h,l)}"]
+                        f"--base.load_model_path={model_path(ini,h,l)}"]
         if args.mode in ("eval","match"):
             command += ["--headless","--env.reset_state_prob=0","--base.eval_episodes=64",
                         f"--env.num_agents={2 if args.mode=='match' else 1}"]
             if args.mode == "eval":
                 command += ["--vec.num_policies=1", "--vec.hist_policy_percent=0",
-                            "--selfplay.enabled=0", "--train.teacher_kl_coefficient=0"]
+                            "--selfplay.enabled=0"]
         if args.mode == "sweep":
             command += [f"--sweep.trainer_path={args.binary}"]
             log = ROOT/"logs/kaggriculture"/f"sweep.{time.time_ns()}.log"

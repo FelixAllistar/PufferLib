@@ -1,4 +1,4 @@
-// Tiny, opt-in qualification of the ACTUAL sampler, PPO and teacher KL kernels.
+// Tiny, opt-in qualification of the ACTUAL sampler and PPO kernels.
 // Does not instantiate a trainer or change any checkpoint.
 #include "../../../src/pufferl.cu"
 
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     }
     int* map=managed<int>(rows); env->sampling_rows=map;
     for(int r=0;r<rows;r++) map[r]=rows-r-1; // shuffled learner row map
-    auto logits=managed<precision_t>(rows*C), teacher=managed<precision_t>(rows*C);
+    auto logits=managed<precision_t>(rows*C);
     auto mask=managed<precision_t>(rows*A), values=managed<precision_t>(rows);
     auto oldlp=managed<logprob_t>(rows);
     auto actions=managed<float>(rows*KAG_ACTION_HEADS), dispatch=managed<float>(rows*KAG_ACTION_HEADS);
@@ -53,7 +53,6 @@ int main(int argc, char** argv) {
     auto sizes=managed<int>(KAG_ACTION_HEADS); const int widths[]=ACT_SIZES; memcpy(sizes,widths,sizeof(widths));
     for(int i=0;i<rows*C;i++) {
         logits[i]=from_float(((i*13)%43-21)/8.0f);
-        teacher[i]=from_float(((i*19)%53-26)/8.0f);
     }
     rng_init<<<1,256>>>(rng,71,rows); sync_test();
     cudaStream_t stream; assert(cudaStreamCreate(&stream)==cudaSuccess);
@@ -116,27 +115,5 @@ int main(int argc, char** argv) {
         for(int j=0;j<widths[h];j++) if(count==1 || !to_float(mask[r*A+off+j]))
             assert(gradient[r*A+off+j]==0);
     }
-    auto kl_grad=managed<float>(rows*A), metrics=managed<float>(2);
-    kag_teacher_kl<<<rows*KAG_ACTION_HEADS,256>>>(logits,teacher,mask,kl_grad,metrics,NULL,.2f,rows); sync_test();
-    double expected_kl=0;
-    for(int r=0;r<rows;r++) for(int h=0;h<KAG_ACTION_HEADS;h++) {
-        int off=kag_direct_offset(h), n=widths[h]; double ps=0,qs=0;
-        for(int j=0;j<n;j++) if(to_float(mask[r*A+off+j])) {
-            ps+=exp(to_float(logits[r*C+off+j])); qs+=exp(to_float(teacher[r*C+off+j]));
-        }
-        for(int j=0;j<n;j++) {
-            double expected=0;
-            if(to_float(mask[r*A+off+j])) {
-                double p=exp(to_float(logits[r*C+off+j]))/ps, q=exp(to_float(teacher[r*C+off+j]))/qs;
-                expected=.2*(p-q)/rows; expected_kl+=q*log(q/p)/rows;
-            }
-            close_test(kl_grad[r*A+off+j],expected,2e-6);
-        }
-    }
-    close_test(metrics[0],expected_kl); assert(metrics[1]==1);
-    cudaMemset(kl_grad,0,rows*A*sizeof(float)); cudaMemset(metrics,0,2*sizeof(float));
-    kag_teacher_kl<<<rows*KAG_ACTION_HEADS,256>>>(logits,logits,mask,kl_grad,metrics,NULL,.2f,rows); sync_test();
-    for(int i=0;i<rows*A;i++) assert(kl_grad[i]==0);
-    assert(metrics[0]==0);
-    printf("direct CUDA graphs=%d greedy=%d: CPU/GPU prefix parity, unchanged PPO ratio=1, zero forced gradients, teacher KL oracle PASS\n",graphs,greedy);
+    printf("direct CUDA graphs=%d greedy=%d: CPU/GPU prefix parity, unchanged PPO ratio=1, zero forced gradients PASS\n",graphs,greedy);
 }
