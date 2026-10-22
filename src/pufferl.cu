@@ -2555,6 +2555,9 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
             "PufferLib 5.0  env=%s  steps=%s  SPS=%s  score=%.3f  epoch=%s  to_go=%s",
             env_name, steps_s, sps_s, dash_num(log, "env/score", 0), epoch_s, remaining);
 #endif
+#ifdef PUF_LIVE_EVAL_COMPACT
+        if (PUF_LIVE_EVAL_ENABLED()) PUF_LIVE_EVAL_COMPACT(compact, sizeof(compact), steps_s, sps_s);
+#endif
         printf("%.*s", term_cols > 1 ? term_cols - 1 : term_cols, compact);
         if (term_rows > 1) {
             dash_eol();
@@ -2632,9 +2635,13 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     }
     dash_blank();
 
+    int extra_rows = 0;
+#ifdef PUF_LIVE_EVAL_DASH
+    extra_rows = PUF_LIVE_EVAL_DASH(puf_dashboard_tty, term_rows - PUF_DASH_BASE_ROWS - 1);
+#endif
     int user_rows = PUF_DASH_MAX_USER_ROWS;
     if (puf_dashboard_tty) {
-        user_rows = term_rows - PUF_DASH_BASE_ROWS - 1;
+        user_rows = term_rows - PUF_DASH_BASE_ROWS - extra_rows - 1;
         if (user_rows < 0) user_rows = 0;
         if (user_rows > PUF_DASH_MAX_USER_ROWS) user_rows = PUF_DASH_MAX_USER_ROWS;
     }
@@ -2646,6 +2653,9 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
         const char* key = log->items[i].key;
         if (strncmp(key, "env/", 4) != 0 || strcmp(key, "env/n") == 0) continue;
         const char* sk = key + 4;
+#ifdef PUF_LIVE_EVAL_DASH
+        if (strncmp(sk, "metamon_", 8) == 0) continue;
+#endif
         if (!pending) {
             snprintf(pending_key, sizeof(pending_key), "%s", sk);
             pending_val = log->items[i].value;
@@ -3082,7 +3092,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
         history = puf_sweep_history_open(history_path, defs, n_params,
             sweep_replay_observation, protein, &completed, &next_run_id);
         free(defs);
-        protein->suggestion_idx = next_run_id > 0 ? next_run_id - 1 : 0;
+        protein_sweep_restore_suggestions(protein, next_run_id > 0 ? next_run_id - 1 : 0);
         printf("sweep restored completed=%d observations=%d next_run=%d total_target=%d history=%s\n",
             completed, protein->succ_n, next_run_id, max_runs, history_path);
     }
@@ -3136,6 +3146,15 @@ void run_sweep(Ini* ini, const char* exe_path) {
                     params[p].section, params[p].key);
                 puf_ini_put(ini, key, buf);
             }
+#ifdef PUF_SWEEP_RESOLVE
+            if (job.run) {
+                PUF_SWEEP_RESOLVE(ini);
+                for (int p = 0; p < space->num; p++) {
+                    float val = puf_ini_get(ini, params[p].section, params[p].key);
+                    job.sample[p] = space_normalize(&space->spaces[p], val);
+                }
+            }
+#endif
 #ifdef PUF_SWEEP_VALIDATE
             const char* config_error = PUF_SWEEP_VALIDATE(ini);
             if (config_error) {
@@ -3150,7 +3169,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
             }
             rejected_configs = 0;
             printf("sweep start run=%d model=%s agents=%.0f buffers=%.0f threads=%.0f "
-                "horizon=%.0f minibatch=%.0f replay=%.0f width=%.0f layers=%.0f\n",
+                "horizon=%.0f minibatch=%.0f replay=%.3g width=%.0f layers=%.0f\n",
                 job.run, puf_ini_get_str(ini, "policy", "architecture"),
                 puf_ini_get(ini, "vec", "total_agents"), puf_ini_get(ini, "vec", "num_buffers"),
                 puf_ini_get(ini, "vec", "num_threads"), puf_ini_get(ini, "train", "horizon"),
@@ -3254,6 +3273,19 @@ void run_sweep(Ini* ini, const char* exe_path) {
             assert(++failed_workers < max_failures && "too many failed sweep workers; inspect trial logs");
             continue;
         }
+        // A stopped Mario worker reports the budget it actually trained. Keep
+        // that point at its actual cost coordinate rather than the requested
+        // multi-billion-step budget. Completed rollout rounding is negligible.
+#ifdef PUF_SWEEP_ACTUAL_BUDGET
+        if (space->cost_idx >= 0 && job->result.steps > 0) {
+            Space* budget = &space->spaces[space->cost_idx];
+            float requested = space_unnormalize(budget, job->sample[space->cost_idx]);
+            if (job->result.steps < 0.98f * requested) {
+                float actual = fmaxf(budget->min * 1.00001f, job->result.steps);
+                job->sample[space->cost_idx] = space_normalize(budget, actual);
+            }
+        }
+#endif
         // points[]: learning-curve downsample, or 1 final score (e.g. selfplay).
         for (int pi = 0; pi < job->result.points; pi++) {
             protein_sweep_observe(protein, job->sample,
@@ -3473,7 +3505,13 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         mkdir_p(checkpoint_dir);
         mkdir_p(log_dir);
     }
+#ifdef PUF_TRAIN_START
+    PUF_TRAIN_START(ini);
+#endif
 
+#ifdef PUF_LIVE_EVAL_INIT
+    PUF_LIVE_EVAL_INIT(ini, ctx->world_size);
+#endif
     PuffeRL* pufferl = create_pufferl(ini, ctx);
     char load_buf[4096];
     const char* load_path = puf_checkpoint_path_key(ini,
@@ -3594,9 +3632,18 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             train_impl(pufferl, NULL);
         }
 
+        bool stop_training = false;
+#ifdef PUF_TRAIN_STOP
+        stop_training = PUF_TRAIN_STOP();
+#endif
+        bool live_eval_due = false;
+#ifdef PUF_LIVE_EVAL_DUE
+        live_eval_due = PUF_LIVE_EVAL_DUE(epoch + 1, train_epochs, batch_size);
+#endif
+        bool regular_checkpoint = stop_training || epoch == train_epochs - 1 || (checkpoint_interval > 0
+                && (epoch + 1) % checkpoint_interval == 0);
         char saved_checkpoint[4096] = {0};
-        if (epoch == train_epochs - 1 || (checkpoint_interval > 0
-                && (epoch + 1) % checkpoint_interval == 0)) {
+        if (regular_checkpoint || live_eval_due) {
             snprintf(saved_checkpoint, sizeof(saved_checkpoint),
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner || use_selfplay) {
@@ -3610,7 +3657,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                     "%s", saved_checkpoint);
             }
         }
-        if (use_selfplay && saved_checkpoint[0]) {
+        if (use_selfplay && saved_checkpoint[0] && regular_checkpoint) {
             selfplay_add_checkpoint(&selfplay, saved_checkpoint);
         }
 
@@ -3627,8 +3674,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             }
         }
 
-        if (last_log.size && wall_clock()
-                < pufferl->last_log_time + 0.6 && epoch < train_epochs - 1) {
+        if (!live_eval_due && last_log.size && wall_clock()
+                < pufferl->last_log_time + 0.6 && epoch < train_epochs - 1 && !stop_training) {
             continue;
         }
 
@@ -3680,12 +3727,31 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
         dict_set(&new_log, "perf/train", train_total);
         memset(pufferl->profile.accum, 0, sizeof(pufferl->profile.accum));
+#ifdef PUF_TRAIN_LOG
+        PUF_TRAIN_LOG(&new_log);
+#endif
 
         if (use_selfplay) {
             dict_set(&new_log, "pool/size", selfplay.pool_size);
             dict_set(&new_log, "pool/num_hist", selfplay.num_hist);
             dict_set(&new_log, "pool/num_policies", pufferl->num_policies);
         }
+#ifdef PUF_LIVE_EVAL_BEGIN
+        if (ctx->artifact_owner && live_eval_due && saved_checkpoint[0]) {
+            PUF_LIVE_EVAL_BEGIN(saved_checkpoint, global_step, epoch + 1);
+            int evaluating;
+            do {
+                evaluating = PUF_LIVE_EVAL_POLL();
+                PUF_LIVE_EVAL_LOG(&new_log);
+                dict_set(&new_log, "uptime", wall_clock() - pufferl->start_time);
+                puf_dashboard_print(ini, pufferl, &new_log, (int)pufferl->epoch);
+                if (evaluating) usleep(250000);
+            } while (evaluating);
+            // Count evaluation in uptime, not optimizer throughput.
+            pufferl->last_log_time = wall_clock();
+        }
+        PUF_LIVE_EVAL_LOG(&new_log);
+#endif
         // n=0 logs omit env/*; keep last complete-episode snapshot.
         int episodes = dict_get(&new_log, "env/n") > 0;
         if (ctx->artifact_owner) {
@@ -3693,7 +3759,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
         result.cost = dict_get(&new_log, "uptime");
         result.steps = dict_get(&new_log, "agent_steps");
-        if (episodes || !last_log.size) {
+        if (episodes || !last_log.size || live_eval_due) {
             dict_clear(&last_log);
             dict_copy(&last_log, &new_log);
         } else {
@@ -3701,10 +3767,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             dict_set(&last_log, "agent_steps", result.steps);
         }
         // Wait until the objective appears; do not treat negative values as missing.
-        if (episodes && dict_find(&new_log, target_key)) {
+        if ((episodes || live_eval_due) && dict_find(&new_log, target_key)) {
             puf_log_history_add(&log_history, &last_log);
         }
         dict_clear(&new_log);
+        if (stop_training) break;
     }
 
     // TrainResult curve: bin-mean over log_history (same as artifact metrics).
