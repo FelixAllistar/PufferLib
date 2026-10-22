@@ -39,8 +39,9 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
         fprintf(stderr,"expert_fraction must be in [0,1]\n"); exit(1);
     }
     // Frozen banks share the encoder dimensions, and every exported bank is 32/64.
-    if(fraction>0 && (pk_embed!=32 || pk_mid!=64)) {
-        printf("Pokemon native league: encoder %d/%d differs from the 32/64 banks; expert_fraction=0\n",pk_embed,pk_mid);
+    if(fraction>0 && (pk_embed!=32 || pk_mid!=64 || pk_attn.layers)) {
+        printf("Pokemon native league: encoder %d/%d attention %d differs from the 32/64 MLP banks; expert_fraction=0\n",
+            pk_embed,pk_mid,pk_attn.layers);
         fraction=0;
     }
     // The non-expert share plays the current policy, not frozen history.
@@ -182,6 +183,16 @@ static inline void pk_configure(Ini* ini, const char* mode) {
     pk_embed=embed?(int)embed->value:32; pk_mid=mid?(int)mid->value:64;
     if(pk_embed<8 || pk_embed%8 || pk_mid<8 || pk_mid%8) {
         fprintf(stderr,"policy.pokemon_embed/pokemon_mid must be positive multiples of 8\n");exit(1);
+    }
+    pk_attn=pk_attn_off;
+    DictItem* attn_layers=dict_find(puf_ini_section(ini,"policy",0),"pokemon_attention_layers");
+    DictItem* attn_width=dict_find(puf_ini_section(ini,"policy",0),"pokemon_attention_width");
+    DictItem* attn_heads=dict_find(puf_ini_section(ini,"policy",0),"pokemon_attention_heads");
+    if(attn_layers)pk_attn.layers=(int)attn_layers->value;
+    if(attn_width)pk_attn.width=(int)attn_width->value;
+    if(attn_heads)pk_attn.heads=(int)attn_heads->value;
+    if(!pk_attn_valid(pk_attn)) {
+        fprintf(stderr,"policy.pokemon_attention_layers 0-8, width a multiple of 8 up to 512, heads dividing width\n");exit(1);
     }
     pk_native_configure(ini,mode);
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;

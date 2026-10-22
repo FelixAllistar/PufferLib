@@ -4,13 +4,7 @@
 #define PUFFER_ENV_NAME "breakout"
 #include "../../../src/pufferl.cu"
 #include "../pokemon_encoder.cu"
-#include <vector>
-extern "C" void pk_reference(float*, int, int, int, int, const float*, const float*, float*, float*);
-// PK_EMBED/PK_MID select the encoder widths under test (default 32/64).
-static void pk_test_sizes() {
-    if (getenv("PK_EMBED")) pk_embed = atoi(getenv("PK_EMBED"));
-    if (getenv("PK_MID")) pk_mid = atoi(getenv("PK_MID"));
-}
+#include "encoder_layout.h"
 
 static void upload(precision_t* dst, const float* src, int n) {
     std::vector<precision_t> packed(n);
@@ -48,15 +42,16 @@ static void qualify(int H) {
     alloc_register(&acts,&obs); alloc_register(&acts,&state); alloc_register(&acts,&ge);
     alloc_register(&acts,&gl); alloc_register(&acts,&gv);
     alloc_create(&params); alloc_create(&acts); alloc_create(&grads);
-    assert(sizeof(precision_t)==2 && params.num_regs==12 && grads.num_regs==12);
+    std::vector<int> features=pk_test_features(H);
+    const int regs=(int)features.size();
+    assert(sizeof(precision_t)==2 && params.num_regs==regs && grads.num_regs==regs);
     std::vector<float> weights(params.total_elems+3*H*H+7),input(B*648),hidden(B*H),
         expected_enc(B*H),expected_dec(B*169),enc_grad(B*H),logits_grad(B*168),value_grad(B);
-    const int features[12]={PK_MOVE_IN,pk_mid,PK_MON_IN(pk_embed),pk_mid,PK_FUSION(pk_embed),H,PK_SPECIES_IN,pk_mid,PK_MOVE_IN,pk_mid,H,H};
     int offset=0;
-    for(int p=0;p<12;p++) {
-        int rows=params.regs[p].shape[0],cols=params.regs[p].shape[1];
+    for(int p=0;p<regs;p++) {
+        int cols=pk_test_cols(params,p),rows=numel(params.regs[p].shape)/cols;
         for(int r=0;r<rows;r++) for(int c=0;c<cols;c++) {
-            float v=c<features[p] ? .03f*sinf((offset+r*cols+c)*.731f) : c==features[p] ? .2f : 0;
+            float v=pk_test_value(features[p],c,offset+r*cols+c,.03f);
             weights[offset+r*cols+c]=to_float(from_float(v));
         }
         upload((precision_t*)*params.regs[p].data_ptr,weights.data()+offset,rows*cols);
@@ -71,7 +66,7 @@ static void qualify(int H) {
     upload(state.data,hidden.data(),B*H); upload(ge.data,enc_grad.data(),B*H);
     assert(cudaMemcpy(gl.data,logits_grad.data(),B*168*sizeof(float),cudaMemcpyHostToDevice)==cudaSuccess);
     assert(cudaMemcpy(gv.data,value_grad.data(),B*sizeof(float),cudaMemcpyHostToDevice)==cudaSuccess);
-    double magnitude[12]={};
+    std::vector<double> magnitude(regs);
     for(int phase=0;phase<3;phase++) {
         for(int b=0;b<B;b++) {
             float* o=input.data()+b*648;
@@ -80,19 +75,19 @@ static void qualify(int H) {
             o[401]=2; o[402]=3; o[433]=4; o[434]=5;
         }
         upload(obs.data,input.data(),B*648);
-        pk_reference(weights.data(),B,H,pk_embed,pk_mid,input.data(),hidden.data(),expected_enc.data(),expected_dec.data());
+        pk_reference(weights.data(),B,H,pk_embed,pk_mid,pk_attn,input.data(),hidden.data(),expected_enc.data(),expected_dec.data());
         compare(enc.forward(ew,&ea,obs,0),expected_enc.data(),B*H);
         pk_decoder_bind(&da,obs);
         compare(dec.forward(dw,&da,state,0),expected_dec.data(),B*169);
         enc.backward(ew,&ea,ge,0);
         Prec dh=dec.backward(dw,&da,gl,{},gv,0);
         for(float v:download(dh.data,B*H)) assert(isfinite(v));
-        for(int p=0;p<12;p++) for(float v:download((precision_t*)*grads.regs[p].data_ptr,numel(grads.regs[p].shape))) {
+        for(int p=0;p<regs;p++) for(float v:download((precision_t*)*grads.regs[p].data_ptr,numel(grads.regs[p].shape))) {
             assert(isfinite(v)); magnitude[p]+=fabs(v);
         }
     }
-    for(int p=0;p<12;p++) assert(magnitude[p]>0);
-    printf("PASS BF16 H%d CPU forward parity; all 12 parameter tensors receive finite nonzero gradients\n",H);
+    for(int p=0;p<regs;p++) assert(magnitude[p]>0);
+    printf("PASS BF16 H%d CPU forward parity; all %d parameter tensors receive finite nonzero gradients\n",H,regs);
     // Each width runs in a fresh process; process teardown frees CUDA allocations.
 }
 int main(int argc,char** argv) {

@@ -4,12 +4,7 @@
 #define PUFFER_ENV_NAME "breakout"
 #include "../../../src/pufferl.cu"
 #include "../pokemon_encoder.cu"
-extern "C" void pk_reference(float*, int, int, int, int, const float*, const float*, float*, float*);
-// PK_EMBED/PK_MID select the encoder widths under test (default 32/64).
-static void pk_test_sizes() {
-    if (getenv("PK_EMBED")) pk_embed = atoi(getenv("PK_EMBED"));
-    if (getenv("PK_MID")) pk_mid = atoi(getenv("PK_MID"));
-}
+#include "encoder_layout.h"
 
 static void gpu(cudaError_t result) {
     assert(result == cudaSuccess);
@@ -109,19 +104,18 @@ int main() {
     float legal[B*168];
     for (int i = 0; i < B*168; i++) legal[i] = 1;
     gpu(cudaMemcpy(graph.mb_action_mask.data, legal, sizeof(legal), cudaMemcpyHostToDevice));
-    assert(params.num_regs == 12 && grads.num_regs == params.num_regs);
+    std::vector<int> features = pk_test_features(H);
+    const int encoder_regs = (int)features.size() - 6;
+    assert(params.num_regs == (int)features.size() && grads.num_regs == params.num_regs);
     assert(params.total_bytes == grads.total_bytes);
     assert(params.total_bytes == params.total_elems*sizeof(float));
     float* weights = (float*)calloc(params.total_elems + 3*H*H + 7, sizeof(float));
     int offset = 0;
-    const int features[12] = {PK_MOVE_IN,pk_mid,PK_MON_IN(pk_embed),pk_mid,PK_FUSION(pk_embed),H,
-        PK_SPECIES_IN,pk_mid,PK_MOVE_IN,pk_mid,H,H};
     for (int p = 0; p < params.num_regs; p++) {
-        int rows = params.regs[p].shape[0], cols = params.regs[p].shape[1];
+        int cols = pk_test_cols(params, p), rows = numel(params.regs[p].shape)/cols;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                weights[offset+r*cols+c] = c < features[p]
-                    ? 0.01f*sinf((offset+r*cols+c)*0.731f) : c == features[p] ? 0.2f : 0;
+                weights[offset+r*cols+c] = pk_test_value(features[p], c, offset+r*cols+c, 0.01f);
             }
         }
         gpu(cudaMemcpy(*params.regs[p].data_ptr, weights+offset,
@@ -157,7 +151,7 @@ int main() {
             o[434] = 5;
         }
         gpu(cudaMemcpy(obs.data, input, sizeof(input), cudaMemcpyHostToDevice));
-        pk_reference(weights, B, H, pk_embed, pk_mid, input, hidden, expected_enc, expected_dec);
+        pk_reference(weights, B, H, pk_embed, pk_mid, pk_attn, input, hidden, expected_enc, expected_dec);
         compare(enc.forward(ew, &ea, obs, 0), expected_enc, B*H);
         Arch arch = {.encoder = enc, .decoder = dec,
             .network = {.forward = fixed_hidden, .forward_train = fixed_hidden_train}};
@@ -197,7 +191,7 @@ int main() {
                 for (int sign = 0; sign < 2; sign++) {
                     float changed = original + (sign ? -epsilon : epsilon);
                     gpu(cudaMemcpy(address, &changed, sizeof(float), cudaMemcpyHostToDevice));
-                    values[sign] = p < 6 ? loss(enc.forward(ew, &ea, obs, 0), ge, B*H)
+                    values[sign] = p < encoder_regs ? loss(enc.forward(ew, &ea, obs, 0), ge, B*H)
                         : loss(dec.forward(dw, &da, state, 0), gd, B*169);
                 }
                 gpu(cudaMemcpy(address, &original, sizeof(float), cudaMemcpyHostToDevice));

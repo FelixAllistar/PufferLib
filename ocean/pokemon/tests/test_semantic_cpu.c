@@ -10,15 +10,20 @@
 #ifdef PK_LEGACY_CPU
 #define PK_SIZES
 #else
-// PK_EMBED/PK_MID select the encoder widths under test (default 32/64).
+// PK_EMBED/PK_MID select the encoder widths under test (default 32/64);
+// PK_ATTN_LAYERS/WIDTH/HEADS enable the entity Transformer.
 static int embed = 32, mid = 64;
-#define PK_SIZES , embed, mid
+static PKAttn attn = {0, 128, 4};
+#define PK_SIZES , embed, mid, attn
 #endif
 
 int main(void) {
 #ifndef PK_LEGACY_CPU
     if (getenv("PK_EMBED")) embed = atoi(getenv("PK_EMBED"));
     if (getenv("PK_MID")) mid = atoi(getenv("PK_MID"));
+    if (getenv("PK_ATTN_LAYERS")) attn.layers = atoi(getenv("PK_ATTN_LAYERS"));
+    if (getenv("PK_ATTN_WIDTH")) attn.width = atoi(getenv("PK_ATTN_WIDTH"));
+    if (getenv("PK_ATTN_HEADS")) attn.heads = atoi(getenv("PK_ATTN_HEADS"));
 #endif
     uint64_t digest = UINT64_C(14695981039346656037);
     for (int layers = 1; layers <= 2; layers++) {

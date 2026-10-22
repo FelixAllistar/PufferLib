@@ -98,7 +98,15 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     DictItem* embed_option = dict_find(puf_ini_section(&policy->ini, "policy", 0), "pokemon_embed");
     DictItem* mid_option = dict_find(puf_ini_section(&policy->ini, "policy", 0), "pokemon_mid");
     int embed = embed_option ? embed_option->value : 32, mid = mid_option ? mid_option->value : 64;
-    size_t expected = pk_parameter_count(h,layers,embed,mid);
+    PKAttn attn = pk_attn_off;
+    DictItem* attn_layers = dict_find(puf_ini_section(&policy->ini, "policy", 0), "pokemon_attention_layers");
+    DictItem* attn_width = dict_find(puf_ini_section(&policy->ini, "policy", 0), "pokemon_attention_width");
+    DictItem* attn_heads = dict_find(puf_ini_section(&policy->ini, "policy", 0), "pokemon_attention_heads");
+    if (attn_layers) attn.layers = attn_layers->value;
+    if (attn_width) attn.width = attn_width->value;
+    if (attn_heads) attn.heads = attn_heads->value;
+    if (!pk_attn_valid(attn)) { fprintf(stderr, "Invalid Pokemon attention dimensions in checkpoint config\n"); exit(1); }
+    size_t expected = pk_parameter_count(h,layers,embed,mid,attn);
     struct stat st;
     if (stat(policy->path, &st) || st.st_size != (off_t)(expected * sizeof(float))) {
         fprintf(stderr, "Missing/incompatible checkpoint %s: expected %zu bytes (H=%d L=%d)\n",
@@ -109,8 +117,8 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     for (size_t i = 0; i < expected; i++) {
         if (!isfinite(policy->weights->data[i])) { fprintf(stderr, "Non-finite checkpoint weights\n"); exit(1); }
     }
-    policy->net = pk_cpu_make(policy->weights,1,h,layers,embed,mid);
-    fprintf(stderr, "Loaded %s (hidden=%d layers=%d)\n", policy->path, h, layers);
+    policy->net = pk_cpu_make(policy->weights,1,h,layers,embed,mid,attn);
+    fprintf(stderr, "Loaded %s (hidden=%d layers=%d attention=%d)\n", policy->path, h, layers, attn.layers);
 }
 static void pk_reset_policy(PKPolicy* policy, uint64_t seed) {
     policy->rng = seed;

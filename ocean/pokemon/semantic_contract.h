@@ -17,6 +17,19 @@
 // Per-Pokemon embedding and entity-MLP width (policy.pokemon_embed/pokemon_mid).
 // Checkpoints without these keys use the original 32/64.
 static int pk_embed = 32, pk_mid = 64;
+// Optional entity Transformer between the per-Pokemon encoder and the fusion MLP
+// (policy.pokemon_attention_layers/_width/_heads). Tokens are the 20 entity
+// embeddings plus one global token, which is pooled. Zero layers is the
+// original MLP fusion and its unchanged checkpoint layout.
+typedef struct { int layers, width, heads; } PKAttn;
+#define PK_TOKENS (PK_MON_COUNT+1)
+#define PK_TOKEN_IN(e) ((e)+PK_GLOBAL+1)
+static const PKAttn pk_attn_off = {0, 128, 4};
+static PKAttn pk_attn = {0, 128, 4};
+static inline int pk_attn_valid(PKAttn a) {
+    return a.layers>=0 && a.layers<=8 && a.width>=8 && a.width<=512 && a.width%8==0
+        && a.heads>=1 && a.width%a.heads==0;
+}
 static const float pk_sem_move[166][PK_MF]={
 #include "move_features.inc"
 };
