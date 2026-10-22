@@ -26,6 +26,10 @@ static double pk_native_fraction;
 static double pk_core_probability = 1;
 static char pk_learner_team[256]="None", pk_learner_lead[64]="None";
 static int pk_current_selfplay=1;
+// Opponent-randomness curriculum (training only): in native-league games the frozen bank's
+// action becomes a uniformly random legal action with probability eps, annealed linearly from
+// env.expert_random_start to 0 at env.expert_random_until of train.total_timesteps.
+static double pk_expert_random_start, pk_expert_random_until=0.5, pk_progress_per_env_step;
 static inline void pk_native_configure(Ini* ini, const char* mode) {
     pk_native_count = 0;
     pk_native_fraction = 0;
@@ -208,6 +212,22 @@ static inline void pk_configure(Ini* ini, const char* mode) {
     }
     pk_attn_learner=pk_attn;
     pk_native_configure(ini,mode);
+    pk_expert_random_start=0; pk_expert_random_until=0.5; pk_progress_per_env_step=0;
+    if(!strcmp(mode,"train")) {
+        DictItem* start=dict_find(puf_ini_section(ini,"env",0),"expert_random_start");
+        DictItem* until=dict_find(puf_ini_section(ini,"env",0),"expert_random_until");
+        if(start) pk_expert_random_start=start->value;
+        if(until) pk_expert_random_until=until->value;
+        if(!(pk_expert_random_start>=0 && pk_expert_random_start<=1) || !(pk_expert_random_until>0 && pk_expert_random_until<=1)) {
+            fprintf(stderr,"env.expert_random_start must be in [0,1] and env.expert_random_until in (0,1]\n");exit(1);
+        }
+        double total=puf_ini_get(ini,"train","total_timesteps"), agents=puf_ini_get(ini,"vec","total_agents");
+        // Synchronous envs: every env step advances the global agent-step count by total_agents.
+        pk_progress_per_env_step=total>0?agents/total:0;
+        if(pk_expert_random_start>0)
+            printf("Pokemon expert randomness: eps %.3g annealed to 0 at %.3g of training (native-league games only)\n",
+                pk_expert_random_start,pk_expert_random_until);
+    }
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;
     if(pk_current_selfplay) {
         puf_ini_put(ini,"env.opponent_team",pk_learner_team);
@@ -338,6 +358,7 @@ struct Log {
     float mix_games[4], mix_steps[4]; // normal/self, normal/expert, core/self, core/expert
     // Learner (seat 0) results by opponent: [0] current self-play, [b] native-league bank b-1.
     float vs_games[SELFPLAY_MAX_BANKS+1], vs_score[SELFPLAY_MAX_BANKS+1];
+    float expert_random_sum, expert_random_steps, expert_random_actions;
 };
 struct Env {
     Log log;
@@ -352,6 +373,8 @@ struct Env {
     long long team_log_max_bytes;
     char team_log_path[512];
     int audit;
+    uint64_t expert_rng;
+    unsigned long long env_steps;
     int behavior_enabled;
     float behavior_delta[2][PK_BEHAVIOR_DIM];
     float reset_state_prob;
@@ -628,6 +651,7 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
             int index = starts[buf] + e;
             Env* env = envs + index;
             env->rng = index;
+            env->expert_rng = UINT64_C(0x5851f42d4c957f2d) ^ (UINT64_C(0x9e3779b97f4a7c15) * ((uint64_t)index + 1));
             puf_init(env, ek);
             int bank = policies > 1 && e >= frozen_start
                 ? 1 + (e - frozen_start) % (policies - 1) : 0;
@@ -738,6 +762,16 @@ void puf_step(Env* env) {
         env->agents[p].terminals[0] = 0;
     }
     env->episode_steps++;
+    env->env_steps++;
+    if(pk_expert_random_start>0 && pk_native_count && env->tag>0) {
+        double progress=env->env_steps*pk_progress_per_env_step;
+        double eps=pk_expert_random_start*fmax(0.0,1.0-progress/pk_expert_random_until);
+        env->log.expert_random_sum+=eps; env->log.expert_random_steps++;
+        if(eps>0 && (pk_random(&env->expert_rng)>>11)*0x1.0p-53<eps) {
+            actions[1]=pk_random_action(env->game.masks[1],&env->expert_rng);
+            env->log.expert_random_actions++;
+        }
+    }
     int mix_group=2*(env->game.fixed_enabled[0]==3 || env->game.fixed_enabled[1]==3) +
         (pk_native_count>0 && env->tag>0);
     env->log.mix_steps[mix_group]++;
@@ -814,6 +848,10 @@ void puf_log(Log* log, Dict* out) {
         snprintf(key,sizeof(key),"%s_step_fraction",groups[i]); dict_set(out,key,steps?log->mix_steps[i]/steps:0);
     }
     dict_set(out,"configured_expert_fraction",pk_native_fraction);
+    if(pk_expert_random_start>0) {
+        dict_set(out,"expert_random_eps",log->expert_random_steps?log->expert_random_sum/log->expert_random_steps:0);
+        dict_set(out,"expert_random_action_rate",log->expert_random_steps?log->expert_random_actions/log->expert_random_steps:0);
+    }
     // Learner win rate per opponent, so a league run shows which banks it beats or cannot.
     double vs_total=0;
     for(int b=0;b<=pk_native_count;b++) vs_total+=log->vs_games[b];
