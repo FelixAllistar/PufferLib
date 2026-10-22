@@ -1,0 +1,33 @@
+{
+  "run": "sweep_1792309167747_0000",
+  "steps": 524288.0,
+  "score": 6.59375,
+  "cost": 12.004951677983627,
+  "panel_attempts": 32.0,
+  "progress": [
+    {
+      "steps": "262144",
+      "seconds": "5.747708",
+      "sps": "45608.440",
+      "entropy": "0.231414944",
+      "kl": "0.019640984",
+      "value": "0.00553966453",
+      "clipfrac": "0.0869998932",
+      "vram_used_gb": "14.432617"
+    },
+    {
+      "steps": "524288",
+      "seconds": "6.726035",
+      "sps": "267951.364",
+      "entropy": "0.247781634",
+      "kl": "0.0081268847",
+      "value": "0.00663101301",
+      "clipfrac": "0.0622272491",
+      "vram_used_gb": "14.797852"
+    }
+  ],
+  "changed_weights": true,
+  "history_score": "6.59375",
+  "binary_sha256": "84eab0ac17a5748e62a2ee27bb1053e0dc849deeee441fa68d2e1f4affaf2fba",
+  "parent_sha256": "addbbc7e69f4ec2c666fcab9531d9e76cdc5bec1af0eeeca9f3e0b02f3060cfb"
+}

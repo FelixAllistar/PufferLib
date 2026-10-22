@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "source": "checkpoints/retro_archive_smoke_20261019/retro/sweep_1792427855163_0000/0000000008388608.bin",
+  "checkpoint": "checkpoints/retro_archive_smoke_20261019/retro/archive_resume/0000000000262144.bin",
+  "cells": 1547,
+  "phase": 1.0,
+  "finite_weights": true,
+  "steps": 262144.0
+}

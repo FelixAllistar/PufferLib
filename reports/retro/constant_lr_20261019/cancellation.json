@@ -1,0 +1,18 @@
+{
+  "utc": "2026-10-19T15:43:19.656468+00:00",
+  "user_requested": "cancel sweep",
+  "scheduler_pid": 680956,
+  "worker_pid": 753519,
+  "trainer_pid": 753520,
+  "run": "sweep_1792424427575_0111",
+  "state": "cancelled and verified stopped",
+  "preserve": "all completed trials, checkpoints, panels and GP history",
+  "completed_utc": "2026-10-19T15:44:02.835790+00:00",
+  "partial_checkpoints": [
+    "checkpoints/retro_constant_20261019/retro/sweep_1792424427575_0111/0000000018874368.bin"
+  ],
+  "completed_trials": 111,
+  "verified_utc": "2026-10-19T15:44:47.591775+00:00",
+  "tmux": "bash",
+  "gpu_compute_processes": ""
+}

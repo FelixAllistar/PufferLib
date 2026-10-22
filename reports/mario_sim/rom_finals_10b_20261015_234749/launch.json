@@ -1,0 +1,26 @@
+{
+  "command": [
+    "python3",
+    "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_finals_10b_20261015_234749/evaluate_rom.py",
+    "--checkpoint",
+    "run0_10b",
+    "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin",
+    "--checkpoint",
+    "run1_10b",
+    "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin",
+    "--config",
+    "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_finals_10b_20261015_234749/evaluation.ini",
+    "--level-config",
+    "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_finals_10b_20261015_234749/levels.ini",
+    "--output",
+    "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_finals_10b_20261015_234749/results",
+    "--repo-root",
+    "/home/felix/puffertank/pufferlib",
+    "--binary",
+    "/home/felix/puffertank/pufferlib/build/mario_sim/fpg/sim2rom",
+    "--workers",
+    "4"
+  ],
+  "tmux": "mario-rom-finals-234851",
+  "created_utc": "2026-10-15T23:48:51.211633+00:00"
+}

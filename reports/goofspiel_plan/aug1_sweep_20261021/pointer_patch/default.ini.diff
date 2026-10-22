@@ -1,0 +1,11 @@
+--- orig/default.ini	2026-10-21 20:11:54.924772140 -0400
++++ default.ini	2026-10-21 20:14:43.178601199 -0400
+@@ -89,6 +89,8 @@
+ num_layers = 4
+ # 1 = zero the MinGRU state every step (feedforward ablation; Goofspiel exact eval matches).
+ memoryless = 0
++# Goofspiel Transformer: 1 = each card's logit comes from its own card token (pointer decoder).
++transformer_pointer = 0
+ 
+ [train]
+ gpus = 1

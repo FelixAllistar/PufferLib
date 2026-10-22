@@ -1,0 +1,50 @@
+[
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin",
+    "local": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin",
+    "sha256": "cebb85725e8f61ba24e6c2bd5d4c5cbaada1dcf339bde0cb802377f15ab0b4f1",
+    "bytes": 1965248
+  },
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin.curriculum",
+    "local": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin.curriculum",
+    "sha256": "8d2872b5a6c7c9417ccd4e8ea766bc4cdd6fc876cc1159c97f174f4704d7ad7e",
+    "bytes": 32976
+  },
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin.curriculum.json",
+    "local": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin.curriculum.json",
+    "sha256": "c3f85ac0e66ada1220b114ba438f98c9dd355fb49adc16328d1cbca0d873bebb",
+    "bytes": 835
+  },
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin",
+    "local": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin",
+    "sha256": "7935ee1cfe0b543957fa0a24abf33a059899637d004e3dadd757eb3c08ff7b69",
+    "bytes": 1965248
+  },
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin.curriculum",
+    "local": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin.curriculum",
+    "sha256": "a52b7148826842d8ce426863836ef40b210ce13dfcc95e86b2550fbb8f149430",
+    "bytes": 32976
+  },
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin.curriculum.json",
+    "local": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin.curriculum.json",
+    "sha256": "b39c65d2cd35533948f0a9648d7fa8c813af908d5f781c4c53c187e847246408",
+    "bytes": 840
+  },
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/logs/mario_sim/sweep_1792016021935_0000.ini",
+    "local": "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_finals_10b_20261015_234749/sweep_1792016021935_0000.ini",
+    "sha256": "e232bedce721ee5feff5fc124a976d60a1f54700271f71871d3d5244a46f0f2d",
+    "bytes": 5892
+  },
+  {
+    "remote": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/logs/mario_sim/sweep_1792052933835_0001.ini",
+    "local": "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_finals_10b_20261015_234749/sweep_1792052933835_0001.ini",
+    "sha256": "c4120db0e4423f0d6ec0de51fc39940064b84765f64df15dfd1164d823f990df",
+    "bytes": 5906
+  }
+]

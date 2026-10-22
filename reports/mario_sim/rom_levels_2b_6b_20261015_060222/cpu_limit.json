@@ -1,0 +1,18 @@
+{
+  "allowed_eval_cpus": [
+    46,
+    47
+  ],
+  "pids": [
+    167510,
+    167514,
+    167516,
+    167521,
+    167660,
+    167678,
+    167686,
+    167702,
+    167725
+  ],
+  "reason": "Container quota 11.52 cores; reserve CPU for live training."
+}

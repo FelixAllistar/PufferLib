@@ -1,0 +1,34 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "46,47",
+    "python3",
+    "/workspace/PufferLib/reports/mario_sim/rom_finals_10b_20261015_234749/assets/evaluate_rom.py",
+    "--checkpoint",
+    "run0_10b",
+    "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin",
+    "--checkpoint",
+    "run1_10b",
+    "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin",
+    "--config",
+    "/workspace/PufferLib/reports/mario_sim/rom_finals_10b_20261015_234749/assets/evaluation.ini",
+    "--level-config",
+    "/workspace/PufferLib/reports/mario_sim/rom_finals_10b_20261015_234749/assets/levels.ini",
+    "--output",
+    "/workspace/PufferLib/reports/mario_sim/rom_finals_10b_20261015_234749/results",
+    "--repo-root",
+    "/workspace/PufferLib/reports/mario_sim/rom_finals_10b_20261015_234749/runtime",
+    "--binary",
+    "/workspace/PufferLib/reports/mario_sim/rom_finals_10b_20261015_234749/assets/sim2rom",
+    "--workers",
+    "4",
+    "--nice",
+    "15"
+  ],
+  "tmux": "mario-finals-234749",
+  "cpu_affinity": [
+    46,
+    47
+  ]
+}

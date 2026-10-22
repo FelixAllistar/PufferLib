@@ -1,0 +1,12 @@
+{
+  "local": "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_levels_2b_6b_20261015_060222",
+  "remote": "/workspace/PufferLib/reports/mario_sim/rom_levels_2b_6b_20261015_060222",
+  "archive": "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_levels_2b_6b_20261015_060222/assets.tar.gz",
+  "assets_sha256": {
+    "sim2rom": "b4594c61e5ac85d41e87ce786139125562564c7245cd60d5224e08bc353df451",
+    "evaluate_rom.py": "8be1c8c261d94bd49c9e2125016c471a88982d5ece747f575f5857b28716bbac",
+    "sim2rom.cpp": "f11141a26e707d862f8e2ea8bf7a3f4061f0ea41a4f4ea3f053bb02cb8619a7d",
+    "evaluation.ini": "496a6fa679c102f6dcb7775c2274b992c079a49a2e169b4d8059e26677e87081",
+    "levels.ini": "7b83cf6367ee747552be90b304a1843f405ab68f1005f560cd4a610d1f1f1648"
+  }
+}

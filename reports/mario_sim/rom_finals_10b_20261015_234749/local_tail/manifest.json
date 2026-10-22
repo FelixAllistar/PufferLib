@@ -1,0 +1,23 @@
+{
+  "created_utc": "2026-10-15T23:48:51.942966+00:00",
+  "seed": 137,
+  "episodes_per_level": 32,
+  "level_frame_limit": 6000,
+  "levels_only": false,
+  "evaluator_sha256": "b4594c61e5ac85d41e87ce786139125562564c7245cd60d5224e08bc353df451",
+  "config_sha256": "496a6fa679c102f6dcb7775c2274b992c079a49a2e169b4d8059e26677e87081",
+  "level_config_sha256": "7b83cf6367ee747552be90b304a1843f405ab68f1005f560cd4a610d1f1f1648",
+  "rom_sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea",
+  "models": {
+    "run0_10b": {
+      "checkpoint": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792016021935_0000/0000009999745024.bin",
+      "sha256": "cebb85725e8f61ba24e6c2bd5d4c5cbaada1dcf339bde0cb802377f15ab0b4f1",
+      "panels": {}
+    },
+    "run1_10b": {
+      "checkpoint": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792052933835_0001/0000009999745024.bin",
+      "sha256": "7935ee1cfe0b543957fa0a24abf33a059899637d004e3dadd757eb3c08ff7b69",
+      "panels": {}
+    }
+  }
+}

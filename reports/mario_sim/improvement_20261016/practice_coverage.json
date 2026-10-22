@@ -1,0 +1,245 @@
+[
+  {
+    "level": "1-1",
+    "states": 8,
+    "areas": [
+      42640
+    ],
+    "area_types": [
+      1
+    ],
+    "x_range": [
+      347,
+      3086
+    ],
+    "sources": [
+      "policy_route_0",
+      "policy_route_13",
+      "powerup_1_1"
+    ]
+  },
+  {
+    "level": "2-2",
+    "states": 8,
+    "areas": [
+      44615
+    ],
+    "area_types": [
+      0
+    ],
+    "x_range": [
+      192,
+      1310
+    ],
+    "sources": [
+      "jump_cycle_0",
+      "policy_route_1",
+      "policy_route_14"
+    ]
+  },
+  {
+    "level": "4-3",
+    "states": 8,
+    "areas": [
+      43153
+    ],
+    "area_types": [
+      1
+    ],
+    "x_range": [
+      128,
+      396
+    ],
+    "sources": [
+      "policy_route_15",
+      "policy_route_2"
+    ]
+  },
+  {
+    "level": "4-4",
+    "states": 8,
+    "areas": [
+      41490
+    ],
+    "area_types": [
+      3
+    ],
+    "x_range": [
+      40,
+      722
+    ],
+    "sources": [
+      "idle_entry_phase",
+      "jump_cycle_1"
+    ]
+  },
+  {
+    "level": "5-4",
+    "states": 8,
+    "areas": [
+      41617
+    ],
+    "area_types": [
+      3
+    ],
+    "x_range": [
+      193,
+      1026
+    ],
+    "sources": [
+      "policy_route_17",
+      "policy_route_4"
+    ]
+  },
+  {
+    "level": "6-3",
+    "states": 8,
+    "areas": [
+      43256
+    ],
+    "area_types": [
+      1
+    ],
+    "x_range": [
+      130,
+      648
+    ],
+    "sources": [
+      "policy_route_18",
+      "policy_route_5"
+    ]
+  },
+  {
+    "level": "6-4",
+    "states": 8,
+    "areas": [
+      41393
+    ],
+    "area_types": [
+      3
+    ],
+    "x_range": [
+      284,
+      2189
+    ],
+    "sources": [
+      "policy_route_19",
+      "policy_route_6"
+    ]
+  },
+  {
+    "level": "7-2",
+    "states": 8,
+    "areas": [
+      44615
+    ],
+    "area_types": [
+      0
+    ],
+    "x_range": [
+      163,
+      1216
+    ],
+    "sources": [
+      "jump_cycle_0",
+      "jump_cycle_1",
+      "policy_route_20",
+      "policy_route_7"
+    ]
+  },
+  {
+    "level": "7-4",
+    "states": 8,
+    "areas": [
+      41841
+    ],
+    "area_types": [
+      3
+    ],
+    "x_range": [
+      40,
+      756
+    ],
+    "sources": [
+      "idle_entry_phase",
+      "jump_cycle_0",
+      "jump_cycle_1",
+      "policy_route_21",
+      "policy_route_8"
+    ]
+  },
+  {
+    "level": "8-1",
+    "states": 8,
+    "areas": [
+      43521
+    ],
+    "area_types": [
+      1
+    ],
+    "x_range": [
+      327,
+      3405
+    ],
+    "sources": [
+      "jump_cycle_1",
+      "policy_route_22"
+    ]
+  },
+  {
+    "level": "8-2",
+    "states": 8,
+    "areas": [
+      43783
+    ],
+    "area_types": [
+      1
+    ],
+    "x_range": [
+      130,
+      512
+    ],
+    "sources": [
+      "jump_cycle_0",
+      "jump_cycle_1",
+      "policy_route_10",
+      "policy_route_23"
+    ]
+  },
+  {
+    "level": "8-3",
+    "states": 8,
+    "areas": [
+      42192
+    ],
+    "area_types": [
+      1
+    ],
+    "x_range": [
+      257,
+      1825
+    ],
+    "sources": [
+      "policy_route_11",
+      "policy_route_24"
+    ]
+  },
+  {
+    "level": "8-4",
+    "states": 8,
+    "areas": [
+      41980
+    ],
+    "area_types": [
+      3
+    ],
+    "x_range": [
+      257,
+      1095
+    ],
+    "sources": [
+      "jump_cycle_0",
+      "policy_route_12"
+    ]
+  }
+]

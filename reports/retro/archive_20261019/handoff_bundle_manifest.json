@@ -1,0 +1,612 @@
+{
+  "purpose": "portable current-best policy, archive, history, resolved settings, source overlay; no ROM or generated ROM blocks",
+  "best_run": "sweep_1792431845100_0002",
+  "best_checkpoint": "/workspace/PufferLib/checkpoints/retro_archive_20261019/retro/sweep_1792431845100_0002/0000000200015872.bin",
+  "git_head": "dedfb9f41957a6e4bfa188918eae1dbe606cf96e",
+  "files": {
+    "checkpoints/retro_archive_20261019/retro/sweep_1792431845100_0002/0000000200015872.bin": {
+      "bytes": 2240864,
+      "sha256": "0e8fe85fdac641a443cc826e13c8886852423c4c82517d80e588d6ad4ec4756b"
+    },
+    "checkpoints/retro_archive_20261019/retro/sweep_1792431845100_0002/0000000200015872.bin.ini": {
+      "bytes": 5018,
+      "sha256": "0e08d8a42b0b89bdaec79eeb184ac614a774a1e630f168ff508b460b132d7586"
+    },
+    "checkpoints/retro_archive_20261019/retro/sweep_1792431845100_0002/0000000200015872.bin.archive.gz": {
+      "bytes": 6725050,
+      "sha256": "fdce51dfe2d957e99051e11bf0a5b61c8d0158e2ad51e539c3be9ce48b340bd8"
+    },
+    "checkpoints/retro_archive_20261019/retro/sweep_1792431845100_0002/0000000200015872.bin.panel.tsv": {
+      "bytes": 8230,
+      "sha256": "cf47555510db726b9947f62494e6d83d32f471dd61fe1c8e3f0fe95fde6d2f5b"
+    },
+    "checkpoints/retro_archive_20261019/retro/sweep_1792431845100_0002/0000000200015872.bin.game.tsv": {
+      "bytes": 2098,
+      "sha256": "375142c84057b149556b8cf2075ac54c58870d8ee862c5c67ae1b37b241f8cd8"
+    },
+    "saved/retro/pixel_197_20261018.bin": {
+      "bytes": 2240864,
+      "sha256": "80127cad3ec19a5a1df84f5566a22a3c41d741a0bceec6da96ded2c9d95178bc"
+    },
+    "saved/retro/pixel_197_20261018.bin.ini": {
+      "bytes": 9166,
+      "sha256": "3709650c7a30925e192066a211453ddc56af50f8410fb5cc4269611fa5c7e080"
+    },
+    "config/retro.ini": {
+      "bytes": 4790,
+      "sha256": "aa3df9686da6792c02a6e13e2b5d4c353986b4b1310e1be14c279b4d904ce220"
+    },
+    "config/default.ini": {
+      "bytes": 5649,
+      "sha256": "b38106e0c8809be18480a7c984506d5d2f6d414aa637e72b34a3680e62f211c4"
+    },
+    "build.sh": {
+      "bytes": 26760,
+      "sha256": "f6095b73803e52a5961c864229fe014e6e438c37c769dbd4e1696c9a286a1f42"
+    },
+    "src/pufferl.cu": {
+      "bytes": 156793,
+      "sha256": "3c79edff2f9c7ab0885b046444c141e1a5adc610ca98eb91d129804701282e5f"
+    },
+    "src/protein.cu": {
+      "bytes": 48094,
+      "sha256": "9098eec1721141cb8e5ad3ce4813bdcbe02d8745fa0b394c31224401f58de57f"
+    },
+    "src/sweep_history.h": {
+      "bytes": 3923,
+      "sha256": "16e84fce71cb1eb01c474cfa84a8e09e457b953d4e0b9053cf97af9f42193925"
+    },
+    "logs/retro_archive_20261019/sweep.history": {
+      "bytes": 1120,
+      "sha256": "01d82e5c242e82d400666a9a32170657491aebc45e5d79b8d34df19ea35e7720"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792428226042_0000.eval/trial.json": {
+      "bytes": 10726,
+      "sha256": "0e46e709de6e964d246fbaabc6f497af6b87c966362a9b3f1c50884176605475"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792430039708_0001.eval/trial.json": {
+      "bytes": 10725,
+      "sha256": "4e7071a4ee7312d8eba2cc5a0c57301c5eec1857df379eed2cf2d63deb7d8d2c"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792431845100_0002.eval/trial.json": {
+      "bytes": 10724,
+      "sha256": "00c04e543a70ed4ce2d55b2916a68294baf611b5b0b7d7a2833bec9dce161b2b"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792433650670_0003.eval/trial.json": {
+      "bytes": 10721,
+      "sha256": "75da3e882534b874c8d187a0ff83e6061738e12cd618e52c8fcf0ddc3173d8d1"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792435442226_0004.eval/trial.json": {
+      "bytes": 10720,
+      "sha256": "2e1eb97cc39758e46b46c3e4b1737e67da8336ac543262b9a51200ad73406871"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792437211540_0005.eval/trial.json": {
+      "bytes": 10720,
+      "sha256": "1c946c8d6a7edee960222a03df31d22b9a815fddbb4fa1a3c4532ea1a536fd45"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792438998891_0006.eval/trial.json": {
+      "bytes": 10728,
+      "sha256": "9f03c5a267ee0fc302c8468f6e22bf3bb5f3ccc4d8b4a1c3a4cf54f29b2b2fed"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792440788430_0007.eval/trial.json": {
+      "bytes": 10724,
+      "sha256": "d911f15a6828b5e9c6464500aa63fff3e49a7fe6359b39ab9239434062644a69"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792442563673_0008.eval/trial.json": {
+      "bytes": 10737,
+      "sha256": "59235c861648d7a501ccb37ecaa5bfc29a674aff579ba1b2100fa776c30b7be1"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792444367069_0009.eval/trial.json": {
+      "bytes": 10727,
+      "sha256": "d2f02f2734cd710bbc23de2197d907021676b31cdbde6ce522a96432f7310290"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792428226042_0000.eval/settings.json": {
+      "bytes": 8537,
+      "sha256": "c3c8936bf170cb9906040b1ce34b5825f17c415fa67be7b3e4b421c2fc9bb67b"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792430039708_0001.eval/settings.json": {
+      "bytes": 8545,
+      "sha256": "3d7f2ddd9998c834f5239850e3d0b9597d75a7ced5473471bf8630abf7c10ede"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792431845100_0002.eval/settings.json": {
+      "bytes": 8545,
+      "sha256": "06aff58f250e3add89dd3e51b8c894b74ceea2089296c325e730c7986f0f3810"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792433650670_0003.eval/settings.json": {
+      "bytes": 8544,
+      "sha256": "bfa7d3a318dc153da363b793de0364bad8d5055e923476dab122eaa24070b62f"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792435442226_0004.eval/settings.json": {
+      "bytes": 8543,
+      "sha256": "8557ba78814e6f83736474d22b6cc002934c939714288745892693027407631e"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792437211540_0005.eval/settings.json": {
+      "bytes": 8543,
+      "sha256": "a62f2aca44fe60da8be529a6bdb7d7685a3d698430d4af2a5f4a466962fe4412"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792438998891_0006.eval/settings.json": {
+      "bytes": 8544,
+      "sha256": "2bb67b05cebd12e191a945466cbe3540649ba460d8db7a8d279e742551b66d6a"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792440788430_0007.eval/settings.json": {
+      "bytes": 8544,
+      "sha256": "5a8cb465367b3245579165f48fe9793bef969fc143102e28e788c5c2663d2494"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792442563673_0008.eval/settings.json": {
+      "bytes": 8545,
+      "sha256": "a7f4d136334f0821493b2b85cae8d9d23c237121f1a7bd8da086858a23e660b1"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792444367069_0009.eval/settings.json": {
+      "bytes": 8545,
+      "sha256": "e119ce395301fac7ab537c95dcbf1a7cb6b2916d2790d9a695a4c5a8ac090525"
+    },
+    "logs/retro_archive_20261019/retro/sweep_1792446150297_0010.eval/settings.json": {
+      "bytes": 8544,
+      "sha256": "8d133061ffc4167f54d9fccfe992c8b797d3143dcfd80d375e6abeb87f2d3441"
+    },
+    "reports/retro/archive_20261019/launch.json": {
+      "bytes": 26515,
+      "sha256": "609d2e16f5d8b619a9bacd37d56c782e8a9015807cdc8a8b38055d7b88b770b0"
+    },
+    "reports/retro/archive_20261019/resume.json": {
+      "bytes": 315,
+      "sha256": "77da7e54001198bafaa62f00604c533d9a23235c5afda85fc2e2c59074f9bfe0"
+    },
+    "reports/retro/archive_20261019/parent.panel.tsv": {
+      "bytes": 8157,
+      "sha256": "fdfe56517d749f5f90467e91591abf4e87b1553565eba15cfd3bf911095b41f4"
+    },
+    "reports/retro/archive_20261019/parent.game.tsv": {
+      "bytes": 2052,
+      "sha256": "3894313ef8deea61e38b57e2feea35304d8412ac8e1242ab1c599a18ac56d2e1"
+    },
+    "ocean/retro/EXPERIMENTS.md": {
+      "bytes": 14169,
+      "sha256": "493945dfa275f564f05e8b4e634049fcecc92a365fba4c02902c2a7b456bf0c0"
+    },
+    "ocean/retro/Makefile": {
+      "bytes": 5562,
+      "sha256": "56e408f3f269fd225a4bfe7ba0e51208de904f4b3b65de8925fa81dae7e600f7"
+    },
+    "ocean/retro/README.md": {
+      "bytes": 18594,
+      "sha256": "690ecadc6f7eb867a80359f993b0fd33a760d74f5781e77ce6c5962e4d2870ad"
+    },
+    "ocean/retro/capture_practice.cpp": {
+      "bytes": 3527,
+      "sha256": "782885c2e3594591a83e31eb9e7d43144dffdbee224dfa9b63a3857702f3c174"
+    },
+    "ocean/retro/retro.c": {
+      "bytes": 16870,
+      "sha256": "57bf836f498397cf9a6e4900fe4c8d13d00e27830e8f38957a03270dfa84970a"
+    },
+    "ocean/retro/retro.h": {
+      "bytes": 49388,
+      "sha256": "91bec74fe7647198a93e3380787bcfee62add72171dc454776d7883322dcf459"
+    },
+    "ocean/retro/retro_encoder.cu": {
+      "bytes": 19273,
+      "sha256": "0cc2f928f1c732ae8c647bf0b650a21aff88bbb2c2a87bac486417b882786145"
+    },
+    "ocean/retro/retro_inspect.h": {
+      "bytes": 12764,
+      "sha256": "e703db6d041b51312a601203d0f311eef10e2cc7205abad12ac9489c7713ce16"
+    },
+    "ocean/retro/retro_obs.h": {
+      "bytes": 10247,
+      "sha256": "08fd4162f904d84c78e73b2463f86f02bb78f00d28f90181e75fafd62e950435"
+    },
+    "ocean/retro/retro_playback.h": {
+      "bytes": 940,
+      "sha256": "05fd68553595a17e7d3a494771f738d2e387ef07f5eafc9a75c9a6cd2aec5c8e"
+    },
+    "ocean/retro/retro_policy_api.c": {
+      "bytes": 1525,
+      "sha256": "c9cbab01dff3c0af27367e2f07596db8d1ee1d361e76bf8f5a763a03421ceb01"
+    },
+    "ocean/retro/retro_policy_cpu.h": {
+      "bytes": 4000,
+      "sha256": "7ef46b846315b752ad002606f888199ecd98c8ab0eaf8439efb6c06021182a47"
+    },
+    "ocean/retro/retro_policy_shape.h": {
+      "bytes": 1725,
+      "sha256": "47425f48f4c479625f38b008eec023b7b0295c17ce636619e8eb1ad0530bab8e"
+    },
+    "ocean/retro/retro_resolution.h": {
+      "bytes": 470,
+      "sha256": "a51a221caad4ef01b86e9e58640eb76bfad9d15d81466da00fca27d468ba008e"
+    },
+    "ocean/retro/retro_rom_identity.h": {
+      "bytes": 910,
+      "sha256": "82813deb56df458f03fe21282362c0bf08840d4e0249c857b589da455fa78e78"
+    },
+    "ocean/retro/retro_sweep_config.h": {
+      "bytes": 7440,
+      "sha256": "66aae313bbc6d07665f74045d8203a8644a806e5c757da1e884638f4d7f05a09"
+    },
+    "ocean/retro/retro_timing.h": {
+      "bytes": 2727,
+      "sha256": "5e9fcc9188dba490e20a305c1287e73e65d9d681f8a8e150a7f4596197c14c77"
+    },
+    "ocean/retro/smb1_tiles.h": {
+      "bytes": 659,
+      "sha256": "4c0a29a0a58d38ab16f359b699a0fa14d8ed9e99c2e4fc716c71f594210be8ba"
+    },
+    "ocean/retro/sweep_eval.cpp": {
+      "bytes": 14029,
+      "sha256": "d1168a591a53e492158f76cb356f68578df01497e6b15dfafff1cd5032d52886"
+    },
+    "ocean/retro/training_config.h": {
+      "bytes": 7573,
+      "sha256": "83e12090236188f3d79bb021453abfec99a27175116c24faa0e46a56ed22e202"
+    },
+    "ocean/retro/sweep_worker.py": {
+      "bytes": 11964,
+      "sha256": "c2aa63f5d4e96f8e5b0dbe99d03dfbfc659c34b94cb15ba0ad0bf875e3d3088e"
+    },
+    "ocean/retro/retro_archive.h": {
+      "bytes": 12531,
+      "sha256": "28adb09735d348c3bf6191ff5ba49e7b0e3ceb77246d6278dff0cb64969557b2"
+    },
+    "ocean/retro/batch/generate_blocks.py": {
+      "bytes": 15752,
+      "sha256": "50fa3c0e3110daa9277aae6e04be7e1992e291e1789f2e0f49e6b6563f8aa816"
+    },
+    "ocean/retro/batch/test_batch.cpp": {
+      "bytes": 13538,
+      "sha256": "3568b01b0e09318b631eb18bd526f792606fe4ab4d45f7860af5a431830ec537"
+    },
+    "ocean/retro/batch/test_observation.cpp": {
+      "bytes": 4317,
+      "sha256": "c391e3c711ec1e5ef312dbb419353e3ad8cd0a22d825fced421ea62aa85f4217"
+    },
+    "ocean/retro/nes_emu/Blip_Buffer.cpp": {
+      "bytes": 10840,
+      "sha256": "1f892c60c2065cff413403e60c0fa894575352ad6b9583bdaab582e9ad7ff82f"
+    },
+    "ocean/retro/nes_emu/Blip_Buffer.h": {
+      "bytes": 13848,
+      "sha256": "88d3b7585d93634bb8beea377d70632eaafc1dea63da7563f04d5ce722a968d8"
+    },
+    "ocean/retro/nes_emu/Data_Reader.cpp": {
+      "bytes": 2314,
+      "sha256": "c0e9fc311a8f764b5841b3d9fdb259b97afd1a151f1eb51e79c3c055e1a7e0db"
+    },
+    "ocean/retro/nes_emu/Data_Reader.h": {
+      "bytes": 3452,
+      "sha256": "2b3eb4dbc129d4b5f056c4b31980d20dfd4962e355b4031676833380c009df6f"
+    },
+    "ocean/retro/nes_emu/Effects_Buffer.cpp": {
+      "bytes": 14559,
+      "sha256": "b956329409dfd9eabaa8838a68f50c283fa78538d527973156a88e63f4691ab7"
+    },
+    "ocean/retro/nes_emu/Effects_Buffer.h": {
+      "bytes": 3276,
+      "sha256": "ec925bafacbc702f9d36654f53d57dae8d07b68aaa1d4eed977a17a744429bd8"
+    },
+    "ocean/retro/nes_emu/Multi_Buffer.cpp": {
+      "bytes": 5770,
+      "sha256": "ffe3657233109455fa26a62ef5d87205a748d2b77e5bb463c661d91645b86b59"
+    },
+    "ocean/retro/nes_emu/Multi_Buffer.h": {
+      "bytes": 5425,
+      "sha256": "c0d0af8d8c5303eccaeaeb26b8e5f15d095d44c43b5db77e24c43d7872185654"
+    },
+    "ocean/retro/nes_emu/Nes_Apu.cpp": {
+      "bytes": 8455,
+      "sha256": "22e497733d552f263f2d381826c23ab5553d9b58f823d4bbbb517b2c0358cf8f"
+    },
+    "ocean/retro/nes_emu/Nes_Apu.h": {
+      "bytes": 5321,
+      "sha256": "994b2ed3a0e3005beb6dace92ad1cfb5097b32f14cb0b98e2e364996dfb38408"
+    },
+    "ocean/retro/nes_emu/Nes_Buffer.cpp": {
+      "bytes": 5069,
+      "sha256": "093c88257699c1285f5957ae390c63721f3d0fb58c8b9f1d20a2d262a7e542d0"
+    },
+    "ocean/retro/nes_emu/Nes_Buffer.h": {
+      "bytes": 1654,
+      "sha256": "27ed3b12c09380ee131de7a19d379c743af877f593a39cc4b35113e22354c091"
+    },
+    "ocean/retro/nes_emu/Nes_Cart.cpp": {
+      "bytes": 2908,
+      "sha256": "f74ff16f538e25c56bdef4bd294a389667bf2c624945de9da3b51e52bc96a671"
+    },
+    "ocean/retro/nes_emu/Nes_Cart.h": {
+      "bytes": 1982,
+      "sha256": "77ae83f8ea4bb68c50a0a91063c294fa1b320286b120330d5c8c73fb10b05cb8"
+    },
+    "ocean/retro/nes_emu/Nes_Core.cpp": {
+      "bytes": 11958,
+      "sha256": "d931106c43e4c18b87d4a1418cbad97b5daedca82f20a51e4ba8de850ce8fe16"
+    },
+    "ocean/retro/nes_emu/Nes_Core.h": {
+      "bytes": 3235,
+      "sha256": "75dd2ffb0813adc88f834e4d20c7660e9dbab5c987f3f4a6d7a808d5cbe05498"
+    },
+    "ocean/retro/nes_emu/Nes_Cpu.cpp": {
+      "bytes": 27179,
+      "sha256": "c034509ab2a2a117e60429b33f74b63978fc3dbd8b7f857eda4bf3d6263a2cb5"
+    },
+    "ocean/retro/nes_emu/Nes_Cpu.h": {
+      "bytes": 3756,
+      "sha256": "026b6b66243b367b8305bc9a4ff4d17ccc39ae17ec56009f10d62b63d406024e"
+    },
+    "ocean/retro/nes_emu/Nes_Effects_Buffer.cpp": {
+      "bytes": 2623,
+      "sha256": "1469404a7ce082e91523d4a728fe39a41f3628b1ebc8a90156c4a404c89e3697"
+    },
+    "ocean/retro/nes_emu/Nes_Effects_Buffer.h": {
+      "bytes": 1049,
+      "sha256": "721b4f0fccb070aaa0b8f9e3655195a6b8fb2c7567cc2677a86c73f6125a77a5"
+    },
+    "ocean/retro/nes_emu/Nes_Emu.cpp": {
+      "bytes": 18375,
+      "sha256": "b581a28b8d59738673bfa994be8d61dab69ab4e32647c886b905c92b31835459"
+    },
+    "ocean/retro/nes_emu/Nes_Emu.h": {
+      "bytes": 11441,
+      "sha256": "06485a1e511ea64ae32b77c363f86944e6e28fdc3f312b292469f9c7d4b6a959"
+    },
+    "ocean/retro/nes_emu/Nes_File.cpp": {
+      "bytes": 4313,
+      "sha256": "40eabee0890e4f5d7212a5d0b8ca2ae810f3417913dedb5078995f3ded1839d4"
+    },
+    "ocean/retro/nes_emu/Nes_File.h": {
+      "bytes": 3000,
+      "sha256": "398723470b988bd9c6c4ec774031c97bb5325ecc2491839e1e94c333b52dc718"
+    },
+    "ocean/retro/nes_emu/Nes_Fme7_Apu.cpp": {
+      "bytes": 3119,
+      "sha256": "a512b7fd2be1d6e3b97c7e6df4966e404386ceed7105d18656a1486486008606"
+    },
+    "ocean/retro/nes_emu/Nes_Fme7_Apu.h": {
+      "bytes": 2655,
+      "sha256": "6cbb8a7f4c2955e1f95dc78657d1a67cbd6a01d75972fe2ffc2c998a9cdc0134"
+    },
+    "ocean/retro/nes_emu/Nes_Mapper.cpp": {
+      "bytes": 9437,
+      "sha256": "c8dd929984db7e6c617fd8c108724cee71e62dcf84b7809e9c632a955ac5eed5"
+    },
+    "ocean/retro/nes_emu/Nes_Mapper.h": {
+      "bytes": 7447,
+      "sha256": "b89e06cf033a62766bb003cdb3da919f6ad31ec63f53f5b1d8486bd0ad132d7c"
+    },
+    "ocean/retro/nes_emu/Nes_Namco_Apu.cpp": {
+      "bytes": 4221,
+      "sha256": "fb6cf3159e5a142154e4a1b8491e14117c0c57d0bb81ed8c3b5fad9a0986c0a7"
+    },
+    "ocean/retro/nes_emu/Nes_Namco_Apu.h": {
+      "bytes": 2108,
+      "sha256": "bf891d1ad58110c8a7d8fecbccc25b5e0ccf8850caecc94369d5423bb62fd6c3"
+    },
+    "ocean/retro/nes_emu/Nes_Oscs.cpp": {
+      "bytes": 12137,
+      "sha256": "9eb13a2cbb9b9c8907246dd9e9c33867278c81fb6c55c55b6f06b68db78a79f3"
+    },
+    "ocean/retro/nes_emu/Nes_Oscs.h": {
+      "bytes": 2882,
+      "sha256": "512077a3d699eff012b01c50832e11a9c7c2de7f42548a161ef1e7e5c259706c"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu.cpp": {
+      "bytes": 15265,
+      "sha256": "007096874a78d199b2c1a6b6a38dbcbfdd9e342afc1372164edd9b9bfb641cc1"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu.h": {
+      "bytes": 3712,
+      "sha256": "7cc367da65f8df04f8b716167c37e6279493bc9b7324e72264502d7b45d00208"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu_Bg.h": {
+      "bytes": 2226,
+      "sha256": "9f34b85edd2efa1638c13e3c884c13176a9a88034323ecd2e22e09162e8616f4"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu_Impl.cpp": {
+      "bytes": 13931,
+      "sha256": "7496b86613652858b65bd30b5ed6db7990cacbd312aade7b4ab3816c8f35192e"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu_Impl.h": {
+      "bytes": 7638,
+      "sha256": "e9d4a2869162614ce1bc1ebc5103e3ebc9a1ea09ab003a7c885546cb9bb7a385"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu_Rendering.cpp": {
+      "bytes": 12800,
+      "sha256": "0f6bcf0d2d2e46120bcdf14a1de181502448267284c439e5d0f5089144fe72e5"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu_Rendering.h": {
+      "bytes": 1481,
+      "sha256": "24715da89b9c04ed99f33ef7bb21ecbb4adf7504df15ae7e164f44291863bde7"
+    },
+    "ocean/retro/nes_emu/Nes_Ppu_Sprites.h": {
+      "bytes": 3455,
+      "sha256": "2d4d42d5f9ec2860bcddedc825020864419603125c75413a3e955f64bdbfa23b"
+    },
+    "ocean/retro/nes_emu/Nes_State.cpp": {
+      "bytes": 6602,
+      "sha256": "bd727ba3a17cda76d6b3cf7b16cf7b6ee17f45a9aafa81d5343e28e8541ecda2"
+    },
+    "ocean/retro/nes_emu/Nes_State.h": {
+      "bytes": 3085,
+      "sha256": "cf59cfd755b26f319355456b5e0edcf1c21a80db637b2d1693d185b26a2870d9"
+    },
+    "ocean/retro/nes_emu/Nes_Vrc6_Apu.cpp": {
+      "bytes": 4536,
+      "sha256": "7353e461ad97140621ba473db820cc45bbf47e11afc4143d6460ddd2d765e168"
+    },
+    "ocean/retro/nes_emu/Nes_Vrc6_Apu.h": {
+      "bytes": 2069,
+      "sha256": "3ac15682630b636c43c3589e08847753ca0681e00a24004a3a9b683c2c74cbec"
+    },
+    "ocean/retro/nes_emu/Nes_Vrc7.cpp": {
+      "bytes": 5398,
+      "sha256": "ab557f80c3a0b0ac82afa38956cb0685e8016bd16569dbd92ac65cd672afed58"
+    },
+    "ocean/retro/nes_emu/Nes_Vrc7.h": {
+      "bytes": 1386,
+      "sha256": "112f4cb79eb53387b4365f231cdaa3e87f29cc639e6505faa18163688818dc2e"
+    },
+    "ocean/retro/nes_emu/abstract_file.cpp": {
+      "bytes": 2456,
+      "sha256": "381e4a047c593c78b29c4dfe25ef18cb4da7e5040796dbf061cce6e4154608a8"
+    },
+    "ocean/retro/nes_emu/abstract_file.h": {
+      "bytes": 3395,
+      "sha256": "8b189a506c7668352e20d139c86c31a46ce21163ec954eaa975ba75fe6f48587"
+    },
+    "ocean/retro/nes_emu/apu_state.cpp": {
+      "bytes": 4908,
+      "sha256": "d7e27e9509fd4133f5ccad154a1b65a64bd63554c208a798b1bb4d1374450cb5"
+    },
+    "ocean/retro/nes_emu/apu_state.h": {
+      "bytes": 1257,
+      "sha256": "ebf5a0e30d575c110d55ab89f2774922002b5bd217660eb068881378294a4243"
+    },
+    "ocean/retro/nes_emu/blargg_common.h": {
+      "bytes": 2115,
+      "sha256": "f39b89b8ce5d81cd2a4b73cdaf7428727fc08ee183afa6cae6e1b46216bb9492"
+    },
+    "ocean/retro/nes_emu/blargg_config.h": {
+      "bytes": 247,
+      "sha256": "06859a542c6b3d7da5c4e76a4627000ed80da6f8a75a062f261588693d93dfe4"
+    },
+    "ocean/retro/nes_emu/blargg_endian.h": {
+      "bytes": 3915,
+      "sha256": "e1f6faa0baa48c5c90fba1b716ac8995586ebb8d1d6e72fa42de1e1eaf0ebf52"
+    },
+    "ocean/retro/nes_emu/blargg_source.h": {
+      "bytes": 1201,
+      "sha256": "f6a815c014f6b613372341151ca1fec6ba65635be2e2a21df58e5073007d6a9d"
+    },
+    "ocean/retro/nes_emu/blip_kernels.h": {
+      "bytes": 96190,
+      "sha256": "2a89637fa06c998307d431b48ba39b18bfe24881381b865af3f4eaf078362c75"
+    },
+    "ocean/retro/nes_emu/emu2413.cpp": {
+      "bytes": 24189,
+      "sha256": "788f87173df56593707cd4e08242259260545d6399613c9ea3255d7cfa3ba8b4"
+    },
+    "ocean/retro/nes_emu/emu2413.h": {
+      "bytes": 4886,
+      "sha256": "49958eee03112cc2ff871bb29563c87cfbf71ef9a44a05d2f0e2105cc139003e"
+    },
+    "ocean/retro/nes_emu/emu2413_state.cpp": {
+      "bytes": 1676,
+      "sha256": "a4d32d3bf59a452fa27c9feb090124bcfb8af0d39e51b48beadbf6cc6a41438d"
+    },
+    "ocean/retro/nes_emu/emu2413_state.h": {
+      "bytes": 586,
+      "sha256": "993c60f7f2c8d5c7e3f6424ed45d7d2006d8482d72831d11ade6d0e4a61eb29e"
+    },
+    "ocean/retro/nes_emu/emu2413_tables.h": {
+      "bytes": 189194,
+      "sha256": "8ffef49e5ff22642cef4630f9dafa3ea0ec159164b5444be103397afcf389640"
+    },
+    "ocean/retro/nes_emu/gen_nes_ntsc_palette_fixed.py": {
+      "bytes": 2817,
+      "sha256": "7059a2946931e533049e207ae13361b596df777bf38ca7820a02b608c3c13aa0"
+    },
+    "ocean/retro/nes_emu/nes_cpu_io.h": {
+      "bytes": 2670,
+      "sha256": "52d46be8ded4974813ce1114c23d7ca0cb34686314d5cf80f11549f2b069a855"
+    },
+    "ocean/retro/nes_emu/nes_data.cpp": {
+      "bytes": 1639,
+      "sha256": "d1e2d82eaf59a89b6cf022e121bdb3375b515d2dc69e8f5524c1c3e18c2f7491"
+    },
+    "ocean/retro/nes_emu/nes_data.h": {
+      "bytes": 4141,
+      "sha256": "8070562f8537687f83b9b32527d7634cfe2207c01b8a1f941d964205aae9bf70"
+    },
+    "ocean/retro/nes_emu/nes_nonlin_table.h": {
+      "bytes": 14442,
+      "sha256": "97c54046ebff7b29e0a97e4a1ba048d56265ccc9684a795a5821651fcbbc78f3"
+    },
+    "ocean/retro/nes_emu/nes_ntsc.cpp": {
+      "bytes": 5706,
+      "sha256": "225dfa3b8bcc538442760007fa0d9e718818e256a28a34c4240b3bbfa361b9d4"
+    },
+    "ocean/retro/nes_emu/nes_ntsc.h": {
+      "bytes": 7637,
+      "sha256": "7e79f2c2482447bfd3f81ff2a68c44b20de1d6f482ec001e0718582fb5056d0d"
+    },
+    "ocean/retro/nes_emu/nes_ntsc_config.h": {
+      "bytes": 880,
+      "sha256": "2a4490c93cd4749cb8c0025c8865be962ef8a189d1c2b50e16a558ead76372be"
+    },
+    "ocean/retro/nes_emu/nes_ntsc_palette_fixed.h": {
+      "bytes": 4590,
+      "sha256": "21c90ef37ed4fb7223836f383d2d32ef4a42718e22a9d1ffc2537ca3cab1ef46"
+    },
+    "ocean/retro/nes_emu/nes_util.cpp": {
+      "bytes": 3723,
+      "sha256": "e78fec54da6fb41b3c0063077ee09bbeda18ad0cabf90c45446eb249110b9abc"
+    },
+    "ocean/retro/nes_emu/nes_util.h": {
+      "bytes": 1655,
+      "sha256": "fd347cce8585f3635a976c9c2c1c17857e77de8bb2bb6362bdf8774bc77df540"
+    },
+    "ocean/retro/practice/pipe_exit.inputs": {
+      "bytes": 3308,
+      "sha256": "798a7939068cd344b644ba46a60fccfa40030a6721e8da277f9b2565ab0dc273"
+    },
+    "ocean/retro/tests/observation_reference.h": {
+      "bytes": 2756,
+      "sha256": "810e9d6b3d02d9f44ed83e1aee7e994d1c6c4f5304f4eb3410e348ecaa5b94ba"
+    },
+    "ocean/retro/tests/test_encoder.cu": {
+      "bytes": 23243,
+      "sha256": "b5d96814a5992c541e3058d793322a771161d71bad24211ed75b7da218958ad2"
+    },
+    "ocean/retro/tests/test_panel.cpp": {
+      "bytes": 1598,
+      "sha256": "8cf483210db297288b77d012f60dcfbf5e8563840a1e6ec54485f8181e0f1bbe"
+    },
+    "ocean/retro/tests/test_panel.py": {
+      "bytes": 3303,
+      "sha256": "94210ee46a41151ce57b308ca5dd6bdb428f21d0f7f0cf887f4778fe9057c53e"
+    },
+    "ocean/retro/tests/test_policy_cpu.c": {
+      "bytes": 4100,
+      "sha256": "20fcb642051e8ef28edc3cc0d333c28b9c1fb0ac552415f6c8e2a294a9155422"
+    },
+    "ocean/retro/tests/test_retro.cpp": {
+      "bytes": 27321,
+      "sha256": "c5bd127aa0c9fda6f99b6f5c1fdd4842be9871390e0d2cd896853e06de2bf6f5"
+    },
+    "ocean/retro/tests/test_training_config.cpp": {
+      "bytes": 3594,
+      "sha256": "47ebb933af60739b11fb3b023561d1177cf029e2994f8cbd9a45bb2551e84838"
+    },
+    "ocean/retro/tests/test_sweep_worker.py": {
+      "bytes": 8632,
+      "sha256": "7fd6e507faab1cf94785225b604a260003ecd73b4e9e7eeb5097ccde23b68723"
+    },
+    "ocean/retro/tests/test_archive.cpp": {
+      "bytes": 4591,
+      "sha256": "a231dc1cc6387f08b4bbdc0b6bcc24abe36683f6aa84fb72bda162ab85e484b0"
+    },
+    "ocean/retro/nes_emu/tools/gen_blip_kernels.cpp": {
+      "bytes": 5917,
+      "sha256": "53704baa80ef48b9ea09352a91a3f7f13900c387d369b98723bd578d2ea66797"
+    },
+    "ocean/retro/nes_emu/tools/gen_emu2413_tables.cpp": {
+      "bytes": 10059,
+      "sha256": "439e979aeb589da7e5cd8efafeb36ecdaf5a095077293edf5dcf95defcfab142"
+    },
+    "ocean/retro/nes_emu/tools/gen_nes_nonlin_table.cpp": {
+      "bytes": 1900,
+      "sha256": "5ce3f1b8892db84410926422c6259051073cfba8c92867629e31f64e28f173e3"
+    },
+    "ocean/retro/nes_emu/tools/verify_blip_kernels.cpp": {
+      "bytes": 1589,
+      "sha256": "902cbcf8c4c267ebc18273d89e65abbdbb9c7f7f0c7f3b338e397a48079cc4d5"
+    },
+    "ocean/retro/nes_emu/tools/verify_emu2413_bake.cpp": {
+      "bytes": 2863,
+      "sha256": "17a6bf09a74ed02c9230c15f4cf11136e5ba142a3b18ac85da9240a3c3707835"
+    },
+    "ocean/retro/nes_emu/tools/verify_nes_nonlin_table.cpp": {
+      "bytes": 1003,
+      "sha256": "b6479e3bb25fd8784464f3a27754f59aa0b838b76a16a4830fdb29e133607b1a"
+    }
+  }
+}

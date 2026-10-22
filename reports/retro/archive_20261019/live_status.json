@@ -1,0 +1,28 @@
+{
+  "checked_utc": "2026-10-19T16:45:30.892033+00:00",
+  "run": "sweep_1792428226042_0000",
+  "latest": {
+    "steps": "11272192",
+    "seconds": "101.300732",
+    "sps": "115190.728",
+    "entropy": "0.215011045",
+    "kl": "0.000585483736",
+    "value": "0.00262563536",
+    "clipfrac": "0.00557031296",
+    "vram_used_gb": "14.805664",
+    "archive_cells": "1547",
+    "archive_phase": "0.072084",
+    "level_steps": "5672289",
+    "full_steps": "2400007",
+    "archive_steps": "3462040"
+  },
+  "history_dimensions": 6,
+  "gpu_processes": "757011, 696 MiB\n757017, 14436 MiB",
+  "log_tail": [
+    "sweep restored completed=0 observations=0 next_run=0 total_target=500 history=logs/retro_archive_20261019/sweep.history",
+    "sweep objective=curriculum goal=maximize trials=500",
+    "sweep start run=0 model=puffernet agents=1024 buffers=4 threads=12 horizon=256 minibatch=4096 replay=1.96 width=256 layers=2",
+    "[Retro sweep] sweep_1792428226042_0000: measured 112,457 decisions/s",
+    "[Retro sweep] sweep_1792428226042_0000: 6,029,312/200,015,872 decisions; 116,364 decisions/s"
+  ]
+}

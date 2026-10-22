@@ -1,0 +1,87 @@
+{
+  "parent_source": "checkpoints/retro_pixel_20261018/retro/1792356246093/0000000838860800.bin",
+  "parent_sha256": "80127cad3ec19a5a1df84f5566a22a3c41d741a0bceec6da96ded2c9d95178bc",
+  "parent_clear_count": 197,
+  "parent_attempts": 256,
+  "parent_mean_checkpoints": 21.1289062,
+  "parent_total_lineage_decisions": 1677721600,
+  "successful_parent_run": {
+    "learning_rate_start": 0.0001,
+    "learning_rate_end": 1e-05,
+    "schedule": "cosine",
+    "epochs": 3200,
+    "mean_lr_discrete": 5.50140625e-05,
+    "mean_lr_continuous": 5.5e-05,
+    "optimizer_updates": 409600
+  },
+  "screen": {
+    "trials": 500,
+    "decisions": 50331648,
+    "epochs": 192,
+    "baseline_lr": 5.5e-05,
+    "baseline_optimizer_updates": 24576,
+    "one_billion_optimizer_updates_rounded": 488192,
+    "nominal_budget_compression": 19.868214925130207,
+    "note": "No learning-rate inflation. Same constant-LR process as a long run for the screened prefix; short-run success does not establish long-run stability. Optimizer updates = floor(steps/batch)*floor(replay*batch/minibatch); sample reuse and new experience cannot be replaced by scaling LR."
+  },
+  "ranking": "100*(clears + 0.5*mean_bounded_progress)/attempts; any extra clear wins",
+  "training_start_seed": 73,
+  "evaluation_seed": 20260907,
+  "fresh_history": true,
+  "ranges": {
+    "sweep.train.total_timesteps": {
+      "distribution": "log_normal",
+      "min": "50331648",
+      "max": "50331648",
+      "scale": "time"
+    },
+    "sweep.train.learning_rate": {
+      "distribution": "log_normal",
+      "min": "0.000005",
+      "max": "0.0002",
+      "scale": "auto"
+    },
+    "sweep.train.ent_coef": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.001",
+      "scale": "auto"
+    },
+    "sweep.train.gamma": {
+      "distribution": "logit_normal",
+      "min": "0.999",
+      "max": "0.99999",
+      "scale": "auto"
+    },
+    "sweep.train.gae_lambda": {
+      "distribution": "logit_normal",
+      "min": "0.99",
+      "max": "0.9999",
+      "scale": "auto"
+    },
+    "sweep.train.replay_ratio": {
+      "distribution": "uniform",
+      "min": "1",
+      "max": "2.25",
+      "scale": "auto"
+    },
+    "sweep.train.clip_coef": {
+      "distribution": "uniform",
+      "min": "0.1",
+      "max": "0.25",
+      "scale": "auto"
+    },
+    "sweep.train.max_grad_norm": {
+      "distribution": "uniform",
+      "min": "0.25",
+      "max": "1",
+      "scale": "auto"
+    },
+    "sweep.train.momentum": {
+      "distribution": "logit_normal",
+      "min": "0.75",
+      "max": "0.95",
+      "scale": "auto"
+    }
+  }
+}

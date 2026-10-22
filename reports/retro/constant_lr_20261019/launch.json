@@ -1,0 +1,147 @@
+{
+  "utc": "2026-10-19T01:09:29.436978+00:00",
+  "tmux": "ssh_tmux:0.0",
+  "command": "cd /workspace/PufferLib && set -o pipefail && stdbuf -oL -eL ./puffer sweep 2>&1 | tee -a logs/retro_constant_20261019/sweep.log",
+  "parent_sha256": "80127cad3ec19a5a1df84f5566a22a3c41d741a0bceec6da96ded2c9d95178bc",
+  "sha256": {
+    "config/retro.ini": "803529148a02c02c8ad2ed21b5e36b632c174ac948e60275ab2752047f93ce7f",
+    "ocean/retro/sweep_worker.py": "ffd1d84d6af3382e9008096c21b9da0f71cd4386c47e5304ea94b233dc7828ca",
+    "puffer": "84eab0ac17a5748e62a2ee27bb1053e0dc849deeee441fa68d2e1f4affaf2fba"
+  },
+  "qualification": {
+    "native_history_dimensions": 8,
+    "baseline_and_generated_proposal_passed": true,
+    "trials": [
+      {
+        "run": "sweep_1792371892887_0000",
+        "score": 75.94200897216797,
+        "steps": 1048576.0,
+        "cost": 46.013480443973094,
+        "clears": 194.0,
+        "lr": "5.49999932e-05",
+        "fixed_settings_verified": true
+      },
+      {
+        "run": "sweep_1792371938959_0001",
+        "score": 76.72358703613281,
+        "steps": 1048576.0,
+        "cost": 44.01333530910779,
+        "clears": 196.0,
+        "lr": "9.40261089e-06",
+        "fixed_settings_verified": true
+      }
+    ]
+  },
+  "baseline_import": {
+    "source_trial": "/workspace/PufferLib/logs/retro_constant_20261018/retro/sweep_1792367954068_0000.eval/trial.json",
+    "source_history": "logs/retro_constant_20261018/sweep.history",
+    "source_run": "sweep_1792367954068_0000",
+    "steps": 50331648.0,
+    "score": 76.72315216064453,
+    "clears": 196.0,
+    "fixed_settings_verified": {
+      "policy.hidden_size": 256,
+      "policy.num_layers": 2,
+      "vec.total_agents": 1024,
+      "vec.num_buffers": 4,
+      "vec.num_threads": 12,
+      "train.horizon": 256,
+      "train.minibatch_size": 4096,
+      "train.vf_clip_coef": 0.2,
+      "train.vf_coef": 0.5,
+      "train.anneal_lr": 0,
+      "train.anneal_ent_coef": 0,
+      "base.async": 1,
+      "base.cudagraphs": 1,
+      "base.seed": 73,
+      "train.vtrace": 0,
+      "train.total_timesteps": 50331648,
+      "panel.repeats": 8,
+      "panel.frames": 30000,
+      "panel.frameskip": 4,
+      "panel.seed": 20260907
+    },
+    "varying_parameters": {
+      "train.learning_rate": "5.49999932e-05",
+      "train.ent_coef": "0",
+      "train.gamma": "0.999899983",
+      "train.gae_lambda": "0.996999979",
+      "train.replay_ratio": "2",
+      "train.clip_coef": "0.200000003",
+      "train.max_grad_norm": "0.5",
+      "train.momentum": "0.899999976"
+    },
+    "checkpoint": "/workspace/PufferLib/checkpoints/retro_constant_20261018/retro/sweep_1792367954068_0000/0000000050331648.bin",
+    "status": "imported compatible baseline only",
+    "history_run": 0,
+    "destination_history": "/workspace/PufferLib/logs/retro_constant_20261019/sweep.history",
+    "destination_trial": "/workspace/PufferLib/logs/retro_constant_20261019/retro/sweep_1792367954068_0000.eval/trial.json"
+  },
+  "status": "cancelled by user",
+  "initial_live_verification": {
+    "utc": "2026-10-19T01:10:43.046444+00:00",
+    "run": "sweep_1792372170340_0001",
+    "state": "running",
+    "settings_verified": true,
+    "fixed_settings_verified": {
+      "policy.hidden_size": 256,
+      "policy.num_layers": 2,
+      "vec.total_agents": 1024,
+      "vec.num_threads": 12,
+      "vec.num_buffers": 4,
+      "train.horizon": 256,
+      "train.minibatch_size": 4096,
+      "train.vf_clip_coef": 0.2,
+      "train.vf_coef": 0.5,
+      "train.anneal_lr": 0,
+      "train.anneal_ent_coef": 0,
+      "base.checkpoint_interval": 0,
+      "train.total_timesteps": 50331648
+    },
+    "varying_parameters": [
+      "sweep.train.clip_coef",
+      "sweep.train.ent_coef",
+      "sweep.train.gae_lambda",
+      "sweep.train.gamma",
+      "sweep.train.learning_rate",
+      "sweep.train.max_grad_norm",
+      "sweep.train.momentum",
+      "sweep.train.replay_ratio"
+    ],
+    "parent": "saved/retro/pixel_197_20261018.bin",
+    "progress": {
+      "steps": "7602176",
+      "seconds": "68.861774",
+      "sps": "113994.148",
+      "entropy": "0.143039569",
+      "kl": "0.000172654705",
+      "value": "0.00107178208",
+      "clipfrac": "0.000274658203",
+      "vram_used_gb": "14.547852"
+    },
+    "parent_clears": 197,
+    "valid_completed_trials": 1,
+    "best_valid_clears": 196,
+    "live_learning_rate": 9.40261089e-06,
+    "live_replay_ratio": 1.25698519,
+    "tmux": "./puffer"
+  },
+  "cancellation": {
+    "utc": "2026-10-19T15:43:19.656468+00:00",
+    "user_requested": "cancel sweep",
+    "scheduler_pid": 680956,
+    "worker_pid": 753519,
+    "trainer_pid": 753520,
+    "run": "sweep_1792424427575_0111",
+    "state": "cancelled and verified stopped",
+    "preserve": "all completed trials, checkpoints, panels and GP history",
+    "completed_utc": "2026-10-19T15:44:02.835790+00:00",
+    "partial_checkpoints": [
+      "checkpoints/retro_constant_20261019/retro/sweep_1792424427575_0111/0000000018874368.bin"
+    ],
+    "completed_trials": 111,
+    "verified_utc": "2026-10-19T15:44:47.591775+00:00",
+    "tmux": "bash",
+    "gpu_compute_processes": ""
+  }
+}

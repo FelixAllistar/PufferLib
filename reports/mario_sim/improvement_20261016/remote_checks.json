@@ -1,0 +1,70 @@
+{
+  "parity_5_2": {
+    "command": [
+      "build/mario_sim/runtime/verify_cpu",
+      "validation/parity_5_2.clips.bin"
+    ],
+    "exit_code": 0
+  },
+  "parity_3_1": {
+    "command": [
+      "build/mario_sim/runtime/verify_cpu",
+      "validation/parity_3_1.clips.bin"
+    ],
+    "exit_code": 0
+  },
+  "build_tests": {
+    "command": [
+      "make",
+      "-f",
+      "ocean/mario_sim/fpg.mk",
+      "build/mario_sim/fpg/test_modes"
+    ],
+    "exit_code": 0
+  },
+  "practice": {
+    "command": [
+      "build/mario_sim/fpg/test_practice"
+    ],
+    "exit_code": 0
+  },
+  "modes": {
+    "command": [
+      "build/mario_sim/fpg/test_modes"
+    ],
+    "exit_code": 0
+  },
+  "model": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000006442450944.bin",
+  "binary_sha256": "35ae3ac69673ecb690e78c742b7036c91e7625b49f2180711cbda02adae507d1",
+  "training_started": false,
+  "gpu_policy_eval": {
+    "command": [
+      "./puffer",
+      "eval",
+      "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000006442450944.bin",
+      "--headless",
+      "--env.mode=game",
+      "--game.max_frames=17",
+      "--base.eval_agents=8",
+      "--base.eval_episodes=8",
+      "--vec.total_agents=8",
+      "--vec.num_buffers=1",
+      "--vec.num_threads=1"
+    ],
+    "exit_code": 0
+  },
+  "all_passed": true,
+  "existing_training_pids": [
+    322187
+  ],
+  "build": {
+    "command": [
+      "bash",
+      "build.sh",
+      "mario_sim",
+      "puffer"
+    ],
+    "exit_code": 0
+  },
+  "old_sweep_still_running": true
+}

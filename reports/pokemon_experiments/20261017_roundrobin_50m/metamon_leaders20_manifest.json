@@ -1,0 +1,507 @@
+{
+  "selection": "Focused comparison: top five Oak sweep checkpoints, round-26 incumbent, thirteen previously measured team representatives, and the leading broad Metamon screen candidate",
+  "games_per_opponent_team": 32,
+  "total_games_per_policy": 96,
+  "seed": 20261023,
+  "candidates": [
+    {
+      "id": "7d74f74f20c1681d21ac",
+      "checkpoint": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500/checkpoints/pokemon/sweep_1792307941412_0000/0000000100663296.bin",
+      "sha256": "fec14816b0fa663e8a8d463e402f12519552c4433e68f862a3a077296ff651e9",
+      "config_sha256": "41d122380a9b8d793e70527ff85ccdad3ef52dc2224a76a28a59d57c985da805",
+      "team_key": [
+        "421,366,389,395,512,445",
+        "121"
+      ],
+      "policy": "master",
+      "sources": [
+        "sweep_report:/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500/logs/pokemon/sweep_1792307941412_0000.ini.oak/summary.json"
+      ],
+      "selection_reasons": [
+        "Top five recorded Oak argmax sweep policies at selection time"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.7473958333333334,
+          "sample": 0.3098958333333333,
+          "games": 768,
+          "report": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500/logs/pokemon/sweep_1792307941412_0000.ini.oak/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "d4de472c51ebaae068e8",
+      "checkpoint": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/checkpoints/pokemon/sweep_1792341398037_0050/0000000089653248.bin",
+      "sha256": "767a5e649cf0cf1cbdbc6d941eca9617073330ddca4b8af55c1ecab5e04272ee",
+      "config_sha256": "62b12d5c88ea8e7afd5f3cf22020a64bf5af503c2e61e9caa6bce9187d9cee02",
+      "team_key": [
+        "421,366,389,395,512,445",
+        "121"
+      ],
+      "policy": "master",
+      "sources": [
+        "sweep_report:/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792341398037_0050.ini.oak/summary.json"
+      ],
+      "selection_reasons": [
+        "Top five recorded Oak argmax sweep policies at selection time"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.7467447916666666,
+          "sample": 0.712890625,
+          "games": 768,
+          "report": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792341398037_0050.ini.oak/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "695c359d47395e70da08",
+      "checkpoint": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/checkpoints/pokemon/sweep_1792335314419_0039/0000000088080384.bin",
+      "sha256": "8542d7e1216e17b45020391d3ae48b3b5977f53bfb3ddce6bb610ae7ef1fd9fd",
+      "config_sha256": "98e1023772252e19cc6d1f9698546eddb07c4028efaf735da66070cfdc64857b",
+      "team_key": [
+        "421,366,389,395,512,445",
+        "121"
+      ],
+      "policy": "master",
+      "sources": [
+        "sweep_report:/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792335314419_0039.ini.oak/summary.json"
+      ],
+      "selection_reasons": [
+        "Top five recorded Oak argmax sweep policies at selection time"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.744140625,
+          "sample": 0.677734375,
+          "games": 768,
+          "report": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792335314419_0039.ini.oak/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "1396167ef9226f91c84c",
+      "checkpoint": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/checkpoints/pokemon/sweep_1792340989375_0049/0000000074448896.bin",
+      "sha256": "6be0a2e0caefa4abf31f0dfd73c738ee6284692dcb19db1b757a238b4b3693dd",
+      "config_sha256": "956b9287acc351324ff587b522490b23055b06ce03941231f5061ea4cfc0c321",
+      "team_key": [
+        "421,366,389,395,512,445",
+        "121"
+      ],
+      "policy": "master",
+      "sources": [
+        "sweep_report:/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792340989375_0049.ini.oak/summary.json"
+      ],
+      "selection_reasons": [
+        "Top five recorded Oak argmax sweep policies at selection time"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.7434895833333334,
+          "sample": 0.5657552083333334,
+          "games": 768,
+          "report": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792340989375_0049.ini.oak/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "7901118b56b3480092fc",
+      "checkpoint": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/checkpoints/pokemon/sweep_1792349092489_0061/0000000084410368.bin",
+      "sha256": "e24f37e97b6cbbb88b740ddb0938ce40838744e728d050d00c4e2a8a3cdcfca6",
+      "config_sha256": "677c0231c287488475005e9fa9905ee91ae3f12674485695073c9241c995ac1c",
+      "team_key": [
+        "421,366,389,395,512,445",
+        "121"
+      ],
+      "policy": "master",
+      "sources": [
+        "sweep_report:/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792349092489_0061.ini.oak/summary.json"
+      ],
+      "selection_reasons": [
+        "Top five recorded Oak argmax sweep policies at selection time"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.7408854166666666,
+          "sample": 0.55859375,
+          "games": 768,
+          "report": "/workspace/PufferLib/reports/pokemon_experiments/20261018_continue_r26_500_v2/logs/pokemon/sweep_1792349092489_0061.ini.oak/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "20355adf07e2b9e9e26e",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/master/r000026-a001/weights.bin",
+      "sha256": "440b4dd80bebcc01fc491fdd6b1b9bed046953936e7d597c2207f2b0a6335b40",
+      "config_sha256": "30fd90c4842e60c043a3c429fb991a0399077e22558d5919c80b0a6d6c9a0f28",
+      "team_key": [
+        "421,366,389,395,512,445",
+        "121"
+      ],
+      "policy": "master",
+      "sources": [
+        "league:r000026-a001"
+      ],
+      "selection_reasons": [
+        "Round-26 incumbent, previously 47.66% Metamon in 384 games"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.7447916666666666,
+          "sample": 0.3424479166666667,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/oak-master-r000026-128/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "b164fd987357fcd3be44",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/gar_egg_mie/r000036-a001/weights.bin",
+      "sha256": "109330f38243ba31bb10ec089f852981f734a088f68c31d4cd5c8c1ae33a6c59",
+      "config_sha256": "42cac3e25801dc4fa7f214cb672e017a21378ef6566c842ef7fa4ee739e54c08",
+      "team_key": [
+        "species:94,103,121,113,143,128",
+        "94"
+      ],
+      "policy": "gar_egg_mie",
+      "sources": [
+        "league:r000036-a001"
+      ],
+      "selection_reasons": [
+        "Highest completed 24-game Metamon screen outside selected candidates"
+      ],
+      "oak_reports": [],
+      "prior_metamon_screen": {
+        "score": 0.5416666666666666,
+        "games": 24,
+        "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/metamon-policy-search/screen/b164fd987357fcd3be44/summary.json"
+      }
+    },
+    {
+      "id": "387a3f682bc26a586883",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/zam_egg_mie/r000013-a001/weights.bin",
+      "sha256": "79abc6c408ed76145c491bffd52e9f9bc0ad2cbe58508d2b85a59142adfae64e",
+      "config_sha256": "fe398174f972499fd43667ee89090977e962b65bc7a097bbf3514dcef92e9a93",
+      "team_key": [
+        "species:65,103,121,113,143,128",
+        "65"
+      ],
+      "policy": "zam_egg_mie",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.3111979166666667,
+          "sample": 0.06510416666666667,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/zam_egg_mie/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "3299053fbea8d15a800d",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/zam_egg_zap/r000013-a001/weights.bin",
+      "sha256": "2546ec21b8dbe77aa0ffad456506682b8be4a0d6da3b1a0837fcfcefa29a6e1a",
+      "config_sha256": "b65904f54a2bf8e3380ad949fcb6f9653afbeac20673160b9c0bfb1144401d8b",
+      "team_key": [
+        "species:65,103,145,113,143,128",
+        "65"
+      ],
+      "policy": "zam_egg_zap",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.26953125,
+          "sample": 0.07942708333333333,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/zam_egg_zap/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "6672ec6daeecc86a57cc",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/zam_egg_gar/r000013-a001/weights.bin",
+      "sha256": "ddf840192f1d78e1868e705e8bb5bb93104085772568eb6b1e0fda68b4ef0ce5",
+      "config_sha256": "58f750d4f56917c51b8bb05f059c5259546b564d27b3eb4d89426806d686da64",
+      "team_key": [
+        "species:65,103,94,113,143,128",
+        "65"
+      ],
+      "policy": "zam_egg_gar",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.171875,
+          "sample": 0.015625,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/zam_egg_gar/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "79fab6102ee3aff72e6e",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/zam_egg_cloy_don/r000013-a001/weights.bin",
+      "sha256": "a1f73c00fc4269be841eb4557f6e4a4af2d2b21a8cd5c762da31500239d81e94",
+      "config_sha256": "4f72ef06f96d670b648a8c5e36788780029d602bff0becf0dba73ae18490a9e4",
+      "team_key": [
+        "species:65,103,112,91,113,128",
+        "65"
+      ],
+      "policy": "zam_egg_cloy_don",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.41015625,
+          "sample": 0.1015625,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/zam_egg_cloy_don/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "8f6bd0702e5b10d5ff01",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/mie_egg_don/r000013-a001/weights.bin",
+      "sha256": "7c694b68139d9c9414ea1a18bd594313630d4c0749c08d62b6be1eeb1cff54f5",
+      "config_sha256": "283da90a602a0986bb4b3b0c0bc31baed246311ff3cd7e86e74006a644be1c00",
+      "team_key": [
+        "species:121,103,112,113,143,128",
+        "121"
+      ],
+      "policy": "mie_egg_don",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.38671875,
+          "sample": 0.057291666666666664,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/mie_egg_don/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "b37a8d1cbd2a925d078d",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/mie_egg_zap/r000013-a001/weights.bin",
+      "sha256": "36feb7d2fd07800573e28be800557121ee1c28473430752260b0dd21a9d1d11a",
+      "config_sha256": "56aec72c61cfb736f27032317db00a7c008dcfb936e2002e928c47b875251670",
+      "team_key": [
+        "species:121,103,145,113,143,128",
+        "121"
+      ],
+      "policy": "mie_egg_zap",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.026041666666666668,
+          "sample": 0.013020833333333334,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/mie_egg_zap/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "74675c24f0b4cf58355a",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/mie_egg_cloy/r000013-a001/weights.bin",
+      "sha256": "6cd151de05642c509700812a33bc4b403ff95d50bd014aa941b6815de73c9610",
+      "config_sha256": "a0bcdc70d7f1675c001f21cd3073721aaddfcd65e8b91b13986750b094f7df18",
+      "team_key": [
+        "species:121,103,91,113,143,128",
+        "121"
+      ],
+      "policy": "mie_egg_cloy",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.4192708333333333,
+          "sample": 0.07161458333333333,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/mie_egg_cloy/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "3bf350b7f709fd2ea94f",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/jynx_mie_don/r000013-a001/weights.bin",
+      "sha256": "dfc3d2b921621c2bb4d0cf0c69494f831d646d69f6aee4084621fbbd6840f831",
+      "config_sha256": "91c9a007466fc58cc688918dfc29157ab9e9d1b7a814c252de707084e134816e",
+      "team_key": [
+        "species:124,121,112,113,143,128",
+        "124"
+      ],
+      "policy": "jynx_mie_don",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.23307291666666666,
+          "sample": 0.020833333333333332,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/jynx_mie_don/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "f8669fe1c76b969120fe",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/jynx_egg_zap/r000013-a001/weights.bin",
+      "sha256": "58d3b494edca849545bb8a8bedb0360a31839add3547237cfee82bdd96c06332",
+      "config_sha256": "41712bffe7a4b907a7553fc43f670e679180b028c90c7b74704661e3f3ebc368",
+      "team_key": [
+        "species:124,103,145,113,143,128",
+        "124"
+      ],
+      "policy": "jynx_egg_zap",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.3255208333333333,
+          "sample": 0.10807291666666667,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/jynx_egg_zap/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "1170b488af6cf3545a60",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/jynx_egg_gar_zap/r000013-a001/weights.bin",
+      "sha256": "7082533df29fff01ddee0fe731cc754fb5781e3cd4be8a2a8df5a34cc42f8c43",
+      "config_sha256": "ac526208e9db04c0427d06abe3d457b0401fae8b0a737d47a1b4e7e615d8fa7e",
+      "team_key": [
+        "species:124,103,94,145,143,128",
+        "124"
+      ],
+      "policy": "jynx_egg_gar_zap",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.08854166666666667,
+          "sample": 0.0,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/jynx_egg_gar_zap/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "49f88208091b45ef93f2",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/gar_egg_mie/r000013-a001/weights.bin",
+      "sha256": "e24d66251fc16f6912db5c27a645f84e088ee1af7dd6be24c189e0967a2a8851",
+      "config_sha256": "281af82f76d7d44e30e0186e17ab0f65025c0475ac6759b79a6e54c2a77c2809",
+      "team_key": [
+        "species:94,103,121,113,143,128",
+        "94"
+      ],
+      "policy": "gar_egg_mie",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.4231770833333333,
+          "sample": 0.08333333333333333,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/gar_egg_mie/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "61b6eed5cd98ad226c2f",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/gar_egg_zap/r000013-a001/weights.bin",
+      "sha256": "6ed3e57ccca16d7fd546ef3aaf30958dc23dc0f00d786ef8aa87a333dd1a22f8",
+      "config_sha256": "5fb1eea8b07673a4b542ebdd36f36686d070245f9cf05ccab743f501e936a4e6",
+      "team_key": [
+        "species:94,103,145,113,143,128",
+        "94"
+      ],
+      "policy": "gar_egg_zap",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.4283854166666667,
+          "sample": 0.1171875,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/gar_egg_zap/summary.json"
+        }
+      ]
+    },
+    {
+      "id": "e17bb510c08e064880d5",
+      "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/gar_egg_mie_zap/r000013-a001/weights.bin",
+      "sha256": "886af0ad90c164a9894fdb48915e18b21d500c0cc60c892a389d39456f798858",
+      "config_sha256": "bb646e46df8978dbbc7c822b234faaeb2bc7bfe862962da103f3ae5943ef5786",
+      "team_key": [
+        "species:94,103,121,145,143,128",
+        "94"
+      ],
+      "policy": "gar_egg_mie_zap",
+      "sources": [
+        "league:r000013-a001"
+      ],
+      "selection_reasons": [
+        "Previously Oak-measured representative for this team"
+      ],
+      "oak_reports": [
+        {
+          "argmax": 0.3111979166666667,
+          "sample": 0.0234375,
+          "games": 384,
+          "report": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/evaluations/roster-round13-128/gar_egg_mie_zap/summary.json"
+        }
+      ]
+    }
+  ],
+  "limitations": "Oak and Metamon scores are different benchmarks; Oak sample counts vary. 96-game Metamon comparisons cannot resolve small differences reliably."
+}

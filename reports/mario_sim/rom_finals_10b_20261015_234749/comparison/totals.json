@@ -1,0 +1,30 @@
+{
+  "steps_2_15b": {
+    "valid": true,
+    "clears": 346,
+    "attempts": 1024,
+    "levels_any_clear": 17,
+    "perfect_levels": 0
+  },
+  "steps_6_44b": {
+    "valid": true,
+    "clears": 475,
+    "attempts": 1024,
+    "levels_any_clear": 21,
+    "perfect_levels": 4
+  },
+  "run0_10b": {
+    "valid": false,
+    "clears": null,
+    "attempts": 1024,
+    "levels_any_clear": null,
+    "perfect_levels": null
+  },
+  "run1_10b": {
+    "valid": true,
+    "clears": 436,
+    "attempts": 1024,
+    "levels_any_clear": 20,
+    "perfect_levels": 2
+  }
+}

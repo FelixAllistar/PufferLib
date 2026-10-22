@@ -1,0 +1,81 @@
+{
+  "score_version": 2,
+  "history_sha256_before": "cf862e32a58ea03d9b4e91aae8ad3b44c57e714871b8280237cb1b6d8a8a35b6",
+  "updates": [
+    {
+      "run": 0,
+      "old_score": 0.005859375,
+      "score": 0.2051585477941544,
+      "level_clear_rate": 0.0078125,
+      "game_progress_rate": 0.2719209558825,
+      "fpg_clear_rate": 0.5330882352941176,
+      "reused_panels": 44,
+      "parity_mismatches": 0,
+      "checkpoint_sha256": "9eb5e96403e955bc24b3d85e7dc8745db55d2cf4b4adedd37bf3cf0071cc4d46",
+      "trial_path": "/workspace/PufferLib/logs/mario_sim/sweep_1792249290745_0000.eval/trial.json"
+    },
+    {
+      "run": 1,
+      "old_score": 0.0,
+      "score": 0.11611213235293254,
+      "level_clear_rate": 0.0,
+      "game_progress_rate": 0.1188602941176125,
+      "fpg_clear_rate": 0.34558823529411764,
+      "reused_panels": 44,
+      "parity_mismatches": 0,
+      "checkpoint_sha256": "9d17cac15f9d2cd91c252ee40946fb19806c84962a6729a43d3e61edf97fa76a",
+      "trial_path": "/workspace/PufferLib/logs/mario_sim/sweep_1792251116556_0001.eval/trial.json"
+    },
+    {
+      "run": 2,
+      "old_score": 0.0,
+      "score": 0.023933823529402022,
+      "level_clear_rate": 0.0,
+      "game_progress_rate": 0.0883823529411375,
+      "fpg_clear_rate": 0.007352941176470588,
+      "reused_panels": 44,
+      "parity_mismatches": 0,
+      "checkpoint_sha256": "858da09830a927f4bc7972b0673c4e66cf621de9e965511341e2f8ab551bf1f4",
+      "trial_path": "/workspace/PufferLib/logs/mario_sim/sweep_1792251730155_0002.eval/trial.json"
+    },
+    {
+      "run": 4,
+      "old_score": 0.0,
+      "score": 0.05999540441174632,
+      "level_clear_rate": 0.0,
+      "game_progress_rate": 0.23630514705875,
+      "fpg_clear_rate": 0.003676470588235294,
+      "reused_panels": 44,
+      "parity_mismatches": 0,
+      "checkpoint_sha256": "f212026955f2041cf5ce7a3846689d167613072c351f3892eec801d2ddb3014d",
+      "trial_path": "/workspace/PufferLib/logs/mario_sim/sweep_1792252661719_0004.eval/trial.json"
+    },
+    {
+      "run": 5,
+      "old_score": 0.0,
+      "score": 0.09864430147058714,
+      "level_clear_rate": 0.0,
+      "game_progress_rate": 0.100459558823525,
+      "fpg_clear_rate": 0.29411764705882354,
+      "reused_panels": 44,
+      "parity_mismatches": 0,
+      "checkpoint_sha256": "380149032022c3a2dbc0604a79bc727077a25449eb719c5f3efc82af598569d6",
+      "trial_path": "/workspace/PufferLib/logs/mario_sim/sweep_1792253260263_0005.eval/trial.json"
+    },
+    {
+      "run": 6,
+      "old_score": 0.0,
+      "score": 0.028501838235282722,
+      "level_clear_rate": 0.0,
+      "game_progress_rate": 0.102977941176425,
+      "fpg_clear_rate": 0.011029411764705883,
+      "reused_panels": 44,
+      "parity_mismatches": 0,
+      "checkpoint_sha256": "6b5cfa30cf8ac88af662f10054cc74d371e8f3dfb0313e59e8e295c7bc78de07",
+      "trial_path": "/workspace/PufferLib/logs/mario_sim/sweep_1792253832950_0006.eval/trial.json"
+    }
+  ],
+  "completed": 6,
+  "next_run": 7,
+  "history_sha256_after": "3ef09ec0b8c6d0149c64a300c746c36f4a39d4a823fa3ba742b99c9ca622f7c1"
+}

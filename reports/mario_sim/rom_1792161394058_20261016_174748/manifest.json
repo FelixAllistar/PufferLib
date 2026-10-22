@@ -1,0 +1,33 @@
+{
+  "created_utc": "2026-10-16T17:47:48.521768+00:00",
+  "seed": 137,
+  "episodes_per_level": 32,
+  "level_frame_limit": 6000,
+  "levels_only": false,
+  "evaluator_sha256": "7f65a39e8017b3bedbdf7a49a63af7c55d19ef66a71cce9860a978ebc9a4e2ea",
+  "config_sha256": "1521929b2f70b30e99dfc1683cf0571837256bd0f9381ae19e6db803807e98ca",
+  "level_config_sha256": "d3816759e89a9abb1c010deded0b5efb919565baf98ff092eabd5aa80e238b1c",
+  "rom_sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea",
+  "models": {
+    "steps_2_00b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792161394058/0000001999634432.bin",
+      "sha256": "9aa782d3740e058c6109418032deb06beed3e97fe33f6aa6d998ff430bdc7d19",
+      "panels": {}
+    },
+    "steps_1_61b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792161394058/0000001610612736.bin",
+      "sha256": "806a56adc4789b069d1b450359868c90823c7f2dabff59b33d3e02cfc941b387",
+      "panels": {}
+    },
+    "steps_1_07b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792161394058/0000001073741824.bin",
+      "sha256": "86e790c54adf324b60d068853b29c3def35904c2d78f034023a9c3b454d50648",
+      "panels": {}
+    },
+    "steps_0_54b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792161394058/0000000536870912.bin",
+      "sha256": "542078b6fafcd1b3340ed36fa1e247fcb230869f9fe80bce91f5dc5f69b80c5e",
+      "panels": {}
+    }
+  }
+}

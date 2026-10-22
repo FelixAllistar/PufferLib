@@ -1,0 +1,18 @@
+{
+  "created_utc": "2026-10-16T23:48:04.498936+00:00",
+  "seed": 137,
+  "episodes_per_level": 32,
+  "level_frame_limit": 6000,
+  "levels_only": false,
+  "evaluator_sha256": "7f65a39e8017b3bedbdf7a49a63af7c55d19ef66a71cce9860a978ebc9a4e2ea",
+  "config_sha256": "1521929b2f70b30e99dfc1683cf0571837256bd0f9381ae19e6db803807e98ca",
+  "level_config_sha256": "d3816759e89a9abb1c010deded0b5efb919565baf98ff092eabd5aa80e238b1c",
+  "rom_sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea",
+  "models": {
+    "continued_latest": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792187230433/0000001610612736.bin",
+      "sha256": "57dfed2f72087044a1c888d8d858f01cc1ff8f80dc5761df259fce8776610a3a",
+      "panels": {}
+    }
+  }
+}

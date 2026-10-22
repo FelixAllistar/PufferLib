@@ -1,0 +1,1022 @@
+{
+  "captured": "2026-10-17",
+  "runs": [
+    {
+      "run_id": "1792155346981",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/1792155346981/0000000499908608.bin",
+      "checkpoint_sha256": "fb0814eb95cffe38afe0cb225460f65674aeda32be57a7fd5179d1d30bd87021",
+      "counted_steps": 499908608,
+      "learner_steps": 499908608,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "500000000",
+          "learning_rate": "0.003",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.9999",
+          "gae_lambda": "0.9",
+          "replay_ratio": "2.15915942",
+          "clip_coef": "0.1",
+          "vf_coef": "0.666770339",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.25",
+          "ent_coef": "0.02",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "4096",
+          "num_buffers": "1",
+          "num_threads": "4",
+          "num_policies": "1",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "128",
+          "budget": "4096",
+          "workers": "3",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "None",
+          "learner_lead": "None",
+          "native_league": "None",
+          "expert_fraction": "0.5",
+          "force_core_combos": "1",
+          "force_core_prob": "0.75",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/1792155346981.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 384,
+          "wins": 186,
+          "draws": 3,
+          "losses": 195,
+          "timeouts": 2,
+          "score": 0.48828125
+        },
+        "sample": {
+          "games": 384,
+          "wins": 30,
+          "draws": 0,
+          "losses": 354,
+          "timeouts": 0,
+          "score": 0.078125
+        }
+      },
+      "additional_evaluations": []
+    },
+    {
+      "run_id": "sweep_1792079639324_0223",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/sweep_1792079639324_0223/0000000033554432.bin",
+      "checkpoint_sha256": "13df5e32aab76fd0c1db862087915ef03af77411e015b72ecb18bb241e3dec32",
+      "counted_steps": 33554432,
+      "learner_steps": 25165824,
+      "precision": "FP32",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "33554432",
+          "learning_rate": "0.00300000072",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "2.15915942",
+          "clip_coef": "0.100000001",
+          "vf_coef": "0.666770339",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.25",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "128",
+          "budget": "4096",
+          "workers": "3",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/sweep_1792079639324_0223.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 384,
+          "wins": 233,
+          "draws": 2,
+          "losses": 149,
+          "timeouts": 2,
+          "score": 0.609375
+        },
+        "sample": {
+          "games": 384,
+          "wins": 71,
+          "draws": 0,
+          "losses": 313,
+          "timeouts": 0,
+          "score": 0.18489583333333334
+        }
+      },
+      "additional_evaluations": []
+    },
+    {
+      "run_id": "sweep_1792195882955_0163",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/sweep_1792195882955_0163/0000000033554432.bin",
+      "checkpoint_sha256": "9bbf435745b857d538849be0e850015cc8c58f3eb80e6f40bb932e2c3ca275b1",
+      "counted_steps": 33554432,
+      "learner_steps": 25165824,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "33554432",
+          "learning_rate": "0.00297837891",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "3.71047497",
+          "clip_coef": "0.12561436",
+          "vf_coef": "0.52888006",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.338345766",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "128",
+          "budget": "4096",
+          "workers": "3",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/sweep_1792195882955_0163.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 384,
+          "wins": 212,
+          "draws": 2,
+          "losses": 170,
+          "timeouts": 1,
+          "score": 0.5546875
+        },
+        "sample": {
+          "games": 384,
+          "wins": 64,
+          "draws": 0,
+          "losses": 320,
+          "timeouts": 0,
+          "score": 0.16666666666666666
+        }
+      },
+      "additional_evaluations": []
+    },
+    {
+      "run_id": "1792196525320",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/1792196525320/0000000033554432.bin",
+      "checkpoint_sha256": "9bbf435745b857d538849be0e850015cc8c58f3eb80e6f40bb932e2c3ca275b1",
+      "counted_steps": 33554432,
+      "learner_steps": 25165824,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "33554432",
+          "learning_rate": "0.00297837891",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "3.71047497",
+          "clip_coef": "0.12561436",
+          "vf_coef": "0.52888006",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.338345766",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "128",
+          "budget": "4096",
+          "workers": "3",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/1792196525320.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 384,
+          "wins": 194,
+          "draws": 2,
+          "losses": 188,
+          "timeouts": 1,
+          "score": 0.5078125
+        },
+        "sample": {
+          "games": 384,
+          "wins": 64,
+          "draws": 2,
+          "losses": 318,
+          "timeouts": 0,
+          "score": 0.16927083333333334
+        }
+      },
+      "additional_evaluations": [
+        {
+          "report": "logs/pokemon/1792196525320.ini.oak-1024/summary.json",
+          "scores": {
+            "argmax": {
+              "games": 3072,
+              "wins": 1613,
+              "draws": 14,
+              "losses": 1445,
+              "timeouts": 5,
+              "score": 0.52734375
+            },
+            "sample": {
+              "games": 3072,
+              "wins": 490,
+              "draws": 10,
+              "losses": 2572,
+              "timeouts": 0,
+              "score": 0.1611328125
+            }
+          }
+        }
+      ]
+    },
+    {
+      "run_id": "1792197715723",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/1792197715723/0000000033554432.bin",
+      "checkpoint_sha256": "9bbf435745b857d538849be0e850015cc8c58f3eb80e6f40bb932e2c3ca275b1",
+      "counted_steps": 33554432,
+      "learner_steps": 25165824,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "33554432",
+          "learning_rate": "0.00297837891",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "3.71047497",
+          "clip_coef": "0.12561436",
+          "vf_coef": "0.52888006",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.338345766",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "1024",
+          "budget": "4096",
+          "workers": "3",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/1792197715723.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 3072,
+          "wins": 1566,
+          "draws": 7,
+          "losses": 1499,
+          "timeouts": 4,
+          "score": 0.5109049479166666
+        },
+        "sample": {
+          "games": 3072,
+          "wins": 556,
+          "draws": 7,
+          "losses": 2509,
+          "timeouts": 1,
+          "score": 0.18212890625
+        }
+      },
+      "additional_evaluations": []
+    },
+    {
+      "run_id": "1792199241996",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/1792199241996/0000000033554432.bin",
+      "checkpoint_sha256": "9bbf435745b857d538849be0e850015cc8c58f3eb80e6f40bb932e2c3ca275b1",
+      "counted_steps": 33554432,
+      "learner_steps": 25165824,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "33554432",
+          "learning_rate": "0.00297837891",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "3.71047497",
+          "clip_coef": "0.12561436",
+          "vf_coef": "0.52888006",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.338345766",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "1024",
+          "budget": "4096",
+          "workers": "6",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/1792199241996.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 3072,
+          "wins": 1612,
+          "draws": 19,
+          "losses": 1441,
+          "timeouts": 7,
+          "score": 0.52783203125
+        },
+        "sample": {
+          "games": 3072,
+          "wins": 541,
+          "draws": 11,
+          "losses": 2520,
+          "timeouts": 0,
+          "score": 0.17789713541666666
+        }
+      },
+      "additional_evaluations": []
+    },
+    {
+      "run_id": "1792201244232",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/1792201244232/0000000067108864.bin",
+      "checkpoint_sha256": "edec889cacb999e72fe333b28df2e184831e3a01d20a6c2a337dce97fd670807",
+      "counted_steps": 67108864,
+      "learner_steps": 50331648,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "67108864",
+          "learning_rate": "0.00297837891",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "3.71047497",
+          "clip_coef": "0.12561436",
+          "vf_coef": "0.52888006",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.338345766",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "128",
+          "budget": "4096",
+          "workers": "6",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/1792201244232.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 384,
+          "wins": 159,
+          "draws": 2,
+          "losses": 223,
+          "timeouts": 0,
+          "score": 0.4166666666666667
+        },
+        "sample": {
+          "games": 384,
+          "wins": 38,
+          "draws": 1,
+          "losses": 345,
+          "timeouts": 0,
+          "score": 0.10026041666666667
+        }
+      },
+      "additional_evaluations": []
+    },
+    {
+      "run_id": "1792201557856",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/1792201557856/0000000671088640.bin",
+      "checkpoint_sha256": "e2f8efa05537dc6603ce44f431f12ef6efc6e497ed19ad502c949b3a4cd76949",
+      "counted_steps": 671088640,
+      "learner_steps": 503316480,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "671088640",
+          "learning_rate": "0.00297837891",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "3.71047497",
+          "clip_coef": "0.12561436",
+          "vf_coef": "0.52888006",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.338345766",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "128",
+          "budget": "4096",
+          "workers": "6",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/1792201557856.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 384,
+          "wins": 245,
+          "draws": 4,
+          "losses": 135,
+          "timeouts": 3,
+          "score": 0.6432291666666666
+        },
+        "sample": {
+          "games": 384,
+          "wins": 57,
+          "draws": 1,
+          "losses": 326,
+          "timeouts": 0,
+          "score": 0.14973958333333334
+        }
+      },
+      "additional_evaluations": []
+    },
+    {
+      "run_id": "1792210230017",
+      "checkpoint": "/workspace/PufferLib/checkpoints/pokemon/1792210230017/0000001342177280.bin",
+      "checkpoint_sha256": "3ebe186d44ef006d4d7abe7250a386132c678d08f96d89c287d03abf9fcfdb90",
+      "counted_steps": 1342177280,
+      "learner_steps": 1006632960,
+      "precision": "BF16",
+      "config": {
+        "train": {
+          "gpus": "1",
+          "total_timesteps": "1342177280",
+          "learning_rate": "0.00297837891",
+          "anneal_lr": "1",
+          "min_lr_ratio": "0.1",
+          "gamma": "0.999899983",
+          "gae_lambda": "0.899999976",
+          "replay_ratio": "3.71047497",
+          "clip_coef": "0.12561436",
+          "vf_coef": "0.52888006",
+          "vf_clip_coef": "0.2",
+          "reward_clip": "0",
+          "max_grad_norm": "0.338345766",
+          "ent_coef": "0.020000007",
+          "anneal_ent_coef": "0",
+          "min_ent_coef_ratio": "0.1",
+          "momentum": "0.95",
+          "minibatch_size": "8192",
+          "horizon": "32",
+          "vtrace": "0",
+          "vtrace_rho_clip": "1.0",
+          "vtrace_c_clip": "1.0",
+          "verb_eps": "0.0",
+          "verb_eps_anneal_start": "0.4",
+          "verb_eps_anneal_end": "1.0"
+        },
+        "policy": {
+          "architecture": "puffernet",
+          "transformer_heads": "2",
+          "hidden_size": "64",
+          "num_layers": "2"
+        },
+        "vec": {
+          "total_agents": "16384",
+          "num_buffers": "2",
+          "num_threads": "4",
+          "num_policies": "15",
+          "hist_policy_hidden_size": "64",
+          "hist_policy_num_layers": "2",
+          "hist_policy_percent": "0.5",
+          "action_mask_size": "168"
+        },
+        "oak": {
+          "enabled": "1",
+          "python": "build/pokemon/oak-benchmark-env/bin/python",
+          "games": "128",
+          "budget": "4096",
+          "workers": "6",
+          "seed": "20261015"
+        },
+        "base": {
+          "seed": "73",
+          "load_model_path": "None",
+          "async": "0",
+          "cudagraphs": "1"
+        },
+        "env": {
+          "learner_team": "421,366,389,395,512,445",
+          "learner_lead": "121",
+          "native_league": "saved/pokemon/starmie_sweep/native.ini",
+          "expert_fraction": "0.5",
+          "force_core_combos": "0",
+          "force_core_prob": "0",
+          "reset_state_prob": "0",
+          "reward_win": "1",
+          "reward_hp_scale": "0",
+          "reward_ko_scale": "0",
+          "rules_sha": "3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6",
+          "catalog_sha": "e109e6bf055910263082bf8498825e9c01e5250a035fa3256a2175ac3f672b2e"
+        }
+      },
+      "oak_report": "logs/pokemon/1792210230017.ini.oak/summary.json",
+      "oak_scores": {
+        "argmax": {
+          "games": 384,
+          "wins": 237,
+          "draws": 3,
+          "losses": 144,
+          "timeouts": 2,
+          "score": 0.62109375
+        },
+        "sample": {
+          "games": 384,
+          "wins": 50,
+          "draws": 0,
+          "losses": 334,
+          "timeouts": 0,
+          "score": 0.13020833333333334
+        }
+      },
+      "additional_evaluations": []
+    }
+  ],
+  "original_frozen_pool": [
+    {
+      "name": "master",
+      "path": "saved/pokemon/starmie_sweep/master/weights.bin",
+      "sha256": "b05573b73a4736a7fcaa23e8db534830309cc38c48e153a5a3b069b81bd5aa34",
+      "config_sha256": "0406f30273fb3bd311452c1b3000d58269bb8827d2f92a891d0420f4cee5457e"
+    },
+    {
+      "name": "zam_egg_mie",
+      "path": "saved/pokemon/starmie_sweep/zam_egg_mie/weights.bin",
+      "sha256": "bde5e8d8755411d07da09e13c79549c03d01f830dee84d5ef6c57ae136f05733",
+      "config_sha256": "22073aec25c3614e32f5d07126d8f69629d04455442a652e3456028a9c590a55"
+    },
+    {
+      "name": "zam_egg_zap",
+      "path": "saved/pokemon/starmie_sweep/zam_egg_zap/weights.bin",
+      "sha256": "5fab53d708e50354fe20e771894c58380028cff1fe164caac630d78142e8220d",
+      "config_sha256": "a51439c9753337da177abca6f74a1b98f44bbdff08c288e2e4d8f657451863c9"
+    },
+    {
+      "name": "zam_egg_gar",
+      "path": "saved/pokemon/starmie_sweep/zam_egg_gar/weights.bin",
+      "sha256": "595895c519e06254c9fb2c6e13060e0deb527879857bf29fc2e52689971470ea",
+      "config_sha256": "f1ac01287ecec41cea5651849079e238641e761e9fa3d224ac2a375239ff0c56"
+    },
+    {
+      "name": "zam_egg_cloy_don",
+      "path": "saved/pokemon/starmie_sweep/zam_egg_cloy_don/weights.bin",
+      "sha256": "58484e28bee39d05be0e51b6ad98ea8d45783e1740c30f5ff626bf64426d4f05",
+      "config_sha256": "57e063db5b8a58d6997d588698a754cb82fd2ecf12e49a8dba404736bf739a49"
+    },
+    {
+      "name": "mie_egg_don",
+      "path": "saved/pokemon/starmie_sweep/mie_egg_don/weights.bin",
+      "sha256": "219f8ea34ffc09e1d26649da83b7c2a12e51c9159921744096022dc6f7196a2f",
+      "config_sha256": "37936052b7d2da1a3ffbf4c52982e6b8a2fe2901aa9eff625b35b2373071b74f"
+    },
+    {
+      "name": "mie_egg_zap",
+      "path": "saved/pokemon/starmie_sweep/mie_egg_zap/weights.bin",
+      "sha256": "148342f1c2c5de0aaa46dc201f1b1f5c986100d837c6fb9a21727dd21296c58e",
+      "config_sha256": "2ee64908f8fe22af8a4325772422164d9ee7743e5a4c7756046d297c1343bbf7"
+    },
+    {
+      "name": "mie_egg_cloy",
+      "path": "saved/pokemon/starmie_sweep/mie_egg_cloy/weights.bin",
+      "sha256": "d2eb246a79ed18f7d7f185d4edf54a2466a1a7d1ff5ee8d103c8ae734d5eccd3",
+      "config_sha256": "70efc47f697bdc5b0c9f2f33bd58de02149606632443bbd8d654373bd9b8d97a"
+    },
+    {
+      "name": "jynx_mie_don",
+      "path": "saved/pokemon/starmie_sweep/jynx_mie_don/weights.bin",
+      "sha256": "752902b000fa84322e43b1307072474b89b0d85e891293e13982df8a192a7de0",
+      "config_sha256": "c7a19d838b2a1085cca1da8d5d6968adaa77f6b0b700a25e814c83f779478cea"
+    },
+    {
+      "name": "jynx_egg_zap",
+      "path": "saved/pokemon/starmie_sweep/jynx_egg_zap/weights.bin",
+      "sha256": "cb2ea64023d58064d2562dbd1401a2872437bc87d38253a356988015b4777fd0",
+      "config_sha256": "659d2f1bdd0ffff3f8bbd8c87a987f32e6064d457e5530a1b3e8496227d9f56c"
+    },
+    {
+      "name": "jynx_egg_gar_zap",
+      "path": "saved/pokemon/starmie_sweep/jynx_egg_gar_zap/weights.bin",
+      "sha256": "07209a5b22569149a38f618aa8bd8a36a52c83f6512a290eac785a86e538c5e6",
+      "config_sha256": "c58120b8328b0bb0ca1b1cf2b5e1ca5b4d0c56fb20fd5736a8c78c3247a22d8f"
+    },
+    {
+      "name": "gar_egg_mie",
+      "path": "saved/pokemon/starmie_sweep/gar_egg_mie/weights.bin",
+      "sha256": "c6c17d6869999bbc109b94bf5a2a1ed981531d9dc0ffed33eb2f58b59c90aec9",
+      "config_sha256": "800fad41a2042205eeb779667282936c82745c03b624c9ae95b82f56bb9a286c"
+    },
+    {
+      "name": "gar_egg_zap",
+      "path": "saved/pokemon/starmie_sweep/gar_egg_zap/weights.bin",
+      "sha256": "1a69e8ed2bf0ecf0a60df9d7c2f88b853e139ac934df1204e4b1afb3d3d550cf",
+      "config_sha256": "eee9e285c9f4f62b6f09f1736ff53ed914911572e15f7fcf2c2a6933234a7fdb"
+    },
+    {
+      "name": "gar_egg_mie_zap",
+      "path": "saved/pokemon/starmie_sweep/gar_egg_mie_zap/weights.bin",
+      "sha256": "d65da914cb2675c9d4eac136c1a0f8235df909c4db9192da0e94105229dc0de2",
+      "config_sha256": "7711e796dee2b2651857430dc1a37803bc061c5e1b5d006d773129e23e133061"
+    }
+  ]
+}

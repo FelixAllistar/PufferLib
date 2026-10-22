@@ -1,0 +1,56 @@
+{
+  "run": "sweep_1792309473671_0000",
+  "score": 6.59375,
+  "cost": 12.005341520998627,
+  "steps": 524288.0,
+  "history_cost": 12.0053415,
+  "panel": {
+    "frames": 16384.0,
+    "repeats": 1.0,
+    "seed": 20260907.0,
+    "deterministic": 0.0,
+    "levels": "all",
+    "frameskip": 4.0,
+    "score": 6.59375,
+    "clears": 0.0,
+    "attempts": 32.0,
+    "progress": 0.262233456,
+    "metric": "checkpoints",
+    "distance": 891.59375,
+    "units": "forward_pixels",
+    "clear_frames": 0.0,
+    "clear_rate": 0.0,
+    "checkpoints": 6.59375,
+    "distance_per_checkpoint": 128.0,
+    "speed_objective": 2.0,
+    "best_frames": 0.0,
+    "best_seconds": 0.0,
+    "mean_seconds": 0.0,
+    "best_count": 0.0,
+    "timing_scope": "full_level",
+    "practice_replay": "None"
+  },
+  "progress": [
+    {
+      "steps": "262144",
+      "seconds": "5.616391",
+      "sps": "46674.810",
+      "entropy": "0.231614247",
+      "kl": "0.0195242912",
+      "value": "0.00555922929",
+      "clipfrac": "0.086894989",
+      "vram_used_gb": "14.432617"
+    },
+    {
+      "steps": "524288",
+      "seconds": "6.578799",
+      "sps": "272383.689",
+      "entropy": "0.248386443",
+      "kl": "0.00796548929",
+      "value": "0.00630511111",
+      "clipfrac": "0.0614795685",
+      "vram_used_gb": "14.797852"
+    }
+  ],
+  "status": "passed"
+}

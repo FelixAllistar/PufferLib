@@ -1,0 +1,89 @@
+{
+  "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/master/r000038-a001/weights.bin",
+  "sha256": "7655bd115ccf093930632ceb1d848d4a0e12b8fce702e788799f2152aa73de4f",
+  "seed": 20261015,
+  "budget": 4096,
+  "elapsed_seconds": 98.34685763303423,
+  "objective": "argmax score (wins + 0.5 draws) / games",
+  "limitations": "Oak sees full state; native pinned engine is authoritative; Oak search RNG is internally seeded.",
+  "scores": {
+    "argmax": {
+      "games": 384,
+      "wins": 57,
+      "draws": 1,
+      "losses": 326,
+      "timeouts": 0,
+      "score": 0.14973958333333334
+    },
+    "sample": {
+      "games": 384,
+      "wins": 14,
+      "draws": 0,
+      "losses": 370,
+      "timeouts": 0,
+      "score": 0.036458333333333336
+    }
+  },
+  "panel": [
+    {
+      "team": "zam_egg_mie",
+      "games": 128,
+      "wins": 21,
+      "draws": 0,
+      "losses": 107,
+      "timeouts": 0,
+      "mode": "argmax",
+      "report": "argmax-zam_egg_mie/rr50m_bf16_20261017-master-zam_egg_mie-4096-argmax.json"
+    },
+    {
+      "team": "jynx_mie_don",
+      "games": 128,
+      "wins": 2,
+      "draws": 0,
+      "losses": 126,
+      "timeouts": 0,
+      "mode": "argmax",
+      "report": "argmax-jynx_mie_don/rr50m_bf16_20261017-master-jynx_mie_don-4096-argmax.json"
+    },
+    {
+      "team": "gar_egg_zap",
+      "games": 128,
+      "wins": 34,
+      "draws": 1,
+      "losses": 93,
+      "timeouts": 0,
+      "mode": "argmax",
+      "report": "argmax-gar_egg_zap/rr50m_bf16_20261017-master-gar_egg_zap-4096-argmax.json"
+    },
+    {
+      "team": "zam_egg_mie",
+      "games": 128,
+      "wins": 7,
+      "draws": 0,
+      "losses": 121,
+      "timeouts": 0,
+      "mode": "sample",
+      "report": "sample-zam_egg_mie/rr50m_bf16_20261017-master-zam_egg_mie-4096-sample.json"
+    },
+    {
+      "team": "jynx_mie_don",
+      "games": 128,
+      "wins": 0,
+      "draws": 0,
+      "losses": 128,
+      "timeouts": 0,
+      "mode": "sample",
+      "report": "sample-jynx_mie_don/rr50m_bf16_20261017-master-jynx_mie_don-4096-sample.json"
+    },
+    {
+      "team": "gar_egg_zap",
+      "games": 128,
+      "wins": 7,
+      "draws": 0,
+      "losses": 121,
+      "timeouts": 0,
+      "mode": "sample",
+      "report": "sample-gar_egg_zap/rr50m_bf16_20261017-master-gar_egg_zap-4096-sample.json"
+    }
+  ]
+}

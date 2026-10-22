@@ -1,0 +1,89 @@
+{
+  "utc": "2026-10-16T00:42:41.968828+00:00",
+  "checkpoints": {
+    "sweep_1792016021935_0000": [
+      {
+        "name": "0000002147483648.bin",
+        "steps": 2147483648,
+        "saved_utc": "2026-10-15T00:16:59.977875+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000004294967296.bin",
+        "steps": 4294967296,
+        "saved_utc": "2026-10-15T02:25:53.979978+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000006442450944.bin",
+        "steps": 6442450944,
+        "saved_utc": "2026-10-15T04:39:00.648838+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000008589934592.bin",
+        "steps": 8589934592,
+        "saved_utc": "2026-10-15T06:58:32.198911+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000009999745024.bin",
+        "steps": 9999745024,
+        "saved_utc": "2026-10-15T08:28:53.069780+00:00",
+        "bytes": 1965248
+      }
+    ],
+    "sweep_1792052933835_0001": [
+      {
+        "name": "0000002147483648.bin",
+        "steps": 2147483648,
+        "saved_utc": "2026-10-15T10:30:31.668590+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000004294967296.bin",
+        "steps": 4294967296,
+        "saved_utc": "2026-10-15T12:38:19.573232+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000006442450944.bin",
+        "steps": 6442450944,
+        "saved_utc": "2026-10-15T14:48:09.027068+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000008589934592.bin",
+        "steps": 8589934592,
+        "saved_utc": "2026-10-15T17:00:13.165599+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000009999745024.bin",
+        "steps": 9999745024,
+        "saved_utc": "2026-10-15T18:28:33.401459+00:00",
+        "bytes": 1965248
+      }
+    ],
+    "sweep_1792088914135_0002": [
+      {
+        "name": "0000002147483648.bin",
+        "steps": 2147483648,
+        "saved_utc": "2026-10-15T20:29:33.907703+00:00",
+        "bytes": 1965248
+      },
+      {
+        "name": "0000004294967296.bin",
+        "steps": 4294967296,
+        "saved_utc": "2026-10-15T22:33:00.889271+00:00",
+        "bytes": 1965248
+      }
+    ]
+  },
+  "completed_trials": [
+    "sweep run=0 score=1.4042 cost=36904.73 steps=9999745024 random=0 gp_obs=0 pareto=0",
+    "sweep run=1 score=1.4266 cost=35973.65 steps=9999745024 random=1 gp_obs=0 pareto=0"
+  ],
+  "gpu": "36, 10135",
+  "sweep_config": "[base]\nenv_name = mario_sim\ngpu_offset = 0\nprofile = 0\ncheckpoint_dir = /workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints\nlog_dir = /workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/logs\ncheckpoint_interval = 4096\neval_episodes = 0\neval_agents = -1\neval_greedy = 0\nload_model_path = None\nload_enemy_model_path = None\nrun_id = 'None'\nresult_fd = 0\ncudagraphs = 1\nseed = 73\nreset_every_horizon = 0\nasync = 1\n\n[vec]\ntotal_agents = 4096\nnum_buffers = 4\nnum_threads = 12\nnum_policies = 1\nhist_policy_hidden_size = 0\nhist_policy_num_layers = 0\nhist_policy_percent = 0\n\n[selfplay]\nenabled = 0\nmax_size = 16\nseed = 42\ninitial_opponents = None\nopp_timeout_steps = 500_000_000\neval_pool_size = 8\neval_games = 0\neval_bot_games = 0\neval_bots = 0\neval_bot_envs = 8192\neval_bot_threads = 0\n\n[bot_eval]\n\n[env]\ndr = 0\nnum_agents = 1\nnum_bots = 0\nmode = mixed\nseed = 73\nengine_module = build/mario_sim/runtime/cuda_replay.cubin\nengine_cpu_archive = build/mario_sim/runtime/logic_cpu.a\n\n[policy]\nhidden_size = 256\nnum_layers = 2\n\n[train]\ngpus = 1\ntotal_timesteps = 10000000000\nlearning_rate = 0.000266737334\nanneal_lr = 0\nmin_lr_ratio = 0.0\ngamma = 0.998788059\ngae_lambda = 0.975953162\nreplay_ratio = 0.951745093\nclip_coef = 0.362240344\nvf_coef = 1.18343806\nvf_clip_coef = 2.15372181\nreward_clip = 0\nmax_grad_norm = 0.353460759\nent_coef = 8.06973767e-05\nanneal_ent_coef = 0\nmin_ent_coef_ratio = 0.1\nmomentum = 0.941101253\nminibatch_size = 1024\nhorizon = 128\nvtrace = 0\nvtrace_rho_clip = 3.40632558\nvtrace_c_clip = 1.0\nverb_eps = 0.0\nverb_eps_anneal_start = 0.4\nverb_eps_anneal_end = 1.0\n\n[sweep]\nmetric = sweep_score\nmetric_distribution = linear\ngoal = maximize\nmax_suggestion_cost = 270000\nmax_runs = 128\ngpus = 1\ndownsample = 1\nprune_pareto = 1\nearly_stop_quantile = 0.3\nmax_failures = 1000\nworker_path = None\ntrainer_path = puffer\n\n[sweep.train.total_timesteps]\ndistribution = log_normal\nmin = 10000000000\nmax = 10000000000\nscale = time\n\n[sweep.policy.hidden_size]\ndistribution = uniform_pow2\nmin = 256\nmax = 256\nscale = auto\n\n[sweep.policy.num_layers]\ndistribution = int_uniform\nmin = 2\nmax = 2\nscale = auto\n\n[sweep.vec.total_agents]\ndistribution = uniform_pow2\nmin = 4096\nmax = 4096\nscale = auto\n\n[sweep.train.horizon]\ndistribution = uniform_pow2\nmin = 128\nmax = 128\nscale = auto\n\n[sweep.train.minibatch_size]\ndistribution = uniform_pow2\nmin = 1024\nmax = 1024\nscale = auto\n\n[sweep.train.learning_rate]\ndistribution = log_normal\nmin = 0.00022\nmax = 0.00032\nscale = 0.5\n\n[sweep.train.ent_coef]\ndistribution = log_normal\nmin = 5e-05\nmax = 0.00012\nscale = auto\n\n[sweep.train.gamma]\ndistribution = logit_normal\nmin = 0.9985\nmax = 0.9991\nscale = auto\n\n[sweep.train.gae_lambda]\ndistribution = logit_normal\nmin = 0.968\nmax = 0.984\nscale = auto\n\n[sweep.train.replay_ratio]\ndistribution = uniform\nmin = 0.85\nmax = 1.1\nscale = auto\n\n[sweep.train.clip_coef]\ndistribution = uniform\nmin = 0.3\nmax = 0.42\nscale = auto\n\n[sweep.train.vf_clip_coef]\ndistribution = uniform\nmin = 1.8\nmax = 2.5\nscale = auto\n\n[sweep.train.vf_coef]\ndistribution = uniform\nmin = 0.95\nmax = 1.45\nscale = auto\n\n[sweep.train.max_grad_norm]\ndistribution = uniform\nmin = 0.28\nmax = 0.43\nscale = auto\n\n[sweep.train.momentum]\ndistribution = logit_normal\nmin = 0.925\nmax = 0.96\nscale = auto\n\n[game]\nreset_bank = build/mario_sim/runtime/generated/bank.bin\nfixed_stage = -1\nmax_frames = 108000\nterminate_on_clear = 0\nclear_reward = 1\ncheckpoint_distance = 128\ncheckpoint_reward = 0.025\ntime_bonus = 0.1\ntime_target_frames = 1800\ndeath_penalty = 0\n\n[fpg]\nfraction = 0.25\nreset_bank = build/mario_sim/fpg/curriculum/bank.bin\nmax_frames = 1800\nfixed_stage = 0\nworld_variants = 1\ngeneration_knobs = 0\ncurriculum = 1\ncurriculum_adaptive = 1\ncurriculum_start_frames = 3\ncurriculum_window = 16\ncurriculum_confirmations = 2\ncurriculum_threshold = 0.8\ncurriculum_replay = 0.2\ncurriculum_resume = 0\ncurriculum_eval_frames = 0\ntime_table = build/mario_sim/fpg/curriculum_targets.bin\ntime_bonus = 0.1\ntime_target_scale = 1.0\ntime_slack_frames = 8\ntime_power = 1\ntime_fallback_speed = 2.5\ntime_fallback_setup = 24\n\n[sweep.train.vtrace]\ndistribution = int_uniform\nmin = 0\nmax = 0\nscale = auto\n\n[sweep.train.vtrace_rho_clip]\ndistribution = uniform\nmin = 3.40632558\nmax = 3.40632558\nscale = auto\n\n[sweep.train.vtrace_c_clip]\ndistribution = uniform\nmin = 1.0\nmax = 1.0\nscale = auto\n\n"
+}

@@ -1,0 +1,55 @@
+{
+  "launched_utc": "2026-10-18T23:59:13.632851+00:00",
+  "tmux": "ssh_tmux:0.0",
+  "command": "cd /workspace/PufferLib && set -o pipefail && stdbuf -oL -eL ./puffer sweep 2>&1 | tee -a logs/retro_constant_20261018/sweep.log",
+  "parent": "saved/retro/pixel_197_20261018.bin",
+  "trials": 500,
+  "decisions_per_trial": 50331648,
+  "anneal_lr": 0,
+  "anneal_ent_coef": 0,
+  "hashes": {
+    "puffer": "84eab0ac17a5748e62a2ee27bb1053e0dc849deeee441fa68d2e1f4affaf2fba",
+    "config/retro.ini": "d7ebd121978a105e98e9e8925f4d82dcb15b5ea7cebee17a7f93e684f367bd5b",
+    "ocean/retro/sweep_worker.py": "4c188171fe1fd728777547434e16ff5c965ee8a6941daf09a661d8fb3c8bced7",
+    "saved/retro/pixel_197_20261018.bin": "80127cad3ec19a5a1df84f5566a22a3c41d741a0bceec6da96ded2c9d95178bc"
+  },
+  "validation": {
+    "parent": {
+      "frames": 1216156.0,
+      "repeats": 8.0,
+      "seed": 20260907.0,
+      "deterministic": 0.0,
+      "levels": "all",
+      "frameskip": 4.0,
+      "score": 77.1141678,
+      "clears": 197.0,
+      "attempts": 256.0,
+      "progress": 0.824539292,
+      "metric": "perf",
+      "distance": 4781.53906,
+      "units": "forward_pixels",
+      "clear_frames": 2463.54822,
+      "clear_rate": 0.76953125,
+      "checkpoints": 21.1289062,
+      "distance_per_checkpoint": 128.0,
+      "speed_objective": 2.0,
+      "best_frames": 1649.0,
+      "best_seconds": 27.438145498413,
+      "mean_seconds": 40.99162801373,
+      "best_count": 7.0,
+      "timing_scope": "full_level",
+      "practice_replay": "None",
+      "elapsed_seconds": 30.276893497095443
+    },
+    "native_smoke": {
+      "score": 76.33274841308594,
+      "steps": 1048576.0,
+      "cost": 46.013595980009995,
+      "reason": "completed",
+      "clears": 195.0,
+      "anneal_lr": "0",
+      "anneal_ent_coef": "0"
+    },
+    "local_checks": "CPU preflight, six worker tests and panel objective/sampling tests passed; replay endpoints passed shape/VRAM validation"
+  }
+}

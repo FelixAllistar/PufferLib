@@ -1,0 +1,23 @@
+{
+  "created_utc": "2026-10-15T06:03:57.655112+00:00",
+  "seed": 137,
+  "episodes_per_level": 32,
+  "level_frame_limit": 6000,
+  "levels_only": true,
+  "evaluator_sha256": "b4594c61e5ac85d41e87ce786139125562564c7245cd60d5224e08bc353df451",
+  "config_sha256": "496a6fa679c102f6dcb7775c2274b992c079a49a2e169b4d8059e26677e87081",
+  "level_config_sha256": "7b83cf6367ee747552be90b304a1843f405ab68f1005f560cd4a610d1f1f1648",
+  "rom_sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea",
+  "models": {
+    "steps_2_15b": {
+      "checkpoint": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000002147483648.bin",
+      "sha256": "62fdae9f5a66b1da569037a38b58cdce17b1cc9c9259953be8375cdc7a82eb93",
+      "panels": {}
+    },
+    "steps_6_44b": {
+      "checkpoint": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000006442450944.bin",
+      "sha256": "6c4327c16a2586ac458670e2ea590f2326510aab7d9205427dae1292f5837408",
+      "panels": {}
+    }
+  }
+}

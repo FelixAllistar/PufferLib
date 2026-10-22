@@ -1,0 +1,49 @@
+{
+  "utc": "2026-10-19T15:44:47.591775+00:00",
+  "run": null,
+  "state": "cancelled by user",
+  "settings_verified": true,
+  "fixed_settings_verified": {
+    "policy.hidden_size": 256,
+    "policy.num_layers": 2,
+    "vec.total_agents": 1024,
+    "vec.num_threads": 12,
+    "vec.num_buffers": 4,
+    "train.horizon": 256,
+    "train.minibatch_size": 4096,
+    "train.vf_clip_coef": 0.2,
+    "train.vf_coef": 0.5,
+    "train.anneal_lr": 0,
+    "train.anneal_ent_coef": 0,
+    "base.checkpoint_interval": 0,
+    "train.total_timesteps": 50331648
+  },
+  "varying_parameters": [
+    "sweep.train.clip_coef",
+    "sweep.train.ent_coef",
+    "sweep.train.gae_lambda",
+    "sweep.train.gamma",
+    "sweep.train.learning_rate",
+    "sweep.train.max_grad_norm",
+    "sweep.train.momentum",
+    "sweep.train.replay_ratio"
+  ],
+  "parent": "saved/retro/pixel_197_20261018.bin",
+  "progress": {
+    "steps": "7602176",
+    "seconds": "68.861774",
+    "sps": "113994.148",
+    "entropy": "0.143039569",
+    "kl": "0.000172654705",
+    "value": "0.00107178208",
+    "clipfrac": "0.000274658203",
+    "vram_used_gb": "14.547852"
+  },
+  "parent_clears": 197,
+  "valid_completed_trials": 111,
+  "best_valid_clears": 198,
+  "live_learning_rate": 9.40261089e-06,
+  "live_replay_ratio": 1.25698519,
+  "tmux": "bash",
+  "cancellation_record": "cancellation.json"
+}

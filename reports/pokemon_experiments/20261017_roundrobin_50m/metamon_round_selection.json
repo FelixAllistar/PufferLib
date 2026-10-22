@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-18",
+  "execution": "Vast ssh6.vast.ai:33431 /workspace/PufferLib",
+  "selection": "Highest recorded complete Oak argmax score among evaluated fixed-team master rounds; not a complete cross-round tournament or proof of best Metamon strength",
+  "protocol": {
+    "games_per_team": 128,
+    "teams": 3,
+    "budget": 4096,
+    "seed": 20261015
+  },
+  "ranked_recorded_rounds": [
+    {
+      "round": 26,
+      "score": 0.7447916666666666
+    },
+    {
+      "round": 16,
+      "score": 0.6953125
+    },
+    {
+      "round": 29,
+      "score": 0.68359375
+    },
+    {
+      "round": 31,
+      "score": 0.6315104166666666
+    },
+    {
+      "round": 11,
+      "score": 0.6223958333333334
+    },
+    {
+      "round": 12,
+      "score": 0.59765625
+    },
+    {
+      "round": 22,
+      "score": 0.34765625
+    },
+    {
+      "round": 13,
+      "score": 0.14322916666666666
+    }
+  ],
+  "highest_published_master_round_at_audit": 36,
+  "unscored_master_rounds_at_audit": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    14,
+    15,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    24,
+    25,
+    27,
+    28,
+    30,
+    32,
+    33,
+    34,
+    35,
+    36
+  ],
+  "selected": {
+    "round": 26,
+    "checkpoint": "leagues/pokemon/rr50m_bf16_20261017/members/master/r000026-a001/weights.bin",
+    "sha256": "440b4dd80bebcc01fc491fdd6b1b9bed046953936e7d597c2207f2b0a6335b40",
+    "source_report": "leagues/pokemon/rr50m_bf16_20261017/evaluations/oak-master-r000026-128/summary.json"
+  },
+  "opponent": {
+    "name": "Metamon TaurosV0",
+    "checkpoint": 62,
+    "sha256": "3f55b698bd19f189a465797c7bd1fe49c75884de701ab91ad156e6bac70b8ba1"
+  },
+  "not_authorized_here": [
+    "new training or sweeps",
+    "joint-training design research"
+  ]
+}

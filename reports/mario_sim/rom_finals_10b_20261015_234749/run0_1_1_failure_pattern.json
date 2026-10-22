@@ -1,0 +1,16 @@
+{
+  "level": "1-1",
+  "checkpoint": "run0_10b",
+  "clears": 9,
+  "deaths": 23,
+  "final_death_x_counts": {
+    "1797": 22,
+    "1794": 1
+  },
+  "death_frame_counts": {
+    "803": 22,
+    "821": 1
+  },
+  "last_sample_below_screen": 0,
+  "interpretation": "Repeated failures at nearly the same encounter. Exact collision cause is not recorded."
+}

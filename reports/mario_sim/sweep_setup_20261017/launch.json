@@ -1,0 +1,49 @@
+{
+  "tmux": "ssh_tmux:0.0",
+  "command": "stdbuf -oL -eL ./puffer sweep 2>&1 | tee -a logs/mario_sim/sweep_20261017.log",
+  "trials": 500,
+  "first_trial_steps": 500000000,
+  "step_range": [
+    200000000,
+    3000000000
+  ],
+  "agents": [
+    4096,
+    32768
+  ],
+  "width": [
+    32,
+    256
+  ],
+  "layers": [
+    1,
+    3
+  ],
+  "horizon": [
+    16,
+    256
+  ],
+  "min_sps": 150000,
+  "max_train_seconds": 14400,
+  "memory_limit_mb": 14336,
+  "canonical_trainer": "/workspace/PufferLib/puffer",
+  "canonical_config": "/workspace/PufferLib/config/mario_sim.ini",
+  "trainer_sha256": "4dcaf66774395c14ab5bdc2fc2a32a3cd20d8c074cd55aeb660cab37fe5f3819",
+  "config_sha256": "b8c08ff277b7eb3b8e4b5eca9371ba1ca5e8c0ccb5c25d2b50b8f190f286e84d",
+  "worker_sha256": "3644c840ff04e03062fd1885dde62dfb7040d62211d5a8e7b41bc880eee4cec3",
+  "validation": {
+    "run": "sweep_1792249026748_0000",
+    "steps": 9371648.0,
+    "requested_steps": 200000080,
+    "reason": "runtime limit",
+    "score": 0.0,
+    "cost": 41.80342779599596,
+    "panels": 44,
+    "history_restore_passed": true
+  },
+  "preserved": {
+    "run": "1792241438943",
+    "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792241438943/0000001426063360.bin",
+    "sha256": "054bc62f52f7496c19d32755b6e36d1ef9fb7c271e160a061dc7f3af76767bd1"
+  }
+}

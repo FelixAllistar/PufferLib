@@ -1,0 +1,17 @@
+--- orig/algo.cu	2026-10-21 20:11:47.669489003 -0400
++++ algo.cu	2026-10-21 20:14:43.174067830 -0400
+@@ -1066,6 +1066,14 @@
+         encoder.reg_train = gs_tokens_reg_train;
+         encoder.reg_rollout = gs_tokens_reg_rollout;
+         encoder.in_dim = GS_TRANSFORMER_FEATURES;
++        if (puf_transformer_pointer) {
++            if (decoder_output_size + 1 != GS_TRANSFORMER_TOKENS) {
++                fprintf(stderr, "transformer_pointer needs one token per card plus the global token\n"); exit(1);
++            }
++            decoder.forward = gs_pointer_decoder_forward;
++            decoder.backward = gs_pointer_decoder_backward;
++            decoder.reg_train = gs_pointer_decoder_reg_train;
++        }
+         network = {
+             .forward = transformer_forward, .forward_train = transformer_forward_train,
+             .backward = transformer_backward, .init_weights = transformer_init_weights,

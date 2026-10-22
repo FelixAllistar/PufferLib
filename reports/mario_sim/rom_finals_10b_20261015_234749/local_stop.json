@@ -1,0 +1,10 @@
+{
+  "pids": [
+    471664,
+    471667,
+    471671,
+    471672,
+    472172
+  ],
+  "reason": "Full batch moved to remote CPU; retained completed local panel for reproducibility."
+}

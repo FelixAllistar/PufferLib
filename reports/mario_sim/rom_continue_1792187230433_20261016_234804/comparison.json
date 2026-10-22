@@ -1,0 +1,185 @@
+{
+  "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792187230433/0000001610612736.bin",
+  "total_exposure_steps": 3610247168,
+  "before_level_clears": 177,
+  "after_level_clears": 164,
+  "before_levels_with_clears": 16,
+  "after_levels_with_clears": 13,
+  "game_mean_progress_before": 2762.75,
+  "game_mean_progress_after": 2397.34375,
+  "fpg_96_before_after": [
+    63,
+    0
+  ],
+  "fpg_425_before_after": [
+    64,
+    0
+  ],
+  "fpg_256_before_after": [
+    2,
+    0
+  ],
+  "all_rom_native_tests_passed": true,
+  "levels": {
+    "level_1_1": {
+      "before": 32,
+      "after": 29,
+      "delta": -3
+    },
+    "level_1_2": {
+      "before": 9,
+      "after": 0,
+      "delta": -9
+    },
+    "level_1_3": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_1_4": {
+      "before": 25,
+      "after": 13,
+      "delta": -12
+    },
+    "level_2_2": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_2_1": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_2_4": {
+      "before": 21,
+      "after": 24,
+      "delta": 3
+    },
+    "level_2_3": {
+      "before": 8,
+      "after": 20,
+      "delta": 12
+    },
+    "level_3_1": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_3_2": {
+      "before": 12,
+      "after": 0,
+      "delta": -12
+    },
+    "level_3_4": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_3_3": {
+      "before": 11,
+      "after": 14,
+      "delta": 3
+    },
+    "level_4_1": {
+      "before": 16,
+      "after": 29,
+      "delta": 13
+    },
+    "level_4_2": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_4_3": {
+      "before": 5,
+      "after": 16,
+      "delta": 11
+    },
+    "level_4_4": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_5_2": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_5_1": {
+      "before": 5,
+      "after": 1,
+      "delta": -4
+    },
+    "level_5_4": {
+      "before": 14,
+      "after": 4,
+      "delta": -10
+    },
+    "level_5_3": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_6_2": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_6_1": {
+      "before": 11,
+      "after": 3,
+      "delta": -8
+    },
+    "level_6_4": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_7_1": {
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    "level_6_3": {
+      "before": 2,
+      "after": 0,
+      "delta": -2
+    },
+    "level_7_2": {
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    "level_7_3": {
+      "before": 4,
+      "after": 8,
+      "delta": 4
+    },
+    "level_8_1": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_8_2": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_8_3": {
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    "level_7_4": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    },
+    "level_8_4": {
+      "before": 0,
+      "after": 0,
+      "delta": 0
+    }
+  }
+}

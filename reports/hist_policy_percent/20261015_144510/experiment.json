@@ -1,0 +1,15 @@
+{
+  "purpose": "Compare Protein samples, training checkpoint configs, and final log configs with selfplay disabled/enabled and post-training evaluation.",
+  "cases": [
+    "disabled",
+    "enabled",
+    "enabled_final_eval"
+  ],
+  "trials_per_case": 3,
+  "agent_steps_per_trial": 512,
+  "range": [
+    0.0625,
+    1
+  ],
+  "default_fraction": 0.5
+}

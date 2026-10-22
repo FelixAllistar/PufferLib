@@ -1,0 +1,55 @@
+{
+  "current_checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792196168198/0000005368709120.bin",
+  "clears_of_1024": {
+    "original_2b": 177,
+    "previous_evaluated": 164,
+    "current": 336,
+    "historical_6_44b": 475
+  },
+  "levels_with_clears": 19,
+  "game_mean_progress_pixels": {
+    "original_2b": 2762.75,
+    "previous_evaluated": 2397.34375,
+    "current": 4473.5
+  },
+  "fpg_current": {
+    "96": 63,
+    "256": 64,
+    "425": 60
+  },
+  "all_native_rom_parity_tests_passed": true,
+  "level_results": {
+    "level_1_2": 0,
+    "level_1_3": 0,
+    "level_1_4": 8,
+    "level_1_1": 32,
+    "level_2_2": 12,
+    "level_2_3": 31,
+    "level_2_1": 24,
+    "level_2_4": 27,
+    "level_3_2": 32,
+    "level_3_1": 30,
+    "level_3_4": 0,
+    "level_4_3": 0,
+    "level_4_1": 5,
+    "level_3_3": 0,
+    "level_4_2": 0,
+    "level_5_2": 15,
+    "level_5_1": 20,
+    "level_5_3": 0,
+    "level_6_1": 9,
+    "level_5_4": 28,
+    "level_6_4": 2,
+    "level_6_2": 8,
+    "level_6_3": 0,
+    "level_4_4": 0,
+    "level_7_1": 2,
+    "level_7_2": 3,
+    "level_7_3": 32,
+    "level_8_2": 16,
+    "level_8_3": 0,
+    "level_8_1": 0,
+    "level_8_4": 0,
+    "level_7_4": 0
+  }
+}

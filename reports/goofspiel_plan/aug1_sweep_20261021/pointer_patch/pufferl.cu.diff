@@ -1,0 +1,10 @@
+--- orig/pufferl.cu	2026-10-21 20:11:50.828379386 -0400
++++ pufferl.cu	2026-10-21 20:14:43.177554274 -0400
+@@ -2267,6 +2267,7 @@
+         assert(slice > 0 && "policy has no agents");
+ 
+         puf_memoryless = puf_ini_get(ini, "policy", "memoryless") != 0;
++        puf_transformer_pointer = puf_ini_get(ini, "policy", "transformer_pointer") != 0;
+         pol->arch = build_arch(input_size, h, L,
+             decoder_output_size, is_continuous, hypers.horizon,
+             puf_ini_get_str(ini, "policy", "architecture"),

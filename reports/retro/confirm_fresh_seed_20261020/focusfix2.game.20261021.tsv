@@ -1,0 +1,73 @@
+# retro_panel_v2 frames=108000 repeats=32 seed=20261021 deterministic=0 levels=1-1 frameskip=4
+level	replicate	clear	progress	frames	clear_frames	checkpoints
+1-1	0	0	0.948823529	16567	0	123
+1-1	1	0	0.948823529	47240	0	349
+1-1	2	0	0.948823529	16796	0	126
+1-1	3	0	0.948823529	16386	0	124
+1-1	4	0	0.948823529	18563	0	130
+1-1	5	0	0.948823529	43186	0	350
+1-1	6	0	0.948823529	50518	0	350
+1-1	7	0	0.948823529	16857	0	124
+1-1	8	0	0.948823529	42142	0	349
+1-1	9	0	0.948823529	42661	0	350
+1-1	10	0	0.948823529	16891	0	124
+1-1	11	0	0.948823529	41921	0	349
+1-1	12	0	0.948823529	15808	0	123
+1-1	13	0	0.948823529	17746	0	129
+1-1	14	0	0.948823529	43617	0	350
+1-1	15	0	0.948823529	40969	0	349
+1-1	16	0	0.948823529	19513	0	148
+1-1	17	0	0.948823529	44043	0	350
+1-1	18	0	0.948823529	31303	0	258
+1-1	19	0	0.948823529	16640	0	124
+1-1	20	0	0.948823529	44963	0	349
+1-1	21	0	0.948823529	16553	0	124
+1-1	22	0	0.948823529	43603	0	349
+1-1	23	0	0.948823529	16639	0	124
+1-1	24	0	0.948823529	42883	0	349
+1-1	25	0	0.948823529	45039	0	349
+1-1	26	0	0.948823529	43485	0	348
+1-1	27	0	0.948823529	45262	0	349
+1-1	28	0	0.948823529	45085	0	350
+1-1	29	0	0.948823529	16157	0	123
+1-1	30	0	0.948823529	47891	0	350
+1-1	31	0	0.948823529	43992	0	350
+# score=10.84375 clears=0 attempts=32 progress=0.948823529 frames=1050919
+# metric=perf distance=3226 units=forward_pixels
+# clear_frames=0 clear_rate=0
+# checkpoints=256.03125 distance_per_checkpoint=128
+# speed_objective=2 best_frames=0 best_seconds=0.000000000000 mean_seconds=0.000000000000 best_count=0
+# game=1 wins=0 win_rate=0 mean_levels=10.84375 archive_enabled=0
+# game_attempt=0 wins=0 levels=5 deaths=3 warps=0 frames=16567
+# game_attempt=1 wins=0 levels=15 deaths=3 warps=0 frames=47240
+# game_attempt=2 wins=0 levels=5 deaths=3 warps=0 frames=16796
+# game_attempt=3 wins=0 levels=5 deaths=3 warps=0 frames=16386
+# game_attempt=4 wins=0 levels=5 deaths=3 warps=0 frames=18563
+# game_attempt=5 wins=0 levels=15 deaths=4 warps=0 frames=43186
+# game_attempt=6 wins=0 levels=15 deaths=4 warps=0 frames=50518
+# game_attempt=7 wins=0 levels=5 deaths=3 warps=0 frames=16857
+# game_attempt=8 wins=0 levels=15 deaths=4 warps=0 frames=42142
+# game_attempt=9 wins=0 levels=15 deaths=4 warps=0 frames=42661
+# game_attempt=10 wins=0 levels=5 deaths=3 warps=0 frames=16891
+# game_attempt=11 wins=0 levels=15 deaths=4 warps=0 frames=41921
+# game_attempt=12 wins=0 levels=5 deaths=3 warps=0 frames=15808
+# game_attempt=13 wins=0 levels=5 deaths=3 warps=0 frames=17746
+# game_attempt=14 wins=0 levels=15 deaths=4 warps=0 frames=43617
+# game_attempt=15 wins=0 levels=15 deaths=3 warps=0 frames=40969
+# game_attempt=16 wins=0 levels=6 deaths=3 warps=0 frames=19513
+# game_attempt=17 wins=0 levels=15 deaths=3 warps=0 frames=44043
+# game_attempt=18 wins=0 levels=11 deaths=3 warps=0 frames=31303
+# game_attempt=19 wins=0 levels=5 deaths=3 warps=0 frames=16640
+# game_attempt=20 wins=0 levels=15 deaths=4 warps=0 frames=44963
+# game_attempt=21 wins=0 levels=5 deaths=3 warps=0 frames=16553
+# game_attempt=22 wins=0 levels=15 deaths=4 warps=0 frames=43603
+# game_attempt=23 wins=0 levels=5 deaths=3 warps=0 frames=16639
+# game_attempt=24 wins=0 levels=15 deaths=3 warps=0 frames=42883
+# game_attempt=25 wins=0 levels=15 deaths=3 warps=0 frames=45039
+# game_attempt=26 wins=0 levels=15 deaths=4 warps=0 frames=43485
+# game_attempt=27 wins=0 levels=15 deaths=4 warps=0 frames=45262
+# game_attempt=28 wins=0 levels=15 deaths=4 warps=0 frames=45085
+# game_attempt=29 wins=0 levels=5 deaths=3 warps=0 frames=16157
+# game_attempt=30 wins=0 levels=15 deaths=4 warps=0 frames=47891
+# game_attempt=31 wins=0 levels=15 deaths=3 warps=0 frames=43992
+# timing_scope=full_game practice_replay=None

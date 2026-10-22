@@ -1,0 +1,220 @@
+{
+  "parent": "saved/retro/vast_838m.bin",
+  "parent_original_config": "saved/retro/vast_838m.bin.ini",
+  "trial_zero_decisions": 30000000,
+  "decision_range": [
+    10000000,
+    100000000
+  ],
+  "native_frames_per_decision": 4,
+  "target_completed_trials": 500,
+  "fixed_panel": {
+    "levels": "all",
+    "repeats": "8",
+    "seed": "20260907",
+    "frames": "30000",
+    "frameskip": "4",
+    "workers": "12"
+  },
+  "metric": "checkpoints",
+  "varying_parameters": {
+    "vec.total_agents": {
+      "distribution": "uniform_pow2",
+      "min": "128",
+      "max": "32768",
+      "scale": "auto"
+    },
+    "train.horizon": {
+      "distribution": "uniform_pow2",
+      "min": "8",
+      "max": "512",
+      "scale": "auto"
+    },
+    "train.minibatch_size": {
+      "distribution": "uniform_pow2",
+      "min": "1024",
+      "max": "32768",
+      "scale": "auto"
+    },
+    "train.learning_rate": {
+      "distribution": "log_normal",
+      "min": "0.00001",
+      "max": "0.02",
+      "scale": "auto"
+    },
+    "train.gamma": {
+      "distribution": "logit_normal",
+      "min": "0.97",
+      "max": "0.99999",
+      "scale": "auto"
+    },
+    "train.gae_lambda": {
+      "distribution": "logit_normal",
+      "min": "0.85",
+      "max": "0.9999",
+      "scale": "auto"
+    },
+    "train.ent_coef": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.02",
+      "scale": "auto"
+    },
+    "train.replay_ratio": {
+      "distribution": "uniform",
+      "min": "0.25",
+      "max": "4",
+      "scale": "auto"
+    },
+    "train.clip_coef": {
+      "distribution": "uniform",
+      "min": "0.05",
+      "max": "0.5",
+      "scale": "auto"
+    },
+    "train.vf_clip_coef": {
+      "distribution": "uniform",
+      "min": "0.01",
+      "max": "2",
+      "scale": "auto"
+    },
+    "train.vf_coef": {
+      "distribution": "uniform",
+      "min": "0.1",
+      "max": "4",
+      "scale": "auto"
+    },
+    "train.max_grad_norm": {
+      "distribution": "uniform",
+      "min": "0.1",
+      "max": "5",
+      "scale": "auto"
+    },
+    "train.momentum": {
+      "distribution": "logit_normal",
+      "min": "0.5",
+      "max": "0.999",
+      "scale": "auto"
+    },
+    "base.async": {
+      "distribution": "int_uniform",
+      "min": "0",
+      "max": "1",
+      "scale": "auto"
+    },
+    "base.cudagraphs": {
+      "distribution": "int_uniform",
+      "min": "-1",
+      "max": "1",
+      "scale": "auto"
+    },
+    "train.anneal_lr": {
+      "distribution": "int_uniform",
+      "min": "0",
+      "max": "1",
+      "scale": "auto"
+    },
+    "train.min_lr_ratio": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.5",
+      "scale": "auto"
+    },
+    "train.anneal_ent_coef": {
+      "distribution": "int_uniform",
+      "min": "0",
+      "max": "1",
+      "scale": "auto"
+    },
+    "train.min_ent_coef_ratio": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.5",
+      "scale": "auto"
+    },
+    "env.completion_reward": {
+      "distribution": "log_normal",
+      "min": "0.25",
+      "max": "8",
+      "scale": "auto"
+    },
+    "env.death_penalty": {
+      "distribution": "log_normal",
+      "min": "0.05",
+      "max": "5",
+      "scale": "auto"
+    },
+    "env.checkpoint_reward": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.5",
+      "scale": "auto"
+    },
+    "env.novel_area_reward": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "2",
+      "scale": "auto"
+    },
+    "env.completion_time_bonus": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "4",
+      "scale": "auto"
+    },
+    "env.score_scale": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.0002",
+      "scale": "auto"
+    },
+    "env.coin_reward": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.2",
+      "scale": "auto"
+    },
+    "env.idle_penalty": {
+      "distribution": "uniform",
+      "min": "0",
+      "max": "0.01",
+      "scale": "auto"
+    },
+    "train.total_timesteps": {
+      "distribution": "log_normal",
+      "min": "10000000",
+      "max": "100000000",
+      "scale": "time"
+    },
+    "train.vtrace": {
+      "distribution": "int_uniform",
+      "min": "0",
+      "max": "1",
+      "scale": "auto"
+    },
+    "train.vtrace_rho_clip": {
+      "distribution": "uniform",
+      "min": "1",
+      "max": "4",
+      "scale": "auto"
+    },
+    "train.vtrace_c_clip": {
+      "distribution": "uniform",
+      "min": "0.1",
+      "max": "1",
+      "scale": "auto"
+    }
+  },
+  "fixed_model": {
+    "hidden_size": 256,
+    "num_layers": 2,
+    "pixels": [
+      64,
+      60
+    ],
+    "ram_features": 112,
+    "actions": 64
+  },
+  "normal_train_budget": 838860800,
+  "notes": "Normal train retains the original run budget; sweep.trial_timesteps overrides only trial zero. Subsequent native Protein proposals vary the decision budget."
+}

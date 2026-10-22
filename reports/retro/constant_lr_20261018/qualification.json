@@ -1,0 +1,9 @@
+{
+  "score": 76.33274841308594,
+  "steps": 1048576.0,
+  "cost": 46.013595980009995,
+  "reason": "completed",
+  "clears": 195.0,
+  "anneal_lr": "0",
+  "anneal_ent_coef": "0"
+}

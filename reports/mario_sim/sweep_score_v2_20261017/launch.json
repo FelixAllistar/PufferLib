@@ -1,0 +1,11 @@
+{
+  "launched_utc": "2026-10-17T16:35:30.205363+00:00",
+  "pane": "ssh_tmux:0.0",
+  "command": "stdbuf -oL -eL ./puffer sweep 2>&1 | tee -a logs/mario_sim/sweep_20261017.log",
+  "completed": 6,
+  "next_run": 7,
+  "target": 500,
+  "binary_sha256": "3279a3b2cac4c89f21b5ca3dd6842aabc34d147742d891a94cd85e7d31826ca5",
+  "worker_sha256": "3799f79a5fc69d1906510ea16a64ddb0f105accca4c36d101a3ba0c942a83910",
+  "cleared_pending_terminal_response": true
+}

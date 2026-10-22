@@ -1,0 +1,12 @@
+{
+  "ocean/mario_sim/logic.h": "973eef6d4419b6fff4a953d7e5c26723e5b4a4f8a82b5a6c8d836b6f01a07be6",
+  "ocean/mario_sim/runtime_registers.h": "98e0d587cb18b48bf0a77bef55c8929715cce2c7e1b6e823e6be744d6a1296c9",
+  "ocean/mario_sim/runtime_poll.h": "7550acf442db5fd056962d089f3d66e64d33066b6a761c6a7bdb835dd3a980f8",
+  "ocean/mario_sim/generate_logic.py": "fbf4e45b96d91120f6edcc3423d00ead1a6ce9219a3f507f80fdaa4722c27c6f",
+  "ocean/mario_sim/generate_runtime.py": "97406e284cbe9a8f2578571bacbb3150f784a33ac2411dcb1d995d67c5eb8851",
+  "ocean/retro/batch/generate_blocks.py": "50fa3c0e3110daa9277aae6e04be7e1992e291e1789f2e0f49e6b6563f8aa816",
+  "ocean/mario_sim/runtime_kernel.cu": "83480a6426d4883e23b66687083a512a93882503a0c69e134c88cfabcc6652b3",
+  "ocean/mario_sim/cuda_replay.cu": "1d193e82d8612a6e993c31e08e8a180622d6fd6405b7f59a7b0323a80a339633",
+  "ocean/mario_sim/cuda_replay.h": "eb4d94f06a6e676337dc0d5f8216da0a10d1bc7b19ce374edfa65504ee0d189b",
+  "ocean/mario_sim/logic_cpu.cpp": "166272c8ff8ff5c4e679e2a95f11cb7128658a01c0ef017d5c218f659ac3f2eb"
+}
