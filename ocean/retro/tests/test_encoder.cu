@@ -196,7 +196,8 @@ static void checkpoint_parity(const char* path,Arch policy,Weights weights,Prec 
     FILE* f=fopen(path,"rb"); require(f,"open learned checkpoint");
     require(fread(saved.data(),sizeof(float),saved.size(),f)==saved.size(),"complete learned checkpoint");
     require(fgetc(f)==EOF,"checkpoint architecture unchanged"); fclose(f); put(flat,saved);
-    constexpr int B=3,H=128,L=2;
+    constexpr int B=3;
+    const int H=policy.network.hidden,L=policy.network.num_layers;
     Arch reference=policy; reference.encoder.forward=reference_encoder_forward;
     Allocator fast_alloc={},ref_alloc={};
     auto fast=arch_reg_rollout(&policy,weights,&fast_alloc,B);
@@ -269,17 +270,21 @@ static void checkpoint_parity(const char* path,Arch policy,Weights weights,Prec 
 int main(int argc,char** argv) {
     setbuf(stdout,nullptr);
     bool large=false; const char* checkpoint=nullptr; const char* write_path=nullptr;
+    int hidden=128,layers=2;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--large")) large=true;
         else if(!strcmp(argv[i],"--checkpoint")&&i+1<argc) checkpoint=argv[++i];
-        else { require(argv[i][0]!='-'&&!write_path,"usage: test_retro_encoder [--large] [--checkpoint FILE] [OUTPUT]"); write_path=argv[i]; }
+        else if(!strcmp(argv[i],"--hidden")&&i+1<argc) hidden=atoi(argv[++i]);
+        else if(!strcmp(argv[i],"--layers")&&i+1<argc) layers=atoi(argv[++i]);
+        else { require(argv[i][0]!='-'&&!write_path,"usage: test_retro_encoder [--large] [--hidden N] [--layers N] [--checkpoint FILE] [OUTPUT]"); write_path=argv[i]; }
     }
+    require(hidden>=8&&hidden<=1024&&hidden%8==0&&layers>=1&&layers<=8,"valid checkpoint architecture");
     cublas_init_handle();
     for(int batch:{1,3,17,33}) {
         convolution_parity<0>(batch); convolution_parity<1>(batch); convolution_parity<2>(batch);
     }
     if(large) { convolution_parity<0>(2048); convolution_parity<1>(2048); convolution_parity<2>(2048); }
-    const int B=3,H=128,L=2;
+    const int B=3,H=hidden,L=layers;
     Arch policy=build_arch(RETRO_POLICY_INPUTS,H,L,64,false,4);
     Allocator params={},acts={},grads={},rollout_alloc={};
     auto weights=weights_create(&policy,&params); alloc_create(&params);

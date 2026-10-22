@@ -47,12 +47,12 @@ typedef float obs_t;
 #define RETRO_BTN_RIGHT 128
 struct Log {
     float perf, score, episode_return, episode_length, distance, flag, deaths, coins;
-    float truncations, frames, decisions, clears, warps;
+    float truncations, frames, decisions, clears, warps, game_wins;
     float progress_pixels, checkpoints, clear_frame_sum;
-    float rta_frame_sum, rta_count, practice;
+    float rta_frame_sum, rta_count, practice, archive_training;
     // `coins` is the ending ROM counter; these fields count reward events.
     float coin_events, idle_steps;
-    float area_transitions, novel_areas;
+    float area_transitions, novel_areas, maze_loops;
     float level_episodes[32], level_clears[32];
     float n;
 };
@@ -87,7 +87,9 @@ struct RetroDisplay {
 };
 // Episode-local frontiers, keyed by source level and actual loaded area data.
 // The ROM's upcoming pipe destination ($0750) is not a stable area identity.
-struct RetroFrontier { unsigned int key; int x; };
+// last_x/last_tick: the previous tracked frame in this area (maze loop detection).
+struct RetroFrontier { unsigned int key; int x, last_x, last_tick; };
+struct RetroArchiveEpisode;
 struct Env {
     Log log;
     Agent agents[1];
@@ -106,10 +108,10 @@ struct Env {
     RetroRtaClock rta;
     int completion_time_min_frames, completion_time_max_frames;
     int idle_streak, episode_idle_steps, episode_coin_events;
-    int episode_area_transitions, episode_novel_areas, area_transition_key_count;
+    int episode_area_transitions, episode_novel_areas, episode_maze_loops, area_transition_key_count;
     unsigned int rewarded_levels;
     float episode_return, completion_reward, death_penalty, score_scale, reward_scale;
-    float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty, novel_area_reward;
+    float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty, novel_area_reward, maze_loop_penalty;
     float completion_time_target_bonus, completion_time_target_max;
     int completion_time_target;
     int checkpoint_distance, idle_grace_decisions, progress_pixels, episode_decisions, frontier_count;
@@ -120,6 +122,7 @@ struct Env {
     RetroVecArena* arena;
     const RetroStart* start;
     RetroDisplay* display;
+    RetroArchiveEpisode* archive;
 };
 static inline unsigned char retro_action_mask(int a) { return (a&3)|((a&60)<<2); }
 static inline int retro_mask_action(unsigned char m) { return (m&3)|((m>>2)&60); }
@@ -290,11 +293,18 @@ static int retro_record_area_transition(Env* e,const unsigned char* m) {
     e->episode_novel_areas++;
     return 2;
 }
+// Page*256+x underflows to ~65535 when Mario steps left of an area's start
+// (4-4 allows this). Treat that as x=0, never as the far end of the area.
+static inline int retro_progress_x(int x) { return x>=0x8000?0:x; }
+// Most new pixels one decision may earn. Mario moves at most ~12 px per
+// 4-frame decision; larger jumps are glitches/warps and only advance the frontier.
+#define RETRO_PROGRESS_STEP_CAP 64
 static int retro_progress(Env* e,unsigned int key,int x) {
     // Bound coordinate-wrap/glitch jackpots without changing ROM execution.
-    x=std::max(0,std::min(3400,x)); // Bound checkpoint distance per area.
+    // No per-area length cap: long areas (8-1) keep earning progress.
+    x=retro_progress_x(x);
     for(int i=0;i<e->frontier_count;i++) if(e->frontiers[i].key==key) {
-        int novel=std::max(0,x-e->frontiers[i].x);
+        int novel=std::min(RETRO_PROGRESS_STEP_CAP,std::max(0,x-e->frontiers[i].x));
         e->frontiers[i].x=std::max(x,e->frontiers[i].x);
         int before=e->progress_pixels/e->checkpoint_distance;
         e->progress_pixels+=novel;
@@ -302,16 +312,35 @@ static int retro_progress(Env* e,unsigned int key,int x) {
     }
     // First arrival establishes a baseline; loading an area isn't movement.
     // Exhaustion suppresses new-area rewards, never alters/emits ROM inputs.
-    if(e->frontier_count<256) e->frontiers[e->frontier_count++]={key,x};
+    if(e->frontier_count<256) e->frontiers[e->frontier_count++]={key,x,x,e->tick};
     return 0;
 }
-static int retro_track_progress(Env* e) {
+// Castle mazes (4-4, 7-4, 8-4) send Mario back four pages (1024 px) when he is
+// at the wrong height at a hidden check. Returns 1 on that jump: a 900+ px drop
+// between two consecutive tracked frames in one area. Death respawns pass
+// through untracked frames, so they never count as a loop.
+#define RETRO_LOOP_DROP 900
+static int retro_maze_loop(Env* e,unsigned int key,int x) {
+    x=retro_progress_x(x);
+    for(int i=0;i<e->frontier_count;i++) if(e->frontiers[i].key==key) {
+        RetroFrontier& f=e->frontiers[i];
+        bool loop=f.last_tick==e->tick-1&&f.last_x-x>=RETRO_LOOP_DROP;
+        f.last_x=x; f.last_tick=e->tick;
+        return loop;
+    }
+    return 0;
+}
+static int retro_track_progress(Env* e,int* loops=nullptr) {
     const unsigned char* m=e->emu->low_mem();
     int level=retro_level_id(robs_world(m),robs_stage(m));
     if(level<0||m[0x770]!=1||m[0x772]!=3||m[0xe]!=8||robs_dying(m)) return 0;
     unsigned int data=m[0xe7]+256u*m[0xe8];
     if(data<0x8000) return 0;
-    return retro_progress(e,((unsigned int)level<<16)|data,robs_x(m));
+    unsigned int key=((unsigned int)level<<16)|data;
+    int checkpoints=retro_progress(e,key,robs_x(m));
+    int loop=retro_maze_loop(e,key,robs_x(m));
+    if(loops) *loops+=loop;
+    return checkpoints;
 }
 static inline obs_t retro_obs_value(float value) {
 #if defined(from_float) && !defined(PRECISION_FLOAT)
@@ -451,6 +480,7 @@ static void retro_prepare_practice_locked(RetroRom& rom,const char* path) {
     rom.practice_start=std::move(start); rom.practice_replay=path;
     fprintf(stderr,"[retro] PRACTICE return-pipe black screen after %d prefix frames; segment clock starts at zero\n",count);
 }
+#include "retro_archive.h"
 void puf_init(Env* e,Dict* cfg) {
     Nes_Emu* supplied=e->emu; RetroVecArena* arena=e->arena; unsigned int seed=e->rng;
     memset(e,0,sizeof(*e)); e->num_agents=1; e->rng=seed?seed:0x9e3779b9u; e->emu=supplied; e->arena=arena;
@@ -489,6 +519,9 @@ void puf_init(Env* e,Dict* cfg) {
     e->novel_area_reward=retro_option(cfg,"novel_area_reward",0);
     if(!std::isfinite(e->novel_area_reward)||e->novel_area_reward<0)
         throw std::runtime_error("retro: novel_area_reward must be finite and nonnegative");
+    e->maze_loop_penalty=retro_option(cfg,"maze_loop_penalty",0);
+    if(!std::isfinite(e->maze_loop_penalty)||e->maze_loop_penalty<0)
+        throw std::runtime_error("retro: maze_loop_penalty must be finite and nonnegative");
     e->idle_penalty=retro_option(cfg,"idle_penalty",0);
     for(const char* key:{"area_transition_reward","area_transition_timer_bonus"})
         if(retro_option(cfg,key,0)!=0)
@@ -558,11 +591,14 @@ void puf_init(Env* e,Dict* cfg) {
     if(!e->emu->set_rom_blocks(e->rom_blocks))
         throw std::runtime_error("retro: blocks CPU requires the experimental ROM-block build and matching PRG");
     e->emu_ok=true;
+    retro_prepare_start_locked(rom,1,1);
+    retro_archive_init(e,cfg);
 }
 void puf_reset(Env* e) {
     retro_pick_spawn(e);
     int id=retro_level_id(e->spawn_w[e->cur_spawn],e->spawn_l[e->cur_spawn]);
     e->start=e->practice?retro_rom().practice_start.get():retro_rom().starts[id].get();
+    retro_archive_choose(e,&id);
     if(!e->start) throw std::runtime_error("retro: unprepared level start");
     e->emu->load_state(e->start->state); e->reset_image=true; retro_sync_from_emu(e);
     // State restore remaps the cartridge and invalidates the specialization.
@@ -575,12 +611,13 @@ void puf_reset(Env* e) {
     e->pending_clear_level=-1; e->pipe_phase=0; e->underground_start_tick=0;
     e->pipe_start_key=retro_area_key(e->emu->low_mem());
     e->idle_streak=0; e->episode_idle_steps=0; e->episode_coin_events=0;
-    e->episode_area_transitions=0; e->episode_novel_areas=0;
+    e->episode_area_transitions=0; e->episode_novel_areas=0; e->episode_maze_loops=0;
     e->area_transition_key_count=0; e->last_area_key=retro_area_key(e->emu->low_mem());
     if(e->last_area_key!=0xffffffffu)
         e->area_transition_keys[e->area_transition_key_count++]=e->last_area_key;
     e->frontier_count=0; e->progress_pixels=0; e->episode_decisions=0;
     retro_track_progress(e);
+    retro_archive_restore(e);
     if(e->agents[0].observations) retro_compute_obs_real(e,(obs_t*)e->agents[0].observations);
 }
 // Exact controller-frame API: no RAM writes, shaping, episode limits or resets.
@@ -652,11 +689,12 @@ static float retro_rom_reward(const Env* e,int advances,bool dead,int score_delt
 // The explicit single-life viewer mode still ends on the first death.
 static void retro_step(Env* e,bool continue_lives) {
     if(e->practice) e->log.practice=1;
+    if(e->archive)e->log.archive_training=1;
     int action=std::max(0,std::min(63,(int)e->agents[0].actions[0]));
     unsigned char buttons=retro_action_mask(action);
     int old_score=e->score, old_coins=e->coins, old_x=e->x_pos;
     bool dead=false,death_end=false,won=false,meaningful_event=false,saw_clear=false;
-    int advances=0,checkpoints=0,life_losses=0,novel_areas=0; e->last_frames=0;
+    int advances=0,checkpoints=0,life_losses=0,novel_areas=0,maze_loops=0; e->last_frames=0;
     float clear_speed=0, completion_target_bonus=0;
     float segment_reward=0;
     for(int f=0;f<e->frameskip;f++) {
@@ -678,7 +716,7 @@ static void retro_step(Env* e,bool continue_lives) {
                 e->display->rta_counts[level]++;
             }
         }
-        checkpoints+=retro_track_progress(e);
+        checkpoints+=retro_track_progress(e,&maze_loops);
         int area_event=retro_record_area_transition(e,m);
         novel_areas+=(area_event==2);
         // Explicit 1-1 route events, independent of the novelty frontier.
@@ -751,9 +789,13 @@ static void retro_step(Env* e,bool continue_lives) {
         continue_lives?life_losses>0:dead,e->score-old_score,checkpoints,clear_speed,
         coin_delta,idle_event,completion_target_bonus,novel_areas);
     reward+=segment_reward*e->reward_scale;
+    reward-=maze_loops*e->maze_loop_penalty*e->reward_scale;
+    e->episode_maze_loops+=maze_loops;
     e->episode_return+=reward; e->episode_decisions++;
     if(continue_lives) e->log.deaths+=life_losses;
+    retro_archive_step(e,done,life_losses>0||death_end,saw_clear||novel_areas>0);
     if(done) {
+        e->log.game_wins+=won;
         e->log.n++; e->log.episode_return+=e->episode_return; e->log.episode_length+=e->tick;
         e->log.frames+=e->tick; e->log.decisions+=e->episode_decisions;
         e->log.progress_pixels+=e->progress_pixels;
@@ -769,6 +811,7 @@ static void retro_step(Env* e,bool continue_lives) {
         e->log.idle_steps+=e->episode_idle_steps;
         e->log.area_transitions+=e->episode_area_transitions;
         e->log.novel_areas+=e->episode_novel_areas;
+        e->log.maze_loops+=e->episode_maze_loops;
         if(!continue_lives) e->log.deaths+=dead;
         e->log.truncations+=e->last_truncated; e->log.warps+=e->episode_warps;
         e->log.level_episodes[e->episode_spawn]++; e->boundary_reached=1;
@@ -783,18 +826,19 @@ void puf_log(Log* log,Dict* out) {
     // the terminal dashboard shows them even with only a few rows available.
     double rta_frames=log->rta_count>0?log->rta_frame_sum/log->rta_count:0;
     // Never publish PAL-on-NTSC simulation times as valid speedrun results.
-    bool practice=log->practice>0;
-    dict_set(out,practice?"segment_seconds":RETRO_RTA_COMPARABLE?"rta_seconds":"sim_seconds",retro_frame_seconds(rta_frames));
-    dict_set(out,practice?"segment_clear_rate":RETRO_RTA_COMPARABLE?"rta_clear_rate":"split_clear_rate",log->rta_count);
-    dict_set(out,practice?"segment_frames":RETRO_RTA_COMPARABLE?"rta_frames":"split_frames",rta_frames);
-    dict_set(out,"rta_valid",!practice&&RETRO_RTA_COMPARABLE?1:0);
+    bool practice=log->practice>0,archived=log->archive_training>0;
+    dict_set(out,archived?"mixed_reset_seconds":practice?"segment_seconds":RETRO_RTA_COMPARABLE?"rta_seconds":"sim_seconds",retro_frame_seconds(rta_frames));
+    dict_set(out,archived?"mixed_reset_clear_rate":practice?"segment_clear_rate":RETRO_RTA_COMPARABLE?"rta_clear_rate":"split_clear_rate",log->rta_count);
+    dict_set(out,archived?"mixed_reset_frames":practice?"segment_frames":RETRO_RTA_COMPARABLE?"rta_frames":"split_frames",rta_frames);
+    dict_set(out,"rta_valid",!practice&&!archived&&RETRO_RTA_COMPARABLE?1:0);
     dict_set(out,"clear_seconds",log->clears>0?retro_frame_seconds(log->clear_frame_sum/log->clears):0);
 #define RETRO_LOG(name) dict_set(out,#name,log->name)
     RETRO_LOG(perf); RETRO_LOG(score); RETRO_LOG(episode_return); RETRO_LOG(episode_length);
     RETRO_LOG(distance); RETRO_LOG(flag); RETRO_LOG(deaths); dict_set(out,"hud_coins",log->coins);
+    RETRO_LOG(game_wins);
     RETRO_LOG(truncations); RETRO_LOG(frames); RETRO_LOG(decisions); RETRO_LOG(clears); RETRO_LOG(warps);
     RETRO_LOG(progress_pixels); RETRO_LOG(checkpoints); RETRO_LOG(coin_events); RETRO_LOG(idle_steps);
-    RETRO_LOG(area_transitions); RETRO_LOG(novel_areas);
+    RETRO_LOG(area_transitions); RETRO_LOG(novel_areas); RETRO_LOG(maze_loops);
     // All raw Log fields are divided by episode count before this hook.
     // The ratio below is therefore frames per cleared level, not per episode.
     dict_set(out,"clear_frames",log->clears>0?log->clear_frame_sum/log->clears:0);
@@ -805,6 +849,7 @@ void puf_log(Log* log,Dict* out) {
     }
 }
 void puf_close(Env* e) {
+    delete e->archive;e->archive=nullptr;
     if(e->emu_owned) delete e->emu;
     e->emu=nullptr; delete e->display; e->display=nullptr;
 }
@@ -856,6 +901,7 @@ static Env* my_vec_init(int* num_envs,int* starts,int* counts,Dict* vec,Dict* cf
     for(int i=0;i<n;i++) {
         envs[i].rng=(unsigned int)i*2654435761u+12345u; envs[i].emu=&arena->emus[i]; envs[i].arena=arena;
         puf_init(&envs[i],cfg);
+        if(envs[i].archive)envs[i].archive->lane=(i+.5)/n;
     }
     for(int b=0;b<buffers;b++) { starts[b]=b*(n/buffers); counts[b]=n/buffers; }
     *num_envs=n; return envs;
@@ -863,7 +909,7 @@ static Env* my_vec_init(int* num_envs,int* starts,int* counts,Dict* vec,Dict* cf
 static void my_vec_close(Env* envs) {
     if(!envs) return;
     RetroVecArena* arena=envs[0].arena;
-    for(int i=0;i<arena->count;i++) { delete envs[i].display; envs[i].display=nullptr; }
+    for(int i=0;i<arena->count;i++) { delete envs[i].archive; delete envs[i].display; envs[i].display=nullptr; }
     delete[] arena->emus; delete arena; free(envs);
 }
 #define MY_VEC_INIT
@@ -871,6 +917,7 @@ static void my_vec_close(Env* envs) {
 #endif
 #ifdef PUFFER_RETRO
 #include "retro_sweep_config.h"
+#include "training_config.h"
 #define PUF_POST_TRAIN_EVAL retro_post_train_eval
 #endif
 #if defined(PUFFERCPU_EVAL_MAIN)

@@ -1,5 +1,7 @@
 # Retro conversion to PufferLib 5.0
 
+Current experiment and operator handoff: [Retro ROM training handoff](../../reports/retro/archive_20261019/HANDOFF.md), including the live sweep, policy ancestry, Vast installation, and recovery procedures.
+
 The two Mario environments are `retro` (ROM execution with pixel observations)
 and [mario_sim](../mario_sim/README.md) (CPU/CUDA simulation with semantic
 observations, full-game episodes and FPG practice). The historical
@@ -110,9 +112,11 @@ bash build.sh retro --float
 
 The build generates compiled-ROM blocks from the local cartridge and links
 QuickNES. Simulation runs on CPU; the CNN and upstream trainer run on GPU.
-The default config now starts fresh 256×2 policies for all-level exploration,
-not the old pipe-exit practice curriculum. It does not use the legacy custom
-optimizer or priority replay.
+The active config loads the preserved 197/256-clear pixel policy for all-level
+exploration and continues naturally through lives and level transitions.
+Its original progress/new-area rewards are enabled. It uses the upstream
+optimizer and rollout sampler. A checkpoint restores weights; optimizer,
+schedules, recurrent state and the step counter start fresh.
 
 Isolated FP32 smoke tests completed 1,024 steps with a small network and graphs
 off, and 2,048 steps with the 256×2 network, graphs on and 64-frame timeouts.
@@ -142,13 +146,47 @@ CPU inference is compiled as C and connected to the C++ emulator through
 
 ### Balanced native Protein sweep
 
-`./puffer_retro sweep` (or the Retro-built `./puffer sweep`) now supports an
-opt-in `[panel]` post-training evaluation. The config requests 500 successful
-trials of 30M nominal decisions each, from fresh weights, with 27 varied resource,
-PPO and reward dimensions. Threads/buffers remain 16/4; architecture, observation
-resolution, ROM, frameskip and evaluation protocol do not vary. Invalid/OOM
-samples still fail normally and feed Protein's failure model. Native training
-rounds the decision budget down to complete rollout batches.
+The active command is the Retro-built `./puffer sweep`, using the single
+editable `config/retro.ini`. The constant-rate search requests 500 successful
+trials of exactly 50,331,648 additional decisions (192 rollouts) each. Every
+trial independently loads `saved/retro/pixel_197_20261018.bin`, the completed
+838.9M-decision continuation with 197/256 clears. Its total training lineage is
+1,677,721,600 decisions. The parent SHA-256 is
+`80127cad3ec19a5a1df84f5566a22a3c41d741a0bceec6da96ded2c9d95178bc`.
+Weights are restored; optimizer and recurrent state reset for each candidate.
+
+Explicit fixed bounds override inherited defaults for model/rollout/value settings.
+The merged native config is tested to contain exactly eight varying dimensions.
+Eight varying dimensions cover LR (5e-6–2e-4), entropy (0–.001), gamma
+(.999–.99999), GAE (.99–.9999), replay (1–2.25), PPO clip (.1–.25), gradient
+clip (.25–1), and momentum (.75–.95). LR and entropy annealing are disabled.
+Trial zero uses LR 5.5e-5, approximately the average of the successful parent's
+cosine schedule from 1e-4 to 1e-5, with its other PPO settings. Actors/horizon/
+minibatch stay 1024/256/4096; threads/buffers stay 12/4. Model, observations,
+reward weights, ROM and four-frame actions retain the successful run's settings.
+
+These are early stability/improvement screens. Multiplying LR by the ratio of
+long to short budgets does not reproduce on-policy exploration, gradient paths,
+or long-run stability. The same constant-rate settings can be tested over 1B
+decisions later; short-run survivors still require that longer validation.
+
+Preflight rejects invalid sequence divisions, zero-update layouts, estimated
+memory above 15,360 MiB and excessive graph construction work. Large actor counts
+are useful only with horizons that fit the full pixel buffers. The env-owned
+`sweep_worker.py` additionally measures resident VRAM and throughput, rejects
+trials below 50K decisions/s after warmup, and limits startup to 600 seconds,
+training to 30 minutes and final evaluation to 900 seconds. A runtime stop saves
+and scores the actual trained budget; speed/memory failures enter Protein's
+failure model. These controls add no PPO or ROM-rule changes.
+
+The native GP history is `logs/retro_constant_20261019/sweep.history`.
+Trial configs, progress CSVs, stderr and `.eval/trial.json` summaries are under
+`logs/retro_constant_20261019/retro/`; final weights and their `.bin.panel.tsv`
+reports are under `checkpoints/retro_constant_20261019/retro/`. The worker checks parent architecture metadata before spawning training and
+forces final-only saves for sweep children. Each short trial saves once at completion. Ordinary 1B training saves every 192 epochs, about
+50.3M decisions. The launch record, LR/update arithmetic and baseline are in
+`reports/retro/constant_lr_20261019/`. The preceding broad search remains in
+`reports/retro/pixel_rom_sweep_20261018/` with its original history.
 
 Each final checkpoint is evaluated on exactly eight attempts per level, all
 32 levels, fixed per-attempt sampling seeds, four-frame actions and a 30,000
@@ -157,29 +195,30 @@ ends at its first source-level clear, game over or timeout. `panel` does not
 balance training resets; it replaces the score sent back to Protein with a
 balanced **evaluation** score. It is not a full-game or warp-route evaluation.
 
-The default objective, `checkpoints`, is mean episode-local forward-frontier
-progress checkpoints (128 pixels each), including failed attempts and additional
-areas, not raw game score or shaped return. Already visited progress cannot pay
-again after respawn. Checkpoint spacing is fixed inside evaluation, independently
-of training reward parameters. This supplies signal before fresh policies clear
-levels. `perf` selects the existing clear-first panel score instead; `speed`
-still means personal-best clear time, **not** average time. The latter objectives
-should not be confused with the fresh-policy progress sweep.
+The active objective, `perf`, ranks level clears first, using
+`100 * (clears + 0.5 * mean_bounded_progress) / attempts`. Any additional clear
+outweighs the entire progress tie-break. Its score includes that small bonus;
+use `panel/clear_rate` for the actual clear percentage. The preceding search's
+`checkpoints` metric remains available and is retained in each report: mean
+episode-local forward-frontier checkpoints (128 pixels), with revisits excluded.
+Its distance cap can be reached without clearing a level. `speed` selects the
+personal-best clear time; it does not rank by average completion time.
 
 Every final model receives a `.bin.panel.tsv` report with level, replicate,
 clear outcome, elapsed frames and progress checkpoints. Final INI metrics include
 `panel/score`, `panel/clear_rate`, `panel/clear_frames`, `panel/attempts` and
 `panel/checkpoints`. Ordinary training-window `env/*` metrics remain separate.
-Protein receives one panel score and total train-plus-panel cost, regardless of
-`sweep.downsample`. The checkpoint's resolved config is passed to the evaluator;
+Protein receives one panel score and total train-plus-panel cost. The active
+config uses `sweep.downsample=1`. The checkpoint's resolved config is passed to the evaluator;
 the panel does not silently reread new training settings during a sweep.
 
-Set `panel.repeats=0` to disable post-training evaluation. To fine-tune, set
-`base.load_model_path` to one explicit preserved checkpoint, never `latest`.
-Every candidate then starts from that same parent; no automatic hill-climb
-promotion occurs. The default config freezes the inherited model-size and
-step-budget sweep sections explicitly: if changing `train.total_timesteps`, also
-change both bounds of `[sweep.train.total_timesteps]`.
+Set `panel.repeats=0` to disable post-training evaluation for ordinary training.
+The sweep worker requires a complete all-32-level panel. To choose another
+parent, set `base.load_model_path` to one explicit preserved checkpoint and
+keep its architecture fixed. Start a new history when changing the parent,
+evaluation protocol or ranges. `sweep.trial_timesteps` sets the first trial's
+budget; `[sweep.train.total_timesteps]` sets subsequent proposal bounds. The
+active bounds are equal, fixing the same budget for every candidate.
 
 `build.sh retro` also builds the CPU panel. The shared trainer adds only an
 optional post-training evaluation hook, after training workers stop; no loss,
@@ -204,7 +243,7 @@ not full-run RTA. `--full-run` disables practice and `--levels all` selects all
 A learned 256×2 checkpoint produced byte-identical four-attempt reports with
 one and four workers: three clears, best 1,605 frames, mean 1,661 frames.
 The action-layout/sampling and metric-ordering unit tests also pass. This
-standalone panel is not yet connected to native Protein sweep scoring.
+standalone panel also supplies the native Protein post-training objective.
 
 ## Recreating the practice tape
 
@@ -242,3 +281,53 @@ QuickNES-derived source retains its original copyright notices and LGPL-2.1+
 terms; a license copy is in `nes_emu/COPYING`. Individual third-party files
 retain their own notices. The old checked-in `tools/proto` executable is not
 imported; its source tools are preserved for rebuilding.
+
+### Automatic ROM-state reset archive
+
+`env.archive_enabled=1` collects exact QuickNES savestates during normal,
+playable frames. It never edits ROM RAM or inserts resets into a live episode.
+Cells distinguish level, loaded room, coarse position, power, and movement state;
+occasional replacement varies enemy timing and other exact state within a cell.
+Failure/no-progress feedback, underuse, and staleness bias sampling, with a
+uniform floor. Coverage eviction removes a cell from the most represented level.
+There is no authored obstacle sequence or mastery gate.
+
+Each snapshot retains its screen and reward frontiers, visited areas and rewarded
+level bits. Restoring cannot repay old novelty. The environment starts a fresh
+episode and the trainer clears recurrent state through its ordinary terminal
+mask; old policy hidden states are never restored. Episode-age observations,
+local metrics, and clocks start fresh, so archive segments are not full-run RTA.
+
+The baseline assigns actor lanes to 60% archive resets, 20% random level starts,
+and 20% full 1-1 starts. Over 80% of the training budget it linearly changes to
+10% archive / 90% full games. Lane changes apply at the next natural episode
+boundary. These are target actor shares, not exact episode or decision shares;
+`*.progress.csv` records actual level/full/archive decisions and schedule phase.
+Episodes retain natural lives and level transitions, up to 108000 native frames
+(about 30 minutes). The six reset parameters are the only varying sweep axes;
+PPO is fixed to the strongest prior constant-rate candidate.
+
+The bank has a 128 MiB payload budget. Active episodes retain shared snapshots
+across bank eviction, so up to one additional snapshot per actor can remain
+resident (roughly another 90 MiB at 1024 actors). Checkpoints write versioned,
+ROM-fingerprinted, CRC-checked `.bin.archive.gz` files and complete `.bin.ini`
+metadata. Loading a retained sidecar restores the bank and does not move the
+schedule backward. Sweep workers retain archive sidecars for the best and most
+recent completed trials, while preserving every policy, report and setting.
+Each independent trial still starts from the same original parent.
+
+The `curriculum` objective runs two fixed, seeded CPU evaluations with the
+archive explicitly disabled: all 32 levels × 8 first-clear attempts, then 16
+full games from 1-1 with natural lives and a 108000-frame cap. It is the existing
+clear-first level-panel score plus `100 * full_game_win_rate + mean_unique_levels_cleared`.
+The `.panel.tsv` and `.game.tsv` preserve both components and individual outcomes.
+A full-game win requires the final ROM victory event; clearing 1-1 does not
+terminate a full-game attempt. Use `sweep_eval --game --metric perf` for this
+full-game evaluator. The ordinary level evaluator retains its 30000-frame cap.
+
+Validation: `make -C ocean/retro archive-test test batch-test panel-test sweep-test`.
+The archive test checks exact serialized ROM continuation, screen observations,
+reward-ledger preservation, corruption/ROM rejection, reset schedule endpoints,
+bounded eviction lifetime, and terminal-mask delivery. This is a Go-Explore-style
+reset curriculum inside PPO, not a separate deterministic exploration phase or
+trajectory-robustification implementation.

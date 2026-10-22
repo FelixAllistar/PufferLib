@@ -1,3 +1,4 @@
+#include <string.h>
 
 // NES PPU emulator
 

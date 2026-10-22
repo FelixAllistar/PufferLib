@@ -9,12 +9,17 @@ CORE := $(wildcard nes_emu/*.cpp)
 OBJECTS := $(patsubst nes_emu/%.cpp,$(BUILD)/%.o,$(CORE))
 LIB := $(BUILD)/libquicknes.a
 INCLUDES := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include -I. -Ines_emu
-LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -ldl -lm -pthread -fopenmp
+LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -ldl -lm -pthread -fopenmp -lz
 
 .PHONY: library batch-library viewer test batch-test resolution policy-test policy-legacy-test encoder-test
-.PHONY: panel panel-test capture
+.PHONY: panel panel-test capture sweep-test
+sweep-test:
+	@mkdir -p $(BUILD)
+	$(CXX) -O2 -std=c++17 -I$(ROOT)/src tests/test_training_config.cpp -o $(BUILD)/test_training_config
+	cd $(ROOT) && $(abspath $(BUILD)/test_training_config)
+	python3 -m unittest discover -s tests -p test_sweep_worker.py -v
 capture: $(BUILD)/capture_practice
-$(BUILD)/capture_practice: capture_practice.cpp retro_sweep_config.h retro.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
+$(BUILD)/capture_practice: capture_practice.cpp retro_sweep_config.h retro.h retro_archive.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(BUILD)/retro_policy_api.o \
 		$(BATCH)/libquicknes_batch.a $(LDLIBS) -o $@
 panel-test:
@@ -22,7 +27,7 @@ panel-test:
 	$(CXX) -O2 -std=c++17 -I$(ROOT)/src tests/test_panel.cpp -o $(BUILD)/test_panel
 	$(BUILD)/test_panel
 panel: $(BUILD)/sweep_eval
-$(BUILD)/sweep_eval: sweep_eval.cpp retro_sweep_config.h retro.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
+$(BUILD)/sweep_eval: sweep_eval.cpp retro_sweep_config.h retro.h retro_archive.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(BUILD)/retro_policy_api.o \
 		$(BATCH)/libquicknes_batch.a $(LDLIBS) -o $@
 
@@ -30,7 +35,7 @@ viewer: $(BUILD)/viewer
 $(BUILD)/retro_policy_api.o: retro_policy_api.c retro_policy_cpu.h retro_policy_shape.h $(ROOT)/src/puffercpu.c resolution
 	@mkdir -p $(BUILD)
 	clang -O2 -std=c11 -I$(ROOT)/src -DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) -c $< -o $@
-$(BUILD)/viewer: retro.c retro_inspect.h retro.h retro_playback.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
+$(BUILD)/viewer: retro.c retro_inspect.h retro.h retro_archive.h retro_playback.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -x c++ $< -x none $(BUILD)/retro_policy_api.o \
 		$(BATCH)/libquicknes_batch.a $(LDLIBS) -o $@
 
@@ -41,7 +46,7 @@ encoder-test: library
 		-std=c++17 -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor $(INCLUDES) \
 		-DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) -Xcompiler=-fopenmp,-Wno-narrowing,-Wno-multichar \
 		--diag-suppress 550 --diag-suppress 68 --diag-suppress 2361 --diag-suppress 1422 \
-		tests/test_encoder.cu $(BUILD)/cpu_reference.o $(LIB) $(filter-out -pthread -fopenmp,$(LDLIBS)) \
+		tests/test_encoder.cu $(BUILD)/cpu_reference.o $(LIB) $(filter-out -pthread -fopenmp -lz,$(LDLIBS)) \
 		-lpthread -lgomp \
 		-lcudart -lcublas -lcusolver -lcurand -lnccl -lnvidia-ml -o $(BUILD)/test_encoder
 
@@ -67,7 +72,7 @@ $(LIB): $(OBJECTS)
 	$(AR) rcs $@ $^
 
 resolution:
-$(BUILD)/test_retro: tests/test_retro.cpp tests/observation_reference.h retro.h retro_obs.h retro_playback.h retro_resolution.h retro_timing.h retro_rom_identity.h $(LIB) resolution
+$(BUILD)/test_retro: tests/test_retro.cpp tests/observation_reference.h retro.h retro_archive.h retro_obs.h retro_playback.h retro_resolution.h retro_timing.h retro_rom_identity.h $(LIB) resolution
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@
 test: $(BUILD)/test_retro
 	cd $(ROOT) && $(abspath $(BUILD)/test_retro)
@@ -78,12 +83,18 @@ $(BATCH)/Nes_Cpu.o: nes_emu/Nes_Cpu.cpp nes_emu/Nes_Cpu.h $(BATCH)/rom_blocks.in
 	$(CXX) $(CXXFLAGS) -O1 -g0 -Ines_emu -I$(BATCH) -DRETRO_ROM_BLOCKS -MMD -MP -c $< -o $@
 $(BATCH)/libquicknes_batch.a: $(filter-out $(BUILD)/Nes_Cpu.o,$(OBJECTS)) $(BATCH)/Nes_Cpu.o
 	$(AR) rcs $@ $^
-$(BATCH)/test_batch: batch/test_batch.cpp tests/test_retro.cpp tests/observation_reference.h retro.h retro_obs.h retro_playback.h retro_resolution.h retro_timing.h retro_rom_identity.h $(BATCH)/libquicknes_batch.a resolution
+$(BATCH)/test_batch: batch/test_batch.cpp tests/test_retro.cpp tests/observation_reference.h retro.h retro_archive.h retro_obs.h retro_playback.h retro_resolution.h retro_timing.h retro_rom_identity.h $(BATCH)/libquicknes_batch.a resolution
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -I$(BATCH) $< $(BATCH)/libquicknes_batch.a $(LDLIBS) -o $@
-$(BATCH)/test_observation: batch/test_observation.cpp retro.h retro_obs.h retro_resolution.h retro_timing.h retro_rom_identity.h $(BATCH)/libquicknes_batch.a resolution
+$(BATCH)/test_observation: batch/test_observation.cpp retro.h retro_archive.h retro_obs.h retro_resolution.h retro_timing.h retro_rom_identity.h $(BATCH)/libquicknes_batch.a resolution
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -I$(BATCH) $< $(BATCH)/libquicknes_batch.a $(LDLIBS) -o $@
 batch-test: $(BATCH)/test_batch $(BATCH)/test_observation
 	cd $(ROOT) && $(abspath $(BATCH)/test_batch)
 	cd $(ROOT) && $(abspath $(BATCH)/test_observation)
 
 -include $(OBJECTS:.o=.d) $(BATCH)/Nes_Cpu.d
+
+.PHONY: archive-test
+archive-test: $(BUILD)/test_archive
+	cd $(ROOT) && $(abspath $(BUILD)/test_archive)
+$(BUILD)/test_archive: tests/test_archive.cpp retro.h retro_archive.h $(LIB)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@
