@@ -19,7 +19,7 @@ typedef uint8_t obs_t;
 #define ACT_SIZES {PK_ACTIONS}
 #define PUF_POKEMON_DASHBOARD 1
 #define SELFPLAY_MAX_BANKS 32
-typedef struct { char path[4096], team[256], lead[64]; } PKNativeBank;
+typedef struct { char path[4096], team[256], lead[64], name[64]; } PKNativeBank;
 static PKNativeBank pk_native_banks[SELFPLAY_MAX_BANKS];
 static int pk_native_count;
 static double pk_native_fraction;
@@ -77,6 +77,10 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
         snprintf(pk_native_banks[b].team,sizeof(pk_native_banks[b].team),"%s",team);
         if(strlen(lead)>=sizeof(pk_native_banks[b].lead))exit(1);
         snprintf(pk_native_banks[b].lead,sizeof(pk_native_banks[b].lead),"%s",lead);
+        // Dashboard label for per-opponent win rates; manifests without names use the slot.
+        DictItem* name=dict_find(puf_ini_section(&manifest,section,0),"name");
+        if(name && name->str && *name->str) snprintf(pk_native_banks[b].name,sizeof(pk_native_banks[b].name),"%s",name->str);
+        else snprintf(pk_native_banks[b].name,sizeof(pk_native_banks[b].name),"bank%d",b);
         // Checkpoint-side team and ABI must agree with the exported binding.
         char config[4096]; snprintf(config,sizeof(config),"%s",path);
         char* slash=strrchr(config,'/'); if(!slash) exit(1);
@@ -332,6 +336,8 @@ struct Log {
     float core_team_samples, core_free_picks[150], core_forced_picks[150];
     float normal_team_samples, normal_team_picks[150], move_picks[166], moves_selected;
     float mix_games[4], mix_steps[4]; // normal/self, normal/expert, core/self, core/expert
+    // Learner (seat 0) results by opponent: [0] current self-play, [b] native-league bank b-1.
+    float vs_games[SELFPLAY_MAX_BANKS+1], vs_score[SELFPLAY_MAX_BANKS+1];
 };
 struct Env {
     Log log;
@@ -768,6 +774,7 @@ void puf_step(Env* env) {
     if (result) {
         env->log.mix_games[mix_group]++;
         float score = (outcome + 1.0f) * 0.5f;
+        if(env->tag>=0 && env->tag<=SELFPLAY_MAX_BANKS) {env->log.vs_games[env->tag]++; env->log.vs_score[env->tag]+=score;}
         env->agents[0].terminals[0] = env->agents[1].terminals[0] = 1;
         env->log.perf += score;
         env->log.score += score;
@@ -807,6 +814,16 @@ void puf_log(Log* log, Dict* out) {
         snprintf(key,sizeof(key),"%s_step_fraction",groups[i]); dict_set(out,key,steps?log->mix_steps[i]/steps:0);
     }
     dict_set(out,"configured_expert_fraction",pk_native_fraction);
+    // Learner win rate per opponent, so a league run shows which banks it beats or cannot.
+    double vs_total=0;
+    for(int b=0;b<=pk_native_count;b++) vs_total+=log->vs_games[b];
+    for(int b=0;b<=pk_native_count;b++) {
+        char key[96];
+        snprintf(key,sizeof(key),"vs_%s_score",b?pk_native_banks[b-1].name:"self");
+        dict_set(out,key,log->vs_games[b]?log->vs_score[b]/log->vs_games[b]:0);
+        snprintf(key,sizeof(key),"vs_%s_share",b?pk_native_banks[b-1].name:"self");
+        dict_set(out,key,vs_total?log->vs_games[b]/vs_total:0);
+    }
     if(pk_core_deck.cards) {
         dict_set(out,"core_combinations",pk_core_deck.count);
         dict_set(out,"core_cycle",(double)pk_core_deck.cycle);
