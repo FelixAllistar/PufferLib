@@ -132,6 +132,20 @@ __device__ inline float warp_max(float x) {
     for (int offset = 16; offset; offset >>= 1) x = fmaxf(x, __shfl_down_sync(0xffffffff, x, offset));
     return x;
 }
+// Butterfly reductions: every lane receives the result.
+__device__ inline float warp_all_sum(float x) {
+    for (int offset = 16; offset; offset >>= 1) x += __shfl_xor_sync(0xffffffff, x, offset);
+    return x;
+}
+__device__ inline float warp_all_max(float x) {
+    for (int offset = 16; offset; offset >>= 1) x = fmaxf(x, __shfl_xor_sync(0xffffffff, x, offset));
+    return x;
+}
+// Row kernels use one warp per row (lanes stride the row), which suits both short
+// rows (21-token softmax, 128-wide LN) and long ones without idle threads or
+// block-wide barriers. Launch with warp_rows_grid / kWarpRowThreads.
+constexpr int kWarpRowThreads = 128;
+inline unsigned warp_rows_grid(int rows) { return unsigned((int64_t(rows) * 32 + kWarpRowThreads - 1) / kWarpRowThreads); }
 template<bool Maximum = false> __device__ inline float block_reduce(float x) {
     __shared__ float partial[32];
     int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
@@ -165,6 +179,38 @@ template<class T> __global__ void layernorm_forward(
     }
 }
 
+template<class T> __global__ void layernorm_forward_warp(
+        const T* x, const T* gamma, const T* beta, T* y, float* stats, int rows, int d) {
+    int row = int((size_t(blockIdx.x) * blockDim.x + threadIdx.x) >> 5), lane = threadIdx.x & 31;
+    if (row >= rows) return;
+    size_t base = size_t(row) * d;
+    float sum = 0.f, squared = 0.f;
+    for (int j = lane; j < d; j += 32) { float value = fp32(x[base + j]); sum += value; squared += value * value; }
+    float mean = warp_all_sum(sum) / d;
+    float variance = fmaxf(warp_all_sum(squared) / d - mean * mean, 0.f);
+    float inverse = rsqrtf(variance + 1e-5f);
+    if (lane == 0) { stats[2 * row] = mean; stats[2 * row + 1] = inverse; }
+    for (int j = lane; j < d; j += 32)
+        y[base + j] = scalar<T>((fp32(x[base + j]) - mean) * inverse * fp32(gamma[j]) + fp32(beta[j]));
+}
+
+template<class T> __global__ void layernorm_backward_input_warp(
+        const T* dy, const T* x, const T* gamma, const float* stats, T* dx, int rows, int d) {
+    int row = int((size_t(blockIdx.x) * blockDim.x + threadIdx.x) >> 5), lane = threadIdx.x & 31;
+    if (row >= rows) return;
+    size_t base = size_t(row) * d;
+    float mean = stats[2 * row], inverse = stats[2 * row + 1], s1 = 0.f, s2 = 0.f;
+    for (int j = lane; j < d; j += 32) {
+        float g = fp32(dy[base + j]) * fp32(gamma[j]);
+        s1 += g; s2 += g * (fp32(x[base + j]) - mean) * inverse;
+    }
+    s1 = warp_all_sum(s1) / d; s2 = warp_all_sum(s2) / d;
+    for (int j = lane; j < d; j += 32) {
+        float normalized = (fp32(x[base + j]) - mean) * inverse;
+        dx[base + j] = scalar<T>(inverse * (fp32(dy[base + j]) * fp32(gamma[j]) - s1 - normalized * s2));
+    }
+}
+
 template<class T> __global__ void layernorm_backward_input(
         const T* dy, const T* x, const T* gamma, const float* stats, T* dx, int d) {
     int row = blockIdx.x;
@@ -183,12 +229,14 @@ template<class T> __global__ void layernorm_backward_input(
 }
 
 // Each tile reads consecutive features; atomics combine independent row tiles.
+// Tall tiles keep the atomic count low when there are many rows (tokens x batch).
+constexpr int kAffineRows = 256;
 template<class T> __global__ void affine_gradients(const T* dy, const T* x,
         const float* stats, float* dgamma, float* dbeta, int rows, int d) {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     if (j >= d) return;
     float a = 0.f, b = 0.f;
-    for (int row = blockIdx.y * 32; row < min(rows, int(blockIdx.y + 1) * 32); ++row) {
+    for (int row = blockIdx.y * kAffineRows; row < min(rows, int(blockIdx.y + 1) * kAffineRows); ++row) {
         size_t i = size_t(row) * d + j;
         float grad = fp32(dy[i]);
         b += grad;
@@ -266,6 +314,30 @@ template<class T> __global__ void attention_softmax(T* values, int n) {
     sum = block_reduce(sum);
     for (int j = threadIdx.x; j < n; j += blockDim.x)
         values[base + j] = scalar<T>(expf(fp32(values[base + j]) - maximum) / sum);
+}
+template<class T> __global__ void attention_softmax_warp(T* values, int rows, int n) {
+    int row = int((size_t(blockIdx.x) * blockDim.x + threadIdx.x) >> 5), lane = threadIdx.x & 31;
+    if (row >= rows) return;
+    size_t base = size_t(row) * n;
+    float maximum = -INFINITY;
+    for (int j = lane; j < n; j += 32) maximum = fmaxf(maximum, fp32(values[base + j]));
+    maximum = warp_all_max(maximum);
+    float sum = 0.f;
+    for (int j = lane; j < n; j += 32) sum += expf(fp32(values[base + j]) - maximum);
+    sum = warp_all_sum(sum);
+    for (int j = lane; j < n; j += 32)
+        values[base + j] = scalar<T>(expf(fp32(values[base + j]) - maximum) / sum);
+}
+template<class T> __global__ void attention_softmax_backward_warp(
+        T* grad, const T* probabilities, int rows, int n, float scale) {
+    int row = int((size_t(blockIdx.x) * blockDim.x + threadIdx.x) >> 5), lane = threadIdx.x & 31;
+    if (row >= rows) return;
+    size_t base = size_t(row) * n;
+    float dot = 0.f;
+    for (int j = lane; j < n; j += 32) dot += fp32(grad[base + j]) * fp32(probabilities[base + j]);
+    dot = warp_all_sum(dot);
+    for (int j = lane; j < n; j += 32)
+        grad[base + j] = scalar<T>(scale * fp32(probabilities[base + j]) * (fp32(grad[base + j]) - dot));
 }
 template<class T> __global__ void attention_softmax_backward(
         T* grad, const T* probabilities, int n, float scale) {
@@ -424,20 +496,22 @@ public:
             &one, x, dtype<T>(), w.cols, dy, dtype<T>(), w.rows,
             &zero, w.gradient.data, CUDA_R_32F, w.cols, CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT), "linear weight gradient");
         check(cudaMemsetAsync(bias.gradient.data, 0, bias.gradient.count * sizeof(float), stream), "zero bias gradient");
-        affine_gradients<T><<<dim3((w.rows + 127) / 128, (rows + 31) / 32), 128, 0, stream>>>(
+        affine_gradients<T><<<dim3((w.rows + 127) / 128, (rows + kAffineRows - 1) / kAffineRows), 128, 0, stream>>>(
             dy, nullptr, nullptr, nullptr, bias.gradient.data, rows, w.rows);
     }
     void norm(const T* x, Parameter<T>& gamma, Parameter<T>& beta, T* y, float* stats) {
-        layernorm_forward<T><<<config.batch * config.tokens, 256, 0, stream>>>(
-            x, gamma.value.data, beta.value.data, y, stats, config.width);
+        int rows = config.batch * config.tokens;
+        layernorm_forward_warp<T><<<warp_rows_grid(rows), kWarpRowThreads, 0, stream>>>(
+            x, gamma.value.data, beta.value.data, y, stats, rows, config.width);
     }
     void norm_backward(const T* dy, const T* x, Parameter<T>& gamma, Parameter<T>& beta,
                        const float* stats, T* dx) {
         int rows = config.batch * config.tokens, d = config.width;
-        layernorm_backward_input<T><<<rows, 256, 0, stream>>>(dy, x, gamma.value.data, stats, dx, d);
+        layernorm_backward_input_warp<T><<<warp_rows_grid(rows), kWarpRowThreads, 0, stream>>>(
+            dy, x, gamma.value.data, stats, dx, rows, d);
         check(cudaMemsetAsync(gamma.gradient.data, 0, d * sizeof(float), stream), "zero LN scale gradient");
         check(cudaMemsetAsync(beta.gradient.data, 0, d * sizeof(float), stream), "zero LN bias gradient");
-        affine_gradients<T><<<dim3((d + 127) / 128, (rows + 31) / 32), 128, 0, stream>>>(
+        affine_gradients<T><<<dim3((d + 127) / 128, (rows + kAffineRows - 1) / kAffineRows), 128, 0, stream>>>(
             dy, x, stats, gamma.gradient.data, beta.gradient.data, rows, d);
     }
     // Row-major batched C[M,N] = op(A)[M,K] * op(B)[K,N].
@@ -463,7 +537,8 @@ public:
             bias_add<T><<<grid(3 * md), 256, 0, stream>>>(a.qkv.data, a.qkv_b.value.data, 3 * md, 3 * d);
             qkv_layout<T><<<grid(md), 256, 0, stream>>>(a.qkv.data, a.q.data, a.k.data, a.v.data, b, n, d, h);
             batched(a.q.data, a.k.data, a.probability.data, n, n, dk, false, true, 1.f / std::sqrt(float(dk)));
-            attention_softmax<T><<<b * h * n, 256, 0, stream>>>(a.probability.data, n);
+            attention_softmax_warp<T><<<warp_rows_grid(b * h * n), kWarpRowThreads, 0, stream>>>(
+                a.probability.data, b * h * n, n);
             batched(a.probability.data, a.v.data, a.context.data, n, dk, n, false, false);
             context_layout<T><<<grid(md), 256, 0, stream>>>(a.merged.data, a.context.data, b, n, d, h);
             linear(a.merged.data, a.out_w, a.residual.data, m);
@@ -495,8 +570,8 @@ public:
             context_layout<T, true><<<grid(md), 256, 0, stream>>>(merged_gradient.data, context_gradient.data, b, n, d, h);
             batched(context_gradient.data, a.v.data, probability_gradient.data, n, n, dk, false, true);
             batched(a.probability.data, context_gradient.data, v_gradient.data, n, dk, n, true, false);
-            attention_softmax_backward<T><<<b * h * n, 256, 0, stream>>>(
-                probability_gradient.data, a.probability.data, n, 1.f / std::sqrt(float(dk)));
+            attention_softmax_backward_warp<T><<<warp_rows_grid(b * h * n), kWarpRowThreads, 0, stream>>>(
+                probability_gradient.data, a.probability.data, b * h * n, n, 1.f / std::sqrt(float(dk)));
             batched(probability_gradient.data, a.k.data, q_gradient.data, n, dk, n, false, false);
             batched(probability_gradient.data, a.q.data, k_gradient.data, n, dk, n, true, false);
             qkv_layout<T, true><<<grid(md), 256, 0, stream>>>(qkv_gradient.data, q_gradient.data, k_gradient.data, v_gradient.data, b, n, d, h);
