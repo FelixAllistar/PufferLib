@@ -1,5 +1,55 @@
 # Pokémon conversion to PufferLib 5.0
 
+## Manual training with live Metamon scores
+
+Normal `./puffer train` now evaluates saved snapshots every 10% of the requested
+training budget and displays Metamon **latest**, **best**, W/D/L, game count and
+evaluation progress inside the ordinary PufferLib dashboard. No sweep wrapper or
+separate status window is needed. It briefly waits during each evaluation and
+then resumes the same optimizer/RNN training state. Native training's `Evaluate`
+timing and mixed `score` remain separate from the explicitly labeled Metamon score.
+
+```bash
+./puffer train
+# Quick interim checks: 2 games/team = 6 total. Final count is separate.
+./puffer train --metamon.games=2
+# Your usual manual training overrides still work; choose the architecture explicitly.
+./puffer train --policy.hidden_size=1024 --policy.num_layers=2 --metamon.interval_fraction=0.1
+# Training without the benchmark:
+./puffer train --metamon.enabled=0
+```
+
+This uses the existing CUDA evaluator environment
+`build/pokemon/metamon-eval-env-cu128/bin/python`; install it with
+`bash ocean/pokemon/benchmarks/setup_private.sh cu128` if absent. Configure
+`metamon.python`, `device`, `games` and `final_games` (per each of three teams), `interval_fraction`,
+`seed`, and `timeout` in `config/pokemon.ini`. Currently one training GPU is
+supported for live evaluation. Architecture, step budget and frozen-opponent
+settings are not changed by enabling evaluation. Existing settings without a
+`[metamon]` section keep live evaluation disabled for compatibility.
+
+Scores are wins plus half draws against sampled TaurosV0, with an argmax learner,
+balanced seats and fixed seeds. 24 games is a noisy screen, not confirmation of
+strength; selecting the best of multiple snapshots adds selection bias. All
+evaluated checkpoints are retained. Each has `<checkpoint>.metamon/summary.json`,
+per-game outcomes, native `progress.txt`/`result.txt`, and an adjacent `.metamon.log`.
+`env/metamon_score`, `env/metamon_best_score`, and their checkpoint step counts are
+also included in native logs. Pending evaluations are not displayed as zero.
+Failures are explicit and preserve checkpoints; a failed final evaluation never
+substitutes mixed training score for a benchmark result. The evaluator exits
+when its native trainer exits (Linux parent-death guard).
+
+Oak remains available as a separate opt-in benchmark; Metamon takes precedence
+when enabled. Native eval-only checkpoints do not change the historical-opponent
+rotation pool. No training or sweep is automatically started by installation.
+
+The current `./puffer sweep` defaults run a fresh 500-trial, 25-dimensional search:
+25M–500M steps, widths 64/128/256, and 1–3 layers. Interim checks use 6 games and
+final checkpoints use 72; only finals rank trials. See
+[the broad-sweep record](../../reports/pokemon_experiments/20261019_broad256/NOTES.md)
+for all ranges, encoder checks and caveats. A 2 GiB disk reserve prevents new
+trials from starting when space is low; no retained artifacts are deleted.
+
 The native battle engine and semantic free-pick game core are preserved from
 `5c` at `036cf4251`. This is a battle simulator, not a ROM emulator; no ROM is
 needed. The engine, drafting, legal masks and observations are unchanged.
@@ -234,6 +284,19 @@ face versions published by earlier members; interrupted stints retry against
 their saved opponent snapshot. Optimizer and in-flight episode state are not
 resumed.
 
+League training defaults to `oak.enabled=0`, including states created before
+the Oak hook existed; end-of-round tournaments run only with `--evaluate`.
+Creation overrides may explicitly opt into Oak with `oak.enabled=1`. Fixed-set
+seeds are supported through a custom roster entry such as
+`"team":"catalog:421,366,389,395,512,445","lead":121`; native manifests preserve
+the exact ordered sets. Species-constrained peers continue learning moves freely.
+
+The current BF16 experiment, its complete baseline history and checkpoint hashes,
+the 14-member starting roster, and the 50-round/50M-stage plan are recorded in
+[the October 17 experiment notes](../../reports/pokemon_experiments/20261017_roundrobin_50m/NOTES.md).
+It uses a hash-verified snapshot of the existing BF16 executable; the older
+FP32 build example below is a separate precision choice.
+
 ```bash
 ./build.sh pokemon build/pokemon/puffer_native --float
 make -C ocean/pokemon viewer
@@ -379,14 +442,153 @@ The [CSV](../../reports/pokemon_sweeps/20261015_vast_setup/results.csv),
 and [qualification record](../../reports/pokemon_sweeps/20261015_vast_setup/qualification.json)
 are committed; full match records and checkpoints remain outside Git.
 
-The completed 500-trial sweep selected `sweep_1792079639324_0223` by the Oak
-argmax objective: 233 wins, two draws and 149 losses (60.9375% score). Its ten
-searched PPO settings are now the defaults in `config/pokemon.ini`. The
+The completed 500-trial FP32 sweep selected `sweep_1792079639324_0223` by the Oak
+argmax objective: 233 wins, two draws and 149 losses (60.9375% score). The
 [winning native configuration](../../reports/pokemon_sweeps/20261016_winner/winning_trial.ini)
 and [evaluation summary](../../reports/pokemon_sweeps/20261016_winner/summary.json)
-retain the full experiment setup and checkpoint hash. Values at range boundaries
-use clean nominal decimals in the default config, removing float32 serialization
-noise. Hardware layout, team selection, opponents and run budget remain separately
-configured; the winner itself used 16,384 agents, two buffers, the fixed Starmie
-team and 25,165,824 learner steps. The winning checkpoint is backed up locally
+retain the full experiment setup and checkpoint hash. The default config keeps
+its fixed team, frozen opponents, H64/L2 architecture, 16,384 agents,
+two buffers and 25,165,824 learner steps.
+The winning checkpoint is backed up locally
 under `saved/pokemon/vast_sweep_20261015/checkpoints/sweep_1792079639324_0223/`.
+
+For the BF16 experiment, build the normal executable with `./build.sh pokemon`
+(without `--float`), then use `./puffer train` or `./puffer sweep`. The environment
+is compiled in; neither command takes a `pokemon` positional argument. Precision
+is a build setting, not an INI setting. The historical FP32 score is not a
+reproduced BF16 result.
+
+`config/pokemon.ini` explicitly overrides every generic sweep range. The BF16
+sweep keeps the same fixed experiment and ten bounded PPO search dimensions,
+targets 500 completed trials, and evaluates each final checkpoint with Oak.
+Its append-only history is `saved/pokemon/starmie_sweep/bf16_sweep.history`,
+separate from the FP32 sweep's `sweep.history`; rerunning the same command resumes
+that history. The dashboard stays live. Failed trials are recorded and the sweep
+continues, stopping after 32 worker failures in one invocation. Keep this history
+paired with the BF16 build; the older `sweep.py run` command above uses the
+historical FP32 profile and binary instead.
+
+The selected BF16 trial is `sweep_1792195882955_0163`: 212 wins, two draws and
+170 losses against Oak (55.46875% argmax score). `config/pokemon.ini` uses its
+exact saved PPO settings for ordinary `./puffer train`, starting fresh with the
+same seed and full trial budget. The selected checkpoint, saved configuration,
+Oak summary and BF16 executable are backed up locally under
+`saved/pokemon/bf16_best_1792195882955_0163/`. The matching executable SHA-256 is
+`07849fd021b6534648cdbcddf98375ae855a9e31c12b5f9829c607d0a2f93a78`.
+
+### Player-information-only external evaluation (experimental)
+
+This is a separate protocol from the perfect-information Oak panel above.
+`benchmarks/evaluate_private.py` gives the external opponent only its own
+648-byte native player observation: its own team and public opponent reveals,
+not the learner's hidden team/moves or raw engine state. It does not change
+the training binary, observation ABI, running league or automatic evaluations.
+
+Two opponents are currently available:
+
+- `heuristic`: our own simple type/STAB/power/accuracy rule, for checking the
+  adapter. It is not an imported competitive bot or a meaningful strength target.
+- `TaurosV0`: released Metamon Gen1 pretrained weights (checkpoint 62), using
+  upstream PyTorch inference in an isolated evaluation environment. Our learner
+  still uses the existing native C inference path. The torch SDPA backend
+  preserves the published causal `(32, 0)` window and BF16 Q/K/V rounding;
+  loading requires an exact checkpoint hash and strict parameter match.
+
+```bash
+# Evaluation-only setup; does not install into the trainer's environment.
+bash ocean/pokemon/benchmarks/setup_private.sh
+python3 ocean/pokemon/tests/test_private_view.py
+build/pokemon/metamon-eval-env/bin/python ocean/pokemon/tests/test_metamon_projection.py
+
+# --games is games PER opponent team; --mode controls OUR policy's actions.
+# TaurosV0 samples its policy. Output directories must be new.
+OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 \
+  build/pokemon/metamon-eval-env/bin/python \
+  ocean/pokemon/benchmarks/evaluate_private.py CHECKPOINT.bin \
+  --opponent TaurosV0 --mode argmax --games 8 --threads 2 \
+  --output NEW_OUTPUT_DIRECTORY
+
+# On the Vast RTX 50-series host: isolated CUDA 12.8 environment, GPU inference.
+bash ocean/pokemon/benchmarks/setup_private.sh cu128
+OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 \
+  build/pokemon/metamon-eval-env-cu128/bin/python \
+  ocean/pokemon/benchmarks/evaluate_private.py CHECKPOINT.bin \
+  --opponent TaurosV0 --device cuda --mode argmax --games 128 --threads 2 \
+  --output NEW_OUTPUT_DIRECTORY
+```
+
+The default panel is the same three pinned teams used for Oak, balanced across
+player seats, but scores against different bots must not be mixed. Use a small
+panel to validate the adapter, then more games and independent seeds for ranking
+policies; game count is configurable per invocation. Reports record checkpoint,
+config, adapter, source and team hashes. Completed games are saved incrementally.
+
+This is a **native-engine adaptation**, not a verified full Showdown bot port
+or a ladder rating. Public HP is quantized to 255; opponent PP/effect order is
+reconstructed from compact observations rather than a complete protocol stream.
+The final Metamon probabilities are conditioned on legal native actions because
+upstream probability clipping otherwise gives masked actions a small positive
+probability. No random invalid-action fallback is used. Further qualification
+is needed before making external playing-strength claims or using it as a sweep
+objective. Keep Oak as a separately labeled perfect-information stress test.
+
+### Match evaluation effort to the experiment
+
+Oak game count is already a per-run setting: `--oak.games=N` means N games
+against each of three teams, separately for argmax and sampled actions (6N games
+total). The default is 128 games/team, search budget 4096 and six workers.
+Choose evaluation effort for the question being tested:
+
+- Coarse sweep screening: `--oak.games=64`; noisy results are suitable for
+  discarding clearly weak candidates, and finalists need confirmation.
+- Routine sweeps and longer-training probes: 128 games/team, the default.
+- Small improvements or final comparisons: `--oak.games=1024`; 3,072 games per
+  mode gives roughly a 1.8 percentage-point 95% sampling margin near a 50% score.
+- Training-throughput checks: `--oak.enabled=0`. Oak-scored sweeps require Oak
+  evaluation and must not use training win rate as a replacement objective.
+
+Keep search budget, team panel and game count consistent within a comparison.
+Changing `oak.budget` changes the strength of the opponent; changing `oak.games`
+changes the precision of the score. Confirm selected models on additional games
+and new battle seeds to reduce selection bias. Oak's internal search randomness
+is not controlled by the recorded battle seed. Repeated evaluations of the same
+byte-identical trial-163 model scored 55.47%, 50.78%, and 52.73%; the last used
+1,024 games/team. The detailed baseline is on the GPU host under
+`logs/pokemon/1792196525320.ini.oak-1024/`.
+
+Choose these overrides for each experiment rather than raising the default
+evaluation cost for every training run. Six workers can run all six team/mode
+jobs concurrently; simultaneous evaluations share the host's CPU quota.
+
+### Check whether more training still helps
+
+The selected model received 33,554,432 counted steps (25,165,824 learner steps).
+A useful first probe is another equal-length stage against the same frozen
+opponents, followed by routine Oak evaluation. Loading a checkpoint restores
+weights only: optimizer state, recurrent state, step counter and learning-rate
+schedule restart. This is a continuation stage, not an exact optimizer resume.
+
+```bash
+# Add 33,554,432 steps to the measured baseline: 2x its cumulative training.
+./puffer train \
+  --base.load_model_path=checkpoints/pokemon/1792196525320/0000000033554432.bin \
+  --train.total_timesteps=33554432
+
+# Alternative experiment: a fresh 10x run with one longer annealing schedule.
+./puffer train --train.total_timesteps=335544320
+
+# Confirm a promising completed checkpoint without retraining it.
+build/pokemon/oak-benchmark-env/bin/python \
+  ocean/pokemon/benchmarks/evaluate_checkpoint.py CHECKPOINT.bin \
+  --output NEW_OUTPUT_DIRECTORY --games 1024 --budget 4096 --workers 6 \
+  --seed 20261017
+```
+
+Track the loaded checkpoint and cumulative steps for each continuation stage.
+For 2x -> 4x -> 8x cumulative training, add 1x, then 2x, then 4x stages, loading
+the preceding stage's final checkpoint each time. Confirm promising gains before
+changing the opponent curriculum. The dashboard's `root_score` mixes current
+self-play and frozen-opponent games, so it does not establish that the expert
+pool is solved. If direct evaluations against the frozen pool saturate while
+Oak progress stalls, updating opponents through round-robin league training is
+a reasonable next experiment.

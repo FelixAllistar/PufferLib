@@ -9,8 +9,9 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 export const ROOT=path.resolve(here,'../..');
 const RULES=JSON.parse(fs.readFileSync(path.join(here,'data/freepick.json'),'utf8'));
+const CATALOG=JSON.parse(fs.readFileSync(path.join(here,'data/catalog.json'),'utf8')).sets;
 const VERSION=4;
-const STAGES=['base','vec','selfplay','policy','env','train'];
+const STAGES=['base','vec','selfplay','policy','env','train','oak','metamon'];
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const fail=message=>{throw Error(message);};
 const readJSON=file=>JSON.parse(fs.readFileSync(file,'utf8'));
@@ -77,6 +78,17 @@ export function speciesID(value) {
     if(!found)fail('Unknown or banned Gen1 OU species: '+value);return found.id;
 }
 export function constraint(team,lead='None') {
+    // Explicit catalog: in roster specs preserves all six ordered movesets.
+    // The native checkpoint/manifest spelling is the bare comma-separated IDs.
+    if(typeof team==='string' && team.startsWith('catalog:')) {
+        const tokens=team.slice(8).split(',');
+        if(tokens.length!==6 || tokens.some(x=>!/^\d+$/.test(x)))fail('Catalog team requires six ordered set IDs');
+        const ids=tokens.map(number),species=ids.map(id=>CATALOG[id]?.species_id);
+        if(species.some(id=>!id || id>149) || new Set(species).size!==6)fail('Invalid or duplicate catalog team species');
+        const leadID=none(lead) || lead===0 || lead==='0'?0:speciesID(lead);
+        if(leadID && leadID!==species[0])fail('Catalog team lead must match its first set');
+        return {team:ids.join(','),lead:leadID?String(leadID):'None'};
+    }
     if(none(team))team=[];
     else if(typeof team==='string')team=team.replace(/^species:/,'').split(',');
     if(!Array.isArray(team) || team.length>6)fail('Team must contain 1..6 distinct species or be None');
@@ -103,7 +115,8 @@ export function checkpoint(file,expected) {
     const data=fs.readFileSync(file);
     if(data.length!==4*parameterCount(hidden,layers))fail('Checkpoint byte count does not match its semantic architecture: '+file);
     for(let i=0;i<data.length;i+=4)if(!Number.isFinite(data.readFloatLE(i)))fail('Non-finite checkpoint weights: '+file);
-    const binding=constraint(config['env.learner_team'],config['env.learner_lead']);
+    const team=config['env.learner_team'];
+    const binding=constraint(!none(team) && !team.startsWith('species:')?'catalog:'+team:team,config['env.learner_lead']);
     return {path:file,sha256:sha(data),config_sha256:sha(fs.readFileSync(path.join(path.dirname(file),'config.ini'))),hidden,layers,config,...binding};
 }
 export function bindingConfig(base,member) {
@@ -186,6 +199,10 @@ function trainCommand(directory,state,member,config,runID,load,steps,league='Non
     const actual={...config,'base.run_id':runID,'base.seed':String(member.seed),
         'base.checkpoint_dir':path.join(work,'checkpoints'),'base.log_dir':path.join(work,'logs'),
         'base.load_model_path':load,'train.total_timesteps':String(steps),
+        // Old league states predate Oak config; never inherit a global enabled
+        // benchmark and accidentally run it after every member's stint.
+        'oak.enabled':config['oak.enabled']??'0',
+        'metamon.enabled':config['metamon.enabled']??'0',
         'env.native_league':league,'env.expert_fraction':String(1-selfplay),
         'vec.num_policies':'1','vec.hist_policy_percent':'0'};
     const args=[state.binary,'train',...Object.entries(actual).map(([key,value])=>'--'+key+'='+value)];
@@ -221,7 +238,17 @@ function writeManifest(file,members,architecture) {
 }
 
 export function planCreate(options={},overrideArgs=[]) {
-    const common={...defaults(),...overrides(overrideArgs)};
+    const common={...defaults(),'oak.enabled':'0','metamon.enabled':'0',...overrides(overrideArgs)};
+    const decayRounds=number(options['lr-decay-rounds']??0),finalRatio=number(options['lr-final-ratio']??0.1);
+    if(!Number.isInteger(decayRounds) || decayRounds<0 || !Number.isFinite(finalRatio) || finalRatio<=0 || finalRatio>1)
+        fail('LR decay needs nonnegative integer rounds and final ratio in (0,1]');
+    if(options['lr-final-ratio']!==undefined && !decayRounds)fail('lr-final-ratio requires lr-decay-rounds');
+    const entRounds=number(options['ent-decay-rounds']??0),entFinal=number(options['ent-final-ratio']??0);
+    if(!Number.isInteger(entRounds) || entRounds<0 || !Number.isFinite(entFinal) || entFinal<0 || entFinal>1)
+        fail('Entropy decay needs nonnegative integer rounds and final ratio in [0,1]');
+    if(options['ent-final-ratio']!==undefined && !entRounds)fail('ent-final-ratio requires ent-decay-rounds');
+    const reserve=number(options['min-free-gb']??0);
+    if(!Number.isFinite(reserve) || reserve<0)fail('min-free-gb must be nonnegative');
     const seed=number(options.seed??73);
     if(!Number.isInteger(seed) || seed<0 || seed>0x7fffffff)fail('seed must be a nonnegative 31-bit integer');
     const master=none(options.master)?null:checkpoint(options.master);
@@ -268,7 +295,40 @@ export function planCreate(options={},overrideArgs=[]) {
     if(!Number.isSafeInteger(steps) || steps<1)fail('steps must be a positive integer');
     return {version:VERSION,rules_sha:RULES.sha256,created:timestamp(),phase:'creating',round:0,seed,architecture,
         binary:path.resolve(ROOT,options.binary||'puffer'),evaluator:path.resolve(ROOT,options.evaluator||'build/pokemon/viewer'),
-        config:common,schedule:{steps,selfplay},members,pending:null,rounds:[]};
+        config:common,schedule:{steps,selfplay},members,pending:null,rounds:[],
+        lr_schedule:decayRounds?{rounds:decayRounds,final_ratio:finalRatio,shape:'boundary-matched-cosine'}:null,
+        ent_schedule:entRounds?{rounds:entRounds,final_ratio:entFinal,shape:'boundary-matched-cosine'}:null,
+        min_free_gb:reserve};
+}
+function checkDisk(directory,state) {
+    if(!state.min_free_gb)return;
+    const disk=fs.statfsSync(directory),free=Number(disk.bavail)*Number(disk.bsize)/2**30;
+    if(free<state.min_free_gb)fail('Disk reserve reached: '+free.toFixed(2)+' GiB available; '+state.min_free_gb+' required. Artifacts retained; resume after freeing space.');
+}
+export function roundLearningRate(config,schedule,round) {
+    if(!schedule)return config;
+    const base=number(config['train.learning_rate']);
+    if(!Number.isFinite(base) || base<=0)fail('Scheduled learning rate must be positive');
+    if(!Number.isInteger(round) || round<1)fail('Invalid learning-rate round');
+    const factor=r=>schedule.final_ratio+(1-schedule.final_ratio)*.5*(1+Math.cos(Math.PI*Math.min(r/schedule.rounds,1)));
+    const start=factor(round-1),end=factor(round);
+    // Native cosine connects this round's endpoints. The next round begins at
+    // this round's endpoint, so it never restarts at the original high LR.
+    return {...config,'train.anneal_lr':'1','train.learning_rate':String(base*start),
+        'train.min_lr_ratio':String(end/start)};
+}
+// Same round-spanning cosine for the entropy bonus. A zero final ratio ends at
+// exactly zero and holds it: later rounds train with no entropy bonus.
+export function roundEntropy(config,schedule,round) {
+    if(!schedule)return config;
+    const base=number(config['train.ent_coef']);
+    if(!Number.isFinite(base) || base<0)fail('Scheduled entropy coefficient must be nonnegative');
+    if(!Number.isInteger(round) || round<1)fail('Invalid entropy round');
+    const factor=r=>schedule.final_ratio+(1-schedule.final_ratio)*.5*(1+Math.cos(Math.PI*Math.min(r/schedule.rounds,1)));
+    const start=factor(round-1),end=factor(round);
+    if(!(base*start>0))return {...config,'train.ent_coef':'0','train.anneal_ent_coef':'0'};
+    return {...config,'train.anneal_ent_coef':'1','train.ent_coef':String(base*start),
+        'train.min_ent_coef_ratio':String(end/start)};
 }
 async function initialize(directory,state) {
     for(const member of state.members) {
@@ -281,12 +341,13 @@ async function initialize(directory,state) {
             verifyStored(member.initializer,state.architecture);
             member.current=publish(directory,member,label,member.initializer.path,config);
         } else {
+            checkDisk(directory,state);
             // One zero-learning-rate minibatch uses exactly the native random
             // initializer and serializer. It is not charged as league training.
             const initConfig={...config,'vec.total_agents':'8','vec.num_threads':'1','train.horizon':'8','train.minibatch_size':'64',
                 'train.learning_rate':'0','train.total_timesteps':'64',
                 'env.force_core_combos':'0','env.force_core_prob':'0','env.reset_state_prob':'0','env.max_updates':'1',
-                'base.cudagraphs':'-1','base.checkpoint_interval':'1'};
+                'base.cudagraphs':'-1','base.checkpoint_interval':'1','oak.enabled':'0','metamon.enabled':'0'};
             const cmd=trainCommand(directory,state,member,initConfig,'init-'+member.name+'-a'+attempt,'None',64);
             jsonWrite(path.join(directory,'plans',cmd.config['base.run_id']+'.json'),cmd);
             await run(cmd.args,cmd.log);
@@ -305,7 +366,7 @@ export function scheduleRound(directory,state,steps,selfplay) {
     for(const member of snapshot)verifyStored(member.current,state.architecture);
     const plans={};
     for(const member of state.members.filter(m=>m.trainable)) {
-        const config=bindingConfig(state.config,member);validateConfig(config,state.architecture);
+        const config=roundEntropy(roundLearningRate(bindingConfig(state.config,member),state.lr_schedule,round),state.ent_schedule,round);validateConfig(config,state.architecture);
         if(number(config['env.force_core_combos'])) {
             const previous=checkpoint(member.current.path,state.architecture).config;
             const pool=value=>value==='all'?'all':String(value).split(',').map(number).sort((a,b)=>a-b).join(',');
@@ -361,6 +422,7 @@ async function trainRounds(directory,state,options) {
         console.log('Round '+pending.round+': '+pending.steps+' total agent-steps/member, current-selfplay env share '+pending.selfplay);
         for(const member of state.members.filter(m=>m.trainable)) {
             if(pending.completed[member.name]) {verifyStored(pending.completed[member.name],state.architecture);continue;}
+            checkDisk(directory,state);
             const plan=pending.plans[member.name];
             // Persist the stint's opponent versions before launching. A retry
             // uses exactly these versions, even after process interruption.
@@ -372,6 +434,10 @@ async function trainRounds(directory,state,options) {
             if(pending.selfplay<1)writeManifest(cmd.bank,cmd.opponents,state.architecture);
             jsonWrite(path.join(directory,'plans',cmd.config['base.run_id']+'.json'),cmd);
             console.log('  Training '+member.name+' vs '+cmd.opponents.length+' frozen peers; log '+cmd.log);
+            if(state.lr_schedule)console.log('  LR '+cmd.config['train.learning_rate']+' -> '+
+                number(cmd.config['train.learning_rate'])*number(cmd.config['train.min_lr_ratio'])+' (round-spanning anneal)');
+            if(state.ent_schedule)console.log('  Entropy '+cmd.config['train.ent_coef']+' -> '+
+                (number(cmd.config['train.anneal_ent_coef'])?number(cmd.config['train.ent_coef'])*number(cmd.config['train.min_ent_coef_ratio']):0)+' (round-spanning anneal)');
             await run(cmd.args,cmd.log);
             const trained=checkpoint(cmd.checkpoint,state.architecture);
             if(trained.team!==member.team || trained.lead!==member.lead)fail('Trainer lost member team/lead binding');
@@ -439,6 +505,8 @@ async function evaluate(directory,state,options) {
 function status(state) {
     console.log('League '+state.phase+'; completed round '+state.round+'; '+state.members.length+' members; H='+state.architecture.hidden+' L='+state.architecture.layers);
     console.log('Default round: '+state.schedule.steps+' total agent-steps/member; current-selfplay env share '+state.schedule.selfplay);
+    if(state.lr_schedule)console.log('LR: cosine endpoints over '+state.lr_schedule.rounds+' rounds, final ratio '+state.lr_schedule.final_ratio);
+    if(state.ent_schedule)console.log('Entropy: cosine endpoints over '+state.ent_schedule.rounds+' rounds, final ratio '+state.ent_schedule.final_ratio);
     if(state.pending)console.log('Unfinished round '+state.pending.round+': '+Object.keys(state.pending.completed).length+'/'+Object.keys(state.pending.plans).length+' members complete');
     for(const member of state.members)console.log('  '+member.name+(member.trainable?'':' [frozen]')+' | '+member.team+' | lead='+member.lead+' | '+(member.current?.path||'not initialized'));
 }
@@ -448,6 +516,8 @@ function help() {
   league.sh create DIR [--master PATH|None] [--new-policies N] [--teams smogon|experts-three|FILE]
                        [--anchor PATH ...] [--seed N] [--selfplay FRACTION]
                        [--steps N] [--defer-init] [--live|--quiet] [--dry-run] [-- section.key=value ...]
+                       [--lr-decay-rounds N --lr-final-ratio FRACTION] [--min-free-gb N]
+                       [--ent-decay-rounds N --ent-final-ratio FRACTION]
   league.sh train DIR [--rounds N] [--steps N] [--selfplay FRACTION]
                       [--evaluate GAMES] [--live|--quiet] [--dry-run]
   league.sh resume DIR [same options as train]
@@ -460,11 +530,18 @@ function help() {
 with --teams. smogon adds all 13 sample compositions with fixed leads; moves stay free.
 experts-three supplies the three compositions from the previous master experiment.
 Custom JSON: {"members":[{"name":"jynx","team":[...],"lead":"Jynx","overrides":{...}}]}.
+Use team="catalog:421,366,389,395,512,445" for six ordered fixed movesets.
 Members train in roster order and publish immediately: later members face the updated
 earlier members. Opponents freeze only within a member's stint (including retries),
 mixed with current self-play. Steps count total agent transitions, not just learner
 transitions; environment counts are saved in the round plan. Budgets must divide
 total_agents*horizon exactly. Optimizer state restarts for each member/round.
+Optional LR decay connects cosine endpoints across rounds; retries retain the saved
+round schedule. After lr-decay-rounds it holds the final LR; it does not restart.
+--ent-decay-rounds does the same for train.ent_coef; --ent-final-ratio may be 0,
+after which members train with no entropy bonus.
+Oak and Metamon default off for leagues. Enable Metamon per member or at creation;
+random initialization always disables evaluations. min-free-gb stops without deletion.
 Resume keeps completed members and retries an interrupted member from its round-start
 checkpoint. Earlier checkpoints, incomplete attempts, and old leagues are retained.
 Interactive terminals show the native dashboard and retain logs automatically.
@@ -495,7 +572,7 @@ export async function main(argv=process.argv.slice(2)) {
     const {positional,options,raw}=parseArgs(argv);
     const [command,dir]=positional;
     if(!dir || positional.length!==2)fail('Expected COMMAND DIR; see --help');
-    const allowed={create:['master','new-policies','teams','anchor','seed','selfplay','steps','dry-run','binary','evaluator','defer-init','live','quiet'],
+    const allowed={create:['master','new-policies','teams','anchor','seed','selfplay','steps','dry-run','binary','evaluator','defer-init','live','quiet','lr-decay-rounds','lr-final-ratio','ent-decay-rounds','ent-final-ratio','min-free-gb'],
         train:['rounds','steps','selfplay','evaluate','dry-run','live','quiet'],resume:['rounds','steps','selfplay','evaluate','dry-run','live','quiet'],
         eval:['games','members','seed','deterministic','dry-run'],export:['members','output','force'],status:[]};
     if(!allowed[command])fail('Unknown command '+command);

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {ROOT,planCreate,constraint,parameterCount,parseIni,bindingConfig} from '../freeleague.mjs';
+import {ROOT,planCreate,constraint,parameterCount,parseIni,formatIni,bindingConfig,roundLearningRate,roundEntropy} from '../freeleague.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const cli=path.join(here,'../freeleague.mjs'),fake=path.join(here,'fake_train.mjs');
 test('native 5.0 initialization, fixed peers, continuation, export and evaluation',
@@ -35,6 +35,55 @@ function command(args,code=0,env={}) {
     const result=spawnSync(process.execPath,[cli,...args],{cwd:ROOT,encoding:'utf8',env:{...process.env,...env},timeout:120000});
     assert.equal(result.status,code,result.stdout+'\n'+result.stderr);return result;
 }
+test('round-spanning entropy reaches exactly zero and stays off',()=>{
+    const base={'train.ent_coef':'0.005','train.anneal_ent_coef':'0','train.min_ent_coef_ratio':'0.1'};
+    const schedule={rounds:25,final_ratio:0};
+    let previous=0.005;
+    for(let round=1;round<=25;round++) {
+        const c=roundEntropy(base,schedule,round),start=Number(c['train.ent_coef']);
+        assert.equal(c['train.anneal_ent_coef'],'1');
+        assert(Math.abs(start-previous)<1e-15);
+        const end=start*Number(c['train.min_ent_coef_ratio']);
+        assert(end<=start && end>=0);
+        previous=end;
+    }
+    assert(previous<1e-18);
+    for(const round of [26,40,60])assert.deepEqual(
+        [roundEntropy(base,schedule,round)['train.ent_coef'],roundEntropy(base,schedule,round)['train.anneal_ent_coef']],['0','0']);
+    assert.equal(roundEntropy(base,null,1),base);
+    for(const options of [{'ent-decay-rounds':-1},{'ent-decay-rounds':1.5},{'ent-final-ratio':0},
+        {'ent-decay-rounds':10,'ent-final-ratio':1.5}])assert.throws(()=>planCreate(options));
+});
+test('round-spanning LR is monotone, continuous at boundaries and holds its floor',()=>{
+    const base={'train.learning_rate':'0.0005','train.anneal_lr':'0','train.min_lr_ratio':'0.1'};
+    const schedule={rounds:50,final_ratio:0.1};
+    let previous=0.0005;
+    for(let round=1;round<=52;round++) {
+        const c=roundLearningRate(base,schedule,round),start=Number(c['train.learning_rate']);
+        const end=start*Number(c['train.min_lr_ratio']);
+        assert(Math.abs(start-previous)<1e-15);
+        assert(end<=start && end>=0.00005-1e-15);
+        assert.equal(c['train.anneal_lr'],'1');
+        previous=end;
+    }
+    assert.equal(previous,0.00005);assert.equal(roundLearningRate(base,null,1),base);
+    for(const options of [{'lr-decay-rounds':-1},{'lr-decay-rounds':2.5},{'lr-final-ratio':.1},
+        {'lr-decay-rounds':50,'lr-final-ratio':0},{'min-free-gb':-1}])assert.throws(()=>planCreate(options));
+});
+test('Metamon opt-in is preserved for stints but never runs during initialization',()=>{
+    const dir=fs.mkdtempSync(path.join(os.tmpdir(),'pokemon-league-metamon-'));
+    try {
+        command(['create',dir,'--new-policies','2','--steps','4096','--binary',fake,'--',
+            'policy.hidden_size=32','policy.num_layers=1','vec.total_agents=64',
+            'train.horizon=64','train.minibatch_size=1024','metamon.enabled=1']);
+        const initial=JSON.parse(fs.readFileSync(path.join(dir,'plans','init-master-a1.json')));
+        assert.equal(initial.config['metamon.enabled'],'0');
+        command(['train',dir]);
+        const stint=JSON.parse(fs.readFileSync(path.join(dir,'plans','r000001-master-a001.json')));
+        assert.equal(stint.config['metamon.enabled'],'1');
+        assert.equal(planCreate().config['metamon.enabled'],'0');
+    }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
 test('deferred initialization and live PTY output preserve logs and failures',()=>{
     const root=fs.mkdtempSync(path.join(os.tmpdir(),"pokemon-live-'test-"));
     const dir=path.join(root,'league with spaces');
@@ -80,11 +129,55 @@ test('composition planner: all sample leads, free moves, independent members',()
         ()=>planCreate({},['train.emag_kl_coef=1']),
         ()=>planCreate({},['selfplay.pfsp_mode=variance'])])assert.throws(fn);
 });
+test('fixed catalog checkpoint survives league publication and Oak defaults off',()=>{
+    const root=fs.mkdtempSync(path.join(os.tmpdir(),'pokemon-catalog-league-'));
+    try {
+        const seedLeague=path.join(root,'seeds');
+        command(['create',seedLeague,'--new-policies','2','--steps','4096','--binary',fake,'--',
+            'policy.hidden_size=32','policy.num_layers=1','vec.total_agents=64',
+            'train.horizon=64','train.minibatch_size=1024']);
+        const initial=JSON.parse(fs.readFileSync(path.join(seedLeague,'state.json')));
+        const fixed='421,366,389,395,512,445',seedDir=path.join(root,'fixed');
+        fs.mkdirSync(seedDir);
+        const weights=path.join(seedDir,'weights.bin');
+        fs.copyFileSync(initial.members[0].current.path,weights);
+        const config=parseIni(fs.readFileSync(path.join(path.dirname(initial.members[0].current.path),'config.ini'),'utf8'));
+        fs.writeFileSync(path.join(seedDir,'config.ini'),formatIni({...config,'env.learner_team':fixed,'env.learner_lead':'121'}));
+        const teams=path.join(root,'roster.json');
+        fs.writeFileSync(teams,JSON.stringify({members:[
+            {name:'master',team:'catalog:'+fixed,lead:121,checkpoint:weights},
+            {name:'peer',team:'None',checkpoint:initial.members[1].current.path}]}));
+        const league=path.join(root,'league');
+        command(['create',league,'--master',weights,'--new-policies','0','--teams',teams,
+            '--steps','4096','--binary',fake,'--','vec.total_agents=64','train.horizon=64','train.minibatch_size=1024']);
+        const statePath=path.join(league,'state.json');
+        let state=JSON.parse(fs.readFileSync(statePath));
+        assert.equal(state.members[0].team,fixed);
+        assert.equal(state.config['oak.enabled'],'0');
+        assert.equal(state.config['metamon.enabled'],'0');
+        // A pre-Oak league state must also suppress globally enabled Oak.
+        delete state.config['oak.enabled'];delete state.config['metamon.enabled'];fs.writeFileSync(statePath,JSON.stringify(state));
+        command(['train',league]);command(['export',league]);
+        state=JSON.parse(fs.readFileSync(statePath));
+        const saved=parseIni(fs.readFileSync(path.join(path.dirname(state.members[0].current.path),'config.ini'),'utf8'));
+        assert.equal(saved['env.learner_team'],fixed);
+        assert.equal(saved['env.learner_lead'],'121');
+        assert.equal(saved['oak.enabled'],'0');
+        assert.equal(saved['metamon.enabled'],'0');
+        const manifest=parseIni(fs.readFileSync(path.join(league,'native.ini'),'utf8'));
+        assert.equal(manifest['bank.0.team'],fixed);
+        assert.equal(planCreate({},['oak.enabled=1']).config['oak.enabled'],'1');
+        for(const team of ['catalog:421','catalog:421,421,389,395,512,445','catalog:999999,366,389,395,512,445'])
+            assert.throws(()=>constraint(team,121));
+        assert.throws(()=>constraint('catalog:'+fixed,128));
+    }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
 test('sequential publication, failure/resume, seed cloning, anchors, selective export and eval',()=>{
     const root=fs.mkdtempSync(path.join(os.tmpdir(),'pokemon-league-test-'));
     const dir=path.join(root,'league');
     try {
-        command(['create',dir,'--new-policies','3','--steps','4096','--binary',fake,'--evaluator',fake,'--',
+        command(['create',dir,'--new-policies','3','--steps','4096','--binary',fake,'--evaluator',fake,
+            '--lr-decay-rounds','3','--lr-final-ratio','0.1','--',
             'policy.hidden_size=32','policy.num_layers=1','vec.total_agents=64','train.horizon=64','train.minibatch_size=1024']);
         const read=()=>JSON.parse(fs.readFileSync(path.join(dir,'state.json'),'utf8'));
         const initial=read();assert.equal(initial.phase,'ready');assert.equal(initial.round,0);
@@ -113,11 +206,15 @@ test('sequential publication, failure/resume, seed cloning, anchors, selective e
         assert.deepEqual(state.rounds[0].snapshot.map(m=>m.current),initial.members.map(m=>m.current));
         assert.deepEqual(state.rounds[0].plans.free_02.opponent_snapshot,failedOpponents);
         assert.deepEqual(commandPlan('r000001-free_02-a002').opponents,failedOpponents);
+        for(const key of ['train.learning_rate','train.min_lr_ratio'])
+            assert.equal(commandPlan('r000001-free_02-a002').config[key],commandPlan('r000001-free_02-a001').config[key]);
         assert.deepEqual(state.rounds[0].plans.free_03.opponent_snapshot.map(m=>m.current),state.members.slice(0,2).map(m=>m.current));
         assert.deepEqual(commandPlan('r000001-free_03-a001').opponents.map(m=>m.current),state.members.slice(0,2).map(m=>m.current));
         const firstRound=state;
         command(['train',dir]);state=read();
         assert.equal(state.round,2);
+        const firstLR=state.rounds[0].plans.master.config,nextLR=state.rounds[1].plans.master.config;
+        assert(Math.abs(Number(firstLR['train.learning_rate'])*Number(firstLR['train.min_lr_ratio'])-Number(nextLR['train.learning_rate']))<1e-15);
         assert.deepEqual(state.rounds[1].plans.master.opponent_snapshot.map(m=>m.current),firstRound.members.slice(1).map(m=>m.current));
         // Legacy interrupted rounds held completed versions off-roster and had
         // no per-stint snapshot. Resume upgrades them without repeating A.

@@ -8,6 +8,16 @@ extern char** environ;
  * trial: the training win rate must never masquerade as an Oak result. */
 static int pk_post_train_oak(Ini* ini, const char* checkpoint,
         const char* log_path, Dict* log, float* score) {
+    if (pk_metamon.enabled) {
+        if (!pk_metamon.has_score || pk_metamon.state != 2
+            || pk_metamon.score_steps != pk_metamon.target_steps) {
+            fprintf(stderr, "Final Metamon evaluation failed; checkpoint retained, no valid final score.\n");
+            exit(1);
+        }
+        pk_metamon_log(log);
+        *score = (float)pk_metamon.score;
+        return 1;
+    }
     if (!puf_ini_get(ini, "oak", "enabled")) return 0;
     char output[4096], games[32], budget[32], workers[32], seed[32];
     if (snprintf(output, sizeof(output), "%s.oak", log_path) >= (int)sizeof(output)) exit(1);
