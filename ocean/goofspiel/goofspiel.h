@@ -75,7 +75,8 @@ static float gs_exact_current_prob;
 static int gs_measure_exploitability;
 static double gs_exploitability = NAN;
 static double gs_best_exploitability = INFINITY;
-static char gs_best_checkpoint[4096];
+static double gs_magnet_exploitability = NAN;
+static char gs_best_checkpoint[4120];
 
 #if PUF_BACKEND == PUF_GPU
 struct GSDeviceExact {
@@ -435,12 +436,18 @@ void puf_close(Env* env) {
 #include "checkpoint.h"
 #include "training_config.h"
 
+static GSEarlyStop gs_stop_progress;
+static int gs_stop_enabled;
+static int gs_stop_requested;
+#define PUF_TRAIN_STOP() gs_stop_requested
+
 #ifdef PRECISION_FLOAT
 #define GS_TRAIN_ALIGNMENT 4
 #else
 #define GS_TRAIN_ALIGNMENT 8
 #endif
 #define PUF_SWEEP_PREPARE(ini) gs_prepare_sweep(ini)
+#define PUF_SWEEP_RESOLVE(ini) gs_resolve_sweep(ini)
 #define PUF_SWEEP_VALIDATE(ini) \
     ((PUF_BACKEND == PUF_GPU && puf_ini_get(ini, "vec", "num_buffers") != 1) \
         ? "GPU environment requires num_buffers=1" : gs_training_config_error(ini, GS_TRAIN_ALIGNMENT))
@@ -462,7 +469,12 @@ void gs_configure(Ini* ini, const char* mode) {
     gs_exact_restored = 0;
     gs_exploitability = NAN;
     gs_best_exploitability = INFINITY;
+    gs_magnet_exploitability = NAN;
     gs_best_checkpoint[0] = 0;
+    gs_stop_progress = {INFINITY, 0};
+    gs_stop_requested = 0;
+    gs_stop_enabled = !strcmp(mode, "train") && puf_ini_get(ini, "base", "result_fd") > 0
+        && puf_ini_get(ini, "sweep", "early_stop_patience_steps") > 0;
     const char* metric = puf_ini_get_str(ini, "sweep", "metric");
     if (strncmp(metric, "env/", 4) == 0) {
         metric += 4;
@@ -548,6 +560,17 @@ void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
             gs_exact_history, (unsigned long long)gs_exact_seen,
             (unsigned long long)nodes, milliseconds);
     }
+    // The EMA magnet is also a deployable policy; best_exploitability covers both.
+    char magnet[4120];
+    snprintf(magnet, sizeof(magnet), "%s.magnet", checkpoint);
+    if (gs_measure_exploitability && access(magnet, R_OK) == 0) {
+        gs_magnet_exploitability = gs_cuda_exploit(magnet, ini, NULL, NULL);
+        printf("Exact magnet: exploitability=%.9f\n", gs_magnet_exploitability);
+        if (gs_magnet_exploitability < gs_best_exploitability) {
+            snprintf(gs_best_checkpoint, sizeof(gs_best_checkpoint), "%s", magnet);
+            gs_best_exploitability = gs_magnet_exploitability;
+        }
+    }
     if (isfinite(exploitability)) {
         gs_exploitability = exploitability;
         if (exploitability < gs_best_exploitability) {
@@ -556,6 +579,18 @@ void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
         gs_best_exploitability = fmin(gs_best_exploitability, exploitability);
         printf("Exact checkpoint: exploitability=%.9f best_exploitability=%.9f path=%s\n",
             exploitability, gs_best_exploitability, checkpoint);
+        if (gs_stop_enabled && !gs_stop_requested) {
+            const char* name = strrchr(checkpoint, '/');
+            long long step = strtoll(name ? name + 1 : checkpoint, NULL, 10);
+            gs_stop_requested = gs_early_stop(&gs_stop_progress, gs_best_exploitability, step,
+                puf_ini_get(ini, "sweep", "early_stop_min_steps"),
+                puf_ini_get(ini, "sweep", "early_stop_patience_steps"),
+                puf_ini_get(ini, "sweep", "early_stop_min_delta"));
+            if (gs_stop_requested) {
+                printf("Goofspiel early stop: step=%lld best=%.9f last_improvement=%lld\n",
+                    step, gs_best_exploitability, gs_stop_progress.improved_at);
+            }
+        }
     }
     if (!gs_exact_enabled) {
         return;
@@ -574,6 +609,8 @@ static int gs_post_train_result(Ini* ini, const char* checkpoint,
     if (!isfinite(gs_exploitability)) return 0;
     dict_set(log, "env/exploitability", gs_exploitability);
     dict_set(log, "env/best_exploitability", gs_best_exploitability);
+    dict_set(log, "env/magnet_exploitability", gs_magnet_exploitability);
+    dict_set(log, "env/early_stopped", gs_stop_requested);
     printf("\nGoofspiel result: exploitability=%.9f best_exploitability=%.9f target=0\n"
         "Final checkpoint: %s\nBest checkpoint: %s\n",
         gs_exploitability, gs_best_exploitability, checkpoint, gs_best_checkpoint);

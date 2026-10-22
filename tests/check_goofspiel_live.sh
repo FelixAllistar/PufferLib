@@ -17,6 +17,8 @@ goof_common=(
     --policy.hidden_size=16 --policy.num_layers=1
     --train.total_timesteps=4096 --train.horizon=8 --train.minibatch_size=128 --train.replay_ratio=1
     --env.exploitability_interval_steps=1024
+    --sweep.early_stop_min_steps=2048 --sweep.early_stop_patience_steps=1024
+    --sweep.early_stop_min_delta=1
 )
 
 for goof_model in puffernet transformer; do
@@ -65,7 +67,8 @@ for goof_model in puffernet transformer; do
         --sweep.vec.total_agents.min=256 --sweep.vec.total_agents.max=1024 \
         --sweep.vec.num_buffers.max=4 --sweep.vec.num_threads.max=2 \
         --sweep.train.horizon.max=16 --sweep.train.minibatch_size.min=128 --sweep.train.minibatch_size.max=512 \
-        --sweep.train.replay_ratio.max=2 --sweep.policy.hidden_size.max=32 --sweep.policy.num_layers.max=2 \
+        --sweep.train.replay_ratio.min=.5 --sweep.train.replay_ratio.max=2 \
+        --sweep.policy.hidden_size.max=32 --sweep.policy.num_layers.max=2 \
         > "$goof_report/sweep_$goof_model.log" 2>&1
     [[ $(grep -c '^sweep run=' "$goof_report/sweep_$goof_model.log") == 3 ]]
     if grep -q 'worker .*failed' "$goof_report/sweep_$goof_model.log"; then exit 1; fi
@@ -85,21 +88,35 @@ for goof_model in puffernet transformer; do
     done < <(find "$goof_report/sweep_$goof_model/logs/goofspiel" -type f -name '*.ini')
     printf 'PASS real %s sweep: three trials, exact objective verified independently\n' "$goof_model"
 done
+
+for goof_model in puffernet transformer; do
+    "$goof_binary" sweep "${goof_common[@]}" --policy.architecture="$goof_model" \
+        --base.checkpoint_dir="$goof_report/stopped_$goof_model/checkpoints" \
+        --base.log_dir="$goof_report/stopped_$goof_model/logs" --sweep.max_runs=1 \
+        --sweep.vec.total_agents.min=64 --sweep.train.minibatch_size.min=128 \
+        --sweep.train.replay_ratio.min=1 > "$goof_report/stopped_$goof_model.log" 2>&1
+    grep -q '^Goofspiel early stop: step=2048 ' "$goof_report/stopped_$goof_model.log"
+    grep -q '^sweep run=0 .*steps=2560 ' "$goof_report/stopped_$goof_model.log"
+    goof_settings=("$goof_report/stopped_$goof_model/logs/goofspiel/"*.ini)
+    grep -q '^env/early_stopped = 1$' "${goof_settings[0]}"
+    printf 'PASS %s sweep stops cleanly, returns actual steps and preserves checkpoints\n' "$goof_model"
+done
 goof_preflight=(
     --policy.hidden_size=16 --policy.num_layers=1
-    --vec.total_agents=512 --vec.num_buffers=1 --vec.num_threads=2
-    --train.total_timesteps=32768 --train.horizon=8 --train.minibatch_size=512
+    --vec.total_agents=8192 --vec.num_buffers=1 --vec.num_threads=2
+    --train.total_timesteps=131072 --train.horizon=8 --train.minibatch_size=8192
     --sweep.max_runs=1
 )
 goof_bad=(
     '--sweep.memory_limit_mb=1'
     '--selfplay.enabled=0 --env.exact_exploiter=1'
-    '--env.exact_exploiter=1 --env.exact_exploiter_banks=5'
+    '--vec.num_policies=2 --env.exact_exploiter=1 --env.exact_exploiter_banks=2'
     '--train.vtrace=1 --train.vtrace_rho_clip=.5 --train.vtrace_c_clip=1'
     '--vec.hist_policy_percent=.375'
+    '--sweep.max_train_graph_work=1'
 )
 goof_reasons=('estimated training/evaluation memory' 'exact_exploiter requires'
-    'enough frozen' 'vtrace_c_clip' 'divide learner rows')
+    'enough frozen' 'vtrace_c_clip' 'divide learner rows' 'CUDA training graph exceeds')
 for goof_index in "${!goof_bad[@]}"; do
     read -ra goof_overrides <<< "${goof_bad[$goof_index]}"
     if "$goof_binary" sweep "${goof_preflight[@]}" "${goof_overrides[@]}" \
@@ -113,5 +130,5 @@ for goof_index in "${!goof_bad[@]}"; do
     [[ ! -e "$goof_report/preflight_$goof_index/checkpoints" ]]
     [[ ! -e "$goof_report/preflight_$goof_index/logs" ]]
 done
-printf 'PASS memory, selfplay/exact, V-trace and fractional-layout rejection before workers\n'
+printf 'PASS memory, graph work, selfplay/exact, V-trace and layout rejection before workers\n'
 printf 'All real Goofspiel automatic-evaluation checks passed. Reports: %s\n' "$goof_report"

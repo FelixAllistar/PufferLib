@@ -351,7 +351,7 @@ static int main(int argc, char** argv) {
     put(ini, "base.log_dir", (report / "logs").string());
     put(ini, "base.run_id", "None"); put(ini, "base.result_fd", 0LL);
     const char* override_binary = getenv("GOOFSPIEL_TRAIN_BINARY");
-    std::string binary = fs::absolute(override_binary ? override_binary : "build/puffer_goofspiel_transformer").lexically_normal().string();
+    std::string binary = fs::absolute(override_binary ? override_binary : "puffer").lexically_normal().string();
     std::vector<std::string> args = arguments(ini, binary);
     std::cout << "# Goofspiel " << architecture << ": " << dimensions << " search dimensions, "
         << integer(ini, "sweep.max_runs") << " trials, " << layout.epochs * layout.epoch_steps << " effective agent steps/trial\n"
