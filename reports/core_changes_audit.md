@@ -66,6 +66,31 @@ Verified locally:
 `puf_load_weights_into` has no size check for Pokemon, so a mismatched bank would load silently. This
 was checked by hand here.
 
+## `src/native_transformer.cuh` speed-up (2026-10-22, local 5.0 not pushed; also on the A/B box)
+
+This is the shared Transformer used by Goofspiel (`policy.architecture=transformer`) and the Pokemon attention encoder.
+The math is unchanged: only the kernel launch shapes differ, so results match to floating-point
+reduction order.
+
+| Change | Why |
+|---|---|
+| LayerNorm forward/backward and attention softmax forward/backward run one 32-lane warp per row (`*_warp` kernels; lanes stride the row) instead of one 256-thread block per row | At Pokemon's shape (21-token softmax rows, 128-wide LN) about 90% / 50% of the threads were idle, and every row paid block barriers. The old kernels were 23% + 18% of the step |
+| Warp-row grid and row index use 64-bit math | Large shapes could overflow `rows × 32` |
+| `affine_gradients` sums 256 rows per block before its atomics (was 32) | Fewer atomics; no measurable change at Pokemon's shape |
+
+Checks:
+- `tests/bench_native_transformer.cu --test` passes locally (FP32, Pascal) and on the A/B box (BF16, Blackwell): FP64 oracle with
+  finite differences at three shapes, BF16 vs FP32, and CUDA graph vs eager.
+- The Pokemon encoder CPU/GPU parity and numerical-gradient tests pass with attention on (2×16×2, 1×32×4) and off.
+
+Speed (5060 Ti, BF16, forward+backward):
+
+| Shape | Before | After |
+|---|---|---|
+| Pokemon: 21 tokens, width 128, 2 layers | 28.7 ms | 19.2 ms |
+| 8 tokens, width 64 | 5.6 ms | 3.1 ms |
+| 264 tokens, width 256, 4 layers | 14.2 ms | 11.8 ms |
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
