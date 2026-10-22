@@ -4,7 +4,7 @@
 # about 2 GB) is copied from the Pokemon box separately so both boxes score with identical files.
 set -euo pipefail
 cd /workspace
-command -v clang >/dev/null && command -v ccache >/dev/null || (apt-get update -qq && apt-get install -y -qq clang ccache)
+command -v clang >/dev/null && command -v ccache >/dev/null && [ -e /usr/lib/x86_64-linux-gnu/libomp5.so ] || (apt-get update -qq && apt-get install -y -qq clang ccache libgl-dev libomp-18-dev)
 # Same NCCL as the Pokemon box (the trainer includes nccl.h even on one GPU).
 [ -f /usr/include/nccl.h ] || (apt-get update -qq && apt-get install -y -qq libnccl2=2.32.3-1+cuda13.4 libnccl-dev=2.32.3-1+cuda13.4)
 command -v uv >/dev/null || (curl -LsSf https://astral.sh/uv/install.sh | sh && ln -sf ~/.local/bin/uv /usr/local/bin/uv)
