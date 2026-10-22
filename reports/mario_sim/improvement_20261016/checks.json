@@ -1,0 +1,168 @@
+{
+  "parity_main_cpu": {
+    "mode": "full_trace_verification",
+    "source_cases": 11396,
+    "source_frames": 1178672,
+    "frames": 1178672,
+    "active_frames": 949988,
+    "failures": 0,
+    "seconds": 23.506304,
+    "frames_per_second": 50142.8,
+    "average_virtual_instructions": 9609.4,
+    "ppo_included": false,
+    "observations_included": false
+  },
+  "parity_boundaries_cpu": {
+    "mode": "full_trace_verification",
+    "source_cases": 3248,
+    "source_frames": 335936,
+    "frames": 335936,
+    "active_frames": 104668,
+    "failures": 0,
+    "seconds": 2.564989,
+    "frames_per_second": 130969.8,
+    "average_virtual_instructions": 9686.0,
+    "ppo_included": false,
+    "observations_included": false
+  },
+  "parity_supplement_cpu": {
+    "mode": "full_trace_verification",
+    "source_cases": 72,
+    "source_frames": 17280,
+    "frames": 17280,
+    "active_frames": 13055,
+    "failures": 0,
+    "seconds": 0.467968,
+    "frames_per_second": 36925.6,
+    "average_virtual_instructions": 9586.9,
+    "ppo_included": false,
+    "observations_included": false
+  },
+  "parity_world_cpu": {
+    "mode": "full_trace_verification",
+    "source_cases": 896,
+    "source_frames": 92672,
+    "frames": 92672,
+    "active_frames": 90394,
+    "failures": 0,
+    "seconds": 1.58943,
+    "frames_per_second": 58305.2,
+    "average_virtual_instructions": 9625.6,
+    "ppo_included": false,
+    "observations_included": false
+  },
+  "parity_main_cuda": {
+    "scope": "video_frame_clips",
+    "cases": 11396,
+    "frames": 1178672,
+    "failures": 0,
+    "bitwise_observations": true,
+    "source_cases": 11396,
+    "source_frames": 1178672,
+    "case_begin": 0,
+    "case_end": 11396
+  },
+  "parity_boundaries_cuda": {
+    "scope": "video_frame_clips",
+    "cases": 3248,
+    "frames": 335936,
+    "failures": 0,
+    "bitwise_observations": true,
+    "source_cases": 3248,
+    "source_frames": 335936,
+    "case_begin": 0,
+    "case_end": 3248
+  },
+  "parity_supplement_cuda": {
+    "scope": "video_frame_clips",
+    "cases": 72,
+    "frames": 17280,
+    "failures": 0,
+    "bitwise_observations": true,
+    "source_cases": 72,
+    "source_frames": 17280,
+    "case_begin": 0,
+    "case_end": 72
+  },
+  "parity_world_cuda": {
+    "scope": "video_frame_clips",
+    "cases": 896,
+    "frames": 92672,
+    "failures": 0,
+    "bitwise_observations": true,
+    "source_cases": 896,
+    "source_frames": 92672,
+    "case_begin": 0,
+    "case_end": 896
+  },
+  "practice_cuda": {
+    "scope": "video_frame_clips",
+    "cases": 104,
+    "frames": 1664,
+    "failures": 0,
+    "bitwise_observations": true,
+    "source_cases": 104,
+    "source_frames": 1664,
+    "case_begin": 0,
+    "case_end": 104
+  },
+  "game_rom": {
+    "stages": 32,
+    "ROM_frames": 72110,
+    "clears": 1,
+    "life_losses": 96,
+    "level_transitions": 1,
+    "gameovers": 31,
+    "checkpoints": 177,
+    "semantic_and_lifecycle_parity": true,
+    "failures": 0
+  },
+  "curriculum_cpu": {
+    "curriculum_levels": 17,
+    "decisions": 4961,
+    "teacher_successes": 73,
+    "promotions": 16,
+    "practice_episodes": 7,
+    "checkpoint_roundtrip": true,
+    "fixed_evaluation": true,
+    "failures": 0
+  },
+  "curriculum_cuda": {
+    "decisions": 40960,
+    "successes": 227,
+    "resets": 688,
+    "teacher_agents_at_final_level": 2,
+    "bitwise_native_states": true,
+    "bitwise_curriculum": true,
+    "bitwise_observations": true,
+    "direct_and_graph": true,
+    "checkpoint_resume": true,
+    "failures": 0
+  },
+  "modes_cpu": {
+    "CPU_modes": true,
+    "config_sections": true,
+    "mixed_metrics": true,
+    "sweep_score": true,
+    "legacy_resume": true,
+    "failures": 0
+  },
+  "runtime_cuda": {
+    "decisions": 196608,
+    "resets": 3681,
+    "stages": 32,
+    "modes": 4,
+    "practice_checkpoint_resume": true,
+    "failures": 0
+  },
+  "regression_5_2": {
+    "stage": 17,
+    "ROM_frames": 2251,
+    "failures": 0
+  },
+  "regression_3_1": {
+    "stage": 8,
+    "ROM_frames": 2575,
+    "failures": 0
+  }
+}

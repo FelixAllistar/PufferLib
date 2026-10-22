@@ -1,0 +1,22 @@
+{
+  "utc": "2026-10-18T07:49:14.518465+00:00",
+  "trials": [
+    {
+      "run": "sweep_1792309690367_0000",
+      "finished": false,
+      "requested_steps": 30000006,
+      "parent": "saved/retro/vast_838m.bin",
+      "latest": {
+        "steps": "6553600",
+        "seconds": "61.582510",
+        "sps": "117051.021",
+        "entropy": "0.130791917",
+        "kl": "0.016440602",
+        "value": "0.00305751269",
+        "clipfrac": "0.0521450043",
+        "vram_used_gb": "14.829102"
+      }
+    }
+  ],
+  "gpu": "100 %, 15185 MiB, 16311 MiB"
+}

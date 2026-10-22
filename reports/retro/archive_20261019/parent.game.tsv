@@ -1,0 +1,41 @@
+# retro_panel_v2 frames=108000 repeats=16 seed=20260907 deterministic=0 levels=1-1 frameskip=4
+level	replicate	clear	progress	frames	clear_frames	checkpoints
+1-1	0	0	0.949117647	8751	0	61
+1-1	1	0	0.948823529	16711	0	61
+1-1	2	0	0.948823529	8060	0	61
+1-1	3	0	0.948823529	7783	0	61
+1-1	4	0	0.948823529	7835	0	60
+1-1	5	0	0.948823529	8455	0	61
+1-1	6	0	0.948823529	7719	0	61
+1-1	7	0	0.948823529	8776	0	61
+1-1	8	0	0.948823529	7867	0	61
+1-1	9	0	0.948823529	8606	0	57
+1-1	10	0	0.948823529	17335	0	61
+1-1	11	0	0.949117647	8776	0	61
+1-1	12	0	0.948823529	7835	0	60
+1-1	13	0	0.948823529	7724	0	61
+1-1	14	0	0.948823529	8751	0	61
+1-1	15	0	0.948823529	8835	0	61
+# score=2 clears=0 attempts=16 progress=0.948860294 frames=149819
+# metric=perf distance=3226.125 units=forward_pixels
+# clear_frames=0 clear_rate=0
+# checkpoints=60.625 distance_per_checkpoint=128
+# speed_objective=2 best_frames=0 best_seconds=0.000000000000 mean_seconds=0.000000000000 best_count=0
+# game=1 wins=0 win_rate=0 mean_levels=2 archive_enabled=0
+# game_attempt=0 wins=0 levels=2 deaths=3 warps=0 frames=8751
+# game_attempt=1 wins=0 levels=2 deaths=3 warps=0 frames=16711
+# game_attempt=2 wins=0 levels=2 deaths=3 warps=0 frames=8060
+# game_attempt=3 wins=0 levels=2 deaths=3 warps=0 frames=7783
+# game_attempt=4 wins=0 levels=2 deaths=3 warps=0 frames=7835
+# game_attempt=5 wins=0 levels=2 deaths=3 warps=0 frames=8455
+# game_attempt=6 wins=0 levels=2 deaths=3 warps=0 frames=7719
+# game_attempt=7 wins=0 levels=2 deaths=3 warps=0 frames=8776
+# game_attempt=8 wins=0 levels=2 deaths=3 warps=0 frames=7867
+# game_attempt=9 wins=0 levels=2 deaths=3 warps=0 frames=8606
+# game_attempt=10 wins=0 levels=2 deaths=3 warps=0 frames=17335
+# game_attempt=11 wins=0 levels=2 deaths=3 warps=0 frames=8776
+# game_attempt=12 wins=0 levels=2 deaths=3 warps=0 frames=7835
+# game_attempt=13 wins=0 levels=2 deaths=3 warps=0 frames=7724
+# game_attempt=14 wins=0 levels=2 deaths=3 warps=0 frames=8751
+# game_attempt=15 wins=0 levels=2 deaths=3 warps=0 frames=8835
+# timing_scope=full_game practice_replay=None

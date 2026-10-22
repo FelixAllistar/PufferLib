@@ -1,0 +1,119 @@
+--- orig/transformer_policy.cuh	2026-10-21 20:11:52.160683992 -0400
++++ transformer_policy.cuh	2026-10-21 20:18:21.031297767 -0400
+@@ -3,6 +3,9 @@
+ #pragma once
+ #include "native_transformer.cuh"
+ 
++// policy.transformer_pointer (Goofspiel): the network outputs every token and the
++// pointer decoder scores card j from token j (value from the global token).
++static bool puf_transformer_pointer = false;
+ struct TransformerWeights {
+     puf_transformer::Config config;
+     Prec* parameters;
+@@ -63,7 +66,7 @@
+     auto config = w->config;
+     config.batch = batch;
+     a->model = new puf_transformer::Model<precision_t>(config, 17, false);
+-    a->pooled = {.shape = {batch, config.width}};
++    a->pooled = {.shape = {batch, (puf_transformer_pointer ? config.tokens : 1) * config.width}};
+     alloc_register(acts, &a->pooled);
+ }
+ 
+@@ -120,6 +123,11 @@
+         m.input.count * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream), "copy tokens");
+     m.forward();
+     auto c = m.config;
++    if (puf_transformer_pointer) {
++        puf_transformer::check(cudaMemcpyAsync(a->pooled.data, m.output.data,
++            size_t(c.batch) * c.tokens * c.width * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream), "copy tokens out");
++        return a->pooled;
++    }
+     transformer_pool<<<grid_size(c.batch * c.width), BLOCK_SIZE, 0, stream>>>(
+         m.output.data, a->pooled.data, c.batch, c.tokens, c.width);
+     return a->pooled;
+@@ -137,7 +145,10 @@
+     auto& m = *a->model;
+     auto c = m.config;
+     m.set_stream(stream);
+-    transformer_unpool<<<grid_size(c.batch * c.tokens * c.width), BLOCK_SIZE, 0, stream>>>(
++    if (puf_transformer_pointer)
++        puf_transformer::check(cudaMemcpyAsync(m.upstream.data, grad.data,
++            size_t(c.batch) * c.tokens * c.width * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream), "copy token grads");
++    else transformer_unpool<<<grid_size(c.batch * c.tokens * c.width), BLOCK_SIZE, 0, stream>>>(
+         grad.data, m.upstream.data, c.batch, c.tokens, c.width);
+     m.backward();
+     if (USE_BF16) for (int i = 0; i < w->count; ++i) {
+@@ -151,6 +162,73 @@
+ #ifdef GS_O_HANDS
+ #include "../ocean/goofspiel/transformer_features.cuh"
+ 
++// Pointer decoder: out[b,j] = W[j] . token[b,j]. Same (A+1, H) weight as the linear
++// decoder; with A cards + 1 value there is exactly one token per output.
++__global__ static void gs_pointer_forward(precision_t* out, const precision_t* tokens,
++        const precision_t* weight, int batch, int outputs, int width) {
++    int i = blockIdx.x * blockDim.x + threadIdx.x;
++    if (i >= batch * outputs) return;
++    int j = i % outputs; float sum = 0.f;
++    const precision_t* t = tokens + (size_t)i * width;
++    for (int h = 0; h < width; ++h) sum += to_float(weight[j * width + h]) * to_float(t[h]);
++    out[i] = from_float(sum);
++}
++__global__ static void gs_pointer_input_grad(precision_t* grad_tokens, const precision_t* grad_out,
++        const precision_t* weight, int batch, int outputs, int width) {
++    int i = blockIdx.x * blockDim.x + threadIdx.x;
++    if (i >= batch * outputs * width) return;
++    int h = i % width, row = i / width, j = row % outputs;
++    grad_tokens[i] = from_float(to_float(grad_out[row]) * to_float(weight[j * width + h]));
++}
++__global__ static void gs_pointer_weight_grad(precision_t* grad_weight, const precision_t* grad_out,
++        const precision_t* tokens, int batch, int outputs, int width) {
++    int i = blockIdx.x * blockDim.x + threadIdx.x;
++    if (i >= outputs * width) return;
++    int j = i / width, h = i % width; float sum = 0.f;
++    for (int b = 0; b < batch; ++b)
++        sum += to_float(grad_out[b * outputs + j]) * to_float(tokens[((size_t)b * outputs + j) * width + h]);
++    grad_weight[i] = from_float(sum);
++}
++static Prec gs_pointer_decoder_forward(void* w, void* activations, Prec input, cudaStream_t stream) {
++    auto* dw = (DecoderWeights*)w; auto* a = (DecoderActivations*)activations;
++    int od1 = dw->output_dim + 1, batch = a->out.shape[0];
++    if (a->saved_input.data) puf_copy(&a->saved_input, &input, stream);
++    gs_pointer_forward<<<grid_size(batch * od1), BLOCK_SIZE, 0, stream>>>(
++        a->out.data, input.data, dw->weight.data, batch, od1, dw->hidden_dim);
++    return a->out;
++}
++static Prec gs_pointer_decoder_backward(void* w, void* activations, Float grad_logits,
++        Float grad_logstd, Float grad_value, cudaStream_t stream) {
++    auto* dw = (DecoderWeights*)w; auto* a = (DecoderActivations*)activations;
++    int B_TT = a->saved_input.shape[0], od = dw->output_dim, od1 = od + 1, H = dw->hidden_dim;
++    assemble_decoder_grad<<<grid_size(B_TT * od1), BLOCK_SIZE, 0, stream>>>(
++        a->grad_out.data, grad_logits.data, grad_value.data, B_TT, od, od1);
++    // dW on the side stream, like puf_mm_tn_async_after: the trainer joins it (puf_dw_join).
++    cudaEventRecord(g_main_ready, stream);
++    cudaStreamWaitEvent(g_dw_stream, g_main_ready, 0);
++    gs_pointer_weight_grad<<<grid_size(od1 * H), BLOCK_SIZE, 0, g_dw_stream>>>(
++        a->wgrad_scratch.data, a->grad_out.data, a->saved_input.data, B_TT, od1, H);
++    gs_pointer_input_grad<<<grid_size(B_TT * od1 * H), BLOCK_SIZE, 0, stream>>>(
++        a->grad_input.data, a->grad_out.data, dw->weight.data, B_TT, od1, H);
++    return a->grad_input;
++}
++static void gs_pointer_decoder_reg_train(void* w, void* activations,
++        Allocator* acts, Allocator* grads, int B_TT) {
++    auto* dw = (DecoderWeights*)w; auto* a = (DecoderActivations*)activations;
++    // Same registrations (and order) as decoder_reg_train, with token-sized input buffers.
++    int od1 = dw->output_dim + 1, input = od1 * dw->hidden_dim;
++    *a = (DecoderActivations){
++        .out = {.shape = {B_TT, od1}}, .grad_out = {.shape = {B_TT, od1}},
++        .saved_input = {.shape = {B_TT, input}}, .grad_input = {.shape = {B_TT, input}},
++        .wgrad_scratch = {.shape = {od1, dw->hidden_dim}}, .logstd_scratch = {.shape = {1, dw->output_dim}},
++    };
++    alloc_register(acts, &a->out);
++    alloc_register(acts, &a->saved_input);
++    alloc_register(acts, &a->grad_out);
++    alloc_register(acts, &a->grad_input);
++    alloc_register(grads, &a->wgrad_scratch);
++}
++
+ static void gs_tokens_reg_rollout(void* weights, void* activations, Allocator* acts, int batch) {
+     auto* w = (EncoderWeights*)weights;
+     auto* a = (EncoderActivations*)activations;

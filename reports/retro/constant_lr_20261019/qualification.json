@@ -1,0 +1,24 @@
+{
+  "native_history_dimensions": 8,
+  "baseline_and_generated_proposal_passed": true,
+  "trials": [
+    {
+      "run": "sweep_1792371892887_0000",
+      "score": 75.94200897216797,
+      "steps": 1048576.0,
+      "cost": 46.013480443973094,
+      "clears": 194.0,
+      "lr": "5.49999932e-05",
+      "fixed_settings_verified": true
+    },
+    {
+      "run": "sweep_1792371938959_0001",
+      "score": 76.72358703613281,
+      "steps": 1048576.0,
+      "cost": 44.01333530910779,
+      "clears": 196.0,
+      "lr": "9.40261089e-06",
+      "fixed_settings_verified": true
+    }
+  ]
+}

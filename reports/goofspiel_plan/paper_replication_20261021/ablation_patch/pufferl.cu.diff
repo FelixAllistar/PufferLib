@@ -1,0 +1,35 @@
+--- orig/pufferl.cu	2026-10-21 08:30:12.294626630 -0400
++++ pufferl.cu	2026-10-21 08:32:05.054340784 -0400
+@@ -321,6 +321,7 @@
+     float min_lr_ratio;
+     bool anneal_lr;
+     float momentum;
++    int optimizer;
+     int minibatch_size;
+     float replay_ratio;
+     long total_timesteps;
+@@ -2086,6 +2087,7 @@
+         .min_lr_ratio = puf_ini_get(ini, "train", "min_lr_ratio"),
+         .anneal_lr = puf_ini_get(ini, "train", "anneal_lr") != 0,
+         .momentum = puf_ini_get(ini, "train", "momentum"),
++        .optimizer = (int)puf_ini_get(ini, "train", "optimizer"),
+         .minibatch_size = puf_ini_get(ini, "train", "minibatch_size"),
+         .replay_ratio = puf_ini_get(ini, "train", "replay_ratio"),
+         .total_timesteps = puf_ini_get(ini, "train", "total_timesteps"),
+@@ -2264,6 +2266,7 @@
+         int slice = vec->policy_layout[b + 1] - vec->policy_layout[b];
+         assert(slice > 0 && "policy has no agents");
+ 
++        puf_memoryless = puf_ini_get(ini, "policy", "memoryless") != 0;
+         pol->arch = build_arch(input_size, h, L,
+             decoder_output_size, is_continuous, hypers.horizon,
+             puf_ini_get_str(ini, "policy", "architecture"),
+@@ -2323,7 +2326,7 @@
+     cudaMalloc((void**)&pufferl->act_sizes, num_action_heads * sizeof(int));
+     cudaMalloc((void**)&pufferl->losses, NUM_LOSSES * sizeof(float));
+ 
+-    muon_init(&pufferl->muon, &primary->params_alloc, hypers.momentum, acts);
++    muon_init(&pufferl->muon, &primary->params_alloc, hypers.momentum, acts, hypers.optimizer == 1);
+ 
+     // Allocate all policy param/activ pools, then train grads + shared acts.
+     for (int b = 0; b < pufferl->num_policies; b++) {

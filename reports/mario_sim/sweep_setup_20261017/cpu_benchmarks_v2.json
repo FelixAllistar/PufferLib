@@ -1,0 +1,58 @@
+[
+  {
+    "case": "cpu_control_v2",
+    "returncode": 0,
+    "seconds": 60.04038134298753,
+    "sps_after_warmup": 297111.67269670684,
+    "max_vram_gb": 9.425659,
+    "steps": 15728640,
+    "agents": 4096,
+    "horizon": 128,
+    "width": 256,
+    "layers": 2,
+    "minibatch": 1024,
+    "command": [
+      "/workspace/PufferLib/puffer",
+      "train",
+      "--base.run_id=validation_sweep_20261017_cpu_control_v2",
+      "--base.result_fd=1",
+      "--base.checkpoint_interval=0",
+      "--train.total_timesteps=16000000",
+      "--vec.total_agents=4096",
+      "--vec.num_buffers=4",
+      "--train.horizon=128",
+      "--policy.hidden_size=256",
+      "--policy.num_layers=2",
+      "--train.minibatch_size=1024",
+      "--train.replay_ratio=1"
+    ]
+  },
+  {
+    "case": "cpu_32k_h16_v2",
+    "returncode": 0,
+    "seconds": 81.936960024992,
+    "sps_after_warmup": 407012.5915009698,
+    "max_vram_gb": 6.433472,
+    "steps": 31981568,
+    "agents": 32768,
+    "horizon": 16,
+    "width": 64,
+    "layers": 1,
+    "minibatch": 8192,
+    "command": [
+      "/workspace/PufferLib/puffer",
+      "train",
+      "--base.run_id=validation_sweep_20261017_cpu_32k_h16_v2",
+      "--base.result_fd=1",
+      "--base.checkpoint_interval=0",
+      "--train.total_timesteps=32000000",
+      "--vec.total_agents=32768",
+      "--vec.num_buffers=4",
+      "--train.horizon=16",
+      "--policy.hidden_size=64",
+      "--policy.num_layers=1",
+      "--train.minibatch_size=8192",
+      "--train.replay_ratio=1"
+    ]
+  }
+]

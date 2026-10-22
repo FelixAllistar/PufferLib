@@ -1,0 +1,132 @@
+<title>Magnet KL Reference</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: single reference column; definition, knobs, recipes, direction, schedule, code map. */
+:root {
+  --bg: #f5f7f6; --panel: #ffffff; --fg: #1a2422; --muted: #586662; --line: #d6dedb;
+  --accent: #2c6e63; --soft: #e3efec; --warn: #9a5b12;
+  --display: "Source Serif 4", Georgia, serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111816; --panel: #18211f; --fg: #e3ebe8; --muted: #98a8a3; --line: #2b3734;
+  --accent: #74c2b4; --soft: #1f2e2b; --warn: #e2a457; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111816; --panel: #18211f; --fg: #e3ebe8; --muted: #98a8a3; --line: #2b3734;
+  --accent: #74c2b4; --soft: #1f2e2b; --warn: #e2a457; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body); }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 34px; }
+h1 { font: 700 2.05rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 1.3rem/1.25 var(--display); margin: 0 0 10px; text-wrap: balance; }
+h3 { font: 600 .98rem/1.3 var(--body); margin: 0 0 4px; }
+p { margin: 0; max-width: 68ch; }
+p + p { margin-top: 10px; }
+.sub { color: var(--muted); margin-top: 8px; }
+.eyebrow { font: 600 .72rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+pre.eq { font: .92rem/1.55 var(--mono); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 12px 0 0; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin-top: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 .74rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td code, p code, li code { font: .86em var(--mono); background: var(--soft); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
+td.cfg { font-family: var(--mono); font-size: .82rem; white-space: nowrap; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; margin-top: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.card.key { border-color: var(--accent); }
+ul { margin: 8px 0 0; padding-left: 20px; max-width: 68ch; }
+li + li { margin-top: 4px; }
+a { color: var(--accent); }
+.note { color: var(--warn); font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">PufferLib · branch magnet-kl · 2026-10-20</div>
+    <h1>Magnet KL Reference</h1>
+    <p class="sub">One mechanism covers EMAgnet, BC anchors, uniform-ish anchors and plain entropy: pull the policy toward a reference policy with a KL penalty. This page lists what each setting does and how to reproduce each paper's method.</p>
+  </header>
+
+  <section>
+    <h2>The idea in one line</h2>
+    <p>Add a penalty to the PPO loss for drifting away from a <em>reference policy</em>. The paper calls the reference a <strong>magnet</strong>; other papers say <em>anchor</em> or <em>prior</em>. Everything else is three choices: which reference, which KL direction, and how strong the penalty is over training.</p>
+<pre class="eq">loss = PPO loss + magnet_coef · KL( magnet ‖ policy )      default (forward)
+loss = PPO loss + magnet_coef · KL( policy ‖ magnet )      magnet_reverse = 1
+
+after each full pass over the rollout:
+  magnet ← (1 − magnet_tau) · magnet + magnet_tau · policy</pre>
+  </section>
+
+  <section>
+    <h2>Settings</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>train.magnet_coef</code></td><td>Penalty strength. 0 turns the magnet off entirely; training is then bit-identical to before the feature.</td><td class="cfg">0</td></tr>
+        <tr><td><code>train.magnet_tau</code></td><td>How fast the magnet follows the learner, per pass over the rollout. 0 = frozen anchor. 1 = magnet equals the learner after every pass.</td><td class="cfg">0.01</td></tr>
+        <tr><td><code>base.magnet_path</code></td><td>Where the magnet starts. <code>None</code> = copy of the learner's starting weights. <code>random</code> = a fresh network, a near-uniform policy. A path = load those weights (e.g. a BC policy).</td><td class="cfg">None</td></tr>
+        <tr><td><code>train.magnet_reverse</code></td><td>0 = KL(magnet ‖ policy), mass-covering. 1 = KL(policy ‖ magnet), mode-seeking.</td><td class="cfg">0</td></tr>
+        <tr><td><code>train.anneal_magnet_coef</code></td><td>Cosine-anneal the strength from <code>magnet_coef</code> down to <code>magnet_coef × min_magnet_coef_ratio</code>, the same way <code>anneal_ent_coef</code> works.</td><td class="cfg">0</td></tr>
+        <tr><td><code>train.min_magnet_coef_ratio</code></td><td>End strength as a fraction of the start, when annealing.</td><td class="cfg">0.1</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:10px">Every checkpoint also saves the magnet as <code>&lt;checkpoint&gt;.magnet</code>, a normal weight file. The training log reports <code>loss/magnet_kl</code>. Discrete actions only. The magnet reuses the learner's stored recurrent start states, so any <code>replay_ratio</code> works.</p>
+  </section>
+
+  <section>
+    <h2>Recipes: each method as settings</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Method</th><th>Reference policy</th><th>Settings</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td><strong>EMAgnet</strong> (PPO-EMAg)</td><td>EMA of its own weights, slowly following the learner</td><td class="cfg">magnet_coef 0.01–32<br>magnet_tau 1e-5–0.1<br>magnet_path None</td><td><a href="https://arxiv.org/abs/2606.23995" target="_blank" rel="noopener">arXiv 2606.23995</a></td></tr>
+        <tr><td><strong>SPICE</strong>, BC anchor</td><td>Frozen behavior-cloned policy from human data</td><td class="cfg">magnet_coef 0.075<br>magnet_tau 0<br>magnet_path bc.bin</td><td><a href="https://arxiv.org/abs/2606.19370" target="_blank" rel="noopener">arXiv 2606.19370</a></td></tr>
+        <tr><td><strong>Ataraxos</strong>-style</td><td>Fixed near-uniform policy</td><td class="cfg">magnet_path random<br>magnet_tau 0<br>magnet_reverse 1<br>anneal_magnet_coef 1</td><td><a href="https://doi.org/10.1038/s41586-026-11036-y" target="_blank" rel="noopener">Nature 2026</a></td></tr>
+        <tr><td><strong>Your old recipe</strong></td><td>Frozen anchor kept strong, then annealed in a fine-tune</td><td class="cfg">run 1: anneal off, high coef<br>run 2: load run 1, anneal on</td><td>5c experiments</td></tr>
+        <tr><td>Plain entropy bonus</td><td>Exact uniform</td><td class="cfg">ent_coef (existing)</td><td>Already in PPO</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:10px">Ataraxos annealed with a power law; ours anneals with a cosine. Same shape idea: strong early, weak late. The Ataraxos reference is "pick a movable piece, then a legal move, uniformly", not a random network. <code>random</code> is the closest zero-effort stand-in.</p>
+  </section>
+
+  <section>
+    <h2>Which KL direction</h2>
+    <div class="two">
+      <div class="card key">
+        <h3>Forward: KL(magnet ‖ policy) <span class="eyebrow">default</span></h3>
+        <p>Penalizes the policy for dropping actions the magnet still plays. It keeps mixing alive and prevents collapse onto one strategy. This is what EMAgnet and SPICE use, and it suits games where you want to stay unexploitable.</p>
+      </div>
+      <div class="card">
+        <h3>Reverse: KL(policy ‖ magnet)</h3>
+        <p>Penalizes the policy for doing things the magnet would not. It keeps behavior inside what the reference considers reasonable: human-like, or a safe set. With a uniform reference, it is the entropy bonus up to a constant.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Strength over training</h2>
+    <ul>
+      <li><strong>Moving reference</strong> (<code>magnet_tau &gt; 0</code>): constant strength is fine. The target moves with the policy and stops pulling toward bad actions once the policy drops them. This is why EMAgnet beats annealed entropy in games with dominated strategies.</li>
+      <li><strong>Fixed reference</strong> (<code>magnet_tau = 0</code>): usually anneal. Otherwise the anchor holds the policy back late in training. Ataraxos found that annealing too fast gave quick gains but collapsed entropy.</li>
+      <li><strong>Evaluate the magnet too.</strong> EMAgnet's magnet often beats the last iterate (0.007 vs 0.015 on 4-card Goofspiel). Ataraxos also found the EMA of weights at least as good, with less seed variance. The Goofspiel eval scores both and keeps the better one.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Where it lives</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>What</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Commits</td><td>Branch <code>magnet-kl</code> on your fork: <code>04eb8a4e1</code> magnet KL, <code>e8ddd31dc</code> remove Kaggriculture teacher, <code>43e8974db</code> reverse KL + random magnet. Not merged into 5.0.</td></tr>
+        <tr><td>Kernel</td><td><code>src/algo.cu</code>, <code>ppo_loss_compute</code>: the KL gradient and the <code>loss/magnet_kl</code> slot</td></tr>
+        <tr><td>Trainer</td><td><code>src/pufferl.cu</code>: magnet allocation, forward pass, per-pass EMA, schedule, init/load, saving</td></tr>
+        <tr><td>Defaults</td><td><code>config/default.ini</code>, <code>[base]</code> and <code>[train]</code></td></tr>
+        <tr><td>Test</td><td><code>tests/check_magnet.sh</code>: off = bit-identical, τ=0 holds, τ=1 tracks, reverse trains, random is fresh</td></tr>
+        <tr><td>In use</td><td>Goofspiel mega sweep on Vast (<code>/workspace/PufferLib-mega</code>, tmux <code>mega</code>), searching coef, τ and annealing. Reverse and random are not in that sweep.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>

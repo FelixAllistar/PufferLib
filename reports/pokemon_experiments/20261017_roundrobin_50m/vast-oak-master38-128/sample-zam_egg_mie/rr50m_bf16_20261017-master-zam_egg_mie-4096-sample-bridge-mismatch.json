@@ -1,0 +1,86 @@
+{
+  "game": 1,
+  "step": 47,
+  "native_result": 80,
+  "oak_result": 80,
+  "choices": [
+    5,
+    13
+  ],
+  "native": "3901c600bc00520170015e0e4520561f691f39014041cc64890120010c01d0005c015e0a4f164810990889000567ca644301f8000c0148012a015e063b08561f691f0e014079c964bf026c006c00c60034013a105517562087100000007100640b023e01e4009e00e4002216780873209c10cb00408f006461012a0120013e01ee002217590f3b083f050000008000640b023e01e4002700e4008f000000000000000000000000002216780873209c1005010602030422224301f8000c0148012a01691c561d3b045e0eac004079c964890120010c01d0005c014f175e0f99074e3000000067ca649d0166015201b200bc00590f9d102217a410000000705464bf026c006c00c60034012f18451d870f561f7400407100640b023e01e4009e00e400221873209c1078080000008f006461012a0120013e01ee0022183f063b0859100000008000644301f8000c0152002a0179c9000000000000000000000000691c561d3b045e0e0106030405023b3b2c0076000101030050f9614b8605d5af",
+  "oak": "3901c600bc00520170015e0e4520561f691f39014041cc64890120010c01d0005c015e0a4f164810990889000567ca644301f8000c0148012a015e063b08561f691f0e014079c964bf026c006c00c60034013a105517562087100000007100640b023e01e4009e00e4002217780873209c10cb00408f006461012a0120013e01ee002217590f3b083f050000008000640b023e01e4002700e4008f000000000000000000000000002217780873209c1005010602030422004301f8000c0148012a01691c561d3b045e0e22014079c964890120010c01d0005c014f175e0f99074e3000000067ca649d0166015201b200bc00590f9d102217a410000000705464bf026c006c00c60034012f18451d870f561f7400407100640b023e01e4009e00e400221873209c1078080000008f006461012a0120013e01ee0022183f063b0859100000008000644301f8000c0152002a0179c9000000000000000000000000691c561d3b045e0e0106030405023b3b2c00dc0001010300c5c6b6c43b4d511f",
+  "different_bytes": [
+    [
+      107,
+      22,
+      23
+    ],
+    [
+      169,
+      22,
+      23
+    ],
+    [
+      183,
+      34,
+      0
+    ],
+    [
+      202,
+      172,
+      34
+    ],
+    [
+      203,
+      0,
+      1
+    ],
+    [
+      370,
+      118,
+      220
+    ],
+    [
+      376,
+      80,
+      197
+    ],
+    [
+      377,
+      249,
+      198
+    ],
+    [
+      378,
+      97,
+      182
+    ],
+    [
+      379,
+      75,
+      196
+    ],
+    [
+      380,
+      134,
+      59
+    ],
+    [
+      381,
+      5,
+      77
+    ],
+    [
+      382,
+      213,
+      81
+    ],
+    [
+      383,
+      175,
+      31
+    ]
+  ],
+  "native_text": "(spe 158>>39) \nSnorlax: 39% (203/523) PAR BodySlam:22 SelfDestruct:8 Reflect:32 Rest:16 \n  Alakazam: 100% (313/313) PAR Psychic:14 SeismicToss:32 ThunderWave:31 Recover:31 \n  Tauros: KO \n  Exeggutor: 35% (137/393) SLP:0 Psychic:10 SleepPowder:22 MegaDrain:16 Explosion:8 \n  Starmie: 84% (270/323) PAR Psychic:6 Blizzard:8 ThunderWave:31 Recover:31 \n  Chansey: KO \n|| used: BodySlam/34 selected: BodySlam/34 [Counterable - 1] (5 1 6 2 3 4 )\n--- --- --- 44 --- --- ---\n(spe 328>>82) \nStarmie: 54% (172/323) PAR Recover:28 ThunderWave:29 Blizzard:4 Psychic:14 \n  Tauros: KO \n  Rhydon: KO \n  Chansey: 17% (116/703) PAR Sing:24 SeismicToss:29 SoftBoiled:15 ThunderWave:31 \n  Snorlax: KO \n  Exeggutor: KO \n|| used: Blizzard/59 selected: Blizzard/59 [Not Counterable - 3] (1 6 3 4 5 2 )\n---\nlast_damage: 118\n",
+  "oak_text": "(spe 158>>39) \nSnorlax: 39% (203/523) PAR BodySlam:23 SelfDestruct:8 Reflect:32 Rest:16 \n  Alakazam: 100% (313/313) PAR Psychic:14 SeismicToss:32 ThunderWave:31 Recover:31 \n  Tauros: KO \n  Exeggutor: 35% (137/393) SLP:0 Psychic:10 SleepPowder:22 MegaDrain:16 Explosion:8 \n  Starmie: 84% (270/323) PAR Psychic:6 Blizzard:8 ThunderWave:31 Recover:31 \n  Chansey: KO \n|| used: None/0 selected: BodySlam/34 [Counterable - 1] (5 1 6 2 3 4 )\n--- --- --- 44 --- --- ---\n(spe 328>>82) \nStarmie: 90% (290/323) PAR Recover:28 ThunderWave:29 Blizzard:4 Psychic:14 \n  Tauros: KO \n  Rhydon: KO \n  Chansey: 17% (116/703) PAR Sing:24 SeismicToss:29 SoftBoiled:15 ThunderWave:31 \n  Snorlax: KO \n  Exeggutor: KO \n|| used: Blizzard/59 selected: Blizzard/59 [Not Counterable - 3] (1 6 3 4 5 2 )\n---\nlast_damage: 220\n"
+}

@@ -1,0 +1,128 @@
+{
+  "direct_log_directories": [
+    {
+      "env": "abyss",
+      "ini_logs": 125,
+      "sweep_logs": 56
+    },
+    {
+      "env": "bomberman",
+      "ini_logs": 237,
+      "sweep_logs": 166
+    },
+    {
+      "env": "breakout",
+      "ini_logs": 2,
+      "sweep_logs": 0
+    },
+    {
+      "env": "goofspiel",
+      "ini_logs": 1427,
+      "sweep_logs": 1121
+    },
+    {
+      "env": "mario_fpg",
+      "ini_logs": 3,
+      "sweep_logs": 0
+    },
+    {
+      "env": "mario_fpg_time",
+      "ini_logs": 17,
+      "sweep_logs": 3
+    },
+    {
+      "env": "mario_sim",
+      "ini_logs": 14,
+      "sweep_logs": 7
+    },
+    {
+      "env": "pokemon",
+      "ini_logs": 22,
+      "sweep_logs": 0
+    },
+    {
+      "env": "poker",
+      "ini_logs": 1,
+      "sweep_logs": 0
+    },
+    {
+      "env": "puffer_survivors",
+      "ini_logs": 364,
+      "sweep_logs": 318
+    },
+    {
+      "env": "retro",
+      "ini_logs": 312,
+      "sweep_logs": 32
+    },
+    {
+      "env": "shenaniguns3d",
+      "ini_logs": 165,
+      "sweep_logs": 19
+    },
+    {
+      "env": "swat",
+      "ini_logs": 1,
+      "sweep_logs": 0
+    },
+    {
+      "env": "trianglepath",
+      "ini_logs": 64,
+      "sweep_logs": 44
+    },
+    {
+      "env": "webnav",
+      "ini_logs": 2,
+      "sweep_logs": 0
+    },
+    {
+      "env": "webnav_catalog",
+      "ini_logs": 1,
+      "sweep_logs": 0
+    },
+    {
+      "env": "webnav_email",
+      "ini_logs": 1,
+      "sweep_logs": 0
+    },
+    {
+      "env": "webnav_family",
+      "ini_logs": 13,
+      "sweep_logs": 0
+    },
+    {
+      "env": "webnav_forms",
+      "ini_logs": 11,
+      "sweep_logs": 0
+    },
+    {
+      "env": "webnav_navigation",
+      "ini_logs": 2,
+      "sweep_logs": 0
+    },
+    {
+      "env": "webnav_numeric",
+      "ini_logs": 2,
+      "sweep_logs": 0
+    },
+    {
+      "env": "webnav_unified",
+      "ini_logs": 3,
+      "sweep_logs": 0
+    }
+  ],
+  "impulse_wars": {
+    "logs": 0,
+    "checkpoints": 0,
+    "empty_run_dirs": [
+      "1791928000888",
+      "1791932956758",
+      "1791933063804",
+      "1791933238922"
+    ]
+  },
+  "notes": [
+    "Counts cover direct logs/ENV/*.ini files; nested reports and archived symlink directories are excluded.",
+    "Temporary diagnostic output from the previous Impulse Wars checks is no longer present in /tmp."
+  ]
+}

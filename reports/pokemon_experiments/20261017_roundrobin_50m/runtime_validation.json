@@ -1,0 +1,18 @@
+{
+  "league": "leagues/pokemon/rr50m_bf16_20261017",
+  "completed_rounds": 0,
+  "current_round": 1,
+  "published_members": [
+    "master"
+  ],
+  "master_updated_sha256": "0624d170ccfcb6ff8cbed39edf60b650ae2f1c121a43e9cdfa7082368402965e",
+  "specialist_consumes_updated_master": true,
+  "native_stages_verified": [
+    "r000001-master-a001",
+    "r000001-zam_egg_mie-a001"
+  ],
+  "oak_disabled": true,
+  "automatic_evaluations_disabled": true,
+  "binary_sha256": "07849fd021b6534648cdbcddf98375ae855a9e31c12b5f9829c607d0a2f93a78",
+  "league_manager_sha256": "b8d6cf4577c1cd2cacedc079cd46e136f390a6a308818be97b0940f2cbf2fd28"
+}

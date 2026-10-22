@@ -1,0 +1,120 @@
+--- orig/algo.cu	2026-10-21 08:30:10.365423267 -0400
++++ algo.cu	2026-10-21 08:35:00.501073053 -0400
+@@ -749,6 +749,16 @@
+     }
+ }
+ 
++// policy.memoryless: the recurrent state is zeroed before every step (rollout) and
++// every step is a scan reset (training), so the MinGRU acts as a gated feedforward net.
++static bool puf_memoryless = false;
++static precision_t* puf_memoryless_ones = NULL;
++static long puf_memoryless_n = 0;
++__global__ void puf_fill_ones(precision_t* dst, long n) {
++    long idx = (long)blockIdx.x * blockDim.x + threadIdx.x;
++    if (idx < n) dst[idx] = from_float(1.0f);
++}
++
+ void mingru_reg_train(void* w, void* activations,
+         Allocator* acts, Allocator* grads, int B_TT) {
+     MinGRUWeights* m = (MinGRUWeights*)w;
+@@ -762,6 +772,14 @@
+     a->grad_next_state = {.shape = {B, 1, H}};
+     alloc_register(acts, &a->grad_input_buf);
+     alloc_register(acts, &a->grad_next_state);
++    // Allocated here, outside graph capture: an all-ones terminal mask for the scan.
++    if (puf_memoryless && (long)B_TT > puf_memoryless_n) {
++        cudaFree(puf_memoryless_ones);
++        cudaMalloc((void**)&puf_memoryless_ones, (long)B_TT * sizeof(precision_t));
++        puf_fill_ones<<<grid_size(B_TT), BLOCK_SIZE>>>(puf_memoryless_ones, B_TT);
++        cudaDeviceSynchronize();
++        puf_memoryless_n = B_TT;
++    }
+     for (int i = 0; i < m->num_layers; i++) {
+         a->scan_bufs[i] = {
+             .B = B, .T = TT, .H = H,
+@@ -821,6 +839,7 @@
+     int H = state.shape[2];
+     for (int i = 0; i < m->num_layers; i++) {
+         Prec state_i = mingru_state_layer(state, i, 0, B);
++        if (puf_memoryless) cudaMemsetAsync(state_i.data, 0, (size_t)B * H * sizeof(precision_t), stream);
+         puf_mm(&x, &m->weights[i], &a->combined[i], stream);
+         mingru_gate<<<grid_size(B*H), BLOCK_SIZE, 0, stream>>>(
+             a->out.data, a->next_state.data,
+@@ -845,6 +864,10 @@
+         scan.state_ptr = state_i.data;
+         scan.input_ptr = a->saved_inputs[i].data;
+         scan.terminals_ptr = terminals.data;
++        if (puf_memoryless) {
++            assert((long)scan.B * scan.T <= puf_memoryless_n && "memoryless mask smaller than the minibatch");
++            scan.terminals_ptr = puf_memoryless_ones;
++        }
+         if (scan.T >= 256 && scan.B * scan.H <= 32768
+                 || scan.T >= 128 && scan.H <= 32) {
+             dim3 block(MINGRU_TILE, MINGRU_TILE);
+@@ -1129,6 +1152,27 @@
+     }
+ }
+ 
++// Adam alternative (train.optimizer = 1): count the step on device so graphs replay it.
++__global__ void adam_count(int* step) { *step += 1; }
++
++// Global grad clip by L2, then Adam moments (beta1 = momentum) and the
++// bias-corrected update written back into the flat grad buffer.
++__global__ void adam_moments(float* __restrict__ mb, float* __restrict__ vb,
++        precision_t* __restrict__ gc, const float* __restrict__ sum_sq_ptr,
++        const int* __restrict__ step, float max_norm, float b1, float b2, int n) {
++    float clip_coef = fminf(max_norm / (sqrtf(*sum_sq_ptr) + 1e-6f), 1.0f);
++    int idx = blockIdx.x * blockDim.x + threadIdx.x;
++    if (idx < n) {
++        float g = to_float(gc[idx]) * clip_coef;
++        float m = b1 * mb[idx] + (1.0f - b1) * g;
++        float v = b2 * vb[idx] + (1.0f - b2) * g * g;
++        mb[idx] = m; vb[idx] = v;
++        float t = (float)*step;
++        float mh = m / (1.0f - powf(b1, t)), vh = v / (1.0f - powf(b2, t));
++        gc[idx] = from_float(mh / (sqrtf(vh) + 1e-8f));
++    }
++}
++
+ constexpr double ns_coeffs[5][3] = {
+     {4.0848, -6.8946, 2.9270},
+     {3.9505, -6.3029, 2.6377},
+@@ -1149,11 +1193,21 @@
+     Float mb;              // flat momentum buffer (param-sized)
+     Prec gram, gram_buf, x_buf;
+     Allocator* param_alloc;
++    bool adam;             // train.optimizer = 1: Adam instead of Newton-Schulz
++    Float vb;              // Adam second moment (param-sized)
++    int* step;
+ };
+ 
+-void muon_init(Muon* m, Allocator* param_alloc, double momentum, Allocator* alloc) {
++void muon_init(Muon* m, Allocator* param_alloc, double momentum, Allocator* alloc, bool adam = false) {
+     m->momentum = momentum;
+     m->param_alloc = param_alloc;
++    m->adam = adam;
++    if (adam) {
++        m->vb = {.shape = {param_alloc->total_elems}};
++        alloc_register(alloc, &m->vb);
++        cudaMalloc((void**)&m->step, sizeof(int));
++        cudaMemset(m->step, 0, sizeof(int));
++    }
+     cudaMalloc((void**)&m->lr, sizeof(float));
+     cudaMalloc((void**)&m->grad_norm, sizeof(float));
+     cudaMalloc((void**)&m->ns_norm, sizeof(float));
+@@ -1185,6 +1239,15 @@
+         m->norm_partials, grads.data, n_grad);
+     muon_sum_sq_reduce<<<1, 256, 0, stream>>>(
+         m->grad_norm, m->norm_partials, sum_blocks);
++    if (m->adam) {
++        adam_count<<<1, 1, 0, stream>>>(m->step);
++        adam_moments<<<grid_size(n_grad), BLOCK_SIZE, 0, stream>>>(
++            m->mb.data, m->vb.data, grads.data, m->grad_norm, m->step,
++            max_grad_norm, (float)m->momentum, 0.999f, n_grad);
++        muon_weight_update<<<grid_size(n_grad), BLOCK_SIZE, 0, stream>>>(
++            weights.data, grads.data, m->lr, 0.0f, n_grad);
++        return;
++    }
+     muon_clip_nesterov<<<grid_size(n_grad), BLOCK_SIZE, 0, stream>>>(
+         m->mb.data, grads.data, m->grad_norm,
+         max_grad_norm, 1e-6f, (float)m->momentum, n_grad);

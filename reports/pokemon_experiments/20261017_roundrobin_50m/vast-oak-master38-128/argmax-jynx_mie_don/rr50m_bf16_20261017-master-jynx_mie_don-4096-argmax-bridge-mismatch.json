@@ -1,0 +1,106 @@
+{
+  "game": 1,
+  "step": 36,
+  "native_result": 80,
+  "oak_result": 128,
+  "choices": [
+    5,
+    13
+  ],
+  "native": "4d01c600a800200120018e0f5e103b059c104d01057ccd644301f8000c0148012a015e0d3b08561f691543014079c9649d0166015201b200bc0059092218a4109d10d60000705464bf026c006c00c60034013a10551856208710bf02007100640b023e01e4009e00e4002218780873209c100b02008f006461012a0120013e01ee00221859103b083f050000008000649d0166015201b200bc00705400000000000000000000000059092218a4109d1003060204050159594301f8000c0148012a01692056203b085e1043010079c964890120010c01d0005c014f175e0f99084e3000000067ca649d0166015201b200bc0059109d102218a410000000705464bf026c006c00c60034012f184514870d561f0000007100640b023e01e4009e00e400221673209c0f78080b02828f006461012a0120013e01ee0022173f073b0859100000008000640b023e01e4009e00e4008f00000000000000000000000000221673209c0f78080503010604029c9c210000000100030016bb9d334e22e2ad",
+  "oak": "4d01c600a800200120018e0f5e103b059c104d01057ccd644301f8000c0148012a015e0d3b08561f691543014079c9649d0166015201b200bc0059092218a4109d10d60000705464bf026c006c00c60034013a10551856208710bf02007100640b023e01e4009e00e4002218780873209c100b02008f006461012a0120013e01ee00221859103b083f050000008000649d0166015201b200bc00705400000000000000000000000059092218a4109d1003060204050159004301f8000c0148012a01692056203b085e1043010079c964890120010c01d0005c014f175e0f99084e3000000067ca649d0166015201b200bc0059109d102218a410000000705464bf026c006c00c60034012f184514870d561f0000007100640b023e01e4009e00e400221673209c1078080000008f006461012a0120013e01ee0022173f073b0859100000008000640b023e01e4009e00e4008f00000000000000000000000000221673209c1078080503010604029c00200009000100030171341a2c6518dddb",
+  "different_bytes": [
+    [
+      183,
+      89,
+      0
+    ],
+    [
+      295,
+      15,
+      16
+    ],
+    [
+      298,
+      11,
+      0
+    ],
+    [
+      299,
+      2,
+      0
+    ],
+    [
+      300,
+      130,
+      0
+    ],
+    [
+      357,
+      15,
+      16
+    ],
+    [
+      367,
+      156,
+      0
+    ],
+    [
+      368,
+      33,
+      32
+    ],
+    [
+      370,
+      0,
+      9
+    ],
+    [
+      375,
+      0,
+      1
+    ],
+    [
+      376,
+      22,
+      113
+    ],
+    [
+      377,
+      187,
+      52
+    ],
+    [
+      378,
+      157,
+      26
+    ],
+    [
+      379,
+      51,
+      44
+    ],
+    [
+      380,
+      78,
+      101
+    ],
+    [
+      381,
+      34,
+      24
+    ],
+    [
+      382,
+      226,
+      221
+    ],
+    [
+      383,
+      173,
+      219
+    ]
+  ],
+  "native_text": "Rhydon: 52% (214/413) Earthquake:9 BodySlam:24 Substitute:16 RockSlide:16 \n  Tauros: KO \n  Starmie: 100% (323/323) PAR Psychic:13 Blizzard:8 ThunderWave:31 Recover:21 \n  Chansey: 100% (703/703) IceBeam:16 Thunderbolt:24 ThunderWave:32 SoftBoiled:16 \n  Snorlax: 100% (523/523) BodySlam:24 SelfDestruct:8 Reflect:32 Rest:16 \n  Jynx: 100% (333/333) SLP:0 LovelyKiss:15 Psychic:16 Blizzard:5 Rest:16 \n|| used: Earthquake/89 selected: Earthquake/89 [Not Counterable - 1] (3 6 2 4 5 1 )\n--- --- --- 33 --- --- ---\nSnorlax: 100% (523/523) RST:2 BodySlam:22 Reflect:32 Rest:15 SelfDestruct:8 \n  Rhydon: KO \n  Starmie: 100% (323/323) Recover:32 ThunderWave:32 Blizzard:8 Psychic:16 \n  Tauros: KO \n  Chansey: KO \n  Exeggutor: KO \n|| used: Rest/156 selected: Rest/156 [Not Counterable - 3] (5 3 1 6 4 2 )\n---\nlast_damage: 0\n",
+  "oak_text": "Rhydon: 52% (214/413) Earthquake:9 BodySlam:24 Substitute:16 RockSlide:16 \n  Tauros: KO \n  Starmie: 100% (323/323) PAR Psychic:13 Blizzard:8 ThunderWave:31 Recover:21 \n  Chansey: 100% (703/703) IceBeam:16 Thunderbolt:24 ThunderWave:32 SoftBoiled:16 \n  Snorlax: 100% (523/523) BodySlam:24 SelfDestruct:8 Reflect:32 Rest:16 \n  Jynx: 100% (333/333) SLP:0 LovelyKiss:15 Psychic:16 Blizzard:5 Rest:16 \n|| used: None/0 selected: Earthquake/89 [Not Counterable - 1] (3 6 2 4 5 1 )\n--- --- --- 32 --- --- ---\nSnorlax: KO \n  Rhydon: KO \n  Starmie: 100% (323/323) Recover:32 ThunderWave:32 Blizzard:8 Psychic:16 \n  Tauros: KO \n  Chansey: KO \n  Exeggutor: KO \n|| used: None/0 selected: Rest/156 [Counterable - 3] (5 3 1 6 4 2 )\n---\nlast_damage: 9\n"
+}

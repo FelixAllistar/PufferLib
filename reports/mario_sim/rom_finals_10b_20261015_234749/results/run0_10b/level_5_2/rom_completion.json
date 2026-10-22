@@ -1,0 +1,41 @@
+{
+  "rom_valid": true,
+  "native_parity_valid": false,
+  "episodes_requested": 32,
+  "episodes_completed": 32,
+  "rom_successes": 10,
+  "deaths": 22,
+  "timeouts": 0,
+  "mean_success_frames": 2605.6,
+  "parity_checked_complete_episodes": 30,
+  "rom_only_completed_episodes": [
+    30,
+    31
+  ],
+  "control_episode_29_exact_case_and_trace_match": true,
+  "episode_30_trace_before_parity_failure_matches": true,
+  "native_failure": {
+    "episode": 30,
+    "scene": 17,
+    "frames": 2010,
+    "native_status": 0,
+    "start_world": 5,
+    "start_level": 2,
+    "rom_status": 0,
+    "failure": "native_state",
+    "field": 2048,
+    "start_x": 40,
+    "max_overworld_x": 2047,
+    "final_x": 2049,
+    "touched_flag": false,
+    "fpg": false,
+    "level_clear": false,
+    "progress_pixels": 0,
+    "checkpoints": 0,
+    "life_losses": 0,
+    "clears": 0,
+    "episode_return": 0
+  },
+  "source_tail": "/home/felix/puffertank/pufferlib/reports/mario_sim/rom_finals_10b_20261015_234749/rom_only_5_2_tail",
+  "checkpoint_sha256": "cebb85725e8f61ba24e6c2bd5d4c5cbaada1dcf339bde0cb802377f15ab0b4f1"
+}

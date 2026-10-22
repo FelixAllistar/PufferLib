@@ -1,0 +1,172 @@
+<title>Goofspiel Experiment DAG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: one reading column; status strip, then DAG, then evidence tables and the decision list. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --fg: #1b2230; --muted: #5a6475; --line: #d9dee7;
+  --accent: #2f5d8a; --done: #2f7a55; --run: #a86a12; --plan: #5f4fa3; --risk: #b23b3b;
+  --display: "Source Serif 4", Georgia, serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --panel: #1a2029; --fg: #e5e9f0; --muted: #9aa4b5; --line: #2e3643;
+  --accent: #7fb0e0; --done: #5fbf8a; --run: #e0a54a; --plan: #a99be8; --risk: #ec7a7a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --panel: #1a2029; --fg: #e5e9f0; --muted: #9aa4b5; --line: #2e3643;
+  --accent: #7fb0e0; --done: #5fbf8a; --run: #e0a54a; --plan: #a99be8; --risk: #ec7a7a; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 36px; }
+h1 { font: 700 2.1rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 1.35rem/1.25 var(--display); margin: 0 0 12px; text-wrap: balance; }
+h3 { font: 600 1rem/1.3 var(--body); margin: 0 0 6px; }
+p { margin: 0; max-width: 68ch; }
+.sub { color: var(--muted); margin-top: 8px; }
+.eyebrow { font: 600 .72rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 4px; }
+.stat .v { font: 600 1.6rem/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.stat .n { color: var(--muted); font-size: .85rem; }
+.diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: .85rem; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 .75rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; font: 600 .7rem/1 var(--mono); padding: 4px 7px; border-radius: 99px; border: 1px solid var(--c); color: var(--c); white-space: nowrap; }
+.list { display: grid; gap: 12px; }
+.item { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 6px; padding: 12px 14px; display: grid; gap: 6px; min-width: 0; }
+code { font: .85em var(--mono); background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 1px 5px; border-radius: 4px; }
+pre.eq { font: .9rem/1.5 var(--mono); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 0; }
+a { color: var(--accent); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">4-card Goofspiel · exact exploitability · lower is better</div>
+    <h1>Goofspiel Experiment DAG</h1>
+    <p class="sub">Everything run so far, what each step showed, and the branches still open. As of 2026-10-20. The transformer sweep is still running on Vast (99 of 500 trials).</p>
+  </header>
+
+  <section class="strip" aria-label="Best results">
+    <div class="stat"><span class="eyebrow">Best transformer</span><span class="v">0.0371</span><span class="n">trial 45, 32×4, 8 heads, exact exploiter on</span></div>
+    <div class="stat"><span class="eyebrow">Best PufferNet</span><span class="v">0.0597</span><span class="n">trial 406 of 500, 128×4, exact exploiter off</span></div>
+    <div class="stat"><span class="eyebrow">Paper, PPO-EMAg magnet</span><span class="v">0.007</span><span class="n">EMAgnet, 4-card Goofspiel, 2M steps, 24 seeds. Our game matches OpenSpiel's default.</span></div>
+    <div class="stat"><span class="eyebrow">Paper, PPO + entropy</span><span class="v">0.031</span><span class="n">uniform magnet, linear anneal, 2M steps</span></div>
+  </section>
+
+  <section>
+    <h2>Experiment graph</h2>
+    <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+  P0["5c port + exact evaluator<br/>Oct 13–14, GTX 1060"]:::done
+  P1["Pilot: PufferNet 32×2 vs Transformer<br/>both ≈0.50, transformer 9× slower"]:::done
+  S1["Broad sweep, 17 trials (interrupted)<br/>best 0.263; slow deep/tiny-minibatch trials"]:::done
+  FX["Protein minimize bug fixed<br/>GP had preferred higher exploitability"]:::done
+  PN["PufferNet sweep, 500 trials<br/>Oct 19, local GTX 1060, 34 dims<br/>best 0.0597 (128×4)"]:::done
+  CFG["Winner written into config/goofspiel.ini<br/>(cudagraphs 0, reset_every_horizon 1)"]:::done
+  TX["Transformer sweep, Vast RTX 5060 Ti<br/>same ranges, starts from PufferNet winner<br/>99 trials, best 0.0371"]:::run
+  CF{{"Confounds: GPU, start point,<br/>exact exploiter, CUDA graphs off"}}:::risk
+  H2H["Head-to-head control<br/>6 configs × 3 seeds, one GPU"]:::plan
+  GAME["Game + metric match OpenSpiel default<br/>uniform 0.7465 in both"]:::done
+  EM["PPO-EMAg implemented (branch magnet-kl)<br/>magnet KL, per-pass EMA, cosine anneal"]:::done
+  SP["Transformer speed: graphs on/off identical<br/>61.6K vs PufferNet 726K steps/s"]:::done
+  MEGA["Mega sweep, RTX 5060 Ti (running)<br/>PufferNet ×1000 then Transformer ×500<br/>39 dims incl. magnet + run length"]:::run
+  P0 --> P1 --> S1 --> FX --> PN --> CFG --> TX --> CF
+  CF -.-> H2H
+  CF -.-> GAME
+  GAME --> EM
+  H2H --> MEGA
+  EM --> MEGA
+  SP --> MEGA
+  classDef done fill:#d9efe3,stroke:#2f7a55,color:#13241b;
+  classDef run fill:#f8e6c8,stroke:#a86a12,color:#2b1d06;
+  classDef plan fill:#e6e1f7,stroke:#5f4fa3,color:#1e1838;
+  classDef risk fill:#f6d9d9,stroke:#b23b3b,color:#2e1010;
+</pre>
+      <div class="legend">
+        <span style="--c: var(--done)">Done</span><span style="--c: var(--run)">Running</span>
+        <span style="--c: var(--plan)">Proposed</span><span style="--c: var(--risk)">Problem found</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What each step found</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Step</th><th>Hardware</th><th>Trials</th><th>Best</th><th>Takeaway</th></tr></thead>
+      <tbody>
+        <tr><td>Pilot (Oct 13)</td><td>GTX 1060</td><td class="num">3 seeds each</td><td class="num">0.503 / 0.503</td><td>Both models learn. No strength difference; the unfused transformer is about 9× slower.</td></tr>
+        <tr><td>Broad sweep</td><td>GTX 1060</td><td class="num">17</td><td class="num">0.263</td><td>Deep models with tiny minibatches ate 92% of wall time. Ranges were narrowed after this.</td></tr>
+        <tr><td>PufferNet sweep</td><td>GTX 1060</td><td class="num">500</td><td class="num">0.0597</td><td>Winner: 128×4, lr 0.0066, replay 7.4. The exact exploiter was tried only 3 times, all in the first 10 random trials, and never again.</td></tr>
+        <tr><td>Transformer sweep</td><td>RTX 5060 Ti</td><td class="num">99 (running)</td><td class="num">0.0371</td><td>Winners are small (32 wide) with the exact exploiter on. LR, clip and entropy sit at their range edges (0.0005, 0.005, ~0.05).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Why the current comparison isn't fair yet</h2>
+    <div class="list">
+      <div class="item" style="--c: var(--risk)"><h3>Different GPUs</h3><p>PufferNet was swept on the local GTX 1060 (3 GB visible), the transformer on a 16 GB RTX 5060 Ti. Memory limits shaped which settings PufferNet could even try.</p></div>
+      <div class="item" style="--c: var(--risk)"><h3>Different starting points</h3><p>The transformer sweep's first trial was PufferNet's tuned winner; PufferNet's sweep started from the old 32×2 defaults. Search ranges were otherwise identical.</p></div>
+      <div class="item" style="--c: var(--risk)"><h3>Exact exploiter</h3><p>Both transformer winners train against exact best-response opponents. PufferNet never really tested that option, so 0.037 vs 0.060 mixes architecture with training setup.</p></div>
+      <div class="item" style="--c: var(--risk)"><h3>CUDA graphs off</h3><p>The transformer sweep inherited <code>cudagraphs = 0</code> from the config, which costs a lot of speed. Graphs were turned off because they used too much GPU memory; that needs a real fix.</p></div>
+      <div class="item" style="--c: var(--risk)"><h3>Budget</h3><p>We train 50M steps per run. The paper reaches 0.007 in 2M steps on what is very likely the same game: our rules are OpenSpiel's default 4-card Goofspiel (past bids visible, random prizes, win/loss), and both compute uniform play at exploitability 0.7465. So the gap is in our training setup, not the game.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>PPO-EMAg, as the paper defines it</h2>
+    <p>Source: <a href="https://arxiv.org/abs/2606.23995" target="_blank" rel="noopener">EMAgnet (Maidment et al., arXiv 2606.23995)</a>, Section 3.1, Algorithm 1 and Table 2.</p>
+    <div class="two" style="margin-top:12px">
+      <pre class="eq">L(θ) = L_PPO(θ)
+     + λ_KL · E_z[ KL( π_mag(·|z) ‖ π_θ(·|z) ) ]
+
+after each PPO epoch (one full pass
+over the rollout's minibatches):
+  θ_mag ← (1 − τ) θ_mag + τ θ
+
+init: θ_mag ← θ (same random weights)</pre>
+      <div class="list">
+        <div class="item" style="--c: var(--accent)"><h3>Update timing</h3><p>Once per pass over the buffer, not once per rollout and not after every gradient step. With our replay ratio of ~4–7, that is ~4–7 magnet updates per rollout.</p></div>
+        <div class="item" style="--c: var(--accent)"><h3>Paper's search ranges</h3><p>λ_KL 0.01–32, τ 1e-5–0.1, entropy 1e-4–0.1 (anneal on/off), lr 1e-7–0.01, clip 1e-4–0.4, GAE λ 0.6–1, VF coef 0.1–5. 700 samples × 3 seeds per method.</p></div>
+        <div class="item" style="--c: var(--accent)"><h3>Evaluate both policies</h3><p>The magnet itself often beats the last iterate (0.007 vs 0.015 in 4-card Goofspiel). We should save and score the magnet every eval.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Our EMAg design</h2>
+    <p>Reuse the existing teacher-KL code (<code>ocean/kaggriculture_direct/teacher.cuh</code>). It already computes KL(teacher ‖ learner) per minibatch with its own recurrent state; it needs to become generic and gain the EMA update.</p>
+    <div class="tbl" style="margin-top:12px"><table>
+      <thead><tr><th>Setting</th><th>Meaning</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>emag.coef</code></td><td>Magnet strength λ_KL. 0 turns EMAg off.</td><td class="num">0</td></tr>
+        <tr><td><code>emag.tau</code></td><td>How fast the magnet moves toward the learner, per buffer pass.</td><td class="num">0.01</td></tr>
+        <tr><td><code>emag.path</code></td><td>Magnet start weights. None means a copy of the learner's initial weights, as in the paper.</td><td class="num">None</td></tr>
+        <tr><td><code>emag.start / emag.end</code></td><td>Fraction of training where the magnet is active (how long it lasts).</td><td class="num">0 / 1</td></tr>
+        <tr><td><code>emag.anneal</code></td><td>Cosine-anneal the strength from coef to coef × min_ratio. The paper keeps it constant; this is our extra experiment.</td><td class="num">0</td></tr>
+        <tr><td><code>emag.min_ratio</code></td><td>End strength as a fraction of coef when annealing.</td><td class="num">0.1</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Decisions to make, in order</h2>
+    <div class="list">
+      <div class="item" style="--c: var(--plan)"><h3>1. Pause or go</h3><p>Either pause Goofspiel now (stop the Vast sweep, keep its results) or commit to the full plan below. The steps after this one assume go.</p></div>
+      <div class="item" style="--c: var(--done)"><h3>2. Match the paper's game (done)</h3><p>Our game is OpenSpiel's default 4-card Goofspiel and our exploitability is NashConv/2, the same as OpenSpiel's. Uniform play scores 0.7465 in both; the other variants score 0.708, 0.750 or 1.25. The paper doesn't print its variant, but its curves start near 1, consistent with a random network on this game. Treat 0.007 as a real target.</p></div>
+      <div class="item" style="--c: var(--done)"><h3>3. Implement and test EMAg (done)</h3><p>Commit <code>9ccfbff33</code> on branch <code>magnet-kl</code> adds <code>train.magnet_coef</code>, <code>magnet_tau</code>, <code>anneal_magnet_coef</code>, <code>min_magnet_coef_ratio</code> and <code>base.magnet_path</code>, and saves <code>&lt;ckpt&gt;.magnet</code>. With the magnet off, training is bit-identical. τ=0 holds the anchor; τ=1 tracks the learner. Commit <code>1bcf54962</code> removes the old Kaggriculture teacher. Still to do: score the magnet's exploitability in Goofspiel evals.</p></div>
+      <div class="item" style="--c: var(--done)"><h3>4. Transformer speed (measured)</h3><p>On the 5060 Ti, CUDA graphs on and off give identical speed and peak memory for both winning shapes. The transformer is simply about 12× more compute per step than PufferNet (61.6K vs 726K steps/s). Faster attention kernels are a separate project.</p></div>
+      <div class="item" style="--c: var(--run)"><h3>5. Mega sweep (running)</h3><p>PufferNet ×1000, then Transformer ×500, on the same box and with the same ranges. 39 dimensions, including run length (2M–105M steps) and the four magnet settings at the paper's ranges. Ranges are widened where earlier winners hit an edge. The sweep metric is the best of the learner and its magnet. Config and notes: <code>reports/goofspiel_plan/mega_sweep_20261020/</code>.</p></div>
+    </div>
+  </section>
+</div>

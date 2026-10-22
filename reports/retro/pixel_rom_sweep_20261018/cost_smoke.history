@@ -1,0 +1,33 @@
+PUFFER_SWEEP_HISTORY_V1 30
+vec.total_agents 128 32768 uniform_pow2
+train.horizon 8 512 uniform_pow2
+train.minibatch_size 1024 32768 uniform_pow2
+train.learning_rate 9.99999975e-06 0.0199999996 log_normal
+train.ent_coef 0 0.0199999996 uniform
+train.gamma 0.970000029 0.999989986 logit_normal
+train.gae_lambda 0.850000024 0.999899983 logit_normal
+train.replay_ratio 0.25 4 uniform
+train.clip_coef 0.0500000007 0.5 uniform
+train.vf_clip_coef 0.00999999978 2 uniform
+train.vf_coef 0.100000001 4 uniform
+train.max_grad_norm 0.100000001 5 uniform
+train.momentum 0.5 0.999000013 logit_normal
+base.async 0 1 int_uniform
+base.cudagraphs -1 1 int_uniform
+train.anneal_lr 0 1 int_uniform
+train.min_lr_ratio 0 0.5 uniform
+train.anneal_ent_coef 0 1 int_uniform
+train.min_ent_coef_ratio 0 0.5 uniform
+env.completion_reward 0.25 8 log_normal
+env.death_penalty 0.0500000007 5 log_normal
+env.checkpoint_reward 0 0.5 uniform
+env.novel_area_reward 0 2 uniform
+env.completion_time_bonus 0 4 uniform
+env.score_scale 0 0.000199999995 uniform
+env.coin_reward 0 0.200000003 uniform
+env.idle_penalty 0 0.00999999978 uniform
+train.vtrace 0 1 int_uniform
+train.vtrace_rho_clip 1 4 uniform
+train.vtrace_c_clip 0.100000001 1 uniform
+
+0 6.59375 12.0053415 0 1024 256 4096 0.00100000005 0 0.999899983 0.996999979 2 0.200000003 0.200000033 0.49999997 0.49999997 0.899999976 1 1 1 0.099999994 1 0.099999994 1.99999988 0.0499999933 0.125 1 0 9.99999975e-05 0 0 0 1 1

@@ -1,0 +1,33 @@
+{
+  "command": [
+    "python3",
+    "-u",
+    "/workspace/PufferLib/reports/mario_sim/rom_levels_2b_6b_20261015_060222/evaluate_rom.py",
+    "--repo-root",
+    "/workspace/PufferLib",
+    "--binary",
+    "/workspace/PufferLib/reports/mario_sim/rom_levels_2b_6b_20261015_060222/sim2rom",
+    "--config",
+    "/workspace/PufferLib/reports/mario_sim/rom_levels_2b_6b_20261015_060222/evaluation.ini",
+    "--level-config",
+    "/workspace/PufferLib/reports/mario_sim/rom_levels_2b_6b_20261015_060222/levels.ini",
+    "--output",
+    "/workspace/PufferLib/reports/mario_sim/rom_levels_2b_6b_20261015_060222/results",
+    "--levels-only",
+    "--episodes-per-level",
+    "32",
+    "--workers",
+    "8",
+    "--nice",
+    "15",
+    "--checkpoint",
+    "steps_2_15b",
+    "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000002147483648.bin",
+    "--checkpoint",
+    "steps_6_44b",
+    "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000006442450944.bin"
+  ],
+  "tmux_session": "mario-rom-levels-060222",
+  "rom_sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea",
+  "portability_verified": true
+}

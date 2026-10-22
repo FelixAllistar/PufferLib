@@ -1,0 +1,11 @@
+{
+  "remote_root": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014",
+  "run": "sweep_1792016021935_0000",
+  "steps": 2147483648,
+  "checkpoint": "/home/felix/puffertank/pufferlib/checkpoints/mario_sim/sweep_1792016021935_0000/0000002147483648.bin",
+  "sha256": {
+    "0000002147483648.bin": "62fdae9f5a66b1da569037a38b58cdce17b1cc9c9259953be8375cdc7a82eb93",
+    "0000002147483648.bin.curriculum": "fe3e93033bb0a21e1069aec8a3446af466dfd0632dbaeba003d61092e002f916",
+    "0000002147483648.bin.curriculum.json": "c3f85ac0e66ada1220b114ba438f98c9dd355fb49adc16328d1cbca0d873bebb"
+  }
+}

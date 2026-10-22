@@ -1,0 +1,167 @@
+{
+  "interpretation": "FP32 input sensitivity, not action correctness. Checkpoints drive different trajectories; aggregates are not a matched quality comparison.",
+  "models": {
+    "6442m": {
+      "counts": {
+        "natural_starts": 136,
+        "rollout_frames": 20112,
+        "rows": 7524,
+        "identical_carry_controls": 1257,
+        "precision": "fp32",
+        "causal_correctness_test": false
+      },
+      "probes": {
+        "unchanged_control": {
+          "samples": 1257,
+          "mean_total_variation": 0.0,
+          "median_total_variation": 0.0,
+          "max_total_variation": 0.0,
+          "greedy_change_fraction": 0,
+          "fraction_tv_above_0.01": 0
+        },
+        "nearby_solids_removed": {
+          "samples": 1257,
+          "mean_total_variation": 0.10974040258376505,
+          "median_total_variation": 0.000470947243,
+          "max_total_variation": 0.999999908,
+          "greedy_change_fraction": 0.10182975338106603,
+          "fraction_tv_above_0.01": 0.3237867939538584
+        },
+        "water_cues_flipped": {
+          "samples": 1257,
+          "mean_total_variation": 0.5979281703586871,
+          "median_total_variation": 0.931269652,
+          "max_total_variation": 1.0,
+          "greedy_change_fraction": 0.5894988066825776,
+          "fraction_tv_above_0.01": 0.7557677008750995
+        },
+        "player_velocity_zero": {
+          "samples": 1213,
+          "mean_total_variation": 0.05311189763416017,
+          "median_total_variation": 0.000102723947,
+          "max_total_variation": 0.999998956,
+          "greedy_change_fraction": 0.05028854080791426,
+          "fraction_tv_above_0.01": 0.21187139323990106
+        },
+        "entities_hidden": {
+          "samples": 854,
+          "mean_total_variation": 0.08257266161591177,
+          "median_total_variation": 6.281579535e-05,
+          "max_total_variation": 1.0,
+          "greedy_change_fraction": 0.07845433255269321,
+          "fraction_tv_above_0.01": 0.2189695550351288
+        },
+        "entity_motion_hidden": {
+          "samples": 773,
+          "mean_total_variation": 0.12416772792478702,
+          "median_total_variation": 0.00033808222,
+          "max_total_variation": 0.999999998,
+          "greedy_change_fraction": 0.11384217335058215,
+          "fraction_tv_above_0.01": 0.2833117723156533
+        },
+        "entities_shifted_16px": {
+          "samples": 854,
+          "mean_total_variation": 0.011048064755021314,
+          "median_total_variation": 1.181104245e-05,
+          "max_total_variation": 0.817445448,
+          "greedy_change_fraction": 0.00585480093676815,
+          "fraction_tv_above_0.01": 0.117096018735363
+        },
+        "platform_motion_reversed": {
+          "samples": 59,
+          "mean_total_variation": 0.012511866952738353,
+          "median_total_variation": 9.27179339e-06,
+          "max_total_variation": 0.365654662,
+          "greedy_change_fraction": 0,
+          "fraction_tv_above_0.01": 0.1016949152542373
+        },
+        "water_cues_flipped_underwater_only": {
+          "samples": 151,
+          "mean_total_variation": 0.2879547662569457,
+          "greedy_change_fraction": 0.26490066225165565
+        }
+      }
+    },
+    "final": {
+      "counts": {
+        "natural_starts": 136,
+        "rollout_frames": 20420,
+        "rows": 7704,
+        "identical_carry_controls": 1281,
+        "precision": "fp32",
+        "causal_correctness_test": false
+      },
+      "probes": {
+        "unchanged_control": {
+          "samples": 1281,
+          "mean_total_variation": 0.0,
+          "median_total_variation": 0.0,
+          "max_total_variation": 0.0,
+          "greedy_change_fraction": 0,
+          "fraction_tv_above_0.01": 0
+        },
+        "nearby_solids_removed": {
+          "samples": 1281,
+          "mean_total_variation": 0.08051450778989497,
+          "median_total_variation": 0.000380555661,
+          "max_total_variation": 0.999999999,
+          "greedy_change_fraction": 0.06479313036690086,
+          "fraction_tv_above_0.01": 0.29820452771272443
+        },
+        "water_cues_flipped": {
+          "samples": 1281,
+          "mean_total_variation": 0.4076151644420053,
+          "median_total_variation": 0.105254838,
+          "max_total_variation": 1.0,
+          "greedy_change_fraction": 0.40359094457455114,
+          "fraction_tv_above_0.01": 0.652615144418423
+        },
+        "player_velocity_zero": {
+          "samples": 1238,
+          "mean_total_variation": 0.054864012690444046,
+          "median_total_variation": 0.0003467367755,
+          "max_total_variation": 0.999999971,
+          "greedy_change_fraction": 0.04281098546042003,
+          "fraction_tv_above_0.01": 0.23424878836833601
+        },
+        "entities_hidden": {
+          "samples": 879,
+          "mean_total_variation": 0.05708812602258388,
+          "median_total_variation": 0.000146282277,
+          "max_total_variation": 1.0,
+          "greedy_change_fraction": 0.053469852104664393,
+          "fraction_tv_above_0.01": 0.18088737201365188
+        },
+        "entity_motion_hidden": {
+          "samples": 798,
+          "mean_total_variation": 0.10020614651483369,
+          "median_total_variation": 0.0007458268510000001,
+          "max_total_variation": 1.0,
+          "greedy_change_fraction": 0.08646616541353383,
+          "fraction_tv_above_0.01": 0.2982456140350877
+        },
+        "entities_shifted_16px": {
+          "samples": 879,
+          "mean_total_variation": 0.0081904328223205,
+          "median_total_variation": 2.14594228e-05,
+          "max_total_variation": 0.973184434,
+          "greedy_change_fraction": 0.004550625711035267,
+          "fraction_tv_above_0.01": 0.10011376564277588
+        },
+        "platform_motion_reversed": {
+          "samples": 67,
+          "mean_total_variation": 0.0009051992378163615,
+          "median_total_variation": 1.2009139e-05,
+          "max_total_variation": 0.0138322043,
+          "greedy_change_fraction": 0,
+          "fraction_tv_above_0.01": 0.029850746268656716
+        },
+        "water_cues_flipped_underwater_only": {
+          "samples": 157,
+          "mean_total_variation": 0.10687932615480637,
+          "greedy_change_fraction": 0.07006369426751592
+        }
+      }
+    }
+  }
+}

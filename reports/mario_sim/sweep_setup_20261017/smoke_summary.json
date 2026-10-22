@@ -1,0 +1,10 @@
+{
+  "run": "sweep_1792249026748_0000",
+  "steps": 9371648.0,
+  "requested_steps": 200000080,
+  "reason": "runtime limit",
+  "score": 0.0,
+  "cost": 41.80342779599596,
+  "panels": 44,
+  "history_restore_passed": true
+}

@@ -1,0 +1,16 @@
+{
+  "checked_utc": "2026-10-18T23:59:31.070785+00:00",
+  "run": "sweep_1792367954068_0000",
+  "settings_verified": true,
+  "latest": {
+    "steps": "1310720",
+    "seconds": "14.629511",
+    "sps": "111323.267",
+    "entropy": "0.154406309",
+    "kl": "0.000812456012",
+    "value": "0.00823136419",
+    "clipfrac": "0.00930213928",
+    "vram_used_gb": "14.825195"
+  },
+  "pane_command": "./puffer"
+}

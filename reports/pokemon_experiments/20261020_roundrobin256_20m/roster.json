@@ -1,0 +1,144 @@
+{
+  "members": [
+    {
+      "name": "master",
+      "team": "catalog:421,366,389,395,512,445",
+      "lead": "121",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "1"
+      }
+    },
+    {
+      "name": "zam_egg_mie",
+      "team": "species:65,103,121,113,143,128",
+      "lead": "65",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "zam_egg_zap",
+      "team": "species:65,103,145,113,143,128",
+      "lead": "65",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "zam_egg_gar",
+      "team": "species:65,103,94,113,143,128",
+      "lead": "65",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "zam_egg_cloy_don",
+      "team": "species:65,103,112,91,113,128",
+      "lead": "65",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "mie_egg_don",
+      "team": "species:121,103,112,113,143,128",
+      "lead": "121",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "mie_egg_zap",
+      "team": "species:121,103,145,113,143,128",
+      "lead": "121",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "mie_egg_cloy",
+      "team": "species:121,103,91,113,143,128",
+      "lead": "121",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "jynx_mie_don",
+      "team": "species:124,121,112,113,143,128",
+      "lead": "124",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "jynx_egg_zap",
+      "team": "species:124,103,145,113,143,128",
+      "lead": "124",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "jynx_egg_gar_zap",
+      "team": "species:124,103,94,145,143,128",
+      "lead": "124",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "gar_egg_mie",
+      "team": "species:94,103,121,113,143,128",
+      "lead": "94",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "gar_egg_zap",
+      "team": "species:94,103,145,113,143,128",
+      "lead": "94",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    },
+    {
+      "name": "gar_egg_mie_zap",
+      "team": "species:94,103,121,145,143,128",
+      "lead": "94",
+      "checkpoint": null,
+      "source": "Fresh independent 256x2 initializer; composition retained from rr50m_bf16_20261017",
+      "overrides": {
+        "metamon.enabled": "0"
+      }
+    }
+  ]
+}

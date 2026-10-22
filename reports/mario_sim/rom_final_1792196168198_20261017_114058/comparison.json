@@ -1,0 +1,69 @@
+{
+  "models": {
+    "steps_5_37b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792196168198/0000005368709120.bin",
+      "rom_level_clears": 336,
+      "attempts": 1024,
+      "level_clear_percent": 32.8125,
+      "levels_with_any_clears": 19,
+      "fpg_successes_of_64": {
+        "96": 63,
+        "256": 64,
+        "425": 60
+      },
+      "fresh_1_1_clears_of_32": 32,
+      "game_mean_progress_pixels": 4473.5,
+      "game_level_exits": 29,
+      "all_tests_valid": true
+    },
+    "steps_6_44b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792196168198/0000006442450944.bin",
+      "rom_level_clears": 268,
+      "attempts": 1024,
+      "level_clear_percent": 26.171875,
+      "levels_with_any_clears": 19,
+      "fpg_successes_of_64": {
+        "96": 60,
+        "256": 3,
+        "425": 60
+      },
+      "fresh_1_1_clears_of_32": 29,
+      "game_mean_progress_pixels": 3406.1875,
+      "game_level_exits": 21,
+      "all_tests_valid": true
+    },
+    "steps_8_05b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792196168198/0000008053063680.bin",
+      "rom_level_clears": 308,
+      "attempts": 1024,
+      "level_clear_percent": 30.078125,
+      "levels_with_any_clears": 22,
+      "fpg_successes_of_64": {
+        "96": 63,
+        "256": 16,
+        "425": 1
+      },
+      "fresh_1_1_clears_of_32": 29,
+      "game_mean_progress_pixels": 3617.40625,
+      "game_level_exits": 24,
+      "all_tests_valid": true
+    },
+    "final_10b": {
+      "checkpoint": "/workspace/PufferLib/checkpoints/mario_sim/1792196168198/0000009999745024.bin",
+      "rom_level_clears": 9,
+      "attempts": 1024,
+      "level_clear_percent": 0.87890625,
+      "levels_with_any_clears": 3,
+      "fpg_successes_of_64": {
+        "96": 0,
+        "256": 0,
+        "425": 0
+      },
+      "fresh_1_1_clears_of_32": 4,
+      "game_mean_progress_pixels": 714.46875,
+      "game_level_exits": 1,
+      "all_tests_valid": true
+    }
+  },
+  "best_tested_this_run_by_level_clear_rate": "steps_5_37b"
+}

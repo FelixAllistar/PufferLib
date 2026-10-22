@@ -1,0 +1,102 @@
+{
+  "members": [
+    {
+      "name": "master",
+      "team": "catalog:421,366,389,395,512,445",
+      "lead": "121",
+      "checkpoint": "checkpoints/pokemon/1792201557856/0000000671088640.bin",
+      "source": "Best observed long-budget BF16 Oak argmax: 0.6432291667; 671088640 counted steps."
+    },
+    {
+      "name": "zam_egg_mie",
+      "team": "species:65,103,121,113,143,128",
+      "lead": "65",
+      "checkpoint": "saved/pokemon/starmie_sweep/zam_egg_mie/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "zam_egg_zap",
+      "team": "species:65,103,145,113,143,128",
+      "lead": "65",
+      "checkpoint": "saved/pokemon/starmie_sweep/zam_egg_zap/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "zam_egg_gar",
+      "team": "species:65,103,94,113,143,128",
+      "lead": "65",
+      "checkpoint": "saved/pokemon/starmie_sweep/zam_egg_gar/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "zam_egg_cloy_don",
+      "team": "species:65,103,112,91,113,128",
+      "lead": "65",
+      "checkpoint": "saved/pokemon/starmie_sweep/zam_egg_cloy_don/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "mie_egg_don",
+      "team": "species:121,103,112,113,143,128",
+      "lead": "121",
+      "checkpoint": "saved/pokemon/starmie_sweep/mie_egg_don/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "mie_egg_zap",
+      "team": "species:121,103,145,113,143,128",
+      "lead": "121",
+      "checkpoint": "saved/pokemon/starmie_sweep/mie_egg_zap/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "mie_egg_cloy",
+      "team": "species:121,103,91,113,143,128",
+      "lead": "121",
+      "checkpoint": "saved/pokemon/starmie_sweep/mie_egg_cloy/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "jynx_mie_don",
+      "team": "species:124,121,112,113,143,128",
+      "lead": "124",
+      "checkpoint": "saved/pokemon/starmie_sweep/jynx_mie_don/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "jynx_egg_zap",
+      "team": "species:124,103,145,113,143,128",
+      "lead": "124",
+      "checkpoint": "saved/pokemon/starmie_sweep/jynx_egg_zap/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "jynx_egg_gar_zap",
+      "team": "species:124,103,94,145,143,128",
+      "lead": "124",
+      "checkpoint": "saved/pokemon/starmie_sweep/jynx_egg_gar_zap/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "gar_egg_mie",
+      "team": "species:94,103,121,113,143,128",
+      "lead": "94",
+      "checkpoint": "saved/pokemon/starmie_sweep/gar_egg_mie/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "gar_egg_zap",
+      "team": "species:94,103,145,113,143,128",
+      "lead": "94",
+      "checkpoint": "saved/pokemon/starmie_sweep/gar_egg_zap/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    },
+    {
+      "name": "gar_egg_mie_zap",
+      "team": "species:94,103,121,145,143,128",
+      "lead": "94",
+      "checkpoint": "saved/pokemon/starmie_sweep/gar_egg_mie_zap/weights.bin",
+      "source": "Frozen OU specialist imported from starmie_sweep; trainable in this new league."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+# retro_panel_v2 frames=12000 repeats=2 seed=20260907 deterministic=0 levels=1-1 frameskip=4
+level	replicate	clear	progress	frames	clear_frames	checkpoints
+1-1	0	0	0.949117647	8751	0	61
+1-1	1	0	0.948823529	12000	0	44
+# score=1.5 clears=0 attempts=2 progress=0.948970588 frames=20751
+# metric=perf distance=3226.5 units=forward_pixels
+# clear_frames=0 clear_rate=0
+# checkpoints=52.5 distance_per_checkpoint=128
+# speed_objective=2 best_frames=0 best_seconds=0.000000000000 mean_seconds=0.000000000000 best_count=0
+# game=1 wins=0 win_rate=0 mean_levels=1.5 archive_enabled=0
+# game_attempt=0 wins=0 levels=2 deaths=3 warps=0 frames=8751
+# game_attempt=1 wins=0 levels=1 deaths=0 warps=0 frames=12000
+# timing_scope=full_game practice_replay=None

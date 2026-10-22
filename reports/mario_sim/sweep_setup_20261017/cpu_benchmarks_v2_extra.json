@@ -1,0 +1,58 @@
+[
+  {
+    "case": "cpu_32k_h32_v2",
+    "returncode": 0,
+    "seconds": 81.27647748508025,
+    "sps_after_warmup": 411360.644217103,
+    "max_vram_gb": 11.380737,
+    "steps": 31457280,
+    "agents": 32768,
+    "horizon": 32,
+    "width": 64,
+    "layers": 1,
+    "minibatch": 8192,
+    "command": [
+      "/workspace/PufferLib/puffer",
+      "train",
+      "--base.run_id=validation_sweep_20261017_cpu_32k_h32_v2",
+      "--base.result_fd=1",
+      "--base.checkpoint_interval=0",
+      "--train.total_timesteps=32000000",
+      "--vec.total_agents=32768",
+      "--vec.num_buffers=4",
+      "--train.horizon=32",
+      "--policy.hidden_size=64",
+      "--policy.num_layers=1",
+      "--train.minibatch_size=8192",
+      "--train.replay_ratio=1"
+    ]
+  },
+  {
+    "case": "cpu_width32_v2",
+    "returncode": 0,
+    "seconds": 40.20693370804656,
+    "sps_after_warmup": 417763.02421774215,
+    "max_vram_gb": 3.503784,
+    "steps": 15990784,
+    "agents": 8192,
+    "horizon": 32,
+    "width": 32,
+    "layers": 1,
+    "minibatch": 8192,
+    "command": [
+      "/workspace/PufferLib/puffer",
+      "train",
+      "--base.run_id=validation_sweep_20261017_cpu_width32_v2",
+      "--base.result_fd=1",
+      "--base.checkpoint_interval=0",
+      "--train.total_timesteps=16000000",
+      "--vec.total_agents=8192",
+      "--vec.num_buffers=4",
+      "--train.horizon=32",
+      "--policy.hidden_size=32",
+      "--policy.num_layers=1",
+      "--train.minibatch_size=8192",
+      "--train.replay_ratio=1"
+    ]
+  }
+]

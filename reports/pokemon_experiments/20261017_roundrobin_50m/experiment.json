@@ -1,0 +1,72 @@
+{
+  "name": "BF16 evolving OU round-robin 50M",
+  "date": "2026-10-17",
+  "league_directory": "leagues/pokemon/rr50m_bf16_20261017",
+  "target_completed_rounds": 50,
+  "members": 14,
+  "trainable_members": 14,
+  "counted_steps_per_member_per_round": 50331648,
+  "learner_steps_per_member_per_round": 37748736,
+  "counted_steps_per_full_round": 704643072,
+  "total_planned_counted_steps": 35232153600,
+  "total_planned_learner_steps": 26424115200,
+  "concurrent_environment_mix": {
+    "current_policy_selfplay": 0.5,
+    "evolving_peer_models": 0.5
+  },
+  "schedule": "Sequential publication; each member sees latest completed peer versions; opponents remain fixed during its stint.",
+  "master_seed": "1792201557856",
+  "master_seed_sha256": "e2f8efa05537dc6603ce44f431f12ef6efc6e497ed19ad502c949b3a4cd76949",
+  "master_team": "catalog:421,366,389,395,512,445",
+  "other_initializers": "13 named specialist weights from saved/pokemon/starmie_sweep; old unrestricted master remains archived but is replaced in the new active roster.",
+  "precision": "BF16",
+  "source_binary": "puffer",
+  "source_binary_sha256": "07849fd021b6534648cdbcddf98375ae855a9e31c12b5f9829c607d0a2f93a78",
+  "runtime_binary": "leagues/pokemon/rr50m_bf16_20261017/bin/puffer",
+  "architecture": {
+    "hidden": 64,
+    "layers": 2
+  },
+  "vector": {
+    "total_agents": 16384,
+    "num_buffers": 1,
+    "num_threads": 4
+  },
+  "policy_seed_base": 73,
+  "ppo": {
+    "gpus": "1",
+    "total_timesteps": "50331648",
+    "learning_rate": "0.00297837891",
+    "anneal_lr": "1",
+    "min_lr_ratio": "0.1",
+    "gamma": "0.999899983",
+    "gae_lambda": "0.899999976",
+    "replay_ratio": "3.71047497",
+    "clip_coef": "0.12561436",
+    "vf_coef": "0.52888006",
+    "vf_clip_coef": "0.2",
+    "reward_clip": "0",
+    "max_grad_norm": "0.338345766",
+    "ent_coef": "0.020000007",
+    "anneal_ent_coef": "0",
+    "min_ent_coef_ratio": "0.1",
+    "momentum": "0.95",
+    "minibatch_size": "8192",
+    "horizon": "32",
+    "vtrace": "0",
+    "vtrace_rho_clip": "1.0",
+    "vtrace_c_clip": "1.0",
+    "verb_eps": "0.0",
+    "verb_eps_anneal_start": "0.4",
+    "verb_eps_anneal_end": "1.0"
+  },
+  "automatic_oak_evaluation": false,
+  "automatic_pairwise_evaluation": false,
+  "checkpointing": "Every completed member stint is published and retained; initial/final native weights also retained.",
+  "continuation": "Weights-only stages; optimizer, rollout/recurrent state, step counter and cosine LR schedule restart each stint.",
+  "limitations": [
+    "Oak results are tuning-panel measurements, not ratings; 384-game estimates are noisy.",
+    "671M/64.3% and 1.34B/62.1% do not establish a reliable ranking or a learning plateau.",
+    "Previous fixed-pool strength is a hypothesis: no evidence here proves all opponents are solved."
+  ]
+}

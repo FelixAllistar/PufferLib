@@ -1,0 +1,54 @@
+{
+  "checkpoint": "/home/felix/puffertank/pufferlib/saved/pokemon/rr50m_bf16_20261017/master/r000026-a001/weights.bin",
+  "sha256": "440b4dd80bebcc01fc491fdd6b1b9bed046953936e7d597c2207f2b0a6335b40",
+  "config_sha256": "30fd90c4842e60c043a3c429fb991a0399077e22558d5919c80b0a6d6c9a0f28",
+  "opponent": "TaurosV0",
+  "mode": "argmax",
+  "information": "Both players use native private player observations; no full-state search",
+  "protocol": "native-private-v1",
+  "games": 2,
+  "games_per_team": 2,
+  "seed": 20261018,
+  "wins": 0,
+  "draws": 0,
+  "losses": 2,
+  "score": 0.0,
+  "timeouts": 0,
+  "elapsed_seconds": 25.489931434975006,
+  "adapter_sha256": "98a2e440abcd7be500e645da465309c715ba2c705fa4234941be37e345a18b70",
+  "records": [
+    {
+      "team": "zam_egg_mie",
+      "team_sha256": "57e8eb73a9e68199026da9e5a0171c5629943c146d62531877e8596fa78b8ed0",
+      "game": 0,
+      "seat": 0,
+      "seed": 20261018,
+      "score": 0.0,
+      "timeout": false,
+      "decisions": 64,
+      "opponent_observation_sha256": "a0a08482597b97f4da50de4a94fdc646778fac5a49ea789ae74bf245010001c3"
+    },
+    {
+      "team": "zam_egg_mie",
+      "team_sha256": "57e8eb73a9e68199026da9e5a0171c5629943c146d62531877e8596fa78b8ed0",
+      "game": 1,
+      "seat": 1,
+      "seed": 11400714819343459503,
+      "score": 0.0,
+      "timeout": false,
+      "decisions": 73,
+      "opponent_observation_sha256": "0ff9cb7b5b051af255d8cda8fecb806e62023d973a9e1c61bb3205a04be71928"
+    }
+  ],
+  "limitations": [
+    "Native engine and 512-update draw cap, not a Showdown ladder rating.",
+    "Compact private observation projection requires qualification before model-strength claims."
+  ],
+  "metamon_version": "1.6.0",
+  "torch_version": "2.8.0+cpu",
+  "metamon_checkpoint": 62,
+  "metamon_action_mode": "sample",
+  "metamon_checkpoint_sha256": "3f55b698bd19f189a465797c7bd1fe49c75884de701ab91ad156e6bac70b8ba1",
+  "metamon_final_mask": "Condition clipped published probabilities on public legal actions; no invalid-action fallback",
+  "metamon_attention": "causal torch SDPA window=(32,0), CPU"
+}

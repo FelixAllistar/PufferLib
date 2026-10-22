@@ -1,0 +1,9 @@
+{
+  "git_head": "e937521188c87485f354b908e14d23cc45bf3bd4",
+  "sha256": {
+    "src/pufferl.cu": "2cdbdaf0b351010708d21555704165cce205f28e20b951f2c2b64aaf475df135",
+    "src/protein.cu": "cd8c4b6733e1bbc714b35031c0be3bcf9a925b7b77ff96127109d0553c76cffa",
+    "ocean/goofspiel/goofspiel.h": "57265dd42e3e33a230809ba26960e1fb9e03deaac703b849316158b8c06d104e"
+  },
+  "binary_sha256": "4f45ddfd9c81d2134d700bc9d5068e2aeecfe4abe69b03731fd7ab109f793edb"
+}

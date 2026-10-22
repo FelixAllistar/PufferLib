@@ -1,0 +1,108 @@
+{
+  "checkpoint": "/workspace/PufferLib/leagues/pokemon/rr50m_bf16_20261017/members/master/r000026-a001/weights.bin",
+  "sha256": "440b4dd80bebcc01fc491fdd6b1b9bed046953936e7d597c2207f2b0a6335b40",
+  "config_sha256": "30fd90c4842e60c043a3c429fb991a0399077e22558d5919c80b0a6d6c9a0f28",
+  "opponent": "TaurosV0",
+  "mode": "argmax",
+  "information": "Both players use native private player observations; no full-state search",
+  "protocol": "native-private-v1",
+  "games": 6,
+  "games_per_team": 2,
+  "seed": 20261018,
+  "wins": 5,
+  "draws": 0,
+  "losses": 1,
+  "score": 0.8333333333333334,
+  "timeouts": 0,
+  "elapsed_seconds": 22.372589707025327,
+  "adapter_sha256": "6a89217b240a702bf8a07fe23d4c228a43a732d57b8b889684ad16b6c3c846cd",
+  "records": [
+    {
+      "team": "zam_egg_mie",
+      "team_sha256": "57e8eb73a9e68199026da9e5a0171c5629943c146d62531877e8596fa78b8ed0",
+      "game": 0,
+      "seat": 0,
+      "seed": 20261018,
+      "score": 1.0,
+      "timeout": false,
+      "decisions": 47,
+      "opponent_observation_sha256": "971635c26cacae9391fe4266b5892f65e30b4146487b257da7789e7dd5d74dc5"
+    },
+    {
+      "team": "zam_egg_mie",
+      "team_sha256": "57e8eb73a9e68199026da9e5a0171c5629943c146d62531877e8596fa78b8ed0",
+      "game": 1,
+      "seat": 1,
+      "seed": 11400714819343459503,
+      "score": 1.0,
+      "timeout": false,
+      "decisions": 52,
+      "opponent_observation_sha256": "b59545a5b171ab910a462facfd64d13981d6d0de7ed5f0c376029c2071de8e53"
+    },
+    {
+      "team": "jynx_mie_don",
+      "team_sha256": "8a3f662037b230ae5e8cf71b4b236ed7d9a8149b258d9f597d43fa056d7d3eac",
+      "game": 0,
+      "seat": 0,
+      "seed": 20261018,
+      "score": 1.0,
+      "timeout": false,
+      "decisions": 86,
+      "opponent_observation_sha256": "c31e5b822ef9a74b25bbe53d98227fd51bcc60925cdf0fbebda48e83acdbe09e"
+    },
+    {
+      "team": "jynx_mie_don",
+      "team_sha256": "8a3f662037b230ae5e8cf71b4b236ed7d9a8149b258d9f597d43fa056d7d3eac",
+      "game": 1,
+      "seat": 1,
+      "seed": 11400714819343459503,
+      "score": 0.0,
+      "timeout": false,
+      "decisions": 73,
+      "opponent_observation_sha256": "9b204611fdc04b47420a35e69d86cfa1cd188d51a0105af67111425658aa68af"
+    },
+    {
+      "team": "gar_egg_zap",
+      "team_sha256": "00a5d031abddd5d359d7e1165c9b691af52a9ca0bb8091f456f27216e8fb815b",
+      "game": 0,
+      "seat": 0,
+      "seed": 20261018,
+      "score": 1.0,
+      "timeout": false,
+      "decisions": 48,
+      "opponent_observation_sha256": "4de9cd250a42d09f65abd9163f74fceadf8509798c17d506f4b8b7e884aca57e"
+    },
+    {
+      "team": "gar_egg_zap",
+      "team_sha256": "00a5d031abddd5d359d7e1165c9b691af52a9ca0bb8091f456f27216e8fb815b",
+      "game": 1,
+      "seat": 1,
+      "seed": 11400714819343459503,
+      "score": 1.0,
+      "timeout": false,
+      "decisions": 84,
+      "opponent_observation_sha256": "0bf3d2f868fd9b5f115922ef5393e5e80e0a0f10f7858eb295af376434644774"
+    }
+  ],
+  "source_sha256": {
+    "evaluate_private.py": "650e9cec068a94bbf26984fba4295a06a12ba9d31869d728c39ecd800cd3dc10",
+    "private_view.py": "5b4fd7782faebd2227f6549bc2a4f98b34354d38293835dd8694acff243cc338",
+    "metamon_opponent.py": "1dd86c559842df79dd0d8e2b1804764cde3b2570eef097c2f3ecf539b34dc3f5",
+    "private_adapter.c": "c5f2fc0a8ca1a433ac36c6be2818a856c69f1f6608d2cc220b5e8d598bbcc159",
+    "adapter.c": "c734d0d29f45b199fdbd7d0a50693fc85793f0360c3399a51a7e6dd18a8eaa74"
+  },
+  "limitations": [
+    "Native engine and 512-update draw cap, not a Showdown ladder rating.",
+    "Compact private observation projection requires qualification before model-strength claims.",
+    "Public move PP and effect order are reconstructed from compact observations, not a complete Showdown event stream."
+  ],
+  "metamon_version": "1.6.0",
+  "torch_version": "2.8.0+cu128",
+  "metamon_checkpoint": 62,
+  "metamon_action_mode": "sample",
+  "metamon_checkpoint_sha256": "3f55b698bd19f189a465797c7bd1fe49c75884de701ab91ad156e6bac70b8ba1",
+  "metamon_device": "cuda",
+  "metamon_revision": "0a00a759c9a4382a2877088d828302ec294a05a5",
+  "metamon_final_mask": "Condition clipped published probabilities on public legal actions; no invalid-action fallback",
+  "metamon_attention": "causal torch SDPA window=(32,0), BF16 Q/K/V rounding"
+}

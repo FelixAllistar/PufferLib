@@ -1,0 +1,114 @@
+{
+  "updated_utc": "2026-10-16T13:09:08.108233+00:00",
+  "status": "validated_and_consolidated",
+  "scope": "Validated simulator installed in the normal repository and canonical config; old remote sweep cancelled, no new training started.",
+  "changes": [
+    "Match the reference emulator cached LDA $2002 status read; preserve 320-byte SmbClock and existing reset/trace layouts.",
+    "Reward completed stage transitions/castle victory; log flag contacts separately; historical reward control remains available.",
+    "Score current successful FPG difficulty rather than historical curriculum frontier. Keep legacy score for comparison.",
+    "Failure-weighted earlier-band replay and two low-success windows before a one-band FPG demotion; migrate V1 checkpoint sidecars.",
+    "Opt-in 104-state natural encounter bank across 13 stages, 50/25/25 frame allocation in manual preset, first-life episodes, no reset-distance reward, isolated metrics and persistence.",
+    "Keep observation dimensions and encoder tensor layout unchanged; add reusable recurrent-state-controlled trained-policy sensitivity probes.",
+    "Supply zero draw_rate for the shared native evaluator; Mario timeouts and deaths remain failures."
+  ],
+  "data": {
+    "existing_archive": "/mnt/d/puffertank/archive/mario-cold-20261014/build/mario_sim/qualification_v2",
+    "archive_read_in_place": true,
+    "new_full_trace_dumps": false,
+    "practice": {
+      "stages": 13,
+      "states": 104,
+      "CPU_ROM_frames": 24960,
+      "CUDA_reference_frames": 1664,
+      "bytes": 5393897,
+      "synthetic_RAM_edits": 0,
+      "guaranteed_full_level_solutions": false,
+      "CUDA_validation_required": true
+    },
+    "practice_coverage": "practice_coverage.json"
+  },
+  "validation": {
+    "archived_frames_per_backend": 1624560,
+    "backends": [
+      "CPU",
+      "CUDA"
+    ],
+    "checks": "checks.json",
+    "practice_CPU_ROM_frames": 24960,
+    "practice_CUDA_frames": 1664,
+    "natural_game_ROM_frames": 72110,
+    "cuda_adapter_decisions": 196608,
+    "cuda_curriculum_decisions": 40960,
+    "original_failure_episodes_retested": [
+      "retest_5_2/summary.json",
+      "retest_3_1/summary.json"
+    ],
+    "encoder": [
+      "encoder_fp32.log",
+      "encoder_bf16.log"
+    ],
+    "observation_trace_frames": 1197616,
+    "training_smoke": {
+      "frames": 2048,
+      "checkpoint": "checkpoints/mario_sim/sweep_1792016021935_0000/0000006442450944.bin",
+      "saved_FPG_frontier": 425,
+      "FPG_sidecar_saved": true,
+      "practice_sidecar_saved": true,
+      "log": "trainer_smoke.log"
+    },
+    "native_evaluation": {
+      "local_exit_code": 0,
+      "remote_exit_code": 0,
+      "local_log": "native_eval_final.log",
+      "scope": "Frozen GPU-policy inference and headless-reporting smoke check, not a performance evaluation"
+    }
+  },
+  "policy_sensitivity": {
+    "details": "policy_sensitivity.json",
+    "probe_rows": 15228,
+    "identical_carry_controls": 2538,
+    "findings": [
+      "Both trained checkpoints respond to water cues, terrain and entities.",
+      "Platform-motion reversal changed the greedy action in 0/59 and 0/67 tested contexts; probability changes were generally small.",
+      "These counterfactual input probes do not establish correct actions. Checkpoints drive different trajectories, so aggregate values are not a matched quality comparison."
+    ]
+  },
+  "manual_preset": {
+    "path": "config/mario_sim.ini",
+    "hyperparameter_source": "10B sweep run 0, sweep_1792016021935_0000",
+    "evaluation_anchor": "run-0 6.44B checkpoint: 475/1024 single-level ROM clears in prior evaluation",
+    "matches_optimizer_architecture_vector_settings": true,
+    "requested_frames": 2000000000,
+    "fresh_weights_by_default": true,
+    "resume_optimizer": false,
+    "practice_fraction": 0.25,
+    "FPG_fraction": 0.25,
+    "remote_workdir": "/workspace/PufferLib",
+    "new_training_started": false,
+    "binary_sha256": "35ae3ac69673ecb690e78c742b7036c91e7625b49f2180711cbda02adae507d1",
+    "start_command": "cd /workspace/PufferLib\n./puffer train",
+    "config_to_edit": "/workspace/PufferLib/config/mario_sim.ini",
+    "optional_continuation_checkpoint": "/workspace/PufferLib/reports/mario_sim/sweep_tight_run26_10b_20261014/checkpoints/mario_sim/sweep_1792016021935_0000/0000006442450944.bin",
+    "remote_validation": "/workspace/PufferLib/reports/mario_sim/improvement_20261016/remote_validation/READY.json"
+  },
+  "limitations": [
+    "Parity qualification is finite, not exhaustive. The original A/P register mismatches had identical RAM and do not establish the cause of poor learning.",
+    "New practice bank covers early 4-4 and 7-4, not complete maze routes; 8-4 coverage is confined to its first castle area.",
+    "Natural practice bands are ordered by achieved progress, not verified successful suffixes.",
+    "Maze loop counters are not explicit observation fields; whether recurrent state resolves the ambiguity has not been established.",
+    "No longer training run has established that the new reward, retention or practice choices improve ROM success."
+  ],
+  "automatic_six_run_batch": "Cancelled; no automatic training",
+  "remote_validation": "remote_checks.json",
+  "existing_remote_sweep_left_running": false,
+  "consolidation": {
+    "old_sweep_cancelled": true,
+    "checkpoints_and_logs_preserved": true,
+    "single_remote_executable": "/workspace/PufferLib/puffer",
+    "single_config": "config/mario_sim.ini",
+    "extra_preset_removed": true,
+    "extra_remote_build_removal_pending": false,
+    "extra_remote_build_removed": true,
+    "sweep_cancelled": true
+  }
+}
