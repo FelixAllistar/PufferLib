@@ -40,6 +40,20 @@ The new box gets the same tree with the attention encoder added. The trainer cor
   GPU memory, because the magnet doubles the training activations; at full size that is about
   5–6 GB, which fits 16 GB.
 
+## Setup (new box)
+
+1. **Bundle (locally).** Build the deploy tree:
+   - `git archive magnet-kl`;
+   - the Pokemon box's `src/pufferl.cu` and `config/pokemon.ini`, with the attention keys added;
+   - `git archive HEAD ocean/pokemon` and this directory.
+
+   Then `tar czf pokemon_ab_bundle.tgz build.sh src config vendor ocean/pokemon <this dir>` (about 0.7 MB).
+   A fresh extract builds, and trains both arms.
+2. **Copy.** Copy the bundle to the box's `/workspace` and run `setup_box.sh` there. It does the build, the
+   encoder tests and the Metamon env.
+3. **Metamon cache.** Copy `build/pokemon/metamon-cache` from the Pokemon box with
+   `ssh old 'tar c -C .../build/pokemon metamon-cache' | ssh new 'tar x -C .../build/pokemon'`.
+
 ## Run (new box)
 
 ```
