@@ -39,8 +39,14 @@ These were uncommitted working-tree edits from the Pokemon, Mario and Goofspiel 
 
 Commit 7c75de2b9 also touches the Goofspiel tests in `tests/` (`test_goofspiel_*`, `check_goofspiel_live.sh`), but they are env-specific.
 
-**Pokemon box 56007315** runs its own deployed copy of these sources. B0/B1 use the live-eval hooks, and none of
-the Protein changes, because they are train runs, not sweeps.
+**Pokemon box 56007315 runs the `magnet-kl` trainer, not `5.0`.** Its tree is:
+- `magnet-kl`'s `src/` and `config/default.ini`;
+- plus the `PUF_LIVE_EVAL_*` hooks above in `src/pufferl.cu` (48 lines);
+- plus `ocean/pokemon`.
+
+Its Pokemon recipe trains with magnet KL (`train.magnet_coef = 0.1`), and it has none of the Protein changes.
+The Transformer A/B box uses the same tree
+(`pokemon_experiments/20261022_transformer_ab/README.md`).
 
 ## Pending / planned
 
