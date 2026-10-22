@@ -3,9 +3,102 @@
 #include "goofspiel_obs.h"
 #include <math.h>
 
+typedef struct {
+    double best;
+    long long improved_at;
+} GSEarlyStop;
+
+static inline int gs_early_stop(GSEarlyStop* state, double score, long long step,
+        long long minimum, long long patience, double delta) {
+    if (!patience || !isfinite(score)) return 0;
+    if (!isfinite(state->best) || score < state->best - delta) {
+        state->best = score;
+        state->improved_at = step;
+    }
+    return step >= minimum && step - state->improved_at >= patience;
+}
+
+static inline void gs_sweep_put(Ini* ini, const char* key, double number) {
+    char value[64];
+    snprintf(value, sizeof(value), "%.17g", number);
+    puf_ini_put(ini, key, value);
+}
+
+// Resolve conditional choices before allocating a worker. The sweep records
+// these actual settings, including their normalized coordinates, in Protein.
+static inline void gs_resolve_sweep(Ini* ini) {
+    // A swept step budget is log-normal; the trainer needs a whole step count.
+    gs_sweep_put(ini, "train.total_timesteps", llround(puf_ini_get(ini, "train", "total_timesteps")));
+    double rho = puf_ini_get(ini, "train", "vtrace_rho_clip");
+    double c = puf_ini_get(ini, "train", "vtrace_c_clip");
+    if (puf_ini_get(ini, "train", "vtrace") && c > rho) {
+        if (rho >= puf_ini_get(ini, "sweep.train.vtrace_c_clip", "min")) {
+            gs_sweep_put(ini, "train.vtrace_c_clip", rho);
+        } else if (c <= puf_ini_get(ini, "sweep.train.vtrace_rho_clip", "max")) {
+            gs_sweep_put(ini, "train.vtrace_rho_clip", c);
+        }
+    }
+    if (!puf_ini_get(ini, "selfplay", "enabled")) {
+        if (puf_ini_get(ini, "sweep.env.exact_exploiter", "min") == 0) {
+            gs_sweep_put(ini, "env.exact_exploiter", 0);
+            return;
+        }
+        if (puf_ini_get(ini, "sweep.selfplay.enabled", "max") < 1) return;
+        gs_sweep_put(ini, "selfplay.enabled", 1);
+    }
+    int policies = puf_ini_get(ini, "vec", "num_policies");
+    int banks = puf_ini_get(ini, "env", "exact_exploiter_banks");
+    if (puf_ini_get(ini, "env", "exact_exploiter") && banks >= policies) {
+        if (policies - 1 >= puf_ini_get(ini, "sweep.env.exact_exploiter_banks", "min")) {
+            gs_sweep_put(ini, "env.exact_exploiter_banks", policies - 1);
+        } else if (banks + 1 <= puf_ini_get(ini, "sweep.vec.num_policies", "max")) {
+            policies = banks + 1;
+            gs_sweep_put(ini, "vec.num_policies", policies);
+        }
+    }
+    int horizon = puf_ini_get(ini, "train", "horizon");
+    int minibatch = puf_ini_get(ini, "train", "minibatch_size");
+    int buffers = puf_ini_get(ini, "vec", "num_buffers");
+    if (horizon <= 0 || minibatch < horizon || minibatch % horizon || buffers < 1) return;
+    int rows = minibatch / horizon;
+    int gcd = rows, divisor = buffers;
+    while (divisor) {
+        int remainder = gcd % divisor;
+        gcd = divisor;
+        divisor = remainder;
+    }
+    int unit = rows / gcd;
+    double fraction = puf_ini_get(ini, "vec", "hist_policy_percent");
+    double low = puf_ini_get(ini, "sweep.vec.hist_policy_percent", "min");
+    double high = puf_ini_get(ini, "sweep.vec.hist_policy_percent", "max");
+    long long maximum = puf_ini_get(ini, "sweep.vec.total_agents", "max");
+    // Agent counts use a power-of-two search. Increase only when this layout
+    // has no legal opponent fraction inside the requested interval.
+    for (long long agents = puf_ini_get(ini, "vec", "total_agents");
+            agents > 0 && agents <= maximum; agents *= 2) {
+        if (agents % (2 * buffers) || agents % rows) continue;
+        long long games = agents / (2 * buffers);
+        long long first = ceil(fmax(games * low, policies - 1) / unit);
+        long long last = floor(games * high / unit);
+        if (first > last) continue;
+        long long frozen = (long long)fmin(last, fmax(first, round(games * fraction / unit))) * unit;
+        gs_sweep_put(ini, "vec.total_agents", agents);
+        gs_sweep_put(ini, "vec.hist_policy_percent", (double)frozen / games);
+        return;
+    }
+}
+
 // CPU-only preflight, also used before the native sweep starts a worker.
-// Reject coupled shapes instead of silently changing the sampled parameters.
+// Validate resolved proposals and explicit ordinary-training settings.
 static inline const char* gs_training_config_error(Ini* ini, int alignment) {
+    const char* stop_keys[] = {"early_stop_min_steps", "early_stop_patience_steps",
+        "early_stop_min_delta"};
+    for (int i = 0; i < 3; i++) {
+        double x = puf_ini_get(ini, "sweep", stop_keys[i]);
+        if (!isfinite(x) || x < 0 || (i < 2 && (x > 1e12 || floor(x) != x))) {
+            return "invalid early-stop steps or minimum improvement";
+        }
+    }
     const char* integer_sections[] = {
         "vec", "vec", "vec", "policy", "policy", "train", "train", "train"};
     const char* integer_keys[] = {"total_agents", "num_buffers", "num_threads", "hidden_size",
@@ -96,6 +189,18 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
     if (puf_ini_get(ini, "train", "total_timesteps")
         < agents * horizon * puf_ini_get(ini, "train", "gpus")) {
         return "training budget is smaller than one rollout";
+    }
+    double graph_limit = puf_ini_get(ini, "sweep", "max_train_graph_work");
+    if (!isfinite(graph_limit) || graph_limit < 0) {
+        return "max_train_graph_work must be finite and nonnegative";
+    }
+    double graph_work = floor(replay * learner_rows * horizon / minibatch) * layers;
+    if (!strcmp(architecture, "puffernet")) {
+        graph_work *= horizon;
+    }
+    if (graph_limit > 0 && puf_ini_get(ini, "base", "cudagraphs") >= 0
+        && graph_work > graph_limit) {
+        return "CUDA training graph exceeds sweep.max_train_graph_work";
     }
     double limit = puf_ini_get(ini, "sweep", "memory_limit_mb");
     if (limit > 0) {

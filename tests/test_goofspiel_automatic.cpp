@@ -20,6 +20,19 @@ static void file(const fs::path& path, long nanos) {
 }
 
 int main() {
+    GSEarlyStop progress = {INFINITY, 0};
+    assert(!gs_early_stop(&progress, .8, 0, 20, 15, .005));
+    assert(!gs_early_stop(&progress, .8, 19, 20, 15, .005));
+    assert(gs_early_stop(&progress, .8, 20, 20, 15, .005));
+    assert(!gs_early_stop(&progress, .79, 20, 20, 15, .005));
+    assert(!gs_early_stop(&progress, .787, 30, 20, 15, .005));
+    assert(progress.improved_at == 20);
+    assert(!gs_early_stop(&progress, .783, 34, 20, 15, .005));
+    assert(progress.improved_at == 34); // Small improvements accumulate.
+    assert(!gs_early_stop(&progress, .9, 48, 20, 15, .005));
+    assert(gs_early_stop(&progress, .9, 49, 20, 15, .005));
+    assert(!gs_early_stop(&progress, .9, 100, 20, 0, .005));
+    assert(!gs_early_stop(&progress, NAN, 100, 20, 15, .005));
     char pattern[] = "/tmp/goofspiel-automatic-contract-XXXXXX";
     char* dir = mkdtemp(pattern); assert(dir);
     fs::path root(dir), checkpoints = root / "checkpoints";
@@ -94,7 +107,8 @@ int main() {
         int learner = agents - frozen * buffers;
         bool valid = threads >= buffers && threads % buffers == 0
             && frozen >= policies - 1 && agents % (minibatch / horizon) == 0
-            && learner % (minibatch / horizon) == 0;
+            && learner % (minibatch / horizon) == 0
+            && floor(4.0 * learner * horizon / minibatch) * 2 * horizon <= 32768;
         const char* error = gs_training_config_error(&ini, 4);
         assert(valid == (error == nullptr));
         assert((valid && horizon % 8 == 0) == (gs_training_config_error(&ini, 8) == nullptr));
@@ -119,6 +133,89 @@ int main() {
     assert(!gs_training_config_error(&ini, 4));
     puf_ini_free(&ini);
 
+    // Every default shape/fraction is resolved before a worker can see it.
+    // Resource limits are tested separately; they are not layout constraints.
+    puf_ini_load_env(&ini, "goofspiel", 0, nullptr);
+    put(&ini, "sweep.max_train_graph_work", 0);
+    int proposals = 0;
+    for (int agents = 4096; agents <= 131072; agents *= 2)
+    for (int buffers : {1, 2})
+    for (int horizon : {4, 8, 16, 32})
+    for (int minibatch : {2048, 4096, 8192})
+    for (int policies : {2, 3, 4, 5})
+    for (int fraction = 0; fraction <= 16; fraction++)
+    for (int selfplay : {0, 1})
+    for (int exact : {0, 1}) {
+        put(&ini, "vec.total_agents", agents);
+        put(&ini, "vec.num_buffers", buffers);
+        put(&ini, "vec.num_threads", buffers);
+        put(&ini, "train.horizon", horizon);
+        put(&ini, "train.minibatch_size", minibatch);
+        put(&ini, "vec.num_policies", policies);
+        gs_sweep_put(&ini, "vec.hist_policy_percent", .25 + fraction / 32.0);
+        put(&ini, "selfplay.enabled", selfplay);
+        put(&ini, "env.exact_exploiter", exact);
+        put(&ini, "env.exact_exploiter_banks", 4);
+        put(&ini, "train.vtrace", 1);
+        gs_sweep_put(&ini, "train.vtrace_rho_clip", .2);
+        gs_sweep_put(&ini, "train.vtrace_c_clip", .8);
+        gs_resolve_sweep(&ini);
+        assert(!gs_training_config_error(&ini, 4));
+        int actual_agents = puf_ini_get(&ini, "vec", "total_agents");
+        double actual_fraction = puf_ini_get(&ini, "vec", "hist_policy_percent");
+        assert(actual_agents >= agents && actual_agents <= 131072);
+        assert(actual_fraction >= .25 && actual_fraction <= .75);
+        assert(puf_ini_get(&ini, "selfplay", "enabled") == selfplay);
+        if (!selfplay) assert(!puf_ini_get(&ini, "env", "exact_exploiter"));
+        gs_resolve_sweep(&ini);
+        assert(actual_agents == puf_ini_get(&ini, "vec", "total_agents"));
+        assert(actual_fraction == puf_ini_get(&ini, "vec", "hist_policy_percent"));
+        ++proposals;
+    }
+    puf_ini_free(&ini);
+    printf("Resolved %d coupled sweep proposals without layout rejection.\n", proposals);
+
+    // The last interrupted trial had a huge captured graph; successful trial
+    // 11's graph must remain admissible under the restart budget.
+    puf_ini_load_env(&ini, "goofspiel", 0, nullptr);
+    put(&ini, "vec.total_agents", 4096);
+    put(&ini, "vec.num_buffers", 4);
+    put(&ini, "vec.num_threads", 8);
+    put(&ini, "vec.num_policies", 6);
+    puf_ini_put(&ini, "vec.hist_policy_percent", ".125");
+    put(&ini, "policy.hidden_size", 8);
+    put(&ini, "policy.num_layers", 8);
+    put(&ini, "train.horizon", 16);
+    put(&ini, "train.minibatch_size", 256);
+    put(&ini, "train.replay_ratio", 8);
+    assert(strstr(gs_training_config_error(&ini, 4), "CUDA training graph exceeds"));
+    put(&ini, "base.cudagraphs", -1);
+    assert(!gs_training_config_error(&ini, 4));
+    put(&ini, "base.cudagraphs", 1);
+    puf_ini_put(&ini, "policy.architecture", "transformer");
+    assert(!gs_training_config_error(&ini, 4));
+    puf_ini_put(&ini, "policy.architecture", "puffernet");
+    put(&ini, "vec.total_agents", 32768);
+    put(&ini, "vec.num_buffers", 2);
+    put(&ini, "vec.num_threads", 2);
+    put(&ini, "vec.num_policies", 3);
+    puf_ini_put(&ini, "vec.hist_policy_percent", ".625");
+    put(&ini, "policy.hidden_size", 32);
+    put(&ini, "policy.num_layers", 3);
+    put(&ini, "train.minibatch_size", 4096);
+    puf_ini_put(&ini, "train.replay_ratio", "5.79809284");
+    assert(!gs_training_config_error(&ini, 4));
+    put(&ini, "vec.total_agents", 65536);
+    put(&ini, "vec.num_policies", 4);
+    puf_ini_put(&ini, "vec.hist_policy_percent", ".5");
+    put(&ini, "policy.hidden_size", 16);
+    put(&ini, "train.horizon", 4);
+    puf_ini_put(&ini, "train.replay_ratio", "5.60852623");
+    assert(!gs_training_config_error(&ini, 4)); // Best trial 14.
+    put(&ini, "sweep.max_train_graph_work", 0);
+    assert(!gs_training_config_error(&ini, 4));
+    puf_ini_free(&ini);
+
     for (const char* model : {"puffernet", "transformer"}) {
         puf_ini_load_env(&ini, "goofspiel", 0, nullptr);
         puf_ini_put(&ini, "policy.architecture", model);
@@ -127,6 +224,7 @@ int main() {
         put(&ini, "sweep.memory_limit_mb", 1);
         assert(strstr(gs_training_config_error(&ini, 4), "estimated training/evaluation memory"));
         put(&ini, "sweep.memory_limit_mb", 3072);
+        put(&ini, "sweep.max_train_graph_work", 0);
         put(&ini, "vec.total_agents", 262144);
         put(&ini, "train.horizon", 128);
         put(&ini, "train.minibatch_size", 32768);

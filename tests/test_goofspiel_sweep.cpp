@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
         gs_sweep::Config c;
         puf_ini_load_env(&c.ini, "goofspiel", argc - 2, argv + 2);
         check(gs_sweep::value(c.ini, "sweep.metric") == "best_exploitability", "wrong forwarded metric");
-        check(gs_sweep::validate_ranges(c.ini) == 36, "wrong forwarded search space");
+        check(gs_sweep::validate_ranges(c.ini) == 34, "wrong forwarded search space");
         std::cout << "CONTRACT_ONLY: no training; model=" << gs_sweep::value(c.ini, "policy.architecture") << '\n';
         std::cerr << "CONTRACT_STDERR\n";
         std::cout.flush(); std::cerr.flush();
@@ -79,13 +79,25 @@ int main(int argc, char** argv) {
             check(!fs::exists(report), "dry-run created report directory");
             gs_sweep::Config c;
             puf_ini_load_file(&c.ini, out.c_str());
-            check(gs_sweep::validate_ranges(c.ini) == 36, "expected the full shared search space");
+            check(gs_sweep::validate_ranges(c.ini) == 34, "expected the full shared search space");
             check(gs_sweep::value(c.ini, "policy.architecture") == model, "wrong model");
             check(gs_sweep::number(c.ini, "vec.total_agents") == 16384, "wrong starting agents");
-            check(gs_sweep::number(c.ini, "sweep.vec.total_agents.min") == 256, "agents are not swept");
-            check(gs_sweep::number(c.ini, "sweep.vec.total_agents.max") == 262144, "high agent range lost");
-            check(gs_sweep::number(c.ini, "sweep.vec.num_buffers.max") == 4, "buffers are not swept");
-            check(gs_sweep::number(c.ini, "sweep.vec.num_threads.min") == 1, "threads are not swept");
+            check(gs_sweep::number(c.ini, "sweep.vec.total_agents.min") == 4096, "agents are not swept");
+            check(gs_sweep::number(c.ini, "sweep.vec.total_agents.max") == 131072, "high agent range lost");
+            fixed(c.ini, "vec.num_buffers", 1);
+            fixed(c.ini, "vec.num_threads", 1);
+            check(gs_sweep::number(c.ini, "sweep.live") == 0, "worker dashboards enabled");
+            check(gs_sweep::number(c.ini, "sweep.train.minibatch_size.min") == 2048,
+                "tiny minibatches retained");
+            check(gs_sweep::number(c.ini, "sweep.train.minibatch_size.max") == 8192,
+                "undertrained large minibatches retained");
+            check(gs_sweep::number(c.ini, "sweep.train.replay_ratio.min") == 2, "too little replay");
+            check(gs_sweep::number(c.ini, "sweep.policy.num_layers.max") == 4, "excessive depth");
+            check(gs_sweep::number(c.ini, "sweep.train.clip_coef.min") < .02
+                && gs_sweep::number(c.ini, "sweep.train.clip_coef.max") <= .2,
+                "clip search must extend below the winner and exclude large clips");
+            check(gs_sweep::number(c.ini, "sweep.max_train_graph_work") == 32768,
+                "missing graph work guard");
             check(gs_sweep::number(c.ini, "sweep.train.replay_ratio.max") == 8, "replay is not swept");
             check(gs_sweep::value(c.ini, "sweep.policy.num_layers.distribution") == "int_uniform", "fractional layers");
             fixed(c.ini, "train.total_timesteps", 50000000);
@@ -94,12 +106,12 @@ int main(int argc, char** argv) {
             check(gs_sweep::number(c.ini, "env.exploitability_interval_steps") == 1048576, "helper changed native cadence");
             fixed(c.ini, !strcmp(model, "puffernet") ? "policy.transformer_heads"
                 : "base.reset_every_horizon", !strcmp(model, "puffernet") ? 2 : 0);
-            check(gs_sweep::number(c.ini, "sweep.vec.hist_policy_percent.step") == .125,
-                "missing fractional selfplay grid");
+            check(gs_sweep::number(c.ini, "sweep.vec.hist_policy_percent.step") == 0,
+                "fixed fractional grid overrides coupled sampling");
             check(!gs_sweep::item(c.ini, "sweep.train.replay_ratio.step")
                 && !gs_sweep::item(c.ini, "sweep.train.reward_clip.step"), "unnecessary quantization");
-            check(gs_sweep::number(c.ini, "sweep.train.gae_lambda.min") <= .427651882,
-                "NMMO lambda excluded");
+            check(gs_sweep::number(c.ini, "sweep.train.gae_lambda.min") == .8,
+                "wrong restart lambda range");
             check(gs_sweep::number(c.ini, "sweep.train.gae_lambda.max") >= .998220325,
                 "old Goofspiel lambda excluded");
             // No profile or hidden helper default may diverge from ordinary native sweep.
@@ -119,14 +131,15 @@ int main(int argc, char** argv) {
             ++tests;
         }
         std::vector<std::string> tuned{"sweep", "transformer", report.string(), "--dry-run",
-            "--vec.total_agents=512", "--vec.num_buffers=2", "--train.minibatch_size=512",
+            "--vec.total_agents=8192", "--vec.num_buffers=2", "--vec.num_threads=2",
+            "--train.minibatch_size=2048",
             "--train.replay_ratio=2", "--policy.hidden_size=64", "--policy.num_layers=3"};
         check(run(tuned, out) == 0, "manual controls rejected");
         {
             gs_sweep::Config c; puf_ini_load_file(&c.ini, out.c_str());
-            check(gs_sweep::number(c.ini, "vec.total_agents") == 512, "starting agents override lost");
+            check(gs_sweep::number(c.ini, "vec.total_agents") == 8192, "starting agents override lost");
             check(gs_sweep::number(c.ini, "train.replay_ratio") == 2, "starting replay override lost");
-            check(gs_sweep::number(c.ini, "sweep.vec.total_agents.max") == 262144, "starting value silently pins search");
+            check(gs_sweep::number(c.ini, "sweep.vec.total_agents.max") == 131072, "starting value silently pins search");
             check(gs_sweep::number(c.ini, "base.checkpoint_interval") == -1, "lost per-trial cadence");
             check(gs_sweep::number(c.ini, "vec.hist_policy_hidden_size") == 64, "frozen width not synchronized");
             check(gs_sweep::number(c.ini, "vec.hist_policy_num_layers") == 3, "frozen depth not synchronized");
@@ -137,7 +150,7 @@ int main(int argc, char** argv) {
         check(run(tuned, out) == 0, "manual fixed range rejected");
         {
             gs_sweep::Config c; puf_ini_load_file(&c.ini, out.c_str());
-            check(gs_sweep::validate_ranges(c.ini) == 35, "manual fixed range was ignored");
+            check(gs_sweep::validate_ranges(c.ini) == 33, "manual fixed range was ignored");
             fixed(c.ini, "train.replay_ratio", 2);
             ++tests;
         }
@@ -160,7 +173,7 @@ int main(int argc, char** argv) {
             ++tests;
         }
         check(run({"sweep", "puffernet", report.string(), "--dry-run",
-            "--train.horizon=4", "--train.replay_ratio=.37"}, out) == 0,
+            "--train.horizon=4", "--train.replay_ratio=2.37"}, out) == 0,
             "FP32 horizon or continuous replay override rejected");
         ++tests;
         const std::vector<std::pair<std::string, std::string>> bad{
@@ -173,6 +186,8 @@ int main(int argc, char** argv) {
             {"--sweep.max_failures=0", "invalid integer"},
             {"--sweep.memory_limit_mb=-1", "nonnegative"},
             {"--sweep.memory_limit_mb=1", "estimated training/evaluation memory"},
+            {"--sweep.max_train_graph_work=-1", "nonnegative"},
+            {"--sweep.max_train_graph_work=1", "CUDA training graph exceeds"},
             {"--policy.hidden_size=12", "width 8-256"},
             {"--policy.transformer_heads=3", "must divide"},
             {"--vec.total_agents=8191", "2*num_buffers"},
