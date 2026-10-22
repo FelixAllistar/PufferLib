@@ -2232,6 +2232,11 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         int slice = vec->policy_layout[b + 1] - vec->policy_layout[b];
         assert(slice > 0 && "policy has no agents");
 
+#ifdef PUF_POLICY_ARCH
+        // Env hook: select env-local encoder settings per policy (e.g. frozen
+        // league banks with a different encoder than the learner).
+        PUF_POLICY_ARCH(pol->frozen);
+#endif
         pol->arch = build_arch(input_size, h, L,
             decoder_output_size, is_continuous, hypers.horizon,
             puf_ini_get_str(ini, "policy", "architecture"),
@@ -2249,6 +2254,10 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         }
     }
 
+#ifdef PUF_POLICY_ARCH
+    // Later copies of the learner arch (async actor, magnet) use its settings.
+    PUF_POLICY_ARCH(false);
+#endif
     // Train-only extras on policies[0] (trainable).
     Policy* primary = &pufferl->policies[0];
     if (hypers.async) {
