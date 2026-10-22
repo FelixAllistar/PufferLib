@@ -66,4 +66,30 @@ whether it does.
 
 ## Results
 
-(pending)
+**Free-pick run: failed to learn.**
+- It scored 0.0% vs both SyntheticRLV2 and TaurosV0 at every checkpoint (250M–1.75B), 0 wins on all panel
+  teams.
+- Its training win rate stayed about 2%, and entropy stayed near random (about 1.96) through 2B steps.
+- With 88% of its play against strong frozen policies from scratch, there was almost no learning
+  signal. Options: opponent-entropy annealing (banks start partly random), or warm-starting from a B1
+  policy.
+
+**gar_egg_zap self-play control** (PufferNet, no league):
+
+| Checkpoint | SyntheticRLV2 | TaurosV0 |
+|---|---|---|
+| 350M | 25.3 | 37.5 |
+| 700M | 49.3 | 34.4 |
+| B1 with league, 700M | 61.8 | 58.0 |
+
+The league adds about 12 points on SyntheticRLV2 and 24 on TaurosV0 here, against about 9 / 8 on
+zam_egg_mie.
+
+**Magnet-off ablation:** restarted 2026-10-22 18:18 with the per-opponent win-rate build (see below).
+
+## Per-opponent win-rate logging (2026-10-22)
+
+`ocean/pokemon/pokemon_base.h` now logs, per opponent, the learner's score (`vs_self_score`,
+`vs_<bank>_score`) and its share of games (`vs_<bank>_share`). Bank names come from the manifest
+`name =`. The code is env-local; there is no core change. It is deployed on the B1 box: `./puffer`
+was rebuilt and the previous `ocean/pokemon` is backed up at `/workspace/ocean_pokemon_backup_20261022`.

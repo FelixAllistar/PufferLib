@@ -32,4 +32,15 @@ Local checks:
 
 ## Results
 
-(pending)
+**350M: SyntheticRLV2 20.1, TaurosV0 18.8.** This is far below B1's 50.7 / 52.1 at 350M.
+- By panel team, it wins about 56–58% vs the gar_egg_zap mirror and 0–2% vs zam_egg_mie and
+  jynx_mie_don.
+
+**CPU match vs each of the 13 league banks** (`./pokemon eval`, 128 argmax games each):
+- It wins only vs the three Gengar-led banks: gar_egg_mie 33%, gar_egg_zap 29%, gar_egg_mie_zap 28%.
+- It has 0 wins vs all ten others, with losses and draws only.
+
+**GPU check.** A learning-rate-0 resume of the checkpoint vs a one-bank zam_egg_mie league scored about
+0.3%, which agrees with CPU. So this is not an inference bug: training against the league produced a
+narrow policy that only handles the Gengar mirror, while PufferNet with the same league learned broadly.
+The in-training score (about 0.47) hid this, which motivated the per-opponent win-rate logging.
