@@ -93,9 +93,22 @@ tmux new -d -s ab_p 'bash reports/pokemon_experiments/20261022_transformer_ab/ru
 |---|---|---|---|
 | puffernet (self-play) | 350M | 53.1 | 45.1 |
 | puffernet (self-play) | 700M | 50.7 | 45.5 |
-| transformer (self-play) | 350M | (pending) | |
-| transformer (self-play) | 700M | (pending) | |
+| transformer (self-play) | 350M | **55.6** | **52.8** |
+| transformer (self-play) | 700M | **54.2** | 46.2 |
 | *B1 PufferNet with league, for reference* | *700M* | *60.4* | *53.1* |
 
 The self-play-only control is about 9 points below the league-trained B1 run on both models. The
 Transformer must therefore be compared with the control, not with B1.
+
+**Verdict.** The Transformer leads the matched control in all four cells: +2.5 / +7.7 at 350M and
++3.5 / +0.7 at 700M. The two-model mean is 54.2 vs 49.1 at 350M and 50.2 vs 48.1 at 700M. Each
+difference is within noise alone (the standard error of a difference is about 5.7), but the direction
+is consistent.
+
+PufferNet's hyperparameters transferred unchanged (Research Q1). The Transformer peaked at 350M.
+Alone on the GPU it trained at about 32K steps/s (about 7× slower than PufferNet) and finished 700M in
+about 6.5 h. Both self-play arms trail the league-trained PufferNet (60.4 / 53.1). The league matters
+more than the encoder so far.
+
+Next test: a Transformer with the frozen league. That needs per-policy encoder selection, which is a
+trainer core change.
