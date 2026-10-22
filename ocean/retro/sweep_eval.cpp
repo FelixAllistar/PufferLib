@@ -24,13 +24,14 @@ static long number(const char* text) {
 
 int main(int argc,char** argv) {
     try {
-        if(argc<2) throw std::runtime_error("usage: build/retro/sweep_eval CHECKPOINT [--config INI] [--levels CSV|all] [--frameskip N] [--metric checkpoints|speed|distance|perf] [--frames 3600] [--repeats 2] [--seed 20260907] [--workers 4] [--output TSV] [--deterministic]");
+        if(argc<2) throw std::runtime_error("usage: build/retro/sweep_eval CHECKPOINT [--config INI] [--levels CSV|all] [--frameskip N] [--metric checkpoints|speed|distance|perf] [--frames 3600] [--repeats 2] [--seed 20260907] [--workers 4] [--output TSV] [--deterministic] [--game]");
         std::string config=std::string(argv[1])+".ini",output;
         std::string levels_override,metric_override,skip_override;
-        int frames=3600,repeats=2,workers=4; unsigned seed=20260907; bool deterministic=false,full_run=false;
+        int frames=3600,repeats=2,workers=4; unsigned seed=20260907; bool deterministic=false,full_run=false,game=false;
         for(int i=2;i<argc;i++) {
             std::string arg=argv[i];
             if(arg=="--deterministic") { deterministic=true; continue; }
+            if(arg=="--game") { game=true;full_run=true;continue; }
             if(arg=="--full-run") { full_run=true; continue; }
             if(i+1==argc) throw std::runtime_error("missing panel option value");
             const char* value=argv[++i];
@@ -45,8 +46,8 @@ int main(int argc,char** argv) {
             else if(arg=="--workers") workers=number(value);
             else throw std::runtime_error("unknown panel option");
         }
-        if(frames<1||frames>30000||repeats<1||repeats>32||workers<1||workers>64)
-            throw std::runtime_error("panel limits: frames 1..30000, repeats 1..32, workers 1..64");
+        if(frames<1||frames>(game?108000:30000)||repeats<1||repeats>32||workers<1||workers>64)
+            throw std::runtime_error("panel limits: frames 1..30000 (1..108000 for --game), repeats 1..32, workers 1..64");
         if(!std::filesystem::exists(config))
             throw std::runtime_error("checkpoint config missing; pass --config logs/retro/RUN.ini for an older checkpoint");
         Ini ini={}; puf_ini_load_env(&ini,"retro",0,nullptr);
@@ -54,6 +55,7 @@ int main(int argc,char** argv) {
         // must not silently inherit today's active practice start.
         puf_ini_set(puf_ini_section(&ini,"env",0),"practice_replay","None");
         puf_ini_load_file(&ini,config.c_str());
+        puf_ini_put(&ini,"env.archive_enabled","0");
         if(full_run) puf_ini_set(puf_ini_section(&ini,"env",0),"practice_replay","None");
         DictItem* practice_option=dict_find(puf_ini_section(&ini,"env",0),"practice_replay");
         bool practice=practice_option&&practice_option->str&&*practice_option->str&&strcmp(practice_option->str,"None");
@@ -63,6 +65,7 @@ int main(int argc,char** argv) {
         if(!levels_override.empty()) puf_ini_put(&ini,"env.spawn_levels",levels_override.c_str());
         if(!skip_override.empty()) puf_ini_put(&ini,"env.frameskip",skip_override.c_str());
         if(!metric_override.empty()) puf_ini_put(&ini,"sweep.metric",metric_override.c_str());
+        if(game)puf_ini_put(&ini,"env.spawn_levels","1-1");
         double skip=puf_ini_get(&ini,"env","frameskip");
         if(!std::isfinite(skip)||skip<1||skip>16||skip!=floor(skip))
             throw std::runtime_error("panel frameskip must be an integer in 1..16");
@@ -77,7 +80,7 @@ int main(int argc,char** argv) {
         puf_ini_put(&ini,"env.max_frames",std::to_string(frames).c_str());
         // Score gameplay, not swept reward weights or checkpoint spacing.
         puf_ini_put(&ini,"env.checkpoint_distance","128");
-        puf_ini_put(&ini,"env.terminate_on_clear","1");
+        puf_ini_put(&ini,"env.terminate_on_clear",game?"0":"1");
         int hidden=puf_ini_get(&ini,"policy","hidden_size"),layers=puf_ini_get(&ini,"policy","num_layers");
         if(hidden<8||hidden>1024||hidden%8||layers<1||layers>8)
             throw std::runtime_error("invalid checkpoint architecture");
@@ -99,11 +102,11 @@ int main(int argc,char** argv) {
         std::vector<float> obs(n*OBS_SIZE),actions(n),rewards(n),terminals(n);
         std::vector<unsigned> rng(n);
         std::vector<int> cleared(n),elapsed(n),furthest(n),clear_frames(n);
-        std::vector<double> progress(n),checkpoints(n);
+        std::vector<double> progress(n),checkpoints(n),game_levels(n),game_deaths(n),game_warps(n);
         for(int i=0;i<n;i++) {
             Env* e=&envs[i]; e->spawn_pin=1; e->cur_spawn=i%level_count;
             e->agents[0]={obs.data()+i*OBS_SIZE,&actions[i],&rewards[i],&terminals[i],nullptr,0};
-            puf_reset(e); furthest[i]=e->x_pos;
+            puf_reset(e); furthest[i]=retro_progress_x(e->x_pos);
             unsigned case_id=(i/level_count)*32+level_ids[i%level_count]+1;
             rng[i]=seed^(case_id*2654435761u); if(!rng[i]) rng[i]=73;
         }
@@ -123,15 +126,20 @@ int main(int argc,char** argv) {
                     puf_step(e); elapsed[i]+=e->last_frames;
                     checkpoints[i]=terminals[i] ? e->log.checkpoints-before_checkpoints
                         : e->progress_pixels/e->checkpoint_distance;
-                    cleared[i]=e->log.level_clears[level]>before;
+                    cleared[i]=game?e->log.game_wins>0:e->log.level_clears[level]>before;
+                    if(game) {
+                        game_levels[i]=0;for(float c:e->log.level_clears)game_levels[i]+=c>0;
+                        game_deaths[i]=e->log.deaths;game_warps[i]=e->log.warps;
+                    }
                     if(cleared[i]) clear_frames[i]=terminals[i]
                         ?(int)e->log.clear_frame_sum:e->episode_clear_frames;
+                    if(game&&cleared[i])clear_frames[i]=elapsed[i];
                     // Stop at first source-level clear or terminal. Auto-reset
                     // observations do NOT become a second attempt in this panel.
                     if(cleared[i]||terminals[i]) break;
                     if(e->world==level/4+1&&e->stage==level%4+1&&e->area==e->start->area
                         &&e->emu->low_mem()[0xe7]+256*e->emu->low_mem()[0xe8]==e->start->data)
-                        furthest[i]=std::max(furthest[i],e->x_pos);
+                        furthest[i]=std::max(furthest[i],retro_progress_x(e->x_pos));
                 }
             } catch(...) {
                 #pragma omp critical(retro_panel_failure)
@@ -155,6 +163,8 @@ int main(int argc,char** argv) {
         double mean_clear_frames=clears?clear_frame_sum/clears:0;
         double score=retro_panel_objective(metric,clears,n,mean_progress,mean_distance,
             mean_clear_frames,frames,best_clear_frames,mean_checkpoints);
+        double mean_game_levels=0;for(double x:game_levels)mean_game_levels+=x/n;
+        if(game)score=100.0*clears/n+mean_game_levels;
         int best_count=0;
         for(int i=0;i<n;i++) best_count+=cleared[i]&&clear_frames[i]==best_clear_frames;
         if(!output.empty()) {
@@ -174,14 +184,18 @@ int main(int argc,char** argv) {
             fprintf(file,"# checkpoints=%.9g distance_per_checkpoint=128\n",mean_checkpoints);
             fprintf(file,"# speed_objective=2 best_frames=%d best_seconds=%.12f mean_seconds=%.12f best_count=%d\n",
                 best_clear_frames,retro_frame_seconds(best_clear_frames),retro_frame_seconds(mean_clear_frames),best_count);
-            fprintf(file,"# timing_scope=%s practice_replay=%s\n",practice?"segment":"full_level",practice_path.c_str());
+            if(game) {
+                fprintf(file,"# game=1 wins=%d win_rate=%.9g mean_levels=%.9g archive_enabled=0\n",clears,(double)clears/n,mean_game_levels);
+                for(int i=0;i<n;i++)fprintf(file,"# game_attempt=%d wins=%d levels=%.0f deaths=%.0f warps=%.0f frames=%d\n",i,cleared[i],game_levels[i],game_deaths[i],game_warps[i],elapsed[i]);
+            }
+            fprintf(file,"# timing_scope=%s practice_replay=%s\n",game?"full_game":practice?"segment":"full_level",practice_path.c_str());
             bool failed=ferror(file)!=0; if(fclose(file)) failed=true;
             if(failed||rename(temporary.c_str(),output.c_str())) throw std::runtime_error("cannot publish panel report");
         }
         if(clears) printf("retro_speed best_frames=%d best_%s_seconds=%.12f mean_%s_seconds=%.12f clears=%d/%d best_hits=%d speed_objective=2 timing_scope=%s\n",
-            best_clear_frames,practice?"segment":"rta",retro_frame_seconds(best_clear_frames),practice?"segment":"rta",retro_frame_seconds(mean_clear_frames),clears,n,best_count,practice?"segment":"full_level");
+            best_clear_frames,practice?"segment":"rta",retro_frame_seconds(best_clear_frames),practice?"segment":"rta",retro_frame_seconds(mean_clear_frames),clears,n,best_count,game?"full_game":practice?"segment":"full_level");
         else printf("retro_speed best_frames=NA best_%s_seconds=NA mean_%s_seconds=NA clears=0/%d best_hits=0 speed_objective=2 timing_scope=%s\n",
-            practice?"segment":"rta",practice?"segment":"rta",n,practice?"segment":"full_level");
+            practice?"segment":"rta",practice?"segment":"rta",n,game?"full_game":practice?"segment":"full_level");
         printf("retro_panel version=1 score=%.9g clears=%d attempts=%d progress=%.9g frames=%ld seed=%u deterministic=%d metric=%s distance=%.9g clear_frames=%.9g levels=%s frameskip=%d\n",
             score,clears,n,mean_progress,executed,seed,deterministic,metric,mean_distance,
             mean_clear_frames,puf_ini_get_str(&ini,"env","spawn_levels"),(int)skip);

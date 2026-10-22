@@ -90,7 +90,7 @@ static int retro_post_train_eval(Ini* ini,const char* checkpoint,const char* con
         "--repeats",dict_get_str(panel,"repeats"),
         "--seed",dict_get_str(panel,"seed"),"--frames",dict_get_str(panel,"frames"),
         "--frameskip",dict_get_str(panel,"frameskip"),
-        "--workers",dict_get_str(panel,"workers"),"--metric",metric,
+        "--workers",dict_get_str(panel,"workers"),"--metric",!strcmp(metric,"curriculum")?"perf":metric,
         "--output",output,nullptr};
     pid_t pid;
     assert(posix_spawn(&pid,args[0],nullptr,nullptr,(char* const*)args,environ)==0
@@ -120,6 +120,24 @@ static int retro_post_train_eval(Ini* ini,const char* checkpoint,const char* con
     }
     assert(!ferror(file)&&found==1);
     fclose(file);
+    if(!strcmp(metric,"curriculum")) {
+        char game_output[4096];snprintf(game_output,sizeof(game_output),"%s.game.tsv",checkpoint);
+        const char* game_args[]={"build/retro/sweep_eval",checkpoint,"--config",config,
+            "--game","--repeats",dict_get_str(panel,"game_repeats"),"--seed",dict_get_str(panel,"seed"),
+            "--frames","108000","--frameskip",dict_get_str(panel,"frameskip"),
+            "--workers",dict_get_str(panel,"workers"),"--metric","perf","--output",game_output,nullptr};
+        assert(posix_spawn(&pid,game_args[0],nullptr,nullptr,(char* const*)game_args,environ)==0);
+        assert(waitpid(pid,&status,0)==pid&&WIFEXITED(status)&&WEXITSTATUS(status)==0);
+        FILE* game_file=fopen(game_output,"r");assert(game_file);int game_found=0;
+        while(fgets(line,sizeof(line),game_file)) {
+            double value;int wins,attempts;
+            if(sscanf(line,"# score=%lf clears=%d attempts=%d",&value,&wins,&attempts)==3) {
+                assert(std::isfinite(value)&&attempts>0);*score+=value;game_found++;
+                dict_set(log,"game/score",value);dict_set(log,"game/wins",wins);dict_set(log,"game/attempts",attempts);
+            }
+        }
+        assert(!ferror(game_file)&&game_found==1);fclose(game_file);
+    }
     fprintf(stderr,"retro_eval metric=%s score=%.6f clears=%.0f/%.0f report=%s\n",
         metric,*score,dict_get(log,"panel/clears"),dict_get(log,"panel/attempts"),output);
     return 1;
