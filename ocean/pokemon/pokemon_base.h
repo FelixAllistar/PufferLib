@@ -38,10 +38,10 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
     if(!isfinite(fraction) || fraction<0 || fraction>1) {
         fprintf(stderr,"expert_fraction must be in [0,1]\n"); exit(1);
     }
-    // Frozen banks share the encoder dimensions, and every exported bank is 32/64.
-    if(fraction>0 && (pk_embed!=32 || pk_mid!=64 || pk_attn.layers)) {
-        printf("Pokemon native league: encoder %d/%d attention %d differs from the 32/64 MLP banks; expert_fraction=0\n",
-            pk_embed,pk_mid,pk_attn.layers);
+    // Frozen banks share the embed/mid widths, and every exported bank is 32/64.
+    // An attention learner is fine: PUF_POLICY_ARCH gives the banks the MLP fusion.
+    if(fraction>0 && (pk_embed!=32 || pk_mid!=64)) {
+        printf("Pokemon native league: encoder %d/%d differs from the 32/64 banks; expert_fraction=0\n",pk_embed,pk_mid);
         fraction=0;
     }
     // The non-expert share plays the current policy, not frozen history.
@@ -130,6 +130,14 @@ static inline const char* pk_native_bank_path(int bank, const char* fallback) {
 }
 #define PUF_SELFPLAY_BANK_PATH(bank,path) pk_native_bank_path(bank,path)
 #define PUF_FROZEN_LEAGUE_ACTIVE() (pk_native_count > 0)
+// The learner's encoder settings; pk_attn is switched per policy while the trainer builds them.
+static PKAttn pk_attn_learner = {0, 128, 4};
+// Frozen native-league banks are exported MLP-fusion checkpoints; frozen self-play
+// history snapshots share the learner's encoder.
+static inline void pk_policy_arch(int frozen) {
+    pk_attn = frozen && pk_native_count ? pk_attn_off : pk_attn_learner;
+}
+#define PUF_POLICY_ARCH(frozen) pk_policy_arch(frozen)
 static inline void pk_name_slug(const char* name, char slug[64]) {
     int n = 0;
     for (; *name && n < 62; name++) {
@@ -194,6 +202,7 @@ static inline void pk_configure(Ini* ini, const char* mode) {
     if(!pk_attn_valid(pk_attn)) {
         fprintf(stderr,"policy.pokemon_attention_layers 0-8, width a multiple of 8 up to 512, heads dividing width\n");exit(1);
     }
+    pk_attn_learner=pk_attn;
     pk_native_configure(ini,mode);
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;
     if(pk_current_selfplay) {

@@ -48,6 +48,24 @@ Its Pokemon recipe trains with magnet KL (`train.magnet_coef = 0.1`), and it has
 The Transformer A/B box uses the same tree
 (`pokemon_experiments/20261022_transformer_ab/README.md`).
 
+## On local `5.0` and the Pokemon A/B box's `magnet-kl` tree (2026-10-22, local 5.0 not pushed)
+
+| File | Change | Needed by | Default effect on other envs |
+|---|---|---|---|
+| `src/pufferl.cu` | `PUF_POLICY_ARCH(frozen)` hook, called before each policy's `build_arch` and once after the loop (restoring the learner's settings for the async actor and magnet copies). An env can switch its encoder per policy | Pokemon: Transformer learner vs frozen PufferNet (MLP) league banks | None: compiled out unless the env defines the macro |
+
+The same 9 lines go into the A/B box's `magnet-kl`-based `src/pufferl.cu`
+(`pokemon_experiments/20261022_transformer_league/box_pufferl_policy_arch.diff`). The Pokemon B1 box
+(56007315) is unchanged.
+
+Verified locally:
+- Frozen banks get the MLP encoder: the bank files are 3,616,896 bytes, exactly the MLP parameter count.
+- The learner checkpoint has the Transformer size.
+- The trainer logs "13 frozen bank slots".
+
+`puf_load_weights_into` has no size check for Pokemon, so a mismatched bank would load silently. This
+was checked by hand here.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
