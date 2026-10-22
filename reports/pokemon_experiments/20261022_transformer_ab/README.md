@@ -51,7 +51,8 @@ The new box gets the same tree with the attention encoder added. The trainer cor
    A fresh extract builds, and trains both arms.
 2. **Copy.** Copy the bundle to the box's `/workspace` and run `setup_box.sh` there. It does the build, the
    encoder tests and the Metamon env.
-3. **Metamon cache.** Copy `build/pokemon/metamon-cache` from the Pokemon box with
+3. **Metamon cache and panel teams.** Copy `build/pokemon/metamon-cache` and
+   `reports/pokemon_benchmarks/20261014_all_roster` (the three panel-team files the evaluator reads) from the Pokemon box with
    `ssh old 'tar c -C .../build/pokemon metamon-cache' | ssh new 'tar x -C .../build/pokemon'`.
 
 ## Run (new box)
