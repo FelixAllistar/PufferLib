@@ -3,18 +3,20 @@
 // ABI 3: byte observations remain compact; categorical IDs are never ordinal
 // neural features. Tables contain pinned simulator mechanics, not usage ranks.
 #define PK_AUG(n) (((n)+8)&~7)
-#define PK_EMBED 32
 #define PK_MON_COUNT 20
 #define PK_MF 152
 #define PK_SF 176
 #define PK_MOVE_IN (166+PK_MF)
 #define PK_SPECIES_IN (150+PK_SF)
 #define PK_DYN 96
-#define PK_MON_IN (PK_SPECIES_IN+PK_EMBED+PK_DYN)
+#define PK_MON_IN(e) (PK_SPECIES_IN+(e)+PK_DYN)
 #define PK_GLOBAL 160
-#define PK_FUSION (PK_MON_COUNT*PK_EMBED+PK_GLOBAL)
+#define PK_FUSION(e) (PK_MON_COUNT*(e)+PK_GLOBAL)
 #define PK_QUERIES 5
-#define PK_QUERY_OUT (PK_QUERIES*PK_EMBED+PK_DYN+4)
+#define PK_QUERY_OUT(e) (PK_QUERIES*(e)+PK_DYN+4)
+// Per-Pokemon embedding and entity-MLP width (policy.pokemon_embed/pokemon_mid).
+// Checkpoints without these keys use the original 32/64.
+static int pk_embed = 32, pk_mid = 64;
 static const float pk_sem_move[166][PK_MF]={
 #include "move_features.inc"
 };

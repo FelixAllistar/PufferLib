@@ -95,7 +95,10 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     int h = puf_ini_get(&policy->ini, "policy", "hidden_size");
     int layers = puf_ini_get(&policy->ini, "policy", "num_layers");
     if (h < 1 || h > 4096 || layers < 1 || layers > 32) { fprintf(stderr, "Invalid policy architecture\n"); exit(1); }
-    size_t expected = pk_parameter_count(h,layers);
+    DictItem* embed_option = dict_find(puf_ini_section(&policy->ini, "policy", 0), "pokemon_embed");
+    DictItem* mid_option = dict_find(puf_ini_section(&policy->ini, "policy", 0), "pokemon_mid");
+    int embed = embed_option ? embed_option->value : 32, mid = mid_option ? mid_option->value : 64;
+    size_t expected = pk_parameter_count(h,layers,embed,mid);
     struct stat st;
     if (stat(policy->path, &st) || st.st_size != (off_t)(expected * sizeof(float))) {
         fprintf(stderr, "Missing/incompatible checkpoint %s: expected %zu bytes (H=%d L=%d)\n",
@@ -106,7 +109,7 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     for (size_t i = 0; i < expected; i++) {
         if (!isfinite(policy->weights->data[i])) { fprintf(stderr, "Non-finite checkpoint weights\n"); exit(1); }
     }
-    policy->net = pk_cpu_make(policy->weights,1,h,layers);
+    policy->net = pk_cpu_make(policy->weights,1,h,layers,embed,mid);
     fprintf(stderr, "Loaded %s (hidden=%d layers=%d)\n", policy->path, h, layers);
 }
 static void pk_reset_policy(PKPolicy* policy, uint64_t seed) {
