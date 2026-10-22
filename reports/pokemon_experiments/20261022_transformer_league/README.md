@@ -44,3 +44,8 @@ Local checks:
 0.3%, which agrees with CPU. So this is not an inference bug: training against the league produced a
 narrow policy that only handles the Gengar mirror, while PufferNet with the same league learned broadly.
 The in-training score (about 0.47) hid this, which motivated the per-opponent win-rate logging.
+
+**700M: SyntheticRLV2 57.3, TaurosV0 47.9** (mean 52.6). The policy broadened: by panel team it wins
+61.5 / 39.6 / 70.8 (zam_egg_mie / jynx_mie_don / gar_egg_zap) vs SyntheticRLV2 and 41.7 / 45.8 / 56.2 vs
+TaurosV0. The narrow phase at 350M was temporary. It still trails PufferNet with the same league (B1:
+61.8 / 58.0) by about 7 points; the Transformer may need more steps.
