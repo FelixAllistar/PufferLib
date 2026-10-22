@@ -89,4 +89,13 @@ tmux new -d -s ab_p 'bash reports/pokemon_experiments/20261022_transformer_ab/ru
 
 ## Results
 
-(pending)
+| Arm | Checkpoint | SyntheticRLV2 | TaurosV0 |
+|---|---|---|---|
+| puffernet (self-play) | 350M | 53.1 | 45.1 |
+| puffernet (self-play) | 700M | 50.7 | 45.5 |
+| transformer (self-play) | 350M | (pending) | |
+| transformer (self-play) | 700M | (pending) | |
+| *B1 PufferNet with league, for reference* | *700M* | *60.4* | *53.1* |
+
+The self-play-only control is about 9 points below the league-trained B1 run on both models. The
+Transformer must therefore be compared with the control, not with B1.
