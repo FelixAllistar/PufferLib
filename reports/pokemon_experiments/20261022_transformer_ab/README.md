@@ -47,7 +47,7 @@ The new box gets the same tree with the attention encoder added. The trainer cor
    - the Pokemon box's `src/pufferl.cu` and `config/pokemon.ini`, with the attention keys added;
    - `git archive HEAD ocean/pokemon` and this directory.
 
-   Then `tar czf pokemon_ab_bundle.tgz build.sh src config vendor ocean/pokemon <this dir>` (about 0.7 MB).
+   Then `tar czf pokemon_ab_bundle.tgz build.sh src config vendor ocean/pokemon ocean/breakout <this dir>` (about 0.7 MB).
    A fresh extract builds, and trains both arms.
 2. **Copy.** Copy the bundle to the box's `/workspace` and run `setup_box.sh` there. It does the build, the
    encoder tests and the Metamon env.
@@ -65,6 +65,26 @@ tmux new -d -s ab_p 'bash reports/pokemon_experiments/20261022_transformer_ab/ru
   which appends to `evals.log`.
 - **Resume:** a `trained` marker skips retraining, and the evals skip any `summary.json` that already
   exists.
+
+## Launched (2026-10-22)
+
+- **Box:** Vast 57154204, `ssh -p 28489 root@ssh2.vast.ai`. tmux `ab_t` (transformer) and `ab_p` (puffernet).
+- **Box checks:** setup passed. That covers FP32 parity and gradients with attention off and on, plus the
+  private-evaluator checks. BF16 parity (`tests/test_encoder_bf16.cu`, built by hand) also passed at the
+  run shape: 2×128×4 with H256, max scaled forward error 0.26%, and all 40 tensors get finite nonzero
+  gradients.
+- **Speed with both arms sharing the GPU:**
+  - transformer: 15.8K steps/s; training is 85% of wall time, about 14 s per epoch;
+  - puffernet: about 97K steps/s, about 2.3 s per epoch.
+- **Estimated finish:** PufferNet in about 2 h. The Transformer has about 12 h at the shared rate, less
+  once it has the GPU alone.
+- **Why the Transformer is slower:**
+  - About 30× more encoder compute per observation (21 tokens × 2 layers at width 128, against the
+    fusion MLP).
+  - The magnet doubles the forward passes.
+  - `native_transformer.cuh` uses 256-thread blocks for 21-token softmax and 128-wide LN rows, which is
+    inefficient at this size. It is core code, so it is left unchanged.
+- **GPU memory:** 11.7 GB for both arms together.
 
 ## Results
 
