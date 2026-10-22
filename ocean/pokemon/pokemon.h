@@ -69,6 +69,7 @@ static inline void pk_personality_configure(Ini* ini, const char* mode) {
 #define PUF_CONFIGURE(ini,mode) pk_personality_configure(ini,mode)
 
 #ifdef PUFFERLIB_BUILD_MAIN
+#include "metamon_eval.h"
 #include "sweep_eval.h"
 #endif
 

@@ -54,6 +54,14 @@ state-test: state-tools
 viewer: engine
 	$(CC) $(CPPFLAGS) $(CFLAGS) pokemon.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/viewer
 
+.PHONY: private-eval-adapter private-eval-test
+private-eval-adapter: engine
+	$(CC) $(CPPFLAGS) $(CFLAGS) -shared -fPIC benchmarks/private_adapter.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/private_adapter.so
+
+private-eval-test: private-eval-adapter
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_private_adapter.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_private_adapter
+	cd $(ROOT) && ./build/pokemon/test_private_adapter
+
 adapter-test: engine
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_pokemon.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_adapter
 	$(BUILD)/test_adapter

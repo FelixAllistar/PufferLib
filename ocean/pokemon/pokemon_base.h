@@ -10,6 +10,7 @@ typedef uint8_t obs_t;
 #include "pufferenv.h"
 #include "pokemon_core.h"
 #include "state_bank.h"
+#include "semantic_contract.h"
 #include "core_deck.h"
 #include "behavior.h"
 #include "species_labels.h"
@@ -36,6 +37,11 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
     double fraction=fraction_option?fraction_option->value:1;
     if(!isfinite(fraction) || fraction<0 || fraction>1) {
         fprintf(stderr,"expert_fraction must be in [0,1]\n"); exit(1);
+    }
+    // Frozen banks share the encoder dimensions, and every exported bank is 32/64.
+    if(fraction>0 && (pk_embed!=32 || pk_mid!=64)) {
+        printf("Pokemon native league: encoder %d/%d differs from the 32/64 banks; expert_fraction=0\n",pk_embed,pk_mid);
+        fraction=0;
     }
     // The non-expert share plays the current policy, not frozen history.
     puf_ini_put(ini,"selfplay.enabled","0");
@@ -171,6 +177,12 @@ static inline void pk_configure(Ini* ini, const char* mode) {
     }
     snprintf(pk_learner_team,sizeof(pk_learner_team),"%s",team);
     snprintf(pk_learner_lead,sizeof(pk_learner_lead),"%s",lead);
+    DictItem* embed=dict_find(puf_ini_section(ini,"policy",0),"pokemon_embed");
+    DictItem* mid=dict_find(puf_ini_section(ini,"policy",0),"pokemon_mid");
+    pk_embed=embed?(int)embed->value:32; pk_mid=mid?(int)mid->value:64;
+    if(pk_embed<8 || pk_embed%8 || pk_mid<8 || pk_mid%8) {
+        fprintf(stderr,"policy.pokemon_embed/pokemon_mid must be positive multiples of 8\n");exit(1);
+    }
     pk_native_configure(ini,mode);
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;
     if(pk_current_selfplay) {
