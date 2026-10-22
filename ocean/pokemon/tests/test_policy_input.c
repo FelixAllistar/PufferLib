@@ -20,11 +20,11 @@ int main(void) {
     // Exercise the production viewer forward path, not a second conversion
     // helper. All byte values are exactly representable in float and BF16.
     const int h = 32;
-    size_t count=pk_parameter_count(h,1);
+    size_t count=pk_parameter_count(h,1,32,64);
     // Match load_weights' seven-float alignment tail.
     float* data=calloc(count+7,sizeof(float));
     Weights weights = {.data = data, .size = count+7};
-    PKPolicy policy = {.net = pk_cpu_make(&weights, 1, h, 1)};
+    PKPolicy policy = {.net = pk_cpu_make(&weights, 1, h, 1, 32, 64)};
     uint8_t obs[PK_OBS], mask[PK_ACTIONS] = {1};
     for (int offset = 0; offset < 2; offset++) {
         for (int i = 0; i < PK_OBS; i++) obs[i] = (uint8_t)(i + offset);

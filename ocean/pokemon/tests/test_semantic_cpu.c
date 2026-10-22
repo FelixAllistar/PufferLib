@@ -7,19 +7,30 @@
 #include "../semantic_cpu.h"
 #endif
 #include "../pokemon_core.h"
+#ifdef PK_LEGACY_CPU
+#define PK_SIZES
+#else
+// PK_EMBED/PK_MID select the encoder widths under test (default 32/64).
+static int embed = 32, mid = 64;
+#define PK_SIZES , embed, mid
+#endif
 
 int main(void) {
+#ifndef PK_LEGACY_CPU
+    if (getenv("PK_EMBED")) embed = atoi(getenv("PK_EMBED"));
+    if (getenv("PK_MID")) mid = atoi(getenv("PK_MID"));
+#endif
     uint64_t digest = UINT64_C(14695981039346656037);
     for (int layers = 1; layers <= 2; layers++) {
         int hidden = layers * 16;
-        size_t count = pk_parameter_count(hidden, layers);
+        size_t count = pk_parameter_count(hidden, layers PK_SIZES);
         Weights weights = {0};
         weights.size = count + 7;
         weights.data = calloc(weights.size, sizeof(float));
         for (size_t i = 0; i < count; i++) {
             weights.data[i] = ((int)(i * 17 % 101) - 50) * 0.002f;
         }
-        PKCpuPolicy* batch = pk_cpu_make(&weights, 2, hidden, layers);
+        PKCpuPolicy* batch = pk_cpu_make(&weights, 2, hidden, layers PK_SIZES);
         assert((size_t)weights.idx == count);
         char path[] = "/tmp/pokemon-semantic-test.XXXXXX";
         int fd = mkstemp(path);
@@ -33,7 +44,7 @@ int main(void) {
         PKCpuPolicy* single[2];
         for (int p = 0; p < 2; p++) {
             loaded->idx = 0;
-            single[p] = pk_cpu_make(loaded, 1, hidden, layers);
+            single[p] = pk_cpu_make(loaded, 1, hidden, layers PK_SIZES);
         }
         PKGame game = {0};
         game.rng = 73;

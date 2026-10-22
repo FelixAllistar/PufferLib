@@ -4,7 +4,12 @@
 #define PUFFER_ENV_NAME "breakout"
 #include "../../../src/pufferl.cu"
 #include "../pokemon_encoder.cu"
-extern "C" void pk_reference(float*, int, int, const float*, const float*, float*, float*);
+extern "C" void pk_reference(float*, int, int, int, int, const float*, const float*, float*, float*);
+// PK_EMBED/PK_MID select the encoder widths under test (default 32/64).
+static void pk_test_sizes() {
+    if (getenv("PK_EMBED")) pk_embed = atoi(getenv("PK_EMBED"));
+    if (getenv("PK_MID")) pk_mid = atoi(getenv("PK_MID"));
+}
 
 static void gpu(cudaError_t result) {
     assert(result == cudaSuccess);
@@ -56,6 +61,7 @@ static Prec fixed_hidden_train(void* weights, Prec input, Prec state,
 int main() {
     const int B = 3, H = 16;
     cublas_init_handle();
+    pk_test_sizes();
     Encoder enc = {.in_dim = 648, .out_dim = H};
     Decoder dec = {.hidden_dim = H, .output_dim = 168};
     create_pokemon_encoder(&enc);
@@ -108,8 +114,8 @@ int main() {
     assert(params.total_bytes == params.total_elems*sizeof(float));
     float* weights = (float*)calloc(params.total_elems + 3*H*H + 7, sizeof(float));
     int offset = 0;
-    const int features[12] = {PK_MOVE_IN,64,PK_MON_IN,64,PK_FUSION,H,
-        PK_SPECIES_IN,64,PK_MOVE_IN,64,H,H};
+    const int features[12] = {PK_MOVE_IN,pk_mid,PK_MON_IN(pk_embed),pk_mid,PK_FUSION(pk_embed),H,
+        PK_SPECIES_IN,pk_mid,PK_MOVE_IN,pk_mid,H,H};
     for (int p = 0; p < params.num_regs; p++) {
         int rows = params.regs[p].shape[0], cols = params.regs[p].shape[1];
         for (int r = 0; r < rows; r++) {
@@ -151,7 +157,7 @@ int main() {
             o[434] = 5;
         }
         gpu(cudaMemcpy(obs.data, input, sizeof(input), cudaMemcpyHostToDevice));
-        pk_reference(weights, B, H, input, hidden, expected_enc, expected_dec);
+        pk_reference(weights, B, H, pk_embed, pk_mid, input, hidden, expected_enc, expected_dec);
         compare(enc.forward(ew, &ea, obs, 0), expected_enc, B*H);
         Arch arch = {.encoder = enc, .decoder = dec,
             .network = {.forward = fixed_hidden, .forward_train = fixed_hidden_train}};
