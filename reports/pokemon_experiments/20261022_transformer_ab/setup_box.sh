@@ -4,9 +4,9 @@
 # about 2 GB) is copied from the Pokemon box separately so both boxes score with identical files.
 set -euo pipefail
 cd /workspace
-command -v clang >/dev/null || (apt-get update -qq && apt-get install -y -qq clang)
+command -v clang >/dev/null && command -v ccache >/dev/null || (apt-get update -qq && apt-get install -y -qq clang ccache)
 command -v uv >/dev/null || (curl -LsSf https://astral.sh/uv/install.sh | sh && ln -sf ~/.local/bin/uv /usr/local/bin/uv)
-mkdir -p PufferLib && tar xzf pokemon_ab_bundle.tgz -C PufferLib
+[ -f PufferLib/build.sh ] || (mkdir -p PufferLib && tar xzf pokemon_ab_bundle.tgz -C PufferLib)
 cd PufferLib
 ./build.sh pokemon 2>&1 | tail -2
 make -C ocean/pokemon encoder-test 2>&1 | tail -2
