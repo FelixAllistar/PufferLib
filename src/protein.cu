@@ -623,6 +623,7 @@ void protein_sweep_observe(ProteinSweep *sw, const float *norm_params,
     if (sw->use_logit) {
         score = logit_transform(score);
     }
+    score *= sw->space->optimize_direction;
     int dim = sw->dim;
     if (is_failure || !isfinite(score)) {
         if (sw->fail_n >= sw->failure_cap) {
@@ -680,6 +681,7 @@ int protein_sweep_should_stop(const ProteinSweep *sw, float score, float cost) {
     if (sw->use_logit) {
         score = logit_transform(score);
     }
+    score *= sw->space->optimize_direction;
     if (!sw->cm_fitted) {
         return 0;
     }
@@ -689,7 +691,9 @@ int protein_sweep_should_stop(const ProteinSweep *sw, float score, float cost) {
     }
     float threshold;
     if (cost > PROTEIN_THRESHOLD_COST_CAP * sw->cm_upper) {
-        threshold = PROTEIN_THRESHOLD_FALLBACK * sw->cm_max_score;
+        float fraction = sw->cm_max_score < 0
+            ? 2.0f - PROTEIN_THRESHOLD_FALLBACK : PROTEIN_THRESHOLD_FALLBACK;
+        threshold = fraction * sw->cm_max_score;
     } else {
         threshold = sw->cm_A + sw->cm_B * logf(cost);
     }
@@ -718,6 +722,15 @@ static void sobol_fallback(ProteinSweep *sw, float *out, int is_fixed_cost,
         out[cost_dim] = fmaxf(-1.0f,
             fminf(1.0f, sw->cost_random_suggestion + noise01()));
     }
+}
+
+// History stores observations rather than RNG state. At least consume the
+// initial random prefix on resume so it does not repeat the same seed trials.
+static void protein_sweep_restore_suggestions(ProteinSweep *sw, int suggested) {
+    int prefix = suggested < sw->num_random_samples ? suggested : sw->num_random_samples;
+    for (int i = 0; i < prefix; i++)
+        sobol_fallback(sw, sw->h_cands, 0, NAN);
+    sw->suggestion_idx = suggested;
 }
 
 // KD Tree near-duplicate filter
@@ -979,8 +992,9 @@ ProteinSweepInfo protein_sweep_suggest(ProteinSweep *sw,
         float s_range = fmaxf(s_max - s_min, PROTEIN_EPSILON);
         float c_range2 = fmaxf(c_max - c_min, PROTEIN_EPSILON);
         float max_pareto_s = sw->succ_scores[sw->pruned_buf[n_pruned - 1]];
+        float near_best = (max_pareto_s < 0 ? 1.02f : 0.98f) * max_pareto_s;
         for (int i = n_pruned - 1; i > 1; i--) {
-            if (sw->succ_scores[sw->pruned_buf[i - 1]] < 0.98f * max_pareto_s) {
+            if (sw->succ_scores[sw->pruned_buf[i - 1]] < near_best) {
                 break;
             }
             float ng = (sw->succ_scores[sw->pruned_buf[i]]
@@ -1240,9 +1254,8 @@ ProteinSweepInfo protein_sweep_suggest(ProteinSweep *sw,
 
     int best = 0;
     float best_s = -FLT_MAX;
-    int opt_dir = sw->space->optimize_direction;
     for (int i = 0; i < n_cands; i++) {
-        float s = opt_dir * sw->h_pred[i];
+        float s = sw->h_pred[i];
         if (!is_fixed_cost) {
             float cn = sw->h_pred[n_cands + i];
             float c = expf(cn * (log_c_max - log_c_min) + log_c_min);
@@ -1266,7 +1279,8 @@ ProteinSweepInfo protein_sweep_suggest(ProteinSweep *sw,
 
     info.score_loss = score_loss;
     info.cost_loss = cost_loss;
-    info.predicted_score = y_norm * (max_score - min_score) + min_score;
+    info.predicted_score = sw->space->optimize_direction
+        * (y_norm * (max_score - min_score) + min_score);
     info.predicted_cost = expf(c_norm * (log_c_max - log_c_min) + log_c_min);
     info.rating = best_s;
     info.n_pareto = n_use;

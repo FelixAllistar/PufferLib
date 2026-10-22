@@ -9,6 +9,7 @@
 //   ./test_protein_numerics tests/golden_protein_numerics.txt
 //   ./test_protein_numerics --tol 1e-4 tests/golden_protein_numerics.txt
 //   ./test_protein_numerics --spaces-only  # host-side mapping, no CUDA initialization
+//   ./test_protein_numerics --directions-only  # min/max ranking and GP symmetry
 
 #include <cuda_runtime.h>
 #include <float.h>
@@ -253,6 +254,88 @@ static void section_space(void) {
     rec_f("space.logit.norm0.9", space_normalize(&s, 0.9f));
 }
 
+static void section_direction(int gpu) {
+    for (int direction = -1; direction <= 1; direction += 2) {
+        SweepSpace space = {.optimize_direction = direction};
+        float params[4], scores[4], costs[4];
+        int top[3];
+        ProteinSweep sw = {.space = &space, .success_cap = 4, .top_k = 3,
+            .succ_params = params, .succ_scores = scores, .succ_costs = costs,
+            .dim = 1, .cost_dim = -1, .top_idx = top};
+        float observations[] = {.6f, .2f, .9f, .4f};
+        for (int i = 0; i < 4; i++) {
+            float x = -.75f + i * .5f;
+            protein_sweep_observe(&sw, &x, observations[i], 100, 0);
+        }
+        int minimum[] = {1, 3, 0}, maximum[] = {2, 0, 3};
+        for (int i = 0; i < 3; i++) {
+            assert(top[i] == (direction < 0 ? minimum[i] : maximum[i])
+                && "top trials must follow optimize_direction");
+        }
+        sw.cm_fitted = 1;
+        sw.cm_A = direction * .5f;
+        sw.cm_max_score = direction * .5f;
+        sw.cm_upper = 1000;
+        assert(protein_sweep_should_stop(&sw, .75f, 500) == (direction < 0));
+        assert(protein_sweep_should_stop(&sw, .25f, 500) == (direction > 0));
+        assert(!protein_sweep_should_stop(&sw, .5f, 1500));
+        assert(protein_sweep_should_stop(&sw, .75f, 1500) == (direction < 0));
+        assert(protein_sweep_should_stop(&sw, .25f, 1500) == (direction > 0));
+    }
+    if (!gpu) {
+        return;
+    }
+
+    // Minimizing loss must match maximizing -loss, including cost weighting,
+    // failed suggestions, Pareto centers, top trials and subsequent GP proposals.
+    float expected[4][2];
+    ProteinSweepInfo expected_info[4];
+    for (int direction = 1; direction >= -1; direction -= 2) {
+        srand(3187);
+        Space dimensions[] = {
+            {.type = SPACE_LINEAR, .min = -1, .max = 1, .scale = .5f},
+            {.type = SPACE_LINEAR, .min = -1, .max = 1, .scale = .5f}};
+        SweepSpace space = {.spaces = dimensions, .num = 2, .cost_idx = -1,
+            .optimize_direction = direction};
+        ProteinSweep* sw = protein_sweep_create((ProteinSweep){
+            .space = &space, .suggestions_per_pareto = 16, .gp_training_iter = 5,
+            .gp_learning_rate = .01f, .gp_max_obs = 64, .infer_batch_size = 64,
+            .use_success_prob = 1, .prune_pareto = 1, .global_search_scale = 1,
+            .max_suggestion_cost = 60, .expansion_rate = .05f,
+            .early_stop_quantile = .3f, .success_cap = 64, .failure_cap = 64,
+            .top_k = 3, .rng_seed = 3187});
+        for (int i = 0; i < 24; i++) {
+            float x[] = {-.95f + i * .08f, -.9f + (i * 7 % 24) * .075f};
+            float loss = .1f + .2f * (x[0] - .3f) * (x[0] - .3f)
+                + .1f * (x[1] + .4f) * (x[1] + .4f);
+            protein_sweep_observe(sw, x, -direction * loss,
+                20 + 30 * (x[0] + 1), i % 2);
+        }
+        for (int i = 0; i < 4; i++) {
+            float x[2];
+            ProteinSweepInfo info = protein_sweep_suggest(sw, x, NAN);
+            assert(info.predicted_cost < 60);
+            if (direction > 0) {
+                memcpy(expected[i], x, sizeof(x));
+                expected_info[i] = info;
+            } else {
+                assert(!memcmp(expected[i], x, sizeof(x)));
+                ProteinSweepInfo e = expected_info[i];
+                assert(fbits(info.predicted_score) == fbits(-e.predicted_score));
+                assert(fbits(info.predicted_cost) == fbits(e.predicted_cost));
+                assert(fbits(info.rating) == fbits(e.rating));
+                assert(fbits(info.score_loss) == fbits(e.score_loss));
+                assert(info.n_pareto == e.n_pareto && info.n_gp_obs == e.n_gp_obs);
+                assert(info.n_candidates == e.n_candidates && !info.is_random);
+            }
+            float loss = .1f + .2f * (x[0] - .3f) * (x[0] - .3f)
+                + .1f * (x[1] + .4f) * (x[1] + .4f);
+            protein_sweep_observe(sw, x, -direction * loss, 20 + 30 * (x[0] + 1), 0);
+        }
+    }
+    printf("PASS min/max top trials, stopping and GP proposal symmetry\n");
+}
+
 static void section_sweep(void) {
     const int dim = 4;
     const int cost_idx = 3;
@@ -354,12 +437,15 @@ static void section_sweep(void) {
 int main(int argc, char **argv) {
     int gen = 0;
     int spaces_only = 0;
+    int directions_only = 0;
     // Default abs tol (numpy-style allclose: rtol = 10*atol).
     float tol = 1e-5f;
     const char *path = "tests/golden_protein_numerics.txt";
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--spaces-only") == 0) {
             spaces_only = 1;
+        } else if (strcmp(argv[i], "--directions-only") == 0) {
+            directions_only = 1;
         } else if (strcmp(argv[i], "--gen") == 0) {
             gen = 1;
             if (i + 1 < argc) {
@@ -378,6 +464,10 @@ int main(int argc, char **argv) {
 
     printf("=== protein.cu numerical regression ===\n");
     section_space();
+    section_direction(!spaces_only);
+    if (directions_only) {
+        return 0;
+    }
     if (spaces_only) {
         printf("RESULT: PASS (legacy and stepped spaces; no CUDA initialization)\n");
         return 0;

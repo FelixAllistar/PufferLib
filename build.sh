@@ -223,6 +223,7 @@ elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library panel
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
+    EXTRA_LDFLAGS+=(-lz)
 elif [ "$ENV" = "swat" ]; then
     SRC_DIR="ocean/$ENV"
     SWAT_SOURCE_DIR="ocean/swat"
