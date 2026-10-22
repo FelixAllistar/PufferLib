@@ -44,5 +44,6 @@ the Protein changes, because they are train runs, not sweeps.
 
 ## Pending / planned
 
-- Pokemon entity Transformer (2026-10-21): intended to live in `ocean/pokemon/` (encoder + CPU eval). If it
-  needs any `src/` change, it is logged here first.
+- Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
+  `src/native_transformer.cuh` unchanged (read-only `#include`). Off by default
+  (`policy.pokemon_attention_layers = 0`).

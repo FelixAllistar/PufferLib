@@ -2,6 +2,7 @@
 // decoder. No per-catalog-set logits or ordinal-ID neural inputs.
 #include "semantic_contract.h"
 #include "semantic_mlp.cuh"
+#include "../../src/native_transformer.cuh"
 #define PK_MOVE_ROWS 168
 #define PK_SPECIES_ROWS 152
 #define PK_CANDIDATES (PK_MOVE_ROWS+PK_SPECIES_ROWS)
@@ -31,11 +32,25 @@ static void pk_static_forward(PKMLPWeights* w,PKMLPActs* a,bool move,cudaStream_
     pk_nn_mlp_forward(w,a,stream);
 }
 
-struct PKEncoderWeights { PKMLPWeights move,mon,fusion; };
-struct PKEncoderActs {
-    PKMLPActs move,mon,fusion;
-    Prec incidence,mean_moves,grad_mean_moves,mean_projection;
+struct PKEncoderWeights {
+    PKMLPWeights move,mon,token,fusion;
+    // Entity Transformer (pk_attn.layers>0): token MLP -> Transformer -> pooled global token.
+    puf_transformer::Config attn;
+    int attn_count;
+    Prec* attn_params;
 };
+struct PKEncoderActs {
+    PKMLPActs move,mon,token,fusion;
+    Prec incidence,mean_moves,grad_mean_moves,mean_projection;
+    puf_transformer::Model<precision_t>* attn;
+    Prec pooled;
+    Prec* attn_grads;
+    Float* attn_fp32_grads;
+};
+static Prec pk_attn_shape(puf_transformer::ParameterSpec s) {
+    // Vectors stay rank-1 so Muon does not orthogonalize LN scales and biases.
+    return s.rows==1?Prec{.shape={s.cols}}:Prec{.shape={s.rows,s.cols}};
+}
 static void* pk_encoder_weights(void* self) {
     Encoder* enc=(Encoder*)self;
     if(enc->in_dim!=648 || enc->out_dim<8 || enc->out_dim%8) {
@@ -44,16 +59,48 @@ static void* pk_encoder_weights(void* self) {
     PKEncoderWeights* w=(PKEncoderWeights*)calloc(1,sizeof(*w));
     w->move={PK_MOVE_IN,pk_mid,pk_embed,true,sqrtf(2.0f),{}, {}};
     w->mon={PK_MON_IN(pk_embed),pk_mid,pk_embed,true,sqrtf(2.0f),{}, {}};
-    w->fusion={PK_FUSION(pk_embed),enc->out_dim,enc->out_dim,true,sqrtf(2.0f),{}, {}};
+    int D=pk_attn.width;
+    w->fusion={pk_attn.layers?D:PK_FUSION(pk_embed),enc->out_dim,enc->out_dim,true,sqrtf(2.0f),{}, {}};
+    if(pk_attn.layers) {
+        if(!pk_attn_valid(pk_attn)) {fprintf(stderr,"Invalid Pokemon attention dimensions\n");exit(1);}
+        w->token={PK_TOKEN_IN(pk_embed),D,D,false,1.0f,{}, {}};
+        w->attn={1,PK_TOKENS,D,pk_attn.layers,pk_attn.heads,4*D};
+        w->attn.validate();
+        w->attn_count=12*pk_attn.layers+2;
+        w->attn_params=new Prec[w->attn_count]{};
+    }
     return w;
 }
 static void pk_encoder_params(void* weights,Allocator* alloc) {
     PKEncoderWeights* w=(PKEncoderWeights*)weights;
-    pk_nn_mlp_params(&w->move,alloc);pk_nn_mlp_params(&w->mon,alloc);pk_nn_mlp_params(&w->fusion,alloc);
+    pk_nn_mlp_params(&w->move,alloc);pk_nn_mlp_params(&w->mon,alloc);
+    if(w->attn_count) {
+        pk_nn_mlp_params(&w->token,alloc);
+        auto specs=puf_transformer::parameter_specs(w->attn);
+        for(int i=0;i<w->attn_count;i++) {w->attn_params[i]=pk_attn_shape(specs[i]);alloc_register(alloc,&w->attn_params[i]);}
+    }
+    pk_nn_mlp_params(&w->fusion,alloc);
 }
 static void pk_encoder_init(void* weights,ulong* seed,cudaStream_t stream) {
     PKEncoderWeights* w=(PKEncoderWeights*)weights;
-    pk_nn_mlp_init(&w->move,seed,stream);pk_nn_mlp_init(&w->mon,seed,stream);pk_nn_mlp_init(&w->fusion,seed,stream);
+    pk_nn_mlp_init(&w->move,seed,stream);pk_nn_mlp_init(&w->mon,seed,stream);
+    if(w->attn_count) {
+        pk_nn_mlp_init(&w->token,seed,stream);
+        // Same initialization as the Goofspiel Transformer: Xavier matrices, LN scale 1, zero biases.
+        std::mt19937 rng((*seed)++);
+        auto specs=puf_transformer::parameter_specs(w->attn);
+        for(int i=0;i<w->attn_count;i++) {
+            auto s=specs[i];
+            float bound=sqrtf(6.f/(s.rows+s.cols));
+            std::uniform_real_distribution<float> distribution(-bound,bound);
+            std::vector<precision_t> values((size_t)s.rows*s.cols);
+            for(auto& v:values) v=from_float(s.initialization==1?1.f:s.initialization==2?0.f:distribution(rng));
+            puf_transformer::check(cudaMemcpyAsync(w->attn_params[i].data,values.data(),
+                values.size()*sizeof(precision_t),cudaMemcpyHostToDevice,stream),"initialize Pokemon attention");
+            puf_transformer::check(cudaStreamSynchronize(stream),"finish Pokemon attention initialization");
+        }
+    }
+    pk_nn_mlp_init(&w->fusion,seed,stream);
 }
 static void pk_encoder_acts(void* weights,void* activations,Allocator* acts,Allocator* grads,int rows) {
     PKEncoderWeights* w=(PKEncoderWeights*)weights; PKEncoderActs* a=(PKEncoderActs*)activations;
@@ -62,6 +109,23 @@ static void pk_encoder_acts(void* weights,void* activations,Allocator* acts,Allo
     // Only the move-embedding slice needs an input gradient. Avoid materializing
     // hundreds of MB of gradients for immutable identity/stat features.
     pk_nn_mlp_acts(&w->mon,&a->mon,acts,grads,rows*PK_MON_COUNT,false);
+    if(w->attn_count) {
+        // Registration order matches pk_encoder_params: token MLP, Transformer, fusion.
+        pk_nn_mlp_acts(&w->token,&a->token,acts,grads,rows*PK_TOKENS,true);
+        auto config=w->attn; config.batch=rows;
+        a->attn=new puf_transformer::Model<precision_t>(config,17,false);
+        a->pooled={.shape={rows,config.width}};alloc_register(acts,&a->pooled);
+        if(grads) {
+            auto specs=puf_transformer::parameter_specs(w->attn);
+            a->attn_grads=new Prec[w->attn_count]{};
+            a->attn_fp32_grads=new Float[w->attn_count]{};
+            for(int i=0;i<w->attn_count;i++) {
+                a->attn_grads[i]=pk_attn_shape(specs[i]);alloc_register(grads,&a->attn_grads[i]);
+                // The Transformer writes FP32 parameter gradients; BF16 builds cast them after backward.
+                if(USE_BF16) {a->attn_fp32_grads[i]={.shape={specs[i].rows*specs[i].cols}};alloc_register(acts,&a->attn_fp32_grads[i]);}
+            }
+        }
+    }
     pk_nn_mlp_acts(&w->fusion,&a->fusion,acts,grads,rows,true);
     a->incidence={.shape={rows*PK_MON_COUNT,PK_MOVE_ROWS}};alloc_register(acts,&a->incidence);
     a->mean_moves={.shape={rows*PK_MON_COUNT,E}};alloc_register(acts,&a->mean_moves);
@@ -104,6 +168,42 @@ __global__ static void pk_fuse(precision_t* dst,const precision_t* obs,const pre
     else if(f==PK_FUSION(E))v=1;
     dst[i]=from_float(v);
 }
+__global__ static void pk_tokens(precision_t* dst,const precision_t* obs,const precision_t* mons,int rows,int E) {
+    int width=PK_AUG(PK_TOKEN_IN(E)),i=blockIdx.x*blockDim.x+threadIdx.x;
+    if(i>=rows*PK_TOKENS*width)return;
+    int r=i/width,f=i%width,t=r%PK_TOKENS,b=r/PK_TOKENS;float v=0;
+    if(f==PK_TOKEN_IN(E))v=1;
+    else if(t<PK_MON_COUNT) {if(f<E)v=to_float(mons[(b*PK_MON_COUNT+t)*E+f]);}
+    else if(f>=E && f<E+PK_GLOBAL)v=pk_global_feature(obs+b*648,f-E);
+    else if(f==E+PK_GLOBAL)v=1;
+    dst[i]=from_float(v);
+}
+__global__ static void pk_pool_global(precision_t* pooled,const precision_t* tokens,int rows,int D) {
+    int i=blockIdx.x*blockDim.x+threadIdx.x;
+    if(i<rows*D)pooled[i]=tokens[((i/D)*PK_TOKENS+PK_MON_COUNT)*D+i%D];
+}
+__global__ static void pk_unpool_global(precision_t* tokens,const precision_t* pooled,int rows,int D) {
+    int i=blockIdx.x*blockDim.x+threadIdx.x;
+    if(i>=rows*PK_TOKENS*D)return;
+    int t=(i/D)%PK_TOKENS;
+    tokens[i]=t==PK_MON_COUNT?pooled[(i/(PK_TOKENS*D))*D+i%D]:from_float(0.f);
+}
+__global__ static void pk_entity_token_gradient(precision_t* dst,const precision_t* tokens,int rows,int E) {
+    int i=blockIdx.x*blockDim.x+threadIdx.x;
+    if(i>=rows*PK_MON_COUNT*E)return;
+    int e=i/E,b=e/PK_MON_COUNT,t=e%PK_MON_COUNT;
+    dst[i]=tokens[(b*PK_TOKENS+t)*PK_TOKEN_IN(E)+i%E];
+}
+static void pk_attn_bind(PKEncoderWeights* w,PKEncoderActs* a,cudaStream_t stream) {
+    auto& m=*a->attn;
+    auto params=m.parameters();
+    m.set_stream(stream);
+    for(int i=0;i<w->attn_count;i++) {
+        size_t count=numel(w->attn_params[i].shape);
+        params[i]->value.borrow(w->attn_params[i].data,count);
+        if(a->attn_grads) params[i]->gradient.borrow(USE_BF16?a->attn_fp32_grads[i].data:(float*)a->attn_grads[i].data,count);
+    }
+}
 static Prec pk_encoder_forward(void* weights,void* activations,Prec obs,cudaStream_t stream) {
     PKEncoderWeights* w=(PKEncoderWeights*)weights;PKEncoderActs* a=(PKEncoderActs*)activations;
     int rows=a->fusion.out.shape[0],E=w->mon.out;
@@ -113,6 +213,19 @@ static Prec pk_encoder_forward(void* weights,void* activations,Prec obs,cudaStre
     pk_mon_input<<<grid_size(rows*PK_MON_COUNT*PK_AUG(PK_MON_IN(E))),BLOCK_SIZE,0,stream>>>(
         a->mon.input_aug.data,obs.data,a->mean_moves.data,rows,E);
     pk_nn_mlp_forward(&w->mon,&a->mon,stream);
+    if(w->attn_count) {
+        int D=w->attn.width;
+        pk_tokens<<<grid_size(rows*PK_TOKENS*PK_AUG(PK_TOKEN_IN(E))),BLOCK_SIZE,0,stream>>>(
+            a->token.input_aug.data,obs.data,a->mon.out.data,rows,E);
+        Prec tokens=pk_nn_mlp_forward(&w->token,&a->token,stream);
+        pk_attn_bind(w,a,stream);
+        auto& m=*a->attn;
+        puf_transformer::check(cudaMemcpyAsync(m.input.data,tokens.data,
+            m.input.count*sizeof(precision_t),cudaMemcpyDeviceToDevice,stream),"copy Pokemon tokens");
+        m.forward();
+        pk_pool_global<<<grid_size(rows*D),BLOCK_SIZE,0,stream>>>(a->pooled.data,m.output.data,rows,D);
+        pk_nn_pack_aug<<<grid_size(rows*PK_AUG(D)),BLOCK_SIZE,0,stream>>>(a->fusion.input_aug.data,a->pooled.data,rows,D,false);
+    } else
     pk_fuse<<<grid_size(rows*PK_AUG(PK_FUSION(E))),BLOCK_SIZE,0,stream>>>(a->fusion.input_aug.data,obs.data,a->mon.out.data,rows,E);
     return pk_nn_mlp_forward(&w->fusion,&a->fusion,stream);
 }
@@ -124,6 +237,21 @@ static void pk_encoder_backward(void* weights,void* activations,Prec grad,cudaSt
     PKEncoderWeights* w=(PKEncoderWeights*)weights;PKEncoderActs* a=(PKEncoderActs*)activations;
     int rows=a->fusion.out.shape[0],E=w->mon.out,M=w->mon.mid;
     Prec fused=pk_nn_mlp_backward(&w->fusion,&a->fusion,grad,stream);
+    if(w->attn_count) {
+        auto& m=*a->attn;
+        int D=w->attn.width;
+        m.set_stream(stream);
+        pk_unpool_global<<<grid_size(rows*PK_TOKENS*D),BLOCK_SIZE,0,stream>>>(m.upstream.data,fused.data,rows,D);
+        m.backward();
+        if(USE_BF16) for(int i=0;i<w->attn_count;i++) {
+            int count=numel(w->attn_params[i].shape);
+            cast<<<grid_size(count),BLOCK_SIZE,0,stream>>>(a->attn_grads[i].data,a->attn_fp32_grads[i].data,count);
+        }
+        Prec token_grad={.data=m.state_gradient.data,.shape={rows*PK_TOKENS,D}};
+        Prec token_in=pk_nn_mlp_backward(&w->token,&a->token,token_grad,stream);
+        pk_entity_token_gradient<<<grid_size(rows*PK_MON_COUNT*E),BLOCK_SIZE,0,stream>>>(
+            a->mon.grad_out.data,token_in.data,rows,E);
+    } else
     pk_extract_gradient<<<grid_size(rows*PK_MON_COUNT*E),BLOCK_SIZE,0,stream>>>(
         a->mon.grad_out.data,fused.data,rows,PK_MON_COUNT*E,PK_FUSION(E),0);
     pk_nn_mlp_backward(&w->mon,&a->mon,a->mon.grad_out,stream);
