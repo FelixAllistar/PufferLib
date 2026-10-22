@@ -6,6 +6,7 @@
 struct SmbGameConfig {
     float fpg_fraction=1,clear_reward=1,time_bonus=.1f,death_penalty=0;
     int max_frames=108000,fixed_stage=-1,terminate_on_clear=0,time_target=1800;
+    int reward_on_exit=1;
     int checkpoint_distance=128;
     float checkpoint_reward=.025f;
     uint32_t roots[32]={};
@@ -15,6 +16,8 @@ struct SmbGameProgress {
     uint32_t rewarded_levels;
     int stage,mode,lives,level_start,clears,deaths,routine;
     int progress_pixels,checkpoints,frontier_count,last_x,tracking;
+    uint32_t exited_levels;
+    int flag_contacts,level_exits;
     uint32_t last_key;
     SmbProgressFrontier frontiers[256];
 };
@@ -67,7 +70,12 @@ SMB_HD float smb_game_after_frame(const SmbLogic* s,SmbEpisode* e,
     int stage=m[0x75f]*4+m[0x75c];
     bool victory=p->mode!=2&&m[0x770]==2;
     bool flag=(m[0xe]==4||m[0xe]==5)&&(p->routine!=4&&p->routine!=5);
-    bool clear=flag||victory||stage>p->stage;
+    bool exited=victory||stage>p->stage;
+    if(flag)p->flag_contacts++;
+    if(exited&&p->stage>=0&&p->stage<32&&!(p->exited_levels&(1u<<p->stage))) {
+        p->exited_levels|=1u<<p->stage;p->level_exits++;
+    }
+    bool clear=exited||(!c->reward_on_exit&&flag);
     float reward=c->checkpoint_reward*smb_game_track_progress(s,p,c);
     if(clear&&p->stage>=0&&p->stage<32&&!(p->rewarded_levels&(1u<<p->stage))) {
         p->rewarded_levels|=1u<<p->stage;p->clears++;

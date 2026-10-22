@@ -23,7 +23,7 @@ The rebuilt binary and assets are available locally. From the repository root:
 
 The [config](../../config/mario_sim.ini) now defaults to mixed full-game/FPG
 training. The commands above explicitly select FPG-only training. `[fpg]` owns
-all practice settings. The shared policy has a 64-wide two-layer MinGRU and all
+all FPG settings. The default shared policy has a 256-wide two-layer MinGRU and all
 64 controller masks; each action advances one video frame. FPG episodes allow
 1,800 frames and end on FPG success, an ordinary flag grab, death or timeout.
 The default starts fresh. To restore a trained semantic policy and its
@@ -53,9 +53,11 @@ Three branches feed the same recurrent policy and value head:
 | Player | 64 decoded physics and control features through a 32-unit ReLU layer |
 | Objects | Shared 32→32 ReLU encoder per typed object; masked max and mean pooling plus object count |
 
-The concatenated 161 features pass through a 64-unit ReLU layer, then the
-existing two-layer MinGRU and 64-action/value head. The default network has
-79,088 parameters, including 50,352 in the encoder. Every input terrain cell
+The concatenated 161 features pass through a ReLU layer at the configured
+hidden width, then the two-layer MinGRU and 64-action/value head. At the current
+default width 256, this is 491,312 parameters, including 81,456 in the encoder
+(the historical width-64 policy had 79,088 total and 50,352 encoder parameters).
+Every input terrain cell
 reaches the CNN; its first strided layer reduces resolution after reading the
 full playfield.
 
@@ -108,12 +110,19 @@ remaining-frame counts:
 
 An actor initially samples only the three-frame start. At each later level,
 80% of resets sample the newly introduced band; 20% revisit an earlier band.
-An earlier band is chosen uniformly, then a state within that band is chosen
-uniformly. **Only episodes from the current frontier count toward promotion.**
+With retention enabled, earlier bands are weighted toward recent failures
+(weights 1–5; untested bands get weight 2), then a state is sampled uniformly.
+Each band's recent counters are halved at 64 attempts. Disable
+`curriculum_retention` to restore uniform earlier-band selection.
+**Only episodes from the current frontier count toward promotion.**
 
 Promotion needs at least 80% FPG success in each of two consecutive windows of
 16 frontier episodes: at least 13 wins in each window. It advances exactly one
-band. A failed window clears the qualifying streak and keeps the current band.
+band. A failed window clears the qualifying streak. With retention enabled,
+two consecutive frontier windows below 25% success lower the frontier one band.
+Evaluation freezes both promotion and demotion. Version-2 sidecars preserve
+retention counters; version-1 sidecars still load, retaining their frontier and
+starting the new counters empty. Changing mastery controls clears partial windows.
 The final band ends at the original pipe exit. “Frames” here means the recorded
 successful continuation length, not a shortened episode timeout.
 
@@ -126,20 +135,26 @@ successful continuation length, not a shortened episode timeout.
 | `curriculum_confirmations` | 2 | Consecutive qualifying windows |
 | `curriculum_threshold` | 0.8 | Required success fraction |
 | `curriculum_replay` | 0.2 | Fraction of easier practice after level zero |
+| `curriculum_retention` | 1 | Weight easier replay by failures and allow demotion |
+| `curriculum_demotion_confirmations` | 2 | Consecutive low-success frontier windows |
+| `curriculum_demotion_threshold` | 0.25 | Success rate below which a window fails retention |
 | `curriculum_resume` | 1 | Restore saved actor progress when loading a model |
 | `curriculum_eval_frames` | 0 | Zero uses saved median; another boundary fixes the evaluation band |
 
 Logs report `curriculum_frames`, `curriculum_start_frames`, `frontier_perf`,
-`frontier_fraction` and `curriculum_promotions`. The ordinary `perf` includes
+`frontier_fraction`, `curriculum_promotions`, `curriculum_demotions`, and
+per-band success rates/fractions. The ordinary `perf` includes
 easier practice and should be read alongside difficulty. Checkpoint JSON reports
 show actor counts per band; these are not weighted by episode length.
-The broad sweep uses game progress pixels and FPG curriculum frames as a cheap
-training-progress objective. Timing allowances (`target_frames`) and raw FPG
-success rates do not contribute. ROM evaluation remains a separate tool.
+The sweep uses game progress pixels and current successful FPG difficulty as a
+cheap training-progress objective. Historical frontier alone earns no credit;
+the former formula is logged as `legacy_sweep_score`. Timing allowances
+(`target_frames`) do not contribute. ROM evaluation remains a separate tool.
 
 ## Broad hyperparameter sweep
 
-The default sweep trains the mixed task: 75% game frames and 25% FPG practice,
+The default sweep trains the mixed task: 50% ordinary game frames, 25% encounter
+practice and 25% FPG practice,
 with fresh weights/curriculum and a 2B-frame budget per trial. The native trainer
 reports the search score directly; it does not invoke the ROM evaluator.
 FPG timing rewards and curriculum rules are held constant in this search.
@@ -152,8 +167,8 @@ python3 ocean/mario_sim/sweep.py
 ```
 
 See [the mixed sweep protocol and ranges](README.md#fresh-2b-step-sweep).
-The objective combines separately normalized game pixels and curriculum
-advancement, with 75/25 weights. It is a training proxy, so selected checkpoints
+The objective combines separately normalized game pixels and successful FPG
+difficulty, with 75/25 weights. It is a training proxy, so selected checkpoints
 can still be checked with the independent ROM tools below. Historical FPG
 sweep results remain in `results/sweep_setup_20261008/`.
 

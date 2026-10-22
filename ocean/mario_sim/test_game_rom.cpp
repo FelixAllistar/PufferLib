@@ -15,9 +15,10 @@ static void controller_controls() {
     s.ram[0x75a]=1;smb_game_after_frame(&s,&e,&p,&c);
     fpt_rom_require(!e.status&&p.deaths==1,"natural life loss did not continue");
     s.ram[0xe]=4;float reward=smb_game_after_frame(&s,&e,&p,&c);
-    fpt_rom_require(reward>1&&!e.status&&p.clears==1,"flag did not reward and continue");
+    fpt_rom_require(reward==0&&!e.status&&p.clears==0&&p.flag_contacts==1&&p.level_exits==0,"flag was credited before exit");
     for(int i=0;i<10;i++)fpt_rom_require(!smb_game_after_frame(&s,&e,&p,&c),"flag paid twice");
-    s.ram[0x75c]=1;smb_game_after_frame(&s,&e,&p,&c);
+    s.ram[0x75c]=1;reward=smb_game_after_frame(&s,&e,&p,&c);
+    fpt_rom_require(reward>1&&p.level_exits==1,"completed exit did not pay");
     fpt_rom_require(!smb_game_after_frame(&s,&e,&p,&c)&&p.clears==1,"finish routine leaked reward into next level");
     s.ram[0x75a]=255;smb_game_after_frame(&s,&e,&p,&c);
     fpt_rom_require(e.status==SMB_EPISODE_DEAD&&p.deaths==2,"game over did not terminate");
@@ -26,7 +27,13 @@ static void controller_controls() {
         s={};s.ram[0x75f]=stage/4;s.ram[0x75c]=3;s.ram[0x75a]=2;s.ram[0x770]=2;
         smb_game_after_frame(&s,&e,&p,&c);
         fpt_rom_require(e.status==(stage==31?SMB_EPISODE_SUCCESS:SMB_EPISODE_ACTIVE),"castle win classification wrong");
+        fpt_rom_require(p.level_exits==1&&p.clears==1,"castle exit was not credited");
     }
+    e={};p={};s={};p.mode=1;p.lives=2;p.routine=8;s.ram[0x770]=1;s.ram[0x75a]=2;s.ram[0xe]=4;
+    c.reward_on_exit=0;smb_game_after_frame(&s,&e,&p,&c);
+    fpt_rom_require(p.clears==1&&p.flag_contacts==1&&!p.level_exits,"legacy reward control lost separate completion metrics");
+    s.ram[0x75c]=1;fpt_rom_require(!smb_game_after_frame(&s,&e,&p,&c)&&p.level_exits==1,"legacy flag plus exit paid twice");
+    c.reward_on_exit=1;
     c.max_frames=1;e={};p={};s={};s.ram[0x75a]=2;s.ram[0x770]=1;
     smb_game_after_frame(&s,&e,&p,&c);fpt_rom_require(e.status==SMB_EPISODE_TIMEOUT,"frame limit did not terminate");
 }

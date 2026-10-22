@@ -88,7 +88,7 @@ def validate_search(config):
                 float(config["sweep." + key][k]) != float(values[key]) for k in ("min", "max")):
             raise ValueError(f"keep {key} fixed")
     if float(values["fpg.fraction"]) != 0.25:
-        raise ValueError("mixed sweep keeps the 75% game / 25% FPG allocation")
+        raise ValueError("mixed sweep keeps the FPG frame allocation at 25%")
     steps = config.getint("train", "total_timesteps")
     if any(float(config["sweep.train.total_timesteps"][k]) != steps for k in ("min", "max")):
         raise ValueError("all trials must request the same training budget")

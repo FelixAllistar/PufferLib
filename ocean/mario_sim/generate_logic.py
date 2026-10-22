@@ -118,7 +118,8 @@ def generate(prg,symbols,pcs,page_bits=8):
                     lines.append(f'if(s->timing.enabled)s->timing.clock+=(({low}+{index})>>8);')
                 value='smb_read(s,data,address)'
                 if mode=='abs' and addr==0x2002:
-                    value='(s->timing.enabled?smb_read(s,data,address):'+('64' if p==poll_hit else '0')+')'
+                    read='smb_clock_status_lda(s)' if name=='LDA' else 'smb_read(s,data,address)'
+                    value='(s->timing.enabled?'+read+':'+('64' if p==poll_hit else '0')+')'
                 if name not in ('STA','STX','STY','JMP','JSR'):
                     lines.append('int value='+value+';');value='value'
             if name in blocks.BRANCHES:

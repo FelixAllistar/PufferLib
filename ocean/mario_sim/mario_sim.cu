@@ -23,21 +23,21 @@ __device__ static void fpt_require_valid(const SmbLogic* s,int env) {
 }
 __global__ void fpt_reset_kernel(Env* envs,SmbLogic* states,const SmbBankEntry* bank,const uint32_t* eligible,
         int eligible_count,const FpgTimeEntry* table,uint32_t* worlds,float* rewards,float* terminals,
-        SmbTaskConfig task,FpgTimeConfig time,FptCurriculumConfig curriculum,SmbGameConfig game,int count) {
+        SmbTaskConfig task,FpgTimeConfig time,FptCurriculumConfig curriculum,SmbGameConfig game,SmbPracticeConfig practice,int count) {
     int i=blockIdx.x*blockDim.x+threadIdx.x;if(i>=count)return;
-    envs[i].num_agents=1;envs[i].is_fpg=smb_fpg_actor(i,count,&game);envs[i].episode={};envs[i].episode.rng=smb_seed(task.seed,(unsigned)i);envs[i].curriculum={};
-    fpt_reset_state(&envs[i],&states[i],&task,&time,bank,eligible,eligible_count,table,&curriculum,&game);fpt_require_valid(&states[i],i);
+    envs[i].num_agents=1;envs[i].is_fpg=smb_fpg_actor(i,count,&game);envs[i].episode={};envs[i].episode.rng=smb_seed(task.seed,(unsigned)i);envs[i].curriculum={};envs[i].practice={};envs[i].is_practice=smb_practice_actor(i,count,&game,&practice);
+    fpt_reset_state(&envs[i],&states[i],&task,&time,bank,eligible,eligible_count,table,&curriculum,&game,&practice);fpt_require_valid(&states[i],i);
     worlds[i]=envs[i].episode.world;rewards[i]=terminals[i]=0;
 }
 __global__ void fpt_after_kernel(Env* envs,SmbLogic* states,const SmbBankEntry* bank,const uint32_t* eligible,
         int eligible_count,const FpgTimeEntry* table,uint32_t* worlds,float* rewards,float* terminals,
-        SmbTaskConfig task,FpgTimeConfig time,FptCurriculumConfig curriculum,SmbGameConfig game,int count) {
+        SmbTaskConfig task,FpgTimeConfig time,FptCurriculumConfig curriculum,SmbGameConfig game,SmbPracticeConfig practice,int count) {
     int i=blockIdx.x*blockDim.x+threadIdx.x;if(i>=count)return;
     auto* e=&envs[i];fpt_require_valid(&states[i],i);
-    rewards[i]=smb_after_frame(e,&states[i],&task,&time,&curriculum,table,&game);
+    rewards[i]=smb_after_frame(e,&states[i],&task,&time,&curriculum,table,&game,&practice);
     int done=e->episode.status!=SMB_EPISODE_ACTIVE;terminals[i]=(float)done;
     if(done) {
-        fpt_reset_state(e,&states[i],&task,&time,bank,eligible,eligible_count,table,&curriculum,&game);fpt_require_valid(&states[i],i);
+        fpt_reset_state(e,&states[i],&task,&time,bank,eligible,eligible_count,table,&curriculum,&game,&practice);fpt_require_valid(&states[i],i);
         worlds[i]=e->episode.world;
     }
 }
@@ -71,14 +71,14 @@ Env* puf_vec_create(int count,Dict* options,obs_t* observations,float* actions,f
 void puf_bind_stream(cudaStream_t stream) {fpt_stream=stream;}
 void puf_reset(Env* envs) {
     fpt_reset_kernel<<<(fpt_count+127)/128,128,0,fpt_stream>>>(envs,fpt_states,fpt_bank_device,fpt_eligible_device,
-        (int)fpt_host->eligible.size(),fpt_table_device,fpt_world_ids,fpt_rewards,fpt_terminals,fpt_host->task,fpt_host->time,fpt_host->curriculum,fpt_host->game,fpt_count);
+        (int)fpt_host->eligible.size(),fpt_table_device,fpt_world_ids,fpt_rewards,fpt_terminals,fpt_host->task,fpt_host->time,fpt_host->curriculum,fpt_host->game,fpt_host->practice,fpt_count);
     smb_cuda_check(cudaGetLastError());
     fpt_observe_kernel<<<fpt_count,128,0,fpt_stream>>>(envs,fpt_states,fpt_worlds_device,fpt_observations,fpt_count);smb_cuda_check(cudaGetLastError());
 }
 void puf_step(Env* envs) {
     fpt_engine.step(fpt_states,fpt_worlds_device,fpt_world_ids,fpt_actions,fpt_count,fpt_stream);
     fpt_after_kernel<<<(fpt_count+127)/128,128,0,fpt_stream>>>(envs,fpt_states,fpt_bank_device,fpt_eligible_device,
-        (int)fpt_host->eligible.size(),fpt_table_device,fpt_world_ids,fpt_rewards,fpt_terminals,fpt_host->task,fpt_host->time,fpt_host->curriculum,fpt_host->game,fpt_count);
+        (int)fpt_host->eligible.size(),fpt_table_device,fpt_world_ids,fpt_rewards,fpt_terminals,fpt_host->task,fpt_host->time,fpt_host->curriculum,fpt_host->game,fpt_host->practice,fpt_count);
     smb_cuda_check(cudaGetLastError());
     fpt_observe_kernel<<<fpt_count,128,0,fpt_stream>>>(envs,fpt_states,fpt_worlds_device,fpt_observations,fpt_count);smb_cuda_check(cudaGetLastError());
 }
@@ -96,22 +96,23 @@ void puf_close(Env* envs) {
     fpt_stream=0;fpt_count=0;fpt_device_envs=nullptr;fpt_host.reset();
 }
 static void fpt_gpu_save(const char* checkpoint,Ini*) {
-    if(!fpt_host||!fpt_host->curriculum.enabled)return;
+    if(!fpt_host)return;
     smb_cuda_check(cudaStreamSynchronize(fpt_stream));std::vector<Env> shells(fpt_count);
     smb_cuda_check(cudaMemcpy(shells.data(),fpt_device_envs,shells.size()*sizeof(Env),cudaMemcpyDeviceToHost));
     std::vector<FptCurriculumProgress> progress;for(const auto& env:shells)if(env.is_fpg)progress.push_back(env.curriculum);
-    if(progress.empty())return;
     fpt_write_progress(checkpoint,fpt_host->bank->header.payload_hash,fpt_host->curriculum,progress);
+    std::vector<SmbPracticeProgress> practice;for(const auto& env:shells)if(env.is_practice)practice.push_back(env.practice);
+    smb_write_practice(checkpoint,fpt_host->practice_bank_hash,practice);
 }
 __global__ void fpt_resume_kernel(Env* envs,SmbLogic* states,const FptCurriculumProgress* saved,
         const SmbBankEntry* bank,const uint32_t* eligible,int eligible_count,const FpgTimeEntry* table,
-        uint32_t* worlds,float* rewards,float* terminals,SmbTaskConfig task,FpgTimeConfig time,FptCurriculumConfig curriculum,SmbGameConfig game,int count) {
+        uint32_t* worlds,float* rewards,float* terminals,SmbTaskConfig task,FpgTimeConfig time,FptCurriculumConfig curriculum,SmbGameConfig game,SmbPracticeConfig practice,int count) {
     int i=blockIdx.x*blockDim.x+threadIdx.x;if(i>=count)return;
     if(!envs[i].is_fpg)return;
-    envs[i].curriculum=saved[i];fpt_reset_state(&envs[i],&states[i],&task,&time,bank,eligible,eligible_count,table,&curriculum,&game);
+    envs[i].curriculum=saved[i];fpt_reset_state(&envs[i],&states[i],&task,&time,bank,eligible,eligible_count,table,&curriculum,&game,&practice);
     fpt_require_valid(&states[i],i);worlds[i]=envs[i].episode.world;rewards[i]=terminals[i]=0;
 }
-static void fpt_gpu_load(const char* checkpoint,Ini* ini) {
+static void fpt_gpu_load_curriculum(const char* checkpoint,Ini* ini) {
     if(!fpt_host||!fpt_host->curriculum.enabled||!fpt_integer(smb_curriculum_options(ini),"curriculum_resume",1,0,1))return;
     auto saved=fpt_read_progress(checkpoint);if(saved.progress.empty())return;fpt_check_resume(saved,fpt_host->bank->header.payload_hash);
     std::vector<FptCurriculumProgress> progress(fpt_count);size_t actor=0;
@@ -119,10 +120,33 @@ static void fpt_gpu_load(const char* checkpoint,Ini* ini) {
     FptCurriculumProgress* device;smb_cuda_check(cudaMalloc(&device,progress.size()*sizeof(FptCurriculumProgress)));
     smb_cuda_check(cudaMemcpyAsync(device,progress.data(),progress.size()*sizeof(FptCurriculumProgress),cudaMemcpyHostToDevice,fpt_stream));
     fpt_resume_kernel<<<(fpt_count+127)/128,128,0,fpt_stream>>>(fpt_device_envs,fpt_states,device,fpt_bank_device,fpt_eligible_device,
-        (int)fpt_host->eligible.size(),fpt_table_device,fpt_world_ids,fpt_rewards,fpt_terminals,fpt_host->task,fpt_host->time,fpt_host->curriculum,fpt_host->game,fpt_count);
+        (int)fpt_host->eligible.size(),fpt_table_device,fpt_world_ids,fpt_rewards,fpt_terminals,fpt_host->task,fpt_host->time,fpt_host->curriculum,fpt_host->game,fpt_host->practice,fpt_count);
     smb_cuda_check(cudaGetLastError());fpt_observe_kernel<<<fpt_count,128,0,fpt_stream>>>(fpt_device_envs,fpt_states,fpt_worlds_device,fpt_observations,fpt_count,true);
     smb_cuda_check(cudaGetLastError());smb_cuda_check(cudaStreamSynchronize(fpt_stream));smb_cuda_check(cudaFree(device));
     fprintf(stderr,"[mario_sim/FPG] restored curriculum progress for %zu FPG agents\n",actor);
+}
+__global__ void smb_resume_practice_kernel(Env* envs,SmbLogic* states,const SmbPracticeProgress* progress,
+        const SmbBankEntry* bank,uint32_t* worlds,float* rewards,float* terminals,
+        SmbGameConfig game,SmbPracticeConfig practice,int count) {
+    int i=blockIdx.x*blockDim.x+threadIdx.x;if(i>=count||!envs[i].is_practice)return;
+    envs[i].practice=progress[i];envs[i].observation_history={};
+    smb_practice_reset(&states[i],&envs[i].episode,&envs[i].game,&envs[i].practice,&practice,&game,bank);
+    fpt_require_valid(&states[i],i);worlds[i]=envs[i].episode.world;rewards[i]=terminals[i]=0;
+}
+static void fpt_gpu_load(const char* checkpoint,Ini* ini) {
+    fpt_gpu_load_curriculum(checkpoint,ini);
+    if(!fpt_host||fpt_host->practice.fraction<=0||!fpt_integer(&smb_game_options,"practice_resume",1,0,1))return;
+    auto saved=smb_read_practice(checkpoint,fpt_host->practice_bank_hash);if(saved.empty())return;
+    std::vector<SmbPracticeProgress> progress(fpt_count);size_t actor=0;
+    for(int i=0;i<fpt_count;i++)if(smb_practice_actor(i,fpt_count,&fpt_host->game,&fpt_host->practice))
+        progress[i]=saved[actor++%saved.size()];
+    SmbPracticeProgress* device;smb_cuda_check(cudaMalloc(&device,progress.size()*sizeof(progress[0])));
+    smb_cuda_check(cudaMemcpyAsync(device,progress.data(),progress.size()*sizeof(progress[0]),cudaMemcpyHostToDevice,fpt_stream));
+    smb_resume_practice_kernel<<<(fpt_count+127)/128,128,0,fpt_stream>>>(fpt_device_envs,fpt_states,device,fpt_bank_device,
+        fpt_world_ids,fpt_rewards,fpt_terminals,fpt_host->game,fpt_host->practice,fpt_count);
+    smb_cuda_check(cudaGetLastError());
+    fpt_observe_kernel<<<fpt_count,128,0,fpt_stream>>>(fpt_device_envs,fpt_states,fpt_worlds_device,fpt_observations,fpt_count);
+    smb_cuda_check(cudaGetLastError());smb_cuda_check(cudaStreamSynchronize(fpt_stream));smb_cuda_check(cudaFree(device));
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint,ini) fpt_gpu_save(checkpoint,ini)
 #define PUF_LOAD_HOOK(checkpoint,ini) fpt_gpu_load(checkpoint,ini)

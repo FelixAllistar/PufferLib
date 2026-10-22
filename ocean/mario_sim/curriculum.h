@@ -14,11 +14,16 @@ struct FptCurriculumConfig {
     int enabled,adaptive,initial_level,window,confirmations;
     float threshold,replay_fraction;
     int offsets[FPT_CURRICULUM_LEVELS+1],depths[FPT_CURRICULUM_LEVELS];
+    int retention,demotion_confirmations;
+    float demotion_threshold;
 };
 struct FptCurriculumProgress {
     int initialized,level,sampled_level,attempts,wins,streak;
     uint32_t promotions;
     float last_rate;
+    int failure_streak;
+    uint32_t demotions;
+    uint16_t band_attempts[FPT_CURRICULUM_LEVELS],band_wins[FPT_CURRICULUM_LEVELS];
 };
 
 static void fpt_require_natural_bank(const SmbBank& bank) {
@@ -60,17 +65,43 @@ SMB_HD int fpt_curriculum_choose(FptCurriculumProgress* p,const FptCurriculumCon
     int level=p->level;
     if(level>0&&cfg->replay_fraction>0) {
         float draw=(float)(smb_random(rng)>>8)*(1.0f/16777216.0f);
-        if(draw<cfg->replay_fraction)level=(int)(smb_random(rng)%(unsigned)level);
+        if(draw<cfg->replay_fraction) {
+            if(!cfg->retention)level=(int)(smb_random(rng)%(unsigned)level);
+            else {
+                // Retain all earlier bands; give recently failed bands more
+                // practice without removing the frontier's fixed frame share.
+                int total=0,weights[FPT_CURRICULUM_LEVELS];
+                for(int k=0;k<level;k++) {
+                    int n=p->band_attempts[k],wins=p->band_wins[k];
+                    weights[k]=n?1+4*(n-wins)/n:2;total+=weights[k];
+                }
+                int draw=(int)(smb_random(rng)%(unsigned)total);
+                for(int k=0;k<level;k++){draw-=weights[k];if(draw<0){level=k;break;}}
+            }
+        }
     }
     p->sampled_level=level;return level;
 }
 SMB_HD int fpt_curriculum_result(FptCurriculumProgress* p,const FptCurriculumConfig* cfg,int won) {
-    if(!cfg->enabled||!cfg->adaptive||p->sampled_level!=p->level)return 0;
+    if(!cfg->enabled||!cfg->adaptive)return 0;
+    int sampled=p->sampled_level;
+    if(p->band_attempts[sampled]>=64) {
+        p->band_attempts[sampled]/=2;p->band_wins[sampled]/=2;
+    }
+    p->band_attempts[sampled]++;p->band_wins[sampled]+=won!=0;
+    if(sampled!=p->level)return 0;
     p->attempts++;p->wins+=won;
     if(p->attempts<cfg->window)return 0;
     p->last_rate=(float)p->wins/(float)p->attempts;
     if(p->last_rate>=cfg->threshold){if(p->streak<cfg->confirmations)p->streak++;}else p->streak=0;
+    if(cfg->retention&&p->last_rate<cfg->demotion_threshold) {
+        if(p->failure_streak<cfg->demotion_confirmations)p->failure_streak++;
+    }
+    else p->failure_streak=0;
     p->attempts=p->wins=0;
+    if(cfg->retention&&p->level>0&&p->failure_streak>=cfg->demotion_confirmations) {
+        p->level--;p->demotions++;p->failure_streak=p->streak=0;return -1;
+    }
     if(p->streak<cfg->confirmations||p->level+1>=FPT_CURRICULUM_LEVELS)return 0;
     p->level++;p->promotions++;p->streak=0;return 1;
 }

@@ -13,13 +13,23 @@ static void promotion_controls() {
     fpt_check(p.level==1&&p.promotions==1&&p.attempts==0,"two successful windows did not advance one band");
     p.sampled_level=0;auto saved=p;
     for(int k=0;k<64;k++)fpt_curriculum_result(&p,&c,1);
-    fpt_check(!memcmp(&p,&saved,sizeof(p)),"easier practice caused promotion");
+    fpt_check(p.level==saved.level&&p.promotions==saved.promotions&&p.attempts==saved.attempts
+        &&p.wins==saved.wins&&p.streak==saved.streak,"easier practice caused promotion");
     p.sampled_level=p.level;c.adaptive=0;saved=p;
     for(int k=0;k<64;k++)fpt_curriculum_result(&p,&c,1);
     fpt_check(!memcmp(&p,&saved,sizeof(p)),"fixed evaluation advanced the curriculum");
     c.adaptive=1;p.level=p.sampled_level=FPT_CURRICULUM_LEVELS-1;
     for(int k=0;k<64;k++)fpt_curriculum_result(&p,&c,1);
     fpt_check(p.level==FPT_CURRICULUM_LEVELS-1&&p.streak<=c.confirmations,"curriculum exceeded final band");
+    c.retention=1;c.demotion_confirmations=2;c.demotion_threshold=.25f;
+    p.level=p.sampled_level=5;
+    for(int k=0;k<4;k++)fpt_curriculum_result(&p,&c,0);
+    fpt_check(p.level==5,"one failed window demoted too early");
+    for(int k=0;k<4;k++)fpt_curriculum_result(&p,&c,0);
+    fpt_check(p.level==4&&p.demotions==1,"sustained skill loss did not lower difficulty");
+    p.sampled_level=p.level;
+    for(int k=0;k<8;k++)fpt_curriculum_result(&p,&c,1);
+    fpt_check(p.level==5&&p.failure_streak==0,"recovered mastery did not restore difficulty");
 }
 int main() {
     try {

@@ -10,7 +10,7 @@ static void fpt_same_state(const SmbLogic& a,const SmbLogic& b) {
     fpt_check(!memcmp(a.ram,b.ram,SMB_RAM)&&a.pc==b.pc&&a.a==b.a&&a.x==b.x&&a.y==b.y&&a.p==b.p&&a.sp==b.sp
         &&!memcmp(a.joy,b.joy,2)&&!memcmp(a.joy_shift,b.joy_shift,2)&&a.strobe==b.strobe
         &&a.instructions==b.instructions&&a.fault==b.fault
-        &&!memcmp(&a.timing,&b.timing,offsetof(SmbClock,sprites)+256),"native state mismatch");
+        &&!memcmp(&a.timing,&b.timing,sizeof(SmbClock)),"native state mismatch");
 }
 struct FptTestTeacher {SmbTraceCase item;std::vector<SmbTraceFrame> frames;};
 static std::vector<FptTestTeacher> fpt_test_teachers() {
@@ -36,5 +36,15 @@ static void fpt_test_old_progress(const char* path,uint64_t bank_hash,const FptC
         fpt_curriculum_init(&p,&c);
         for(int i=0;i<FPT_CURRICULUM_LEVELS;i++)if(c.depths[i]==96)p.level=p.sampled_level=i;
     }
-    fpt_write_progress(path,bank_hash,c,progress);
+    FptCurriculumSavedHeaderV1 header={};header.magic=0x46504331;header.version=1;
+    header.count=progress.size();header.progress_size=sizeof(FptCurriculumProgressV1);
+    header.bank_hash=bank_hash;header.checkpoint_hash=fpg_time_file_hash(path);
+    memcpy(&header.config,&c,sizeof(header.config));
+    std::vector<FptCurriculumProgressV1> old(progress.size());
+    for(size_t i=0;i<old.size();i++)memcpy(&old[i],&progress[i],sizeof(old[i]));
+    header.payload_hash=smb_bank_hash(1469598103934665603ull,&header.config,sizeof(header.config));
+    header.payload_hash=smb_bank_hash(header.payload_hash,old.data(),old.size()*sizeof(old[0]));
+    std::ofstream out(std::string(path)+".curriculum",std::ios::binary);
+    out.write((const char*)&header,sizeof(header));out.write((const char*)old.data(),old.size()*sizeof(old[0]));
+    out.close();fpt_check(bool(out),"cannot write legacy sidecar fixture");
 }

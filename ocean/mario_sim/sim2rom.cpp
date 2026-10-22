@@ -19,16 +19,25 @@ static int choose(const float* logits,uint32_t* rng,int deterministic) {
 }
 int main(int argc,char** argv) {
     try {
-        if(argc<4||argc>10)throw std::runtime_error("usage: sim2rom MODEL CONFIG OUTPUT [EPISODES=64] [SEED=137] [DETERMINISTIC=0] [BANK_DIRECTORY|new-game|all-stages] [REFERENCE_FRAMES=0] [OBJECTIVE=fpg|clear|game]");
+        if(argc<4||argc>11)throw std::runtime_error("usage: sim2rom MODEL CONFIG OUTPUT [EPISODES=64] [SEED=137] [DETERMINISTIC=0] [BANK_DIRECTORY|new-game|all-stages|level:W-L] [REFERENCE_FRAMES=0] [OBJECTIVE=fpg|clear|game] [FIRST_EPISODE=0]");
         int episodes=argc>4?std::stoi(argv[4]):64;uint32_t seed=argc>5?(uint32_t)std::stoul(argv[5]):137;
         int deterministic=argc>6?std::stoi(argv[6]):0;std::filesystem::path root=argc>7?argv[7]:"build/mario_sim/fpg/pipe",out=argv[3];
         int reference_frames=argc>8?std::stoi(argv[8]):0;
-        bool all_stages=root=="all-stages",new_game=root=="new-game"||all_stages;
+        int first_episode=argc>10?std::stoi(argv[10]):0;
+        std::string selector=root.string();int selected_stage=-1;
+        if(selector.rfind("level:",0)==0) {
+            fpt_rom_require(selector.size()==9&&selector[6]>='1'&&selector[6]<='8'
+                &&selector[7]=='-'&&selector[8]>='1'&&selector[8]<='4',"level selector must be level:1-1 through level:8-4");
+            selected_stage=(selector[6]-'1')*4+selector[8]-'1';
+        }
+        bool all_stages=root=="all-stages",new_game=root=="new-game"||all_stages||selected_stage>=0;
         bool clear=argc>9&&!strcmp(argv[9],"clear"),game=argc>9&&!strcmp(argv[9],"game");
         fpt_rom_require(argc<=9||clear||game||!strcmp(argv[9],"fpg"),"objective must be fpg, clear or game");
         fpt_rom_require(!all_stages||clear||game,"all-stages needs a clear or game objective");
+        fpt_rom_require(selected_stage<0||clear||game,"level selection needs a clear or game objective");
         fpt_rom_require(!new_game||reference_frames==0,"new-game has no reference depth");
         fpt_rom_require(episodes>0&&episodes<=100000&&seed&&(deterministic==0||deterministic==1),"invalid transfer parameters");
+        fpt_rom_require(first_episode>=0&&first_episode<=100000-episodes,"invalid first episode");
         Ini ini={};puf_ini_load_file(&ini,argv[2]);int hidden=(int)puf_ini_get(&ini,"policy","hidden_size"),layers=(int)puf_ini_get(&ini,"policy","num_layers");
         const char* reward_section="env";for(int i=0;i<ini.num_sections;i++)if(!strcmp(ini.sections[i].name,"fpg"))reward_section="fpg";
         if(game)reward_section="game";
@@ -43,7 +52,8 @@ int main(int argc,char** argv) {
             FpgTimeTable table(puf_ini_get_str(&ini,reward_section,"time_table"),*bank,
                 puf_ini_get_str(&ini,"env","engine_cpu_archive"),puf_ini_get_str(&ini,"env","engine_module"));
             for(unsigned i=0;i<bank->entries.size();i++)if((int)table.entries[i].best_frames==reference_frames)eligible.push_back(i);
-        }else if(new_game)for(int stage=0;stage<(all_stages?32:1);stage++)eligible.push_back(stage);
+        }else if(selected_stage>=0)eligible.push_back(selected_stage);
+        else if(new_game)for(int stage=0;stage<(all_stages?32:1);stage++)eligible.push_back(stage);
         else for(unsigned i=0;i<bank->entries.size();i++)eligible.push_back(i);
         fpt_rom_require(!eligible.empty(),"no reset matches the requested reference depth");
         RetroRom& rom=retro_rom();retro_load_rom_locked(rom,RETRO_SMB1_ROM_PATH);
@@ -58,7 +68,7 @@ int main(int argc,char** argv) {
         unsigned flag_contacts=0,fpg_contacts=0,cleared_levels=0;int furthest_x=0;
         uint64_t total_frames=0,successful_frames=0;
         uint64_t total_progress=0,total_checkpoints=0,total_life_losses=0;
-        unsigned clear_episodes=0;double progress_fraction=0;
+        unsigned clear_episodes=0,total_level_exits=0,total_flag_contacts=0;double progress_fraction=0;
         SmbTaskConfig task={seed,0,horizon,SMB_TASK_FPG,0,1};uint32_t pick=smb_seed(seed,0);
         SmbGameConfig game_config;game_config.max_frames=horizon;
         if(game) {
@@ -68,10 +78,12 @@ int main(int argc,char** argv) {
             game_config.time_target=(int)number("time_target_frames",1800);game_config.death_penalty=number("death_penalty",0);
             game_config.checkpoint_distance=(int)number("checkpoint_distance",128);
             game_config.checkpoint_reward=number("checkpoint_reward",.025f);
+            game_config.reward_on_exit=(int)number("reward_on_exit",1);
             fpt_rom_require(game_config.checkpoint_distance>=1&&game_config.checkpoint_distance<=3400
                 &&std::isfinite(game_config.checkpoint_reward)&&game_config.checkpoint_reward>=0,"invalid checkpoint reward settings");
         }
-        for(int index=0;index<episodes;index++) {
+        if(!all_stages)for(int i=0;i<first_episode;i++)smb_random(&pick);
+        for(int index=first_episode;index<first_episode+episodes;index++) {
             unsigned scene=eligible[all_stages?(unsigned)index%eligible.size():smb_random(&pick)%eligible.size()];Nes_State snapshot;
             if(new_game)emulator.load_state(rom.starts[scene]->state);
             else {
@@ -88,6 +100,7 @@ int main(int argc,char** argv) {
             uint32_t ar=smb_seed(seed,index+1),br=ar;std::string failure;int bad_field=-1;
             int start_x=fpt_x(real.ram,0),max_x=start_x;
             bool touched_flag=false,touched_fpg=false,level_clear=false;
+            std::vector<uint8_t> actions;
             auto after=[&](const SmbLogic& s,SmbEpisode* ep) {
                 if(game)return smb_game_after_frame(&s,ep,ep==&a?&ga:&gb,&game_config);
                 if(!clear)return smb_task_after_frame(&s,ep,&task);
@@ -109,9 +122,39 @@ int main(int argc,char** argv) {
                 if(!(t%16))traces<<index<<','<<t<<','<<fpt_x(real.ram,0)<<','<<fpt_y(real.ram,0)<<','
                     <<fpt_signed(real.ram[0x57])<<','<<fpt_signed(real.ram[0x9f])<<','<<(int)real.ram[0x75f]+1<<','
                     <<(int)real.ram[0x75c]+1<<','<<(int)real.ram[0x74e]<<','<<(int)real.ram[0xe]<<','<<ra<<'\n';
+                SmbLogic native_before=native,rom_before=real;
+                actions.push_back((uint8_t)smb_action_buttons(ra));
                 fpt_rom_require(!smb_native_frame(&native,world,smb_action_buttons(na)),"native simulation fault");
                 retro_check(emulator.emulate_skip_frame_fast(smb_action_buttons(ra),0));real=smb_import_logic(emulator);total_frames++;
-                bad_field=fpt_rom_difference(native,real);if(bad_field>=0){failure="native_state";break;}
+                bad_field=fpt_rom_difference(native,real);if(bad_field>=0){
+                    failure="native_state";
+                    // One-frame fixtures and a compact action sequence, never a
+                    // full RAM dump of every episode. Both imports distinguish
+                    // accumulated hidden-state drift from a one-frame defect.
+                    std::ofstream clips(out/"failure.clips.bin",std::ios::binary);
+                    SmbTraceHeader h={SMB_TRACE_MAGIC,SMB_TRACE_VERSION,sizeof(SmbScene),sizeof(SmbTraceCase),sizeof(SmbTraceFrame),2,2,1,0x6e01246e5d215cb3ull};
+                    clips.write((const char*)&h,sizeof(h));clips.write((const char*)world,SMB_PRG);
+                    for(const auto* before:{&native_before,&rom_before}) {
+                        SmbTraceCase c={};c.scene.initial=*before;c.frames=1;c.stage=ga.stage;c.source_frame=t;c.seed=seed;
+                        auto f=fpt_rom_record(real,smb_action_buttons(ra));
+                        clips.write((const char*)&c,sizeof(c));clips.write((const char*)&f,sizeof(f));
+                    }
+                    clips.close();fpt_rom_require(bool(clips),"cannot write mismatch fixture");
+                    std::ofstream input(out/"failure.actions",std::ios::binary);
+                    input.write((const char*)actions.data(),actions.size());input.close();
+                    fpt_rom_require(bool(input),"cannot write mismatch actions");
+                    std::ofstream detail(out/"failure.json");
+                    detail<<"{\"episode\":"<<index<<",\"frame\":"<<t<<",\"field\":"<<bad_field;
+                    auto registers=[&](const char* name,const SmbLogic& s) {
+                        detail<<",\""<<name<<"\":{\"pc\":"<<s.pc<<",\"a\":"<<(int)s.a<<",\"x\":"<<(int)s.x
+                            <<",\"y\":"<<(int)s.y<<",\"p\":"<<(int)(s.p&207)<<",\"sp\":"<<(int)s.sp
+                            <<",\"timestamp\":"<<s.timing.timestamp<<",\"video_frame\":"<<s.timing.video_frame<<"}";
+                    };
+                    registers("native_before",native_before);registers("rom_before",rom_before);
+                    registers("native",native);registers("rom",real);detail<<"}\n";
+                    detail.close();fpt_rom_require(bool(detail),"cannot write mismatch diagnostics");
+                    break;
+                }
                 const auto* m=real.ram;
                 touched_flag|=m[0xe]==4||m[0xe]==5;
                 touched_fpg|=m[0xe]==5&&m[0x70f]>=162&&m[0xd4]==48;
@@ -129,15 +172,18 @@ int main(int argc,char** argv) {
             if(game) {
                 total_progress+=gb.progress_pixels;total_checkpoints+=gb.checkpoints;
                 total_life_losses+=gb.deaths;clear_episodes+=gb.clears>0;
+                total_level_exits+=gb.level_exits;total_flag_contacts+=gb.flag_contacts;
                 progress_fraction+=std::min(1.0,(double)gb.progress_pixels/3400.0);
             }
             cases<<"{\"episode\":"<<index<<",\"scene\":"<<scene<<",\"frames\":"<<b.frames<<",\"native_status\":"<<a.status
+                <<",\"start_world\":"<<a.start_world+1<<",\"start_level\":"<<a.start_level+1
                 <<",\"rom_status\":"<<b.status<<",\"failure\":\""<<failure<<"\",\"field\":"<<bad_field
                 <<",\"start_x\":"<<start_x<<",\"max_overworld_x\":"<<max_x<<",\"final_x\":"<<fpt_x(real.ram,0)
                 <<",\"touched_flag\":"<<(touched_flag?"true":"false")<<",\"fpg\":"<<(touched_fpg?"true":"false")
                 <<",\"level_clear\":"<<(level_clear?"true":"false")
                 <<",\"progress_pixels\":"<<gb.progress_pixels<<",\"checkpoints\":"<<gb.checkpoints
                 <<",\"life_losses\":"<<gb.deaths<<",\"clears\":"<<gb.clears
+                <<",\"level_exits\":"<<gb.level_exits<<",\"flag_contacts\":"<<gb.flag_contacts
                 <<",\"episode_return\":"<<b.episode_return<<"}\n";
             if(!failure.empty())break;
         }
@@ -146,9 +192,11 @@ int main(int argc,char** argv) {
         bool complete=completed==(unsigned)episodes,passed=!mismatches&&complete;
         std::ofstream report(out/"summary.json");
         report<<std::setprecision(12);
-        report<<"{\"schema\":3,\"scope\":\""<<(all_stages?"natural_all_32_stages":new_game?"natural_1_1_new_game":"natural_1_1_starts")
+        report<<"{\"schema\":3,\"scope\":\""<<(all_stages?"natural_all_32_stages":selected_stage>=0?"natural_single_stage":new_game?"natural_1_1_new_game":"natural_1_1_starts")
             <<"\",\"objective\":\""<<(game?"full_game":clear?"level_transition":"fpg")<<"\",\"reference_frames\":"<<reference_frames
+            <<",\"starting_stage\":"<<(selected_stage>=0?selected_stage:new_game&&!all_stages?0:-1)
             <<",\"eligible_starts\":"<<eligible.size()<<",\"episodes_requested\":"<<episodes
+            <<",\"first_episode\":"<<first_episode
             <<",\"episodes_run\":"<<episodes_run<<",\"episodes_completed\":"<<completed<<",\"seed\":"<<seed
             <<",\"max_frames\":"<<horizon<<",\"checkpoint_fnv64\":\""<<fpg_time_file_hash(argv[1])
             <<"\",\"config_fnv64\":\""<<fpg_time_file_hash(argv[2])<<"\",\"bank_payload_fnv64\":\""<<(bank?bank->header.payload_hash:0)<<"\""
@@ -158,6 +206,8 @@ int main(int argc,char** argv) {
             <<",\"flag_contacts\":"<<flag_contacts<<",\"fpg_contacts\":"<<fpg_contacts<<",\"level_clears\":"<<cleared_levels
             <<",\"furthest_overworld_x\":"<<furthest_x
             <<",\"game_clear_episodes\":"<<clear_episodes<<",\"game_life_losses\":"<<total_life_losses
+            <<",\"game_level_exits\":"<<total_level_exits<<",\"game_flag_contacts\":"<<total_flag_contacts
+            <<",\"reward_on_exit\":"<<game_config.reward_on_exit
             <<",\"game_progress_pixels\":"<<total_progress<<",\"game_checkpoints\":"<<total_checkpoints
             <<",\"mean_progress_pixels\":"<<(episodes_run?(double)total_progress/episodes_run:0)
             <<",\"mean_progress_fraction\":"<<(episodes_run?progress_fraction/episodes_run:0)
