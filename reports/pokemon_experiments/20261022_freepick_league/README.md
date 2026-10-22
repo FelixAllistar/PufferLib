@@ -85,7 +85,15 @@ whether it does.
 The league adds about 12 points on SyntheticRLV2 and 24 on TaurosV0 here, against about 9 / 8 on
 zam_egg_mie.
 
-**Magnet-off ablation:** restarted 2026-10-22 18:18 with the per-opponent win-rate build (see below).
+**Magnet-off ablation** (gar_egg_zap, B1 recipe with `train.magnet_coef = 0`, per-opponent logging build):
+
+| Checkpoint | Magnet off | Magnet on (B1) |
+|---|---|---|
+| 350M | 42.4 / 43.1 | 50.7 / 52.1 |
+| 700M | 48.6 / 50.0 | 61.8 / 58.0 |
+
+Magnet on is ahead by about 10 points at 700M on both models, and by 8–9 at 350M. This is one seed per arm,
+but a gap of about 10 on both is about 2.5 standard errors. EMAgnet helps in this setting.
 
 ## Per-opponent win-rate logging (2026-10-22)
 
