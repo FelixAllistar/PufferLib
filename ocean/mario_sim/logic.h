@@ -20,7 +20,12 @@ typedef struct {
     uint16_t decay_low,decay_high;
     uint8_t control,mask,status,sprite_y,sprite_x,sprite_tile,open_bus;
     uint8_t sprites[256];
+    // Occupies the old trailing padding byte, preserving existing reset banks.
+    // QuickNES can cache $2002 through the remainder of a video frame once
+    // sprite events have resolved and no open-bus decay is pending at the read.
+    uint8_t status_read_frozen;
 } SmbClock;
+static_assert(sizeof(SmbClock)==320,"reset-bank clock layout changed");
 typedef struct {
     uint8_t ram[SMB_RAM];
     uint16_t pc;
@@ -89,6 +94,7 @@ SMB_HD void smb_clock_begin(SmbClock* c) {
     int end=89341-c->extra;c->length=(end+2)/3;c->frame_extra=c->length*3-end;
     c->nmi=(c->control&c->status&128)?2-(c->extra>>1):0x3fffffff;
     c->frame_ended=c->vblank_cleared=c->odd_checked=0;
+    c->status_read_frozen=0;
     c->overflow_checked=0;c->overflow_time=0x3fffffff;
     c->decay_low=(uint16_t)(c->decay_low+c->clock);c->decay_high=(uint16_t)(c->decay_high+c->clock);
 }
@@ -109,9 +115,19 @@ SMB_HD int smb_clock_status(SmbLogic* s) {
         if(c->extra!=1&&time==c->length)c->nmi=0x3fffffff;
         if(c->extra==1&&time==c->length-1){c->status&=127;c->frame_ended=1;c->nmi=0x3fffffff;}
     }
+    // Nes_Ppu::read_2002 sets an indefinite next-status event in this case.
+    // The optimized LDA-absolute read then returns the cached register without
+    // advancing PPU events, even when that instruction crosses the frame end.
+    // Other opcodes still take the ordinary PPU read path.
+    c->status_read_frozen=time>2423&&time<=29770&&(c->status&64)
+        &&((c->status&32)||(c->overflow_checked&&c->overflow_time==0x3fffffff))
+        &&time<=c->decay_low&&time<=c->decay_high;
     int value=c->status;c->status&=127;
     c->open_bus=(c->open_bus&31)|(value&224);c->decay_high=(uint16_t)(time+11366);
     smb_clock_bus_decay(c,time);return (value&224)|(c->open_bus&31);
+}
+SMB_HD int smb_clock_status_lda(SmbLogic* s) {
+    return s->timing.status_read_frozen?s->timing.status:smb_clock_status(s);
 }
 SMB_HD void smb_clock_write(SmbLogic* s,int address,int value) {
     SmbClock* c=&s->timing;int time=c->clock-1;smb_clock_length(c,time);

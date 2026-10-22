@@ -29,8 +29,8 @@ SMB_HD void smb_runtime_poll_skip(SmbLogic* s,int wait_for_set) {
     int maximum=(stop-begin-12)/9;
     if(count>maximum)count=maximum;
     if(count<2)return;
-    c->clock=begin+4;smb_clock_status(s);
+    c->clock=begin+4;smb_clock_status_lda(s);
     c->clock=begin+(count-1)*9+4;
-    s->a=(uint8_t)(smb_clock_status(s)&64);smb_nz(s,s->a);
+    s->a=(uint8_t)(smb_clock_status_lda(s)&64);smb_nz(s,s->a);
     c->clock+=5;s->instructions+=(unsigned)count*3;
 }

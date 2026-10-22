@@ -5,6 +5,7 @@ static void check_sweep_score() {
     Log log={};Dict metrics={};
     log.game_episodes=4;log.game_progress_pixels=4*3400;
     log.fpg_episodes=20;log.curriculum_frames=20*214;
+    log.fpg_mastery=10;
     puf_log(&log,&metrics);
     fpt_check(fabs(dict_get(&metrics,"sweep_score")-.875)<1e-6,"sweep score mixes task denominators");
     log.episode_return=1e6;log.target_frames=1e6;log.successes=20;
@@ -20,6 +21,13 @@ static void check_sweep_score() {
     log={};log.fpg_episodes=20;log.curriculum_frames=60;
     puf_log(&log,&metrics);
     fpt_check(dict_get(&metrics,"sweep_score")==0,"initial FPG depth counted as advancement");
+    log.curriculum_frames=20*425;
+    puf_log(&log,&metrics);
+    fpt_check(dict_get(&metrics,"sweep_score")==0&&dict_get(&metrics,"legacy_sweep_score")==.25,
+        "forgotten FPG skill still earns curriculum credit");
+    log.practice_episodes=100;log.practice_successes=100;
+    puf_log(&log,&metrics);
+    fpt_check(dict_get(&metrics,"sweep_score")==0,"practice resets inflated ordinary game score");
     log={};puf_log(&log,&metrics);
     fpt_check(dict_get(&metrics,"sweep_score")==0,"empty log has nonzero sweep score");
     dict_clear(&metrics);
@@ -30,6 +38,9 @@ int main() {
         Ini ini={};puf_ini_load_file(&ini,"config/mario_sim.ini");
         dict_set(puf_ini_section(&ini,"vec",0),"total_agents",4);
         dict_set(puf_ini_section(&ini,"game",0),"max_frames",17);
+        // This case verifies the ordinary 75/25 pools even when a manual
+        // training profile enables the separately tested encounter pool.
+        dict_set(puf_ini_section(&ini,"game",0),"practice_fraction",0);
         dict_set(puf_ini_section(&ini,"fpg",0),"max_frames",13);
         dict_set(puf_ini_section(&ini,"fpg",0),"curriculum_resume",1);
         fpt_configure(&ini,"train",nullptr);

@@ -17,6 +17,13 @@ void* fpt_policy_load(const char* path,int hidden,int layers) {
 void fpt_policy_reset(void* handle) {
     FptPolicy* p=handle;MinGRU* r=p->recurrent;memset(r->state,0,r->hidden_size*r->num_layers*sizeof(float));
 }
+int fpt_policy_copy_state(void* destination,const void* source) {
+    FptPolicy* dst=destination;const FptPolicy* src=source;
+    if(!dst||!src||dst->recurrent->hidden_size!=src->recurrent->hidden_size
+        ||dst->recurrent->num_layers!=src->recurrent->num_layers)return 0;
+    memcpy(dst->recurrent->state,src->recurrent->state,
+        src->recurrent->hidden_size*src->recurrent->num_layers*sizeof(float));return 1;
+}
 const float* fpt_policy_logits(void* handle,const float* obs) {
     FptPolicy* p=handle;fpt_cpu_encode(&p->encoder,obs);
     mingru(p->recurrent,p->encoder.out);linear(p->decoder,p->recurrent->output);return p->decoder->output;

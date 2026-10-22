@@ -182,6 +182,7 @@ def main():
                 body = body.replace(f'smb_{name}(s,', f'smb_reg_{name}(r,')
             body = body.replace('smb_push(s,', 'smb_reg_push(s,r,').replace('smb_pop(s)', 'smb_reg_pop(s,r)')
             body = body.replace('smb_read(s,data,address)', 'smb_reg_read(s,data,address,clock)')
+            body = body.replace('smb_clock_status_lda(s)', 'smb_reg_status_lda(s,clock)')
             # Indirect JMP operands are literal addresses, unlike other reads.
             body = re.sub(r'smb_read\(s,data,(\d+)\)', r'smb_reg_read(s,data,\1,clock)', body)
             body = body.replace('smb_write(s,address,', 'smb_reg_write(s,address,')

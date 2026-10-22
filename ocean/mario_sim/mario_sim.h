@@ -9,6 +9,8 @@ typedef float obs_t;
 #include "view.h"
 #include "observation.h"
 #include "game.h"
+#include "practice.h"
+#include "practice_state.h"
 #include <memory>
 
 #define OBS_SIZE FPT_OBS
@@ -22,12 +24,17 @@ struct Log {
     float frontier_episodes,frontier_successes,curriculum_promotions;
     float fpg_episodes,game_episodes,game_clears,game_wins,game_deaths,game_timeouts;
     float game_progress_pixels,game_checkpoints,game_checkpoint_reward;
+    float fpg_mastery,curriculum_demotions,game_flag_contacts,game_level_exits;
+    float band_episodes[FPT_CURRICULUM_LEVELS],band_successes[FPT_CURRICULUM_LEVELS];
+    float practice_episodes,practice_successes,practice_deaths,practice_timeouts,practice_promotions,practice_demotions;
+    float practice_stage_episodes[32],practice_stage_successes[32];
 };
 struct Env {
     Log log;Agent agents[1];int tag,boundary_reached,num_agents;uint32_t rng;
     SmbEpisode episode;SmbLogic* state;float target;int table_hit;
     FptCurriculumProgress curriculum;
     int is_fpg;SmbGameProgress game;
+    int is_practice;SmbPracticeProgress practice;
     FptObservationHistory observation_history;
 };
 struct FpgTimeHost {
@@ -38,6 +45,7 @@ struct FpgTimeHost {
     std::vector<FpgTimeEntry> table;
     std::string module;
     SmbGameConfig game;std::vector<SmbBankEntry> runtime_bank;
+    SmbPracticeConfig practice;uint64_t practice_bank_hash=0;
 };
 static std::unique_ptr<FpgTimeHost> fpt_host;
 static int fpt_references;
@@ -116,6 +124,10 @@ static void fpt_setup_fpg(Dict* options) {
     curriculum.confirmations=fpt_integer(options,"curriculum_confirmations",2,1,128);
     curriculum.threshold=fpt_number(options,"curriculum_threshold",0.8f,0.01f,1);
     curriculum.replay_fraction=fpt_number(options,"curriculum_replay",0.2f,0,0.9f);
+    curriculum.retention=fpt_integer(options,"curriculum_retention",1,0,1);
+    curriculum.demotion_confirmations=fpt_integer(options,"curriculum_demotion_confirmations",2,1,128);
+    curriculum.demotion_threshold=fpt_number(options,"curriculum_demotion_threshold",.25f,0,1);
+    if(curriculum.demotion_threshold>=curriculum.threshold)throw std::runtime_error("curriculum demotion threshold must be below promotion threshold");
     int start=fpt_integer(options,"curriculum_start_frames",3,3,425);curriculum.initial_level=-1;
     for(int i=0;i<FPT_CURRICULUM_LEVELS;i++)if(fpt_curriculum_depths[i]==start)curriculum.initial_level=i;
     if(curriculum.initial_level<0)throw std::runtime_error("curriculum_start_frames must be a curriculum depth (3,4,5,6,8,12,16,24,32,48,64,96,128,192,256,320,425)");
@@ -181,24 +193,62 @@ static void fpt_setup(Dict* options) {
         h.game.max_frames=fpt_integer(d,"max_frames",108000,1,1000000);
         h.game.fixed_stage=fpt_integer(d,"fixed_stage",-1,-1,31);
         h.game.terminate_on_clear=fpt_integer(d,"terminate_on_clear",0,0,1);
+        h.game.reward_on_exit=fpt_integer(d,"reward_on_exit",1,0,1);
         h.game.clear_reward=fpt_number(d,"clear_reward",1,0,10);
         h.game.time_bonus=fpt_number(d,"time_bonus",.1f,0,10);
         h.game.time_target=fpt_integer(d,"time_target_frames",1800,1,1000000);
         h.game.death_penalty=fpt_number(d,"death_penalty",0,0,10);
         h.game.checkpoint_distance=fpt_integer(d,"checkpoint_distance",128,1,3400);
         h.game.checkpoint_reward=fpt_number(d,"checkpoint_reward",.025f,0,10);
+        h.practice.fraction=fpt_evaluating?0:fpt_number(d,"practice_fraction",0,0,1);
+        if(h.practice.fraction+smb_fpg_fraction>1)throw std::runtime_error("game practice and FPG frame shares exceed one");
+        h.practice.max_frames=fpt_integer(d,"practice_max_frames",6000,1,108000);
+        h.practice.replay=fpt_number(d,"practice_replay",.2f,0,.9f);
+        if(h.practice.fraction>0) {
+            SmbBank practice(fpt_path(d,"practice_bank","build/mario_sim/practice/bank.bin"));
+            if(practice.header.worlds!=1||memcmp(practice.worlds.data(),h.bank->worlds.data(),SMB_PRG))
+                throw std::runtime_error("practice bank must contain the original ROM world");
+            h.practice_bank_hash=practice.header.payload_hash;
+            for(const auto& e:practice.entries) {
+                const auto* m=e.scene.initial.ram;
+                if(!(e.flags&SMB_BANK_PRACTICE)||(e.flags&SMB_BANK_CONSTRUCTED)||e.scene.mask
+                    ||e.stage!=m[0x75f]*4u+m[0x75c]||m[0xe]!=8
+                    ||((e.flags>>SMB_PRACTICE_BAND_SHIFT)&255)>=SMB_PRACTICE_BANDS)
+                    throw std::runtime_error("invalid natural encounter reset");
+            }
+            size_t copied=0;
+            for(int stage=0;stage<32;stage++) {
+                bool present=false;
+                for(const auto& e:practice.entries)if((int)e.stage==stage)present=true;
+                if(!present)continue;
+                h.practice.stages[h.practice.stage_count++]=stage;
+                for(int band=0;band<SMB_PRACTICE_BANDS;band++) {
+                    h.practice.offsets[stage][band]=(uint32_t)h.runtime_bank.size();
+                    for(const auto& e:practice.entries)if((int)e.stage==stage
+                        &&(int)(e.flags>>SMB_PRACTICE_BAND_SHIFT)==band){h.runtime_bank.push_back(e);copied++;}
+                    if(h.runtime_bank.size()==h.practice.offsets[stage][band])
+                        throw std::runtime_error("practice stage has an empty approach band");
+                }
+                h.practice.offsets[stage][SMB_PRACTICE_BANDS]=(uint32_t)h.runtime_bank.size();
+            }
+            if(copied!=practice.entries.size()||!h.practice.stage_count)throw std::runtime_error("empty or incomplete practice bank");
+            fprintf(stderr,"[mario_sim/practice] frame_share=%.3f stages=%d states=%zu max_frames=%d\n",
+                h.practice.fraction,h.practice.stage_count,copied,h.practice.max_frames);
+        }
     } else h.runtime_bank=h.bank->entries;
     if(h.table.empty())h.table.resize(h.runtime_bank.size());
     if(h.eligible.empty())h.eligible.push_back(0);
-    fprintf(stderr,"[mario_sim] game=%.1f%% FPG=%.1f%%; original stages=%s; game limit=%d\n",
-        100*(1-smb_fpg_fraction),100*smb_fpg_fraction,h.game.fixed_stage<0?"all 32":"fixed",h.game.max_frames);
+    fprintf(stderr,"[mario_sim] game=%.1f%% practice=%.1f%% FPG=%.1f%%; original stages=%s; game limit=%d\n",
+        100*(1-smb_fpg_fraction-h.practice.fraction),100*h.practice.fraction,100*smb_fpg_fraction,
+        h.game.fixed_stage<0?"all 32":"fixed",h.game.max_frames);
 }
 SMB_HD int fpt_reset_state(Env* env,SmbLogic* state,const SmbTaskConfig* task,const FpgTimeConfig* time,
         const SmbBankEntry* bank,const uint32_t* eligible,int eligible_count,const FpgTimeEntry* table,
-        const FptCurriculumConfig* curriculum=nullptr,const SmbGameConfig* game=nullptr) {
+        const FptCurriculumConfig* curriculum=nullptr,const SmbGameConfig* game=nullptr,const SmbPracticeConfig* practice=nullptr) {
     if(!game)env->is_fpg=1;
     if(game&&!env->is_fpg) {
         env->observation_history={};env->target=0;env->table_hit=0;
+        if(env->is_practice)return smb_practice_reset(state,&env->episode,&env->game,&env->practice,practice,game,bank);
         return smb_game_reset(state,&env->episode,&env->game,game,bank);
     }
     if(curriculum&&curriculum->enabled) {
@@ -223,22 +273,41 @@ SMB_HD void fpt_log_episode(Env* env,const SmbTaskConfig* task,const FpgTimeConf
         l->curriculum_level+=p->level;l->curriculum_frames+=curriculum->depths[p->level];
         l->curriculum_start_frames+=table?table[e->scene].best_frames:0;
         l->frontier_episodes+=frontier;l->frontier_successes+=frontier&&won;
-        l->curriculum_promotions+=fpt_curriculum_result(p,curriculum,(int)won);
+        int sampled=p->sampled_level;
+        l->band_episodes[sampled]++;l->band_successes[sampled]+=won;
+        l->fpg_mastery+=won*(curriculum->depths[sampled]-curriculum->depths[0])/
+            (float)(curriculum->depths[FPT_CURRICULUM_LEVELS-1]-curriculum->depths[0]);
+        int changed=fpt_curriculum_result(p,curriculum,(int)won);
+        l->curriculum_promotions+=changed>0;l->curriculum_demotions+=changed<0;
     }
 }
 SMB_HD float smb_after_frame(Env* env,SmbLogic* state,const SmbTaskConfig* task,
-        const FpgTimeConfig* time,const FptCurriculumConfig* curriculum,const FpgTimeEntry* table,const SmbGameConfig* game) {
+        const FpgTimeConfig* time,const FptCurriculumConfig* curriculum,const FpgTimeEntry* table,const SmbGameConfig* game,
+        const SmbPracticeConfig* practice=nullptr) {
+    SmbGameConfig encounter;
+    if(env->is_practice) {
+        encounter=*game;encounter.max_frames=practice->max_frames;encounter.terminate_on_clear=1;encounter.reward_on_exit=1;game=&encounter;
+    }
     float reward=env->is_fpg?fpg_time_after_frame(state,&env->episode,task,env->target,time):
         smb_game_after_frame(state,&env->episode,&env->game,game);
+    if(env->is_practice&&!env->episode.status&&(state->ram[0xe]==11||env->game.deaths))env->episode.status=SMB_EPISODE_DEAD;
     if(env->episode.status!=SMB_EPISODE_ACTIVE) {
         if(env->is_fpg)fpt_log_episode(env,task,time,curriculum,table);
-        else {
+        else if(env->is_practice) {
+            auto* l=&env->log;auto* e=&env->episode;int won=e->status==SMB_EPISODE_SUCCESS;
+            l->n++;l->practice_episodes++;l->practice_successes+=won;l->practice_deaths+=e->status==SMB_EPISODE_DEAD;
+            l->practice_timeouts+=e->status==SMB_EPISODE_TIMEOUT;
+            l->practice_stage_episodes[env->practice.stage]++;l->practice_stage_successes[env->practice.stage]+=won;
+            int changed=smb_practice_result(&env->practice,won);l->practice_promotions+=changed>0;l->practice_demotions+=changed<0;
+            l->perf+=won;l->score+=won;l->episode_return+=e->episode_return;l->episode_length+=e->frames;
+        } else {
             auto* l=&env->log;const auto* e=&env->episode;
             l->n++;l->game_episodes++;l->game_clears+=env->game.clears;l->game_deaths+=env->game.deaths;
             l->game_wins+=e->status==SMB_EPISODE_SUCCESS&&!game->terminate_on_clear;
             l->game_timeouts+=e->status==SMB_EPISODE_TIMEOUT;
             l->game_progress_pixels+=env->game.progress_pixels;l->game_checkpoints+=env->game.checkpoints;
             l->game_checkpoint_reward+=env->game.checkpoints*game->checkpoint_reward;
+            l->game_flag_contacts+=env->game.flag_contacts;l->game_level_exits+=env->game.level_exits;
             l->perf+=env->game.clears>0;l->score+=env->game.clears;l->episode_return+=e->episode_return;l->episode_length+=e->frames;
         }
     }
@@ -246,44 +315,69 @@ SMB_HD float smb_after_frame(Env* env,SmbLogic* state,const SmbTaskConfig* task,
 }
 void puf_log(Log* l,Dict* out) {
     dict_set(out,"perf",l->perf);dict_set(out,"score",l->score);
+    // The shared headless evaluator expects a draw rate. Mario timeouts and
+    // deaths are failures, so this single-player task has no draw outcome.
+    dict_set(out,"draw_rate",0);
     dict_set(out,"episode_return",l->episode_return);dict_set(out,"episode_length",l->episode_length);
     dict_set(out,"fpg_perf",l->fpg_episodes?l->successes/l->fpg_episodes:0);
     dict_set(out,"game_clears",l->game_episodes?l->game_clears/l->game_episodes:0);
     dict_set(out,"game_wins",l->game_episodes?l->game_wins/l->game_episodes:0);
     dict_set(out,"game_deaths",l->game_episodes?l->game_deaths/l->game_episodes:0);
     dict_set(out,"game_timeouts",l->game_episodes?l->game_timeouts/l->game_episodes:0);
+    dict_set(out,"game_flag_contacts",l->game_episodes?l->game_flag_contacts/l->game_episodes:0);
+    dict_set(out,"game_level_exits",l->game_episodes?l->game_level_exits/l->game_episodes:0);
     float game_pixels=l->game_episodes?l->game_progress_pixels/l->game_episodes:0;
     float curriculum_frames=l->fpg_episodes?l->curriculum_frames/l->fpg_episodes:0;
     dict_set(out,"game_progress_pixels",game_pixels);
-    // Cheap training-progress objective. One game's area frontier and the full
-    // FPG curriculum set the units; rewards and timing allowances do not.
+    // Cheap training-progress objective. FPG credit requires current success
+    // at the sampled difficulty; historical frontier alone earns no credit.
     // Keep game progress uncapped so clearing more areas can still improve it.
     float fpg_progress=fmaxf(0.0f,(curriculum_frames-fpt_curriculum_depths[0])/
         (fpt_curriculum_depths[FPT_CURRICULUM_LEVELS-1]-fpt_curriculum_depths[0]));
-    dict_set(out,"sweep_score",0.75f*game_pixels/3400.0f+0.25f*fpg_progress);
+    float mastery=l->fpg_episodes?l->fpg_mastery/l->fpg_episodes:0;
+    dict_set(out,"fpg_mastery",mastery);
+    dict_set(out,"sweep_score",0.75f*game_pixels/3400.0f+0.25f*mastery);
+    dict_set(out,"legacy_sweep_score",0.75f*game_pixels/3400.0f+0.25f*fpg_progress);
     dict_set(out,"game_checkpoints",l->game_episodes?l->game_checkpoints/l->game_episodes:0);
     dict_set(out,"game_checkpoint_reward",l->game_episodes?l->game_checkpoint_reward/l->game_episodes:0);
 #define FPT_LOG(field) dict_set(out,#field,l->fpg_episodes?l->field/l->fpg_episodes:0)
     FPT_LOG(successes);FPT_LOG(deaths);FPT_LOG(timeouts);FPT_LOG(normal_flags);FPT_LOG(generated);FPT_LOG(world_variant);
     FPT_LOG(target_frames);FPT_LOG(table_hit);
     FPT_LOG(curriculum_level);FPT_LOG(curriculum_frames);FPT_LOG(curriculum_start_frames);FPT_LOG(curriculum_promotions);
+    FPT_LOG(curriculum_demotions);
 #undef FPT_LOG
     dict_set(out,"success_frames",l->successes?l->success_frames/l->successes:0);
     dict_set(out,"success_time_score",l->successes?l->time_score/l->successes:0);
     dict_set(out,"frontier_perf",l->frontier_episodes?l->frontier_successes/l->frontier_episodes:0);
     dict_set(out,"frontier_fraction",l->fpg_episodes?l->frontier_episodes/l->fpg_episodes:0);
+    dict_set(out,"practice_perf",l->practice_episodes?l->practice_successes/l->practice_episodes:0);
+    dict_set(out,"practice_deaths",l->practice_episodes?l->practice_deaths/l->practice_episodes:0);
+    dict_set(out,"practice_timeouts",l->practice_episodes?l->practice_timeouts/l->practice_episodes:0);
+    dict_set(out,"practice_promotions",l->practice_episodes?l->practice_promotions/l->practice_episodes:0);
+    dict_set(out,"practice_demotions",l->practice_episodes?l->practice_demotions/l->practice_episodes:0);
+    for(int stage=0;stage<32;stage++) {
+        char key[64];snprintf(key,sizeof(key),"practice_%d_%d_perf",stage/4+1,stage%4+1);
+        dict_set(out,key,l->practice_stage_episodes[stage]?l->practice_stage_successes[stage]/l->practice_stage_episodes[stage]:0);
+    }
+    for(int i=0;i<FPT_CURRICULUM_LEVELS;i++) {
+        char key[64];snprintf(key,sizeof(key),"fpg_band_%d_perf",fpt_curriculum_depths[i]);
+        dict_set(out,key,l->band_episodes[i]?l->band_successes[i]/l->band_episodes[i]:0);
+        snprintf(key,sizeof(key),"fpg_band_%d_fraction",fpt_curriculum_depths[i]);
+        dict_set(out,key,l->fpg_episodes?l->band_episodes[i]/l->fpg_episodes:0);
+    }
 }
 #ifndef PUFFER_GPU_ENV
 static std::vector<Env*> fpt_cpu_envs;
 void puf_init(Env* env,Dict* options) {
     fpt_setup(options);fpt_references++;env->num_agents=1;
     env->is_fpg=smb_fpg_actor(env->rng%(unsigned)smb_actor_count,smb_actor_count,&fpt_host->game);
+    env->is_practice=smb_practice_actor(env->rng%(unsigned)smb_actor_count,smb_actor_count,&fpt_host->game,&fpt_host->practice);
     env->episode.rng=smb_seed(fpt_host->task.seed,env->rng);env->state=new SmbLogic{};
     fpt_cpu_envs.push_back(env);
 }
 void puf_reset(Env* env) {
     if(fpt_reset_state(env,env->state,&fpt_host->task,&fpt_host->time,fpt_host->runtime_bank.data(),
-        fpt_host->eligible.data(),(int)fpt_host->eligible.size(),fpt_host->table.data(),&fpt_host->curriculum,&fpt_host->game))throw std::runtime_error("FPG timing reset fault");
+        fpt_host->eligible.data(),(int)fpt_host->eligible.size(),fpt_host->table.data(),&fpt_host->curriculum,&fpt_host->game,&fpt_host->practice))throw std::runtime_error("FPG timing reset fault");
     if(env->agents[0].observations)fpt_observe(env->state,
         fpt_host->bank->worlds.data()+(size_t)env->episode.world*SMB_PRG,
         &env->observation_history,env->agents[0].observations);
@@ -293,7 +387,7 @@ void puf_step(Env* env) {
     if(!(raw>=0&&raw<64)||raw!=(float)action)throw std::runtime_error("invalid FPG timing action");
     auto* world=fpt_host->bank->worlds.data()+(size_t)env->episode.world*SMB_PRG;
     if(smb_native_frame(env->state,world,smb_action_buttons(action)))throw std::runtime_error("FPG timing simulation fault");
-    float reward=smb_after_frame(env,env->state,&fpt_host->task,&fpt_host->time,&fpt_host->curriculum,fpt_host->table.data(),&fpt_host->game);
+    float reward=smb_after_frame(env,env->state,&fpt_host->task,&fpt_host->time,&fpt_host->curriculum,fpt_host->table.data(),&fpt_host->game,&fpt_host->practice);
     int done=env->episode.status!=SMB_EPISODE_ACTIVE;
     if(done){env->boundary_reached=1;puf_reset(env);}
     else fpt_observe(env->state,world,&env->observation_history,env->agents[0].observations);
@@ -308,16 +402,26 @@ void puf_close(Env* env) {
     if(env->state){delete env->state;env->state=nullptr;fpt_cpu_envs.erase(std::remove(fpt_cpu_envs.begin(),fpt_cpu_envs.end(),env),fpt_cpu_envs.end());if(!--fpt_references)fpt_host.reset();}
 }
 static void fpt_cpu_save(const char* checkpoint,Ini*) {
-    if(!fpt_host||!fpt_host->curriculum.enabled)return;
+    if(!fpt_host)return;
     std::vector<FptCurriculumProgress> progress;for(auto* env:fpt_cpu_envs)if(env->is_fpg)progress.push_back(env->curriculum);
-    if(progress.empty())return;
     fpt_write_progress(checkpoint,fpt_host->bank->header.payload_hash,fpt_host->curriculum,progress);
+    std::vector<SmbPracticeProgress> practice;for(auto* env:fpt_cpu_envs)if(env->is_practice)practice.push_back(env->practice);
+    smb_write_practice(checkpoint,fpt_host->practice_bank_hash,practice);
 }
 static void fpt_cpu_load(const char* checkpoint,Ini* ini) {
-    if(!fpt_host||!fpt_host->curriculum.enabled||!fpt_integer(smb_curriculum_options(ini),"curriculum_resume",1,0,1))return;
-    auto saved=fpt_read_progress(checkpoint);if(saved.progress.empty())return;fpt_check_resume(saved,fpt_host->bank->header.payload_hash);
+    if(!fpt_host)return;
+    if(fpt_host->curriculum.enabled&&fpt_integer(smb_curriculum_options(ini),"curriculum_resume",1,0,1)) {
+    auto saved=fpt_read_progress(checkpoint);fpt_check_resume(saved,fpt_host->bank->header.payload_hash);
+    if(!saved.progress.empty()) {
     size_t actor=0;for(auto* env:fpt_cpu_envs)if(env->is_fpg){env->curriculum=fpt_restore_progress(saved,actor++,fpt_host->curriculum);puf_reset(env);}
+    }}
+    if(fpt_host->practice.fraction>0&&fpt_integer(&smb_game_options,"practice_resume",1,0,1)) {
+        auto saved=smb_read_practice(checkpoint,fpt_host->practice_bank_hash);
+        if(!saved.empty()){size_t actor=0;for(auto* env:fpt_cpu_envs)if(env->is_practice){env->practice=saved[actor++%saved.size()];puf_reset(env);}}
+    }
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint,ini) fpt_cpu_save(checkpoint,ini)
 #define PUF_LOAD_HOOK(checkpoint,ini) fpt_cpu_load(checkpoint,ini)
 #endif
+
+#include "training_config.h"

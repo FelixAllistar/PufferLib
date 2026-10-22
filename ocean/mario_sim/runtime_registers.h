@@ -35,6 +35,9 @@ SMB_HD int smb_reg_read(SmbLogic* s,const uint8_t* data,int address,int& clock) 
     if(address>=32768)return data[address-32768];
     s->timing.clock=clock;int value=smb_read(s,data,address);clock=s->timing.clock;return value;
 }
+SMB_HD int smb_reg_status_lda(SmbLogic* s,int clock) {
+    s->timing.clock=clock;return smb_clock_status_lda(s);
+}
 SMB_HD void smb_reg_write(SmbLogic* s,int address,int value,int& clock) {
     address&=65535;
     if(address<8192){s->ram[address&2047]=(uint8_t)value;return;}

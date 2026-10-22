@@ -66,6 +66,12 @@ $(OUT)/sim2rom: $(SRC)/sim2rom.cpp $(SRC)/rom_check.h $(SRC)/pipe_start.h $(SRC)
 	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(OUT)/policy.o $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
 transfer: $(OUT)/sim2rom
 
+$(OUT)/test_parity: $(SRC)/test_parity.cpp $(wildcard $(SRC)/*.h) $(CPU) build/retro/libquicknes.a
+	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
+
+$(OUT)/build_practice_bank: $(SRC)/build_practice_bank.cpp $(wildcard $(SRC)/*.h) $(OUT)/policy.o $(CPU) build/retro/libquicknes.a
+	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(OUT)/policy.o $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
+
 $(OUT)/test_observation: $(SRC)/test_observation.cpp $(SRC)/observation.h $(SRC)/policy_shape.h
 	clang++ -O2 -std=c++17 $< -o $@
 $(OUT)/test_encoder $(OUT)/test_encoder_bf16: $(SRC)/test_encoder.cu $(SRC)/encoder.cu $(SRC)/encoder_cpu.h $(SRC)/observation.h $(SRC)/policy_shape.h $(OUT)/policy.o $(CPU) $(wildcard src/*.cu src/*.h)
@@ -82,6 +88,12 @@ semantic-test: $(OUT)/test_observation $(OUT)/test_encoder $(OUT)/test_encoder_b
 $(OUT)/test_modes: $(SRC)/test_modes.cpp $(wildcard $(SRC)/*.h) $(CPU)
 	mkdir -p $(OUT)
 	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -o $@
+$(OUT)/test_practice: $(SRC)/test_practice.cpp $(wildcard $(SRC)/*.h) $(CPU)
+	mkdir -p $(OUT)
+	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -o $@
+$(OUT)/probe_policy: $(SRC)/probe_policy.cpp $(wildcard $(SRC)/*.h) $(OUT)/policy.o $(CPU)
+	mkdir -p $(OUT)
+	clang++ -O3 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(OUT)/policy.o $(CPU) -o $@
 $(OUT)/test_game_rom: $(SRC)/test_game_rom.cpp $(wildcard $(SRC)/*.h) $(CPU) build/retro/libquicknes.a
 	mkdir -p $(OUT)
 	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
