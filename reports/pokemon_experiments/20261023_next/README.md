@@ -20,6 +20,17 @@ vendor, scripts, build.sh) and rebuilt with `./build.sh pokemon`; previous sourc
 | `big_b1_1024` (`run_big_b1.sh`) | window box, started 16:46 UTC | B1's gar_egg_zap recipe with a 1024x2 learner vs the frozen upgraded league, B1 hyperparameters, 1B, scored every 250M. Are we capped by model size? If 1024 learns, sweep it (learning rate first). | B1 61.8 / 58.0, b1_repro_5.0 55.9 / 52.8 |
 | `omni_master_256` (`run_omni.sh 256`) | B1 box, after move_pairs is scored | OMNI_MASTER: one policy plays all 13 league teams (`env.learner_team_pool`, a team drawn per game), same recipe, 2B. Scored on gar_egg_zap, zam_egg_cloy_don and zam_egg_zap every 500M (`eval_omni.sh`). Then 1024 if big_b1 learns. | Specialists on those teams: 62.5 / 57.6, 58.3 / 58.0, 58.7 / 57.3 |
 
+### Queued 2026-10-23 20:25 UTC on the B1 box after OMNI trains (`queue_b1_after_omni.sh`, tmux `after_omni`)
+
+- `freepick_omni` (`run_freepick_omni.sh`): free-pick warm-started from OMNI's final checkpoint, move-pairs
+  settings, but 31.25% league games so 81.5% of the learner's play is self-play (earlier free-pick: 93.75%
+  league games). 1B, scored every 125M.
+- Pilot generality (`eval_teams.sh`, `pilot_teams.txt`, tmux `pilot_eval`): OMNI final and B0 gar_egg_zap each
+  pilot the 13 league teams plus free-pick's argmaxed team (drafting their own moves), vs SyntheticRLV2 and
+  TaurosV0. Which pilots more generally, and does any (policy, team) pair set a new high score?
+- Note on "is ~40 just the ceiling for the free-pick team": `fixed_fpteam` already trained that exact team
+  (move_pairs' converged team) B1-style and got 34.9, so free-pick's ~40 is at or above a specialist on it.
+
 Code for these (commits 200de5799, 62d12d788, env-local in `ocean/pokemon`): no early stop in move drafting;
 `env.force_move_pairs_prob/_until`; `smogon_set_rate_free/_forced` and `move_pair_team_fraction` logs;
 team-log rows gain `move_pairs`. Both boxes are redeployed with these once their current runs are scored.
