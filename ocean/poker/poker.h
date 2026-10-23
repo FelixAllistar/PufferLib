@@ -19,6 +19,9 @@ typedef struct Client { int unused; } Client;
 typedef struct PokerLeague {
     float* weights;
     int count, hidden, layers, stride;
+    int total_envs;          // vectorized envs sharing this bank (GPU recurrent-state slots)
+    float* device_weights;   // env.league_gpu: weights and per-(env, seat) MinGRU state on the GPU
+    float* device_state;
 } PokerLeague;
 
 PokerLeague* poker_load_league(Dict* kwargs) {
@@ -111,6 +114,12 @@ struct Env {
     Poker* game;
     PokerLeague* league;
     float* memories;
+    int index;              // global env index (GPU state slot)
+    uint8_t league_gpu;     // 1: frozen bank seats wait for one batched GPU forward per round
+    uint8_t pending;        // waiting for a GPU decision of seat pending_seat
+    uint8_t pending_seat;
+    uint8_t stage;          // POKER_STAGE_*: what to do once the field reaches the learner or the hand ends
+    uint8_t fresh;          // bit p: seat p's GPU recurrent state must be zeroed before its next forward
     PokerProfile* profiles;
     float rules_fraction;
     uint64_t policy_rng;
@@ -165,6 +174,13 @@ void puf_init(Env* env, Dict* kwargs) {
         env->memories = (float*)calloc((POKER_PLAYERS - 1) * env->league->hidden
             * env->league->layers, sizeof(float));
     }
+    DictItem* gpu = dict_find(kwargs, "league_gpu");
+#ifdef __CUDACC__
+    env->league_gpu = env->league && env->league->total_envs > 0 && gpu && gpu->value != 0;
+#else
+    env->league_gpu = 0;  // CPU-only builds always run frozen banks inline
+    (void)gpu;
+#endif
     env->num_agents = 1;
     env->agents[0].policy = 0;
 }
@@ -176,6 +192,9 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
     assert((int)dict_get(vk, "num_policies") == 1);
     Env* envs = (Env*)calloc(total, sizeof(Env));
     PokerLeague* league = poker_load_league(ek);
+    if (league) {
+        league->total_envs = total;
+    }
     for (int b = 0; b < buffers; b++) {
         starts[b] = b * (total / buffers);
         counts[b] = total / buffers;
@@ -190,6 +209,7 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
             env->league_owner = starts[b] + i == 0;
             env->lane = i % POKER_BATCH;
             env->rng = starts[b] + i;
+            env->index = starts[b] + i;
             puf_init(env, ek);
         }
     }
@@ -197,46 +217,118 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
     return envs;
 }
 
-void poker_field(Env* env) {
+enum { POKER_STAGE_STEP, POKER_STAGE_DEAL };
+
+// Sample a frozen bank seat's action from its logits (same masked softmax and RNG draw as before).
+static int32_t poker_league_action(Env* env, float* logits) {
+    int32_t amounts[POKER_ACTIONS];
+    unsigned mask = poker_actions(env->game, env->lane, amounts);
+    float maximum = -INFINITY, total = 0;
+    for (int a = 0; a < POKER_ACTIONS; a++) {
+        if ((mask & (1u << a)) && logits[a] > maximum) {
+            maximum = logits[a];
+        }
+    }
+    for (int a = 0; a < POKER_ACTIONS; a++) {
+        logits[a] = mask & (1u << a) ? expf(logits[a] - maximum) : 0;
+        total += logits[a];
+    }
+    float sample = (poker_random(&env->policy_rng) >> 8) * 0x1p-24f * total;
+    int selected = 31 - __builtin_clz(mask);
+    for (int a = 0; a < POKER_ACTIONS; a++) {
+        sample -= logits[a];
+        if (sample < 0) {
+            selected = a;
+            break;
+        }
+    }
+    return amounts[selected];
+}
+
+static void poker_act(Env* env, int32_t action) {
+    poker_profile_update(env->profiles, env->game, env->lane, action);
+    poker_step(env->game, env->lane, action);
+}
+
+// Plays opponent seats until the learner acts or the hand ends. Returns 1 when a frozen bank seat
+// needs a batched GPU decision (league_gpu); CPU mode runs bank seats inline and always returns 0.
+static int poker_field(Env* env) {
     Poker* g = env->game;
     int t = env->lane;
     while (g->actor[t] != 0 && g->actor[t] != POKER_DONE) {
         int p = g->actor[t], policy = env->opponents[p];
-        int32_t action;
         if (policy < 0) {
-            action = poker_decide(g, t, &env->policy_rng, env->baseline_styles[p],
-                env->equity_samples, env->profiles);
+            poker_act(env, poker_decide(g, t, &env->policy_rng, env->baseline_styles[p],
+                env->equity_samples, env->profiles));
+        } else if (env->league_gpu) {
+            env->pending_seat = p;
+            return 1;
         } else {
             float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
-            int32_t amounts[POKER_ACTIONS];
             poker_observe(g, t, p, obs);
-            unsigned mask = poker_actions(g, t, amounts);
             poker_forward(env->league, policy, env->memories + (p - 1)
                 * env->league->hidden * env->league->layers, obs, logits);
-            float maximum = -INFINITY, total = 0;
-            for (int a = 0; a < POKER_ACTIONS; a++) {
-                if ((mask & (1u << a)) && logits[a] > maximum) {
-                    maximum = logits[a];
-                }
-            }
-            for (int a = 0; a < POKER_ACTIONS; a++) {
-                logits[a] = mask & (1u << a) ? expf(logits[a] - maximum) : 0;
-                total += logits[a];
-            }
-            float sample = (poker_random(&env->policy_rng) >> 8) * 0x1p-24f * total;
-            int selected = 31 - __builtin_clz(mask);
-            for (int a = 0; a < POKER_ACTIONS; a++) {
-                sample -= logits[a];
-                if (sample < 0) {
-                    selected = a;
-                    break;
-                }
-            }
-            action = amounts[selected];
+            poker_act(env, poker_league_action(env, logits));
         }
-        poker_profile_update(env->profiles, g, t, action);
-        poker_step(g, t, action);
     }
+    return 0;
+}
+
+static void poker_deal_hand(Env* env) {
+    uint32_t stacks[POKER_PLAYERS];
+    for (int p = 0; p < POKER_PLAYERS; p++) {
+        stacks[p] = env->starting_stack;
+    }
+    if (env->league) {
+        if (env->league_gpu) {
+            env->fresh = 0x3e;  // seats 1..5
+        } else {
+            memset(env->memories, 0, (POKER_PLAYERS - 1) * env->league->hidden
+                * env->league->layers * sizeof(float));
+        }
+    }
+    for (int p = 1; p < POKER_PLAYERS; p++) {
+        env->opponents[p] = -1;
+        if (env->league && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f
+            >= env->rules_fraction) {
+            env->opponents[p] = poker_random(&env->policy_rng) % env->league->count;
+        }
+    }
+    Poker* g = env->game;
+    poker_deal(g, env->lane, (g->button[env->lane] + 1) % POKER_PLAYERS, stacks);
+    poker_profile_begin(env->profiles);
+}
+
+void poker_publish(Env* env);
+float poker_log_hand(Env* env);
+
+// Advances to the learner's next decision: after a learner action (STEP) settle a finished hand and
+// deal the next; after a deal (DEAL) skip hands that end before the learner acts. Returns 1 while a
+// bank seat waits for a GPU decision; otherwise publishes the learner's observation and returns 0.
+static int poker_run(Env* env) {
+    Poker* g = env->game;
+    int t = env->lane;
+    for (;;) {
+        if (poker_field(env)) {
+            return 1;
+        }
+        if (env->stage == POKER_STAGE_STEP) {
+            env->agents[0].terminals[0] = g->actor[t] == POKER_DONE;
+            if (!env->agents[0].terminals[0]) {
+                break;
+            }
+            env->agents[0].rewards[0] = poker_log_hand(env);
+        } else if (g->actor[t] != POKER_DONE) {
+            break;
+        } else {
+            // No learner decision in this hand: retain its result in raw game logs.
+            poker_log_hand(env);
+        }
+        poker_deal_hand(env);
+        env->stage = POKER_STAGE_DEAL;
+    }
+    poker_publish(env);
+    return 0;
 }
 
 float poker_log_hand(Env* env) {
@@ -261,53 +353,204 @@ void poker_publish(Env* env) {
 }
 
 void puf_reset(Env* env) {
-    uint32_t stacks[POKER_PLAYERS];
-    for (int p = 0; p < POKER_PLAYERS; p++) {
-        stacks[p] = env->starting_stack;
-    }
-    do {
-        Poker* g = env->game;
-        int t = env->lane;
-        if (env->league) {
-            memset(env->memories, 0, (POKER_PLAYERS - 1) * env->league->hidden
-                * env->league->layers * sizeof(float));
-        }
-        for (int p = 1; p < POKER_PLAYERS; p++) {
-            env->opponents[p] = -1;
-            if (env->league && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f
-                >= env->rules_fraction) {
-                env->opponents[p] = poker_random(&env->policy_rng) % env->league->count;
-            }
-        }
-        poker_deal(g, t, (g->button[t] + 1) % POKER_PLAYERS, stacks);
-        poker_profile_begin(env->profiles);
-        poker_field(env);
-        if (g->actor[t] != POKER_DONE) {
-            break;
-        }
-        // No learner decision in this hand: retain its result in raw game logs.
-        poker_log_hand(env);
-    } while (1);
-    poker_publish(env);
+    poker_deal_hand(env);
+    env->stage = POKER_STAGE_DEAL;
+    env->pending = poker_run(env);
 }
 
 void puf_step(Env* env) {
     int32_t amounts[POKER_ACTIONS];
     unsigned mask = poker_actions(env->game, env->lane, amounts);
     int action = env->agents[0].actions[0];
+    assert(!env->pending);
     assert(action >= 0 && action < POKER_ACTIONS && (mask & (1u << action)));
-    poker_profile_update(env->profiles, env->game, env->lane, amounts[action]);
-    poker_step(env->game, env->lane, amounts[action]);
-    poker_field(env);
+    poker_act(env, amounts[action]);
     env->agents[0].rewards[0] = 0;
-    env->agents[0].terminals[0] = env->game->actor[env->lane] == POKER_DONE;
-    if (env->agents[0].terminals[0]) {
-        env->agents[0].rewards[0] = poker_log_hand(env);
-        puf_reset(env);
-    } else {
-        poker_publish(env);
+    env->agents[0].terminals[0] = 0;
+    env->stage = POKER_STAGE_STEP;
+    env->pending = poker_run(env);
+}
+
+#ifdef __CUDACC__
+// env.league_gpu: frozen bank seats run as one batched GPU forward per round instead of one CPU forward
+// per decision. After the trainer steps a buffer's envs (PUF_CPU_POST_STEP, on that buffer's thread),
+// every env waiting on a bank seat contributes one row; rows are grouped by bank and run through cuBLAS
+// with the MinGRU state kept on the GPU per (env, seat). Logits come back and each env samples and
+// continues on the CPU exactly as the inline path does (same masked softmax, same RNG draws), possibly
+// waiting again. Rounds repeat until no env waits.
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+#include <mutex>
+
+#define POKER_CUDA(call) do { cudaError_t poker_err_ = (call); if (poker_err_ != cudaSuccess) { \
+    fprintf(stderr, "poker league GPU: %s at %s:%d\n", cudaGetErrorString(poker_err_), __FILE__, __LINE__); \
+    abort(); } } while (0)
+#define POKER_CUBLAS(call) do { cublasStatus_t poker_st_ = (call); if (poker_st_ != CUBLAS_STATUS_SUCCESS) { \
+    fprintf(stderr, "poker league cuBLAS error %d at %s:%d\n", (int)poker_st_, __FILE__, __LINE__); \
+    abort(); } } while (0)
+
+__global__ void poker_zero_fresh(float* state, const int* slot, const uint8_t* fresh, int n, int width) {
+    long idx = (long)blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= (long)n * width) return;
+    int r = idx / width;
+    if (fresh[r]) state[(long)slot[r] * width + idx % width] = 0;
+}
+
+// Same MinGRU update as poker_forward, for rows [0, n) of one bank's segment.
+__global__ void poker_mingru(const float* proj, float* x, float* state, const int* slot, int n, int h,
+    int layer, int layers) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= n * h) return;
+    int r = idx / h, i = idx % h;
+    const float* p = proj + (long)r * 3 * h;
+    float value = p[i] >= 0 ? p[i] + 0.5f : 1.0f / (1.0f + expf(-p[i]));
+    float gate = 1.0f / (1.0f + expf(-p[h + i]));
+    float highway = 1.0f / (1.0f + expf(-p[2 * h + i]));
+    float* sp = state + ((long)slot[r] * layers + layer) * h + i;
+    float sv = *sp;
+    sv += gate * (value - sv);
+    *sp = sv;
+    x[(long)r * h + i] = highway * sv + (1 - highway) * x[(long)r * h + i];
+}
+
+typedef struct {
+    cudaStream_t stream;
+    cublasHandle_t blas;
+    int capacity;
+    int* order;
+    float *host_obs, *host_logits, *obs, *x, *proj, *logits;
+    int *host_slot, *slot;
+    uint8_t *host_fresh, *fresh;
+} PokerLeagueGPU;
+
+static std::mutex poker_league_gpu_mutex;
+
+// Upload the bank once and allocate the recurrent state of every (env, opponent seat).
+static void poker_league_gpu_bank(PokerLeague* bank) {
+    std::lock_guard<std::mutex> lock(poker_league_gpu_mutex);
+    if (bank->device_weights) return;
+    size_t weights = (size_t)bank->count * bank->stride;
+    size_t state = (size_t)bank->total_envs * (POKER_PLAYERS - 1) * bank->layers * bank->hidden;
+    POKER_CUDA(cudaMalloc(&bank->device_weights, weights * sizeof(float)));
+    POKER_CUDA(cudaMemcpy(bank->device_weights, bank->weights, weights * sizeof(float), cudaMemcpyHostToDevice));
+    POKER_CUDA(cudaMalloc(&bank->device_state, state * sizeof(float)));
+    POKER_CUDA(cudaMemset(bank->device_state, 0, state * sizeof(float)));
+    printf("Poker league GPU: %d banks, %zu MB recurrent state\n", bank->count, state * sizeof(float) >> 20);
+}
+
+// One stream, cuBLAS handle and staging buffers per calling thread (each trainer buffer has its own).
+static PokerLeagueGPU* poker_league_gpu_context(int capacity, int hidden) {
+    static thread_local PokerLeagueGPU c;
+    if (!c.stream) {
+        POKER_CUDA(cudaStreamCreateWithFlags(&c.stream, cudaStreamNonBlocking));
+        POKER_CUBLAS(cublasCreate(&c.blas));
+        POKER_CUBLAS(cublasSetStream(c.blas, c.stream));
+        POKER_CUBLAS(cublasSetMathMode(c.blas, CUBLAS_DEFAULT_MATH));
+    }
+    if (capacity > c.capacity) {
+        if (c.capacity) {
+            free(c.order);
+            cudaFreeHost(c.host_obs); cudaFreeHost(c.host_logits); cudaFreeHost(c.host_slot); cudaFreeHost(c.host_fresh);
+            cudaFree(c.obs); cudaFree(c.x); cudaFree(c.proj); cudaFree(c.logits); cudaFree(c.slot); cudaFree(c.fresh);
+        }
+        c.capacity = capacity;
+        c.order = (int*)malloc(capacity * sizeof(int));
+        POKER_CUDA(cudaMallocHost(&c.host_obs, (size_t)capacity * POKER_OBS * sizeof(float)));
+        POKER_CUDA(cudaMallocHost(&c.host_logits, (size_t)capacity * (POKER_ACTIONS + 1) * sizeof(float)));
+        POKER_CUDA(cudaMallocHost(&c.host_slot, capacity * sizeof(int)));
+        POKER_CUDA(cudaMallocHost(&c.host_fresh, capacity));
+        POKER_CUDA(cudaMalloc(&c.obs, (size_t)capacity * POKER_OBS * sizeof(float)));
+        POKER_CUDA(cudaMalloc(&c.x, (size_t)capacity * hidden * sizeof(float)));
+        POKER_CUDA(cudaMalloc(&c.proj, (size_t)capacity * 3 * hidden * sizeof(float)));
+        POKER_CUDA(cudaMalloc(&c.logits, (size_t)capacity * (POKER_ACTIONS + 1) * sizeof(float)));
+        POKER_CUDA(cudaMalloc(&c.slot, capacity * sizeof(int)));
+        POKER_CUDA(cudaMalloc(&c.fresh, capacity));
+    }
+    return &c;
+}
+
+// Batched forward of n rows grouped by bank (rows [start[k], start[k] + count[k]) use bank k). Leaves
+// logits in c->host_logits.
+static void poker_league_gpu_forward(PokerLeague* bank, PokerLeagueGPU* c, int n, const int* start,
+    const int* count) {
+    int h = bank->hidden, layers = bank->layers, outputs = POKER_ACTIONS + 1;
+    cudaStream_t st = c->stream;
+    POKER_CUDA(cudaMemcpyAsync(c->obs, c->host_obs, (size_t)n * POKER_OBS * sizeof(float), cudaMemcpyHostToDevice, st));
+    POKER_CUDA(cudaMemcpyAsync(c->slot, c->host_slot, n * sizeof(int), cudaMemcpyHostToDevice, st));
+    POKER_CUDA(cudaMemcpyAsync(c->fresh, c->host_fresh, n, cudaMemcpyHostToDevice, st));
+    int width = layers * h;
+    poker_zero_fresh<<<(int)(((long)n * width + 255) / 256), 256, 0, st>>>(bank->device_state, c->slot, c->fresh, n, width);
+    const float one = 1, zero = 0;
+    for (int k = 0; k < bank->count; k++) {
+        int m = count[k], s = start[k];
+        if (!m) continue;
+        const float* w = bank->device_weights + (size_t)k * bank->stride;
+        const float* recurrent = w + h * (POKER_OBS + POKER_ACTIONS + 1);
+        float *x = c->x + (size_t)s * h, *proj = c->proj + (size_t)s * 3 * h;
+        // Row-major Y[m, out] = X[m, in] * W[out, in]^T, i.e. column-major Y^T = W^T(op T) * X^T.
+        POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, h, m, POKER_OBS, &one, w, POKER_OBS,
+            c->obs + (size_t)s * POKER_OBS, POKER_OBS, &zero, x, h));
+        for (int l = 0; l < layers; l++) {
+            POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, 3 * h, m, h, &one,
+                recurrent + (size_t)l * 3 * h * h, h, x, h, &zero, proj, 3 * h));
+            poker_mingru<<<(m * h + 255) / 256, 256, 0, st>>>(proj, x, bank->device_state, c->slot + s, m, h, l, layers);
+        }
+        POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, outputs, m, h, &one, w + h * POKER_OBS, h,
+            x, h, &zero, c->logits + (size_t)s * outputs, outputs));
+    }
+    POKER_CUDA(cudaGetLastError());
+    POKER_CUDA(cudaMemcpyAsync(c->host_logits, c->logits, (size_t)n * outputs * sizeof(float), cudaMemcpyDeviceToHost, st));
+    POKER_CUDA(cudaStreamSynchronize(st));
+}
+
+static void poker_league_flush(Env* envs, int count) {
+    if (count <= 0 || !envs[0].league_gpu) return;
+    PokerLeague* bank = envs[0].league;
+    poker_league_gpu_bank(bank);
+    PokerLeagueGPU* c = poker_league_gpu_context(count, bank->hidden);
+    for (;;) {
+        int per_bank[16] = {0}, start[16], cursor[16], n = 0;
+        for (int i = 0; i < count; i++) {
+            if (envs[i].pending) {
+                per_bank[envs[i].opponents[envs[i].pending_seat]]++;
+                n++;
+            }
+        }
+        if (!n) return;
+        for (int k = 0, sum = 0; k < bank->count; k++) {
+            start[k] = cursor[k] = sum;
+            sum += per_bank[k];
+        }
+        for (int i = 0; i < count; i++) {
+            if (envs[i].pending) c->order[cursor[envs[i].opponents[envs[i].pending_seat]]++] = i;
+        }
+        #pragma omp parallel for schedule(static) if (n > 512)
+        for (int r = 0; r < n; r++) {
+            Env* e = &envs[c->order[r]];
+            int p = e->pending_seat;
+            poker_observe(e->game, e->lane, p, c->host_obs + (size_t)r * POKER_OBS);
+            c->host_slot[r] = e->index * (POKER_PLAYERS - 1) + (p - 1);
+            c->host_fresh[r] = (e->fresh >> p) & 1;
+            e->fresh &= ~(1u << p);
+        }
+        poker_league_gpu_forward(bank, c, n, start, per_bank);
+        #pragma omp parallel for schedule(static) if (n > 512)
+        for (int r = 0; r < n; r++) {
+            Env* e = &envs[c->order[r]];
+            poker_act(e, poker_league_action(e, c->host_logits + (size_t)r * (POKER_ACTIONS + 1)));
+            e->pending = poker_run(e);
+        }
     }
 }
+#define PUF_CPU_POST_STEP(envs, count) poker_league_flush(envs, count)
+
+static void poker_league_gpu_free(PokerLeague* bank) {
+    if (bank->device_weights) cudaFree(bank->device_weights);
+    if (bank->device_state) cudaFree(bank->device_state);
+}
+#else
+static void poker_league_gpu_free(PokerLeague* bank) { (void)bank; }
+#endif
 
 void puf_set_bot_policy(Env* env, int policy) {
     assert(poker_bot_supported(policy));
@@ -328,6 +571,7 @@ void puf_close(Env* env) {
     free(env->memories);
     free(env->profiles);
     if (env->league_owner && env->league) {
+        poker_league_gpu_free(env->league);
         free(env->league->weights);
         free(env->league);
     }
