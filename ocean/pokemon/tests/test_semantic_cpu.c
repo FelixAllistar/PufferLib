@@ -9,12 +9,16 @@
 #include "../pokemon_core.h"
 #ifdef PK_LEGACY_CPU
 #define PK_SIZES
+#define PK_RESET(p, rows) memset((p)->mingru->state, 0, (rows) * hidden * layers * sizeof(float))
 #else
 // PK_EMBED/PK_MID select the encoder widths under test (default 32/64);
 // PK_ATTN_LAYERS/WIDTH/HEADS enable the entity Transformer.
 static int embed = 32, mid = 64;
 static PKAttn attn = {0, 128, 4};
-#define PK_SIZES , embed, mid, attn
+// PK_WINDOW=1 replaces MinGRU with the window Transformer (window length = layers).
+static PKWindow window = {0, 1, 16, 2};
+#define PK_SIZES , embed, mid, attn, window
+#define PK_RESET(p, rows) pk_cpu_reset_memory(p)
 #endif
 
 int main(void) {
@@ -24,6 +28,7 @@ int main(void) {
     if (getenv("PK_ATTN_LAYERS")) attn.layers = atoi(getenv("PK_ATTN_LAYERS"));
     if (getenv("PK_ATTN_WIDTH")) attn.width = atoi(getenv("PK_ATTN_WIDTH"));
     if (getenv("PK_ATTN_HEADS")) attn.heads = atoi(getenv("PK_ATTN_HEADS"));
+    if (getenv("PK_WINDOW")) window.enabled = atoi(getenv("PK_WINDOW"));
 #endif
     uint64_t digest = UINT64_C(14695981039346656037);
     for (int layers = 1; layers <= 2; layers++) {
@@ -84,9 +89,9 @@ int main(void) {
             if (game.result) {
                 assert(game.result != 4);
                 pk_game_reset(&game);
-                memset(batch->mingru->state, 0, 2 * hidden * layers * sizeof(float));
+                PK_RESET(batch, 2);
                 for (int p = 0; p < 2; p++) {
-                    memset(single[p]->mingru->state, 0, hidden * layers * sizeof(float));
+                    PK_RESET(single[p], 1);
                 }
             }
         }

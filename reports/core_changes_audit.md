@@ -91,6 +91,22 @@ Speed (5060 Ti, BF16, forward+backward):
 | 8 tokens, width 64 | 5.6 ms | 3.1 ms |
 | 264 tokens, width 256, 4 layers | 14.2 ms | 11.8 ms |
 
+## Window Transformer memory network (2026-10-23, local 5.0 not pushed; also in the A/B deploy tree)
+
+| File | Change | Default effect on other envs |
+|---|---|---|
+| `src/window_transformer.cuh` (new) | `policy.network = window`: causal window Transformer replacing MinGRU. State = the last K encoder outputs in the ordinary recurrent state tensor; per step, attention over K+1 tokens. Weight gradients go on the dW side stream like MinGRU | None: only built when selected |
+| `src/algo.cu` | `Network.window_layers/window_width`; `build_arch(..., network_type, window_layers, window_width, window_heads)` with MinGRU defaults; includes the new header | None: defaults keep MinGRU |
+| `src/pufferl.cu` | `puf_resolve_network`: sets `policy.num_layers = policy.window_length` for window runs. Frozen policies use `vec.hist_policy_network` (`same`, `mingru` or `window`) | None: `network = mingru`, `hist_policy_network = same` |
+| `config/default.ini` | `policy.network/window_length/window_layers/window_width/window_heads`, `vec.hist_policy_network` | Defaults are MinGRU |
+
+Tests:
+- `tests/test_window_transformer.cu`: training matches step-by-step rollout to 4e-7, with a non-empty starting window and mid-segment resets; 142 finite-difference gradient checks pass.
+- `ocean/pokemon/tests/test_window_parity.cu`: GPU rollout matches the CPU evaluator path to 7e-7.
+- A Pokemon smoke run (league, magnet, CUDA graphs) trains, and its checkpoint loads in the CPU evaluator.
+
+Note: `base.cudagraphs = 0` still enables graphs; only a negative value disables them.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
