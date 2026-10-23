@@ -16,6 +16,12 @@ vendor, scripts, build.sh) and rebuilt with `./build.sh pokemon`; previous sourc
 
 - **league_gen2_gar:** 48.6 / 52.1 at both 350M and 700M (different per-team results; the totals match by
   coincidence). About 9 below B1; `b1_repro_5.0` decides whether the league or the build is the cause.
+- **b1_repro_5.0:** 58.0 / 52.8 at 350M, 55.9 / 52.8 at 700M (mean 54.4). Original B1 got 59.9 and the
+  ε 0.5 rerun 58.7, so the 5.0 build is about 4–5 lower: roughly 1.5 standard errors, not clearly a
+  regression. League gen 2 (50.3) is about 4 below this control, also within noise. Seed-to-seed spread
+  on this recipe looks like ±3–5 points; single runs cannot separate effects that small.
+- **meta_rotation:** first launch failed at load (`config.ini` was not copied next to the warm-start
+  checkpoint on the window box; kept as `meta_rotation.failed_noconfig`); relaunched 15:35 UTC.
 - **freepick_warm:** trained to 1B; evals pending (the first watcher never started: `eval_dir.sh` was only
   on the window box, and the tmux session lacked `-c /workspace/PufferLib`; fixed and restarted).
 
