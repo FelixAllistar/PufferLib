@@ -22,6 +22,11 @@ typedef struct {
     int invalid_actions;
     int result;      // Engine results; 5 means wrapper time limit (draw).
     int reset_source; // 0 original game, 1 auxiliary state-bank game; public to both.
+    // Forced move pairs (move exploration, like forced species cores): when force_moves[p] is set at reset,
+    // each of p's drafted Pokemon gets 2 random legal moves dealt for its first slots; p picks the rest.
+    int force_moves[2];
+    uint8_t forced_moves[2][6][2], forced_count[2][6];
+    uint64_t move_rng;
 } PKGame;
 
 static inline uint64_t pk_random(uint64_t* rng) {
@@ -52,6 +57,26 @@ static inline int pk_required_species(const PKGame* g, int p, int species) {
     }
     return pk_required_set(g,p,species)>=0;
 }
+// Deal up to 2 distinct moves that are legal together, uniformly over the species' legal pairs.
+static inline int pk_deal_move_pair(int species, uint64_t* rng, uint8_t out[2]) {
+    uint8_t legal[164]; int n=0;
+    for(int move=1;move<=164;move++) if(pk_move_learnable(species,move)) legal[n++]=(uint8_t)move;
+    if(n==0) return 0;
+    if(n>1) for(int attempt=0;attempt<256;attempt++) {
+        uint8_t pair[2]={legal[pk_random(rng)%(unsigned)n],legal[pk_random(rng)%(unsigned)n]};
+        if(pair[0]!=pair[1] && pk_moves_legal(species,pair,2)) { out[0]=pair[0]; out[1]=pair[1]; return 2; }
+    }
+    out[0]=legal[pk_random(rng)%(unsigned)n];
+    return 1;
+}
+static inline void pk_deal_forced_moves(PKGame* g) {
+    for(int p=0;p<2;p++) for(int i=0;i<6;i++) {
+        g->forced_count[p][i]=0;
+        // Fixed catalog sets keep their own moves.
+        if(!g->force_moves[p] || pk_required_set(g,p,g->teams[p][i].species)>=0) continue;
+        g->forced_count[p][i]=(uint8_t)pk_deal_move_pair(g->teams[p][i].species,&g->move_rng,g->forced_moves[p][i]);
+    }
+}
 static inline void pk_draft_masks(PKGame* g) {
     memset(g->masks, 0, sizeof(g->masks));
     for (int p = 0; p < 2; p++) {
@@ -63,6 +88,8 @@ static inline void pk_draft_masks(PKGame* g) {
             if(fixed>=0) {
                 int move=n<4?pk_set_move(fixed,n):0;
                 g->masks[p][move?move-1:PK_MOVE_DONE]=1;
+            } else if(n<g->forced_count[p][index]) {
+                g->masks[p][g->forced_moves[p][index][n]-1]=1;
             } else {
                 int any=0;
                 for(int move=1;move<=164;move++) any|=g->masks[p][move-1]=(uint8_t)pk_move_allowed(mon,move);
@@ -139,6 +166,7 @@ static inline void pk_game_reset(PKGame* g) {
     g->invalid_actions = 0;
     g->result = 0;
     memset(g->teams, 0, sizeof(g->teams));
+    memset(g->forced_count, 0, sizeof(g->forced_count));
     memset(&g->battle, 0, sizeof(g->battle));
     pk_draft_masks(g);
     while(!g->draft && g->phase!=PK_PHASE_BATTLE && !g->result) {
@@ -162,7 +190,7 @@ static inline int pk_game_step(PKGame* g, int a0, int a1) {
     }
     if (g->phase == PK_PHASE_SPECIES) {
         for(int p=0;p<2;p++) g->teams[p][g->picks].species=(uint8_t)(actions[p]+1);
-        if(++g->picks==6) g->phase=PK_PHASE_MOVES;
+        if(++g->picks==6) { g->phase=PK_PHASE_MOVES; pk_deal_forced_moves(g); }
         pk_draft_masks(g);
     } else if(g->phase==PK_PHASE_MOVES) {
         for(int p=0;p<2;p++) if(!g->move_stopped[p]) {
