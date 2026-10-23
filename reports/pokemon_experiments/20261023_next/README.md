@@ -39,8 +39,11 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   21% exact Smogon sets (Lapras 74%, Jolteon and Zapdos 0-1%; Zapdos Thunderbolt / Thunder Wave / Hyper
   Beam / Double-Edge with no Drill Peck in 93%). So team and moves are confounded here; fixed species alone
   does not make it find good sets for these Pokémon, which is what `move_pairs` targets.
-- **move_pairs (live):** exact Smogon sets in free drafts 4.3% at the start → 24.7% at 487M (forced pairs
-  nearly annealed off); freepick_warm ended at 15%. Metamon 125M: 30.2 / 34.4.
+- **move_pairs:** trained to 1B. Exact Smogon sets in free drafts 4% → 25% (487M) → 28% (1B); freepick_warm
+  ended at 15%. Metamon: 125M 30.2 / 34.4, 250M 36.5 / 38.9, 375M 40.6 / 43.8 (best), 500M 35.8 / 37.2,
+  625M 37.8 / 38.9, 750M 32.3 / 39.2, 875M 39.6 / 35.8; 1B pending. Better sets, same 35-44 score range.
+- **meta_rotation:** 1B final 44.8 / 41.0 (its best; 875M 40.6 / 38.9), slightly above the other free-pick runs.
+- **big_b1_1024 (live, 88K steps/s):** 250M SyntheticRLV2 36.5 (B1 256x2 had 50.7 / 52.1 at 350M).
 - **freepick_warm:** trained to 1B; evals pending (the first watcher never started: `eval_dir.sh` was only
   on the window box, and the tmux session lacked `-c /workspace/PufferLib`; fixed and restarted).
 
