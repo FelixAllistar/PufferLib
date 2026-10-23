@@ -1,0 +1,8 @@
+# name team lead: reference teams with Smogon OU sets, then the first pool teams
+freepick_omni_team 231,392,456,389,421,445 None
+gar_egg_zap_ou 336,365,526,392,511,445 None
+zam_egg_cloy_don_ou 231,365,389,328,392,445 None
+smogon_000 471,526,337,294,381,348 None
+smogon_001 281,406,375,507,471,4 None
+smogon_002 543,507,397,257,449,167 None
+smogon_003 54,429,471,543,84,389 None

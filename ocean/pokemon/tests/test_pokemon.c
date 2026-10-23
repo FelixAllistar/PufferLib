@@ -365,6 +365,16 @@ static void test_learner_team_pool(void) {
         puf_step(&env);
     }
     assert(terminals[0] && env.log.pool_games[0]+env.log.pool_games[1]==1);
+    // Fixed catalog sets (ordered control): species and moves both come from the pool team.
+    snprintf(pk_team_pool[0].team,sizeof(pk_team_pool[0].team),"392,445,4,18,46,54");
+    snprintf(pk_team_pool[0].lead,sizeof(pk_team_pool[0].lead),"None");
+    pk_team_pool_count=1;
+    puf_reset(&env);
+    for(int k=0;k<6;k++) {
+        const int sets[6]={392,445,4,18,46,54}; int set=sets[k];
+        assert(env.game.teams[0][k].species==pk_species(set));
+        for(int m=0;m<4;m++) assert(env.game.teams[0][k].moves[m]==pk_set_move(set,m));
+    }
     pk_team_pool_count=0;
 }
 int main(void) {
