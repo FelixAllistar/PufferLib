@@ -8,7 +8,7 @@ cd /workspace/PufferLib
 R=reports/pokemon_experiments/20261023_next/freepick_warm
 INIT=$(ls reports/pokemon_experiments/20261022_b1_teams/gar_egg_zap/checkpoints/pokemon/*/0000000700186624.bin)
 mkdir -p $R
-tmux new -d -s fpwarm_eval "bash reports/pokemon_experiments/20261023_freepick_v2/eval_dir.sh $R; exec bash"
+tmux new -d -s fpwarm_eval -c /workspace/PufferLib "bash reports/pokemon_experiments/20261023_freepick_v2/eval_dir.sh $R; exec bash"
 bash reports/pokemon_experiments/20261022_freepick_league/run_freepick.sh $R \
   --base.load_model_path=$INIT --train.total_timesteps=1000000000 --base.checkpoint_interval=477 \
   --env.force_core_until=0.5
