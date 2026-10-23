@@ -45,7 +45,7 @@ def run(args):
                 "train.total_timesteps": args.steps, "selfplay.enabled": 0,
                 "vec.total_agents": args.agents, "vec.num_buffers": 1,
                 "vec.num_threads": args.threads, "vec.num_policies": 1,
-                "train.horizon": args.horizon, "train.minibatch_size": args.agents,
+                "train.horizon": args.horizon, "train.minibatch_size": args.minibatch or args.agents,
             }
             command = [str(binary), "train"] + [f"--{k}={v}" for k, v in options.items()]
             record = {"stint": stint, "command": command, "opponents": [
@@ -78,6 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--agents", type=int, default=1024)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--horizon", type=int, default=32)
+    parser.add_argument("--minibatch", type=int, help="PPO minibatch size; default --agents")
     parser.add_argument("--seed", type=int, default=73)
     parser.add_argument("--rules-fraction", type=float, default=0.25)
     parser.add_argument("--bot-policy", type=int, choices=(1, 4, 7), default=7,
