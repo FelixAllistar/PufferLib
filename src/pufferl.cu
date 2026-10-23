@@ -3493,7 +3493,9 @@ static EvalResult eval_loop(Ini* ini, PuffeRL* p, int mode, int verbose,
         result.score = match ? dict_get(&el, "env/policy_0_score")
             : (m ? m->value : dict_get(&el, "env/score"));
         result.perf = dict_get(&el, "env/perf");
-        result.draw = dict_get(&el, "env/draw_rate");
+        // Only envs with draws log draw_rate (games, not e.g. poker or breakout).
+        DictItem* d = dict_find(&el, "env/draw_rate");
+        result.draw = d ? d->value : 0;
         result.games = (int)n;
         dict_clear(&el);
         return result;

@@ -153,6 +153,12 @@ GPU checks on merged 5.0:
 Breakout trains, then its end-of-training eval needs `env/draw_rate`. That is upstream `bde2eb70b`
 ("Unify eval", July) and predates this merge.
 
+## Optional `env/draw_rate` in eval (2026-10-23, local 5.0)
+
+| Files | What | Affects other envs? |
+|---|---|---|
+| `src/pufferl.cu` (`eval_loop`) | The final eval read `env/draw_rate` with `dict_get`, which exits when the key is missing (upstream bde2eb70b "Unify eval"). Envs without draws (poker, breakout) therefore failed every sweep trial after training. It now reads 0 when the env does not log it. | No: envs that log `draw_rate` get the same value |
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
