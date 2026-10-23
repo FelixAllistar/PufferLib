@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Big B1 warm restart (2026-10-23, window box): continue big_b1_1024 (1024x2, gar_egg_zap, upgraded league)
-# from its 1B checkpoint for 2B more steps with a new learning-rate schedule: 2.5e-4 (half the original
-# peak) annealed to 5e-5 (min_lr_ratio 0.2, where the first run ended). The EMA magnet resumes from the
-# checkpoint's .magnet file. Optimizer state restarts, so expect a short dip. Checkpoints every 250M.
+# from its 750M checkpoint (60.4 / 60.1, better than the 1B one at 50.0 / 58.0) for 2B more steps with a
+# lower new schedule: 1.25e-4 annealed to 2.5e-5 (min_lr_ratio 0.2), below the original run's rate near
+# 750M, so there is no jump. The EMA magnet resumes from the checkpoint's .magnet file; optimizer state
+# restarts. Checkpoints every 250M. (A start from the 1B checkpoint at 2.5e-4 was stopped after 0.8M steps
+# at the user's request: big_b1_1024_cont_from1b_stopped.)
 cd /workspace/PufferLib
-INIT=$(ls reports/pokemon_experiments/20261023_next/big_b1_1024/checkpoints/pokemon/*/[0-9]*.bin | tail -1)
-C=reports/pokemon_experiments/20261023_next/big_b1_1024_cont
+INIT=$(ls reports/pokemon_experiments/20261023_next/big_b1_1024/checkpoints/pokemon/*/0000000750256128.bin)
+C=reports/pokemon_experiments/20261023_next/big_b1_1024_cont750
 L=reports/pokemon_experiments/20261022_freepick_league/league
 mkdir -p $C
 tmux new -d -s $(basename $C | tr . _)_eval -c /workspace/PufferLib "bash reports/pokemon_experiments/20261023_freepick_v2/eval_dir.sh $C; exec bash"
@@ -145,6 +147,6 @@ if [ ! -f $C/trained ]; then
     --env.opponent_lead=94 \
     --base.checkpoint_dir=$C/checkpoints --base.log_dir=$C/logs \
     --base.load_model_path=$INIT --base.magnet_path=$INIT.magnet \
-    --train.total_timesteps=2000000000 --train.learning_rate=0.00025 --train.min_lr_ratio=0.2 > $C/train.log 2>&1 || exit 1
+    --train.total_timesteps=2000000000 --train.learning_rate=0.000125 --train.min_lr_ratio=0.2 > $C/train.log 2>&1 || exit 1
   touch $C/trained
 fi
