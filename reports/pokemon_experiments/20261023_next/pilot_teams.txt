@@ -1,0 +1,15 @@
+# name team lead  (the 13 upgraded-league teams, then free-pick's argmaxed team from move_pairs)
+gar_egg_zap species:94,103,145,113,143,128 94
+zam_egg_cloy_don species:65,103,112,91,113,128 65
+gar_egg_mie_zap species:94,103,121,145,143,128 94
+zam_egg_zap species:65,103,145,113,143,128 65
+zam_egg_mie species:65,103,121,113,143,128 65
+gar_egg_mie species:94,103,121,113,143,128 94
+mie_egg_zap species:121,103,145,113,143,128 121
+jynx_egg_zap species:124,103,145,113,143,128 124
+jynx_mie_don species:124,121,112,113,143,128 124
+mie_egg_cloy species:121,103,91,113,143,128 121
+jynx_egg_gar_zap species:124,103,94,145,143,128 124
+zam_egg_gar species:65,103,94,113,143,128 65
+mie_egg_don species:121,103,112,113,143,128 121
+freepick_jolteon species:144,135,124,131,128,145 None
