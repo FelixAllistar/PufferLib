@@ -13,6 +13,13 @@ vendor, scripts, build.sh) and rebuilt with `./build.sh pokemon`; previous sourc
 | `meta_rotation` (`run_meta_rotation.sh`, queued by `queue_window_meta.sh`) | window box, after b1_repro_5.0 | Free-pick warm start whose forced 3-species cores come from 15 standard OU species (0.75 of games, constant): does piloting the meta species fix the team and the movesets? | freepick_warm, B1 |
 | `move_pairs` (`run_move_pairs.sh`) | B1 box, after fixed_fpteam is scored | Move exploration like forced species cores: in 75% of learner games each drafted Pokémon is dealt 2 random legal moves and picks the other 2 (annealed to 0 by half), plus forced species cores (0.75 → 0 by half) and slight opponent randomness (0.3 → 0 by 20%). Warm start from B1 gar, 1B. Drafts must fill all 4 move slots. Does it learn Smogon-quality sets in free drafts (`smogon_set_rate_free`), and does that raise the free-pick score? | freepick_warm: 15% exact Smogon sets, ~40; B0 gar 83% |
 
+### Branch 2: capacity and experience against the good league (planned 2026-10-23)
+
+| Run | Box | Question | Compare |
+|---|---|---|---|
+| `big_b1_1024` (`run_big_b1.sh`) | window box, started 16:46 UTC | B1's gar_egg_zap recipe with a 1024x2 learner vs the frozen upgraded league, B1 hyperparameters, 1B, scored every 250M. Are we capped by model size? If 1024 learns, sweep it (learning rate first). | B1 61.8 / 58.0, b1_repro_5.0 55.9 / 52.8 |
+| `omni_master_256` (`run_omni.sh 256`) | B1 box, after move_pairs is scored | OMNI_MASTER: one policy plays all 13 league teams (`env.learner_team_pool`, a team drawn per game), same recipe, 2B. Scored on gar_egg_zap, zam_egg_cloy_don and zam_egg_zap every 500M (`eval_omni.sh`). Then 1024 if big_b1 learns. | Specialists on those teams: 62.5 / 57.6, 58.3 / 58.0, 58.7 / 57.3 |
+
 Code for these (commits 200de5799, 62d12d788, env-local in `ocean/pokemon`): no early stop in move drafting;
 `env.force_move_pairs_prob/_until`; `smogon_set_rate_free/_forced` and `move_pair_team_fraction` logs;
 team-log rows gain `move_pairs`. Both boxes are redeployed with these once their current runs are scored.
@@ -32,6 +39,8 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   21% exact Smogon sets (Lapras 74%, Jolteon and Zapdos 0-1%; Zapdos Thunderbolt / Thunder Wave / Hyper
   Beam / Double-Edge with no Drill Peck in 93%). So team and moves are confounded here; fixed species alone
   does not make it find good sets for these Pokémon, which is what `move_pairs` targets.
+- **move_pairs (live):** exact Smogon sets in free drafts 4.3% at the start → 24.7% at 487M (forced pairs
+  nearly annealed off); freepick_warm ended at 15%. Metamon 125M: 30.2 / 34.4.
 - **freepick_warm:** trained to 1B; evals pending (the first watcher never started: `eval_dir.sh` was only
   on the window box, and the tmux session lacked `-c /workspace/PufferLib`; fixed and restarted).
 
