@@ -50,7 +50,11 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   run's own config (gar team) and repeated the gar score; moved to `omni_eval_symlink_bug/`, script fixed to
   copy the weights (37074b047), those evals rerunning.
 - **meta_rotation:** 1B final 44.8 / 41.0 (its best; 875M 40.6 / 38.9), slightly above the other free-pick runs.
-- **big_b1_1024 (live, 88K steps/s):** 250M 36.5 / 43.8, 500M 53.8 / 46.5, 750M SyntheticRLV2 60.4 (B1 256x2 had 50.7 / 52.1 at 350M). Exact Smogon sets in its gar drafts 72% at 850M. Queued after it
+- **big_b1_1024:** 250M 36.5 / 43.8, 500M 53.8 / 46.5, **750M 60.4 / 60.1**, 1B 50.0 / 58.0 (B1 256x2 at 700M:
+  61.8 / 58.0). Exact Smogon sets in its gar drafts 77% at 1B. The queue chose the warm restart (means rose
+  40.1 → 50.2 → 60.3); per the user it now restarts from the 750M checkpoint at 1.25e-4 → 2.5e-5 over 2B
+  (`big_b1_1024_cont750`, started 20:13 UTC, ~96K steps/s, about 6 h). The 1B-start version ran 0.8M steps
+  and was stopped (`big_b1_1024_cont_from1b_stopped`). Queued after it
   (`queue_big_b1_next.sh`, tmux `big_b1_next`): if the mean score rose 250M → 500M → 750M, warm restart to 3B
   (`run_big_b1_cont.sh`: 1B weights + .magnet, 2B more at 2.5e-4 → 5e-5); otherwise the LR scan
   (`run_big_b1_lr.sh` 1.5e-4 then 2.5e-4, 1B each from scratch).
