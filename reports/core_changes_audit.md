@@ -5,8 +5,7 @@ This file tracks every change outside `ocean/<env>` and `config/<env>.ini`, mean
 For each change it records what it does, which env needed it, and whether other envs are affected.
 
 Branch policy:
-- `5.0` is the main research branch.
-- `magnet-kl` holds the EMAgnet trainer changes. Do not merge it into `5.0`.
+- `5.0` is the main research branch and holds everything. `magnet-kl` was merged into it on 2026-10-23.
 
 ## On `magnet-kl` (pushed to origin)
 
@@ -131,6 +130,28 @@ Checks:
   recorded in the history.
 - Builds pass for pokemon, breakout, poker, goofspiel (`--cu --float`) and kaggriculture (direct-policy
   ABI assert).
+
+## Branch sync (2026-10-23): magnet-kl and upstream merged into local 5.0
+
+The user's direction is to keep everything in one tree. Local `5.0` now contains:
+
+- **`magnet-kl` (merge `3a3c94491`).** EMAgnet (`train.magnet_*`, `base.magnet_path`), off by default
+  (`magnet_coef = 0`). It also removes Kaggriculture's native frozen-teacher KL. The Pokemon boxes'
+  hand-assembled trees are now a subset of 5.0, so future deploys come straight from 5.0.
+- **`upstream/5.0` (PufferLib PR #693, cuBLAS per-stream handles).** Each stream gets its own cuBLAS
+  handle and workspace (`cublas_init_stream`); a GEMM on an unregistered stream asserts. Conflict
+  resolution: our split `vec_thread_main` registers its rollout stream with `cublas_init_stream`
+  (upstream's approach), instead of calling `cublas_init_handle`.
+
+GPU checks on merged 5.0:
+- window Transformer: training matches rollout, GPU matches CPU, gradient checks pass;
+- Pokemon encoder parity (attention on and off);
+- `tests/check_magnet.sh` (5 Goofspiel EMAgnet trainings);
+- short trainings: poker (async), Pokemon MinGRU / entity attention / window with the league, and the
+  Goofspiel Transformer (exact evals).
+
+Breakout trains, then its end-of-training eval needs `env/draw_rate`. That is upstream `bde2eb70b`
+("Unify eval", July) and predates this merge.
 
 ## Pending / planned
 

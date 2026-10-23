@@ -1350,7 +1350,8 @@ static void* vec_thread_main(void* arg) {
     int buf = a->buf;
     int* state = &vec->worker_state[buf];
     cudaSetDevice(pufferl->hypers.gpu_id);
-    cublas_init_handle();
+    // cuBLAS handles are per stream (upstream #693): register this rollout stream.
+    cublas_init_stream(pufferl->streams[buf]);
     cudaEvent_t ev[NUM_EV];
     for (int i = 0; i < NUM_EV; i++) {
         cudaEventCreate(&ev[i]);
@@ -2279,6 +2280,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     } else {
         assert(cudaStreamCreate(&pufferl->train_stream) == cudaSuccess);
     }
+    cublas_init_stream(pufferl->train_stream);
 
     Allocator* acts = &pufferl->activ_alloc;
     Allocator* grads = &pufferl->grads_alloc;
@@ -2474,6 +2476,10 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         } else {
             assert(cudaStreamCreate(&pufferl->streams[i]) == cudaSuccess);
         }
+    }
+    // CPU rollout workers register their streams in vec_thread_main.
+    if (PUF_BACKEND == PUF_GPU) {
+        cublas_init_stream(pufferl->streams[0]);
     }
 
     env_start(pufferl);
