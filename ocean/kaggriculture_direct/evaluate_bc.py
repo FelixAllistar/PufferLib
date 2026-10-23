@@ -30,7 +30,7 @@ def main():
                 agents = 1 if args.trace else min(32, args.games)
                 options = {
                     "base.load_model_path": ROOT / f"saved/kaggriculture/compact_v7/h{width}_l2/bc.bin",
-                    "base.teacher_model_path": "None", "base.eval_episodes": args.games,
+                    "base.eval_episodes": args.games,
                     "base.eval_agents": agents, "base.eval_greedy": greedy,
                     "base.async": 0, "base.cudagraphs": 1, "base.seed": 73,
                     "policy.hidden_size": width, "policy.num_layers": 2,
@@ -40,7 +40,7 @@ def main():
                     "selfplay.enabled": 0, "env.num_agents": 1,
                     "env.learner_seat": seat, "env.bot_policy": 1,
                     "env.reset_state_prob": 0, "train.horizon": 32,
-                    "train.minibatch_size": 32, "train.teacher_kl_coefficient": 0,
+                    "train.minibatch_size": 32,
                     "sweep.metric": "root_money",
                 }
                 command = [str(args.binary.resolve()), "eval", "--headless"]

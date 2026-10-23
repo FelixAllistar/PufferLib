@@ -46,7 +46,6 @@ def command(binary, mode, values, overrides):
 def eval_overrides(values, checkpoint, seat):
     return {
         "base.load_model_path": str(checkpoint),
-        "base.teacher_model_path": "None",
         "base.load_enemy_model_path": "None",
         "base.seed": values["sweep.eval_seed"],
         "base.eval_episodes": values["sweep.eval_games_per_seat"],
@@ -60,7 +59,7 @@ def eval_overrides(values, checkpoint, seat):
         "env.learner_seat": str(seat), "env.bot_policy": "1",
         "env.reset_state_prob": "0", "env.reset_state_bank": "None",
         "env.opponent_noise_initial": "0", "env.opponent_noise_final": "0",
-        "train.teacher_kl_coefficient": "0", "train.verb_eps": "0",
+        "train.verb_eps": "0",
         "sweep.metric": "root_money",
     }
 
