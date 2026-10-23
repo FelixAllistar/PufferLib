@@ -331,11 +331,48 @@ static void test_forced_move_pairs(void) {
             assert(pk_mon_legal(&mon) && pk_smogon_set(&mon));
         }
 }
+static void test_learner_team_pool(void) {
+    const int species[2][6]={{94,103,145,113,143,128},{144,135,124,131,128,145}};
+    snprintf(pk_team_pool[0].team,sizeof(pk_team_pool[0].team),"species:94,103,145,113,143,128");
+    snprintf(pk_team_pool[0].lead,sizeof(pk_team_pool[0].lead),"94");
+    snprintf(pk_team_pool[1].team,sizeof(pk_team_pool[1].team),"species:144,135,124,131,128,145");
+    snprintf(pk_team_pool[1].lead,sizeof(pk_team_pool[1].lead),"None");
+    pk_team_pool_count=2;
+    Env env={0};
+    env.num_agents=2; env.game.rng=99; env.game.move_rng=7; env.game.max_updates=64;
+    env.reward_win=1; env.reward_gamma=1; env.tag=1;
+    env.agents[0].policy=0; env.agents[1].policy=1;
+    uint8_t obs[2][PK_OBS], masks[2][PK_ACTIONS];
+    float actions[2], rewards[2], terminals[2];
+    bind_env(&env,obs,masks,actions,rewards,terminals);
+    int seen[2]={0};
+    for(int episode=0;episode<40;episode++) {
+        puf_reset(&env);
+        int i=env.pool_team[0];
+        assert((i==0 || i==1) && env.pool_team[1]==-1); // the frozen seat keeps its own team
+        seen[i]++;
+        for(int k=0;k<6;k++) {
+            int found=0;
+            for(int j=0;j<6;j++) found|=env.game.teams[0][k].species==species[i][j];
+            assert(found);
+        }
+        if(i==0) assert(env.game.teams[0][0].species==94);
+    }
+    assert(seen[0] && seen[1]);
+    uint64_t rng=5;
+    for(int t=0;t<200 && !terminals[0];t++) {
+        for(int p=0;p<2;p++) actions[p]=pk_random_action(masks[p],&rng);
+        puf_step(&env);
+    }
+    assert(terminals[0] && env.log.pool_games[0]+env.log.pool_games[1]==1);
+    pk_team_pool_count=0;
+}
 int main(void) {
     test_top_species_summary();
     test_catalog_coverage();
     test_draft();
     test_forced_move_pairs();
+    test_learner_team_pool();
     test_stable_switch_and_move_reveal();
     test_terminal_reset();
     test_seeded_rollouts();

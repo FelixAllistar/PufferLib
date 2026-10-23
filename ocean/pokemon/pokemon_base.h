@@ -22,6 +22,14 @@ typedef uint8_t obs_t;
 #define SELFPLAY_MAX_BANKS 32
 typedef struct { char path[4096], team[256], lead[64], name[64]; } PKNativeBank;
 static PKNativeBank pk_native_banks[SELFPLAY_MAX_BANKS];
+// OMNI training (training only): env.learner_team_pool names a league manifest. Each learner seat plays one
+// of its bank teams (species constraint and lead), chosen uniformly per game; the policy still drafts the
+// moves. Learner win rate per pool team logs as team_<name>_score.
+typedef struct { char team[256], lead[64], name[64]; } PKTeamChoice;
+static PKTeamChoice pk_team_pool[SELFPLAY_MAX_BANKS];
+static int pk_team_pool_count;
+static inline void pk_parse_fixed_team(PKGame* game, int player, const char* text);
+static inline void pk_parse_lead(PKGame* game, int player, const char* text);
 static int pk_native_count;
 static double pk_native_fraction;
 static double pk_core_probability = 1;
@@ -261,6 +269,33 @@ static inline void pk_configure(Ini* ini, const char* mode) {
             printf("Pokemon forced move pairs: share %.3g of learner games%s%.3g of training\n",pk_move_pairs_prob,
                 pk_move_pairs_until>0?", annealed to 0 at ":", constant; until=",pk_move_pairs_until);
     }
+    pk_team_pool_count=0;
+    DictItem* pool=dict_find(puf_ini_section(ini,"env",0),"learner_team_pool");
+    if(!strcmp(mode,"train") && pool && pool->str && *pool->str && strcmp(pool->str,"None")) {
+        Ini manifest={0};
+        puf_ini_load_file(&manifest,pool->str);
+        int count=(int)puf_ini_get(&manifest,"native","banks");
+        if(count<1 || count>SELFPLAY_MAX_BANKS) { fprintf(stderr,"learner_team_pool %s: need 1..%d banks\n",pool->str,SELFPLAY_MAX_BANKS); exit(1); }
+        if(puf_ini_get(ini,"env","force_core_combos")!=0 || puf_ini_get(ini,"env","reset_state_prob")!=0) {
+            fprintf(stderr,"learner_team_pool is incompatible with forced cores and snapshot resets\n"); exit(1);
+        }
+        for(int b=0;b<count;b++) {
+            char section[32]; snprintf(section,sizeof(section),"bank.%d",b);
+            const char* team=puf_ini_get_str(&manifest,section,"team");
+            const char* lead=puf_ini_get_str(&manifest,section,"lead");
+            DictItem* name=dict_find(puf_ini_section(&manifest,section,0),"name");
+            PKTeamChoice* c=&pk_team_pool[b];
+            if(strlen(team)>=sizeof(c->team) || strlen(lead)>=sizeof(c->lead)) exit(1);
+            snprintf(c->team,sizeof(c->team),"%s",team);
+            snprintf(c->lead,sizeof(c->lead),"%s",lead);
+            if(name && name->str && *name->str) snprintf(c->name,sizeof(c->name),"%s",name->str);
+            else snprintf(c->name,sizeof(c->name),"pool%d",b);
+            PKGame check={0}; pk_parse_fixed_team(&check,0,c->team); pk_parse_lead(&check,0,c->lead); // exits if invalid
+        }
+        puf_ini_free(&manifest);
+        pk_team_pool_count=count;
+        printf("Pokemon learner team pool: %d teams from %s, one chosen per learner game\n",count,pool->str);
+    }
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;
     if(pk_current_selfplay) {
         puf_ini_put(ini,"env.opponent_team",pk_learner_team);
@@ -399,6 +434,7 @@ struct Log {
     float expert_random_sum, expert_random_steps, expert_random_actions;
     // Learner teams by move drafting: forced pairs vs free; mons whose set is exactly a Smogon set.
     float move_pair_teams, free_move_teams, smogon_sets_forced, smogon_sets_free;
+    float pool_games[SELFPLAY_MAX_BANKS], pool_score[SELFPLAY_MAX_BANKS]; // seat 0 by pool team
 };
 struct Env {
     Log log;
@@ -422,6 +458,7 @@ struct Env {
     int episode_steps, reset_bucket;
     int core_pending, core_valid[2], core_counted[2], core_just_drafted;
     int core_episode_selected; // -1 pending choice, 0 ordinary draft, 1 assigned core
+    int pool_team[2]; // learner_team_pool index this game, -1 when none
     uint32_t core_card[2];
 };
 // Opt-in adapter-boundary diagnostics; no trainer or learning changes.
@@ -725,10 +762,21 @@ static inline void pk_choose_move_pairs(Env* env) {
             (pk_random(&env->game.move_rng)>>11)*0x1.0p-53 < probability;
     }
 }
+static inline void pk_choose_pool_teams(Env* env) {
+    for(int p=0;p<2;p++) {
+        env->pool_team[p]=-1;
+        if(!pk_team_pool_count || !(env->agents[p].policy==0 || env->tag==0)) continue;
+        int i=(int)(pk_random(&env->game.move_rng)%(unsigned)pk_team_pool_count);
+        pk_parse_fixed_team(&env->game,p,pk_team_pool[i].team);
+        pk_parse_lead(&env->game,p,pk_team_pool[i].lead);
+        env->pool_team[p]=i;
+    }
+}
 static inline void pk_episode_start(Env* env) {
     env->episode_steps=0;
     env->reset_bucket=-1;
     pk_choose_move_pairs(env); // Before any draft reset, including the core path's deferred one.
+    pk_choose_pool_teams(env);
     if(pk_core_deck.cards) {
         // Parallel workers only request a reset. The serial batch hook supplies
         // cores and publishes the new observations before the next inference.
@@ -869,6 +917,7 @@ void puf_step(Env* env) {
         env->log.mix_games[mix_group]++;
         float score = (outcome + 1.0f) * 0.5f;
         if(env->tag>=0 && env->tag<=SELFPLAY_MAX_BANKS) {env->log.vs_games[env->tag]++; env->log.vs_score[env->tag]+=score;}
+        if(env->pool_team[0]>=0) {env->log.pool_games[env->pool_team[0]]++; env->log.pool_score[env->pool_team[0]]+=score;}
         env->agents[0].terminals[0] = env->agents[1].terminals[0] = 1;
         env->log.perf += score;
         env->log.score += score;
@@ -911,6 +960,10 @@ void puf_log(Log* log, Dict* out) {
     if(pk_move_pairs_prob>0) {
         double teams=log->move_pair_teams+log->free_move_teams;
         dict_set(out,"move_pair_team_fraction",teams?log->move_pair_teams/teams:0);
+    }
+    for(int i=0;i<pk_team_pool_count;i++) {
+        char key[96]; snprintf(key,sizeof(key),"team_%s_score",pk_team_pool[i].name);
+        dict_set(out,key,log->pool_games[i]?log->pool_score[i]/log->pool_games[i]:0);
     }
     dict_set(out,"smogon_set_rate_free",log->free_move_teams?log->smogon_sets_free/(6*log->free_move_teams):0);
     dict_set(out,"smogon_set_rate_forced",log->move_pair_teams?log->smogon_sets_forced/(6*log->move_pair_teams):0);
