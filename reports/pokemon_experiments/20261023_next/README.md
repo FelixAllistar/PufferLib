@@ -27,6 +27,11 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   on this recipe looks like ±3–5 points; single runs cannot separate effects that small.
 - **meta_rotation:** first launch failed at load (`config.ini` was not copied next to the warm-start
   checkpoint on the window box; kept as `meta_rotation.failed_noconfig`); relaunched 15:35 UTC.
+- **fixed_fpteam:** 41.0 / 34.0 at 350M, 29.2 / 40.6 at 700M (mean 34.9), about 20 below the gar team with
+  the same recipe (b1_repro_5.0, 54.4). Its moves still locked into non-standard sets with species fixed:
+  21% exact Smogon sets (Lapras 74%, Jolteon and Zapdos 0-1%; Zapdos Thunderbolt / Thunder Wave / Hyper
+  Beam / Double-Edge with no Drill Peck in 93%). So team and moves are confounded here; fixed species alone
+  does not make it find good sets for these Pokémon, which is what `move_pairs` targets.
 - **freepick_warm:** trained to 1B; evals pending (the first watcher never started: `eval_dir.sh` was only
   on the window box, and the tmux session lacked `-c /workspace/PufferLib`; fixed and restarted).
 
