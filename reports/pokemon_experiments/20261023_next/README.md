@@ -55,7 +55,18 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   625M 37.8 / 38.9, 750M 32.3 / 39.2, 875M 39.6 / 35.8, 1B 41.7 / 35.8. Better sets, same 35-44 score range.
   Final sets are mostly settled and near-standard (Jynx Lovely Kiss / Psychic / Blizzard / Ice Beam 99%, Jolteon
   Body Slam / Rest / Thunder Wave / Thunderbolt 94%, Zapdos back to Drill Peck), on the same off-meta team.
-- **omni_master_256:** started 18:03 UTC on the B1 box, ~207K steps/s. 500M on gar_egg_zap: **61.1 / 63.9**
+- **freepick_omni (live, 731M at 22:00 UTC):** 125M **61.8 / 49.0**, 250M SyntheticRLV2 62.8: free-pick at the
+  level of our best fixed-team policies (earlier free-pick runs peaked around 40). It drafts a standard RBY OU
+  team, 100% of free drafts: Alakazam, Chansey, Lapras, Rhydon, Starmie, Tauros, with near-textbook sets
+  (Tauros Body Slam / Hyper Beam / Earthquake / Blizzard 99%, Lapras Blizzard / Body Slam / Sing / Thunderbolt
+  88%, Alakazam Psychic / Recover / Seismic Toss / Thunder Wave 84%, Starmie Surf / Thunderbolt / Thunder Wave /
+  Recover 83%). Exact Smogon OU sets 64%, any format 74%. Warm start from OMNI + 81.5% self-play did it.
+- **omni_master_256 (trained, 2B):** gar_egg_zap 61.1 / 63.9 (500M), 63.2 / 64.2 (1B), 66.7 / 62.2 (1.5B);
+  zam_egg_cloy_don 54.2 / 70.5, 64.6 / 69.4, 71.2 / pending; zam_egg_zap 62.8 / 51.4, 62.5 / 53.8.
+  Pilot test at 2B so far: gar_egg_zap 67.4 / 55.9, zam_egg_cloy_don 64.2 / 73.3, gar_egg_mie_zap 64.9 / 68.8.
+- **big_b1_1024_cont750 (live):** +250M after the restart: 56.2 / 50.0 (below the 750M start, 60.4 / 60.1;
+  the restart dip). 571M at 22:00 UTC.
+- **omni_master_256 (launch):** started 18:03 UTC on the B1 box, ~207K steps/s. 500M on gar_egg_zap: **61.1 / 63.9**
   (gar specialists: B1 61.8 / 58.0, B0 62.5 / 57.6). The first zam_egg_cloy_don / zam_egg_zap evals were
   invalid: `eval_omni.sh` symlinked the weights and evaluate_private.py resolves symlinks, so it read the
   run's own config (gar team) and repeated the gar score; moved to `omni_eval_symlink_bug/`, script fixed to
