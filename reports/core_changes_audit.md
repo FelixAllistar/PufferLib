@@ -159,6 +159,14 @@ Breakout trains, then its end-of-training eval needs `env/draw_rate`. That is up
 |---|---|---|
 | `src/pufferl.cu` (`eval_loop`) | The final eval read `env/draw_rate` with `dict_get`, which exits when the key is missing (upstream bde2eb70b "Unify eval"). Envs without draws (poker, breakout) therefore failed every sweep trial after training. It now reads 0 when the env does not log it. | No: envs that log `draw_rate` get the same value |
 
+## Box deploy (2026-10-23): both Pokemon boxes now run local `5.0`
+
+Window box 57306307 and B1 box 56007315 were synced to local `5.0` at e3c68f02a (src, ocean/pokemon,
+config, tests, vendor, scripts, build.sh) and rebuilt (`./build.sh pokemon`, `private_adapter.so`).
+Before syncing, every line that existed only on a box was checked: all were older versions of code `5.0`
+has replaced (cuBLAS handles, step budget, sweep packet, draw_rate). Previous sources:
+`/workspace/before_5.0_sync_20261023.tgz`, `puffer.before_5.0_sync`, `private_adapter.so.before_5.0_sync`.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
