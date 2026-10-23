@@ -2047,7 +2047,17 @@ static void master_weights_setup(Float* mw, Prec* param,
     }
 }
 
+// policy.network = window keeps its memory in the recurrent state rows, so the state
+// row count (policy.num_layers) is the window length. Idempotent; call before any use.
+static void puf_resolve_network(Ini* ini) {
+    if (strcmp(puf_ini_get_str(ini, "policy", "network"), "window") != 0) return;
+    char length[32];
+    snprintf(length, sizeof(length), "%d", (int)puf_ini_get(ini, "policy", "window_length"));
+    puf_ini_put(ini, "policy.num_layers", length);
+}
+
 PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
+    puf_resolve_network(ini);
     Hypers hypers = {
         .horizon = puf_ini_get(ini, "train", "horizon"),
         .total_agents = puf_ini_get(ini, "vec", "total_agents"),
@@ -2237,10 +2247,16 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         // league banks with a different encoder than the learner).
         PUF_POLICY_ARCH(pol->frozen);
 #endif
+        // Frozen policies may use another network (vec.hist_policy_network, e.g. MinGRU banks).
+        const char* hist_network = puf_ini_get_str(ini, "vec", "hist_policy_network");
+        const char* network_type = pol->frozen && strcmp(hist_network, "same")
+            ? hist_network : puf_ini_get_str(ini, "policy", "network");
         pol->arch = build_arch(input_size, h, L,
             decoder_output_size, is_continuous, hypers.horizon,
             puf_ini_get_str(ini, "policy", "architecture"),
-            puf_ini_get(ini, "policy", "transformer_heads"));
+            puf_ini_get(ini, "policy", "transformer_heads"), network_type,
+            puf_ini_get(ini, "policy", "window_layers"), puf_ini_get(ini, "policy", "window_width"),
+            puf_ini_get(ini, "policy", "window_heads"));
         pol->weights = weights_create(&pol->arch, &pol->params_alloc);
         Allocator* aalloc = pol->frozen ? &pol->activ_alloc : acts;
         pol->buf_acts = (Activations*)calloc(
@@ -3467,6 +3483,7 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose,
 }
 
 TrainResult run_train(Ini* ini, TrainContext* ctx) {
+    puf_resolve_network(ini);
 #ifdef PUF_CONFIGURE
     PUF_CONFIGURE(ini, "train");
 #endif

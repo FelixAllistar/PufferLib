@@ -125,6 +125,8 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
     puf_ini_put(ini,"selfplay.eval_pool_size","0");
     puf_ini_put(ini,"selfplay.eval_games","0");
     puf_ini_put(ini,"env.team_selection","1");
+    // Exported banks are MinGRU policies, whatever memory network the learner uses.
+    puf_ini_put(ini,"vec.hist_policy_network","mingru");
     pk_native_count=count;
     pk_native_fraction=fraction;
     printf("Pokemon native league: %d frozen bank slots; expert_env_fraction=%.9g current_selfplay_env_fraction=%.9g; only learner trains\n",

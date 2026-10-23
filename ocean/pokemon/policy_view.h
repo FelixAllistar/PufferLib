@@ -106,7 +106,16 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     if (attn_width) attn.width = attn_width->value;
     if (attn_heads) attn.heads = attn_heads->value;
     if (!pk_attn_valid(attn)) { fprintf(stderr, "Invalid Pokemon attention dimensions in checkpoint config\n"); exit(1); }
-    size_t expected = pk_parameter_count(h,layers,embed,mid,attn);
+    // policy.network = window: num_layers is the window length (src/window_transformer.cuh).
+    PKWindow window = pk_window_off;
+    DictItem* network = dict_find(puf_ini_section(&policy->ini, "policy", 0), "network");
+    if (network && network->str && !strcmp(network->str, "window")) {
+        window.enabled = 1;
+        window.layers = puf_ini_get(&policy->ini, "policy", "window_layers");
+        window.width = puf_ini_get(&policy->ini, "policy", "window_width");
+        window.heads = puf_ini_get(&policy->ini, "policy", "window_heads");
+    }
+    size_t expected = pk_parameter_count(h,layers,embed,mid,attn,window);
     struct stat st;
     if (stat(policy->path, &st) || st.st_size != (off_t)(expected * sizeof(float))) {
         fprintf(stderr, "Missing/incompatible checkpoint %s: expected %zu bytes (H=%d L=%d)\n",
@@ -117,15 +126,14 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     for (size_t i = 0; i < expected; i++) {
         if (!isfinite(policy->weights->data[i])) { fprintf(stderr, "Non-finite checkpoint weights\n"); exit(1); }
     }
-    policy->net = pk_cpu_make(policy->weights,1,h,layers,embed,mid,attn);
-    fprintf(stderr, "Loaded %s (hidden=%d layers=%d attention=%d)\n", policy->path, h, layers, attn.layers);
+    policy->net = pk_cpu_make(policy->weights,1,h,layers,embed,mid,attn,window);
+    fprintf(stderr, "Loaded %s (hidden=%d layers=%d attention=%d window=%d)\n", policy->path, h, layers, attn.layers,
+        window.enabled ? window.layers : 0);
 }
 static void pk_reset_policy(PKPolicy* policy, uint64_t seed) {
     policy->rng = seed;
     if (!policy->net) return;
-    MinGRU* gru = policy->net->mingru;
-    memset(gru->state, 0, (size_t)gru->hidden_size * gru->num_layers * sizeof(float));
-    memset(gru->output, 0, (size_t)gru->hidden_size * sizeof(float));
+    pk_cpu_reset_memory(policy->net);
 }
 static int pk_policy_action(PKPolicy* policy, const uint8_t* obs, const uint8_t* mask, int deterministic) {
     if (!policy->net) return pk_random_action(mask, &policy->rng);
