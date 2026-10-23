@@ -44,9 +44,13 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   625M 37.8 / 38.9, 750M 32.3 / 39.2, 875M 39.6 / 35.8, 1B 41.7 / 35.8. Better sets, same 35-44 score range.
   Final sets are mostly settled and near-standard (Jynx Lovely Kiss / Psychic / Blizzard / Ice Beam 99%, Jolteon
   Body Slam / Rest / Thunder Wave / Thunderbolt 94%, Zapdos back to Drill Peck), on the same off-meta team.
-- **omni_master_256:** started 18:03 UTC on the B1 box, 223K steps/s (2B in about 2.5 h); logs team_<name>_score.
+- **omni_master_256:** started 18:03 UTC on the B1 box, ~207K steps/s. 500M on gar_egg_zap: **61.1 / 63.9**
+  (gar specialists: B1 61.8 / 58.0, B0 62.5 / 57.6). The first zam_egg_cloy_don / zam_egg_zap evals were
+  invalid: `eval_omni.sh` symlinked the weights and evaluate_private.py resolves symlinks, so it read the
+  run's own config (gar team) and repeated the gar score; moved to `omni_eval_symlink_bug/`, script fixed to
+  copy the weights (37074b047), those evals rerunning.
 - **meta_rotation:** 1B final 44.8 / 41.0 (its best; 875M 40.6 / 38.9), slightly above the other free-pick runs.
-- **big_b1_1024 (live, 88K steps/s):** 250M 36.5 / 43.8 (B1 256x2 had 50.7 / 52.1 at 350M). Queued after it
+- **big_b1_1024 (live, 88K steps/s):** 250M 36.5 / 43.8, 500M 53.8 / 46.5, 750M SyntheticRLV2 60.4 (B1 256x2 had 50.7 / 52.1 at 350M). Exact Smogon sets in its gar drafts 72% at 850M. Queued after it
   (`queue_big_b1_next.sh`, tmux `big_b1_next`): if the mean score rose 250M → 500M → 750M, warm restart to 3B
   (`run_big_b1_cont.sh`: 1B weights + .magnet, 2B more at 2.5e-4 → 5e-5); otherwise the LR scan
   (`run_big_b1_lr.sh` 1.5e-4 then 2.5e-4, 1B each from scratch).
