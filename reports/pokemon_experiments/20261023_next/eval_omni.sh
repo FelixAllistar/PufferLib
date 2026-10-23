@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Score an OMNI_MASTER run on several of its pool teams (48 games per panel team, argmax, seed 20261025),
 # every 500M and the final checkpoint, until training is done. The evaluator reads our team from the
-# checkpoint's config.ini, so each (checkpoint, team) gets a directory with the weights symlinked and that
+# checkpoint's config.ini, so each (checkpoint, team) gets a directory with a copy of the weights and that
 # team's learner_team / learner_lead. Compare with the specialist on the same team: gar_egg_zap B0 62.5 / 57.6,
 # zam_egg_cloy_don B0 58.3 / 58.0, zam_egg_zap B1 58.7 / 57.3. Usage: eval_omni.sh RUN_DIR
 cd /workspace/PufferLib
@@ -18,7 +18,8 @@ while true; do
     [ $((steps / 250000000 % 2)) = 0 ] || [ "$ck" = "$last" -a $done_flag = 1 ] || continue
     for team in $TEAMS; do
       d=$R/omni_eval/$(basename $ck .bin)_$team; mkdir -p $d
-      ln -sf $(realpath $ck) $d/$(basename $ck)
+      # A copy, not a symlink: evaluate_private.py resolves symlinks and would read the original config.ini.
+      [ -f $d/$(basename $ck) ] || cp $ck $d/$(basename $ck)
       sed -e "s|^learner_team = .*|learner_team = $(team_field $team team)|" -e "s|^learner_lead = .*|learner_lead = $(team_field $team lead)|" $(dirname $ck)/config.ini > $d/config.ini
       for opp in SyntheticRLV2 TaurosV0; do
         out=$d/eval_$opp
