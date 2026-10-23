@@ -73,9 +73,11 @@ static void test_draft(void) {
         int m=pk_move_count(&a.teams[0][mon]);
         int ownmove=pk_set_move(fixtures[mon],m);
         int own=a.move_stopped[0]?PK_MOVE_DONE:ownmove?ownmove-1:PK_MOVE_DONE;
+        // Stopping early is offered only once no legal move is left.
+        if(m<4) assert(!a.masks[0][PK_MOVE_DONE]);
+        // The two opponents draft different random sets; neither may leak into our observation.
         int foeA=pk_random_action(a.masks[1],&a.rng);
-        // One opponent always stops at one move; the other may choose four.
-        int foeB=turn%4?PK_MOVE_DONE:pk_random_action(b.masks[1],&b.rng);
+        int foeB=pk_random_action(b.masks[1],&b.rng);
         assert(pk_game_step(&a,own,foeA)==0);
         assert(pk_game_step(&b,own,foeB)==0);
         if(turn<23)assert(!memcmp(a.obs[0],b.obs[0],PK_OBS));

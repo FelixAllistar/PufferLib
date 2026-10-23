@@ -41,7 +41,8 @@ static inline int pk_move_allowed(const PKMon* mon, int move) {
     int n=pk_move_count(mon);
     if(n==4 || move<1 || move>164) return 0;
     uint8_t chosen[4]; memcpy(chosen,mon->moves,4); chosen[n]=(uint8_t)move;
-    // Every legal non-empty prefix may stop. No mask can lead to a dead end.
+    // Every legal prefix is a valid set, so no mask can lead to a dead end. The draft (pk_draft_masks)
+    // only offers stopping once no further move is allowed.
     return pk_moves_legal(mon->species,chosen,n+1);
 }
 static inline int pk_species_id(const char* name) {

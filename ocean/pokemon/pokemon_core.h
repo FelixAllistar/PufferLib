@@ -64,8 +64,11 @@ static inline void pk_draft_masks(PKGame* g) {
                 int move=n<4?pk_set_move(fixed,n):0;
                 g->masks[p][move?move-1:PK_MOVE_DONE]=1;
             } else {
-                for(int move=1;move<=164;move++) g->masks[p][move-1]=(uint8_t)pk_move_allowed(mon,move);
-                g->masks[p][PK_MOVE_DONE]=(uint8_t)(n>0);
+                int any=0;
+                for(int move=1;move<=164;move++) any|=g->masks[p][move-1]=(uint8_t)pk_move_allowed(mon,move);
+                // A drafted Pokemon fills all four slots; it stops early only when no legal move is left
+                // (Ditto, Magikarp, Caterpie and the like, or a forbidden-combination dead end).
+                g->masks[p][PK_MOVE_DONE]=(uint8_t)(n>0 && !any);
             }
             continue;
         }
