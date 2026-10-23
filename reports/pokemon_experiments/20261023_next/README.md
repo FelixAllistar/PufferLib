@@ -55,7 +55,18 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   625M 37.8 / 38.9, 750M 32.3 / 39.2, 875M 39.6 / 35.8, 1B 41.7 / 35.8. Better sets, same 35-44 score range.
   Final sets are mostly settled and near-standard (Jynx Lovely Kiss / Psychic / Blizzard / Ice Beam 99%, Jolteon
   Body Slam / Rest / Thunder Wave / Thunderbolt 94%, Zapdos back to Drill Peck), on the same off-meta team.
-- **freepick_omni (live, 731M at 22:00 UTC):** 125M **61.8 / 49.0**, 250M SyntheticRLV2 62.8: free-pick at the
+- **omni_smogon_256 (live, B1 box, started 23:01 UTC):** OMNI recipe from scratch on 256 random Smogon OU teams
+  with fixed Smogon sets (`smogon_pool/`, `ocean/pokemon/build_team_pool.py`), 2B; then `run_freepick_smogon.sh`
+  fast / none / slow (1B each, 81.5% self-play), queued by `queue_b1_smogon.sh` (tmux `smogon_queue`).
+- **freepick_omni (done):** 125M 61.8 / 49.0, **250M 62.8 / 56.6**, 375M 53.5 / 50.7, 500M 58.3 / 38.2,
+  625M 53.8 / 52.4. Draft trajectory (`draft_trajectory.py`): 3,649 distinct teams in the first 10% of free
+  drafts, never an exact OMNI team; Exeggutor and Snorlax (in 12 of 13 league teams) dropped at once, Lapras
+  (in none) rose 20% → 100%. It explored and picked a team that may counter the league.
+- **OMNI pilot test at 2B (`pilot_eval/omni_master_256`):** gar_egg_zap 67.4 / 55.9, zam_egg_cloy_don 64.2 / 73.3,
+  gar_egg_mie_zap 64.9 / 68.8, zam_egg_zap 71.5 / 59.7, zam_egg_mie 61.1 / 56.2, gar_egg_mie 62.2 / 59.7,
+  mie_egg_zap 68.1 / 60.4 (rest and B0 gar pending). OMNI 1.5B zam_egg_cloy_don 71.2 / 67.4, zam_egg_zap 68.4 / 63.9.
+- **big_b1_1024_cont750:** +250M 56.2 / 50.0, +500M 59.4 / 55.2, **+750M 65.3 / 56.6**.
+- **freepick_omni (first notes, 731M at 22:00 UTC):** 125M **61.8 / 49.0**, 250M SyntheticRLV2 62.8: free-pick at the
   level of our best fixed-team policies (earlier free-pick runs peaked around 40). It drafts a standard RBY OU
   team, 100% of free drafts: Alakazam, Chansey, Lapras, Rhydon, Starmie, Tauros, with near-textbook sets
   (Tauros Body Slam / Hyper Beam / Earthquake / Blizzard 99%, Lapras Blizzard / Body Slam / Sing / Thunderbolt
