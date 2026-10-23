@@ -10,6 +10,7 @@ typedef uint8_t obs_t;
 #include "pufferenv.h"
 #include "pokemon_core.h"
 #include "state_bank.h"
+#include "smogon_sets.inc"
 #include "semantic_contract.h"
 #include "core_deck.h"
 #include "behavior.h"
@@ -33,6 +34,20 @@ static int pk_current_selfplay=1;
 // action becomes a uniformly random legal action with probability eps, annealed linearly from
 // env.expert_random_start to 0 at env.expert_random_until of train.total_timesteps.
 static double pk_expert_random_start, pk_expert_random_until=0.5, pk_progress_per_env_step;
+// Move exploration (training only), the move analogue of forced cores: with probability
+// env.force_move_pairs_prob a learner's game deals each drafted Pokemon 2 random legal moves for its
+// first slots (pk_deal_forced_moves); it picks the other 2. Annealed linearly to 0 at
+// env.force_move_pairs_until of training (0 keeps it constant). Frozen opponents draft freely.
+static double pk_move_pairs_prob, pk_move_pairs_until;
+// 1 when the Pokemon's four moves are exactly a Smogon Gen 1 set (any format; smogon_sets.inc).
+static inline int pk_smogon_set(const PKMon* mon) {
+    uint8_t m[4]; memcpy(m,mon->moves,4);
+    for(int i=1;i<4;i++) for(int j=i;j>0 && m[j]<m[j-1];j--) { uint8_t t=m[j]; m[j]=m[j-1]; m[j-1]=t; }
+    if(!m[0] || mon->species<1 || mon->species>149) return 0;
+    for(int k=pk_smogon_set_offset[mon->species];k<pk_smogon_set_offset[mon->species+1];k++)
+        if(!memcmp(pk_smogon_sets[k],m,4)) return 1;
+    return 0;
+}
 static inline void pk_native_configure(Ini* ini, const char* mode) {
     pk_native_count = 0;
     pk_native_fraction = 0;
@@ -233,6 +248,19 @@ static inline void pk_configure(Ini* ini, const char* mode) {
             printf("Pokemon expert randomness: eps %.3g annealed to 0 at %.3g of training (native-league games only)\n",
                 pk_expert_random_start,pk_expert_random_until);
     }
+    pk_move_pairs_prob=pk_move_pairs_until=0;
+    if(!strcmp(mode,"train")) {
+        DictItem* prob=dict_find(puf_ini_section(ini,"env",0),"force_move_pairs_prob");
+        DictItem* until=dict_find(puf_ini_section(ini,"env",0),"force_move_pairs_until");
+        if(prob) pk_move_pairs_prob=prob->value;
+        if(until) pk_move_pairs_until=until->value;
+        if(!(pk_move_pairs_prob>=0 && pk_move_pairs_prob<=1) || !(pk_move_pairs_until>=0 && pk_move_pairs_until<=1)) {
+            fprintf(stderr,"env.force_move_pairs_prob and env.force_move_pairs_until must be in [0,1]\n");exit(1);
+        }
+        if(pk_move_pairs_prob>0)
+            printf("Pokemon forced move pairs: share %.3g of learner games%s%.3g of training\n",pk_move_pairs_prob,
+                pk_move_pairs_until>0?", annealed to 0 at ":", constant; until=",pk_move_pairs_until);
+    }
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;
     if(pk_current_selfplay) {
         puf_ini_put(ini,"env.opponent_team",pk_learner_team);
@@ -369,6 +397,8 @@ struct Log {
     // Learner (seat 0) results by opponent: [0] current self-play, [b] native-league bank b-1.
     float vs_games[SELFPLAY_MAX_BANKS+1], vs_score[SELFPLAY_MAX_BANKS+1];
     float expert_random_sum, expert_random_steps, expert_random_actions;
+    // Learner teams by move drafting: forced pairs vs free; mons whose set is exactly a Smogon set.
+    float move_pair_teams, free_move_teams, smogon_sets_forced, smogon_sets_free;
 };
 struct Env {
     Log log;
@@ -458,6 +488,12 @@ static inline void pk_record_teams(Env* env) {
             env->log.normal_team_samples++;
             for(int i=0;i<6;i++) env->log.normal_team_picks[env->game.teams[p][i].species]++;
         }
+        if(!env->game.reset_source && env->game.fixed_enabled[p]!=1 && env->game.fixed_enabled[p]!=2) {
+            int sets=0;
+            for(int i=0;i<6;i++) sets+=pk_smogon_set(&env->game.teams[p][i]);
+            if(env->game.force_moves[p]) { env->log.move_pair_teams++; env->log.smogon_sets_forced+=sets; }
+            else { env->log.free_move_teams++; env->log.smogon_sets_free+=sets; }
+        }
     }
     env->episodes++;
     if (env->team_log_interval <= 0 ||
@@ -465,10 +501,11 @@ static inline void pk_record_teams(Env* env) {
     char line[4096];
     int n = snprintf(line, sizeof(line),
         "{\"abi\":3,\"rules_sha\":\"" PK_RULES_SHA "\",\"time\":%lld,\"pid\":%ld,\"env\":%u,\"episode\":%llu,\"battle_seed\":\"%llu\","
-        "\"draft_mode\":\"%s\",\"opponent_kind\":\"%s\",\"env_tag\":%d,"
+        "\"draft_mode\":\"%s\",\"move_pairs\":[%d,%d],\"opponent_kind\":\"%s\",\"env_tag\":%d,"
         "\"banks\":[%d,%d],\"result\":%d,\"leads\":[\"%s\",\"%s\"],\"teams\":[",
         (long long)time(NULL), (long)getpid(), env->rng, env->episodes, (unsigned long long)env->game.battle_seed,
         env->game.fixed_enabled[0]==3 || env->game.fixed_enabled[1]==3 ? "forced_core" : env->game.reset_source ? "snapshot" : "normal",
+        env->game.force_moves[0], env->game.force_moves[1],
         pk_native_count>0 && env->tag>0 ? "expert" : env->tag>0 ? "frozen_history" : "current_selfplay",env->tag,
         env->agents[0].policy, env->agents[1].policy, env->game.result,
         pk_species_names[env->game.teams[0][0].species], pk_species_names[env->game.teams[1][0].species]);
@@ -620,6 +657,7 @@ void puf_init(Env* env, Dict* kwargs) {
     memset(env->core_valid,0,sizeof(env->core_valid));
     memset(env->core_counted,0,sizeof(env->core_counted));
     env->reset_rng=env->game.rng ^ UINT64_C(0x76cb834b803aecb3);
+    env->game.move_rng=env->game.rng ^ UINT64_C(0x2545f4914f6cdd1d);
     if (!isfinite(env->reset_state_prob) || env->reset_state_prob<0 || env->reset_state_prob>1 ||
             (env->reset_state_prob>0 && (!pk_state_bank.states || !draft || max_updates!=512 ||
             env->game.fixed_enabled[0] || env->game.fixed_enabled[1] || env->game.fixed_lead[0] || env->game.fixed_lead[1] || env->behavior_enabled ||
@@ -678,9 +716,19 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
     return envs;
 }
 
+static inline void pk_choose_move_pairs(Env* env) {
+    double probability=pk_move_pairs_prob;
+    if(pk_move_pairs_until>0) probability*=fmax(0.0,1.0-env->env_steps*pk_progress_per_env_step/pk_move_pairs_until);
+    for(int p=0;p<2;p++) {
+        int learner=env->agents[p].policy==0 || env->tag==0;
+        env->game.force_moves[p]=learner && probability>0 &&
+            (pk_random(&env->game.move_rng)>>11)*0x1.0p-53 < probability;
+    }
+}
 static inline void pk_episode_start(Env* env) {
     env->episode_steps=0;
     env->reset_bucket=-1;
+    pk_choose_move_pairs(env); // Before any draft reset, including the core path's deferred one.
     if(pk_core_deck.cards) {
         // Parallel workers only request a reset. The serial batch hook supplies
         // cores and publishes the new observations before the next inference.
@@ -860,6 +908,12 @@ void puf_log(Log* log, Dict* out) {
         snprintf(key,sizeof(key),"%s_step_fraction",groups[i]); dict_set(out,key,steps?log->mix_steps[i]/steps:0);
     }
     dict_set(out,"configured_expert_fraction",pk_native_fraction);
+    if(pk_move_pairs_prob>0) {
+        double teams=log->move_pair_teams+log->free_move_teams;
+        dict_set(out,"move_pair_team_fraction",teams?log->move_pair_teams/teams:0);
+    }
+    dict_set(out,"smogon_set_rate_free",log->free_move_teams?log->smogon_sets_free/(6*log->free_move_teams):0);
+    dict_set(out,"smogon_set_rate_forced",log->move_pair_teams?log->smogon_sets_forced/(6*log->move_pair_teams):0);
     if(pk_expert_random_start>0) {
         dict_set(out,"expert_random_eps",log->expert_random_steps?log->expert_random_sum/log->expert_random_steps:0);
         dict_set(out,"expert_random_action_rate",log->expert_random_steps?log->expert_random_actions/log->expert_random_steps:0);

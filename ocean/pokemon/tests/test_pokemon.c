@@ -291,10 +291,51 @@ static void test_top_species_summary(void) {
     dict_clear(&metrics);
     assert(pk_top_species(&metrics,"",0,ids,rates)==0);
 }
+static void test_forced_move_pairs(void) {
+    for(uint64_t seed=1;seed<=200;seed++) {
+        PKGame g={0}; g.rng=seed; g.move_rng=seed*7919; g.draft=1; g.max_updates=512;
+        g.force_moves[0]=1; g.force_moves[1]=0;
+        pk_game_reset(&g);
+        while(g.phase==PK_PHASE_SPECIES) assert(pk_game_step(&g,pk_random_action(g.masks[0],&g.rng),pk_random_action(g.masks[1],&g.rng))==0);
+        assert(g.phase==PK_PHASE_MOVES);
+        for(int i=0;i<6;i++) {
+            int species=g.teams[0][i].species, forced=g.forced_count[0][i];
+            assert(forced==2 || (forced==1 && species==132)); // Ditto knows only Transform
+            if(forced==2) {
+                assert(g.forced_moves[0][i][0]!=g.forced_moves[0][i][1]);
+                assert(pk_moves_legal(species,g.forced_moves[0][i],2));
+            }
+            assert(!g.forced_count[1][i]);
+        }
+        while(g.phase==PK_PHASE_MOVES) {
+            int mon=g.move_index[0], n=mon<6?pk_move_count(&g.teams[0][mon]):4;
+            if(mon<6 && !g.move_stopped[0] && n<g.forced_count[0][mon]) {
+                int allowed=0; for(int a=0;a<PK_ACTIONS;a++) allowed+=g.masks[0][a];
+                assert(allowed==1 && g.masks[0][g.forced_moves[0][mon][n]-1]);
+            }
+            assert(pk_game_step(&g,pk_random_action(g.masks[0],&g.rng),pk_random_action(g.masks[1],&g.rng))==0);
+        }
+        assert(!g.invalid_actions);
+        for(int i=0;i<6;i++) {
+            const PKMon* mon=&g.teams[0][i];
+            for(int k=0;k<g.forced_count[0][i];k++) assert(mon->moves[k]==g.forced_moves[0][i][k]);
+            int legal=0; for(int m=1;m<=164;m++) legal+=pk_move_learnable(mon->species,m);
+            assert(pk_move_count(mon)==(legal<4?legal:4) || pk_move_count(mon)<4); // short only at a dead end
+            assert(pk_mon_legal(mon));
+        }
+    }
+    // Every Smogon set in the table is legal for its species.
+    for(int species=1;species<=149;species++)
+        for(int k=pk_smogon_set_offset[species];k<pk_smogon_set_offset[species+1];k++) {
+            PKMon mon={(uint8_t)species,{0}}; memcpy(mon.moves,pk_smogon_sets[k],4);
+            assert(pk_mon_legal(&mon) && pk_smogon_set(&mon));
+        }
+}
 int main(void) {
     test_top_species_summary();
     test_catalog_coverage();
     test_draft();
+    test_forced_move_pairs();
     test_stable_switch_and_move_reveal();
     test_terminal_reset();
     test_seeded_rollouts();
