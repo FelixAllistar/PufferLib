@@ -2056,6 +2056,38 @@ static void puf_resolve_network(Ini* ini) {
     puf_ini_put(ini, "policy.num_layers", length);
 }
 
+// Training epochs for the run. train.budget = agents (default): total_timesteps counts
+// every agent row, frozen opponents included. learner: it counts learner rows only, so a
+// run's length is its learning budget whatever share of rows frozen policies take.
+static long puf_train_epochs(Ini* ini, long total_agents, long learner_agents, int world_size) {
+    const char* budget = puf_ini_get_str(ini, "train", "budget");
+    assert((!strcmp(budget, "agents") || !strcmp(budget, "learner")) && "train.budget must be agents or learner");
+    long rows = strcmp(budget, "learner") ? total_agents : learner_agents;
+    long batch = rows * (long)puf_ini_get(ini, "train", "horizon");
+    return (long)puf_ini_get(ini, "train", "total_timesteps") / world_size / batch;
+}
+
+// PPO splits the learner's rows into minibatches of whole horizon-length sequences, so the
+// sequence count must divide the learner row count. Frozen policies shrink those rows, so a
+// minibatch valid for total_agents may not be. Use the nearest valid size (the smaller on a
+// tie) and record it in the config; the sweep is told the value the trial actually used.
+static void puf_resolve_minibatch(Ini* ini, Hypers* hypers, int learner_agents) {
+    int horizon = hypers->horizon, requested = hypers->minibatch_size;
+    int want = requested / horizon > 0 ? (requested + horizon / 2) / horizon : 1, best = 0;
+    for (int d = 1; d <= learner_agents; d++) {
+        if (learner_agents % d) continue;
+        if (!best || abs(d - want) < abs(best - want)) best = d;
+    }
+    int resolved = best * horizon;
+    if (resolved == requested) return;
+    fprintf(stderr, "train.minibatch_size %d -> %d: %d sequences must divide %d learner rows\n",
+        requested, resolved, requested / horizon, learner_agents);
+    hypers->minibatch_size = resolved;
+    char value[32];
+    snprintf(value, sizeof(value), "%d", resolved);
+    puf_ini_put(ini, "train.minibatch_size", value);
+}
+
 PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     puf_resolve_network(ini);
     Hypers hypers = {
@@ -2198,8 +2230,10 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     int hidden_size = hypers.hidden_size;
     int num_layers = hypers.num_layers;
     int decoder_output_size = is_continuous ? num_action_heads : act_n;
-    int minibatch_segments = hypers.minibatch_size / hypers.horizon;
     int train_agents = vec->policy_layout[1] * num_buffers;
+    puf_resolve_minibatch(ini, &hypers, train_agents);
+    pufferl->hypers.minibatch_size = hypers.minibatch_size;
+    int minibatch_segments = hypers.minibatch_size / hypers.horizon;
     int B_TT = minibatch_segments * hypers.horizon;
     int horizon = hypers.horizon;
     int agents_per_buf = total_agents / num_buffers;
@@ -2535,10 +2569,10 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     double steps = dash_num(log, "agent_steps",
         (double)p->global_step * p->hypers.world_size);
     double sps = dash_num(log, "SPS", 0);
-    long configured = puf_ini_get(ini, "train", "total_timesteps");
     long local_batch = (long)p->hypers.total_agents * p->hypers.horizon;
-    long local_steps = configured / p->hypers.world_size;
-    double target = (double)((local_steps / local_batch) * local_batch * p->hypers.world_size);
+    long learner_agents = (long)p->vec->policy_layout[1] * p->hypers.num_buffers;
+    double target = (double)puf_train_epochs(ini, p->hypers.total_agents, learner_agents,
+        p->hypers.world_size) * local_batch * p->hypers.world_size;
     double remain_sec = sps > 0 && target > steps ? (target - steps) / sps : 0;
     double rollout = dash_num(log, "perf/rollout", 0);
     double train_time = dash_num(log, "perf/train", 0);
@@ -2847,9 +2881,14 @@ typedef struct {
     float scores[TRAIN_RESULT_MAX_POINTS];
     float costs[TRAIN_RESULT_MAX_POINTS];
     float step_points[TRAIN_RESULT_MAX_POINTS];
+    // Appended fields. Legacy writers (the Python sweep workers) send only the fields
+    // above; the sweep parent accepts both sizes and treats these as unreported (0).
+    float minibatch_size;  // minibatch the trial trained with
+    float learner_steps;   // agent steps of learner rows (frozen-policy rows excluded)
 } TrainResult;
+#define TRAIN_RESULT_LEGACY_BYTES offsetof(TrainResult, minibatch_size)
 #ifdef PUFFER_KAGGRICULTURE_DIRECT
-static_assert(sizeof(TrainResult) == 784, "update the Kag sweep worker's pipe ABI");
+static_assert(TRAIN_RESULT_LEGACY_BYTES == 784, "update the Kag sweep worker's pipe ABI");
 #endif
 
 #define EVAL_RENDER 0
@@ -3284,8 +3323,10 @@ void run_sweep(Ini* ini, const char* exe_path) {
         close(job->fd);
         job->pid = 0;
         active--;
+        bool legacy_result = nread == (int)TRAIN_RESULT_LEGACY_BYTES;
+        if (legacy_result) job->result.minibatch_size = job->result.learner_steps = 0;
 
-        if (nread != (int)sizeof(job->result)
+        if ((nread != (int)sizeof(job->result) && !legacy_result)
                 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
             fprintf(stderr, "sweep worker run=%d failed; marking sample bad\n",
                 job->run);
@@ -3311,6 +3352,16 @@ void run_sweep(Ini* ini, const char* exe_path) {
             }
         }
 #endif
+        // A trial whose learner rows forced another minibatch reports the size it used;
+        // observe the point where it actually ran (clamped to the searched range).
+        if (job->result.minibatch_size > 0) {
+            for (int p = 0; p < space->num; p++) {
+                if (strcmp(params[p].section, "train") || strcmp(params[p].key, "minibatch_size")) continue;
+                Space* range = &space->spaces[p];
+                float used = fminf(range->max, fmaxf(range->min, job->result.minibatch_size));
+                job->sample[p] = space_normalize(range, used);
+            }
+        }
         // points[]: learning-curve downsample, or 1 final score (e.g. selfplay).
         for (int pi = 0; pi < job->result.points; pi++) {
             protein_sweep_observe(protein, job->sample,
@@ -3607,11 +3658,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
     }
 
-    long total_timesteps = puf_ini_get(ini, "train", "total_timesteps");
     long batch_size = puf_ini_get(ini, "vec", "total_agents") *
         puf_ini_get(ini, "train", "horizon");
-    long local_timesteps = total_timesteps / ctx->world_size;
-    long train_epochs = local_timesteps / batch_size;
+    long learner_agents = (long)pufferl->vec->policy_layout[1] * pufferl->hypers.num_buffers;
+    long train_epochs = puf_train_epochs(ini, puf_ini_get(ini, "vec", "total_agents"),
+        learner_agents, ctx->world_size);
     long checkpoint_interval = puf_ini_get(ini, "base", "checkpoint_interval");
     char target_key[128];
     sweep_metric_key(ini, target_key, sizeof(target_key));
@@ -3716,6 +3767,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
         dict_set(&new_log, "SPS", sps);
         dict_set(&new_log, "agent_steps", (double)global_step * pufferl->hypers.world_size);
+        dict_set(&new_log, "learner_steps", (double)global_step * pufferl->hypers.world_size
+            * learner_agents / puf_ini_get(ini, "vec", "total_agents"));
         dict_set(&new_log, "uptime", now - pufferl->start_time);
         dict_set(&new_log, "epoch", (double)pufferl->epoch);
 
@@ -3785,6 +3838,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
         result.cost = dict_get(&new_log, "uptime");
         result.steps = dict_get(&new_log, "agent_steps");
+        result.learner_steps = dict_get(&new_log, "learner_steps");
+        result.minibatch_size = pufferl->hypers.minibatch_size;
         if (episodes || !last_log.size || live_eval_due) {
             dict_clear(&last_log);
             dict_copy(&last_log, &new_log);

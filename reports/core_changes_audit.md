@@ -107,6 +107,31 @@ Tests:
 
 Note: `base.cudagraphs = 0` still enables graphs; only a negative value disables them.
 
+## Learner-row minibatch and step budget (2026-10-23, local 5.0 not pushed; also in the box deploy tree)
+
+Background: since `f44130573` (Sep 27) PPO trains only on learner rows, and frozen-policy rows are
+excluded. That is correct for on-policy PPO, and it won a one-seed Kaggriculture comparison (about 60k
+vs 40k). It left two bookkeeping gaps:
+- a sampled minibatch could stop dividing the shrunken learner batch. The current code asserted; the
+  August snap (`d6f59a9da`) rounded silently and is no longer present;
+- `total_timesteps` counts frozen rows too.
+
+| File | Change | Default effect on other envs |
+|---|---|---|
+| `src/pufferl.cu` | `puf_resolve_minibatch`: at trial start, a minibatch whose sequence count does not divide the learner rows becomes the nearest valid size (logged; written to the config) instead of asserting | Only when the minibatch was invalid, which used to crash |
+| `src/pufferl.cu` | `TrainResult` appends `minibatch_size` and `learner_steps`. The sweep parent accepts the legacy 784-byte packet (Python workers) or the new one, and observes a trial at the minibatch it actually used (clamped to the range) | Legacy workers unchanged; sweeps record true values |
+| `src/pufferl.cu` | `learner_steps` logged every log step; `puf_train_epochs` shared by training and the dashboard | Extra log key only |
+| `src/pufferl.cu`, `config/default.ini` | `train.budget = agents` (default, unchanged) or `learner`: `total_timesteps` counts learner rows only | None unless opted in |
+
+Checks:
+- An 85% Pokemon league run (590 learner rows, minibatch 512) used to assert; now it resolves to 320 and
+  trains.
+- `budget = learner` ran 283,200 learner steps (15 epochs × 590 × 32).
+- `tests/check_sweep_result_packet.sh`: legacy packets are accepted, and a reported minibatch is
+  recorded in the history.
+- Builds pass for pokemon, breakout, poker, goofspiel (`--cu --float`) and kaggriculture (direct-policy
+  ABI assert).
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
