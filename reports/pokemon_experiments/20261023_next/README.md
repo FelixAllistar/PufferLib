@@ -9,6 +9,8 @@ vendor, scripts, build.sh) and rebuilt with `./build.sh pokemon`; previous sourc
 | `league_gen2_gar` (`run_league_gen2.sh`) | window box 57306307 | Does training against the upgraded league (best of B0/B1 per team) beat B1's round-26 league? Only the league changes. 700M from scratch. | B1 gar_egg_zap @700M 61.8 / 58.0 |
 | `b1_repro_5.0` (`run_b1_repro.sh`) | window box | Control added after league gen 2 scored 48.6 / 52.1: B1's exact command (original round-26 league) on the 5.0 build. Reproduces B1 → the upgraded league hurt; ~50 → the build changed training. | B1 61.8 / 58.0 |
 | `freepick_warm` (`run_freepick_warm.sh`) | B1 box 56007315 | Free-pick v2 settings started from the B1 gar_egg_zap 700M policy, 1B. Is free-pick's ~40 plateau the from-scratch start, or drafting its own team? | free-pick v1 33.7 / 49.7, v2 33.7 / 33.3; B1 61.8 / 58.0 |
+| `fixed_fpteam` (`run_fixed_fpteam.sh`) | B1 box | Team or moves? B1's recipe with species fixed to the warm start's free-pick team (Articuno, Jolteon, Jynx, Lapras, Tauros, Zapdos); the policy picks moves. ~60: the team is fine, free-pick's gap is move choice and skill. ~40: the team is weak. | b1_repro_5.0 |
+| `meta_rotation` (`run_meta_rotation.sh`, queued by `queue_window_meta.sh`) | window box, after b1_repro_5.0 | Free-pick warm start whose forced 3-species cores come from 15 standard OU species (0.75 of games, constant): does piloting the meta species fix the team and the movesets? | freepick_warm, B1 |
 
 ## Results
 
