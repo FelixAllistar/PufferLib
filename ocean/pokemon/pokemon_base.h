@@ -25,8 +25,9 @@ static PKNativeBank pk_native_banks[SELFPLAY_MAX_BANKS];
 // OMNI training (training only): env.learner_team_pool names a league manifest. Each learner seat plays one
 // of its bank teams (species constraint and lead), chosen uniformly per game; the policy still drafts the
 // moves. Learner win rate per pool team logs as team_<name>_score.
+#define PK_TEAM_POOL_MAX 1024 // per-team scores are logged only for pools of up to SELFPLAY_MAX_BANKS
 typedef struct { char team[256], lead[64], name[64]; } PKTeamChoice;
-static PKTeamChoice pk_team_pool[SELFPLAY_MAX_BANKS];
+static PKTeamChoice pk_team_pool[PK_TEAM_POOL_MAX];
 static int pk_team_pool_count;
 static inline void pk_parse_fixed_team(PKGame* game, int player, const char* text);
 static inline void pk_parse_lead(PKGame* game, int player, const char* text);
@@ -275,7 +276,7 @@ static inline void pk_configure(Ini* ini, const char* mode) {
         Ini manifest={0};
         puf_ini_load_file(&manifest,pool->str);
         int count=(int)puf_ini_get(&manifest,"native","banks");
-        if(count<1 || count>SELFPLAY_MAX_BANKS) { fprintf(stderr,"learner_team_pool %s: need 1..%d banks\n",pool->str,SELFPLAY_MAX_BANKS); exit(1); }
+        if(count<1 || count>PK_TEAM_POOL_MAX) { fprintf(stderr,"learner_team_pool %s: need 1..%d banks\n",pool->str,PK_TEAM_POOL_MAX); exit(1); }
         if(puf_ini_get(ini,"env","force_core_combos")!=0 || puf_ini_get(ini,"env","reset_state_prob")!=0) {
             fprintf(stderr,"learner_team_pool is incompatible with forced cores and snapshot resets\n"); exit(1);
         }
@@ -917,7 +918,7 @@ void puf_step(Env* env) {
         env->log.mix_games[mix_group]++;
         float score = (outcome + 1.0f) * 0.5f;
         if(env->tag>=0 && env->tag<=SELFPLAY_MAX_BANKS) {env->log.vs_games[env->tag]++; env->log.vs_score[env->tag]+=score;}
-        if(env->pool_team[0]>=0) {env->log.pool_games[env->pool_team[0]]++; env->log.pool_score[env->pool_team[0]]+=score;}
+        if(env->pool_team[0]>=0 && env->pool_team[0]<SELFPLAY_MAX_BANKS) {env->log.pool_games[env->pool_team[0]]++; env->log.pool_score[env->pool_team[0]]+=score;}
         env->agents[0].terminals[0] = env->agents[1].terminals[0] = 1;
         env->log.perf += score;
         env->log.score += score;
@@ -961,7 +962,7 @@ void puf_log(Log* log, Dict* out) {
         double teams=log->move_pair_teams+log->free_move_teams;
         dict_set(out,"move_pair_team_fraction",teams?log->move_pair_teams/teams:0);
     }
-    for(int i=0;i<pk_team_pool_count;i++) {
+    for(int i=0;i<pk_team_pool_count && pk_team_pool_count<=SELFPLAY_MAX_BANKS;i++) {
         char key[96]; snprintf(key,sizeof(key),"team_%s_score",pk_team_pool[i].name);
         dict_set(out,key,log->pool_games[i]?log->pool_score[i]/log->pool_games[i]:0);
     }
