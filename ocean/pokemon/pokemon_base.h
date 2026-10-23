@@ -24,6 +24,9 @@ static PKNativeBank pk_native_banks[SELFPLAY_MAX_BANKS];
 static int pk_native_count;
 static double pk_native_fraction;
 static double pk_core_probability = 1;
+// env.force_core_until in (0,1]: the forced-core share falls linearly from force_core_prob to 0
+// at that fraction of training, so late training is all free drafts. 0 keeps it constant.
+static double pk_core_until = 0;
 static char pk_learner_team[256]="None", pk_learner_lead[64]="None";
 static int pk_current_selfplay=1;
 // Opponent-randomness curriculum (training only): in native-league games the frozen bank's
@@ -236,7 +239,7 @@ static inline void pk_configure(Ini* ini, const char* mode) {
         puf_ini_put(ini,"env.opponent_lead",pk_learner_lead);
     }
     pk_core_free(&pk_core_deck);
-    pk_core_probability=1;
+    pk_core_probability=1; pk_core_until=0;
     DictItem* core_option=dict_find(puf_ini_section(ini,"env",0),"force_core_combos");
     double core=core_option?core_option->value:0;
     if(core!=0 && core!=1) { fprintf(stderr,"force_core_combos must be 0 or 1\n"); exit(1); }
@@ -251,6 +254,11 @@ static inline void pk_configure(Ini* ini, const char* mode) {
         if(!isfinite(pk_core_probability) || pk_core_probability<0 || pk_core_probability>1) {
             fprintf(stderr,"force_core_prob must be in [0,1]\n"); exit(1);
         }
+        DictItem* until=dict_find(puf_ini_section(ini,"env",0),"force_core_until");
+        pk_core_until=until?until->value:0;
+        if(!(pk_core_until>=0 && pk_core_until<=1)) { fprintf(stderr,"force_core_until must be in [0,1]\n"); exit(1); }
+        if(pk_core_until>0)
+            printf("Pokemon forced cores: share %.3g annealed to 0 at %.3g of training\n",pk_core_probability,pk_core_until);
         if(puf_ini_get(ini,"env","reset_state_prob")!=0 ||
                 puf_ini_get(ini,"env","team_selection")!=1 ||
                 puf_ini_get(ini,"vec","num_buffers")!=1 || puf_ini_get(ini,"base","async")!=0 ||
@@ -705,8 +713,10 @@ static inline void pk_core_flush(Env* envs, int count) {
         env->core_just_drafted=0;
         if(!env->core_pending) continue;
         if(env->core_episode_selected<0) {
-            env->core_episode_selected = pk_core_probability>=1 || (pk_core_probability>0 &&
-                (pk_random(&env->reset_rng)>>11)*0x1.0p-53 < pk_core_probability);
+            double probability=pk_core_probability;
+            if(pk_core_until>0) probability*=fmax(0.0,1.0-env->env_steps*pk_progress_per_env_step/pk_core_until);
+            env->core_episode_selected = probability>=1 || (probability>0 &&
+                (pk_random(&env->reset_rng)>>11)*0x1.0p-53 < probability);
         }
         for(int p=0;p<2;p++) {
             if(env->tag>0 && env->agents[p].policy!=0) continue; // Frozen opponents keep their own draft/team.
