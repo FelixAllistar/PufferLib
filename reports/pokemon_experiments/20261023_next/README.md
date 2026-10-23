@@ -46,7 +46,10 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
   Body Slam / Rest / Thunder Wave / Thunderbolt 94%, Zapdos back to Drill Peck), on the same off-meta team.
 - **omni_master_256:** started 18:03 UTC on the B1 box, 223K steps/s (2B in about 2.5 h); logs team_<name>_score.
 - **meta_rotation:** 1B final 44.8 / 41.0 (its best; 875M 40.6 / 38.9), slightly above the other free-pick runs.
-- **big_b1_1024 (live, 88K steps/s):** 250M SyntheticRLV2 36.5 (B1 256x2 had 50.7 / 52.1 at 350M).
+- **big_b1_1024 (live, 88K steps/s):** 250M 36.5 / 43.8 (B1 256x2 had 50.7 / 52.1 at 350M). Queued after it
+  (`queue_big_b1_next.sh`, tmux `big_b1_next`): if the mean score rose 250M → 500M → 750M, warm restart to 3B
+  (`run_big_b1_cont.sh`: 1B weights + .magnet, 2B more at 2.5e-4 → 5e-5); otherwise the LR scan
+  (`run_big_b1_lr.sh` 1.5e-4 then 2.5e-4, 1B each from scratch).
 - **freepick_warm:** trained to 1B; evals pending (the first watcher never started: `eval_dir.sh` was only
   on the window box, and the tmux session lacked `-c /workspace/PufferLib`; fixed and restarted).
 
