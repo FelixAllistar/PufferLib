@@ -69,7 +69,18 @@ Banks are shared across tables; each opponent seat has separate recurrent
 state, cleared at hand reset. Only acting opponents run inference. This is
 snapshot self-play with one learning seat per table, and avoids inactive policy
 rows or mixing different players' rewards/RNN states. The button rotates, so
-the learning seat covers every position. Frozen inference currently runs on CPU.
+the learning seat covers every position.
+
+Frozen inference runs inline on CPU by default. `--env.league_gpu=1` (CUDA trainer
+builds) instead pauses each table when a bank seat must act; after the trainer
+steps a buffer, every waiting table contributes one row to a batched cuBLAS
+forward (rows grouped by bank, MinGRU state kept on the GPU per table and seat),
+and each table samples and continues on CPU with the same RNG draws as the inline
+path, repeating until none waits. `test_league_gpu.cu` checks the forward against
+a double-precision reference and that CPU- and GPU-league envs stay identical
+(100% of tables over 160k hands with the gen0 H128/L3 bank). With that bank on a
+4-core machine it trains at about 70K steps/s against under 3K inline; tiny banks
+(H32/L2) are faster inline.
 
 The bank is capped at 16 models, H128/L4; default six-seat H64/L2 weights occupy
 127,744 bytes/model. Eight default models occupy 1,021,952 bytes total. Per-table
