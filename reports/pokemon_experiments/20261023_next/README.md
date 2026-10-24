@@ -124,3 +124,16 @@ Hyper Beam / Earthquake / Blizzard.
 
 Every free-pick run avoids Chansey and Snorlax, the two most-used Gen 1 OU Pokémon, and converges on a
 team that beats the frozen league it trains against.
+
+## Final results (overnight 2026-10-24; both boxes backed up to pufferlib/runs/pokemon_{b1,window}_box_*_backup, then destroyed)
+
+- **OMNI_MASTER 1024x2 (2B):** gar_egg_zap 69.8 / 65.6 (1B), 76.0 / 57.3 (2B); zam_egg_cloy_don 72.9 / 68.8 (1B),
+  **77.1 / 69.4** (2B, best score so far); zam_egg_zap 76.0 / 59.0 (1B), 71.5 / 59.7 (2B). Beats OMNI 256 on most cells.
+- **Free-pick from Smogon OMNI (1B each, 81.5% self-play):** fast best 63.9 / 54.9 (500M); **none best 72.6 / 55.2**
+  (500M), final 57.3 / 57.3; slow best 70.5 / 55.6 (625M). Slow to start (~30 at 125M for fast/slow), then 57–73,
+  similar to or above free-pick from OMNI_MASTER (62.8 / 56.6).
+- **Smogon OMNI 256 (2B):** gar_egg_zap with Smogon sets 59.4 / 59.7, zam_egg_cloy_don 47.2 / 50.7, free-pick's
+  Lapras team 50.7 / 49.0; random pool teams 12–45.
+- **Pilot test, B0 gar (single-team policy) on other teams:** its own team 62.5 / 57.6, every other team 2–51 vs
+  SyntheticRLV2 (e.g. zam_egg_cloy_don 2.1 / 7.6). OMNI 256 scores 55–72 on all 13. Single-team policies do not
+  transfer; OMNI does. OMNI on free-pick v1's Jolteon team: 25.0 / 36.5 (that team is weak for everyone).
