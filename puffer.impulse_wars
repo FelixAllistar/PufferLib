@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IW_LAUNCHER_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+exec bash "$IW_LAUNCHER_DIR"/./ocean/impulse_wars/launch.sh "$IW_LAUNCHER_DIR"/puffer.elf "$@"
