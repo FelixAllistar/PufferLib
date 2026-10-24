@@ -58,6 +58,9 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
 - **omni_smogon_256 (live, B1 box, started 23:01 UTC):** OMNI recipe from scratch on 256 random Smogon OU teams
   with fixed Smogon sets (`smogon_pool/`, `ocean/pokemon/build_team_pool.py`), 2B; then `run_freepick_smogon.sh`
   fast / none / slow (1B each, 81.5% self-play), queued by `queue_b1_smogon.sh` (tmux `smogon_queue`).
+- **omni_master_1024 (queued, window box):** `run_omni.sh 1024`, the OMNI_MASTER recipe and hyperparameters at
+  1024x2, 2B, scored by `eval_omni.sh`. Starts after big_b1_1024_cont750 is trained and scored; the box is
+  redeployed to the latest commit first (it lacked the team-pool code).
 - **omni_smogon_256 (live, 1.4B at 01:10 UTC):** 500M on teams with Smogon OU sets: gar_egg_zap_ou 55.9 / 67.0,
   zam_egg_cloy_don_ou 41.0 / 55.6, freepick_omni_team 42.7 / 43.4, smogon_000 (random pool team) 18.1 vs
   SyntheticRLV2. Each checkpoint takes ~1.5 h to score (7 teams, GPU shared with training and the pilot evals).
