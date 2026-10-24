@@ -1,0 +1,20 @@
+PUFFER_SWEEP_HISTORY_V1 17
+policy.hidden_size 32 256 uniform_pow2
+policy.num_layers 1 4 int_uniform
+vec.total_agents 4096 16384 uniform_pow2
+train.horizon 16 64 uniform_pow2
+train.minibatch_size 1024 16384 uniform_pow2
+train.learning_rate 2.99999992e-05 0.00300000003 log_normal
+train.ent_coef 9.99999975e-05 0.100000001 log_normal
+train.gamma 0.949999988 1 uniform
+train.gae_lambda 0.800000012 0.995000005 logit_normal
+train.replay_ratio 1 4 uniform
+train.clip_coef 0.0500000007 0.400000006 uniform
+train.vf_clip_coef 0.0500000007 1 log_normal
+train.vf_coef 0.100000001 2 log_normal
+train.max_grad_norm 0.25 3 log_normal
+train.momentum 0.800000012 0.99000001 logit_normal
+train.anneal_ent_coef 0 1 int_uniform
+train.min_ent_coef_ratio 0.00999999978 1 log_normal
+
+0 nan 3600 1 64 2 8192 32 4096 0.000300000072 0.00100000005 1 0.899999976 1 0.200000003 0.199999988 2.00000024 1.5 0.949999988 0 0.100000001
