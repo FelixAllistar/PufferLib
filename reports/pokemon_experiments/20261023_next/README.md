@@ -58,6 +58,14 @@ team-log rows gain `move_pairs`. Both boxes are redeployed with these once their
 - **omni_smogon_256 (live, B1 box, started 23:01 UTC):** OMNI recipe from scratch on 256 random Smogon OU teams
   with fixed Smogon sets (`smogon_pool/`, `ocean/pokemon/build_team_pool.py`), 2B; then `run_freepick_smogon.sh`
   fast / none / slow (1B each, 81.5% self-play), queued by `queue_b1_smogon.sh` (tmux `smogon_queue`).
+- **omni_smogon_256 (live, 1.4B at 01:10 UTC):** 500M on teams with Smogon OU sets: gar_egg_zap_ou 55.9 / 67.0,
+  zam_egg_cloy_don_ou 41.0 / 55.6, freepick_omni_team 42.7 / 43.4, smogon_000 (random pool team) 18.1 vs
+  SyntheticRLV2. Each checkpoint takes ~1.5 h to score (7 teams, GPU shared with training and the pilot evals).
+- **OMNI pilot test, all 13 league teams at 2B:** 55.6–71.5 vs SyntheticRLV2, 51.4–73.3 vs TaurosV0; also
+  jynx_egg_zap 68.1 / 60.1, jynx_mie_don 66.0 / 51.4, mie_egg_cloy 68.8 / 64.6, jynx_egg_gar_zap 60.4 / 52.8,
+  zam_egg_gar 55.6 / 55.9, mie_egg_don 66.7 / 59.0. Free-pick team and B0 gar's 14 teams still scoring.
+- **big_b1_1024_cont750:** +1B 56.2 / 56.2, +1.25B 56.9 / 55.2, +1.5B SyntheticRLV2 57.6: flat near 56–57 after
+  the +750M peak (65.3 / 56.6).
 - **freepick_omni (done):** 125M 61.8 / 49.0, **250M 62.8 / 56.6**, 375M 53.5 / 50.7, 500M 58.3 / 38.2,
   625M 53.8 / 52.4. Draft trajectory (`draft_trajectory.py`): 3,649 distinct teams in the first 10% of free
   drafts, never an exact OMNI team; Exeggutor and Snorlax (in 12 of 13 league teams) dropped at once, Lapras
