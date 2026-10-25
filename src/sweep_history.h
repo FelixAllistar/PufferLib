@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
+#include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 typedef struct {
@@ -23,8 +25,26 @@ static void puf_sweep_history_error(const char* path, const char* reason) {
 
 // A locked, append-only record of completed trials. Parameters are stored in
 // their actual units so history remains readable independently of Protein.
+// A history written for different search parameters is moved aside (path.old-<time>) and a fresh one
+// started, so changing the search never blocks a sweep. Missing parent directories are created.
+static void puf_sweep_history_move_aside(FILE* fp, const char* path, const char* reason) {
+    char aside[1100];
+    snprintf(aside, sizeof(aside), "%s.old-%ld", path, (long)time(NULL));
+    fclose(fp);
+    if (rename(path, aside)) { perror(aside); exit(1); }
+    fprintf(stderr, "Sweep history %s: %s; moved it to %s and starting a fresh history\n", path, reason, aside);
+}
+
 static FILE* puf_sweep_history_open(const char* path, PufSweepHistoryParam* defs,
         int dim, PufSweepHistoryReplay replay, void* ctx, int* completed, int* next_run) {
+    char parent[1024];
+    snprintf(parent, sizeof(parent), "%s", path);
+    for (char* c = parent + 1; *c; c++) {
+        if (*c != '/') continue;
+        *c = 0;
+        if (mkdir(parent, 0777) && errno != EEXIST) { perror(parent); exit(1); }
+        *c = '/';
+    }
     FILE* fp = fopen(path, "a+");
     if (!fp) { perror(path); exit(1); }
     if (flock(fileno(fp), LOCK_EX | LOCK_NB))
@@ -43,14 +63,18 @@ static FILE* puf_sweep_history_open(const char* path, PufSweepHistoryParam* defs
     }
     char magic[64]; int count;
     if (fscanf(fp, "%63s %d", magic, &count) != 2 ||
-            strcmp(magic, "PUFFER_SWEEP_HISTORY_V1") || count != dim)
-        puf_sweep_history_error(path, "unsupported format or parameter count");
+            strcmp(magic, "PUFFER_SWEEP_HISTORY_V1") || count != dim) {
+        puf_sweep_history_move_aside(fp, path, "different format or parameter count");
+        return puf_sweep_history_open(path, defs, dim, replay, ctx, completed, next_run);
+    }
     for (int i = 0; i < dim; i++) {
         char key[128], distribution[64]; float low, high;
         if (fscanf(fp, "%127s %f %f %63s", key, &low, &high, distribution) != 4 ||
                 strcmp(key, defs[i].key) || strcmp(distribution, defs[i].distribution) ||
-                low != defs[i].min || high != defs[i].max)
-            puf_sweep_history_error(path, "search parameter names/ranges changed");
+                low != defs[i].min || high != defs[i].max) {
+            puf_sweep_history_move_aside(fp, path, "search parameter names/ranges changed");
+            return puf_sweep_history_open(path, defs, dim, replay, ctx, completed, next_run);
+        }
     }
     float* values = (float*)calloc(dim, sizeof(float));
     int previous = -1;

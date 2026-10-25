@@ -3000,6 +3000,7 @@ typedef struct {
     pid_t pid;
     float* sample;
     TrainResult result;
+    char log[512];  // the worker's stderr; kept only if it fails
 } SweepJob;
 
 static void sweep_replay_observation(void* context, const float* values,
@@ -3184,12 +3185,22 @@ void run_sweep(Ini* ini, const char* exe_path) {
     // Row 0 = staging for suggest; rows 1..parallel = per-slot copies for observe.
     float* samples = (float*)calloc((parallel + 1) * space->num, sizeof(float));
     SweepJob* jobs = (SweepJob*)calloc(parallel, sizeof(SweepJob));
-    int failed_workers = 0;
+    int failed_workers = 0, consecutive_failures = 0;
+    DictItem* consecutive_option = dict_find(sweep_options, "max_consecutive_failures");
+    int max_consecutive_failures = consecutive_option ? (int)consecutive_option->value : 10;
     int next_run_id = 0;
     int completed = 0;
     int active = 0;
     FILE* history = NULL;
     const char* history_path = puf_ini_get_str(ini, "sweep", "history_path");
+    // history_path = None still records every trial: an automatic per-sweep file under the log dir
+    // (resume by pointing history_path at it). Needs final-score trials (downsample = 1).
+    char auto_history[512];
+    if ((!strcmp(history_path, "None") || !*history_path) && downsample == 1) {
+        snprintf(auto_history, sizeof(auto_history), "%s/%s/sweep_%ld.history",
+            puf_ini_get_str(ini, "base", "log_dir"), puf_ini_get_str(ini, "base", "env_name"), (long)time(NULL));
+        history_path = auto_history;
+    }
     if (strcmp(history_path, "None") && *history_path) {
         if (downsample != 1) {
             fprintf(stderr, "Sweep history requires sweep.downsample=1 (final scores)\n");
@@ -3338,6 +3349,13 @@ void run_sweep(Ini* ini, const char* exe_path) {
             posix_spawn_file_actions_t actions;
             posix_spawn_file_actions_init(&actions);
             posix_spawn_file_actions_addclose(&actions, pipefd[0]);
+            // Each worker's stderr goes to <log_dir>/<env>/<run_id>.err, kept only if the trial fails.
+            char err_dir[400];
+            snprintf(err_dir, sizeof(err_dir), "%s/%s", puf_ini_get_str(ini, "base", "log_dir"),
+                puf_ini_get_str(ini, "base", "env_name"));
+            mkdir_p(err_dir);
+            snprintf(job.log, sizeof(job.log), "%s/%s.err", err_dir, run_id);
+            posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, job.log, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (!live) {
                 posix_spawn_file_actions_addopen(
                     &actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
@@ -3379,17 +3397,33 @@ void run_sweep(Ini* ini, const char* exe_path) {
 
         if ((nread != (int)sizeof(job->result) && !legacy_result)
                 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            fprintf(stderr, "sweep worker run=%d failed; marking sample bad\n",
-                job->run);
+            fprintf(stderr, "sweep worker run=%d failed; marking sample bad. Log %s:\n", job->run, job->log);
+            FILE* err = fopen(job->log, "r");
+            if (err) {
+                char lines[5][256] = {{0}}; int count = 0;
+                while (fgets(lines[count % 5], sizeof(lines[0]), err)) count++;
+                for (int k = count > 5 ? count - 5 : 0; k < count; k++) fprintf(stderr, "    %s", lines[k % 5]);
+                fclose(err);
+            }
             protein_sweep_observe(protein, job->sample, NAN, max_cost, 1);
             if (history) {
                 for (int p = 0; p < n_params; p++)
                     samples[p] = space_unnormalize(&space->spaces[p], job->sample[p]);
                 puf_sweep_history_append(history, job->run, samples, n_params, NAN, max_cost, 1);
             }
+            // Stop on a run of failures (a broken environment, e.g. GPU out of memory) instead of burning
+            // through max_failures samples that all fail for the same reason.
+            if (++consecutive_failures >= max_consecutive_failures) {
+                fprintf(stderr, "Stopping sweep: %d trials in a row failed (sweep.max_consecutive_failures); "
+                    "see the logs above. The history keeps every completed trial; restart to resume.\n",
+                    consecutive_failures);
+                exit(1);
+            }
             assert(++failed_workers < max_failures && "too many failed sweep workers; inspect trial logs");
             continue;
         }
+        consecutive_failures = 0;
+        unlink(job->log);
         // A stopped Mario worker reports the budget it actually trained. Keep
         // that point at its actual cost coordinate rather than the requested
         // multi-billion-step budget. Completed rollout rounding is negligible.

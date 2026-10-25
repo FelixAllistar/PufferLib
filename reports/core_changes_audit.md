@@ -167,6 +167,16 @@ Before syncing, every line that existed only on a box was checked: all were olde
 has replaced (cuBLAS handles, step budget, sweep packet, draw_rate). Previous sources:
 `/workspace/before_5.0_sync_20261023.tgz`, `puffer.before_5.0_sync`, `private_adapter.so.before_5.0_sync`.
 
+## Sweep robustness (2026-10-25, local 5.0)
+
+| Files | What | Affects other envs? |
+|---|---|---|
+| `src/sweep_history.h` | A history whose parameters or format differ is moved aside (`path.old-<time>`) and a fresh one started, instead of exiting; missing parent directories are created. | Only sweeps with a history |
+| `src/pufferl.cu` (`run_sweep`) | `history_path = None` now writes an automatic `<log_dir>/<env>/sweep_<time>.history` (downsample 1), so results survive a crash. Each worker's stderr goes to `<log_dir>/<env>/<run_id>.err` (deleted on success) and its last lines are printed on failure. The sweep stops after `sweep.max_consecutive_failures` (default 10) failures in a row instead of spending `max_failures` samples. | All sweeps; trial stderr no longer prints to the terminal (it is in the .err file) |
+| `config/default.ini` | `[sweep] max_consecutive_failures = 10` | Default for all sweeps |
+
+Motivated by a poker sweep that ran 73 good trials, then failed ~1,000 trials in a row (probably GPU memory taken by Windows apps on a 3 GB card) with every error lost to terminal scrollback.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
