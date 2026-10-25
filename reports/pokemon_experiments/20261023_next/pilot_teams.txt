@@ -13,3 +13,6 @@ jynx_egg_gar_zap species:124,103,94,145,143,128 124
 zam_egg_gar species:65,103,94,113,143,128 65
 mie_egg_don species:121,103,112,113,143,128 121
 freepick_jolteon species:144,135,124,131,128,145 None
+zam_cha_lap_don_mie_tau species:65,113,131,112,121,128 None
+zam_cha_egg_lap_tau_zap species:65,113,103,131,128,145 None
+zam_cha_gol_lap_tau_zap species:65,113,76,131,128,145 None
