@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include "native.c"
 
 void check(Poker* g, int t) {
@@ -76,6 +77,21 @@ int main(int argc, char** argv) {
                     poker_observe(g, t, p, after);
                     assert(!memcmp(before, after, sizeof(before)));
                     g->hole[other][0][t] = saved;
+                    // Card features: own hole cards one-hot, pair/suited flags, board counts, made-hand class.
+                    const float* f = before + POKER_OBS - POKER_CARD_FEATURES;
+                    uint8_t a = g->hole[p][0][t], b = g->hole[p][1][t];
+                    float ranks = 0, boards = 0, classes = 0;
+                    for (int i = 0; i < 13; i++) ranks += f[i] + f[17 + i];
+                    for (int i = 0; i < 17; i++) boards += f[36 + i];
+                    for (int i = 0; i < 9; i++) classes += f[53 + i];
+                    int board_n = g->street[t] ? g->street[t] + 2 : 0;
+                    assert(f[a >> 2] == 1 && f[13 + (a & 3)] == 1 && f[17 + (b >> 2)] == 1 && f[30 + (b & 3)] == 1);
+                    assert(ranks == 2 && f[34] == ((a >> 2) == (b >> 2)) && f[35] == ((a & 3) == (b & 3)));
+                    assert(fabsf(boards - 0.45f * board_n) < 1e-5f && classes == (board_n ? 1 : 0));
+                    for (int i = 0; i < POKER_CARD_FEATURES; i++) assert(f[i] >= 0 && f[i] <= 1);
+                    int r0 = a >> 2, r1 = b >> 2, hi = r0 > r1 ? r0 : r1, lo = r0 < r1 ? r0 : r1;
+                    float strength = (r0 == r1 ? 30 + 3 * hi : 2 * hi + lo + 4 * ((a & 3) == (b & 3)) + 4 * (hi - lo <= 2)) / 66.0f;
+                    assert(f[62] == strength && (board_n && board_n < 5 ? 1 : f[66] == 0 && f[67] == 0));
                 }
                 int32_t action;
                 if (mode == 3) {

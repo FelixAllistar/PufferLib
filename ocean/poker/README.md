@@ -302,3 +302,20 @@ Kernel benchmarks include dealing, actions and settlement, but exclude
 observation construction and neural inference. See the
 [implementation report](../../reports/poker/20261014/implementation.md) for
 measured rates, validation evidence and remaining work.
+
+## Evaluation panel, archetypes and live self-play pool (2026-10-25)
+
+gen0 and the first gen1 attempts exploited one opponent type (blind raising vs bots, calling vs blind raisers), so:
+
+- `archetypes.h`: scripted panel opponents, bot IDs 8 maniac (bets about pot most of the time, never folds),
+  9 station (always checks/calls), 10 tight (plays only strong hands, bets equity, calls only with pot odds).
+- `panel.c`: `build/poker/panel WEIGHTS HIDDEN LAYERS [--hands N] [--vs CHECKPOINT ...]` scores one policy seat vs five
+  copies of Rules, Range and each archetype (and of any given checkpoints), plus card sense and a self-play script
+  test. Its PANEL line gives mean and worst BB/hand over the bots.
+- `policy.h`: the CPU forward and league sample without the trainer adapter (also the web game's reference).
+- Observation: card features (rank/suit one-hots, pair/suited, board counts, made-hand class) and rule hints
+  (preflop strength, pot odds, call/stack, stack/pot, flush and straight draws, hole cards improving the board);
+  POKER_CARD_FEATURES in core.h. The env logs card_sense and skill.
+- Live pool: `env.league_pool_dir` (GPU league) adds each checkpoint of the running training to the opponent pool,
+  up to 128 (`POKER_LEAGUE_MAX`), with `env.league_active` snapshots active at a time. One continuous self-play
+  run replaces league.py stints. Example: leagues/poker/gen1_selfplay/run.sh.

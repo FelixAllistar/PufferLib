@@ -1,0 +1,230 @@
+[base]
+env_name = poker
+seed = 73
+checkpoint_interval = 0
+# gen1 sweep (2026-10-25): from scratch. The observation gained card features (ocean/poker/core.h
+# POKER_CARD_FEATURES), so gen0 (106 inputs) cannot be loaded. The gen0 league sweep config is
+# config/poker.ini.gen0_league_sweep.
+load_model_path = None
+async = 1
+cudagraphs = 1
+
+[vec]
+total_agents = 16384
+num_buffers = 2
+num_threads = 4
+num_policies = 1
+hist_policy_percent = 0
+
+[policy]
+architecture = puffernet
+hidden_size = 128
+num_layers = 3
+
+[env]
+num_agents = 1
+num_players = 6
+starting_stack = 20000
+bot_policy = 7
+# Active IDs: 1 rules control, 4 Fullhouse, 7 range. Zero uses bot_policy;
+# otherwise bit i enables policy i once per seat. 146 mixes all three.
+# gen1: each opponent seat is Rules or Range (130), no frozen networks.
+native_baseline_mask = 130
+# 0 uses the build default. 32, 64 and 128 choose the range sampling budget.
+equity_samples = 0
+# Public table statistics persist across hands; only the range policy uses them.
+native_history = 0
+seed = 73
+# gen0 league: each opponent seat is the range bot (bot_policy 7) with probability rules_fraction,
+# otherwise gen0 (leagues/poker/gen0). Frozen opponents run on CPU, so all trainer rows are learner rows.
+native_league = None
+# 1: league seats run as one batched GPU forward per round (ocean/poker/poker.h); 0: inline on CPU.
+league_gpu = 1
+# Live pool: this run's checkpoint directory; each new checkpoint joins the opponent pool (up to 128, oldest
+# replaced). Needs league_gpu = 1 and a native_league manifest (it may list 0 banks).
+league_pool_dir = None
+# Live pool: opponents come from this many snapshots at a time (the newest plus a random sample, redrawn every
+# 20 s), which keeps the GPU league fast as the pool grows.
+league_active = 8
+# Live pool ramp: the bot share of opponent seats falls from 1 to rules_fraction as the pool grows to this many
+# snapshots (0 = off).
+league_ramp = 0
+rules_fraction = 0.25
+
+[selfplay]
+# Native acting-opponent banks are frozen per stint by ocean/poker/league.py.
+# Keep the trainer's simultaneous-row selfplay pool off for this adapter.
+enabled = 0
+
+[train]
+# gen1 sweep: trial 0 is the gen0 recipe (mega-sweep trial 99, LR/entropy/magnet annealing on), from scratch
+# with card features against Rules + Range bots.
+total_timesteps = 100000000
+anneal_lr = 1
+learning_rate = 0.003
+gamma = 0.95
+gae_lambda = 0.989157677
+reward_clip = 0
+horizon = 16
+minibatch_size = 1024
+replay_ratio = 1
+clip_coef = 0.391240656
+vf_clip_coef = 0.938034117
+vf_coef = 0.275439382
+max_grad_norm = 0.25
+momentum = 0.940657675
+ent_coef = 0.000145730155
+anneal_ent_coef = 1
+min_ent_coef_ratio = 0.01
+magnet_coef = 0.0128853433
+magnet_tau = 0.00130456768
+magnet_reverse = 1
+anneal_magnet_coef = 1
+[sweep]
+# skill = BB/hand vs the bots + 2 * card_sense (ocean/poker/poker.h). Score alone picks card-blind
+# aggression: gen0 wins +2.5 BB/hand vs Range and Rules while playing every hand alike.
+metric = skill
+goal = maximize
+max_runs = 500
+downsample = 1
+max_suggestion_cost = 3600
+history_path = None
+
+# --- searched (ranges widened 2026-10-23 where the mega sweep's best trials sat on a bound) ---
+[sweep.train.learning_rate]
+distribution = log_normal
+min = 0.00003
+max = 0.003
+scale = auto
+
+[sweep.train.ent_coef]
+distribution = log_normal
+min = 0.00001
+max = 0.1
+scale = auto
+
+[sweep.train.anneal_ent_coef]
+distribution = int_uniform
+min = 0
+max = 1
+scale = auto
+
+[sweep.train.min_ent_coef_ratio]
+distribution = log_normal
+min = 0.001
+max = 1
+scale = auto
+
+[sweep.train.clip_coef]
+distribution = uniform
+min = 0.05
+max = 0.6
+scale = auto
+
+[sweep.train.vf_coef]
+distribution = log_normal
+min = 0.1
+max = 2
+scale = auto
+
+[sweep.train.gae_lambda]
+distribution = logit_normal
+min = 0.8
+max = 0.995
+scale = auto
+
+[sweep.train.replay_ratio]
+distribution = uniform
+min = 1
+max = 1
+scale = auto
+
+[sweep.train.max_grad_norm]
+distribution = log_normal
+min = 0.1
+max = 3
+scale = auto
+
+# Pinned at 128x3: the web table runs this network in Bend (~15 ms per decision at this size).
+[sweep.policy.hidden_size]
+distribution = uniform_pow2
+min = 128
+max = 128
+scale = auto
+
+[sweep.policy.num_layers]
+distribution = int_uniform
+min = 3
+max = 3
+scale = auto
+
+# --- also searched (ranges keep every batch layout valid: agents*horizon >= max minibatch) ---
+[sweep.train.gamma]
+distribution = uniform
+min = 0.9
+max = 1.0
+scale = auto
+
+[sweep.vec.total_agents]
+distribution = uniform_pow2
+min = 4096
+max = 16384
+scale = auto
+
+[sweep.train.horizon]
+distribution = uniform_pow2
+min = 8
+max = 64
+scale = auto
+
+[sweep.train.minibatch_size]
+distribution = uniform_pow2
+min = 512
+max = 16384
+scale = auto
+
+[sweep.train.vf_clip_coef]
+distribution = log_normal
+min = 0.05
+max = 2
+scale = auto
+
+[sweep.train.momentum]
+distribution = logit_normal
+min = 0.8
+max = 0.99
+scale = auto
+
+# --- EMAgnet (magnet KL toward an EMA of the learner) ---
+[sweep.train.magnet_coef]
+distribution = log_normal
+min = 0.001
+max = 1
+scale = auto
+
+[sweep.train.magnet_tau]
+distribution = log_normal
+min = 0.0001
+max = 0.1
+scale = auto
+
+[sweep.train.magnet_reverse]
+distribution = int_uniform
+min = 0
+max = 1
+scale = auto
+
+[sweep.train.anneal_magnet_coef]
+distribution = int_uniform
+min = 0
+max = 1
+scale = auto
+
+# --- budget: from scratch, so longer trials than the warm-started gen0 league sweep ---
+[sweep.train.total_timesteps]
+distribution = log_normal
+min = 30000000
+max = 300000000
+scale = auto
+
+

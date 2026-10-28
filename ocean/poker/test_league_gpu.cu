@@ -72,7 +72,7 @@ static void forward_parity(PokerLeague* source) {
             c->host_slot[k] = r * (POKER_PLAYERS - 1);
             c->host_fresh[k] = fresh;
         }
-        poker_league_gpu_forward(&bank, c, rows, start, count);
+        poker_league_gpu_forward(&bank, c, rows, start, count, bank.count);
         POKER_CUDA(cudaMemcpy(gpu_state, bank.device_state, (size_t)bank.total_envs * (POKER_PLAYERS - 1) * width * sizeof(float), cudaMemcpyDeviceToHost));
         for (int k = 0; k < rows; k++) {
             int r = c->order[k];

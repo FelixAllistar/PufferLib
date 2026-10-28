@@ -1,5 +1,8 @@
 #pragma once
 #include "core.h"
+#include <dirent.h>
+#include <sys/stat.h>
+#include <time.h>
 typedef float obs_t;
 #define PUF_HAS_BOT_POLICY
 #include "pufferenv.h"
@@ -10,15 +13,49 @@ typedef float obs_t;
 
 struct Log {
     float perf, score, episode_return, episode_length, n;
+    // Card sense: the learner's first preflop decision by hand class (premium TT+/AK/AQ; trash = unsuited,
+    // unpaired, J-high or lower with a gap of 3+). A card-blind policy (gen0) folds and raises both alike.
+    float premium, premium_fold, premium_raise, trash, trash_fold, trash_raise;
+    // Panel tables (env.panel_fraction): BB won and hands per opponent type (POKER_PANEL order).
+    float panel_score[5], panel_hands[5];
 };
+
+// Panel opponent types (archetypes.h): one per panel table, all five opponent seats alike.
+static const int POKER_PANEL[5] = {1, 7, 8, 9, 10};
+static const char* POKER_PANEL_NAMES[5] = {"rules", "range", "maniac", "station", "tight"};
+
+// 0 premium, 1 medium, 2 trash (same classes as poker_game tools/policy_check.c).
+static int poker_hand_class(uint8_t a, uint8_t b) {
+    int r1 = a >> 2, r2 = b >> 2, hi = r1 > r2 ? r1 : r2, lo = r1 > r2 ? r2 : r1;
+    if (r1 == r2) return hi >= 8 ? 0 : 1;
+    if (hi == 12 && lo >= 10) return 0;
+    if ((a & 3) != (b & 3) || hi > 9 || hi - lo < 3) return 1;
+    return 2;
+}
 
 typedef struct Client { int unused; } Client;
 
-// Immutable, shared PufferNet snapshots. Same fp32 checkpoint layout and
-// MinGRU equations as src/puffercpu.c. No per-decision allocation or search.
+// Shared PufferNet snapshots. Same fp32 checkpoint layout and MinGRU equations as src/puffercpu.c. No
+// per-decision allocation or search.
+// Live pool (env.league_pool_dir, GPU league only): one continuous run that adds its own checkpoints to the
+// opponent pool as the trainer writes them (Robocode-style historical self-play, no stints). The manifest may then
+// start with 0 banks (opponent seats are bots until the first snapshot); up to POKER_LEAGUE_MAX snapshots are kept,
+// after which each new one replaces the oldest.
+#define POKER_LEAGUE_MAX 128
 typedef struct PokerLeague {
     float* weights;
     int count, hidden, layers, stride;
+    char pool_dir[1024];     // live pool: directory of this run's checkpoints ("" = fixed bank)
+    int loaded;              // live pool: snapshots loaded so far (slot = loaded % POKER_LEAGUE_MAX)
+    char last[256];          // live pool: newest checkpoint name loaded
+    double polled;           // live pool: time of the last directory scan
+    // Live pool: opponents are drawn from an active subset of the pool (env.league_active, resampled at every
+    // scan, always including the newest snapshot), so each round runs a few banks' GEMMs, not up to 128.
+    int active[POKER_LEAGUE_MAX], active_count, active_max;
+    // Live pool ramp (env.league_ramp snapshots, 0 = off): the bot share of opponent seats starts at 1 and falls
+    // linearly to env.rules_fraction as the pool reaches that many snapshots, so early training is mostly bots.
+    int ramp;
+    uint64_t active_rng;
     int total_envs;          // vectorized envs sharing this bank (GPU recurrent-state slots)
     float* device_weights;   // env.league_gpu: weights and per-(env, seat) MinGRU state on the GPU
     float* device_state;
@@ -39,11 +76,28 @@ PokerLeague* poker_load_league(Dict* kwargs) {
     int fields = sscanf(line, "poker_v1 %d %d %d %d", &players, &bank->hidden,
         &bank->layers, &bank->count);
     assert(fields == 4 && players == POKER_PLAYERS);
-    assert(bank->hidden > 0 && bank->hidden <= 128 && bank->hidden % 8 == 0);
-    assert(bank->layers > 0 && bank->layers <= 4 && bank->count > 0 && bank->count <= 16);
+    assert(bank->hidden > 0 && bank->hidden <= 256 && bank->hidden % 8 == 0);  // 256: gen3 sweep width
+    DictItem* pool = dict_find(kwargs, "league_pool_dir");
+    if (pool && pool->str && *pool->str && strcmp(pool->str, "None")) {
+        assert(strlen(pool->str) < sizeof(bank->pool_dir));
+        // "auto": this run's own checkpoint directory (each sweep trial plays its own snapshots); the trainer publishes it.
+        const char* dir = strcmp(pool->str, "auto") ? pool->str : getenv("PUF_CHECKPOINT_DIR");
+        assert(dir && "env.league_pool_dir = auto needs PUF_CHECKPOINT_DIR from the trainer");
+        snprintf(bank->pool_dir, sizeof(bank->pool_dir), "%s", dir);
+    }
+    assert(bank->layers > 0 && bank->layers <= 4 && bank->count >= (bank->pool_dir[0] ? 0 : 1)
+        && bank->count <= POKER_LEAGUE_MAX);
     int h = bank->hidden;
     bank->stride = h * (POKER_OBS + POKER_ACTIONS + 1) + bank->layers * 3 * h * h;
-    bank->weights = (float*)malloc(bank->count * bank->stride * sizeof(float));
+    bank->weights = (float*)malloc((size_t)POKER_LEAGUE_MAX * bank->stride * sizeof(float));
+    bank->loaded = bank->count;
+    DictItem* active = dict_find(kwargs, "league_active");
+    bank->active_max = active && active->value > 0 ? (int)active->value : POKER_LEAGUE_MAX;
+    DictItem* ramp = dict_find(kwargs, "league_ramp");
+    bank->ramp = ramp && ramp->value > 0 ? (int)ramp->value : 0;
+    bank->active_rng = 0x9e3779b97f4a7c15ull;
+    for (int i = 0; i < bank->count && i < bank->active_max; i++) bank->active[i] = i;
+    bank->active_count = bank->count < bank->active_max ? bank->count : bank->active_max;
     for (int i = 0; i < bank->count; i++) {
         read = fgets(line, sizeof(line), manifest);
         assert(read);
@@ -57,9 +111,62 @@ PokerLeague* poker_load_league(Dict* kwargs) {
         fclose(file);
     }
     fclose(manifest);
-    printf("Poker league: %d frozen H%d/L%d banks, %zu weight bytes\n",
-        bank->count, h, bank->layers, bank->count * bank->stride * sizeof(float));
+    printf("Poker league: %d frozen H%d/L%d banks, %zu weight bytes%s%s\n",
+        bank->count, h, bank->layers, bank->count * bank->stride * sizeof(float),
+        bank->pool_dir[0] ? "; live pool from " : "", bank->pool_dir);
     return bank;
+}
+
+// Live pool: a new active subset: the newest snapshot plus a uniform sample of the rest, without replacement.
+// Published by one store of active_count after the indices (readers may briefly mix old and new; both are valid).
+static void poker_league_resample(PokerLeague* bank, int newest) {
+    int pool = bank->count, k = pool < bank->active_max ? pool : bank->active_max;
+    int order[POKER_LEAGUE_MAX];
+    for (int i = 0; i < pool; i++) order[i] = i;
+    order[newest] = 0; order[0] = newest;
+    for (int i = 1; i < k; i++) {
+        int j = i + (int)(poker_random(&bank->active_rng) % (uint32_t)(pool - i));
+        int x = order[i]; order[i] = order[j]; order[j] = x;
+    }
+    for (int i = 0; i < k; i++) bank->active[i] = order[i];
+    __atomic_store_n(&bank->active_count, k, __ATOMIC_RELEASE);
+}
+
+// Live pool: the next new checkpoint in pool_dir (name order = step order) that is complete (exact size, unchanged
+// for 5 s), loaded into host slot *slot. Returns 1 when one was loaded. Caller holds the league lock.
+static int poker_league_poll(PokerLeague* bank, int* slot) {
+    double t = (double)time(NULL);
+    if (!bank->pool_dir[0] || t - bank->polled < 20) return 0;
+    bank->polled = t;
+    DIR* dir = opendir(bank->pool_dir);
+    if (!dir) return 0;
+    char best[256] = "";
+    struct dirent* entry;
+    while ((entry = readdir(dir))) {
+        const char* name = entry->d_name;
+        size_t n = strlen(name);
+        if (n < 5 || n >= sizeof(best) || strcmp(name + n - 4, ".bin")) continue;
+        if (strcmp(name, bank->last) <= 0 || (best[0] && strcmp(name, best) >= 0)) continue;
+        snprintf(best, sizeof(best), "%s", name);
+    }
+    closedir(dir);
+    if (!best[0]) return 0;
+    char path[1400];
+    snprintf(path, sizeof(path), "%s/%s", bank->pool_dir, best);
+    struct stat st;
+    if (stat(path, &st) || (long long)st.st_size != (long long)bank->stride * (long long)sizeof(float)) return 0;
+    if (time(NULL) - st.st_mtime < 5) return 0;
+    FILE* file = fopen(path, "rb");
+    if (!file) return 0;
+    *slot = bank->loaded % POKER_LEAGUE_MAX;
+    size_t size = fread(bank->weights + (size_t)*slot * bank->stride, sizeof(float), bank->stride, file);
+    fclose(file);
+    if (size != (size_t)bank->stride) return 0;
+    snprintf(bank->last, sizeof(bank->last), "%s", best);
+    bank->loaded++;
+    printf("Poker live pool: %s -> slot %d (%d snapshots)\n", best, *slot,
+        bank->loaded < POKER_LEAGUE_MAX ? bank->loaded : POKER_LEAGUE_MAX);
+    return 1;
 }
 
 void poker_linear(float* out, const float* x, const float* weights, int in, int n) {
@@ -88,7 +195,7 @@ void poker_linear(float* out, const float* x, const float* weights, int in, int 
 void poker_forward(PokerLeague* bank, int policy, float* state,
     const float* observations, float* logits) {
     int h = bank->hidden;
-    float x[128], projected[384];
+    float x[256], projected[768];
     const float* weights = bank->weights + policy * bank->stride;
     poker_linear(x, observations, weights, POKER_OBS, h);
     const float* recurrent = weights + h * (POKER_OBS + POKER_ACTIONS + 1);
@@ -124,12 +231,20 @@ struct Env {
     float rules_fraction;
     uint64_t policy_rng;
     uint32_t starting_stack;
+    // Cash sessions (env.session_hands > 0): stacks carry over between hands for that many hands, then every seat sits
+    // down fresh. A seat's starting depth is uniform in [stack_min_bb, stack_max_bb] big blinds, drawn at each session
+    // start, after a bust (rebuy) and when a stack passes stack_cap_bb (it leaves with its winnings and a new player sits).
+    // The reward stays per hand in BB. Everything the policy sees is already in big blinds (chips / 100), so blind size
+    // needs no randomizing; stack depth is what varies. 0 keeps the old fresh starting_stack every hand.
+    int session_hands, session_left, stack_min_bb, stack_max_bb, stack_cap_bb;
     unsigned int rng;
     int lane, num_agents, tag, boundary_reached, bot_policy, equity_samples;
     unsigned baseline_mask;
     int8_t opponents[POKER_PLAYERS];
     uint8_t baseline_styles[POKER_PLAYERS];
     uint8_t league_owner;
+    uint8_t first_decision;  // the learner has not acted yet this hand
+    int8_t panel;            // panel table: index into POKER_PANEL (all opponents that bot), -1 otherwise
     Agent agents[1];
     Log log;
     Client* client;
@@ -145,6 +260,16 @@ void puf_init(Env* env, Dict* kwargs) {
     env->game->rng[env->lane] = ((uint64_t)(unsigned)seed << 32) + env->rng + 1;
     env->policy_rng = env->game->rng[env->lane] ^ UINT64_C(0xd1b54a32d192ed03);
     env->starting_stack = dict_get(kwargs, "starting_stack");
+    DictItem* session = dict_find(kwargs, "session_hands");
+    env->session_hands = session ? (int)session->value : 0;
+    if (env->session_hands > 0) {
+        env->stack_min_bb = (int)dict_get(kwargs, "stack_min_bb");
+        env->stack_max_bb = (int)dict_get(kwargs, "stack_max_bb");
+        env->stack_cap_bb = (int)dict_get(kwargs, "stack_cap_bb");
+        assert(env->stack_min_bb >= 2 && env->stack_min_bb <= env->stack_max_bb);
+        assert(env->stack_cap_bb >= env->stack_max_bb && env->stack_cap_bb * POKER_BB <= 60000);  // PokerAmount is 16-bit
+        env->session_left = 0;
+    }
     env->bot_policy = dict_get(kwargs, "bot_policy");
     env->rules_fraction = dict_get(kwargs, "rules_fraction");
     assert(env->starting_stack >= POKER_BB && env->starting_stack <= 65535);
@@ -170,6 +295,17 @@ void puf_init(Env* env, Dict* kwargs) {
         }
     }
     assert(env->rules_fraction >= 0 && env->rules_fraction <= 1);
+    // Panel tables (gen2): env.panel_fraction of the tables seat five copies of one panel bot (cycling Rules, Range,
+    // maniac, station, tight by env index) and never a league snapshot; their results log per type and as panel_worst.
+    DictItem* panel = dict_find(kwargs, "panel_fraction");
+    env->panel = -1;
+    if (panel && panel->value > 0) {
+        uint64_t mix = (uint64_t)env->rng * UINT64_C(0x9e3779b97f4a7c15);
+        if ((mix >> 40) * 0x1p-24 < panel->value) {
+            env->panel = (int8_t)((uint64_t)env->rng % 5);
+            for (int p = 1; p < POKER_PLAYERS; p++) env->baseline_styles[p] = POKER_PANEL[env->panel];
+        }
+    }
     if (env->league) {
         env->memories = (float*)calloc((POKER_PLAYERS - 1) * env->league->hidden
             * env->league->layers, sizeof(float));
@@ -177,6 +313,7 @@ void puf_init(Env* env, Dict* kwargs) {
     DictItem* gpu = dict_find(kwargs, "league_gpu");
 #ifdef __CUDACC__
     env->league_gpu = env->league && env->league->total_envs > 0 && gpu && gpu->value != 0;
+    assert((!env->league || !env->league->pool_dir[0] || env->league_gpu) && "env.league_pool_dir needs env.league_gpu=1");
 #else
     env->league_gpu = 0;  // CPU-only builds always run frozen banks inline
     (void)gpu;
@@ -274,10 +411,27 @@ static int poker_field(Env* env) {
     return 0;
 }
 
+static uint32_t poker_sit_down(Env* env) {
+    int span = env->stack_max_bb - env->stack_min_bb + 1;
+    return (uint32_t)(env->stack_min_bb + (int)(poker_random(&env->policy_rng) % (uint64_t)span)) * POKER_BB;
+}
+
 static void poker_deal_hand(Env* env) {
     uint32_t stacks[POKER_PLAYERS];
-    for (int p = 0; p < POKER_PLAYERS; p++) {
-        stacks[p] = env->starting_stack;
+    if (env->session_hands > 0) {
+        Poker* g = env->game;
+        int fresh = env->session_left <= 0;
+        if (fresh) env->session_left = env->session_hands;
+        env->session_left--;
+        for (int p = 0; p < POKER_PLAYERS; p++) {
+            uint32_t s = fresh ? 0 : g->stack[p][env->lane];
+            if (fresh || s < POKER_BB || s > (uint32_t)env->stack_cap_bb * POKER_BB) s = poker_sit_down(env);
+            stacks[p] = s;
+        }
+    } else {
+        for (int p = 0; p < POKER_PLAYERS; p++) {
+            stacks[p] = env->starting_stack;
+        }
     }
     if (env->league) {
         if (env->league_gpu) {
@@ -289,13 +443,20 @@ static void poker_deal_hand(Env* env) {
     }
     for (int p = 1; p < POKER_PLAYERS; p++) {
         env->opponents[p] = -1;
-        if (env->league && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f
-            >= env->rules_fraction) {
-            env->opponents[p] = poker_random(&env->policy_rng) % env->league->count;
+        int banks = env->league ? __atomic_load_n(&env->league->active_count, __ATOMIC_ACQUIRE) : 0;
+        float bots = env->rules_fraction;
+        if (env->league && env->league->ramp) {
+            float ramped = 1.0f - (float)__atomic_load_n(&env->league->count, __ATOMIC_ACQUIRE) / env->league->ramp;
+            if (ramped > bots) bots = ramped;
+        }
+        if (env->league && env->panel < 0 && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f
+            >= bots && banks) {
+            env->opponents[p] = env->league->active[poker_random(&env->policy_rng) % banks];
         }
     }
     Poker* g = env->game;
     poker_deal(g, env->lane, (g->button[env->lane] + 1) % POKER_PLAYERS, stacks);
+    env->first_decision = 1;
     poker_profile_begin(env->profiles);
 }
 
@@ -339,6 +500,10 @@ float poker_log_hand(Env* env) {
     env->log.score += reward;
     env->log.episode_return += reward;
     env->log.episode_length += g->decisions[t];
+    if (env->panel >= 0) {
+        env->log.panel_score[env->panel] += reward;
+        env->log.panel_hands[env->panel] += 1;
+    }
     env->log.n++;
     return reward;
 }
@@ -364,6 +529,16 @@ void puf_step(Env* env) {
     int action = env->agents[0].actions[0];
     assert(!env->pending);
     assert(action >= 0 && action < POKER_ACTIONS && (mask & (1u << action)));
+    Poker* g = env->game;
+    int t = env->lane;
+    if (env->first_decision && g->street[t] == 0) {
+        int c = poker_hand_class(g->hole[0][0][t], g->hole[0][1][t]);
+        if (c != 1) {
+            float* row = c ? &env->log.trash : &env->log.premium;
+            row[0] += 1; row[1] += amounts[action] < 0; row[2] += amounts[action] > 0;
+        }
+    }
+    env->first_decision = 0;
     poker_act(env, amounts[action]);
     env->agents[0].rewards[0] = 0;
     env->agents[0].terminals[0] = 0;
@@ -429,10 +604,11 @@ static std::mutex poker_league_gpu_mutex;
 static void poker_league_gpu_bank(PokerLeague* bank) {
     std::lock_guard<std::mutex> lock(poker_league_gpu_mutex);
     if (bank->device_weights) return;
-    size_t weights = (size_t)bank->count * bank->stride;
+    size_t weights = (size_t)POKER_LEAGUE_MAX * bank->stride;
     size_t state = (size_t)bank->total_envs * (POKER_PLAYERS - 1) * bank->layers * bank->hidden;
     POKER_CUDA(cudaMalloc(&bank->device_weights, weights * sizeof(float)));
-    POKER_CUDA(cudaMemcpy(bank->device_weights, bank->weights, weights * sizeof(float), cudaMemcpyHostToDevice));
+    POKER_CUDA(cudaMemcpy(bank->device_weights, bank->weights, (size_t)bank->count * bank->stride * sizeof(float),
+        cudaMemcpyHostToDevice));
     POKER_CUDA(cudaMalloc(&bank->device_state, state * sizeof(float)));
     POKER_CUDA(cudaMemset(bank->device_state, 0, state * sizeof(float)));
     printf("Poker league GPU: %d banks, %zu MB recurrent state\n", bank->count, state * sizeof(float) >> 20);
@@ -472,7 +648,7 @@ static PokerLeagueGPU* poker_league_gpu_context(int capacity, int hidden) {
 // Batched forward of n rows grouped by bank (rows [start[k], start[k] + count[k]) use bank k). Leaves
 // logits in c->host_logits.
 static void poker_league_gpu_forward(PokerLeague* bank, PokerLeagueGPU* c, int n, const int* start,
-    const int* count) {
+    const int* count, int banks) {
     int h = bank->hidden, layers = bank->layers, outputs = POKER_ACTIONS + 1;
     cudaStream_t st = c->stream;
     POKER_CUDA(cudaMemcpyAsync(c->obs, c->host_obs, (size_t)n * POKER_OBS * sizeof(float), cudaMemcpyHostToDevice, st));
@@ -481,7 +657,7 @@ static void poker_league_gpu_forward(PokerLeague* bank, PokerLeagueGPU* c, int n
     int width = layers * h;
     poker_zero_fresh<<<(int)(((long)n * width + 255) / 256), 256, 0, st>>>(bank->device_state, c->slot, c->fresh, n, width);
     const float one = 1, zero = 0;
-    for (int k = 0; k < bank->count; k++) {
+    for (int k = 0; k < banks; k++) {
         int m = count[k], s = start[k];
         if (!m) continue;
         const float* w = bank->device_weights + (size_t)k * bank->stride;
@@ -507,9 +683,21 @@ static void poker_league_flush(Env* envs, int count) {
     if (count <= 0 || !envs[0].league_gpu) return;
     PokerLeague* bank = envs[0].league;
     poker_league_gpu_bank(bank);
+    if (bank->pool_dir[0] && poker_league_gpu_mutex.try_lock()) {
+        int slot;
+        if (poker_league_poll(bank, &slot)) {
+            POKER_CUDA(cudaMemcpy(bank->device_weights + (size_t)slot * bank->stride, bank->weights
+                + (size_t)slot * bank->stride, (size_t)bank->stride * sizeof(float), cudaMemcpyHostToDevice));
+            if (slot == bank->count) __atomic_store_n(&bank->count, bank->count + 1, __ATOMIC_RELEASE);
+            poker_league_resample(bank, slot);
+        } else if (bank->count && bank->polled == (double)time(NULL)) {
+            poker_league_resample(bank, (bank->loaded - 1) % POKER_LEAGUE_MAX);
+        }
+        poker_league_gpu_mutex.unlock();
+    }
     PokerLeagueGPU* c = poker_league_gpu_context(count, bank->hidden);
     for (;;) {
-        int per_bank[16] = {0}, start[16], cursor[16], n = 0;
+        int per_bank[POKER_LEAGUE_MAX] = {0}, start[POKER_LEAGUE_MAX], cursor[POKER_LEAGUE_MAX], n = 0;
         for (int i = 0; i < count; i++) {
             if (envs[i].pending) {
                 per_bank[envs[i].opponents[envs[i].pending_seat]]++;
@@ -517,7 +705,8 @@ static void poker_league_flush(Env* envs, int count) {
             }
         }
         if (!n) return;
-        for (int k = 0, sum = 0; k < bank->count; k++) {
+        int banks = __atomic_load_n(&bank->count, __ATOMIC_ACQUIRE);
+        for (int k = 0, sum = 0; k < banks; k++) {
             start[k] = cursor[k] = sum;
             sum += per_bank[k];
         }
@@ -533,7 +722,7 @@ static void poker_league_flush(Env* envs, int count) {
             c->host_fresh[r] = (e->fresh >> p) & 1;
             e->fresh &= ~(1u << p);
         }
-        poker_league_gpu_forward(bank, c, n, start, per_bank);
+        poker_league_gpu_forward(bank, c, n, start, per_bank, banks);
         #pragma omp parallel for schedule(static) if (n > 512)
         for (int r = 0; r < n; r++) {
             Env* e = &envs[c->order[r]];
@@ -565,6 +754,33 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "episode_return", log->episode_return);
     dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "n", log->n);
+    float premium_fold = log->premium ? log->premium_fold / log->premium : 0;
+    float premium_raise = log->premium ? log->premium_raise / log->premium : 0;
+    float trash_fold = log->trash ? log->trash_fold / log->trash : 0;
+    float trash_raise = log->trash ? log->trash_raise / log->trash : 0;
+    dict_set(out, "premium_fold", premium_fold);
+    dict_set(out, "premium_raise", premium_raise);
+    dict_set(out, "trash_fold", trash_fold);
+    dict_set(out, "trash_raise", trash_raise);
+    // In [-2, 2]: folds trash more than premium plus raises premium more than trash. ~0 for gen0.
+    float card_sense = (trash_fold - premium_fold) + (premium_raise - trash_raise);
+    dict_set(out, "card_sense", card_sense);
+    // Sweep metric (gen1): BB/hand vs the bots plus 2 BB per unit of card sense. Blind aggression beats these
+    // bots (gen0: +2.5 BB/hand, card_sense ~0), so score alone selects card-blind exploiters.
+    dict_set(out, "skill", log->score + 2 * card_sense);
+    // Panel tables: BB/hand vs each panel bot, and the worst of them (the gen2 sweep metric; 0 until all have hands).
+    float worst = 1e9f;
+    int seen = 0;
+    for (int k = 0; k < 5; k++) {
+        if (!log->panel_hands[k]) continue;
+        float bb = log->panel_score[k] / log->panel_hands[k];
+        char key[32];
+        snprintf(key, sizeof(key), "panel_%s", POKER_PANEL_NAMES[k]);
+        dict_set(out, key, bb);
+        worst = bb < worst ? bb : worst;
+        seen++;
+    }
+    dict_set(out, "panel_worst", seen == 5 ? worst : 0);
 }
 
 void puf_close(Env* env) {

@@ -14,8 +14,18 @@
 // An aggressor may wait through the rest of this round and the next round's
 // prefix: at most 2*(players-1) other actions, plus its own previous action.
 #define POKER_HISTORY (2 * POKER_PLAYERS)
-#define POKER_OBS (16 + 7 * POKER_PLAYERS + 4 * POKER_HISTORY)
+// Card features (gen1, 2026-10-25): each hole card's rank and suit one-hot, pair and suited flags, the board's rank
+// and suit counts, and the made-hand class postflop. Cards were one scalar id/52 each before, and gen0 learned to
+// ignore them. Then rule hints: preflop strength (the rules bot's score), pot odds, call/stack, stack/pot, flush and
+// straight draws, and whether the hole cards improve on the board. Changes checkpoint compatibility (gen0 has 106
+// inputs at six seats).
+#define POKER_CARD_FEATURES (2 * 17 + 2 + 17 + 9 + 7)
+#define POKER_OBS (16 + 7 * POKER_PLAYERS + 4 * POKER_HISTORY + POKER_CARD_FEATURES)
 #define POKER_BB 100
+// Small blind; the web's $0.02 / $0.05 micro stakes build with -DPOKER_SB=40. Training keeps half the big blind.
+#ifndef POKER_SB
+#define POKER_SB (POKER_BB / 2)
+#endif
 #define POKER_DONE 255
 
 // The web cash table can carry deep stacks across hands. Default training
@@ -286,7 +296,7 @@ void poker_reset(Poker* g, int t, int button, const uint32_t* stacks,
     }
     int sb = POKER_PLAYERS == 2 ? button : (button + 1) % POKER_PLAYERS;
     int bb = (sb + 1) % POKER_PLAYERS;
-    poker_pay(g, t, sb, stacks[sb] < POKER_BB / 2 ? stacks[sb] : POKER_BB / 2);
+    poker_pay(g, t, sb, stacks[sb] < POKER_SB ? stacks[sb] : POKER_SB);
     poker_pay(g, t, bb, stacks[bb] < POKER_BB ? stacks[bb] : POKER_BB);
     g->pending[t] = g->active[t];
     poker_advance(g, t, bb);
@@ -449,19 +459,58 @@ void poker_observe(Poker* g, int t, int p, float* obs) {
         events[4 * i + 2] = ((e >> (POKER_EVENT_SHIFT + 6)) & 3) / 3.0f;
         events[4 * i + 3] = (e & POKER_EVENT_AMOUNT) / 20000.0f;
     }
+    float* cards = events + 4 * POKER_HISTORY;
+    memset(cards, 0, POKER_CARD_FEATURES * sizeof(float));
+    uint8_t hand[7] = {g->hole[p][0][t], g->hole[p][1][t]};
+    for (int c = 0; c < 2; c++) {
+        cards[17 * c + (hand[c] >> 2)] = 1;
+        cards[17 * c + 13 + (hand[c] & 3)] = 1;
+    }
+    cards[34] = (hand[0] >> 2) == (hand[1] >> 2);
+    cards[35] = (hand[0] & 3) == (hand[1] & 3);
+    for (int i = 0; i < board_count; i++) {
+        hand[2 + i] = g->board[i][t];
+        cards[36 + (hand[2 + i] >> 2)] += 0.25f;
+        cards[49 + (hand[2 + i] & 3)] += 0.2f;
+    }
+    uint32_t made = board_count ? poker_rank(hand, board_count + 2) : 0;
+    if (board_count) cards[53 + (made >> 24)] = 1;
+    int r0 = hand[0] >> 2, r1 = hand[1] >> 2, hi = r0 > r1 ? r0 : r1, lo = r0 < r1 ? r0 : r1;
+    int suited = (hand[0] & 3) == (hand[1] & 3);
+    cards[62] = (r0 == r1 ? 30 + 3 * hi : 2 * hi + lo + 4 * suited + 4 * (hi - lo <= 2)) / 66.0f;
+    uint32_t call = g->high[t] > g->bet[p][t] ? g->high[t] - g->bet[p][t] : 0;
+    if (call > g->stack[p][t]) call = g->stack[p][t];
+    cards[63] = g->pot[t] + call ? (float)call / (g->pot[t] + call) : 0;
+    cards[64] = g->stack[p][t] ? (float)call / g->stack[p][t] : 1;
+    float spr = g->pot[t] ? (float)g->stack[p][t] / g->pot[t] : 10;
+    cards[65] = spr < 10 ? spr / 10 : 1;
+    if (board_count && board_count < 5) {
+        int suits[4] = {0};
+        unsigned ranks = 0;
+        for (int i = 0; i < board_count + 2; i++) { suits[hand[i] & 3]++; ranks |= 1u << (hand[i] >> 2); }
+        cards[66] = (suits[hand[0] & 3] == 4 || suits[hand[1] & 3] == 4) && (made >> 24) < 5;
+        unsigned low = (ranks << 1) | ((ranks >> 12) & 1);  // bit 0: the ace playing low, bit k+1: rank k
+        int run = 0;  // four of five consecutive ranks (open-ended or gutshot)
+        for (int r = 0; r + 5 <= 14; r++) run |= __builtin_popcount((low >> r) & 31) == 4;
+        cards[67] = run && (made >> 24) < 4;
+    }
+    if (board_count >= 5) cards[68] = made > poker_rank(hand + 2, 5);
+    else if (board_count) cards[68] = (made >> 24) > 0 && (r0 == r1 || ((made >> 16) & 15) - 2 == r0 || ((made >> 16) & 15) - 2 == r1);
 }
 
 #ifdef POKER_FULLHOUSE_MODEL
 #include "fullhouse.h"
-#define POKER_BOT_MASK 146u
+#define POKER_BOT_MASK (146u | 0x700u)
 #else
-#define POKER_BOT_MASK 130u
+#define POKER_BOT_MASK (130u | 0x700u)
 #endif
-// Stable IDs: 1 original rules, 4 Fullhouse, 7 current range policy.
+// Stable IDs: 1 original rules, 4 Fullhouse, 7 current range policy; 8 maniac, 9 station, 10 tight
+// (archetypes.h, the evaluation panel).
 // Removed experiment IDs remain in frozen report sources and old binaries.
-#define POKER_BOT_COUNT 8
+#define POKER_BOT_COUNT 11
 #include "rules.h"
 #include "equity.h"
+#include "archetypes.h"
 
 int poker_bot_supported(int policy) {
     return policy >= 0 && policy < POKER_BOT_COUNT && (POKER_BOT_MASK & (1u << policy));
@@ -472,6 +521,9 @@ int32_t poker_decide(Poker* g, int t, uint64_t* rng, int policy, int samples,
     assert(poker_bot_supported(policy));
     assert(samples == 0 || samples == 32 || samples == 64 || samples == 128);
     if (policy == 7) return poker_equity_bot(g, t, rng, samples, profiles);
+    if (policy == 8) return poker_maniac_bot(g, t, rng);
+    if (policy == 9) return poker_station_bot(g, t, rng);
+    if (policy == 10) return poker_tight_bot(g, t, rng);
 #ifdef POKER_FULLHOUSE_MODEL
     if (policy == 4) return poker_fullhouse_bot(g, t, rng);
 #endif

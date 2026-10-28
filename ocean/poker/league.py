@@ -16,7 +16,7 @@ def run(args):
     assert 1 <= args.pool <= 16 and 1 <= args.layers <= 4
     assert 8 <= args.hidden <= 128 and args.hidden % 8 == 0
     assert 0 <= args.rules_fraction <= 1 and args.stints > 0
-    observations = 16 + 15 * args.players
+    observations = 16 + 15 * args.players + 69  # + POKER_CARD_FEATURES (ocean/poker/core.h)
     expected = 4 * (args.hidden * (observations + 9)
         + args.layers * 3 * args.hidden ** 2)
     pool = [path.resolve() for path in args.opponents]
