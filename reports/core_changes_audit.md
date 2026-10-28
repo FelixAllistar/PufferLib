@@ -177,6 +177,13 @@ has replaced (cuBLAS handles, step budget, sweep packet, draw_rate). Previous so
 
 Motivated by a poker sweep that ran 73 good trials, then failed ~1,000 trials in a row (probably GPU memory taken by Windows apps on a 3 GB card) with every error lost to terminal scrollback.
 
+### 2026-10-27: trainer publishes the run's checkpoint directory to envs (`src/pufferl.cu`)
+
+One line: after computing `checkpoint_dir` (base.checkpoint_dir/env/run_id), the trainer calls
+`setenv("PUF_CHECKPOINT_DIR", checkpoint_dir, 1)` before creating the envs. Why: a sweep names each trial's run_id
+itself, so an env that plays its own snapshots (poker `env.league_pool_dir = auto`, the gen3 cash-table sweep) cannot
+name that directory in the ini. Inert for every env that does not read the variable. Env side: ocean/poker/poker.h.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses

@@ -3665,6 +3665,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     snprintf(log_dir, sizeof(log_dir), "%s/%s",
         puf_ini_get_str(ini, "base", "log_dir"),
         puf_ini_get_str(ini, "base", "env_name"));
+    // Envs that keep their own snapshots as opponents (poker env.league_pool_dir = auto) need this run's checkpoint
+    // directory, which a sweep names per trial; it is published before the envs are created.
+    setenv("PUF_CHECKPOINT_DIR", checkpoint_dir, 1);
     if (ctx->artifact_owner) {
         mkdir_p(checkpoint_dir);
         mkdir_p(log_dir);
